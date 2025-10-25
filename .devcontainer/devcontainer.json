@@ -1,0 +1,75 @@
+{
+  "name": "langstar",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "TZ": "${localEnv:TZ:America/New_York}",
+      "CLAUDE_CODE_VERSION": "latest",
+      "GIT_DELTA_VERSION": "0.18.2",
+      "ZSH_IN_DOCKER_VERSION": "1.2.1"
+    }
+  },
+  "features": {
+    // "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW",
+    "--env-file",
+    ".devcontainer/.env"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        // container tools for docker
+        "ms-azuretools.vscode-containers"
+        // "github.vscode-pull-request-github",
+        // "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "files.autoSave": "afterDelay",
+        "editor.formatOnSave": true,
+        // "editor.defaultFormatter": "biomejs.biome",
+        // "editor.codeActionsOnSave": {
+        //   "source.fixAll.eslint": "explicit"
+        // },
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+  "remoteUser": "node",
+  "remoteEnv": {
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
+    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
+    "GITHUB_TOKEN": "${localEnv:DEVCONTAINER_GITHUB_TOKEN}",
+    "OPENAI_API_KEY": "${localEnv:DEVCONTAINER_OPENAI_API_KEY}",
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+    // "GEMINI_API_KEY": "${localEnv:DEVCONTAINER_GEMINI_API_KEY}",
+    // "OPENROUTER_API_KEY": "${localEnv:DEVCONTAINER_OPENROUTER_API_KEY}",
+    // "OCO_API_KEY": "${localEnv:DEVCONTAINER_OPENROUTER_API_KEY}",
+    // "OCO_API_URL": "${localEnv:DEVCONTAINER_OCO_API_URL}",
+    // "OCO_MODEL": "${localEnv:DEVCONTAINER_OCO_MODEL}"
+  },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
+  "workspaceFolder": "/workspace",
+  // "postCreateCommand": "mise trust && init.sh",
+  //   "postCreateCommand": ".devcontainer/scripts/postCreateCommand.sh",
+  //   "postStartCommand": ".devcontainer/scripts/postStartCommand.sh"
+  "postStartCommand": "bash .devcontainer/setup-github-auth.sh",
+  "mounts": [
+    "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
+  ]
+}
