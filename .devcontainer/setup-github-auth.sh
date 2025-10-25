@@ -47,8 +47,50 @@ else
   exit 1
 fi
 
+# Remove any SSH URL rewrite rules and credential helpers that would bypass PAT authentication
+#
+# VS Code Dev Containers automatically copies your host machine's ~/.gitconfig into the container.
+# If your host has a git config rule like:
+#   [url "git@github.com:"]
+#       insteadof = https://github.com/
+# Then ALL https:// GitHub URLs get silently rewritten to git@github.com (SSH protocol).
+#
+# Additionally, if your host has credential helpers configured (like VSCode's credential helper
+# or gh auth git-credential), these can override the PAT-based authentication we're setting up.
+#
+# This breaks PAT authentication because:
+# - PATs only work with HTTPS protocol
+# - SSH requires SSH keys, not PATs
+# - The rewrite happens transparently, so "git remote -v" might show https:// but git actually uses SSH
+# - Credential helpers may invoke OAuth flows instead of using the PAT
+#
+# This causes VS Code to pop up OAuth dialogs asking for broad GitHub access, even though you've
+# provided a scoped fine-grained PAT in GITHUB_PAT.
+#
+# Solution: Remove the SSH rewrite rules and clear credential helpers so git actually uses HTTPS with your PAT as intended.
+git config --global --unset url.git@github.com:.insteadof 2>/dev/null || true
+git config --unset url.git@github.com:.insteadof 2>/dev/null || true
+
+# Clear all existing credential helpers (both global and local)
+# Note: We can't modify /etc/gitconfig (VSCode's system config), but we can override it
+git config --global --unset-all credential.helper 2>/dev/null || true
+git config --unset-all credential.helper 2>/dev/null || true
+git config --global --unset-all credential.https://github.com.helper 2>/dev/null || true
+git config --unset-all credential.https://github.com.helper 2>/dev/null || true
+git config --global --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
+git config --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
+
+# Reset credential helper chain by setting empty string, then add store
+# The empty string resets the helper list (overriding system config)
+# Then we add 'store' as the only helper
+git config --global --replace-all credential.helper "" ".*"
+git config --global --add credential.helper store
+
+echo "[setup-github-auth] Cleared conflicting git credential helpers."
+
 # Configure git credentials to use same token (optional but convenient)
 if command -v git >/dev/null 2>&1; then
+
   USERNAME="${GITHUB_USER:-}"
   if [[ -z "$USERNAME" ]]; then
     # Use gh user if available
@@ -56,7 +98,7 @@ if command -v git >/dev/null 2>&1; then
   fi
   printf "protocol=https\nhost=github.com\nusername=%s\npassword=%s\n\n" \
     "$USERNAME" "$TOKEN_VALUE" | git credential approve
-  echo "[setup-github-auth] git credential stored for $USERNAME."
+  echo "[setup-github-auth] git credential stored for $USERNAME using 'store' helper."
 fi
 
 echo "[setup-github-auth] Done."
