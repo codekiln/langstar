@@ -1,0 +1,10 @@
+*~
+.DS_Store
+__pycache__/
+.venv/
+node_modules/
+.claude/settings.local.json
+
+# Local dev container overrides (never commit these)
+.devcontainer/devcontainer.local.json
+.devcontainer/.env
