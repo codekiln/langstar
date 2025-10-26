@@ -1,9 +1,23 @@
 # Langstar
 
+## Project Overview
+
+Langstar is a **Rust project**. 
+
+### Technology Stack
+
+- **Primary Language**: Rust
+- **Build System**: Cargo (Rust's package manager and build tool)
+- **Development Environment**: Devcontainer-based setup for consistency
+
 ## Dev Setup
 * see .devcontainer
 * git access is provided via a github fine-grained personal access token
   * it's locked down to this repo
+
+## Tooling Preferences
+
+This project prefers **Rust-based tools** wherever possible for better performance and integration with the Rust ecosystem.
 
 ## Claude Code Plugin Configuration
 
