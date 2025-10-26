@@ -97,16 +97,22 @@ Claude Code can automatically create branches when you mention `@claude` in an i
 ```
 
 **What Claude Code Does:**
-1. Creates a branch following the naming convention
+1. Creates a branch automatically
 2. Checks out the branch in the workflow environment
 3. Can make initial commits if requested
 4. Provides a link to create a PR when work is complete
 
 **Claude Code Branch Format:**
-When Claude creates branches, it uses:
+When Claude creates branches, it uses a different format than the project convention:
 ```
-claude/<issue_num>-<issue_slug>
+claude/issue-<issue_num>-<timestamp>
 ```
+
+**Example:** `claude/issue-11-20251026-1529`
+
+**Note:** This format differs from the project's preferred convention of `<username>/<issue_num>-<issue_slug>`. The Claude Code Action currently does not support customizing the full branch name pattern beyond the prefix. See [Issue #11](https://github.com/codekiln/langstar/issues/11) for details.
+
+For branches that need to strictly follow project conventions, use manual branch creation (Option 1 above).
 
 ---
 
