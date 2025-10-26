@@ -34,3 +34,9 @@ When both `settings.json` and `settings.local.json` exist, the files are merged 
 - Keep shared team configuration in `settings.json`
 - Override specific settings locally in `settings.local.json`
 - Maintain separate credentials without committing them
+
+## Coding Conventions
+
+All coding conventions and development guidelines can be found in @docs/dev/README.md
+
+For commit message formatting, please follow @docs/dev/git-scm-conventions.md
