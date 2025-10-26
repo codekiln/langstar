@@ -35,6 +35,16 @@ When both `settings.json` and `settings.local.json` exist, the files are merged 
 - Override specific settings locally in `settings.local.json`
 - Maintain separate credentials without committing them
 
+## Development Workflow
+
+This project follows a GitHub issue-driven development workflow. For complete details, see @docs/dev/github-workflow.md
+
+Key points:
+- Create GitHub issues for all work
+- Use branch naming convention: `<username>/<issue_num>-<issue_slug>`
+- Follow Conventional Emoji Commits for commit messages
+- Link PRs to issues using `Fixes #N` or `Closes #N`
+
 ## Coding Conventions
 
 All coding conventions and development guidelines can be found in @docs/dev/README.md
