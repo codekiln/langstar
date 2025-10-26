@@ -51,15 +51,5 @@ jobs:
           #   --allowedTools "Bash(npm install),Bash(npm run build),Bash(npm run test:*),Bash(npm run lint:*)"
           #   --system-prompt "Follow our coding standards. Ensure all new code has tests. Use TypeScript for new files."
 
-          # Optional: Environment configuration
-          settings: |
-            {
-              "env": {
-                "ANTHROPIC_BEDROCK_BASE_URL": "${{ secrets.ANTHROPIC_BEDROCK_BASE_URL }}",
-                "ANTHROPIC_MODEL": "${{ secrets.ANTHROPIC_MODEL }}",
-                "ANTHROPIC_SMALL_FAST_MODEL": "${{ secrets.ANTHROPIC_SMALL_FAST_MODEL }}",
-                "AWS_REGION": "${{ secrets.AWS_REGION }}",
-                "CLAUDE_CODE_SKIP_BEDROCK_AUTH": "1",
-                "CLAUDE_CODE_USE_BEDROCK": "1"
-              }
-            }
+          # Reference project settings file
+          settings: .claude/settings.json
