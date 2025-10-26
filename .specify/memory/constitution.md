@@ -1,26 +1,28 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version Change: 1.0.0 → 1.1.0
-- Added two new core principles (MINOR version bump)
-- Extended governance for AI automation and multi-environment support
+Version Change: 1.1.0 → 1.1.1
+- Expanded Principle VI with comprehensive automation guidance (PATCH version bump)
 
-Modified Principles: N/A
-Added Sections:
-  - Principle VI: AI Automation First (human time is precious)
-  - Principle VII: Multi-Environment Development (local/codespaces/GitHub Actions)
+Modified Principles:
+  - Principle VI: AI Automation First - Added GitHub Workflows and GitHub Project Automation
+    as automation mechanisms alongside Claude Code skills. Added specific examples for each
+    mechanism and guidance on choosing appropriate automation approach.
 
+Added Sections: N/A
 Removed Sections: N/A
 
 Templates Status:
   ✅ spec-template.md - Aligned with all principles
   ✅ plan-template.md - Constitution Check section references this document
   ✅ tasks-template.md - Task categorization includes automation and CI/CD tasks
-  ⚠️  Follow-up: Consider creating Claude Code skills for common SOPs
+  ⚠️  Follow-up: Consider creating GitHub workflows for constitution compliance validation
 
 Follow-up TODOs:
-  - Document standard operating procedures that should be automated via skills
-  - Ensure GitHub Actions workflows validate constitution compliance
+  - Document standard operating procedures for each automation mechanism
+  - Create GitHub workflows for constitution compliance (commit format, branch naming, etc.)
+  - Configure GitHub project automation rules for issue lifecycle management
+  - Document when to use each automation mechanism (skills vs workflows vs project automation)
 -->
 
 # Langstar Constitution
@@ -117,22 +119,56 @@ Complex features MUST use Spec-Kit workflow; simple changes SHOULD NOT.
 
 ### VI. AI Automation First (NON-NEGOTIABLE)
 
-Human time is precious. Standard operating procedures MUST be automated using Claude Code skills whenever possible. Repetitive tasks that can be delegated to AI MUST NOT consume human attention.
+Human time is precious. Standard operating procedures MUST be automated through Claude Code skills, GitHub workflows, and GitHub project automation. Repetitive tasks that can be delegated to automation MUST NOT consume human attention.
 
-**Rationale**: Humans should focus on high-value decision-making, architecture, and creative problem-solving. Routine operations (status updates, branch creation, boilerplate generation, workflow orchestration) should be delegated to AI agents. This maximizes human productivity and reduces cognitive load from repetitive tasks.
+**Rationale**: Humans should focus on high-value decision-making, architecture, and creative problem-solving. Routine operations (status updates, branch creation, boilerplate generation, workflow orchestration, project management) should be delegated to automation systems. This maximizes human productivity and reduces cognitive load from repetitive tasks.
+
+**Automation mechanisms** (use appropriate mechanism for each task):
+
+1. **Claude Code Skills** (`.claude/skills/`)
+   - Interactive automation requiring AI decision-making
+   - Complex workflows requiring context understanding
+   - Tasks needing natural language processing
+   - Version-controlled and documented
+
+2. **GitHub Workflows** (`.github/workflows/`)
+   - Event-driven automation (push, PR, issue events)
+   - CI/CD pipelines and testing
+   - Scheduled tasks and maintenance
+   - Constitution compliance validation
+
+3. **GitHub Project Automation**
+   - Issue lifecycle management (status transitions)
+   - Automated project board updates
+   - Label-based routing and assignment
+   - Built-in GitHub project rules and actions
 
 **Non-negotiable requirements**:
-- Standard operating procedures documented in skills (`.claude/skills/`)
-- Repetitive workflows automated via Claude Code skills or GitHub Actions
-- Skills MUST be version-controlled and documented
+- Standard operating procedures MUST be automated using appropriate mechanism
+- All automation MUST be version-controlled and documented
 - Manual execution of automatable tasks is discouraged unless automation impossible
+- Choose simplest appropriate mechanism (prefer GitHub built-ins over custom workflows)
 
-**Examples of required automation**:
-- GitHub issue status updates → skill automation
-- Branch creation and PR generation → skill automation
-- Boilerplate code generation → skill automation
-- Documentation updates from code changes → skill automation
-- Project board management → skill automation
+**Examples of required automation by mechanism**:
+
+**Claude Code Skills**:
+- Complex issue analysis and triage requiring AI understanding
+- Automated code generation from specifications
+- Intelligent PR descriptions and commit messages
+- Context-aware documentation generation
+
+**GitHub Workflows**:
+- Automated testing and builds on PR
+- Constitution compliance checks (commit format, branch naming, issue linkage)
+- Deployment pipelines
+- Dependency updates and security scanning
+- Automated release creation and changelog generation
+
+**GitHub Project Automation**:
+- Move issues to "In Progress" when branch created or PR opened
+- Move issues to "Done" when PR merged or issue closed
+- Auto-assign issues based on labels or components
+- Stale issue detection and notification
 
 **Human involvement required for**:
 - Architectural decisions
@@ -266,4 +302,4 @@ For day-to-day development guidance, refer to:
 - `docs/dev/git-scm-conventions.md` - Commit message standards
 - `docs/dev/spec-kit.md` - Spec-driven development workflows
 
-**Version**: 1.1.0 | **Ratified**: 2025-10-26 | **Last Amended**: 2025-10-26
+**Version**: 1.1.1 | **Ratified**: 2025-10-26 | **Last Amended**: 2025-10-26
