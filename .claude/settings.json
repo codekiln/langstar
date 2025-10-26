@@ -9,14 +9,5 @@
   },
   "enabledPlugins": {
     "example-skills@anthropic-agent-skills": true
-  },
-  "env": {
-    "ANTHROPIC_BEDROCK_BASE_URL": "${{ secrets.ANTHROPIC_BEDROCK_BASE_URL }}",
-    "ANTHROPIC_MODEL": "${{ secrets.ANTHROPIC_MODEL }}",
-    "ANTHROPIC_SMALL_FAST_MODEL": "${{ secrets.ANTHROPIC_SMALL_FAST_MODEL }}",
-    "AWS_REGION": "${{ secrets.AWS_REGION }}",
-    "CLAUDE_CODE_SKIP_BEDROCK_AUTH": "1",
-    "CLAUDE_CODE_USE_BEDROCK": "1",
-    "GH_PROJECT_PAT": "${{ secrets.GH_PROJECT_PAT }}"
   }
 }
