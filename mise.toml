@@ -15,7 +15,3 @@ _.path = [
   "{{ config_root }}/.local/bin",
   "$HOME/.local/bin"
 ]
-
-[settings]
-# Trust this mise.toml automatically in the devcontainer
-trusted = true
