@@ -16,6 +16,7 @@
     "ANTHROPIC_SMALL_FAST_MODEL": "${{ secrets.ANTHROPIC_SMALL_FAST_MODEL }}",
     "AWS_REGION": "${{ secrets.AWS_REGION }}",
     "CLAUDE_CODE_SKIP_BEDROCK_AUTH": "1",
-    "CLAUDE_CODE_USE_BEDROCK": "1"
+    "CLAUDE_CODE_USE_BEDROCK": "1",
+    "GH_PROJECT_PAT": "${{ secrets.GH_PROJECT_PAT }}"
   }
 }
