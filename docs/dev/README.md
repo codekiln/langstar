@@ -8,6 +8,7 @@ This directory contains instructions and conventions for developing the Langstar
 - [GitHub Projects](./github-projects.md) - GitHub Projects V2 configuration, fields, and API usage
 - [Issue Automation](./issue-automation.md) - Automated issue assignment and project status updates
 - [Git SCM Conventions](./git-scm-conventions.md) - Guidelines for commit messages and version control practices
+- [Spec-Kit Integration](./spec-kit.md) - Spec-driven development with GitHub Spec-Kit
 
 ## Purpose
 

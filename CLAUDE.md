@@ -59,6 +59,28 @@ Key points:
 - Follow Conventional Emoji Commits for commit messages
 - Link PRs to issues using `Fixes #N` or `Closes #N`
 
+### Spec-Driven Development (Optional)
+
+Langstar integrates [GitHub Spec-Kit](https://github.com/github/spec-kit) for spec-driven development workflows. For complex features, consider using Spec-Kit slash commands:
+
+- `/speckit.constitution` - Establish project principles
+- `/speckit.specify` - Define requirements
+- `/speckit.plan` - Create technical plans
+- `/speckit.tasks` - Generate task lists
+- `/speckit.implement` - Execute implementation
+
+For complete Spec-Kit documentation, see @docs/dev/spec-kit.md
+
+**When to use Spec-Kit:**
+- Complex features requiring detailed planning
+- Features with ambiguous requirements
+- Major architectural changes
+
+**Skip Spec-Kit for:**
+- Simple bug fixes
+- Trivial changes
+- Well-understood modifications
+
 ## Coding Conventions
 
 All coding conventions and development guidelines can be found in @docs/dev/README.md

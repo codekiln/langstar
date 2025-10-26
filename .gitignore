@@ -8,3 +8,11 @@ node_modules/
 # Local dev container overrides (never commit these)
 .devcontainer/devcontainer.local.json
 .devcontainer/.env
+
+# Spec-Kit agent folder (may contain credentials)
+.specify/.agent/
+.specify/**/.cache/
+
+# Temporary specification working files
+.specify/**/*-draft.md
+.specify/**/*-wip.md

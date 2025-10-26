@@ -1,0 +1,21 @@
+# mise.toml - Tool version management for Langstar project
+# https://mise.jdx.dev/
+
+[tools]
+# Python 3.11+ is required for Spec-Kit (github/spec-kit)
+python = "3.11"
+
+# Node.js version matches devcontainer base image
+# Managed by devcontainer, not by mise
+# node = "22"
+
+[env]
+# Ensure Python tools installed via uv are available in PATH
+_.path = [
+  "{{ config_root }}/.local/bin",
+  "$HOME/.local/bin"
+]
+
+[settings]
+# Trust this mise.toml automatically in the devcontainer
+trusted = true

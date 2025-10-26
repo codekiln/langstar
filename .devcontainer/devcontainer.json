@@ -64,9 +64,7 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  // "postCreateCommand": "mise trust && init.sh",
-  //   "postCreateCommand": ".devcontainer/scripts/postCreateCommand.sh",
-  //   "postStartCommand": ".devcontainer/scripts/postStartCommand.sh"
+  "postCreateCommand": "mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git",
   "postStartCommand": "bash .devcontainer/setup-github-auth.sh",
   "mounts": [
     // the following allows persisting command history and claude config across devcontainer rebuilds

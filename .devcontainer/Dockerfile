@@ -127,6 +127,10 @@ RUN curl https://mise.run/zsh | sh && \
     /home/node/.local/bin/mise trust && \
     /home/node/.local/bin/mise install
 
+# Install uv package manager (required for Spec-Kit)
+# https://docs.astral.sh/uv/
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # RUN npm i -g rulesync
 
 # Aliases
