@@ -35,6 +35,14 @@ When both `settings.json` and `settings.local.json` exist, the files are merged 
 - Override specific settings locally in `settings.local.json`
 - Maintain separate credentials without committing them
 
+## Development Workflow
+
+This project follows a GitHub issue-driven development workflow. See @docs/dev/github-workflow.md for complete details on:
+- Creating issues and branches
+- Using Claude Code GitHub Actions
+- Making commits and pull requests
+- Review and merge process
+
 ## Coding Conventions
 
 All coding conventions and development guidelines can be found in @docs/dev/README.md

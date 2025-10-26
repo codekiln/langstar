@@ -4,6 +4,7 @@ This directory contains instructions and conventions for developing the Langstar
 
 ## Contents
 
+- [GitHub Workflow](./github-workflow.md) - Issue-driven development workflow with Claude Code integration
 - [Git SCM Conventions](./git-scm-conventions.md) - Guidelines for commit messages and version control practices
 
 ## Purpose
