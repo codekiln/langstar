@@ -121,23 +121,15 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # --------------------↓-CUSTOMIZATIONS FOR NODE USER-↓--------------------
 
+# Note: mise and uv are installed via devcontainer features (applied after Dockerfile)
+# - mise: "ghcr.io/devcontainers-extra/features/mise:1"
+# - uv: "ghcr.io/devcontainers-extra/features/uv:1"
+# See devcontainer.json features section
 
-# Install mise
-RUN curl https://mise.run/zsh | sh
-
-# Install uv package manager (required for Spec-Kit)
-# https://docs.astral.sh/uv/
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Copy mise.toml and install tools during Docker build for better caching
-COPY --chown=node:node mise.toml /workspace/mise.toml
-RUN cd /workspace && \
-    /home/node/.local/bin/mise trust && \
-    /home/node/.local/bin/mise install && \
-    /home/node/.local/bin/uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+# Note: mise.toml installation happens in postCreateCommand in devcontainer.json
 
 # RUN npm i -g rulesync
 
-# Aliases
+# Aliases (mise shell integration happens in postCreateCommand after feature is installed)
 RUN echo "alias claude=\"claude --dangerously-skip-permissions\"" >> "/home/node/.zshrc"
 

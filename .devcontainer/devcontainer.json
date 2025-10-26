@@ -11,7 +11,9 @@
   },
   "features": {
     // "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/mise:1": {},
+    "ghcr.io/devcontainers-extra/features/uv:1": {}
   },
   "runArgs": [
     "--cap-add=NET_ADMIN",
@@ -64,7 +66,6 @@
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
   "workspaceFolder": "/workspace",
-  "postStartCommand": "bash .devcontainer/setup-github-auth.sh",
   "mounts": [
     // the following allows persisting command history and claude config across devcontainer rebuilds
     "source=claude-code-bashhistory,target=/commandhistory,type=volume",
@@ -72,5 +73,8 @@
     // the following scopes the command history to a given build a of a devcontainer
     // "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
     // "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
-  ]
+  ],
+  // Lifecycle commands
+  "postCreateCommand": "echo 'eval \"$(mise activate zsh)\"' >> ~/.zshrc && mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git",
+  "postStartCommand": "bash .devcontainer/setup-github-auth.sh"
 }
