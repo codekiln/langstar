@@ -1,4 +1,4 @@
-use crate::client::{LangchainClient, ListResponse};
+use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
@@ -91,21 +91,54 @@ impl<'a> PromptClient<'a> {
 
     /// Create or update a prompt in the PromptHub
     ///
+    /// This creates a new commit for the prompt. The correct endpoint is
+    /// `/api/v1/commits/{owner}/{repo}` not `/api/v1/repos/{owner}/{repo}`.
+    ///
     /// # Arguments
-    /// * `repo_handle` - The handle for the prompt (e.g., "owner/prompt-name")
-    /// * `prompt_data` - The prompt data to push
-    pub async fn push(&self, repo_handle: &str, prompt_data: &PromptData) -> Result<Prompt> {
-        let path = format!("/api/v1/repos/{}", repo_handle);
-        // Use PUT for creating/updating prompts
-        let request = self.client.langsmith_put(&path)?
-            .json(prompt_data);
-        let prompt: Prompt = self.client.execute(request).await?;
-        Ok(prompt)
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `commit_request` - The commit data to push
+    pub async fn push(&self, owner: &str, repo: &str, commit_request: &CommitRequest) -> Result<CommitResponse> {
+        let path = format!("/api/v1/commits/{}/{}", owner, repo);
+        // Use POST to create a new commit
+        let request = self.client.langsmith_post(&path)?
+            .json(commit_request);
+        let response: CommitResponse = self.client.execute(request).await?;
+        Ok(response)
     }
 }
 
-/// Data for creating/updating a prompt
+/// Request to create a commit (upload/update a prompt)
+///
+/// Corresponds to the LangSmith API CreateRepoCommitRequest schema.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitRequest {
+    /// The prompt manifest/template (required)
+    pub manifest: serde_json::Value,
+    /// Parent commit hash (optional, for updates)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_commit: Option<String>,
+    /// Example run IDs to associate with this commit
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub example_run_ids: Option<Vec<String>>,
+}
+
+/// Response from creating a commit
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitResponse {
+    /// Commit hash
+    pub commit_hash: String,
+    /// URL to the commit
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+/// Data for creating/updating a prompt (deprecated, use CommitRequest)
+///
+/// This type is kept for backward compatibility but CommitRequest should be
+/// used for new code.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[deprecated(since = "0.1.0", note = "Use CommitRequest instead")]
 pub struct PromptData {
     /// Description of the prompt
     pub description: Option<String>,
@@ -123,7 +156,7 @@ pub struct PromptData {
 
 impl LangchainClient {
     /// Get a PromptClient for interacting with prompts
-    pub fn prompts(&self) -> PromptClient {
+    pub fn prompts(&self) -> PromptClient<'_> {
         PromptClient::new(self)
     }
 }

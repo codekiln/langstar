@@ -26,10 +26,12 @@
 pub mod auth;
 pub mod client;
 pub mod error;
+pub mod organization;
 pub mod prompts;
 
 // Re-export commonly used types
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use error::{LangstarError, Result};
-pub use prompts::{Prompt, PromptClient, PromptData};
+pub use organization::Organization;
+pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, PromptData};

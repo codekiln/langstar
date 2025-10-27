@@ -15,6 +15,8 @@ pub struct LangchainClient {
     auth: AuthConfig,
     langsmith_base_url: String,
     langgraph_base_url: String,
+    /// Optional organization ID for API requests (used in X-Organization-Id header)
+    organization_id: Option<String>,
 }
 
 impl LangchainClient {
@@ -29,7 +31,22 @@ impl LangchainClient {
             auth,
             langsmith_base_url: LANGSMITH_API_BASE.to_string(),
             langgraph_base_url: LANGGRAPH_API_BASE.to_string(),
+            organization_id: None,
         })
+    }
+
+    /// Set the organization ID for API requests
+    ///
+    /// Some write operations may require an organization ID to be specified.
+    /// This adds the X-Organization-Id header to subsequent requests.
+    pub fn with_organization_id(mut self, org_id: String) -> Self {
+        self.organization_id = Some(org_id);
+        self
+    }
+
+    /// Get the current organization ID if set
+    pub fn organization_id(&self) -> Option<&str> {
+        self.organization_id.as_deref()
     }
 
     /// Create a new client with custom base URLs (useful for testing)
@@ -47,6 +64,7 @@ impl LangchainClient {
             auth,
             langsmith_base_url,
             langgraph_base_url,
+            organization_id: None,
         })
     }
 
@@ -55,11 +73,18 @@ impl LangchainClient {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
 
-        Ok(self
+        let mut request = self
             .http_client
             .get(&url)
             .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        Ok(request)
     }
 
     /// Create a POST request to LangSmith API
@@ -67,11 +92,18 @@ impl LangchainClient {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
 
-        Ok(self
+        let mut request = self
             .http_client
             .post(&url)
             .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        Ok(request)
     }
 
     /// Create a PUT request to LangSmith API
@@ -79,11 +111,18 @@ impl LangchainClient {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
 
-        Ok(self
+        let mut request = self
             .http_client
             .put(&url)
             .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        Ok(request)
     }
 
     /// Create a GET request to LangGraph API

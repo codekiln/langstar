@@ -55,26 +55,27 @@ Tests the ability to list prompts from the LangSmith PromptHub.
 - Fetching and parsing paginated prompt list
 - API response deserialization
 
-### `test_push_prompt_to_prompthub` ⚠️
+### `test_push_prompt_to_prompthub` ✅
 
-**Status**: Not working (405 Method Not Allowed)
+**Status**: Working (requires prompt repository to exist first)
 
-Attempts to create/update a prompt in the LangSmith PromptHub.
+Creates a new commit for a prompt in the LangSmith PromptHub.
 
-**Current Issue**:
-The LangSmith API returns 405 Method Not Allowed when attempting to create prompts via
-`PUT /api/v1/repos/{handle}`. The correct endpoint or authentication method needs to be
-determined.
+**Prerequisites**:
+1. Valid `LANGSMITH_API_KEY` with **write permissions**
+2. The prompt repository must already exist in your PromptHub
+   - Create at: https://smith.langchain.com/prompts
+   - Test uses: `codekiln/langstar-integration-test`
 
-**Possible causes**:
-1. API key lacks write permissions
-2. Different endpoint required (e.g., `/api/v1/commits`)
-3. Additional authentication required
-4. Prompts must be created via LangSmith web UI first
+**What it tests**:
+- Fetching current organization information
+- Setting X-Organization-Id header for write operations
+- Creating a commit using `POST /api/v1/commits/{owner}/{repo}`
+- Proper request body format (manifest, parent_commit, example_run_ids)
 
-**Requirements** (when working):
-- Valid `LANGSMITH_API_KEY` with **write permissions**
-- Network connectivity to `api.smith.langchain.com`
+**Expected behavior**:
+- If repository exists: ✅ Returns commit hash
+- If repository doesn't exist: ❌ Returns 404 "Repository not found"
 
 ## CI/CD Integration
 
