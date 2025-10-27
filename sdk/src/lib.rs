@@ -32,4 +32,4 @@ pub mod prompts;
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use error::{LangstarError, Result};
-pub use prompts::{Prompt, PromptClient};
+pub use prompts::{Prompt, PromptClient, PromptData};

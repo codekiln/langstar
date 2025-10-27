@@ -55,10 +55,14 @@ impl<'a> PromptClient<'a> {
         let path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
         let request = self.client.langsmith_get(&path)?;
 
-        // For now, return a simplified response
-        // In a real implementation, we'd parse the actual API response structure
-        let response: Vec<Prompt> = self.client.execute(request).await?;
-        Ok(response)
+        // LangSmith API returns a paginated response with a "repos" field
+        #[derive(Deserialize)]
+        struct ListReposResponse {
+            repos: Vec<Prompt>,
+        }
+
+        let response: ListReposResponse = self.client.execute(request).await?;
+        Ok(response.repos)
     }
 
     /// Get a specific prompt by handle
@@ -84,6 +88,37 @@ impl<'a> PromptClient<'a> {
         let response: Vec<Prompt> = self.client.execute(request).await?;
         Ok(response)
     }
+
+    /// Create or update a prompt in the PromptHub
+    ///
+    /// # Arguments
+    /// * `repo_handle` - The handle for the prompt (e.g., "owner/prompt-name")
+    /// * `prompt_data` - The prompt data to push
+    pub async fn push(&self, repo_handle: &str, prompt_data: &PromptData) -> Result<Prompt> {
+        let path = format!("/api/v1/repos/{}", repo_handle);
+        // Use PUT for creating/updating prompts
+        let request = self.client.langsmith_put(&path)?
+            .json(prompt_data);
+        let prompt: Prompt = self.client.execute(request).await?;
+        Ok(prompt)
+    }
+}
+
+/// Data for creating/updating a prompt
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptData {
+    /// Description of the prompt
+    pub description: Option<String>,
+    /// Prompt readme/documentation
+    pub readme: Option<String>,
+    /// Tags for the prompt
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+    /// Is this prompt public
+    #[serde(default)]
+    pub is_public: bool,
+    /// The prompt manifest/template
+    pub manifest: serde_json::Value,
 }
 
 impl LangchainClient {

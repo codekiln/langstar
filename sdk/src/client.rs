@@ -74,6 +74,18 @@ impl LangchainClient {
             .header("Content-Type", "application/json"))
     }
 
+    /// Create a PUT request to LangSmith API
+    pub fn langsmith_put(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+
+        Ok(self
+            .http_client
+            .put(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
     /// Create a GET request to LangGraph API
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langgraph_key()?;
