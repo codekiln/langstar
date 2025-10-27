@@ -13,6 +13,23 @@ node_modules/
 .specify/.agent/
 .specify/**/.cache/
 
+# Rust
+/target
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# OpenAPI specs and generated code
+tools/specs/
+sdk/src/generated/langsmith/
+sdk/src/generated/langgraph/
+
 # Temporary specification working files
 .specify/**/*-draft.md
 .specify/**/*-wip.md
