@@ -1,0 +1,26 @@
+{
+  // Local devcontainer overrides
+  // This file is for LOCAL DEVELOPMENT ONLY and should NOT be committed to git.
+  //
+  // SETUP INSTRUCTIONS:
+  // 1. Copy this file to devcontainer.local.json:
+  //    cp devcontainer.local.json.template devcontainer.local.json
+  // 2. Copy .env.default to .env:
+  //    cp .env.default .env
+  // 3. Edit .env with your actual credentials
+  // 4. Rebuild the devcontainer
+  //
+  // This configuration adds --env-file to runArgs to load environment variables
+  // from .devcontainer/.env for local development. In Codespaces, this file
+  // doesn't exist and Codespaces secrets are used instead.
+  //
+  // NOTE: Both devcontainer.local.json and .env are gitignored and will not be
+  // committed to version control.
+
+  "runArgs": [
+    "--cap-add=NET_ADMIN",
+    "--cap-add=NET_RAW",
+    "--env-file",
+    ".devcontainer/.env"
+  ]
+}
