@@ -1,3 +1,6 @@
+# Docker Compose configuration for Langstar devcontainer
+# Compose file format: https://docs.docker.com/compose/compose-file/
+# Environment variables: https://docs.docker.com/compose/how-tos/environment-variables/
 version: '3.8'
 
 services:
@@ -5,16 +8,23 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Build arguments - can be overridden via .env file or environment
+      # https://docs.docker.com/compose/compose-file/build/#args
       args:
         TZ: ${TZ:-America/New_York}
         CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
         GIT_DELTA_VERSION: ${GIT_DELTA_VERSION:-0.18.2}
         ZSH_IN_DOCKER_VERSION: ${ZSH_IN_DOCKER_VERSION:-1.2.1}
 
+    # Add Linux capabilities for VPN/network tools
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#cap_add
     cap_add:
       - NET_ADMIN
       - NET_RAW
 
+    # Environment variables passed to the container
+    # Syntax: ${VAR:-default} means use VAR if set, otherwise use default
+    # https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/
     environment:
       # GitHub Authentication
       # Local: Uses GITHUB_PAT from .env file
@@ -44,18 +54,30 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-${DEVCONTAINER_GITHUB_TOKEN}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-${DEVCONTAINER_OPENAI_API_KEY}}
 
+    # Volume mounts
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
     volumes:
-      # Workspace
+      # Mount workspace directory with cached consistency for better performance
+      # https://docs.docker.com/compose/compose-file/compose-file-v3/#caching-options-for-volume-mounts-docker-desktop
       - ..:/workspace:cached
 
-      # Persistent volumes for command history and config
+      # Named volumes for persistent data across container rebuilds
+      # These survive even when the container is deleted
       - claude-code-bashhistory:/commandhistory
       - claude-code-config:/home/node/.claude
 
+    # Keep container running (required for devcontainers)
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#command
     command: sleep infinity
 
+    # Run container as 'node' user (matches Dockerfile USER directive)
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#user
     user: node
 
+# Named volumes declaration
+# https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
 volumes:
+  # Persistent bash history across container rebuilds
   claude-code-bashhistory:
+  # Persistent Claude configuration across container rebuilds
   claude-code-config:
