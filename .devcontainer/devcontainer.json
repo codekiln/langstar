@@ -17,9 +17,7 @@
   },
   "runArgs": [
     "--cap-add=NET_ADMIN",
-    "--cap-add=NET_RAW",
-    "--env-file",
-    ".devcontainer/.env"
+    "--cap-add=NET_RAW"
   ],
   "customizations": {
     "vscode": {
