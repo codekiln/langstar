@@ -1,13 +1,16 @@
 # Devcontainer Setup
 
-This directory contains the devcontainer configuration for the Langstar project. The devcontainer provides a consistent development environment across local machines and GitHub Codespaces.
+This directory contains the devcontainer configuration for the Langstar project. The devcontainer provides a consistent development environment across local machines and GitHub Codespaces using **Docker Compose**.
 
 ## Overview
 
-The devcontainer configuration supports two environments:
+The devcontainer uses Docker Compose which provides **native `.env` file support**, solving environment variable management elegantly for both local and Codespaces environments.
 
-1. **Local Development** - Uses local `.env` file for environment variables
-2. **GitHub Codespaces** - Uses Codespaces secrets for environment variables
+### Architecture
+
+- **Local Development**: Docker Compose automatically loads `.env` file
+- **GitHub Codespaces**: Environment variables come from Codespaces secrets
+- **Single Configuration**: No duplication, standard Docker Compose patterns
 
 ## Local Development Setup
 
@@ -20,26 +23,24 @@ The devcontainer configuration supports two environments:
 
 1. **Copy environment template:**
    ```bash
-   cp .devcontainer/.env.default .devcontainer/.env
+   cd .devcontainer
+   cp .env.default .env
    ```
 
-2. **Copy devcontainer local configuration:**
+2. **Edit `.env`** with your actual credentials:
    ```bash
-   cp .devcontainer/devcontainer.local.json.template .devcontainer/devcontainer.local.json
-   ```
-
-3. **Edit `.devcontainer/.env`** with your actual credentials:
-   ```bash
-   # GitHub Configuration
+   # Replace placeholder values with real credentials
    GITHUB_PAT=ghp_YourActualTokenHere
    GITHUB_USER=your_github_username
    GITHUB_PROJECT_PAT=ghp_YourProjectTokenHere
-
-   # Anthropic Configuration
    ANTHROPIC_API_KEY=sk-ant-YourActualKeyHere
-
-   # LangSmith Configuration
    LANGSMITH_API_KEY=lsv2_YourActualKeyHere
+   ```
+
+3. **(Optional) Create local overrides:**
+   ```bash
+   cp docker-compose.override.yml.template docker-compose.override.yml
+   # Edit docker-compose.override.yml for local customizations
    ```
 
 4. **Open in devcontainer:**
@@ -52,8 +53,8 @@ The devcontainer configuration supports two environments:
 
 These files are created locally and **will not be committed** to git:
 
-- `.devcontainer/devcontainer.local.json` - Local devcontainer overrides
-- `.devcontainer/.env` - Local environment variables with your secrets
+- `.devcontainer/.env` - Your local environment variables with secrets
+- `.devcontainer/docker-compose.override.yml` - Optional local Docker Compose overrides
 
 ## GitHub Codespaces Setup
 
@@ -83,11 +84,11 @@ Codespaces uses repository or organization secrets instead of local `.env` files
 ### How Codespaces Works
 
 In Codespaces:
-- The main `devcontainer.json` is used
-- `devcontainer.local.json` doesn't exist (and isn't needed)
+- The `devcontainer.json` uses Docker Compose configuration
+- `docker-compose.yml` uses fallback syntax: `${GITHUB_PAT:-${GH_PAT}}`
 - Environment variables come from Codespaces secrets (`GH_PAT`, `GH_USER`, etc.)
-- `setup-github-auth.sh` configures git authentication using `$GH_PAT`
 - No `.env` file is needed or used
+- `setup-github-auth.sh` configures git authentication using the provided variables
 
 ## Architecture
 
@@ -95,88 +96,133 @@ In Codespaces:
 
 | File | Purpose | Committed to Git | Environment |
 |------|---------|------------------|-------------|
-| `devcontainer.json` | Base devcontainer config | ✅ Yes | Both |
-| `devcontainer.local.json.template` | Template for local overrides | ✅ Yes | Both |
-| `devcontainer.local.json` | Local devcontainer overrides | ❌ No (gitignored) | Local only |
+| `devcontainer.json` | Dev Container config (points to Docker Compose) | ✅ Yes | Both |
+| `docker-compose.yml` | Docker Compose service definition | ✅ Yes | Both |
+| `docker-compose.override.yml.template` | Template for local Docker overrides | ✅ Yes | Both |
+| `docker-compose.override.yml` | Local Docker Compose overrides | ❌ No (gitignored) | Local only |
 | `.env.default` | Environment variables template | ✅ Yes | Both |
 | `.env` | Actual environment variables | ❌ No (gitignored) | Local only |
 | `Dockerfile` | Container image definition | ✅ Yes | Both |
 | `setup-github-auth.sh` | Git authentication setup | ✅ Yes | Both |
 
-### How Local Configuration Works
+### How Docker Compose Environment Variables Work
 
-The devcontainer uses a **merge strategy** for configuration:
+Docker Compose has **native `.env` file support**:
 
-1. **Base configuration** (`devcontainer.json`):
-   - Used by both local and Codespaces
-   - Contains essential `runArgs` (network capabilities)
-   - Contains `remoteEnv` with Codespaces-compatible variables
-   - Does **not** reference `.env` file directly
+1. **Local Development:**
+   - Docker Compose automatically loads `.env` from the same directory as `docker-compose.yml`
+   - Variables are substituted in `docker-compose.yml` using `${VARIABLE_NAME}` syntax
+   - Variables become available in the container environment
+   - No custom scripts or workarounds needed!
 
-2. **Local overrides** (`devcontainer.local.json`):
-   - Only exists locally (gitignored)
-   - Sets `DEVCONTAINER_LOCAL_ENV_FILE` in `remoteEnv`
-   - VS Code automatically merges this with the base config
-   - Tells `setup-github-auth.sh` to source the `.env` file
+2. **GitHub Codespaces:**
+   - Codespaces secrets are available as environment variables to Docker Compose
+   - `docker-compose.yml` uses fallback syntax: `${GITHUB_PAT:-${GH_PAT}}`
+   - This means: use `GITHUB_PAT` if available, otherwise use `GH_PAT`
+   - Works seamlessly without any `.env` file
 
-3. **Environment variables** (`.env`):
-   - Sourced by `setup-github-auth.sh` during `postStartCommand`
-   - Contains actual credentials and API keys
-   - Never committed to git
-   - Variables are exported to the shell environment using `set -a`
+3. **Variable Precedence:**
+   - Local: `.env` file variables → Docker Compose → Container environment
+   - Codespaces: Secrets → Docker Compose → Container environment
+
+### Docker Compose Structure
+
+**`docker-compose.yml`** (base configuration, committed):
+```yaml
+services:
+  langstar-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Supports both local (.env) and Codespaces (secrets)
+      GITHUB_PAT: ${GITHUB_PAT:-${GH_PAT}}
+      GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
+      # ... other variables
+    volumes:
+      - ..:/workspace:cached
+      - claude-code-bashhistory:/commandhistory
+```
+
+**`docker-compose.override.yml`** (local only, gitignored):
+```yaml
+services:
+  langstar-dev:
+    # Add local-specific customizations
+    ports:
+      - "8080:8080"  # Example: expose ports
+    volumes:
+      - ~/my-data:/data  # Example: mount local directories
+```
 
 ## Troubleshooting
 
 ### Container Build Fails
 
-**Problem:** Container fails to build in Codespaces
+**Problem:** Container fails to build
 
-**Solution:**
-- Ensure Codespaces secrets are configured correctly
-- Check that secret names match exactly: `GH_PAT`, `GH_USER`, `GH_PROJECT_PAT`, etc.
-- Verify secrets have proper permissions
+**Local Development:**
+1. Verify Docker Desktop is running
+2. Check `.env` file exists and has actual values (not placeholders)
+3. Try: `docker-compose -f .devcontainer/docker-compose.yml build --no-cache`
+
+**Codespaces:**
+1. Ensure Codespaces secrets are configured correctly
+2. Verify secret names match exactly: `GH_PAT`, `GH_USER`, etc.
+3. Check secrets have proper permissions
 
 ### Environment Variables Not Available
 
 **Problem:** Environment variables are undefined in the container
 
 **Local Development:**
-1. Verify `.devcontainer/.env` exists and has actual values (not placeholders)
-2. Verify `.devcontainer/devcontainer.local.json` exists
-3. Rebuild the devcontainer: `Dev Containers: Rebuild Container`
+1. Verify `.devcontainer/.env` exists and has actual values
+2. Check you're in `.devcontainer` directory when running Docker Compose
+3. Rebuild: `Dev Containers: Rebuild Container`
+4. Test manually:
+   ```bash
+   cd .devcontainer
+   docker-compose config  # Shows merged configuration
+   ```
 
 **Codespaces:**
 1. Check Codespaces secrets in repository settings
 2. Restart the Codespace
-3. Check environment variables with: `printenv | grep -E 'GH_|ANTHROPIC|LANGSMITH'`
+3. Verify: `printenv | grep -E 'GH_|ANTHROPIC|LANGSMITH'`
 
 ### Git Authentication Fails
 
 **Problem:** Git operations fail with authentication errors
 
 **Solution:**
-1. Check that `GH_PAT` (Codespaces) or `GITHUB_PAT` (local) is set correctly
+1. Check that `GITHUB_PAT` (local) or `GH_PAT` (Codespaces) is set correctly
 2. Verify the token has `repo` scope
-3. Run the setup script manually: `bash .devcontainer/setup-github-auth.sh`
+3. Run setup script manually: `bash .devcontainer/setup-github-auth.sh`
+4. Check token in container:
+   ```bash
+   echo ${GITHUB_PAT:-${GH_PAT}} | cut -c1-10  # Show first 10 chars
+   ```
 
-### Changes to devcontainer.json Not Applied
+### Docker Compose Override Not Working
 
-**Problem:** Changes to configuration aren't taking effect
+**Problem:** Local overrides in `docker-compose.override.yml` aren't applied
 
 **Solution:**
-1. Rebuild the container: `Dev Containers: Rebuild Container`
-2. Or rebuild without cache: `Dev Containers: Rebuild Container Without Cache`
+1. Ensure file is named exactly `docker-compose.override.yml` (not `.template`)
+2. Verify it's in `.devcontainer/` directory
+3. Check YAML syntax is valid: `docker-compose config`
+4. Rebuild container completely
 
 ## Best Practices
 
 1. **Never commit secrets:**
    - Always use `.env` or Codespaces secrets
    - Never hardcode credentials in configuration files
-   - Double-check `.gitignore` includes `.devcontainer/.env` and `devcontainer.local.json`
+   - Double-check `.gitignore` includes `.env` and `docker-compose.override.yml`
 
 2. **Keep templates updated:**
    - Update `.env.default` when adding new environment variables
-   - Update `devcontainer.local.json.template` when changing local configuration
+   - Update `docker-compose.override.yml.template` when changing Docker config
    - Document any new required secrets
 
 3. **Test both environments:**
@@ -184,10 +230,10 @@ The devcontainer uses a **merge strategy** for configuration:
    - Verify changes work in Codespaces (create a test Codespace)
    - Ensure new environment variables are documented
 
-4. **Document environment variables:**
-   - Add new variables to both `.env.default` and this README
-   - Document what each variable is used for
-   - Provide example values (but not real credentials)
+4. **Use Docker Compose features:**
+   - Use `docker-compose.override.yml` for local customizations
+   - Leverage Docker Compose's native `.env` file support
+   - Follow Docker Compose best practices
 
 ## Environment Variables Reference
 
@@ -217,6 +263,39 @@ The devcontainer uses a **merge strategy** for configuration:
 | `CLAUDE_CODE_SKIP_BEDROCK_AUTH` | No | `1` | Skip Bedrock auth |
 | `CLAUDE_CODE_USE_BEDROCK` | No | `1` | Use Bedrock for Claude |
 
+## Advanced Usage
+
+### Custom Docker Compose Commands
+
+```bash
+# View merged Docker Compose configuration
+cd .devcontainer
+docker-compose config
+
+# Build without cache
+docker-compose build --no-cache
+
+# View container logs
+docker-compose logs langstar-dev
+
+# Execute command in running container
+docker-compose exec langstar-dev bash
+```
+
+### Debugging Environment Variables
+
+```bash
+# Inside container - check all environment variables
+printenv | sort
+
+# Check specific variable
+echo $GITHUB_PAT | cut -c1-20  # Show first 20 chars
+
+# Test Docker Compose variable substitution
+cd .devcontainer
+docker-compose config | grep -A 10 environment:
+```
+
 ## Related Issues
 
 - [#33](https://github.com/codekiln/langstar/issues/33) - Fix devcontainer .env file handling for Codespaces compatibility
@@ -226,5 +305,6 @@ The devcontainer uses a **merge strategy** for configuration:
 ## Resources
 
 - [VS Code Dev Containers Documentation](https://code.visualstudio.com/docs/devcontainers/containers)
+- [Docker Compose Environment Variables](https://docs.docker.com/compose/environment-variables/)
 - [GitHub Codespaces Documentation](https://docs.github.com/en/codespaces)
 - [Dev Container Specification](https://containers.dev/)

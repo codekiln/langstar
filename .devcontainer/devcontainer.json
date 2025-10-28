@@ -1,24 +1,19 @@
 {
   "name": "langstar",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": {
-      "TZ": "${localEnv:TZ:America/New_York}",
-      "CLAUDE_CODE_VERSION": "latest",
-      "GIT_DELTA_VERSION": "0.18.2",
-      "ZSH_IN_DOCKER_VERSION": "1.2.1"
-    }
-  },
+  // Use Docker Compose for container configuration
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "langstar-dev",
+  "workspaceFolder": "/workspace",
+
+  // Dev Container features (installed by VS Code, not Docker Compose)
   "features": {
     // "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-extra/features/mise:1": {},
     "ghcr.io/devcontainers-extra/features/uv:1": {}
   },
-  "runArgs": [
-    "--cap-add=NET_ADMIN",
-    "--cap-add=NET_RAW"
-  ],
+
+  // VS Code customizations
   "customizations": {
     "vscode": {
       "extensions": [
@@ -48,30 +43,9 @@
       }
     }
   },
+
   "remoteUser": "node",
-  "remoteEnv": {
-    "NODE_OPTIONS": "--max-old-space-size=4096",
-    "CLAUDE_CONFIG_DIR": "/home/node/.claude",
-    "POWERLEVEL9K_DISABLE_GITSTATUS": "true",
-    "GITHUB_TOKEN": "${localEnv:DEVCONTAINER_GITHUB_TOKEN}",
-    "OPENAI_API_KEY": "${localEnv:DEVCONTAINER_OPENAI_API_KEY}",
-    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
-    // "GEMINI_API_KEY": "${localEnv:DEVCONTAINER_GEMINI_API_KEY}",
-    // "OPENROUTER_API_KEY": "${localEnv:DEVCONTAINER_OPENROUTER_API_KEY}",
-    // "OCO_API_KEY": "${localEnv:DEVCONTAINER_OPENROUTER_API_KEY}",
-    // "OCO_API_URL": "${localEnv:DEVCONTAINER_OCO_API_URL}",
-    // "OCO_MODEL": "${localEnv:DEVCONTAINER_OCO_MODEL}"
-  },
-  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=delegated",
-  "workspaceFolder": "/workspace",
-  "mounts": [
-    // the following allows persisting command history and claude config across devcontainer rebuilds
-    "source=claude-code-bashhistory,target=/commandhistory,type=volume",
-    "source=claude-code-config,target=/home/node/.claude,type=volume"
-    // the following scopes the command history to a given build a of a devcontainer
-    // "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    // "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
-  ],
+
   // Lifecycle commands
   "postCreateCommand": "echo 'eval \"$(mise activate zsh)\"' >> ~/.zshrc && mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git",
   "postStartCommand": "bash .devcontainer/setup-github-auth.sh"

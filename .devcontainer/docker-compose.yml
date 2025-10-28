@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  langstar-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TZ: ${TZ:-America/New_York}
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
+        GIT_DELTA_VERSION: ${GIT_DELTA_VERSION:-0.18.2}
+        ZSH_IN_DOCKER_VERSION: ${ZSH_IN_DOCKER_VERSION:-1.2.1}
+
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    environment:
+      # GitHub Authentication
+      # Local: Uses GITHUB_PAT from .env file
+      # Codespaces: Falls back to GH_PAT from secrets
+      GITHUB_PAT: ${GITHUB_PAT:-${GH_PAT}}
+      GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
+      GITHUB_PROJECT_PAT: ${GITHUB_PROJECT_PAT:-${GH_PROJECT_PAT}}
+
+      # Anthropic Configuration
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_BEDROCK_BASE_URL: ${ANTHROPIC_BEDROCK_BASE_URL}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-us.anthropic.claude-sonnet-4-5-20250929-v1:0}
+      ANTHROPIC_SMALL_FAST_MODEL: ${ANTHROPIC_SMALL_FAST_MODEL:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      CLAUDE_CODE_SKIP_BEDROCK_AUTH: ${CLAUDE_CODE_SKIP_BEDROCK_AUTH:-1}
+      CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-1}
+
+      # LangSmith Configuration
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+
+      # Container Environment
+      NODE_OPTIONS: --max-old-space-size=4096
+      CLAUDE_CONFIG_DIR: /home/node/.claude
+      POWERLEVEL9K_DISABLE_GITSTATUS: "true"
+
+      # Legacy variables (if needed)
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-${DEVCONTAINER_GITHUB_TOKEN}}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-${DEVCONTAINER_OPENAI_API_KEY}}
+
+    volumes:
+      # Workspace
+      - ..:/workspace:cached
+
+      # Persistent volumes for command history and config
+      - claude-code-bashhistory:/commandhistory
+      - claude-code-config:/home/node/.claude
+
+    command: sleep infinity
+
+    user: node
+
+volumes:
+  claude-code-bashhistory:
+  claude-code-config:

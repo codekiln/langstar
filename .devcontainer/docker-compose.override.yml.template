@@ -1,0 +1,46 @@
+version: '3.8'
+
+# Docker Compose Override Template
+#
+# This file is for LOCAL DEVELOPMENT ONLY and should NOT be committed to git.
+#
+# SETUP INSTRUCTIONS:
+#
+# 1. Copy this file to create your local override:
+#    cp docker-compose.override.yml.template docker-compose.override.yml
+#
+# 2. Copy .env.default to .env:
+#    cp .env.default .env
+#
+# 3. Edit .env with your actual credentials (replace placeholder values)
+#
+# 4. Rebuild the devcontainer
+#
+# NOTES:
+#
+# - docker-compose.override.yml is automatically merged by Docker Compose
+# - Both docker-compose.override.yml and .env are gitignored
+# - In Codespaces, this file is not needed (secrets are used instead)
+# - Use this file to add local-specific customizations like:
+#   - Additional port mappings
+#   - Extra volume mounts
+#   - Local-only environment variable overrides
+#   - Resource limits
+
+services:
+  langstar-dev:
+    # Add any local-specific overrides here
+
+    # Example: Expose additional ports
+    # ports:
+    #   - "8080:8080"
+    #   - "5432:5432"
+
+    # Example: Mount additional local directories
+    # volumes:
+    #   - ~/my-local-data:/data
+
+    # Example: Override specific environment variables
+    # environment:
+    #   - DEBUG=true
+    #   - LOG_LEVEL=debug
