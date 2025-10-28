@@ -89,6 +89,53 @@ impl<'a> PromptClient<'a> {
         Ok(response)
     }
 
+    /// Create a new prompt repository
+    ///
+    /// # Arguments
+    /// * `repo_handle` - The handle for the repository (e.g., "owner/repo-name")
+    /// * `description` - Optional description
+    /// * `readme` - Optional readme content
+    /// * `is_public` - Whether the repository is public (default: false)
+    /// * `tags` - Optional tags
+    pub async fn create_repo(
+        &self,
+        repo_handle: &str,
+        description: Option<String>,
+        readme: Option<String>,
+        is_public: bool,
+        tags: Option<Vec<String>>,
+    ) -> Result<Prompt> {
+        let path = "/api/v1/repos";
+
+        #[derive(Serialize)]
+        struct CreateRepoRequest {
+            repo_handle: String,
+            description: Option<String>,
+            readme: Option<String>,
+            is_public: bool,
+            tags: Option<Vec<String>>,
+        }
+
+        let request_body = CreateRepoRequest {
+            repo_handle: repo_handle.to_string(),
+            description,
+            readme,
+            is_public,
+            tags,
+        };
+
+        let request = self.client.langsmith_post(path)?
+            .json(&request_body);
+
+        #[derive(Deserialize)]
+        struct CreateRepoResponse {
+            repo: Prompt,
+        }
+
+        let response: CreateRepoResponse = self.client.execute(request).await?;
+        Ok(response.repo)
+    }
+
     /// Create or update a prompt in the PromptHub
     ///
     /// This creates a new commit for the prompt. The correct endpoint is

@@ -2,7 +2,8 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{LangchainClient, Prompt};
+use langstar_sdk::{CommitRequest, LangchainClient, Prompt};
+use serde_json::json;
 use tabled::Tabled;
 
 /// Commands for interacting with LangSmith Prompts
@@ -33,6 +34,29 @@ pub enum PromptCommands {
         /// Maximum number of results
         #[arg(short, long, default_value = "20")]
         limit: u32,
+    },
+
+    /// Push/create a prompt in PromptHub
+    Push {
+        /// Owner of the prompt (username or organization)
+        #[arg(short, long)]
+        owner: String,
+
+        /// Prompt repository name
+        #[arg(short, long)]
+        repo: String,
+
+        /// Prompt template text
+        #[arg(short, long)]
+        template: String,
+
+        /// Input variables (comma-separated, e.g., "context,question")
+        #[arg(short, long)]
+        input_variables: Option<String>,
+
+        /// Template format (default: f-string)
+        #[arg(long, default_value = "f-string")]
+        template_format: String,
     },
 }
 
@@ -132,6 +156,99 @@ impl PromptCommands {
                     let rows: Vec<PromptRow> = prompts.iter().map(PromptRow::from).collect();
                     formatter.print_table(&rows)?;
                     println!("\nFound {} prompts", prompts.len());
+                }
+            }
+
+            PromptCommands::Push {
+                owner,
+                repo,
+                template,
+                input_variables,
+                template_format,
+            } => {
+                // Get organization info and set organization ID
+                formatter.info("Fetching organization information...");
+                let mut client = client;
+                match client.get_current_organization().await {
+                    Ok(org) => {
+                        if let Some(org_id) = &org.id {
+                            println!("✓ Organization: {}", org.display_name.as_deref().unwrap_or("Unknown"));
+                            println!("  ID: {}", org_id);
+                            client = client.with_organization_id(org_id.clone());
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("⚠ Warning: Could not fetch organization: {}", e);
+                        eprintln!("  Proceeding without X-Organization-Id header");
+                    }
+                }
+
+                // Try to create repository if it doesn't exist
+                let repo_handle = format!("{}/{}", owner, repo);
+                formatter.info(&format!("Checking if repository {} exists...", repo_handle));
+
+                match client.prompts().get(&repo_handle).await {
+                    Ok(_) => {
+                        println!("✓ Repository exists");
+                    }
+                    Err(_) => {
+                        formatter.info(&format!("Repository not found, creating {}...", repo_handle));
+                        match client.prompts().create_repo(
+                            &repo_handle,
+                            Some("Created via langstar CLI".to_string()),
+                            None,
+                            false, // Private by default
+                            Some(vec!["cli".to_string(), "langstar".to_string()]),
+                        ).await {
+                            Ok(_) => {
+                                println!("✓ Repository created successfully");
+                            }
+                            Err(e) => {
+                                eprintln!("⚠ Warning: Could not create repository: {}", e);
+                                eprintln!("  Will attempt to push anyway...");
+                            }
+                        }
+                    }
+                }
+
+                formatter.info(&format!("Pushing prompt to {}/{}...", owner, repo));
+
+                // Parse input variables
+                let vars: Vec<String> = if let Some(vars_str) = input_variables {
+                    vars_str.split(',').map(|s| s.trim().to_string()).collect()
+                } else {
+                    vec![]
+                };
+
+                // Create commit request
+                let commit_request = CommitRequest {
+                    manifest: json!({
+                        "type": "prompt",
+                        "template": template,
+                        "input_variables": vars,
+                        "template_format": template_format
+                    }),
+                    parent_commit: None,
+                    example_run_ids: None,
+                };
+
+                // Push the commit
+                match client.prompts().push(owner, repo, &commit_request).await {
+                    Ok(response) => {
+                        if format == OutputFormat::Json {
+                            formatter.print(&response)?;
+                        } else {
+                            println!("\n✓ Prompt commit pushed successfully!");
+                            println!("  Repository: {}/{}", owner, repo);
+                            println!("  Commit hash: {}", response.commit_hash);
+                            if let Some(url) = &response.url {
+                                println!("  URL: {}", url);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        return Err(crate::error::CliError::Sdk(e));
+                    }
                 }
             }
         }
