@@ -1,0 +1,1 @@
+Specific and Explicit are better than Implicit and vague. When given a choice between an implicit default and an explicit setting, take the explicit setting, linking to the docs for it.
