@@ -86,3 +86,5 @@ For complete Spec-Kit documentation, see @docs/dev/spec-kit.md
 All coding conventions and development guidelines can be found in @docs/dev/README.md
 
 For commit message formatting, please follow @docs/dev/git-scm-conventions.md
+
+### Basic principles - see @docs/dev/code-style-principles.md

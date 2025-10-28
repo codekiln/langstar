@@ -21,15 +21,18 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 # Determine which token source is populated
+# Docker Compose loads environment variables from .env file (local) or Codespaces secrets
 if [[ -n "${GITHUB_PAT:-}" ]]; then
-  TOKEN_SOURCE="containerEnv"
+  TOKEN_SOURCE="Docker Compose environment (GITHUB_PAT)"
   TOKEN_VALUE="$GITHUB_PAT"
-elif [[ -n "${localEnv_GITHUB_PAT:-}" ]]; then
-  # Some devcontainer runtimes expand ${localEnv:...} into localEnv_VAR names
-  TOKEN_SOURCE="localEnv"
-  TOKEN_VALUE="$localEnv_GITHUB_PAT"
+elif [[ -n "${GH_PAT:-}" ]]; then
+  # Codespaces uses GH_PAT
+  TOKEN_SOURCE="Codespaces secrets (GH_PAT)"
+  TOKEN_VALUE="$GH_PAT"
+  # Set GITHUB_PAT for consistency
+  export GITHUB_PAT="$GH_PAT"
 else
-  echo "[setup-github-auth] No GITHUB_PAT found. Skipping gh auth."
+  echo "[setup-github-auth] No GITHUB_PAT or GH_PAT found. Skipping gh auth."
   exit 0
 fi
 
@@ -91,7 +94,8 @@ echo "[setup-github-auth] Cleared conflicting git credential helpers."
 # Configure git credentials to use same token (optional but convenient)
 if command -v git >/dev/null 2>&1; then
 
-  USERNAME="${GITHUB_USER:-}"
+  # Handle both GITHUB_USER (local) and GH_USER (Codespaces)
+  USERNAME="${GITHUB_USER:-${GH_USER:-}}"
   if [[ -z "$USERNAME" ]]; then
     # Use gh user if available
     USERNAME="$(gh api user --jq .login 2>/dev/null || echo 'github-user')"
