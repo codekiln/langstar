@@ -83,10 +83,11 @@ Codespaces uses repository or organization secrets instead of local `.env` files
 ### How Codespaces Works
 
 In Codespaces:
-- The main `devcontainer.json` is used (without `--env-file`)
+- The main `devcontainer.json` is used
 - `devcontainer.local.json` doesn't exist (and isn't needed)
-- Environment variables come from Codespaces secrets
+- Environment variables come from Codespaces secrets (`GH_PAT`, `GH_USER`, etc.)
 - `setup-github-auth.sh` configures git authentication using `$GH_PAT`
+- No `.env` file is needed or used
 
 ## Architecture
 
@@ -108,19 +109,21 @@ The devcontainer uses a **merge strategy** for configuration:
 
 1. **Base configuration** (`devcontainer.json`):
    - Used by both local and Codespaces
-   - Contains only the essential `runArgs` (network capabilities)
-   - Does **not** reference `.env` file
+   - Contains essential `runArgs` (network capabilities)
+   - Contains `remoteEnv` with Codespaces-compatible variables
+   - Does **not** reference `.env` file directly
 
 2. **Local overrides** (`devcontainer.local.json`):
    - Only exists locally (gitignored)
-   - Adds `--env-file .devcontainer/.env` to `runArgs`
+   - Sets `DEVCONTAINER_LOCAL_ENV_FILE` in `remoteEnv`
    - VS Code automatically merges this with the base config
-   - Arrays in the local file **replace** arrays in the base file (not merge)
+   - Tells `setup-github-auth.sh` to source the `.env` file
 
 3. **Environment variables** (`.env`):
-   - Only loaded when `devcontainer.local.json` includes `--env-file`
+   - Sourced by `setup-github-auth.sh` during `postStartCommand`
    - Contains actual credentials and API keys
    - Never committed to git
+   - Variables are exported to the shell environment using `set -a`
 
 ## Troubleshooting
 

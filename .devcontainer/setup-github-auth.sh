@@ -14,6 +14,16 @@ set -euo pipefail
 
 echo "[setup-github-auth] Starting setup..."
 
+# Source local .env file if specified (for local development)
+if [[ -n "${DEVCONTAINER_LOCAL_ENV_FILE:-}" && -f "$DEVCONTAINER_LOCAL_ENV_FILE" ]]; then
+  echo "[setup-github-auth] Loading environment from $DEVCONTAINER_LOCAL_ENV_FILE"
+  # Source the file in a way that exports all variables
+  set -a  # automatically export all variables
+  source "$DEVCONTAINER_LOCAL_ENV_FILE"
+  set +a  # turn off automatic export
+  echo "[setup-github-auth] Environment loaded from .env file"
+fi
+
 # Ensure gh is installed
 if ! command -v gh >/dev/null 2>&1; then
   echo "[setup-github-auth] ERROR: gh CLI not installed in container."
@@ -22,14 +32,20 @@ fi
 
 # Determine which token source is populated
 if [[ -n "${GITHUB_PAT:-}" ]]; then
-  TOKEN_SOURCE="containerEnv"
+  TOKEN_SOURCE="containerEnv or .env file"
   TOKEN_VALUE="$GITHUB_PAT"
+elif [[ -n "${GH_PAT:-}" ]]; then
+  # Codespaces uses GH_PAT
+  TOKEN_SOURCE="Codespaces (GH_PAT)"
+  TOKEN_VALUE="$GH_PAT"
+  # Set GITHUB_PAT for consistency
+  export GITHUB_PAT="$GH_PAT"
 elif [[ -n "${localEnv_GITHUB_PAT:-}" ]]; then
   # Some devcontainer runtimes expand ${localEnv:...} into localEnv_VAR names
   TOKEN_SOURCE="localEnv"
   TOKEN_VALUE="$localEnv_GITHUB_PAT"
 else
-  echo "[setup-github-auth] No GITHUB_PAT found. Skipping gh auth."
+  echo "[setup-github-auth] No GITHUB_PAT or GH_PAT found. Skipping gh auth."
   exit 0
 fi
 
@@ -91,7 +107,8 @@ echo "[setup-github-auth] Cleared conflicting git credential helpers."
 # Configure git credentials to use same token (optional but convenient)
 if command -v git >/dev/null 2>&1; then
 
-  USERNAME="${GITHUB_USER:-}"
+  # Handle both GITHUB_USER (local) and GH_USER (Codespaces)
+  USERNAME="${GITHUB_USER:-${GH_USER:-}}"
   if [[ -z "$USERNAME" ]]; then
     # Use gh user if available
     USERNAME="$(gh api user --jq .login 2>/dev/null || echo 'github-user')"
