@@ -15,6 +15,10 @@ This document describes the GitHub Projects V2 setup for the Langstar repository
 
 To access GitHub Projects V2 via the API, use the `GITHUB_PROJECT_PAT` environment variable (defined in `.devcontainer/.env`). This PAT has the necessary permissions to read and modify project data. This is not available in a github actions setting; it's only available locally.
 
+### IMPORTANT disambiguation between github credentials for projects vs for the repo
+
+This project uses two different github credential environment variables because it's not possible to combine fine grained personal access tokens (which are advisable for AI coding to scope down permissions) with a token that allows read/write to GitHub Projects, AFAICT. As a result, we have a GITHUB_PAT which is a fine-grained project access token and a GH_PROJECT_PAT / GITHUB_PROJECT_PAT which has ONLY the permissions to read and write projects.
+
 ### Using the PAT with GitHub CLI
 
 ```bash
