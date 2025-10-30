@@ -148,6 +148,12 @@ impl PromptCommands {
     ) -> LangchainClient {
         let mut client = client;
 
+        // Warn if both org and workspace IDs are specified
+        if flag_org_id.is_some() && flag_workspace_id.is_some() {
+            eprintln!("⚠ Warning: Both organization and workspace IDs specified");
+            eprintln!("  → Using workspace scope (narrower scope takes precedence)");
+        }
+
         // Apply organization ID if provided via flag (overrides config/env)
         if let Some(org_id) = flag_org_id {
             client = client.with_organization_id(org_id.clone());
@@ -158,7 +164,36 @@ impl PromptCommands {
             client = client.with_workspace_id(workspace_id.clone());
         }
 
+        // Also warn if client now has both (from config/env combination)
+        if client.organization_id().is_some()
+            && client.workspace_id().is_some()
+            && flag_org_id.is_none()
+            && flag_workspace_id.is_none()
+        {
+            eprintln!("ℹ Info: Both organization and workspace IDs configured");
+            eprintln!("  → Using workspace scope (narrower scope takes precedence)");
+        }
+
         client
+    }
+
+    /// Print scope information for verbose output
+    fn print_scope_info(client: &LangchainClient, visibility: Visibility) {
+        let scope = if let Some(workspace_id) = client.workspace_id() {
+            format!("Workspace ({})", &workspace_id[..8])
+        } else if let Some(org_id) = client.organization_id() {
+            format!("Organization ({})", &org_id[..8])
+        } else {
+            "Global".to_string()
+        };
+
+        let visibility_str = match visibility {
+            Visibility::Private => "private only",
+            Visibility::Public => "public only",
+            Visibility::Any => "all",
+        };
+
+        eprintln!("ℹ Scope: {} | Visibility: {}", scope, visibility_str);
     }
 
     /// Determine visibility based on scoping and --public flag
@@ -198,6 +233,9 @@ impl PromptCommands {
                 let client = Self::apply_scoping(client, organization_id, workspace_id);
                 let visibility = Self::determine_visibility(&client, *public);
 
+                // Show scope information
+                Self::print_scope_info(&client, visibility);
+
                 formatter.info(&format!(
                     "Fetching prompts (limit: {}, offset: {})...",
                     limit, offset
@@ -214,6 +252,16 @@ impl PromptCommands {
                     let rows: Vec<PromptRow> = prompts.iter().map(PromptRow::from).collect();
                     formatter.print_table(&rows)?;
                     println!("\nFound {} prompts", prompts.len());
+
+                    // Show hint if scoped and no results
+                    if prompts.is_empty()
+                        && (client.organization_id().is_some() || client.workspace_id().is_some())
+                        && !*public
+                    {
+                        eprintln!("\n💡 Hint: No private prompts found in this scope.");
+                        eprintln!("  Try using --public flag to see public prompts:");
+                        eprintln!("    langstar prompt list --public");
+                    }
                 }
             }
 
@@ -261,6 +309,9 @@ impl PromptCommands {
                 let client = Self::apply_scoping(client, organization_id, workspace_id);
                 let visibility = Self::determine_visibility(&client, *public);
 
+                // Show scope information
+                Self::print_scope_info(&client, visibility);
+
                 formatter.info(&format!("Searching for '{}'...", query));
 
                 let prompts = client
@@ -274,6 +325,19 @@ impl PromptCommands {
                     let rows: Vec<PromptRow> = prompts.iter().map(PromptRow::from).collect();
                     formatter.print_table(&rows)?;
                     println!("\nFound {} prompts", prompts.len());
+
+                    // Show hint if scoped and no results
+                    if prompts.is_empty()
+                        && (client.organization_id().is_some() || client.workspace_id().is_some())
+                        && !*public
+                    {
+                        eprintln!(
+                            "\n💡 Hint: No private prompts found matching '{}' in this scope.",
+                            query
+                        );
+                        eprintln!("  Try using --public flag to search public prompts:");
+                        eprintln!("    langstar prompt search \"{}\" --public", query);
+                    }
                 }
             }
 
