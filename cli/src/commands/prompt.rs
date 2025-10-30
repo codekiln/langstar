@@ -18,12 +18,28 @@ pub enum PromptCommands {
         /// Number of prompts to skip
         #[arg(short, long, default_value = "0")]
         offset: u32,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+
+        /// Workspace ID for narrower scoping (overrides config/env)
+        #[arg(long)]
+        workspace_id: Option<String>,
     },
 
     /// Get details of a specific prompt
     Get {
         /// Prompt handle (e.g., "owner/prompt-name")
         handle: String,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+
+        /// Workspace ID for narrower scoping (overrides config/env)
+        #[arg(long)]
+        workspace_id: Option<String>,
     },
 
     /// Search for prompts
@@ -34,6 +50,14 @@ pub enum PromptCommands {
         /// Maximum number of results
         #[arg(short, long, default_value = "20")]
         limit: u32,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+
+        /// Workspace ID for narrower scoping (overrides config/env)
+        #[arg(long)]
+        workspace_id: Option<String>,
     },
 
     /// Push/create a prompt in PromptHub
@@ -57,6 +81,14 @@ pub enum PromptCommands {
         /// Template format (default: f-string)
         #[arg(long, default_value = "f-string")]
         template_format: String,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+
+        /// Workspace ID for narrower scoping (overrides config/env)
+        #[arg(long)]
+        workspace_id: Option<String>,
     },
 }
 
@@ -98,6 +130,29 @@ impl From<&Prompt> for PromptRow {
 }
 
 impl PromptCommands {
+    /// Apply organization and workspace ID overrides to the client
+    ///
+    /// Precedence order: CLI flags → config (which includes env vars)
+    fn apply_scoping(
+        client: LangchainClient,
+        flag_org_id: &Option<String>,
+        flag_workspace_id: &Option<String>,
+    ) -> LangchainClient {
+        let mut client = client;
+
+        // Apply organization ID if provided via flag (overrides config/env)
+        if let Some(org_id) = flag_org_id {
+            client = client.with_organization_id(org_id.clone());
+        }
+
+        // Apply workspace ID if provided via flag (overrides config/env)
+        if let Some(workspace_id) = flag_workspace_id {
+            client = client.with_workspace_id(workspace_id.clone());
+        }
+
+        client
+    }
+
     /// Execute the prompt command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
         let auth = config.to_auth_config();
@@ -105,7 +160,13 @@ impl PromptCommands {
         let formatter = OutputFormatter::new(format);
 
         match self {
-            PromptCommands::List { limit, offset } => {
+            PromptCommands::List {
+                limit,
+                offset,
+                organization_id,
+                workspace_id,
+            } => {
+                let client = Self::apply_scoping(client, organization_id, workspace_id);
                 formatter.info(&format!(
                     "Fetching prompts (limit: {}, offset: {})...",
                     limit, offset
@@ -122,7 +183,12 @@ impl PromptCommands {
                 }
             }
 
-            PromptCommands::Get { handle } => {
+            PromptCommands::Get {
+                handle,
+                organization_id,
+                workspace_id,
+            } => {
+                let client = Self::apply_scoping(client, organization_id, workspace_id);
                 formatter.info(&format!("Fetching prompt '{}'...", handle));
 
                 let prompt = client.prompts().get(handle).await?;
@@ -151,7 +217,13 @@ impl PromptCommands {
                 }
             }
 
-            PromptCommands::Search { query, limit } => {
+            PromptCommands::Search {
+                query,
+                limit,
+                organization_id,
+                workspace_id,
+            } => {
+                let client = Self::apply_scoping(client, organization_id, workspace_id);
                 formatter.info(&format!("Searching for '{}'...", query));
 
                 let prompts = client.prompts().search(query, Some(*limit)).await?;
@@ -171,24 +243,30 @@ impl PromptCommands {
                 template,
                 input_variables,
                 template_format,
+                organization_id,
+                workspace_id,
             } => {
-                // Get organization info and set organization ID
-                formatter.info("Fetching organization information...");
-                let mut client = client;
-                match client.get_current_organization().await {
-                    Ok(org) => {
-                        if let Some(org_id) = &org.id {
-                            println!(
-                                "✓ Organization: {}",
-                                org.display_name.as_deref().unwrap_or("Unknown")
-                            );
-                            println!("  ID: {}", org_id);
-                            client = client.with_organization_id(org_id.clone());
+                // Apply scoping from flags/config
+                let mut client = Self::apply_scoping(client, organization_id, workspace_id);
+
+                // If no organization ID was explicitly provided, try to fetch it
+                if organization_id.is_none() && client.organization_id().is_none() {
+                    formatter.info("Fetching organization information...");
+                    match client.get_current_organization().await {
+                        Ok(org) => {
+                            if let Some(org_id) = &org.id {
+                                println!(
+                                    "✓ Organization: {}",
+                                    org.display_name.as_deref().unwrap_or("Unknown")
+                                );
+                                println!("  ID: {}", org_id);
+                                client = client.with_organization_id(org_id.clone());
+                            }
                         }
-                    }
-                    Err(e) => {
-                        eprintln!("⚠ Warning: Could not fetch organization: {}", e);
-                        eprintln!("  Proceeding without X-Organization-Id header");
+                        Err(e) => {
+                            eprintln!("⚠ Warning: Could not fetch organization: {}", e);
+                            eprintln!("  Proceeding without X-Organization-Id header");
+                        }
                     }
                 }
 
