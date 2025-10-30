@@ -1,7 +1,6 @@
 use crate::error::Result;
 use colored::Colorize;
 use serde::Serialize;
-use std::io::Write;
 use tabled::{
     settings::{object::Rows, style::Style, Modify, Width},
     Table, Tabled,
@@ -78,16 +77,19 @@ impl OutputFormatter {
     }
 
     /// Print a success message
+    #[allow(dead_code)]
     pub fn success(&self, message: &str) {
         println!("{} {}", "✓".green(), message);
     }
 
     /// Print an error message
+    #[allow(dead_code)]
     pub fn error(&self, message: &str) {
         eprintln!("{} {}", "✗".red(), message);
     }
 
     /// Print a warning message
+    #[allow(dead_code)]
     pub fn warning(&self, message: &str) {
         println!("{} {}", "⚠".yellow(), message);
     }

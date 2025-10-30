@@ -80,6 +80,7 @@ impl Config {
     }
 
     /// Save the current configuration to file
+    #[allow(dead_code)]
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_file_path()?;
 

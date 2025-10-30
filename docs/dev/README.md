@@ -12,3 +12,6 @@ This directory contains instructions and conventions for developing the Langstar
 ## Purpose
 
 These documents outline the coding conventions, best practices, and standards that all contributors should follow when working on this project. Please review these guidelines before making commits or submitting pull requests.
+
+## Tips from Development - Memories
+- This project uses a devcontainer to standardize the development environment. Never configure the environment in a 1-off way, unless running a 1-off test. Always prefer modifications to .devcontainer folder and related assets.

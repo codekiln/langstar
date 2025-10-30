@@ -34,4 +34,4 @@ pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use error::{LangstarError, Result};
 pub use organization::Organization;
-pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, PromptData};
+pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient};
