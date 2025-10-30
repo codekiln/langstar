@@ -16,6 +16,24 @@ pub struct Organization {
     pub handle: Option<String>,
 }
 
+/// LangSmith Workspace information
+///
+/// Workspaces are nested under organizations and provide narrower scoping
+/// for resources like prompts, traces, and datasets.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Workspace {
+    /// Workspace ID (UUID)
+    pub id: String,
+    /// Display name of the workspace
+    pub display_name: Option<String>,
+    /// The organization this workspace belongs to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub organization_id: Option<String>,
+    /// Workspace handle/slug
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub handle: Option<String>,
+}
+
 impl LangchainClient {
     /// Get information about the current organization
     ///
@@ -41,6 +59,35 @@ impl LangchainClient {
         let org: Organization = self.execute(request).await?;
         Ok(org)
     }
+
+    /// List workspaces in an organization
+    ///
+    /// Returns all workspaces accessible within the current organization context.
+    /// If an organization_id is configured on the client, it will be used to scope
+    /// the request via the x-organization-id header.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?
+    ///     .with_organization_id("org-id".to_string());
+    /// let workspaces = client.get_workspaces().await?;
+    /// for workspace in workspaces {
+    ///     println!("Workspace: {} ({})", workspace.display_name.unwrap_or_default(), workspace.id);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_workspaces(&self) -> Result<Vec<Workspace>> {
+        let path = "/api/v1/workspaces";
+        let request = self.langsmith_get(path)?;
+        let workspaces: Vec<Workspace> = self.execute(request).await?;
+        Ok(workspaces)
+    }
 }
 
 #[cfg(test)]
@@ -64,5 +111,34 @@ mod tests {
         assert_eq!(org.display_name, Some("Test Org".to_string()));
         assert!(!org.is_personal);
         assert_eq!(org.handle, Some("test-org".to_string()));
+    }
+
+    #[test]
+    fn test_workspace_deserialization() {
+        let json = r#"{
+            "id": "workspace-uuid-123",
+            "display_name": "Test Workspace",
+            "organization_id": "org-uuid-456",
+            "handle": "test-workspace"
+        }"#;
+
+        let workspace: Workspace = serde_json::from_str(json).unwrap();
+        assert_eq!(workspace.id, "workspace-uuid-123");
+        assert_eq!(workspace.display_name, Some("Test Workspace".to_string()));
+        assert_eq!(workspace.organization_id, Some("org-uuid-456".to_string()));
+        assert_eq!(workspace.handle, Some("test-workspace".to_string()));
+    }
+
+    #[test]
+    fn test_workspace_minimal_deserialization() {
+        let json = r#"{
+            "id": "workspace-123"
+        }"#;
+
+        let workspace: Workspace = serde_json::from_str(json).unwrap();
+        assert_eq!(workspace.id, "workspace-123");
+        assert!(workspace.display_name.is_none());
+        assert!(workspace.organization_id.is_none());
+        assert!(workspace.handle.is_none());
     }
 }

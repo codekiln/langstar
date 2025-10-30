@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn test_prompt_client_creation() {
-        let auth = AuthConfig::new(Some("test".to_string()), None);
+        let auth = AuthConfig::new(Some("test".to_string()), None, None, None);
         let client = LangchainClient::new(auth).unwrap();
         let _prompt_client = client.prompts();
     }
