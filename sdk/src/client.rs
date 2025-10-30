@@ -15,30 +15,39 @@ pub struct LangchainClient {
     auth: AuthConfig,
     langsmith_base_url: String,
     langgraph_base_url: String,
-    /// Optional organization ID for API requests (used in X-Organization-Id header)
+    /// Optional organization ID for API requests (used in x-organization-id header)
     organization_id: Option<String>,
+    /// Optional workspace ID for narrower scoping (used in X-Tenant-Id header)
+    workspace_id: Option<String>,
 }
 
 impl LangchainClient {
     /// Create a new client with the given authentication configuration
+    ///
+    /// The client will use organization_id and workspace_id from the AuthConfig
+    /// to automatically add the appropriate scoping headers to API requests.
     pub fn new(auth: AuthConfig) -> Result<Self> {
         let http_client = HttpClient::builder()
             .timeout(Duration::from_secs(30))
             .build()?;
+
+        let organization_id = auth.organization_id.clone();
+        let workspace_id = auth.workspace_id.clone();
 
         Ok(Self {
             http_client,
             auth,
             langsmith_base_url: LANGSMITH_API_BASE.to_string(),
             langgraph_base_url: LANGGRAPH_API_BASE.to_string(),
-            organization_id: None,
+            organization_id,
+            workspace_id,
         })
     }
 
     /// Set the organization ID for API requests
     ///
     /// Some write operations may require an organization ID to be specified.
-    /// This adds the X-Organization-Id header to subsequent requests.
+    /// This adds the x-organization-id header to subsequent requests.
     pub fn with_organization_id(mut self, org_id: String) -> Self {
         self.organization_id = Some(org_id);
         self
@@ -47,6 +56,22 @@ impl LangchainClient {
     /// Get the current organization ID if set
     pub fn organization_id(&self) -> Option<&str> {
         self.organization_id.as_deref()
+    }
+
+    /// Set the workspace ID for API requests
+    ///
+    /// Workspace ID provides narrower scoping than organization ID.
+    /// This adds the X-Tenant-Id header to subsequent requests.
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// can be used together for workspace-scoped requests.
+    pub fn with_workspace_id(mut self, workspace_id: String) -> Self {
+        self.workspace_id = Some(workspace_id);
+        self
+    }
+
+    /// Get the current workspace ID if set
+    pub fn workspace_id(&self) -> Option<&str> {
+        self.workspace_id.as_deref()
     }
 
     /// Create a new client with custom base URLs (useful for testing)
@@ -59,16 +84,23 @@ impl LangchainClient {
             .timeout(Duration::from_secs(30))
             .build()?;
 
+        let organization_id = auth.organization_id.clone();
+        let workspace_id = auth.workspace_id.clone();
+
         Ok(Self {
             http_client,
             auth,
             langsmith_base_url,
             langgraph_base_url,
-            organization_id: None,
+            organization_id,
+            workspace_id,
         })
     }
 
     /// Create a GET request to LangSmith API
+    ///
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_get(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
@@ -79,15 +111,23 @@ impl LangchainClient {
             .header("x-api-key", api_key)
             .header("Content-Type", "application/json");
 
-        // Add organization ID header if set
+        // Add organization ID header if set (should be present on all requests per docs)
         if let Some(org_id) = &self.organization_id {
             request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
         }
 
         Ok(request)
     }
 
     /// Create a POST request to LangSmith API
+    ///
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_post(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
@@ -98,15 +138,23 @@ impl LangchainClient {
             .header("x-api-key", api_key)
             .header("Content-Type", "application/json");
 
-        // Add organization ID header if set
+        // Add organization ID header if set (should be present on all requests per docs)
         if let Some(org_id) = &self.organization_id {
             request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
         }
 
         Ok(request)
     }
 
     /// Create a PUT request to LangSmith API
+    ///
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_put(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langsmith_base_url, path);
@@ -117,9 +165,14 @@ impl LangchainClient {
             .header("x-api-key", api_key)
             .header("Content-Type", "application/json");
 
-        // Add organization ID header if set
+        // Add organization ID header if set (should be present on all requests per docs)
         if let Some(org_id) = &self.organization_id {
             request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
         }
 
         Ok(request)
@@ -182,18 +235,48 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        let auth = AuthConfig::new(Some("test_key".to_string()), Some("test_key".to_string()));
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            Some("test_key".to_string()),
+            None,
+            None,
+        );
         let client = LangchainClient::new(auth);
         assert!(client.is_ok());
     }
 
     #[test]
     fn test_client_missing_auth() {
-        let auth = AuthConfig::new(None, None);
+        let auth = AuthConfig::new(None, None, None, None);
         let client = LangchainClient::new(auth).unwrap();
 
         // Should fail when trying to make authenticated requests
         assert!(client.langsmith_get("/test").is_err());
         assert!(client.langgraph_get("/test").is_err());
+    }
+
+    #[test]
+    fn test_client_with_org_and_workspace() {
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            None,
+            Some("org_123".to_string()),
+            Some("workspace_456".to_string()),
+        );
+        let client = LangchainClient::new(auth).unwrap();
+        assert_eq!(client.organization_id(), Some("org_123"));
+        assert_eq!(client.workspace_id(), Some("workspace_456"));
+    }
+
+    #[test]
+    fn test_client_builder_methods() {
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth)
+            .unwrap()
+            .with_organization_id("new_org".to_string())
+            .with_workspace_id("new_workspace".to_string());
+
+        assert_eq!(client.organization_id(), Some("new_org"));
+        assert_eq!(client.workspace_id(), Some("new_workspace"));
     }
 }
