@@ -15,3 +15,11 @@ These documents outline the coding conventions, best practices, and standards th
 
 ## Tips from Development - Memories
 - This project uses a devcontainer to standardize the development environment. Never configure the environment in a 1-off way, unless running a 1-off test. Always prefer modifications to .devcontainer folder and related assets.
+- <rules>
+for ANY question about the langchain ecosystem (langsmith, LangGraph, langchain) use the langgraph-docs-mcp server to help answer -- 
++ call list_doc_sources tool to get the available llms.txt file
++ call fetch_docs tool to read it
++ reflect on the urls in llms.txt 
++ reflect on the input question 
++ call fetch_docs on any urls relevant to the question
+</rules>

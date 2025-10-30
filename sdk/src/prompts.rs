@@ -72,8 +72,15 @@ impl<'a> PromptClient<'a> {
     pub async fn get(&self, handle: &str) -> Result<Prompt> {
         let path = format!("/api/v1/repos/{}", handle);
         let request = self.client.langsmith_get(&path)?;
-        let prompt: Prompt = self.client.execute(request).await?;
-        Ok(prompt)
+
+        // The API wraps the prompt in a "repo" field
+        #[derive(Deserialize)]
+        struct PromptResponse {
+            repo: Prompt,
+        }
+
+        let response: PromptResponse = self.client.execute(request).await?;
+        Ok(response.repo)
     }
 
     /// Search for prompts
@@ -173,6 +180,13 @@ pub struct CommitRequest {
 /// Response from creating a commit
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitResponse {
+    /// The commit data
+    pub commit: CommitData,
+}
+
+/// Commit data within the response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitData {
     /// Commit hash
     pub commit_hash: String,
     /// URL to the commit

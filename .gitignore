@@ -34,3 +34,6 @@ sdk/src/generated/langgraph/
 # Temporary specification working files
 .specify/**/*-draft.md
 .specify/**/*-wip.md
+
+# Reference repository code directories (gitignored, notes are tracked)
+reference/**/code/
