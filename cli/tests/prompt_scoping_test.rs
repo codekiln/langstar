@@ -14,7 +14,8 @@ use predicates::prelude::*;
 /// 2. Valid LANGSMITH_ORGANIZATION_ID environment variable (optional, can be overridden by flag)
 /// 3. Valid LANGSMITH_WORKSPACE_ID environment variable (optional, can be overridden by flag)
 ///
-/// Run with: cargo test --test prompt_scoping_test -- --ignored --nocapture
+/// These tests run automatically in CI with configured secrets.
+/// Run locally with: cargo test --test prompt_scoping_test
 /// Helper function to get a CLI command builder
 #[allow(deprecated)]
 fn langstar_cmd() -> Command {
@@ -22,7 +23,6 @@ fn langstar_cmd() -> Command {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_with_org_id_from_env() {
     // Requires LANGSMITH_ORGANIZATION_ID to be set
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -46,7 +46,6 @@ fn test_prompt_list_with_org_id_from_env() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_with_workspace_id_from_env() {
     // Requires LANGSMITH_WORKSPACE_ID to be set
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
@@ -70,7 +69,6 @@ fn test_prompt_list_with_workspace_id_from_env() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_with_organization_id_flag() {
     // Test that --organization-id flag works
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -101,7 +99,6 @@ fn test_prompt_list_with_organization_id_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_with_workspace_id_flag() {
     // Test that --workspace-id flag works
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
@@ -132,7 +129,6 @@ fn test_prompt_list_with_workspace_id_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_scoped_defaults_to_private() {
     // When scoped (org or workspace ID set), should default to private prompts
     // unless --public flag is specified
@@ -168,7 +164,6 @@ fn test_prompt_list_scoped_defaults_to_private() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_list_scoped_with_public_flag() {
     // When scoped with --public flag, should list public prompts
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -200,7 +195,6 @@ fn test_prompt_list_scoped_with_public_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_search_with_organization_id_flag() {
     // Test search command with org ID flag
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -229,7 +223,6 @@ fn test_prompt_search_with_organization_id_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_search_scoped_defaults_to_private() {
     // Search should also respect the default-to-private behavior when scoped
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -258,7 +251,6 @@ fn test_prompt_search_scoped_defaults_to_private() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_search_scoped_with_public_flag() {
     // Search with --public flag when scoped
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -288,7 +280,6 @@ fn test_prompt_search_scoped_with_public_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_prompt_get_with_organization_id_flag() {
     // Test get command with org ID flag
     // Note: This requires a prompt that actually exists
@@ -337,7 +328,6 @@ fn test_prompt_get_with_organization_id_flag() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_json_output_format() {
     // Test that JSON output works with scoping
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -370,7 +360,6 @@ fn test_json_output_format() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_both_org_and_workspace_flags() {
     // Test providing both --organization-id and --workspace-id
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -402,7 +391,6 @@ fn test_both_org_and_workspace_flags() {
 }
 
 #[test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 fn test_flag_overrides_environment() {
     // Test that CLI flag overrides environment variable
     // Set a different org ID via flag

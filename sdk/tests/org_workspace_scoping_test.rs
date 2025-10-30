@@ -12,10 +12,10 @@ use langstar_sdk::{AuthConfig, LangchainClient, Visibility};
 /// 2. Valid LANGSMITH_ORGANIZATION_ID environment variable
 /// 3. Valid LANGSMITH_WORKSPACE_ID environment variable
 ///
-/// Run with: cargo test --test org_workspace_scoping_test -- --ignored --nocapture
+/// These tests run automatically in CI with configured secrets.
+/// Run locally with: cargo test --test org_workspace_scoping_test
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_org_id_from_environment() {
     // Verify LANGSMITH_ORGANIZATION_ID is set
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -63,7 +63,6 @@ async fn test_org_id_from_environment() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_workspace_id_from_environment() {
     // Verify LANGSMITH_WORKSPACE_ID is set
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
@@ -110,7 +109,6 @@ async fn test_workspace_id_from_environment() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_both_org_and_workspace_ids() {
     // Verify both IDs are set
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -166,7 +164,6 @@ async fn test_both_org_and_workspace_ids() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_visibility_filtering_default_private_when_scoped() {
     // This test verifies Phase 4 requirement:
     // When scoped (org or workspace ID set), default to private prompts
@@ -213,7 +210,6 @@ async fn test_visibility_filtering_default_private_when_scoped() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_visibility_filtering_explicit_private() {
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
@@ -252,7 +248,6 @@ async fn test_visibility_filtering_explicit_private() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_visibility_filtering_explicit_public() {
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
@@ -292,7 +287,6 @@ async fn test_visibility_filtering_explicit_public() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_with_organization_id_builder() {
     // Test the with_organization_id builder method
     let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
@@ -327,7 +321,6 @@ async fn test_with_organization_id_builder() {
 }
 
 #[tokio::test]
-#[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_with_workspace_id_builder() {
     // Test the with_workspace_id builder method
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
