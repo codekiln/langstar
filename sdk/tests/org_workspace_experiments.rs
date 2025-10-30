@@ -13,8 +13,7 @@ use reqwest::StatusCode;
 /// 2. Access to at least one organization
 /// 3. (Optional) Access to workspaces for workspace testing
 ///
-/// Run with: cargo test --test org_workspace_experiments -- --ignored --nocapture
-
+/// Run with: `cargo test --test org_workspace_experiments -- --ignored --nocapture`
 /// Helper to make a raw HTTP request with custom headers for experimentation
 async fn make_request_with_headers(
     client: &LangchainClient,
@@ -84,7 +83,10 @@ async fn test_org_id_header_only() {
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!("Response body (first 500 chars): {}", &body[..body.len().min(500)]);
+        println!(
+            "Response body (first 500 chars): {}",
+            &body[..body.len().min(500)]
+        );
         println!("\n✓ SUCCESS: API accepts x-organization-id header");
     } else {
         let body = response.text().await.unwrap();
@@ -136,7 +138,10 @@ async fn test_workspace_id_header_only() {
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!("Response body (first 500 chars): {}", &body[..body.len().min(500)]);
+        println!(
+            "Response body (first 500 chars): {}",
+            &body[..body.len().min(500)]
+        );
         println!("\n✓ SUCCESS: API accepts X-Tenant-Id header");
     } else {
         let body = response.text().await.unwrap();
@@ -202,7 +207,10 @@ async fn test_both_headers() {
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!("Response body (first 500 chars): {}", &body[..body.len().min(500)]);
+        println!(
+            "Response body (first 500 chars): {}",
+            &body[..body.len().min(500)]
+        );
         println!("\n✓ SUCCESS: API accepts both headers");
         println!("  NOTE: Need to determine which header takes precedence");
     } else {
@@ -299,7 +307,10 @@ async fn test_no_headers_baseline() {
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!("Response body (first 500 chars): {}", &body[..body.len().min(500)]);
+        println!(
+            "Response body (first 500 chars): {}",
+            &body[..body.len().min(500)]
+        );
         println!("\n✓ SUCCESS: Baseline request works");
         println!("  This shows what results are returned without scoping");
     } else {
