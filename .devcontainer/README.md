@@ -245,7 +245,7 @@ services:
 |----------|-----------|-----------------|----------|-------------|
 | GitHub PAT | `GITHUB_PAT` | `GH_PAT` | Yes | Personal access token for git operations |
 | GitHub User | `GITHUB_USER` | `GH_USER` | Yes | Your GitHub username |
-| GitHub Project PAT | `GITHUB_PROJECT_PAT` | `GH_PROJECT_PAT` | Optional | PAT with project permissions for API operations |
+| GitHub Project PAT | `GITHUB_PROJECT_PAT` | `GH_PROJECT_PAT` | Optional | PAT with project permissions for manual project status updates via Claude skill |
 
 ### API Keys
 
