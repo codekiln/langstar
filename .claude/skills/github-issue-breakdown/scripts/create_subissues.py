@@ -20,6 +20,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Dict, List, Optional, Tuple
 
 
@@ -209,24 +210,22 @@ def detect_repository() -> Optional[str]:
 
 def run_gh_api(query: str, token: str, variables: Optional[Dict] = None) -> Optional[Dict]:
     """Execute a GraphQL query using gh CLI."""
-    cmd = ['gh', 'api', 'graphql']
-
     # Set token
     env = os.environ.copy()
     env['GH_TOKEN'] = token
 
-    # Add query
-    cmd.extend(['-f', f'query={query}'])
-
-    # Add variables
+    # Build GraphQL request
+    graphql_request = {'query': query}
     if variables:
-        for key, value in variables.items():
-            if isinstance(value, (list, dict)):
-                cmd.extend(['-F', f'{key}={json.dumps(value)}'])
-            else:
-                cmd.extend(['-F', f'{key}={value}'])
+        graphql_request['variables'] = variables
+
+    # Write to temp file and pass via --input
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(graphql_request, f)
+        temp_file = f.name
 
     try:
+        cmd = ['gh', 'api', 'graphql', '--input', temp_file]
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -241,6 +240,12 @@ def run_gh_api(query: str, token: str, variables: Optional[Dict] = None) -> Opti
     except json.JSONDecodeError:
         print("Error: Invalid JSON response from GitHub API")
         return None
+    finally:
+        # Clean up temp file
+        try:
+            os.unlink(temp_file)
+        except:
+            pass
 
 
 def fetch_issue(repo: str, issue_number: int, token: str) -> Optional[Dict]:
