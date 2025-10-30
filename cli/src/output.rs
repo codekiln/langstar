@@ -2,8 +2,8 @@ use crate::error::Result;
 use colored::Colorize;
 use serde::Serialize;
 use tabled::{
-    settings::{object::Rows, style::Style, Modify, Width},
     Table, Tabled,
+    settings::{Modify, Width, object::Rows, style::Style},
 };
 
 /// Output format for displaying data
@@ -107,7 +107,10 @@ mod tests {
     #[test]
     fn test_output_format_from_str() {
         assert_eq!(OutputFormat::from_str("json").unwrap(), OutputFormat::Json);
-        assert_eq!(OutputFormat::from_str("table").unwrap(), OutputFormat::Table);
+        assert_eq!(
+            OutputFormat::from_str("table").unwrap(),
+            OutputFormat::Table
+        );
         assert_eq!(OutputFormat::from_str("JSON").unwrap(), OutputFormat::Json);
         assert!(OutputFormat::from_str("invalid").is_err());
     }

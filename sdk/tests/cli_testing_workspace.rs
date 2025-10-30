@@ -13,7 +13,6 @@ use serde_json::json;
 /// - Organization ID: 6f52dd84-9870-4f3a-b42d-4eea5fc9dfde
 ///
 /// Run with: cargo test --test cli_testing_workspace -- --ignored --nocapture
-
 const TEST_ORG_ID: &str = "6f52dd84-9870-4f3a-b42d-4eea5fc9dfde";
 
 /// Test: Create a new prompt, push a commit, and read it back
@@ -25,8 +24,7 @@ async fn test_create_push_and_read_prompt() {
     println!("╚══════════════════════════════════════════════════════════╝\n");
 
     // Load authentication from environment
-    let auth = AuthConfig::from_env()
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
     // Create client with organization ID
     let client = LangchainClient::new(auth)
@@ -47,7 +45,10 @@ async fn test_create_push_and_read_prompt() {
         .create_repo(
             &full_repo_handle,
             Some("Integration test prompt created by langstar".to_string()),
-            Some("# Test Prompt\n\nThis prompt was created by langstar integration tests.".to_string()),
+            Some(
+                "# Test Prompt\n\nThis prompt was created by langstar integration tests."
+                    .to_string(),
+            ),
             false, // Private prompt
             Some(vec!["test".to_string(), "langstar".to_string()]),
         )
@@ -64,11 +65,13 @@ async fn test_create_push_and_read_prompt() {
             prompt
         }
         Err(e) => {
-            panic!("Failed to create repository: {:?}\n\nPlease verify:\n\
+            panic!(
+                "Failed to create repository: {:?}\n\nPlease verify:\n\
                 1. LANGSMITH_API_KEY has write permissions\n\
                 2. You have permission to create prompts in organization {}\n\
                 3. The owner '{}' is correct for your workspace",
-                e, TEST_ORG_ID, owner);
+                e, TEST_ORG_ID, owner
+            );
         }
     };
 
@@ -188,7 +191,10 @@ async fn test_create_push_and_read_prompt() {
     println!("\nTest prompt created: {}", created_prompt.repo_handle);
     println!("Organization: {}", TEST_ORG_ID);
     println!("\nNote: You may want to delete this test prompt from:");
-    println!("https://smith.langchain.com/prompts/{}?organizationId={}", repo_name, TEST_ORG_ID);
+    println!(
+        "https://smith.langchain.com/prompts/{}?organizationId={}",
+        repo_name, TEST_ORG_ID
+    );
 }
 
 /// Test: Try to read an existing prompt (requires knowing the correct handle)
@@ -198,8 +204,7 @@ async fn test_create_push_and_read_prompt() {
 async fn test_read_existing_test_prompt() {
     println!("\n=== Test: Reading existing test-prompt ===\n");
 
-    let auth = AuthConfig::from_env()
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
     let client = LangchainClient::new(auth)
         .expect("Failed to create LangchainClient")

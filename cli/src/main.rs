@@ -86,9 +86,26 @@ async fn run() -> Result<()> {
                 }
             );
             println!("\nEnvironment variables:");
-            println!("  LANGSMITH_API_KEY: {}", if std::env::var("LANGSMITH_API_KEY").is_ok() { "set" } else { "not set" });
-            println!("  LANGGRAPH_API_KEY: {}", if std::env::var("LANGGRAPH_API_KEY").is_ok() { "set" } else { "not set" });
-            println!("  LANGSTAR_OUTPUT_FORMAT: {}", std::env::var("LANGSTAR_OUTPUT_FORMAT").unwrap_or_else(|_| "not set".to_string()));
+            println!(
+                "  LANGSMITH_API_KEY: {}",
+                if std::env::var("LANGSMITH_API_KEY").is_ok() {
+                    "set"
+                } else {
+                    "not set"
+                }
+            );
+            println!(
+                "  LANGGRAPH_API_KEY: {}",
+                if std::env::var("LANGGRAPH_API_KEY").is_ok() {
+                    "set"
+                } else {
+                    "not set"
+                }
+            );
+            println!(
+                "  LANGSTAR_OUTPUT_FORMAT: {}",
+                std::env::var("LANGSTAR_OUTPUT_FORMAT").unwrap_or_else(|_| "not set".to_string())
+            );
         }
         Commands::Version => {
             println!("langstar {}", env!("CARGO_PKG_VERSION"));

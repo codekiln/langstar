@@ -57,7 +57,10 @@ mod tests {
         }"#;
 
         let org: Organization = serde_json::from_str(json).unwrap();
-        assert_eq!(org.id, Some("12345678-1234-1234-1234-123456789012".to_string()));
+        assert_eq!(
+            org.id,
+            Some("12345678-1234-1234-1234-123456789012".to_string())
+        );
         assert_eq!(org.display_name, Some("Test Org".to_string()));
         assert!(!org.is_personal);
         assert_eq!(org.handle, Some("test-org".to_string()));

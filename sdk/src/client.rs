@@ -138,12 +138,18 @@ impl LangchainClient {
     }
 
     /// Execute a request and parse the response
-    pub async fn execute<T: for<'de> Deserialize<'de>>(&self, request: RequestBuilder) -> Result<T> {
+    pub async fn execute<T: for<'de> Deserialize<'de>>(
+        &self,
+        request: RequestBuilder,
+    ) -> Result<T> {
         let response = request.send().await?;
 
         let status = response.status();
         if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(LangstarError::ApiError {
                 status: status.as_u16(),
                 message: error_text,
@@ -176,10 +182,7 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        let auth = AuthConfig::new(
-            Some("test_key".to_string()),
-            Some("test_key".to_string()),
-        );
+        let auth = AuthConfig::new(Some("test_key".to_string()), Some("test_key".to_string()));
         let client = LangchainClient::new(auth);
         assert!(client.is_ok());
     }

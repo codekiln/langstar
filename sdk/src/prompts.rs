@@ -131,8 +131,7 @@ impl<'a> PromptClient<'a> {
             tags,
         };
 
-        let request = self.client.langsmith_post(path)?
-            .json(&request_body);
+        let request = self.client.langsmith_post(path)?.json(&request_body);
 
         #[derive(Deserialize)]
         struct CreateRepoResponse {
@@ -152,11 +151,15 @@ impl<'a> PromptClient<'a> {
     /// * `owner` - The owner of the prompt (username or organization)
     /// * `repo` - The prompt repository name
     /// * `commit_request` - The commit data to push
-    pub async fn push(&self, owner: &str, repo: &str, commit_request: &CommitRequest) -> Result<CommitResponse> {
+    pub async fn push(
+        &self,
+        owner: &str,
+        repo: &str,
+        commit_request: &CommitRequest,
+    ) -> Result<CommitResponse> {
         let path = format!("/api/v1/commits/{}/{}", owner, repo);
         // Use POST to create a new commit
-        let request = self.client.langsmith_post(&path)?
-            .json(commit_request);
+        let request = self.client.langsmith_post(&path)?.json(commit_request);
         let response: CommitResponse = self.client.execute(request).await?;
         Ok(response)
     }

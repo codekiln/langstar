@@ -29,20 +29,22 @@ impl AuthConfig {
 
     /// Get LangSmith API key, returning error if not configured
     pub fn require_langsmith_key(&self) -> Result<&str> {
-        self.langsmith_api_key
-            .as_deref()
-            .ok_or_else(|| LangstarError::AuthError(
-                "LANGSMITH_API_KEY not configured. Set it via environment variable or config file.".to_string()
-            ))
+        self.langsmith_api_key.as_deref().ok_or_else(|| {
+            LangstarError::AuthError(
+                "LANGSMITH_API_KEY not configured. Set it via environment variable or config file."
+                    .to_string(),
+            )
+        })
     }
 
     /// Get LangGraph API key, returning error if not configured
     pub fn require_langgraph_key(&self) -> Result<&str> {
-        self.langgraph_api_key
-            .as_deref()
-            .ok_or_else(|| LangstarError::AuthError(
-                "LANGGRAPH_API_KEY not configured. Set it via environment variable or config file.".to_string()
-            ))
+        self.langgraph_api_key.as_deref().ok_or_else(|| {
+            LangstarError::AuthError(
+                "LANGGRAPH_API_KEY not configured. Set it via environment variable or config file."
+                    .to_string(),
+            )
+        })
     }
 }
 
@@ -56,8 +58,14 @@ mod tests {
             Some("test_langsmith_key".to_string()),
             Some("test_langgraph_key".to_string()),
         );
-        assert_eq!(config.require_langsmith_key().unwrap(), "test_langsmith_key");
-        assert_eq!(config.require_langgraph_key().unwrap(), "test_langgraph_key");
+        assert_eq!(
+            config.require_langsmith_key().unwrap(),
+            "test_langsmith_key"
+        );
+        assert_eq!(
+            config.require_langgraph_key().unwrap(),
+            "test_langgraph_key"
+        );
     }
 
     #[test]

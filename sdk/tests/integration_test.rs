@@ -16,23 +16,25 @@ use serde_json::json;
 #[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_push_prompt_to_prompthub() {
     // Load authentication from environment
-    let auth = AuthConfig::from_env()
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
     // Verify we have a LangSmith API key
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required for this test");
 
     // Create client
-    let mut client = LangchainClient::new(auth)
-        .expect("Failed to create LangchainClient");
+    let mut client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
 
     // Get current organization to set org ID header
     println!("Fetching current organization...");
     match client.get_current_organization().await {
         Ok(org) => {
             if let Some(org_id) = org.id {
-                println!("✓ Organization: {} (ID: {})", org.display_name.unwrap_or_default(), org_id);
+                println!(
+                    "✓ Organization: {} (ID: {})",
+                    org.display_name.unwrap_or_default(),
+                    org_id
+                );
                 client = client.with_organization_id(org_id);
             } else {
                 println!("⚠ Organization has no ID, proceeding without X-Organization-Id header");
@@ -69,8 +71,8 @@ async fn test_push_prompt_to_prompthub() {
     match result {
         Ok(commit_response) => {
             println!("✓ Prompt commit pushed successfully!");
-            println!("  Commit hash: {}", commit_response.commit_hash);
-            if let Some(url) = &commit_response.url {
+            println!("  Commit hash: {}", commit_response.commit.commit_hash);
+            if let Some(url) = &commit_response.commit.url {
                 println!("  URL: {}", url);
             }
 
@@ -94,16 +96,18 @@ async fn test_push_prompt_to_prompthub() {
 
             println!("\n✓ Integration test passed!");
             println!("\nNote: Test prompt '{}/{}' commit created.", owner, repo);
-            println!("Commit hash: {}", commit_response.commit_hash);
+            println!("Commit hash: {}", commit_response.commit.commit_hash);
         }
         Err(e) => {
-            panic!("Failed to push prompt commit to PromptHub: {:?}\n\nPlease verify:\n\
+            panic!(
+                "Failed to push prompt commit to PromptHub: {:?}\n\nPlease verify:\n\
                 1. LANGSMITH_API_KEY is valid\n\
                 2. API key has write permissions\n\
                 3. The prompt repository '{}/{}' exists in your PromptHub\n\
                 4. Network connectivity to api.smith.langchain.com\n\n\
                 Note: You may need to create the prompt repository first via the LangSmith UI.",
-                e, owner, repo);
+                e, owner, repo
+            );
         }
     }
 }
@@ -116,12 +120,10 @@ async fn test_push_prompt_to_prompthub() {
 #[ignore] // Only run when explicitly requested with --ignored flag
 async fn test_list_prompts_from_prompthub() {
     // Load authentication from environment
-    let auth = AuthConfig::from_env()
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
     // Create client
-    let client = LangchainClient::new(auth)
-        .expect("Failed to create LangchainClient");
+    let client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
 
     println!("Fetching prompts from PromptHub...");
 

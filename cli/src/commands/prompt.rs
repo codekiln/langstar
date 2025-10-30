@@ -106,7 +106,10 @@ impl PromptCommands {
 
         match self {
             PromptCommands::List { limit, offset } => {
-                formatter.info(&format!("Fetching prompts (limit: {}, offset: {})...", limit, offset));
+                formatter.info(&format!(
+                    "Fetching prompts (limit: {}, offset: {})...",
+                    limit, offset
+                ));
 
                 let prompts = client.prompts().list(Some(*limit), Some(*offset)).await?;
 
@@ -132,7 +135,10 @@ impl PromptCommands {
                     println!("Handle:      {}", prompt.repo_handle);
                     println!("Likes:       {}", prompt.num_likes);
                     println!("Downloads:   {}", prompt.num_downloads);
-                    println!("Public:      {}", if prompt.is_public { "yes" } else { "no" });
+                    println!(
+                        "Public:      {}",
+                        if prompt.is_public { "yes" } else { "no" }
+                    );
                     if let Some(desc) = &prompt.description {
                         println!("Description: {}", desc);
                     }
@@ -172,7 +178,10 @@ impl PromptCommands {
                 match client.get_current_organization().await {
                     Ok(org) => {
                         if let Some(org_id) = &org.id {
-                            println!("✓ Organization: {}", org.display_name.as_deref().unwrap_or("Unknown"));
+                            println!(
+                                "✓ Organization: {}",
+                                org.display_name.as_deref().unwrap_or("Unknown")
+                            );
                             println!("  ID: {}", org_id);
                             client = client.with_organization_id(org_id.clone());
                         }
@@ -192,14 +201,21 @@ impl PromptCommands {
                         println!("✓ Repository exists");
                     }
                     Err(_) => {
-                        formatter.info(&format!("Repository not found, creating {}...", repo_handle));
-                        match client.prompts().create_repo(
-                            &repo_handle,
-                            Some("Created via langstar CLI".to_string()),
-                            None,
-                            false, // Private by default
-                            Some(vec!["cli".to_string(), "langstar".to_string()]),
-                        ).await {
+                        formatter.info(&format!(
+                            "Repository not found, creating {}...",
+                            repo_handle
+                        ));
+                        match client
+                            .prompts()
+                            .create_repo(
+                                &repo_handle,
+                                Some("Created via langstar CLI".to_string()),
+                                None,
+                                false, // Private by default
+                                Some(vec!["cli".to_string(), "langstar".to_string()]),
+                            )
+                            .await
+                        {
                             Ok(_) => {
                                 println!("✓ Repository created successfully");
                             }
@@ -240,8 +256,8 @@ impl PromptCommands {
                         } else {
                             println!("\n✓ Prompt commit pushed successfully!");
                             println!("  Repository: {}/{}", owner, repo);
-                            println!("  Commit hash: {}", response.commit_hash);
-                            if let Some(url) = &response.url {
+                            println!("  Commit hash: {}", response.commit.commit_hash);
+                            if let Some(url) = &response.commit.url {
                                 println!("  URL: {}", url);
                             }
                         }
