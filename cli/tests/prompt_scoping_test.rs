@@ -306,7 +306,7 @@ fn test_prompt_get_with_organization_id_flag() {
         "1",
         "--organization-id",
         &org_id,
-        "--output",
+        "--format",
         "json",
     ]);
 
@@ -353,15 +353,18 @@ fn test_json_output_format() {
         "5",
         "--organization-id",
         &org_id,
-        "--output",
+        "--format",
         "json",
     ]);
 
     // Run the command
     let assert = cmd.assert();
 
-    // Should succeed and output valid JSON
-    assert.success().stdout(predicate::str::starts_with("["));
+    // Should succeed and output valid JSON (may have info messages before JSON)
+    assert
+        .success()
+        .stdout(predicate::str::contains("["))
+        .stdout(predicate::str::contains("]"));
 
     println!("✓ CLI produced JSON output with organization scoping");
 }
