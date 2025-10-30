@@ -106,10 +106,14 @@ def main():
         sys.exit(0)
 
     # Confirm with user
-    response = input(f"Create these {len(tasks)} sub-issue(s)? (y/n): ")
-    if response.lower() != 'y':
-        print("Cancelled")
-        sys.exit(0)
+    if not args.yes:
+        response = input(f"Create these {len(tasks)} sub-issue(s)? (y/n): ")
+        if response.lower() != 'y':
+            print("Cancelled")
+            sys.exit(0)
+    else:
+        print(f"Auto-confirming creation of {len(tasks)} sub-issue(s) (--yes flag)")
+        print()
 
     print()
     print("Creating sub-issues...")
@@ -174,6 +178,12 @@ def parse_arguments():
         action='store_true',
         default=True,
         help='Inherit assignees from parent issue (default: true)'
+    )
+    parser.add_argument(
+        '--yes',
+        '-y',
+        action='store_true',
+        help='Automatically confirm creation without prompting'
     )
     return parser.parse_args()
 
@@ -388,34 +398,49 @@ def create_sub_issue(
     Returns:
         (success, url, error_message)
     """
-    mutation = """
-    mutation($repoId: ID!, $title: String!, $body: String, $parentId: ID!, $labelIds: [ID!], $assigneeIds: [ID!]) {
-      createIssue(input: {
-        repositoryId: $repoId
-        title: $title
-        body: $body
-        parentIssueId: $parentId
-        labelIds: $labelIds
-        assigneeIds: $assigneeIds
-      }) {
-        issue {
+    # Build mutation dynamically based on what fields we have
+    label_ids = sub_issue.get('labelIds', [])
+    assignee_ids = sub_issue.get('assigneeIds', [])
+
+    # Build the mutation with optional fields
+    mutation_parts = ['$repoId: ID!', '$title: String!', '$body: String', '$parentId: ID!']
+    input_parts = ['repositoryId: $repoId', 'title: $title', 'body: $body', 'parentIssueId: $parentId']
+
+    if label_ids:
+        mutation_parts.append('$labelIds: [ID!]')
+        input_parts.append('labelIds: $labelIds')
+
+    if assignee_ids:
+        mutation_parts.append('$assigneeIds: [ID!]')
+        input_parts.append('assigneeIds: $assigneeIds')
+
+    mutation = f"""
+    mutation({', '.join(mutation_parts)}) {{
+      createIssue(input: {{
+        {', '.join(input_parts)}
+      }}) {{
+        issue {{
           id
           number
           title
           url
-        }
-      }
-    }
+        }}
+      }}
+    }}
     """
 
     variables = {
         'repoId': repo_id,
         'title': sub_issue['title'],
         'body': sub_issue.get('body', ''),
-        'parentId': parent_id,
-        'labelIds': sub_issue.get('labelIds', []),
-        'assigneeIds': sub_issue.get('assigneeIds', [])
+        'parentId': parent_id
     }
+
+    if label_ids:
+        variables['labelIds'] = label_ids
+
+    if assignee_ids:
+        variables['assigneeIds'] = assignee_ids
 
     response = run_gh_api(mutation, token, variables)
     if not response or 'data' not in response:
