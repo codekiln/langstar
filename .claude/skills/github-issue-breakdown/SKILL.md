@@ -173,6 +173,11 @@ When user has generated tasks using Spec-Kit:
 | --dry-run | No | Preview mode without creating | `--dry-run` |
 | --inherit-labels | No | Inherit labels from parent (default: true) | `--inherit-labels` |
 | --inherit-assignees | No | Inherit assignees from parent (default: true) | `--inherit-assignees` |
+| --section | No | Only parse under this section header | `--section "Implementation Tasks"` |
+| --checkbox-only | No | Only parse checkboxes `- [ ]`, ignore bullets/numbers | `--checkbox-only` |
+| --max-depth | No | Maximum indentation depth (0 = top-level, default: 0) | `--max-depth 1` |
+| --all-bullets | No | Disable section filtering (legacy behavior) | `--all-bullets` |
+| --yes, -y | No | Auto-confirm creation without prompting | `--yes` |
 
 ### Environment Variables
 
@@ -199,6 +204,170 @@ When user has generated tasks using Spec-Kit:
 - **Error handling** - Reports specific errors for each sub-issue
 - **Repository-agnostic** - Works in any repository without modification
 - **Portable** - No hardcoded repository or project IDs
+- **Context-aware parsing** - By default, only parses tasks under dedicated task sections
+
+## Best Practices for Parent Issues
+
+The skill uses context-aware parsing by default. Structure your parent issues properly for best results:
+
+### ✅ Good Structure
+
+Place your tasks under a dedicated section header:
+
+```markdown
+## Overview
+Detailed description of the feature...
+
+## Implementation Tasks
+
+- [ ] Phase 1: Research & Experimentation
+- [ ] Phase 2: SDK Layer
+- [ ] Phase 3: CLI Layer
+- [ ] Phase 4: Testing
+
+## Background
+Any explanatory content here won't be parsed as tasks.
+
+## Configuration Details
+- **Environment variables**: FOO_BAR (won't be parsed - not under Tasks section)
+- **Config file**: settings.toml (won't be parsed)
+```
+
+**Why this works:**
+- Tasks are clearly separated under `## Implementation Tasks` header
+- Explanatory bullets elsewhere are ignored
+- Section headers like "Tasks", "Sub-Issues", "Implementation Tasks", "Sub-Tasks" are auto-detected
+
+### ❌ Avoid This Structure
+
+Don't use bullets for non-task content throughout your issue:
+
+```markdown
+## Configuration Methods
+- **Environment variables**: FOO (this will be parsed as a task!)
+- **Config file**: bar.toml (this will be parsed as a task!)
+- **CLI flags**: --flag (this will be parsed as a task!)
+
+## Behavior
+- When condition X happens (this will be parsed as a task!)
+- Need explicit flag Y (this will be parsed as a task!)
+```
+
+**Why this fails:**
+- Without section filtering, ALL bullets become tasks
+- Configuration options become "sub-issues"
+- Explanatory text becomes "sub-issues"
+- Results in 50+ unwanted sub-issues
+
+**How to fix:**
+- Use paragraphs for explanatory content instead of bullets
+- Or use `--section "Tasks"` to explicitly specify which section contains actual tasks
+- Or restructure to have a dedicated "Tasks" section
+
+## Common Pitfalls
+
+### Pitfall 1: Over-Parsing Complex Spec Documents
+
+**Problem:** Issue has 100+ lines with bullets for formatting, configuration options, and explanations.
+
+**Symptom:** Script finds 50+ tasks when you only want 5-10.
+
+**Solution:**
+1. Use `--dry-run` first to preview what will be parsed
+2. Add a dedicated `## Tasks` or `## Implementation Tasks` section
+3. Or use `--section "Phase Tasks"` to target specific section
+4. Or use `--checkbox-only` for strict checkbox-only parsing
+
+### Pitfall 2: Nested Task Lists
+
+**Problem:** Issue has multi-level nested tasks with sub-items.
+
+**Symptom:** All nested items become separate sub-issues.
+
+**Solution:**
+- By default, only top-level items (indent 0) are parsed
+- Nested items are automatically skipped
+- Use `--max-depth 1` if you want one level of nesting
+
+### Pitfall 3: Using Bullets for Everything
+
+**Problem:** Using `- ` for all content (explanations, options, tasks).
+
+**Symptom:** Everything becomes a task.
+
+**Solution:**
+- Reserve bullets for actual tasks only
+- Use prose paragraphs for explanations
+- Structure issue with dedicated task section
+- Or use checkbox-only mode: `--checkbox-only`
+
+## Troubleshooting
+
+### Issue: Too Many Tasks Parsed
+
+**Symptom:** Script finds 50+ tasks but you only have 5-10 actual tasks.
+
+**Diagnosis:** The parser is picking up explanatory bullets, configuration options, or nested details.
+
+**Solutions:**
+1. **Preview first:** `--dry-run` to see what's being parsed
+2. **Add task section:** Restructure issue with `## Tasks` header
+3. **Target specific section:** Use `--section "Implementation Tasks"`
+4. **Strict mode:** Use `--checkbox-only` to only parse `- [ ]` items
+5. **Check for nesting:** Verify indented items aren't being parsed (they shouldn't be by default)
+
+**Example:**
+```bash
+# Preview what will be created
+python scripts/create_subissues.py --issue 46 --dry-run
+
+# Only parse under "Implementation Tasks" section
+python scripts/create_subissues.py --issue 46 --section "Implementation Tasks"
+
+# Strict checkbox-only mode
+python scripts/create_subissues.py --issue 46 --checkbox-only
+```
+
+### Issue: No Tasks Found
+
+**Symptom:** Script reports "No tasks found" but issue clearly has tasks.
+
+**Diagnosis:** Tasks aren't under a recognized section header.
+
+**Solutions:**
+1. **Check section header:** Ensure tasks are under `## Tasks`, `## Sub-Issues`, or similar
+2. **Specify section explicitly:** Use `--section "Your Custom Header"`
+3. **Disable filtering:** Use `--all-bullets` to parse all bullets (legacy behavior)
+4. **Verify format:** Ensure using supported formats (`- [ ]`, `1.`, `*`, `-`)
+
+**Example:**
+```bash
+# Parse under custom section header
+python scripts/create_subissues.py --issue 46 --section "Phase List"
+
+# Disable section filtering (parse all bullets)
+python scripts/create_subissues.py --issue 46 --all-bullets
+```
+
+### Issue: Warning About 20+ Tasks
+
+**Symptom:** Script warns "Found more than 20 tasks" and suggests alternatives.
+
+**Diagnosis:** Likely over-parsing explanatory content.
+
+**What to do:**
+1. Run `--dry-run` to review what's being parsed
+2. Restructure issue to have clear task section
+3. Use `--section` or `--checkbox-only` for stricter parsing
+4. If truly 20+ tasks, proceed with caution or break down further
+
+### Issue: Sub-Issues Not Showing in GitHub UI
+
+**Symptom:** Issues created but don't show as "sub-issues" on parent issue.
+
+**Diagnosis:** Only affects manually created issues via `gh issue create` (which doesn't support parent relationships).
+
+**Solution:** Always use this skill's script - it's the only CLI way to create proper parent-child relationships. The script uses GraphQL `createIssue` with `parentIssueId` parameter.
 
 ## Parsing Patterns
 
