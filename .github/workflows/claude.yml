@@ -26,6 +26,10 @@ jobs:
       issues: write
       id-token: write
       actions: read # Required for Claude to read CI results on PRs
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -36,7 +40,10 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          use_bedrock: "true"
+          claude_args: |
+            --model us.anthropic.claude-sonnet-4-5-20250929-v1:0
+            --max-turns 10
 
           # Optional: Customize the trigger phrase (default: @claude)
           # trigger_phrase: "/claude"

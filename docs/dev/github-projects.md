@@ -171,19 +171,24 @@ mutation {
 
 ## Integration with Development Workflow
 
-The GitHub project integrates with the issue-driven development workflow described in [github-workflow.md](./github-workflow.md):
+The GitHub project integrates with the issue-driven development workflow described in [github-workflow.md](./github-workflow.md). Project status updates are managed manually or via the Claude Code skill.
 
-1. **Issue Created** → Automatically added to project with status "Todo"
-2. **Work Starts** → Status updated to "In Progress"
-3. **PR Merged** → Status updated to "Done"
+### Manual Status Updates
 
-### Automation Opportunities
+Use the `update-github-issue-project-status` Claude skill to manually update project status:
 
-Consider implementing GitHub Actions to:
-- Auto-add new issues to the project
-- Update status to "In Progress" when a branch is created
-- Update status to "Done" when a PR is merged
-- Auto-assign issues based on branch ownership
+```
+Use the update-github-issue-project-status skill to set issue #42 to "in_progress"
+```
+
+The skill supports:
+- Single or batch issue updates (comma-separated)
+- All three status values: "todo", "in_progress", "done"
+- Automatic project item creation if needed
+
+### Native Automation Research
+
+See Issue #38 for ongoing research into native GitHub Projects V2 automations that could provide automatic status updates without custom code
 
 ## Troubleshooting
 

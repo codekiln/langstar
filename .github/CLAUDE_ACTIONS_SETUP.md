@@ -1,38 +1,34 @@
 # Claude Code GitHub Actions Setup
 
-This repository is configured to use Claude Code in GitHub Actions. Claude can be triggered by mentioning `@claude` in issues, pull requests, and comments.
+This repository is configured to use Claude Code in GitHub Actions via AWS Bedrock. Claude can be triggered by mentioning `@claude` in issues, pull requests, and comments.
 
 ## Prerequisites
 
-1. **Install the Claude GitHub App**
-   - Visit: https://github.com/apps/claude
-   - Install the app on this repository
-   - Grant the necessary permissions (read/write access to code, PRs, and issues)
+### 1. AWS Bedrock Setup
 
-2. **Configure GitHub Secrets**
+Ensure you have:
+- AWS Bedrock enabled with Claude model access in us-east-1 region
+- AWS IAM user or access keys with Bedrock invoke permissions
 
-   You need to add your Anthropic API key to GitHub repository secrets:
+### 2. Configure GitHub Secrets
 
-   ### Steps to Add Secret:
+   Add the required AWS credentials to your GitHub repository:
+
+   **Steps to Add Secrets:**
 
    1. Go to your repository on GitHub
    2. Click **Settings** → **Secrets and variables** → **Actions**
    3. Click **New repository secret**
-   4. Add the following secret:
-      - **Name:** `ANTHROPIC_API_KEY`
-      - **Value:** Your Anthropic API key (starts with `sk-ant-`)
+   4. Add the following secrets:
+      - **Name:** `AWS_ACCESS_KEY_ID`
+      - **Value:** Your AWS access key ID
    5. Click **Add secret**
+   6. Repeat for the second secret:
+      - **Name:** `AWS_SECRET_ACCESS_KEY`
+      - **Value:** Your AWS secret access key
+   7. Click **Add secret**
 
-   ### Getting an Anthropic API Key:
-
-   - Visit: https://console.anthropic.com/settings/keys
-   - Create a new API key
-   - Copy the key (it will only be shown once)
-   - Store it securely
-
-   **Alternative:** If you have Claude Pro/Max subscription, you can use:
-   - **Name:** `CLAUDE_CODE_OAUTH_TOKEN`
-   - **Value:** Generate via `claude setup-token` command
+   **Note:** This replaces the previous `ANTHROPIC_API_KEY` approach. The workflow now uses AWS Bedrock for Claude model access.
 
 ## How It Works
 

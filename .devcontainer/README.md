@@ -33,7 +33,8 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
    GITHUB_PAT=ghp_YourActualTokenHere
    GITHUB_USER=your_github_username
    GITHUB_PROJECT_PAT=ghp_YourProjectTokenHere
-   ANTHROPIC_API_KEY=sk-ant-YourActualKeyHere
+   AWS_ACCESS_KEY_ID=your_aws_access_key_here
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key_here
    LANGSMITH_API_KEY=lsv2_YourActualKeyHere
    ```
 
@@ -72,7 +73,8 @@ Codespaces uses repository or organization secrets instead of local `.env` files
    | `GH_PAT` | GitHub Personal Access Token | `ghp_xxxxx` |
    | `GH_USER` | Your GitHub username | `your_username` |
    | `GH_PROJECT_PAT` | GitHub PAT with project permissions | `ghp_xxxxx` |
-   | `ANTHROPIC_API_KEY` | Anthropic API key for Claude | `sk-ant-xxxxx` |
+   | `AWS_ACCESS_KEY_ID` | AWS access key for Bedrock | `AKIAXXXXXXX` |
+   | `AWS_SECRET_ACCESS_KEY` | AWS secret access key | `xxxxx` |
    | `LANGSMITH_API_KEY` | LangSmith API key | `lsv2_xxxxx` |
 
 3. **Create a Codespace:**
@@ -243,24 +245,23 @@ services:
 |----------|-----------|-----------------|----------|-------------|
 | GitHub PAT | `GITHUB_PAT` | `GH_PAT` | Yes | Personal access token for git operations |
 | GitHub User | `GITHUB_USER` | `GH_USER` | Yes | Your GitHub username |
-| GitHub Project PAT | `GITHUB_PROJECT_PAT` | `GH_PROJECT_PAT` | Optional | PAT with project permissions for API operations |
+| GitHub Project PAT | `GITHUB_PROJECT_PAT` | `GH_PROJECT_PAT` | Optional | PAT with project permissions for manual project status updates via Claude skill |
 
 ### API Keys
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Anthropic API key for Claude Code |
+| `AWS_ACCESS_KEY_ID` | Yes | AWS access key for Bedrock authentication |
+| `AWS_SECRET_ACCESS_KEY` | Yes | AWS secret access key for Bedrock authentication |
 | `LANGSMITH_API_KEY` | Optional | LangSmith API key for testing |
 
 ### Anthropic Configuration
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `ANTHROPIC_BEDROCK_BASE_URL` | No | - | AWS Bedrock endpoint URL |
 | `ANTHROPIC_MODEL` | No | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | Primary Claude model |
 | `ANTHROPIC_SMALL_FAST_MODEL` | No | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Fast model for simple tasks |
 | `AWS_REGION` | No | `us-east-1` | AWS region for Bedrock |
-| `CLAUDE_CODE_SKIP_BEDROCK_AUTH` | No | `1` | Skip Bedrock auth |
 | `CLAUDE_CODE_USE_BEDROCK` | No | `1` | Use Bedrock for Claude |
 
 ## Advanced Usage
