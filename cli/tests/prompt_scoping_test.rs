@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use escargot::CargoBuild;
 use predicates::prelude::*;
 
 /// CLI Integration tests for organization and workspace scoping
@@ -17,9 +18,14 @@ use predicates::prelude::*;
 /// These tests run automatically in CI with configured secrets.
 /// Run locally with: cargo test --test prompt_scoping_test
 /// Helper function to get a CLI command builder
-#[allow(deprecated)]
 fn langstar_cmd() -> Command {
-    Command::cargo_bin("langstar").expect("Failed to find langstar binary")
+    let bin = CargoBuild::new()
+        .bin("langstar")
+        .run()
+        .expect("Failed to build langstar binary")
+        .path()
+        .to_owned();
+    Command::new(bin)
 }
 
 #[test]
