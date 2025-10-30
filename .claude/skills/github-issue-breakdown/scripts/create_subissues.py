@@ -58,17 +58,40 @@ def main():
     print()
 
     # Parse tasks from issue body
-    tasks = parse_tasks(parent_issue['body'] or '')
+    tasks = parse_tasks(
+        parent_issue['body'] or '',
+        section=args.section,
+        checkbox_only=args.checkbox_only,
+        max_depth=args.max_depth,
+        all_bullets=args.all_bullets
+    )
     if not tasks:
         print("No tasks found in issue description.")
         print("Supported formats:")
         print("  - [ ] Task name")
         print("  1. Task name")
         print("  * Task name")
+        print()
+        print("Tips:")
+        print("  - Use --section to specify a section header (e.g., --section 'Tasks')")
+        print("  - Use --checkbox-only to only parse [ ] checkboxes")
+        print("  - Use --all-bullets to parse all bullets (legacy behavior)")
         sys.exit(0)
 
     print(f"Found {len(tasks)} task(s) to convert into sub-issues:")
     print()
+
+    # Warning for high task counts
+    if len(tasks) > 20:
+        print("⚠️  WARNING: Found more than 20 tasks.")
+        print("Your issue may contain explanatory bullets that aren't meant to be tasks.")
+        print("Consider:")
+        print("  - Using --dry-run to preview what will be created")
+        print("  - Using --section to specify which section contains tasks")
+        print("  - Using --checkbox-only for strict checkbox-only parsing")
+        print("  - Restructuring your issue to have tasks in a dedicated section")
+        print()
+
     for i, task in enumerate(tasks, 1):
         print(f"{i}. {task}")
     print()
@@ -186,6 +209,27 @@ def parse_arguments():
         action='store_true',
         help='Automatically confirm creation without prompting'
     )
+    parser.add_argument(
+        '--section',
+        type=str,
+        help='Only parse tasks under this section header (e.g., "Tasks" or "Implementation Tasks")'
+    )
+    parser.add_argument(
+        '--checkbox-only',
+        action='store_true',
+        help='Only parse markdown checkboxes (- [ ]), ignore numbered/bullet lists'
+    )
+    parser.add_argument(
+        '--max-depth',
+        type=int,
+        default=0,
+        help='Maximum indentation depth to parse (0 = top-level only, default: 0)'
+    )
+    parser.add_argument(
+        '--all-bullets',
+        action='store_true',
+        help='Disable section filtering and parse all bullets (legacy behavior)'
+    )
     return parser.parse_args()
 
 
@@ -296,41 +340,101 @@ def fetch_issue(repo: str, issue_number: int, token: str) -> Optional[Dict]:
     return issue
 
 
-def parse_tasks(body: str) -> List[str]:
-    """Parse task lists from issue body.
+def parse_tasks(
+    body: str,
+    section: Optional[str] = None,
+    checkbox_only: bool = False,
+    max_depth: int = 0,
+    all_bullets: bool = False
+) -> List[str]:
+    """Parse task lists from issue body with context-aware filtering.
+
+    Args:
+        body: The issue body text
+        section: Only parse under this section header (e.g., "Tasks")
+        checkbox_only: Only parse markdown checkboxes, ignore other formats
+        max_depth: Maximum indentation depth (0 = top-level only)
+        all_bullets: Disable section filtering (legacy behavior)
 
     Supports:
     - Markdown checkboxes: - [ ] Task or - [x] Task
     - Numbered lists: 1. Task
     - Bullet points: * Task or - Task
+
+    By default, uses section filtering to only parse under common task section headers.
     """
     tasks = []
 
-    # Split into lines
+    # Split into lines (preserve original lines for indentation detection)
     lines = body.split('\n')
 
+    # Default task section headers if not disabled
+    default_task_sections = ['tasks', 'sub-issues', 'implementation tasks', 'sub-tasks', 'subtasks']
+
+    # Determine if we're using section filtering
+    use_section_filter = not all_bullets
+    target_section = section.lower() if section else None
+
+    in_task_section = False if use_section_filter else True  # Start enabled if no filtering
+
     for line in lines:
-        line = line.strip()
+        # Get indentation level before stripping
+        stripped_line = line.lstrip()
+        indent_level = len(line) - len(stripped_line)
+
+        # Calculate depth (assuming 2 spaces per level, or 1 tab = 1 level)
+        if '\t' in line[:indent_level]:
+            depth = line[:indent_level].count('\t')
+        else:
+            depth = indent_level // 2
+
+        # Skip if exceeds max depth
+        if depth > max_depth:
+            continue
+
+        line_stripped = stripped_line.strip()
 
         # Skip empty lines
-        if not line:
+        if not line_stripped:
+            continue
+
+        # Check for section headers (## Header)
+        if use_section_filter and re.match(r'^##\s+', line_stripped):
+            header_text = re.sub(r'^##\s+', '', line_stripped).strip().lower()
+
+            # Check if entering a task section
+            if target_section:
+                # User specified exact section
+                in_task_section = target_section in header_text
+            else:
+                # Check against default task section names
+                in_task_section = any(task_sec in header_text for task_sec in default_task_sections)
+
+            continue
+
+        # Only parse if we're in a task section (or section filtering is disabled)
+        if not in_task_section:
             continue
 
         # Markdown checkbox (unchecked only by default)
-        if re.match(r'^-\s*\[\s*\]', line):
-            task = re.sub(r'^-\s*\[\s*\]\s*', '', line).strip()
+        if re.match(r'^-\s*\[\s*\]', line_stripped):
+            task = re.sub(r'^-\s*\[\s*\]\s*', '', line_stripped).strip()
             if task:
                 tasks.append(task)
 
+        # Skip other formats if checkbox-only mode
+        elif checkbox_only:
+            continue
+
         # Numbered list
-        elif re.match(r'^\d+\.\s+', line):
-            task = re.sub(r'^\d+\.\s+', '', line).strip()
+        elif re.match(r'^\d+\.\s+', line_stripped):
+            task = re.sub(r'^\d+\.\s+', '', line_stripped).strip()
             if task:
                 tasks.append(task)
 
         # Bullet point (but not checkbox)
-        elif re.match(r'^[\*-]\s+(?!\[)', line):
-            task = re.sub(r'^[\*-]\s+', '', line).strip()
+        elif re.match(r'^[\*-]\s+(?!\[)', line_stripped):
+            task = re.sub(r'^[\*-]\s+', '', line_stripped).strip()
             # Avoid duplicating checkbox items
             if task and not task.startswith('['):
                 tasks.append(task)
