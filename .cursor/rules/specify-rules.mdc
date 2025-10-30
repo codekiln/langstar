@@ -1,0 +1,88 @@
+---
+alwaysApply: true
+---
+
+# Langstar Development Guidelines
+
+## Project Overview
+
+Langstar is a **Rust project**. See `AGENTS.md` for complete project context.
+
+## Development Workflow
+
+This project follows a GitHub issue-driven development workflow. For complete details, see:
+@docs/dev/github-workflow.md
+
+Key points:
+- Create GitHub issues for all work
+- Use branch naming convention: `<username>/<issue_num>-<issue_slug>`
+- Follow Conventional Emoji Commits for commit messages
+- Link PRs to issues using `Fixes #N` or `Closes #N`
+
+### Spec-Driven Development (Optional)
+
+Langstar integrates [GitHub Spec-Kit](https://github.com/github/spec-kit) for spec-driven development workflows. For complete Spec-Kit documentation, see:
+@docs/dev/spec-kit.md
+
+## Coding Conventions
+
+All coding conventions and development guidelines can be found in:
+@docs/dev/README.md
+
+For commit message formatting, please follow:
+@docs/dev/git-scm-conventions.md
+
+### Basic principles
+@docs/dev/code-style-principles.md
+
+## Technology Stack
+
+- **Primary Language**: Rust
+- **Build System**: Cargo (Rust's package manager and build tool)
+- **Development Environment**: Devcontainer-based setup for consistency
+
+## Tooling Preferences
+
+This project prefers **Rust-based tools** wherever possible for better performance and integration with the Rust ecosystem.
+# Langstar Development Guidelines
+
+## Project Overview
+
+Langstar is a **Rust project**. See `AGENTS.md` for complete project context.
+
+## Development Workflow
+
+This project follows a GitHub issue-driven development workflow. For complete details, see:
+@docs/dev/github-workflow.md
+
+Key points:
+- Create GitHub issues for all work
+- Use branch naming convention: `<username>/<issue_num>-<issue_slug>`
+- Follow Conventional Emoji Commits for commit messages
+- Link PRs to issues using `Fixes #N` or `Closes #N`
+
+### Spec-Driven Development (Optional)
+
+Langstar integrates [GitHub Spec-Kit](https://github.com/github/spec-kit) for spec-driven development workflows. For complete Spec-Kit documentation, see:
+@docs/dev/spec-kit.md
+
+## Coding Conventions
+
+All coding conventions and development guidelines can be found in:
+@docs/dev/README.md
+
+For commit message formatting, please follow:
+@docs/dev/git-scm-conventions.md
+
+### Basic principles
+@docs/dev/code-style-principles.md
+
+## Technology Stack
+
+- **Primary Language**: Rust
+- **Build System**: Cargo (Rust's package manager and build tool)
+- **Development Environment**: Devcontainer-based setup for consistency
+
+## Tooling Preferences
+
+This project prefers **Rust-based tools** wherever possible for better performance and integration with the Rust ecosystem.

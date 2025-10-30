@@ -5,6 +5,9 @@
 # Python 3.11+ is required for Spec-Kit (github/spec-kit)
 python = "3.11"
 
+# Rust is required for langstar CLI development
+rust = "latest"
+
 # Node.js version matches devcontainer base image
 # Managed by devcontainer, not by mise
 # node = "22"

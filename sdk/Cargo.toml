@@ -1,0 +1,24 @@
+[package]
+name = "langstar-sdk"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Rust SDK for LangChain ecosystem (LangSmith, LangGraph Cloud)"
+
+[dependencies]
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+thiserror.workspace = true
+
+# Additional SDK-specific dependencies
+url = "2.5"
+base64 = "0.22"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockito = "1.5"
+chrono = "0.4"
