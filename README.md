@@ -49,6 +49,39 @@ langsmith_api_key = "your-api-key-here"
 output_format = "table"
 ```
 
+#### Organization and Workspace Scoping
+
+Langstar supports scoping operations to a specific organization or workspace. This is useful when working with team prompts or enterprise deployments.
+
+**Configuration Methods:**
+
+1. **Environment Variables:**
+   ```bash
+   export LANGSMITH_ORGANIZATION_ID="your-org-id"
+   export LANGSMITH_WORKSPACE_ID="your-workspace-id"
+   ```
+
+2. **Config File (`~/.config/langstar/config.toml`):**
+   ```toml
+   organization_id = "your-org-id"
+   workspace_id = "your-workspace-id"
+   ```
+
+3. **CLI Flags (per command):**
+   ```bash
+   langstar prompt list --organization-id "your-org-id"
+   langstar prompt list --workspace-id "your-workspace-id"
+   ```
+
+**Precedence Order:** CLI flags → config file → environment variables
+
+**Default Behavior:**
+- When scoped (org/workspace ID set), operations **default to private prompts only**
+- Use `--public` flag to explicitly access public prompts when scoped
+- Without scoping, all prompts (public and private) are accessible
+
+For detailed documentation on scoping, see [docs/usage/scoping.md](./docs/usage/scoping.md).
+
 ### Usage
 
 ```bash
@@ -69,6 +102,11 @@ langstar prompt list --format json
 
 # Show configuration
 langstar config
+
+# Scoped operations (organization/workspace)
+langstar prompt list --organization-id "your-org-id"  # List private prompts in org
+langstar prompt list --organization-id "your-org-id" --public  # List public prompts in org
+langstar prompt search "rag" --workspace-id "your-workspace-id"  # Search within workspace
 ```
 
 ## Architecture
