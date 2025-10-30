@@ -128,7 +128,7 @@ async fn test_list_prompts_from_prompthub() {
     println!("Fetching prompts from PromptHub...");
 
     // List prompts (limit to 5 for faster test)
-    let result = client.prompts().list(Some(5), None).await;
+    let result = client.prompts().list(Some(5), None, None).await;
 
     match result {
         Ok(prompts) => {

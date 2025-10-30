@@ -2,6 +2,17 @@ use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
+/// Visibility filter for prompts
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Visibility {
+    /// Only public prompts
+    Public,
+    /// Only private prompts
+    Private,
+    /// All prompts (public and private)
+    Any,
+}
+
 /// A prompt from the LangSmith Prompt Hub
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prompt {
@@ -48,9 +59,16 @@ impl<'a> PromptClient<'a> {
     /// # Arguments
     /// * `limit` - Maximum number of prompts to return (default: 20)
     /// * `offset` - Number of prompts to skip (default: 0)
-    pub async fn list(&self, limit: Option<u32>, offset: Option<u32>) -> Result<Vec<Prompt>> {
+    /// * `visibility` - Filter by visibility (Public, Private, or Any). Defaults to Any.
+    pub async fn list(
+        &self,
+        limit: Option<u32>,
+        offset: Option<u32>,
+        visibility: Option<Visibility>,
+    ) -> Result<Vec<Prompt>> {
         let limit = limit.unwrap_or(20);
         let offset = offset.unwrap_or(0);
+        let visibility = visibility.unwrap_or(Visibility::Any);
 
         let path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
         let request = self.client.langsmith_get(&path)?;
@@ -62,7 +80,19 @@ impl<'a> PromptClient<'a> {
         }
 
         let response: ListReposResponse = self.client.execute(request).await?;
-        Ok(response.repos)
+
+        // Filter by visibility if specified
+        let filtered = match visibility {
+            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
+            Visibility::Private => response
+                .repos
+                .into_iter()
+                .filter(|p| !p.is_public)
+                .collect(),
+            Visibility::Any => response.repos,
+        };
+
+        Ok(filtered)
     }
 
     /// Get a specific prompt by handle
@@ -88,12 +118,28 @@ impl<'a> PromptClient<'a> {
     /// # Arguments
     /// * `query` - Search query string
     /// * `limit` - Maximum number of results (default: 20)
-    pub async fn search(&self, query: &str, limit: Option<u32>) -> Result<Vec<Prompt>> {
+    /// * `visibility` - Filter by visibility (Public, Private, or Any). Defaults to Any.
+    pub async fn search(
+        &self,
+        query: &str,
+        limit: Option<u32>,
+        visibility: Option<Visibility>,
+    ) -> Result<Vec<Prompt>> {
         let limit = limit.unwrap_or(20);
+        let visibility = visibility.unwrap_or(Visibility::Any);
+
         let path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
         let request = self.client.langsmith_get(&path)?;
         let response: Vec<Prompt> = self.client.execute(request).await?;
-        Ok(response)
+
+        // Filter by visibility if specified
+        let filtered = match visibility {
+            Visibility::Public => response.into_iter().filter(|p| p.is_public).collect(),
+            Visibility::Private => response.into_iter().filter(|p| !p.is_public).collect(),
+            Visibility::Any => response,
+        };
+
+        Ok(filtered)
     }
 
     /// Create a new prompt repository
