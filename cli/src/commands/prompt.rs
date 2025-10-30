@@ -2,7 +2,7 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{CommitRequest, LangchainClient, Prompt};
+use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
 use serde_json::json;
 use tabled::Tabled;
 
@@ -26,6 +26,10 @@ pub enum PromptCommands {
         /// Workspace ID for narrower scoping (overrides config/env)
         #[arg(long)]
         workspace_id: Option<String>,
+
+        /// Show only public prompts (default: private when scoped, any when not scoped)
+        #[arg(long)]
+        public: bool,
     },
 
     /// Get details of a specific prompt
@@ -58,6 +62,10 @@ pub enum PromptCommands {
         /// Workspace ID for narrower scoping (overrides config/env)
         #[arg(long)]
         workspace_id: Option<String>,
+
+        /// Show only public prompts (default: private when scoped, any when not scoped)
+        #[arg(long)]
+        public: bool,
     },
 
     /// Push/create a prompt in PromptHub
@@ -153,6 +161,26 @@ impl PromptCommands {
         client
     }
 
+    /// Determine visibility based on scoping and --public flag
+    ///
+    /// Logic:
+    /// - If scoped (org/workspace ID set) and no --public flag: Private
+    /// - If scoped and --public flag: Public
+    /// - If not scoped: Any (current behavior)
+    fn determine_visibility(client: &LangchainClient, public_flag: bool) -> Visibility {
+        let is_scoped = client.organization_id().is_some() || client.workspace_id().is_some();
+
+        if is_scoped {
+            if public_flag {
+                Visibility::Public
+            } else {
+                Visibility::Private
+            }
+        } else {
+            Visibility::Any
+        }
+    }
+
     /// Execute the prompt command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
         let auth = config.to_auth_config();
@@ -165,14 +193,20 @@ impl PromptCommands {
                 offset,
                 organization_id,
                 workspace_id,
+                public,
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let visibility = Self::determine_visibility(&client, *public);
+
                 formatter.info(&format!(
                     "Fetching prompts (limit: {}, offset: {})...",
                     limit, offset
                 ));
 
-                let prompts = client.prompts().list(Some(*limit), Some(*offset)).await?;
+                let prompts = client
+                    .prompts()
+                    .list(Some(*limit), Some(*offset), Some(visibility))
+                    .await?;
 
                 if format == OutputFormat::Json {
                     formatter.print(&prompts)?;
@@ -222,11 +256,17 @@ impl PromptCommands {
                 limit,
                 organization_id,
                 workspace_id,
+                public,
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let visibility = Self::determine_visibility(&client, *public);
+
                 formatter.info(&format!("Searching for '{}'...", query));
 
-                let prompts = client.prompts().search(query, Some(*limit)).await?;
+                let prompts = client
+                    .prompts()
+                    .search(query, Some(*limit), Some(visibility))
+                    .await?;
 
                 if format == OutputFormat::Json {
                     formatter.print(&prompts)?;
