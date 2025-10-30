@@ -10,6 +10,12 @@ pub struct Config {
     pub langsmith_api_key: Option<String>,
     /// LangGraph Cloud API key
     pub langgraph_api_key: Option<String>,
+    /// Optional organization ID for scoping LangSmith operations
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub organization_id: Option<String>,
+    /// Optional workspace ID for narrower scoping of LangSmith operations
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workspace_id: Option<String>,
     /// Default output format (json or table)
     #[serde(default = "default_output_format")]
     pub output_format: String,
@@ -24,6 +30,8 @@ impl Default for Config {
         Self {
             langsmith_api_key: None,
             langgraph_api_key: None,
+            organization_id: None,
+            workspace_id: None,
             output_format: default_output_format(),
         }
     }
@@ -47,8 +55,21 @@ impl Config {
         if let Ok(key) = std::env::var("LANGGRAPH_API_KEY") {
             config.langgraph_api_key = Some(key);
         }
+        if let Ok(org_id) = std::env::var("LANGSMITH_ORGANIZATION_ID") {
+            config.organization_id = Some(org_id);
+        }
+        if let Ok(workspace_id) = std::env::var("LANGSMITH_WORKSPACE_ID") {
+            config.workspace_id = Some(workspace_id);
+        }
         if let Ok(format) = std::env::var("LANGSTAR_OUTPUT_FORMAT") {
             config.output_format = format;
+        }
+
+        // Log warning if both organization and workspace IDs are set
+        if config.organization_id.is_some() && config.workspace_id.is_some() {
+            eprintln!(
+                "Warning: Both organization_id and workspace_id are set. Workspace ID takes precedence for narrower scoping."
+            );
         }
 
         Ok(config)
@@ -102,8 +123,8 @@ impl Config {
         AuthConfig::new(
             self.langsmith_api_key.clone(),
             self.langgraph_api_key.clone(),
-            None, // organization_id - will be added in Phase 3
-            None, // workspace_id - will be added in Phase 3
+            self.organization_id.clone(),
+            self.workspace_id.clone(),
         )
     }
 }
@@ -125,12 +146,46 @@ mod tests {
         let config = Config {
             langsmith_api_key: Some("test_key".to_string()),
             langgraph_api_key: None,
+            organization_id: Some("test_org_id".to_string()),
+            workspace_id: None,
             output_format: "json".to_string(),
         };
 
         let toml = toml::to_string(&config).unwrap();
         assert!(toml.contains("langsmith_api_key"));
         assert!(toml.contains("test_key"));
+        assert!(toml.contains("organization_id"));
+        assert!(toml.contains("test_org_id"));
         assert!(toml.contains("json"));
+    }
+
+    #[test]
+    fn test_config_with_workspace() {
+        let config = Config {
+            langsmith_api_key: Some("test_key".to_string()),
+            langgraph_api_key: None,
+            organization_id: None,
+            workspace_id: Some("test_workspace_id".to_string()),
+            output_format: "table".to_string(),
+        };
+
+        let auth = config.to_auth_config();
+        assert!(auth.organization_id.is_none());
+        assert_eq!(auth.workspace_id, Some("test_workspace_id".to_string()));
+    }
+
+    #[test]
+    fn test_config_to_auth_config_with_both() {
+        let config = Config {
+            langsmith_api_key: Some("key".to_string()),
+            langgraph_api_key: None,
+            organization_id: Some("org_123".to_string()),
+            workspace_id: Some("workspace_456".to_string()),
+            output_format: "table".to_string(),
+        };
+
+        let auth = config.to_auth_config();
+        assert_eq!(auth.organization_id, Some("org_123".to_string()));
+        assert_eq!(auth.workspace_id, Some("workspace_456".to_string()));
     }
 }
