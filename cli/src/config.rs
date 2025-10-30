@@ -102,6 +102,8 @@ impl Config {
         AuthConfig::new(
             self.langsmith_api_key.clone(),
             self.langgraph_api_key.clone(),
+            None, // organization_id - will be added in Phase 3
+            None, // workspace_id - will be added in Phase 3
         )
     }
 }
