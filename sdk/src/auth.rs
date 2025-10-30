@@ -87,14 +87,8 @@ mod tests {
             config.require_langgraph_key().unwrap(),
             "test_langgraph_key"
         );
-        assert_eq!(
-            config.organization_id.as_deref().unwrap(),
-            "test_org_id"
-        );
-        assert_eq!(
-            config.workspace_id.as_deref().unwrap(),
-            "test_workspace_id"
-        );
+        assert_eq!(config.organization_id.as_deref().unwrap(), "test_org_id");
+        assert_eq!(config.workspace_id.as_deref().unwrap(), "test_workspace_id");
     }
 
     #[test]
@@ -125,9 +119,6 @@ mod tests {
             Some("workspace_456".to_string()),
         );
         assert!(config.organization_id.is_none());
-        assert_eq!(
-            config.workspace_id.as_deref().unwrap(),
-            "workspace_456"
-        );
+        assert_eq!(config.workspace_id.as_deref().unwrap(), "workspace_456");
     }
 }

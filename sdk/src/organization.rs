@@ -124,10 +124,7 @@ mod tests {
 
         let workspace: Workspace = serde_json::from_str(json).unwrap();
         assert_eq!(workspace.id, "workspace-uuid-123");
-        assert_eq!(
-            workspace.display_name,
-            Some("Test Workspace".to_string())
-        );
+        assert_eq!(workspace.display_name, Some("Test Workspace".to_string()));
         assert_eq!(workspace.organization_id, Some("org-uuid-456".to_string()));
         assert_eq!(workspace.handle, Some("test-workspace".to_string()));
     }
