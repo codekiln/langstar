@@ -85,6 +85,33 @@ async fn run() -> Result<()> {
                     "not configured"
                 }
             );
+
+            // Show scoping configuration
+            println!("\nScoping configuration:");
+            println!(
+                "  Organization ID: {}",
+                config
+                    .organization_id
+                    .as_deref()
+                    .unwrap_or("not configured")
+            );
+            println!(
+                "  Workspace ID: {}",
+                config.workspace_id.as_deref().unwrap_or("not configured")
+            );
+
+            // Show active scope
+            if config.workspace_id.is_some() {
+                println!("\n  Active scope: Workspace (narrower)");
+                println!("  → Operations will be scoped to the workspace");
+            } else if config.organization_id.is_some() {
+                println!("\n  Active scope: Organization");
+                println!("  → Operations will be scoped to the organization");
+            } else {
+                println!("\n  Active scope: None (global)");
+                println!("  → Operations will access all available prompts");
+            }
+
             println!("\nEnvironment variables:");
             println!(
                 "  LANGSMITH_API_KEY: {}",
@@ -93,6 +120,15 @@ async fn run() -> Result<()> {
                 } else {
                     "not set"
                 }
+            );
+            println!(
+                "  LANGSMITH_ORGANIZATION_ID: {}",
+                std::env::var("LANGSMITH_ORGANIZATION_ID")
+                    .unwrap_or_else(|_| "not set".to_string())
+            );
+            println!(
+                "  LANGSMITH_WORKSPACE_ID: {}",
+                std::env::var("LANGSMITH_WORKSPACE_ID").unwrap_or_else(|_| "not set".to_string())
             );
             println!(
                 "  LANGGRAPH_API_KEY: {}",
