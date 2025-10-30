@@ -49,6 +49,13 @@ services:
       CLAUDE_CONFIG_DIR: /home/node/.claude
       POWERLEVEL9K_DISABLE_GITSTATUS: "true"
 
+      # Claude Code Token Configuration
+      # max_tokens must be greater than thinking.budget_tokens
+      # Recommended for Bedrock: MAX_OUTPUT=4096, THINKING=1024
+      # https://docs.claude.com/en/docs/build-with-claude/extended-thinking
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS: ${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-4096}
+      MAX_THINKING_TOKENS: ${MAX_THINKING_TOKENS:-1024}
+
       # Legacy variables (if needed)
       GITHUB_TOKEN: ${GITHUB_TOKEN:-${DEVCONTAINER_GITHUB_TOKEN}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-${DEVCONTAINER_OPENAI_API_KEY}}

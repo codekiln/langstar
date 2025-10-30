@@ -10,11 +10,9 @@ use serde_json::json;
 ///
 /// Prerequisites:
 /// - LANGSMITH_API_KEY must be set with write access to the workspace
-/// - Organization ID: 6f52dd84-9870-4f3a-b42d-4eea5fc9dfde
+/// - LANGSMITH_ORGANIZATION_ID must be set to your organization ID
 ///
 /// Run with: cargo test --test cli_testing_workspace -- --ignored --nocapture
-const TEST_ORG_ID: &str = "6f52dd84-9870-4f3a-b42d-4eea5fc9dfde";
-
 /// Test: Create a new prompt, push a commit, and read it back
 #[tokio::test]
 #[ignore]
@@ -26,10 +24,14 @@ async fn test_create_push_and_read_prompt() {
     // Load authentication from environment
     let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
+    // Get organization ID from environment
+    let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
+
     // Create client with organization ID
     let client = LangchainClient::new(auth)
         .expect("Failed to create LangchainClient")
-        .with_organization_id(TEST_ORG_ID.to_string());
+        .with_organization_id(org_id.clone());
 
     // Generate unique prompt name using timestamp
     let timestamp = chrono::Utc::now().timestamp();
@@ -70,7 +72,7 @@ async fn test_create_push_and_read_prompt() {
                 1. LANGSMITH_API_KEY has write permissions\n\
                 2. You have permission to create prompts in organization {}\n\
                 3. The owner '{}' is correct for your workspace",
-                e, TEST_ORG_ID, owner
+                e, org_id, owner
             );
         }
     };
@@ -189,11 +191,11 @@ async fn test_create_push_and_read_prompt() {
     println!("║          All Integration Tests Passed! ✓                 ║");
     println!("╚══════════════════════════════════════════════════════════╝");
     println!("\nTest prompt created: {}", created_prompt.repo_handle);
-    println!("Organization: {}", TEST_ORG_ID);
+    println!("Organization: {}", org_id);
     println!("\nNote: You may want to delete this test prompt from:");
     println!(
         "https://smith.langchain.com/prompts/{}?organizationId={}",
-        repo_name, TEST_ORG_ID
+        repo_name, org_id
     );
 }
 
@@ -206,9 +208,13 @@ async fn test_read_existing_test_prompt() {
 
     let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
 
+    // Get organization ID from environment
+    let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
+
     let client = LangchainClient::new(auth)
         .expect("Failed to create LangchainClient")
-        .with_organization_id(TEST_ORG_ID.to_string());
+        .with_organization_id(org_id);
 
     // NOTE: Update this with the correct handle for your test-prompt
     // You can find this in the LangSmith UI

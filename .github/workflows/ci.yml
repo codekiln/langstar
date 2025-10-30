@@ -45,6 +45,10 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-features --workspace
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
 
   clippy:
     name: Clippy

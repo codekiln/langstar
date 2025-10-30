@@ -390,3 +390,157 @@ impl PromptCommands {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use langstar_sdk::AuthConfig;
+
+    #[test]
+    fn test_apply_scoping_with_no_flags() {
+        // Client with no scoping
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth).unwrap();
+
+        assert_eq!(client.organization_id(), None);
+        assert_eq!(client.workspace_id(), None);
+
+        // Apply scoping with no flags - should remain unchanged
+        let scoped_client = PromptCommands::apply_scoping(client, &None, &None);
+
+        assert_eq!(scoped_client.organization_id(), None);
+        assert_eq!(scoped_client.workspace_id(), None);
+    }
+
+    #[test]
+    fn test_apply_scoping_with_org_flag() {
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth).unwrap();
+
+        let org_id = Some("test-org-id".to_string());
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None);
+
+        assert_eq!(scoped_client.organization_id(), Some("test-org-id"));
+        assert_eq!(scoped_client.workspace_id(), None);
+    }
+
+    #[test]
+    fn test_apply_scoping_with_workspace_flag() {
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth).unwrap();
+
+        let workspace_id = Some("test-workspace-id".to_string());
+        let scoped_client = PromptCommands::apply_scoping(client, &None, &workspace_id);
+
+        assert_eq!(scoped_client.organization_id(), None);
+        assert_eq!(scoped_client.workspace_id(), Some("test-workspace-id"));
+    }
+
+    #[test]
+    fn test_apply_scoping_with_both_flags() {
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth).unwrap();
+
+        let org_id = Some("test-org-id".to_string());
+        let workspace_id = Some("test-workspace-id".to_string());
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &workspace_id);
+
+        assert_eq!(scoped_client.organization_id(), Some("test-org-id"));
+        assert_eq!(scoped_client.workspace_id(), Some("test-workspace-id"));
+    }
+
+    #[test]
+    fn test_apply_scoping_flag_overrides_config() {
+        // Client with org ID from config
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            None,
+            Some("config-org-id".to_string()),
+            None,
+        );
+        let client = LangchainClient::new(auth).unwrap();
+
+        assert_eq!(client.organization_id(), Some("config-org-id"));
+
+        // Flag should override config
+        let org_id = Some("flag-org-id".to_string());
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None);
+
+        assert_eq!(scoped_client.organization_id(), Some("flag-org-id"));
+    }
+
+    #[test]
+    fn test_determine_visibility_unscoped() {
+        // Client with no scoping should default to Any
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let client = LangchainClient::new(auth).unwrap();
+
+        // Without --public flag
+        let visibility = PromptCommands::determine_visibility(&client, false);
+        assert_eq!(visibility, Visibility::Any);
+
+        // With --public flag (should still be Any when unscoped)
+        let visibility = PromptCommands::determine_visibility(&client, true);
+        assert_eq!(visibility, Visibility::Any);
+    }
+
+    #[test]
+    fn test_determine_visibility_scoped_with_org_id() {
+        // Client with organization ID
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            None,
+            Some("test-org-id".to_string()),
+            None,
+        );
+        let client = LangchainClient::new(auth).unwrap();
+
+        // Without --public flag should default to Private
+        let visibility = PromptCommands::determine_visibility(&client, false);
+        assert_eq!(visibility, Visibility::Private);
+
+        // With --public flag should be Public
+        let visibility = PromptCommands::determine_visibility(&client, true);
+        assert_eq!(visibility, Visibility::Public);
+    }
+
+    #[test]
+    fn test_determine_visibility_scoped_with_workspace_id() {
+        // Client with workspace ID
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            None,
+            None,
+            Some("test-workspace-id".to_string()),
+        );
+        let client = LangchainClient::new(auth).unwrap();
+
+        // Without --public flag should default to Private
+        let visibility = PromptCommands::determine_visibility(&client, false);
+        assert_eq!(visibility, Visibility::Private);
+
+        // With --public flag should be Public
+        let visibility = PromptCommands::determine_visibility(&client, true);
+        assert_eq!(visibility, Visibility::Public);
+    }
+
+    #[test]
+    fn test_determine_visibility_scoped_with_both_ids() {
+        // Client with both organization and workspace IDs
+        let auth = AuthConfig::new(
+            Some("test_key".to_string()),
+            None,
+            Some("test-org-id".to_string()),
+            Some("test-workspace-id".to_string()),
+        );
+        let client = LangchainClient::new(auth).unwrap();
+
+        // Without --public flag should default to Private
+        let visibility = PromptCommands::determine_visibility(&client, false);
+        assert_eq!(visibility, Visibility::Private);
+
+        // With --public flag should be Public
+        let visibility = PromptCommands::determine_visibility(&client, true);
+        assert_eq!(visibility, Visibility::Public);
+    }
+}

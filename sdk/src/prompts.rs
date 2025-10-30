@@ -130,13 +130,24 @@ impl<'a> PromptClient<'a> {
 
         let path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
         let request = self.client.langsmith_get(&path)?;
-        let response: Vec<Prompt> = self.client.execute(request).await?;
+
+        // LangSmith API returns a paginated response with a "repos" field (same as list)
+        #[derive(Deserialize)]
+        struct SearchReposResponse {
+            repos: Vec<Prompt>,
+        }
+
+        let response: SearchReposResponse = self.client.execute(request).await?;
 
         // Filter by visibility if specified
         let filtered = match visibility {
-            Visibility::Public => response.into_iter().filter(|p| p.is_public).collect(),
-            Visibility::Private => response.into_iter().filter(|p| !p.is_public).collect(),
-            Visibility::Any => response,
+            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
+            Visibility::Private => response
+                .repos
+                .into_iter()
+                .filter(|p| !p.is_public)
+                .collect(),
+            Visibility::Any => response.repos,
         };
 
         Ok(filtered)
