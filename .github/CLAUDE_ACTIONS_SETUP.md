@@ -11,8 +11,6 @@ Ensure you have:
 - AWS IAM user with Bedrock invoke permissions
 - AWS access key ID and secret access key for that user
 
-**Note on Authentication:** This repository uses **static AWS credentials** (access key ID + secret access key) for simplicity. The [official claude-code-action documentation](https://github.com/anthropics/claude-code-action/blob/main/docs/cloud-providers.md) recommends OIDC authentication with IAM roles for enhanced security. If you need OIDC, see the "Alternative: OIDC Authentication" section below.
-
 ### 2. Configure GitHub Secrets
 
 Add the required AWS credentials to your GitHub repository:
@@ -121,47 +119,8 @@ If Claude isn't responding:
 - Workflow file syntax error
 - `@claude` not mentioned in comment/issue/PR
 
-## Alternative: OIDC Authentication
-
-For enhanced security, you can use OIDC authentication instead of static credentials. This is the [officially recommended approach](https://github.com/anthropics/claude-code-action/blob/main/docs/cloud-providers.md).
-
-**OIDC requires:**
-1. AWS IAM role with Bedrock permissions
-2. GitHub App with appropriate permissions
-3. Additional workflow setup steps
-
-**Required secrets for OIDC:**
-- `AWS_ROLE_TO_ASSUME` - IAM role ARN
-- `APP_ID` - GitHub App ID
-- `APP_PRIVATE_KEY` - GitHub App private key
-
-**Workflow changes:**
-```yaml
-- name: Configure AWS Credentials (OIDC)
-  uses: aws-actions/configure-aws-credentials@v4
-  with:
-    role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-    aws-region: us-east-1
-
-- name: Generate GitHub App token
-  id: app-token
-  uses: actions/create-github-app-token@v2
-  with:
-    app-id: ${{ secrets.APP_ID }}
-    private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
-- uses: anthropics/claude-code-action@v1
-  with:
-    use_bedrock: "true"
-    claude_args: |
-      --model anthropic.claude-4-0-sonnet-20250805-v1:0
-```
-
-See the [cloud providers documentation](https://github.com/anthropics/claude-code-action/blob/main/docs/cloud-providers.md) for full OIDC setup instructions.
-
 ## Resources
 
 - [Claude Code GitHub Actions Documentation](https://docs.claude.com/en/docs/claude-code/github-actions)
 - [Claude Code Action Repository](https://github.com/anthropics/claude-code-action)
-- [Claude Code Action - Cloud Providers (Bedrock)](https://github.com/anthropics/claude-code-action/blob/main/docs/cloud-providers.md)
 - [AWS Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
