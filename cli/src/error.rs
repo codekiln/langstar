@@ -47,3 +47,9 @@ impl From<anyhow::Error> for CliError {
         CliError::Other(err)
     }
 }
+
+impl From<serde_json::Error> for CliError {
+    fn from(err: serde_json::Error) -> Self {
+        CliError::Other(err.into())
+    }
+}
