@@ -23,6 +23,7 @@
 //! }
 //! ```
 
+pub mod assistants;
 pub mod auth;
 pub mod client;
 pub mod error;
@@ -30,6 +31,10 @@ pub mod organization;
 pub mod prompts;
 
 // Re-export commonly used types
+pub use assistants::{
+    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
+    UpdateAssistantRequest,
+};
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use error::{LangstarError, Result};

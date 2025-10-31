@@ -190,6 +190,42 @@ impl LangchainClient {
             .header("Content-Type", "application/json"))
     }
 
+    /// Create a POST request to LangGraph API
+    pub fn langgraph_post(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .post(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
+    /// Create a PATCH request to LangGraph API
+    pub fn langgraph_patch(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .patch(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
+    /// Create a DELETE request to LangGraph API
+    pub fn langgraph_delete(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .delete(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
     /// Execute a request and parse the response
     pub async fn execute<T: for<'de> Deserialize<'de>>(
         &self,
