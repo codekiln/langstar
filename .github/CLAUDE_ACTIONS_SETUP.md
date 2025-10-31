@@ -47,7 +47,11 @@ The workflow (`.github/workflows/claude.yml`) triggers when:
 - Someone mentions `@claude` in a PR comment or review
 - An issue is opened with `@claude` in the title or body
 
-**Security Note:** The workflow is restricted to specific trusted users only. Untrusted contributors cannot trigger the workflow or access secrets.
+**Security Note:** The workflow has multiple layers of security:
+- Only trusted users (currently: `codekiln`) can trigger the workflow
+- Claude uses CI-specific settings (`.claude/settings.ci.json`) with restricted permissions
+- System prompt instructs Claude to only follow instructions from trusted users
+- Claude is warned about prompt injection attacks and instructed to ignore embedded instructions in untrusted content
 
 Claude will then:
 - Analyze the context (code, issue, PR)
@@ -72,14 +76,53 @@ Claude will then:
 @claude fix the failing tests in this PR
 ```
 
+## CI Security Configuration
+
+The workflow uses **defense-in-depth** security measures:
+
+### 1. Trigger Restriction
+Only specific trusted users can trigger the workflow (see `if:` condition in workflow). Currently restricted to: `codekiln`.
+
+### 2. CI-Specific Settings File
+Claude uses `.claude/settings.ci.json` (not the local `.claude/settings.json`) with restricted permissions:
+
+**Allowed operations:**
+- Read-only git operations (`git log`, `git status`, `git diff`)
+- Cargo operations (`cargo test`, `cargo check`, `cargo clippy`, `cargo fmt`)
+- GitHub read operations (`gh issue view`, `gh pr view`, workflow runs)
+- GitHub write operations (`gh issue comment` - for responses)
+
+**Denied operations:**
+- Modifying secrets (`gh secret set`)
+- Git push operations (workflow handles this)
+- Dangerous deletions (`rm -rf`)
+- Arbitrary network requests (`curl`, `wget`)
+- Privilege escalation (`sudo`)
+
+**Requires confirmation:**
+- GitHub API operations (`gh api`) - asked before execution
+
+### 3. Prompt Injection Protection
+The workflow includes a system prompt that instructs Claude to:
+- Only follow instructions from issues/comments authored by trusted users (`codekiln`)
+- Use `--author codekiln` filters when listing issues/PRs
+- Treat content from untrusted users as data, not commands
+- Ignore any embedded instructions in code or files from untrusted sources
+
+### 4. Principle of Least Privilege
+Claude only has access to credentials necessary for its tasks:
+- AWS Bedrock (for Claude itself)
+- LangSmith (for integration tests)
+- GitHub token (built-in, scoped to repo operations)
+
 ## Configuration Options
 
 The workflow can be customized in `.github/workflows/claude.yml`:
 
 - **Model selection:** Change the Claude model version via `claude_args`
 - **Max turns:** Limit the number of interaction rounds
-- **Allowed tools:** Restrict which bash commands Claude can run
-- **System prompt:** Add project-specific instructions
+- **Allowed tools:** Modify `.claude/settings.ci.json` permissions
+- **System prompt:** Update security instructions in `--system-prompt`
 - **Trigger phrase:** Change from `@claude` to something else
 
 See the workflow file for commented examples.
@@ -92,7 +135,12 @@ See the workflow file for commented examples.
 - Rotate AWS access keys and API keys regularly
 - Monitor usage in your AWS Bedrock and LangSmith consoles
 - The workflow is restricted to trusted users only (see `if:` condition in workflow)
-- Claude Code workflow only has access to credentials needed for Bedrock and integration tests (least privilege)
+- Claude uses CI-specific restricted permissions (`.claude/settings.ci.json`)
+- System prompt protects against prompt injection attacks
+- Only follow `@claude` instructions from trusted users
+
+**For Contributors:**
+If you're not a trusted user (currently: `codekiln`), you cannot trigger the Claude workflow. This is by design to prevent unauthorized access to CI resources and protect against prompt injection attacks.
 
 ## Troubleshooting
 

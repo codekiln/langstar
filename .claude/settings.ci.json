@@ -1,0 +1,46 @@
+{
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "example-skills@anthropic-agent-skills": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo fmt*)",
+      "Bash(cargo build:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue comment:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(git log:*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git show*)"
+    ],
+    "deny": [
+      "Bash(gh secret set:*)",
+      "Bash(git push*)",
+      "Bash(rm -rf*)",
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Bash(sudo*)",
+      "Bash(chmod +x*)"
+    ],
+    "ask": [
+      "Bash(gh api:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": false
+}
