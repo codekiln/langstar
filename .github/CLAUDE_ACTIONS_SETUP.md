@@ -19,6 +19,8 @@ Add the required AWS credentials to your GitHub repository:
 - `AWS_ACCESS_KEY_ID` - Your AWS access key ID
 - `AWS_SECRET_ACCESS_KEY` - Your AWS secret access key
 - `AWS_REGION` - AWS region (default: `us-east-1`)
+- `ANTHROPIC_MODEL` - Bedrock model ID (e.g., `us.anthropic.claude-sonnet-4-5-20250929-v1:0`)
+- `ANTHROPIC_SMALL_FAST_MODEL` - Bedrock small/fast model ID (e.g., `us.anthropic.claude-haiku-4-5-20251001-v1:0`)
 - `LANGSMITH_API_KEY` - LangSmith API key (for integration tests)
 - `LANGSMITH_ORGANIZATION_ID` - LangSmith organization ID (for integration tests)
 - `LANGSMITH_WORKSPACE_ID` - LangSmith workspace ID (for integration tests)
@@ -34,7 +36,6 @@ Add the required AWS credentials to your GitHub repository:
 
 These secrets exist in the repository but are **not used by the Claude Code workflow**:
 - `GH_PROJECT_PAT` - GitHub Projects API access (local development only)
-- `ANTHROPIC_MODEL`, `ANTHROPIC_SMALL_FAST_MODEL` - Model configuration (local development only)
 
 The Claude Code workflow follows the **principle of least privilege** and only has access to credentials needed for Bedrock and running integration tests.
 
@@ -100,17 +101,19 @@ If Claude isn't responding:
 1. **Check workflow triggers:** Ensure you used `@claude` in a comment/issue/PR
 2. **Verify you're a trusted user:** Check the `if:` condition in `.github/workflows/claude.yml`
 3. **Check AWS secrets:** Confirm `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` are set in repository secrets
-4. **Check LangSmith secrets:** If integration tests are failing, confirm `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, and `LANGSMITH_WORKSPACE_ID` are set
-5. **Verify AWS Bedrock access:** Ensure your AWS account has Claude model access enabled in the specified region
-6. **Check workflow logs:** Go to Actions tab → Select failed workflow run → Review logs for error messages
-7. **Verify environment variable:** Ensure `CLAUDE_CODE_USE_BEDROCK: "1"` is set in workflow `env:` section
+4. **Check model secrets:** Confirm `ANTHROPIC_MODEL` and `ANTHROPIC_SMALL_FAST_MODEL` are set with correct Bedrock model IDs
+5. **Check LangSmith secrets:** If integration tests are failing, confirm `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, and `LANGSMITH_WORKSPACE_ID` are set
+6. **Verify AWS Bedrock access:** Ensure your AWS account has Claude model access enabled for the specified model IDs
+7. **Check workflow logs:** Go to Actions tab → Select failed workflow run → Review logs for error messages
+8. **Verify environment variable:** Ensure `CLAUDE_CODE_USE_BEDROCK: "1"` is set in workflow `env:` section
 
 ### Common Issues
 
 **Exit code 1 from Claude Code:**
 - Missing or invalid AWS credentials
-- AWS Bedrock model not enabled in region
+- AWS Bedrock model not enabled in region (check model IDs match what's enabled in Bedrock)
 - Missing `CLAUDE_CODE_USE_BEDROCK` environment variable
+- Incorrect model IDs in `ANTHROPIC_MODEL` or `ANTHROPIC_SMALL_FAST_MODEL` secrets
 - Network connectivity issues to AWS Bedrock
 
 **Workflow doesn't trigger:**
