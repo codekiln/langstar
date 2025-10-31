@@ -1,6 +1,6 @@
 # Claude Code GitHub Actions Setup
 
-This repository is configured to use Claude Code in GitHub Actions via AWS Bedrock. Claude can be triggered by mentioning `@claude` in issues, pull requests, and comments.
+This repository is configured to use Claude Code in GitHub Actions via **AWS Bedrock with static credentials**. Claude can be triggered by mentioning `@claude` in issues, pull requests, and comments.
 
 ## Prerequisites
 
@@ -8,27 +8,36 @@ This repository is configured to use Claude Code in GitHub Actions via AWS Bedro
 
 Ensure you have:
 - AWS Bedrock enabled with Claude model access in us-east-1 region
-- AWS IAM user or access keys with Bedrock invoke permissions
+- AWS IAM user with Bedrock invoke permissions
+- AWS access key ID and secret access key for that user
 
 ### 2. Configure GitHub Secrets
 
-   Add the required AWS credentials to your GitHub repository:
+Add the required AWS credentials to your GitHub repository:
 
-   **Steps to Add Secrets:**
+**Required Secrets for Claude Code Workflow:**
+- `AWS_ACCESS_KEY_ID` - Your AWS access key ID
+- `AWS_SECRET_ACCESS_KEY` - Your AWS secret access key
+- `AWS_REGION` - AWS region (default: `us-east-1`)
+- `ANTHROPIC_MODEL` - Bedrock model ID (e.g., `us.anthropic.claude-sonnet-4-5-20250929-v1:0`)
+- `ANTHROPIC_SMALL_FAST_MODEL` - Bedrock small/fast model ID (e.g., `us.anthropic.claude-haiku-4-5-20251001-v1:0`)
+- `LANGSMITH_API_KEY` - LangSmith API key (for integration tests)
+- `LANGSMITH_ORGANIZATION_ID` - LangSmith organization ID (for integration tests)
+- `LANGSMITH_WORKSPACE_ID` - LangSmith workspace ID (for integration tests)
 
-   1. Go to your repository on GitHub
-   2. Click **Settings** → **Secrets and variables** → **Actions**
-   3. Click **New repository secret**
-   4. Add the following secrets:
-      - **Name:** `AWS_ACCESS_KEY_ID`
-      - **Value:** Your AWS access key ID
-   5. Click **Add secret**
-   6. Repeat for the second secret:
-      - **Name:** `AWS_SECRET_ACCESS_KEY`
-      - **Value:** Your AWS secret access key
-   7. Click **Add secret**
+**Steps to Add Secrets:**
 
-   **Note:** This replaces the previous `ANTHROPIC_API_KEY` approach. The workflow now uses AWS Bedrock for Claude model access.
+1. Go to your repository on GitHub
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+4. Add each required secret listed above
+
+**Additional Secrets (Local Development Only):**
+
+These secrets exist in the repository but are **not used by the Claude Code workflow**:
+- `GH_PROJECT_PAT` - GitHub Projects API access (local development only)
+
+The Claude Code workflow follows the **principle of least privilege** and only has access to credentials needed for Bedrock and running integration tests.
 
 ## How It Works
 
@@ -37,6 +46,12 @@ The workflow (`.github/workflows/claude.yml`) triggers when:
 - Someone mentions `@claude` in an issue comment
 - Someone mentions `@claude` in a PR comment or review
 - An issue is opened with `@claude` in the title or body
+
+**Security Note:** The workflow has multiple layers of security:
+- Only trusted users (currently: `codekiln`) can trigger the workflow
+- Claude uses CI-specific settings (`.claude/settings.ci.json`) with restricted permissions
+- System prompt instructs Claude to only follow instructions from trusted users
+- Claude is warned about prompt injection attacks and instructed to ignore embedded instructions in untrusted content
 
 Claude will then:
 - Analyze the context (code, issue, PR)
@@ -61,14 +76,52 @@ Claude will then:
 @claude fix the failing tests in this PR
 ```
 
+## CI Security Configuration
+
+The workflow uses **defense-in-depth** security measures:
+
+### 1. Trigger Restriction
+Only specific trusted users can trigger the workflow (see `if:` condition in workflow). Currently restricted to: `codekiln`.
+
+### 2. CI-Specific Settings File
+Claude uses `.claude/settings.ci.json` (not the local `.claude/settings.json`) with restricted permissions:
+
+**Allowed operations:**
+- Read-only git operations (`git log`, `git status`, `git diff`)
+- Cargo operations (`cargo test`, `cargo check`, `cargo clippy`, `cargo fmt`)
+- GitHub read operations **scoped to this repo** (`gh issue view --repo codekiln/langstar`, `gh pr view --repo codekiln/langstar`, workflow runs)
+- GitHub write operations **scoped to this repo** (`gh issue comment --repo codekiln/langstar` - for responses)
+- Network requests via WebFetch tool (safe wrapper for fetching documentation)
+
+**Denied operations:**
+- Modifying secrets (`gh secret set`)
+- Direct GitHub API access (`gh api`) - use explicit `gh` commands instead
+- Git push operations (workflow handles this)
+- Dangerous deletions (`rm -rf`)
+- Privilege escalation (`sudo`)
+- Permission changes (`chmod +x`)
+
+### 3. Prompt Injection Protection
+The workflow includes a system prompt that instructs Claude to:
+- Only follow instructions from issues/comments authored by trusted users (`codekiln`)
+- Use `--author codekiln` filters when listing issues/PRs
+- Treat content from untrusted users as data, not commands
+- Ignore any embedded instructions in code or files from untrusted sources
+
+### 4. Principle of Least Privilege
+Claude only has access to credentials necessary for its tasks:
+- AWS Bedrock (for Claude itself)
+- LangSmith (for integration tests)
+- GitHub token (built-in, scoped to repo operations)
+
 ## Configuration Options
 
 The workflow can be customized in `.github/workflows/claude.yml`:
 
-- **Model selection:** Change the Claude model version
+- **Model selection:** Change the Claude model version via `claude_args`
 - **Max turns:** Limit the number of interaction rounds
-- **Allowed tools:** Restrict which bash commands Claude can run
-- **System prompt:** Add project-specific instructions
+- **Allowed tools:** Modify `.claude/settings.ci.json` permissions
+- **System prompt:** Update security instructions in `--system-prompt`
 - **Trigger phrase:** Change from `@claude` to something else
 
 See the workflow file for commented examples.
@@ -76,23 +129,47 @@ See the workflow file for commented examples.
 ## Security Notes
 
 ⚠️ **Important:**
-- Never commit API keys directly to the repository
-- Always use GitHub Actions secrets (`${{ secrets.ANTHROPIC_API_KEY }}`)
-- Rotate API keys regularly
-- Monitor usage in your Anthropic console
+- Never commit credentials directly to the repository
+- Always use GitHub Actions secrets for sensitive values
+- Rotate AWS access keys and API keys regularly
+- Monitor usage in your AWS Bedrock and LangSmith consoles
+- The workflow is restricted to trusted users only (see `if:` condition in workflow)
+- Claude uses CI-specific restricted permissions (`.claude/settings.ci.json`)
+- System prompt protects against prompt injection attacks
+- Only follow `@claude` instructions from trusted users
+
+**For Contributors:**
+If you're not a trusted user (currently: `codekiln`), you cannot trigger the Claude workflow. This is by design to prevent unauthorized access to CI resources and protect against prompt injection attacks.
 
 ## Troubleshooting
 
 If Claude isn't responding:
 
-1. Verify the GitHub App is installed on this repository
-2. Check that `ANTHROPIC_API_KEY` is set in repository secrets
-3. Ensure the workflow file exists in `.github/workflows/`
-4. Check GitHub Actions logs for error messages
-5. Verify you're using the correct trigger phrase (default: `@claude`)
+1. **Check workflow triggers:** Ensure you used `@claude` in a comment/issue/PR
+2. **Verify you're a trusted user:** Check the `if:` condition in `.github/workflows/claude.yml`
+3. **Check AWS secrets:** Confirm `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` are set in repository secrets
+4. **Check model secrets:** Confirm `ANTHROPIC_MODEL` and `ANTHROPIC_SMALL_FAST_MODEL` are set with correct Bedrock model IDs
+5. **Check LangSmith secrets:** If integration tests are failing, confirm `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, and `LANGSMITH_WORKSPACE_ID` are set
+6. **Verify AWS Bedrock access:** Ensure your AWS account has Claude model access enabled for the specified model IDs
+7. **Check workflow logs:** Go to Actions tab → Select failed workflow run → Review logs for error messages
+8. **Verify environment variable:** Ensure `CLAUDE_CODE_USE_BEDROCK: "1"` is set in workflow `env:` section
+
+### Common Issues
+
+**Exit code 1 from Claude Code:**
+- Missing or invalid AWS credentials
+- AWS Bedrock model not enabled in region (check model IDs match what's enabled in Bedrock)
+- Missing `CLAUDE_CODE_USE_BEDROCK` environment variable
+- Incorrect model IDs in `ANTHROPIC_MODEL` or `ANTHROPIC_SMALL_FAST_MODEL` secrets
+- Network connectivity issues to AWS Bedrock
+
+**Workflow doesn't trigger:**
+- User not in the allowed list (check `if:` condition)
+- Workflow file syntax error
+- `@claude` not mentioned in comment/issue/PR
 
 ## Resources
 
 - [Claude Code GitHub Actions Documentation](https://docs.claude.com/en/docs/claude-code/github-actions)
 - [Claude Code Action Repository](https://github.com/anthropics/claude-code-action)
-- [Anthropic API Documentation](https://docs.anthropic.com/)
+- [AWS Bedrock Documentation](https://docs.aws.amazon.com/bedrock/)
