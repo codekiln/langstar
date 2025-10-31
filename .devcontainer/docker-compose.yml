@@ -25,6 +25,18 @@ services:
     # Environment variables passed to the container
     # Syntax: ${VAR:-default} means use VAR if set, otherwise use default
     # https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/
+    #
+    # IMPORTANT: ALL variables that should be available in the container MUST be
+    # declared in this environment: section. Docker Compose loads values from .env
+    # and substitutes them here using ${VAR} syntax. If a variable is in .env but
+    # NOT listed here, it won't be available in the container shell.
+    #
+    # To add a new environment variable:
+    # 1. Add value to .env file (e.g., MY_VAR=value)
+    # 2. Add declaration here (e.g., MY_VAR: ${MY_VAR})
+    # 3. Rebuild devcontainer
+    #
+    # See .env.default and docker-compose.override.yml.template for full docs
     environment:
       # GitHub Authentication
       # Local: Uses GITHUB_PAT from .env file
@@ -43,6 +55,10 @@ services:
 
       # LangSmith Configuration
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_ORGANIZATION_NAME: ${LANGSMITH_ORGANIZATION_NAME}
+      LANGSMITH_ORGANIZATION_ID: ${LANGSMITH_ORGANIZATION_ID}
+      LANGSMITH_WORKSPACE_NAME: ${LANGSMITH_WORKSPACE_NAME}
+      LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID}
 
       # Container Environment
       NODE_OPTIONS: --max-old-space-size=4096

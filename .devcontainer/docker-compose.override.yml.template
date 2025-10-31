@@ -16,6 +16,83 @@ version: '3.8'
 #
 # 4. Rebuild the devcontainer
 #
+# ============================================================================
+# ENVIRONMENT VARIABLE STRATEGY - IMPORTANT!
+# ============================================================================
+#
+# Environment variables require declarations in MULTIPLE FILES:
+#
+# FILE 1: .env (or .env.default as template)
+# ----------------------------------------
+# - Contains the ACTUAL VALUES of environment variables
+# - Example: LANGSMITH_API_KEY=lsv2_sk_abc123...
+# - This is a standard Docker Compose .env file
+# - https://docs.docker.com/compose/environment-variables/set-environment-variables/
+#
+# FILE 2: docker-compose.yml (base configuration)
+# -----------------------------------------------
+# - Declares which variables to PASS INTO THE CONTAINER
+# - Uses ${VAR} syntax to substitute values from .env
+# - Example:
+#   environment:
+#     LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+#     LANGSMITH_ORGANIZATION_NAME: ${LANGSMITH_ORGANIZATION_NAME}
+#
+# FILE 3: docker-compose.override.yml (THIS FILE - optional local overrides)
+# --------------------------------------------------------------------------
+# - Used ONLY for local-specific overrides or additions
+# - Can override environment: values from docker-compose.yml
+# - Can use env_file: to load additional .env files (but see caveat below)
+#
+# WHY THE DOUBLE/TRIPLE DECLARATION?
+# ----------------------------------
+# Docker Compose works in two steps:
+#
+# STEP 1: Variable Substitution (happens during compose file parsing)
+#   - Reads .env file
+#   - Substitutes ${VAR} references in docker-compose.yml
+#
+# STEP 2: Container Environment (happens when container starts)
+#   - Only variables in environment: section are passed to container
+#   - env_file: is loaded but doesn't automatically pass vars to container
+#   - Variables must ALSO be declared in environment: section to be available
+#
+# COMMON MISTAKE:
+# ---------------
+# ❌ Adding variable to .env only
+# ❌ Using env_file: without adding vars to environment: section
+# ❌ Adding to override environment: without being in base docker-compose.yml
+#
+# Result: Variable won't be available in container shell!
+#
+# CORRECT APPROACH TO ADD NEW VARIABLE:
+# -------------------------------------
+# ✅ Step 1: Add value to .env
+#    LANGSMITH_WORKSPACE_ID=abc-123-def
+#
+# ✅ Step 2: Add to docker-compose.yml environment: section
+#    environment:
+#      LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID}
+#
+# ✅ Step 3 (optional): Override in this file if needed
+#    environment:
+#      LANGSMITH_WORKSPACE_ID: different-value
+#
+# ✅ Step 4: Rebuild devcontainer
+#
+# PRECEDENCE ORDER (highest to lowest):
+# -------------------------------------
+# 1. docker-compose.override.yml environment: (this file) - HIGHEST
+# 2. docker-compose.yml environment: (base file)
+# 3. .env file (used for ${VAR} substitution only)
+# 4. Shell environment where docker-compose is run - LOWEST
+#
+# WHY env_file: ALONE DOESN'T WORK:
+# ---------------------------------
+# The env_file: directive below loads variables for SUBSTITUTION but does NOT
+# automatically pass them to the container. You still need to declare them in
+# the environment: section (see lines below).
+#
 # NOTES:
 #
 # - docker-compose.override.yml is automatically merged by Docker Compose
@@ -26,10 +103,35 @@ version: '3.8'
 #   - Extra volume mounts
 #   - Local-only environment variable overrides
 #   - Resource limits
+#
+# REFERENCE:
+# ---------
+# https://docs.docker.com/compose/environment-variables/
+# https://docs.docker.com/compose/multiple-compose-files/merge/
 
 services:
   langstar-dev:
-    # Add any local-specific overrides here
+    # Load environment variables from .env file for SUBSTITUTION
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#env_file
+    #
+    # NOTE: This env_file: directive is technically redundant since Docker Compose
+    # automatically loads .env files from the same directory. It's kept here for
+    # explicitness. The REAL requirement is declaring variables in environment:
+    # section below - that's what makes them available in the container shell.
+    env_file:
+      - .env
+
+    # Environment variables for LangSmith testing
+    # These supplement the variables in docker-compose.yml
+    #
+    # CRITICAL: Variables declared here override base docker-compose.yml values
+    # and must ALSO exist in base docker-compose.yml to work properly
+    environment:
+      # LangSmith Organization and Workspace scoping
+      LANGSMITH_ORGANIZATION_ID: ${LANGSMITH_ORGANIZATION_ID}
+      LANGSMITH_ORGANIZATION_NAME: ${LANGSMITH_ORGANIZATION_NAME}
+      LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID}
+      LANGSMITH_WORKSPACE_NAME: ${LANGSMITH_WORKSPACE_NAME}
 
     # Example: Expose additional ports
     # ports:
@@ -40,7 +142,7 @@ services:
     # volumes:
     #   - ~/my-local-data:/data
 
-    # Example: Override specific environment variables
+    # Example: Override specific environment variables for debugging
     # environment:
     #   - DEBUG=true
     #   - LOG_LEVEL=debug
