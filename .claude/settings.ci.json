@@ -17,11 +17,11 @@
       "Bash(cargo clippy:*)",
       "Bash(cargo fmt*)",
       "Bash(cargo build:*)",
-      "Bash(gh issue view:*)",
-      "Bash(gh issue list:*)",
-      "Bash(gh issue comment:*)",
-      "Bash(gh pr view:*)",
-      "Bash(gh pr list:*)",
+      "Bash(gh issue view --repo codekiln/langstar:*)",
+      "Bash(gh issue list --repo codekiln/langstar:*)",
+      "Bash(gh issue comment --repo codekiln/langstar:*)",
+      "Bash(gh pr view --repo codekiln/langstar:*)",
+      "Bash(gh pr list --repo codekiln/langstar:*)",
       "Bash(gh run view:*)",
       "Bash(gh run list:*)",
       "Bash(git log:*)",
@@ -31,15 +31,11 @@
     ],
     "deny": [
       "Bash(gh secret set:*)",
+      "Bash(gh api:*)",
       "Bash(git push*)",
       "Bash(rm -rf*)",
-      "Bash(curl*)",
-      "Bash(wget*)",
       "Bash(sudo*)",
       "Bash(chmod +x*)"
-    ],
-    "ask": [
-      "Bash(gh api:*)"
     ]
   },
   "enableAllProjectMcpServers": false

@@ -89,18 +89,17 @@ Claude uses `.claude/settings.ci.json` (not the local `.claude/settings.json`) w
 **Allowed operations:**
 - Read-only git operations (`git log`, `git status`, `git diff`)
 - Cargo operations (`cargo test`, `cargo check`, `cargo clippy`, `cargo fmt`)
-- GitHub read operations (`gh issue view`, `gh pr view`, workflow runs)
-- GitHub write operations (`gh issue comment` - for responses)
+- GitHub read operations **scoped to this repo** (`gh issue view --repo codekiln/langstar`, `gh pr view --repo codekiln/langstar`, workflow runs)
+- GitHub write operations **scoped to this repo** (`gh issue comment --repo codekiln/langstar` - for responses)
+- Network requests via WebFetch tool (safe wrapper for fetching documentation)
 
 **Denied operations:**
 - Modifying secrets (`gh secret set`)
+- Direct GitHub API access (`gh api`) - use explicit `gh` commands instead
 - Git push operations (workflow handles this)
 - Dangerous deletions (`rm -rf`)
-- Arbitrary network requests (`curl`, `wget`)
 - Privilege escalation (`sudo`)
-
-**Requires confirmation:**
-- GitHub API operations (`gh api`) - asked before execution
+- Permission changes (`chmod +x`)
 
 ### 3. Prompt Injection Protection
 The workflow includes a system prompt that instructs Claude to:
