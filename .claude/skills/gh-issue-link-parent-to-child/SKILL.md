@@ -1,5 +1,5 @@
 ---
-name: github-issue-link
+name: gh-issue-link-parent-to-child
 description: Link existing GitHub child issues to parent issues, establishing official parent-child sub-task relationships. Use when issues were created separately but need to be connected, or when fixing missing sub-task relationships. Requires both parent and child issue numbers.
 ---
 
@@ -28,13 +28,13 @@ Use this skill when you need to:
 ### Basic Usage
 
 ```bash
-python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --child 103
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
 
 ### With Repository Specification
 
 ```bash
-python .claude/skills/github-issue-link/scripts/link_issue.py \
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py \
   --parent 92 \
   --child 103 \
   --repo owner/repo
@@ -43,7 +43,7 @@ python .claude/skills/github-issue-link/scripts/link_issue.py \
 ### Dry Run (Preview Without Changes)
 
 ```bash
-python .claude/skills/github-issue-link/scripts/link_issue.py \
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py \
   --parent 92 \
   --child 103 \
   --dry-run
@@ -68,7 +68,7 @@ Requires GitHub authentication:
 
 ```bash
 # Link issue #103 as a sub-task of issue #92
-python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --child 103
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
 
 **Output:**
@@ -100,7 +100,7 @@ Linking issues...
 
 ```bash
 # Preview what will happen
-python .claude/skills/github-issue-link/scripts/link_issue.py \
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py \
   --parent 92 \
   --child 103 \
   --dry-run
@@ -108,7 +108,7 @@ python .claude/skills/github-issue-link/scripts/link_issue.py \
 
 ## Differences from github-issue-breakdown
 
-| Feature | github-issue-breakdown | github-issue-link |
+| Feature | github-issue-breakdown | gh-issue-link-parent-to-child |
 |---------|----------------------|-------------------|
 | **Creates new issues** | ✓ Yes | ✗ No |
 | **Links existing issues** | ✗ No | ✓ Yes |
@@ -123,7 +123,7 @@ python .claude/skills/github-issue-link/scripts/link_issue.py \
 - When creating a new Epic/parent issue that needs sub-issues
 - When you want to generate multiple sub-issues at once
 
-**Use `github-issue-link`:**
+**Use `gh-issue-link-parent-to-child`:**
 - When you already have issues created but they're not properly linked
 - When you need to establish parent-child relationships after the fact
 - When you created issues separately and now want to connect them
@@ -135,10 +135,10 @@ python .claude/skills/github-issue-link/scripts/link_issue.py \
 
 1. You created issue #103 separately
 2. Later realized #103 should be a sub-task of #92
-3. Use `github-issue-link` to establish the relationship:
+3. Use `gh-issue-link-parent-to-child` to establish the relationship:
 
 ```bash
-python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --child 103
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
 
 ### Workflow 2: Creating Two-Level Hierarchy
@@ -149,10 +149,10 @@ python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --chil
 
 ```bash
 # Link #102 to #92 (if #102 were an issue)
-python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --child 102
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 102
 
 # Link #103 to #92
-python .claude/skills/github-issue-link/scripts/link_issue.py --parent 92 --child 103
+python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
 
 Result: Epic #83 → Phase #92 → Sub-tasks #102, #103
