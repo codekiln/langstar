@@ -1,4 +1,9 @@
-# GitHub Issue Link Skill
+---
+name: github-issue-link
+description: Link existing GitHub child issues to parent issues, establishing official parent-child sub-task relationships. Use when issues were created separately but need to be connected, or when fixing missing sub-task relationships. Requires both parent and child issue numbers.
+---
+
+# Link GitHub Child Issues to Parent Issues
 
 Link an existing GitHub issue as an official sub-task of another issue, establishing a proper parent-child relationship.
 
