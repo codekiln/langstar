@@ -77,6 +77,28 @@ impl LangchainClient {
         self.workspace_id.as_deref()
     }
 
+    /// Override the LangGraph base URL for deployment-specific operations
+    ///
+    /// This method allows you to set a custom LangGraph deployment URL
+    /// instead of using the default `https://api.langgraph.cloud`.
+    /// This is useful when targeting a specific LangGraph deployment
+    /// that has a custom URL (e.g., from Control Plane API's `custom_url` field).
+    ///
+    /// # Arguments
+    /// * `url` - The custom deployment URL (e.g., "https://my-deployment.us.langgraph.app")
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{LangchainClient, AuthConfig};
+    /// # let auth = AuthConfig::new(None, Some("key".into()), None, None);
+    /// let client = LangchainClient::new(auth).unwrap()
+    ///     .with_langgraph_url("https://my-deployment.us.langgraph.app".to_string());
+    /// ```
+    pub fn with_langgraph_url(mut self, url: String) -> Self {
+        self.langgraph_base_url = url;
+        self
+    }
+
     /// Create a new client with custom base URLs (useful for testing)
     pub fn with_base_urls(
         auth: AuthConfig,

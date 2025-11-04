@@ -1,8 +1,10 @@
 use crate::config::Config;
-use crate::error::Result;
+use crate::error::{CliError, Result};
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{Assistant, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest};
+use langstar_sdk::{
+    Assistant, AuthConfig, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest,
+};
 use serde_json::json;
 use tabled::Tabled;
 
@@ -11,6 +13,10 @@ use tabled::Tabled;
 pub enum AssistantCommands {
     /// List all assistants
     List {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Maximum number of assistants to return
         #[arg(short, long, default_value = "20")]
         limit: u32,
@@ -22,6 +28,10 @@ pub enum AssistantCommands {
 
     /// Search for assistants by name
     Search {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Search query
         query: String,
 
@@ -32,12 +42,20 @@ pub enum AssistantCommands {
 
     /// Get details of a specific assistant
     Get {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Assistant ID
         assistant_id: String,
     },
 
     /// Create a new assistant
     Create {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Graph ID to base the assistant on
         #[arg(short, long)]
         graph_id: String,
@@ -57,6 +75,10 @@ pub enum AssistantCommands {
 
     /// Update an existing assistant
     Update {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Assistant ID to update
         assistant_id: String,
 
@@ -75,6 +97,10 @@ pub enum AssistantCommands {
 
     /// Delete an assistant
     Delete {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
         /// Assistant ID to delete
         assistant_id: String,
 
@@ -125,15 +151,79 @@ impl From<&Assistant> for AssistantRow {
     }
 }
 
+/// Resolve a deployment name or ID to its custom URL
+///
+/// This function queries the Control Plane API to find a deployment by name or ID,
+/// then extracts the `custom_url` from the deployment's `source_config`.
+///
+/// # Arguments
+/// * `config` - CLI configuration containing API keys and workspace ID
+/// * `deployment_name_or_id` - Deployment name or UUID to look up
+///
+/// # Returns
+/// * `Ok(String)` - The deployment's custom URL
+/// * `Err` - If deployment not found, no custom_url, or API error
+async fn resolve_deployment_url(config: &Config, deployment_name_or_id: &str) -> Result<String> {
+    // Create Control Plane client for deployment lookup
+    let auth = AuthConfig::new(
+        config.langsmith_api_key.clone(),
+        None,
+        None,
+        config.workspace_id.clone(),
+    );
+    let client = LangchainClient::new(auth)?;
+
+    // List deployments (limit 100 to catch most cases)
+    let deployments_list = client.deployments().list(Some(100), Some(0), None).await?;
+
+    // Find deployment by name or ID
+    let deployment = deployments_list
+        .resources
+        .iter()
+        .find(|d| d.name == deployment_name_or_id || d.id == deployment_name_or_id)
+        .ok_or_else(|| {
+            CliError::Config(format!(
+                "Deployment '{}' not found. Run 'langstar graph list' to see available deployments.",
+                deployment_name_or_id
+            ))
+        })?;
+
+    // Extract custom_url
+    deployment.custom_url().ok_or_else(|| {
+        CliError::Config(format!(
+            "Deployment '{}' has no custom_url in source_config",
+            deployment.name
+        ))
+    })
+}
+
 impl AssistantCommands {
     /// Execute the assistant command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
+        // Extract deployment name from command
+        let deployment_name = match self {
+            AssistantCommands::List { deployment, .. } => deployment,
+            AssistantCommands::Search { deployment, .. } => deployment,
+            AssistantCommands::Get { deployment, .. } => deployment,
+            AssistantCommands::Create { deployment, .. } => deployment,
+            AssistantCommands::Update { deployment, .. } => deployment,
+            AssistantCommands::Delete { deployment, .. } => deployment,
+        };
+
+        // Resolve deployment to URL
+        let deployment_url = resolve_deployment_url(config, deployment_name).await?;
+
+        // Create client with custom deployment URL
         let auth = config.to_auth_config();
-        let client = LangchainClient::new(auth)?;
+        let client = LangchainClient::new(auth)?.with_langgraph_url(deployment_url);
         let formatter = OutputFormatter::new(format);
 
         match self {
-            AssistantCommands::List { limit, offset } => {
+            AssistantCommands::List {
+                deployment: _,
+                limit,
+                offset,
+            } => {
                 formatter.info(&format!(
                     "Fetching assistants (limit: {}, offset: {})...",
                     limit, offset
@@ -164,7 +254,11 @@ impl AssistantCommands {
                 Ok(())
             }
 
-            AssistantCommands::Search { query, limit } => {
+            AssistantCommands::Search {
+                deployment: _,
+                query,
+                limit,
+            } => {
                 formatter.info(&format!("Searching for assistants matching '{}'...", query));
 
                 let assistants = client.assistants().search(query, Some(*limit)).await?;
@@ -189,7 +283,10 @@ impl AssistantCommands {
                 Ok(())
             }
 
-            AssistantCommands::Get { assistant_id } => {
+            AssistantCommands::Get {
+                deployment: _,
+                assistant_id,
+            } => {
                 formatter.info(&format!("Fetching assistant '{}'...", assistant_id));
 
                 let assistant = client.assistants().get(assistant_id).await?;
@@ -223,6 +320,7 @@ impl AssistantCommands {
             }
 
             AssistantCommands::Create {
+                deployment: _,
                 graph_id,
                 name,
                 config_file,
@@ -261,6 +359,7 @@ impl AssistantCommands {
             }
 
             AssistantCommands::Update {
+                deployment: _,
                 assistant_id,
                 name,
                 config_file,
@@ -297,6 +396,7 @@ impl AssistantCommands {
             }
 
             AssistantCommands::Delete {
+                deployment: _,
                 assistant_id,
                 force,
             } => {
