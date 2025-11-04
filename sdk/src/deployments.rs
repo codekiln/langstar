@@ -109,6 +109,34 @@ impl Default for Deployment {
     }
 }
 
+impl Deployment {
+    /// Extract the custom URL from the deployment's source_config
+    ///
+    /// The Control Plane API returns deployments with a `custom_url` field
+    /// nested inside the `source_config` JSON object. This method extracts
+    /// that URL for use in assistant API calls.
+    ///
+    /// # Returns
+    /// * `Some(String)` - The custom URL if present in source_config
+    /// * `None` - If source_config is missing or doesn't contain custom_url
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::deployments::Deployment;
+    /// # let deployment = Deployment::default();
+    /// if let Some(url) = deployment.custom_url() {
+    ///     println!("Deployment URL: {}", url);
+    /// }
+    /// ```
+    pub fn custom_url(&self) -> Option<String> {
+        self.source_config
+            .as_ref()
+            .and_then(|v| v.get("custom_url"))
+            .and_then(|v| v.as_str())
+            .map(String::from)
+    }
+}
+
 /// Response from listing deployments
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeploymentsList {
@@ -290,5 +318,59 @@ mod tests {
         assert_eq!(list.resources.len(), 1);
         assert_eq!(list.offset, 0);
         assert_eq!(list.resources[0].name, "deployment-1");
+    }
+
+    #[test]
+    fn test_deployment_custom_url_extraction() {
+        // Test with custom_url present
+        let json_with_url = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "source_config": {
+                "custom_url": "https://my-deployment.us.langgraph.app",
+                "integration_id": "d23cce11-20c1-424c-b2b2-4322c4ff4d90",
+                "deployment_type": "dev"
+            },
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_with_url).unwrap();
+        let url = deployment.custom_url();
+        assert_eq!(
+            url,
+            Some("https://my-deployment.us.langgraph.app".to_string())
+        );
+
+        // Test without source_config
+        let json_without_config = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_without_config).unwrap();
+        assert_eq!(deployment.custom_url(), None);
+
+        // Test with source_config but no custom_url
+        let json_without_url = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "source_config": {
+                "integration_id": "d23cce11-20c1-424c-b2b2-4322c4ff4d90"
+            },
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_without_url).unwrap();
+        assert_eq!(deployment.custom_url(), None);
     }
 }

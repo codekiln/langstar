@@ -109,6 +109,207 @@ langstar prompt list --organization-id "your-org-id" --public  # List public pro
 langstar prompt search "rag" --workspace-id "your-workspace-id"  # Search within workspace
 ```
 
+## LangGraph Deployments and Assistants
+
+Langstar provides commands for managing LangGraph deployments and assistants. The workflow uses **auto-discovery** via the Control Plane API - you don't need to manually register deployments.
+
+### Prerequisites
+
+For deployment and assistant operations, you need:
+
+```bash
+export LANGSMITH_API_KEY="your-api-key"
+export LANGCHAIN_WORKSPACE_ID="your-workspace-id"
+```
+
+Or in `~/.config/langstar/config.toml`:
+
+```toml
+langsmith_api_key = "your-api-key"
+workspace_id = "your-workspace-id"
+```
+
+### Discovering Deployments
+
+First, list your available LangGraph deployments:
+
+```bash
+# List all deployments
+langstar graph list
+
+# Output example:
+# Name                    ID                   Status  Created
+# my-prod-deployment      abc-123e4567...      READY   2024-01-15
+# my-staging-deployment   def-456e4567...      READY   2024-01-20
+```
+
+You can filter and search:
+
+```bash
+# Filter by deployment type
+langstar graph list --deployment-type prod
+
+# Filter by status
+langstar graph list --status READY
+
+# Filter by name
+langstar graph list --name-contains "production"
+
+# JSON output for scripting
+langstar graph list --format json
+```
+
+### Managing Assistants
+
+All assistant commands require the `--deployment` flag to specify which deployment to target. You can use either the deployment **name** or **ID** from `langstar graph list`.
+
+#### List Assistants
+
+```bash
+# List assistants in a deployment (by name)
+langstar assistant list --deployment my-prod-deployment
+
+# Or by ID
+langstar assistant list --deployment abc-123e4567
+
+# With pagination
+langstar assistant list --deployment my-prod-deployment --limit 10 --offset 20
+
+# JSON output
+langstar assistant list --deployment my-prod-deployment --format json
+```
+
+#### Search Assistants
+
+```bash
+# Search by name
+langstar assistant search "customer" --deployment my-prod-deployment
+
+# With result limit
+langstar assistant search "bot" --deployment my-staging --limit 5
+```
+
+#### Get Assistant Details
+
+```bash
+# Get details of a specific assistant
+langstar assistant get <assistant-id> --deployment my-prod-deployment
+```
+
+#### Create Assistant
+
+```bash
+# Create a new assistant
+langstar assistant create \
+  --deployment my-staging-deployment \
+  --graph-id my-graph-id \
+  --name "My Assistant"
+
+# With inline configuration
+langstar assistant create \
+  --deployment my-staging \
+  --graph-id my-graph \
+  --name "Configured Bot" \
+  --config '{"temperature": 0.7}'
+
+# With configuration from file
+langstar assistant create \
+  --deployment my-staging \
+  --graph-id my-graph \
+  --name "File Config Bot" \
+  --config-file ./assistant-config.json
+```
+
+#### Update Assistant
+
+```bash
+# Update assistant name
+langstar assistant update <assistant-id> \
+  --deployment my-staging \
+  --name "Updated Name"
+
+# Update configuration
+langstar assistant update <assistant-id> \
+  --deployment my-staging \
+  --config '{"temperature": 0.9}'
+
+# Update from file
+langstar assistant update <assistant-id> \
+  --deployment my-staging \
+  --config-file ./new-config.json
+```
+
+#### Delete Assistant
+
+```bash
+# Delete with confirmation prompt
+langstar assistant delete <assistant-id> --deployment my-staging
+
+# Force delete (skip confirmation)
+langstar assistant delete <assistant-id> --deployment my-staging --force
+```
+
+### How Deployment Resolution Works
+
+When you specify `--deployment <name-or-id>`:
+
+1. Langstar queries the Control Plane API to list your deployments
+2. Finds the deployment by matching name or ID
+3. Extracts the deployment's `custom_url` from the API response
+4. Uses that URL for all assistant API calls
+
+This means:
+- ✅ No manual configuration needed
+- ✅ Always up-to-date with your actual deployments
+- ✅ Clear error messages if deployment not found
+
+### Error Handling
+
+If a deployment isn't found:
+
+```bash
+$ langstar assistant list --deployment nonexistent
+Error: Deployment 'nonexistent' not found. Run 'langstar graph list' to see available deployments.
+```
+
+If a deployment has no URL (rare):
+
+```bash
+$ langstar assistant list --deployment my-deployment
+Error: Deployment 'my-deployment' has no custom_url in source_config
+```
+
+### Example Workflow
+
+```bash
+# 1. Discover available deployments
+$ langstar graph list
+Name                ID                  Status  Created
+prod-chatbot        abc-123...          READY   2024-01-15
+staging-chatbot     def-456...          READY   2024-01-20
+
+# 2. List assistants in production
+$ langstar assistant list --deployment prod-chatbot
+ID              Name            Graph ID        Created
+a1b2c3...       Support Bot     graph-123...    2024-01-15
+d4e5f6...       Sales Bot       graph-456...    2024-01-16
+
+# 3. Create new assistant in staging
+$ langstar assistant create \
+  --deployment staging-chatbot \
+  --graph-id graph-789 \
+  --name "Test Bot"
+
+# 4. Test the assistant in staging
+$ langstar assistant get a7b8c9 --deployment staging-chatbot
+
+# 5. When ready, create in production
+$ langstar assistant create \
+  --deployment prod-chatbot \
+  --graph-id graph-789 \
+  --name "Production Bot"
+```
+
 ## Architecture
 
 Langstar follows a **spec-driven, thin-wrapper architecture**:
