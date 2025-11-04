@@ -2,18 +2,31 @@ use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
+/// A secret environment variable for a deployment
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeploymentSecret {
+    /// Name of the secret environment variable
+    pub name: String,
+    /// Value of the secret (will be redacted in responses)
+    pub value: String,
+}
+
 /// Source type for LangGraph deployment
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum DeploymentSource {
     /// GitHub repository source
     Github,
     /// External Docker image source
     ExternalDocker,
+    /// Unknown source type (for forward compatibility)
+    #[serde(other)]
+    #[default]
+    Unknown,
 }
 
 /// Current status of a deployment
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DeploymentStatus {
     /// Deployment is awaiting database provisioning
@@ -25,6 +38,7 @@ pub enum DeploymentStatus {
     /// Deployment is awaiting deletion
     AwaitingDelete,
     /// Deployment status is unknown
+    #[default]
     Unknown,
 }
 
@@ -42,6 +56,7 @@ pub enum DeploymentType {
 
 /// A LangGraph deployment
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Deployment {
     /// Unique identifier for the deployment
     pub id: String,
@@ -57,7 +72,7 @@ pub struct Deployment {
     pub source_revision_config: Option<serde_json::Value>,
     /// Environment variable secrets
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub secrets: Option<Vec<String>>,
+    pub secrets: Option<Vec<DeploymentSecret>>,
     /// When the deployment was created
     pub created_at: String,
     /// When the deployment was last updated
@@ -73,6 +88,25 @@ pub struct Deployment {
     /// Optional version specification for the image
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image_version: Option<String>,
+}
+
+impl Default for Deployment {
+    fn default() -> Self {
+        Self {
+            id: String::new(),
+            name: String::new(),
+            source: DeploymentSource::Unknown,
+            source_config: None,
+            source_revision_config: None,
+            secrets: None,
+            created_at: String::new(),
+            updated_at: String::new(),
+            status: DeploymentStatus::Unknown,
+            latest_revision_id: None,
+            active_revision_id: None,
+            image_version: None,
+        }
+    }
 }
 
 /// Response from listing deployments
