@@ -379,3 +379,4 @@ echo "✓ All checks passed!"
 Make it executable: `chmod +x .git/hooks/pre-commit`
 
 **Note**: This runs on every commit. If it's too slow, consider a lighter version that only runs `cargo fmt` and `cargo check --workspace`.
+- We follow a principled github issue -> pr workflow. If, in the course of working on an issue/PR another task comes up, the standard operating procedure (SOP) should be to 1.) file a new issue, 2.) if we are to begin development on it immediately in a feature branch, create a new feature branch off of the current feature branch that lists the new issue number and slug, 3.) PR from the new feature branch into the old feature branch with a PR description that will close the newly opened feature
