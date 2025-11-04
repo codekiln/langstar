@@ -7,6 +7,7 @@ use std::time::Duration;
 /// Base URLs for LangChain services
 pub const LANGSMITH_API_BASE: &str = "https://api.smith.langchain.com";
 pub const LANGGRAPH_API_BASE: &str = "https://api.langgraph.cloud";
+pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 
 /// HTTP client for interacting with LangChain APIs
 #[derive(Clone)]
@@ -15,6 +16,7 @@ pub struct LangchainClient {
     auth: AuthConfig,
     langsmith_base_url: String,
     langgraph_base_url: String,
+    control_plane_base_url: String,
     /// Optional organization ID for API requests (used in x-organization-id header)
     organization_id: Option<String>,
     /// Optional workspace ID for narrower scoping (used in X-Tenant-Id header)
@@ -39,6 +41,7 @@ impl LangchainClient {
             auth,
             langsmith_base_url: LANGSMITH_API_BASE.to_string(),
             langgraph_base_url: LANGGRAPH_API_BASE.to_string(),
+            control_plane_base_url: CONTROL_PLANE_API_BASE.to_string(),
             organization_id,
             workspace_id,
         })
@@ -79,6 +82,7 @@ impl LangchainClient {
         auth: AuthConfig,
         langsmith_base_url: String,
         langgraph_base_url: String,
+        control_plane_base_url: String,
     ) -> Result<Self> {
         let http_client = HttpClient::builder()
             .timeout(Duration::from_secs(30))
@@ -92,6 +96,7 @@ impl LangchainClient {
             auth,
             langsmith_base_url,
             langgraph_base_url,
+            control_plane_base_url,
             organization_id,
             workspace_id,
         })
@@ -171,6 +176,28 @@ impl LangchainClient {
         }
 
         // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
+    /// Create a GET request to Control Plane API
+    ///
+    /// The Control Plane API uses the same authentication as LangSmith:
+    /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
+    pub fn control_plane_get(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+
+        let mut request = self
+            .http_client
+            .get(&url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add workspace ID header if set (required for Control Plane API)
         if let Some(ws_id) = &self.workspace_id {
             request = request.header("X-Tenant-Id", ws_id);
         }

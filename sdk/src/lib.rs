@@ -26,6 +26,7 @@
 pub mod assistants;
 pub mod auth;
 pub mod client;
+pub mod deployments;
 pub mod error;
 pub mod organization;
 pub mod prompts;
@@ -37,6 +38,10 @@ pub use assistants::{
 };
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
+pub use deployments::{
+    Deployment, DeploymentClient, DeploymentFilters, DeploymentSource, DeploymentStatus,
+    DeploymentType, DeploymentsList,
+};
 pub use error::{LangstarError, Result};
 pub use organization::{Organization, Workspace};
 pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};
