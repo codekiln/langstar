@@ -4,6 +4,10 @@ link_issue.py
 
 Link an existing GitHub issue as a sub-task of another issue (parent-child relationship).
 
+IMPORTANT: GitHub's API only supports setting parentIssueId during issue creation,
+NOT when updating existing issues. This script closes and recreates the child issue
+with the same content but with parentIssueId set.
+
 Usage:
     python link_issue.py --parent 92 --child 103
     python link_issue.py --parent 92 --child 103 --repo owner/repo
@@ -16,16 +20,15 @@ Environment Variables:
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
-from typing import Optional
+from typing import Optional, Dict, Tuple
 
 
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Link existing GitHub issue as sub-task of another issue"
+        description="Link existing GitHub issue as sub-task of another issue (closes and recreates child)"
     )
     parser.add_argument(
         "--parent",
@@ -37,7 +40,7 @@ def parse_arguments():
         "--child",
         type=int,
         required=True,
-        help="Child issue number (the sub-task to be tracked)",
+        help="Child issue number (will be closed and recreated)",
     )
     parser.add_argument(
         "--repo",
@@ -79,20 +82,28 @@ def detect_repository() -> Optional[str]:
     return None
 
 
-def run_gh_command(args: list) -> Optional[dict]:
-    """Run gh CLI command and return JSON output."""
+def run_gh_api(query: str, token: str, variables: Optional[Dict] = None) -> Optional[Dict]:
+    """Run GitHub GraphQL API query."""
     try:
+        cmd = ["gh", "api", "graphql", "-f", f"query={query}"]
+
+        if variables:
+            for key, value in variables.items():
+                if isinstance(value, list):
+                    cmd.extend(["-f", f"{key}={json.dumps(value)}"])
+                else:
+                    cmd.extend(["-f", f"{key}={value}"])
+
         result = subprocess.run(
-            ["gh"] + args,
+            cmd,
             capture_output=True,
             text=True,
             check=True,
         )
-        if result.stdout.strip():
-            return json.loads(result.stdout)
-        return None
+
+        return json.loads(result.stdout) if result.stdout.strip() else None
     except subprocess.CalledProcessError as e:
-        print(f"Error running gh command: {e}")
+        print(f"Error running GraphQL query: {e}")
         if e.stderr:
             print(f"Error output: {e.stderr}")
         return None
@@ -101,114 +112,153 @@ def run_gh_command(args: list) -> Optional[dict]:
         return None
 
 
-def fetch_issue(repo: str, issue_number: int) -> Optional[dict]:
-    """Fetch issue details using gh CLI."""
-    result = run_gh_command(
-        [
-            "issue",
-            "view",
-            str(issue_number),
-            "--repo",
-            repo,
-            "--json",
-            "number,title,body,state,id",
-        ]
-    )
-    return result
+def fetch_repository_id(repo: str, token: str) -> Optional[str]:
+    """Fetch repository GraphQL node ID."""
+    owner, name = repo.split("/")
+    query = """
+    query($owner: String!, $name: String!) {
+      repository(owner: $owner, name: $name) {
+        id
+      }
+    }
+    """
+
+    response = run_gh_api(query, token, {"owner": owner, "name": name})
+    if response and "data" in response and response["data"]["repository"]:
+        return response["data"]["repository"]["id"]
+    return None
 
 
-def link_issues(
-    repo: str,
-    parent_number: int,
-    parent_body: str,
-    child_number: int,
-    child_title: str,
-    dry_run: bool = False,
-) -> bool:
-    """Link child issue as sub-task of parent issue by updating parent's body with task list."""
+def fetch_issue_details(repo: str, issue_number: int, token: str) -> Optional[Dict]:
+    """Fetch full issue details including GraphQL node ID."""
+    owner, name = repo.split("/")
+    query = """
+    query($owner: String!, $name: String!, $number: Int!) {
+      repository(owner: $owner, name: $name) {
+        issue(number: $number) {
+          id
+          number
+          title
+          body
+          state
+          labels(first: 100) {
+            nodes {
+              id
+              name
+            }
+          }
+          assignees(first: 10) {
+            nodes {
+              id
+              login
+            }
+          }
+        }
+      }
+    }
+    """
 
-    # Check if child is already referenced in parent body
-    child_ref = f"#{child_number}"
-    if child_ref in parent_body:
-        print(f"Note: Child issue {child_ref} is already referenced in parent body")
+    response = run_gh_api(query, token, {"owner": owner, "name": name, "number": issue_number})
+    if response and "data" in response and response["data"]["repository"]["issue"]:
+        return response["data"]["repository"]["issue"]
+    return None
 
-        # Check if it's in a task list format
-        task_pattern = f"- [ ] .*{child_ref}"
-        if re.search(task_pattern, parent_body):
-            print("  Already in task list format - relationship should exist")
-            return True
-        else:
-            print("  Referenced but not in task list format")
 
-    # Add child to parent's body as a task list item
-    # Look for existing task list sections
-    if "## Sub-Tasks" in parent_body or "## Subtasks" in parent_body:
-        # Append to existing sub-tasks section
-        section_pattern = r"(## Sub-?Tasks.*?\n)"
-        match = re.search(section_pattern, parent_body, re.IGNORECASE)
-        if match:
-            insert_pos = match.end()
-            new_task = f"- [ ] #{child_number} {child_title}\n"
-            updated_body = parent_body[:insert_pos] + new_task + parent_body[insert_pos:]
-        else:
-            # Fallback: append at end
-            updated_body = parent_body + f"\n\n## Sub-Tasks\n- [ ] #{child_number} {child_title}\n"
-    else:
-        # Create new sub-tasks section at the end
-        updated_body = parent_body.rstrip() + f"\n\n## Sub-Tasks\n- [ ] #{child_number} {child_title}\n"
-
-    if dry_run:
-        print("[DRY RUN] Would update parent issue body:")
-        print(f"  Add task: - [ ] #{child_number} {child_title}")
-        return True
-
-    # Update parent issue with new body
+def close_issue(repo: str, issue_number: int, comment: str) -> bool:
+    """Close an issue with a comment."""
     try:
-        # Write updated body to temp file
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
-            f.write(updated_body)
-            temp_file = f.name
+        # Add comment first
+        subprocess.run(
+            ["gh", "issue", "comment", str(issue_number), "--repo", repo, "--body", comment],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
-        try:
-            result = subprocess.run(
-                [
-                    "gh",
-                    "issue",
-                    "edit",
-                    str(parent_number),
-                    "--repo",
-                    repo,
-                    "--body-file",
-                    temp_file,
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
+        # Then close
+        subprocess.run(
+            ["gh", "issue", "close", str(issue_number), "--repo", repo],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
-            print(f"✓ Successfully linked issues")
-            print(f"  Updated parent #{parent_number} body with task list")
-            print(f"  Added: - [ ] #{child_number} {child_title}")
-            return True
-
-        finally:
-            os.unlink(temp_file)
-
+        return True
     except subprocess.CalledProcessError as e:
-        print(f"Error updating parent issue: {e}")
+        print(f"Error closing issue: {e}")
         if e.stderr:
             print(f"Error output: {e.stderr}")
         return False
+
+
+def create_issue_with_parent(
+    repo_id: str,
+    parent_id: str,
+    title: str,
+    body: str,
+    label_ids: list,
+    assignee_ids: list,
+    token: str
+) -> Tuple[bool, Optional[int], Optional[str]]:
+    """Create a new issue with parent relationship."""
+
+    # Build mutation with optional fields
+    mutation_parts = ['$repoId: ID!', '$parentId: ID!', '$title: String!', '$body: String']
+    input_parts = ['repositoryId: $repoId', 'parentIssueId: $parentId', 'title: $title', 'body: $body']
+
+    variables = {
+        'repoId': repo_id,
+        'parentId': parent_id,
+        'title': title,
+        'body': body or ''
+    }
+
+    if label_ids:
+        mutation_parts.append('$labelIds: [ID!]')
+        input_parts.append('labelIds: $labelIds')
+        variables['labelIds'] = label_ids
+
+    if assignee_ids:
+        mutation_parts.append('$assigneeIds: [ID!]')
+        input_parts.append('assigneeIds: $assigneeIds')
+        variables['assigneeIds'] = assignee_ids
+
+    mutation = f"""
+    mutation({', '.join(mutation_parts)}) {{
+      createIssue(input: {{
+        {', '.join(input_parts)}
+      }}) {{
+        issue {{
+          id
+          number
+          title
+          url
+        }}
+      }}
+    }}
+    """
+
+    response = run_gh_api(mutation, token, variables)
+    if not response or 'data' not in response:
+        error_msg = "Failed to create issue"
+        if response and 'errors' in response:
+            error_msg = response['errors'][0].get('message', error_msg)
+        return False, None, error_msg
+
+    created = response['data']['createIssue']['issue']
+    return True, created['number'], created['url']
 
 
 def main():
     """Main entry point."""
     args = parse_arguments()
 
-    # Check if gh CLI is authenticated (token not needed when using gh CLI)
-    # We'll rely on gh CLI's authentication
-    token = get_github_token()  # Optional - gh CLI handles auth
+    # Get GitHub token
+    token = get_github_token()
+    if not token:
+        print("Error: No GitHub token found")
+        print("Please set GITHUB_TOKEN or GH_TOKEN environment variable")
+        sys.exit(1)
 
     # Auto-detect or use provided repository
     repo = args.repo or detect_repository()
@@ -222,9 +272,16 @@ def main():
     print(f"Child Issue: #{args.child}")
     print()
 
+    # Fetch repository ID
+    print("Fetching repository ID...")
+    repo_id = fetch_repository_id(repo, token)
+    if not repo_id:
+        print("Error: Could not fetch repository ID")
+        sys.exit(1)
+
     # Fetch parent issue
     print("Fetching parent issue...")
-    parent_issue = fetch_issue(repo, args.parent)
+    parent_issue = fetch_issue_details(repo, args.parent, token)
     if not parent_issue:
         print(f"Error: Could not fetch issue #{args.parent}")
         sys.exit(1)
@@ -235,7 +292,7 @@ def main():
 
     # Fetch child issue
     print("Fetching child issue...")
-    child_issue = fetch_issue(repo, args.child)
+    child_issue = fetch_issue_details(repo, args.child, token)
     if not child_issue:
         print(f"Error: Could not fetch issue #{args.child}")
         sys.exit(1)
@@ -244,32 +301,71 @@ def main():
     print(f"  State: {child_issue['state']}")
     print()
 
-    # Link issues
-    if args.dry_run:
-        print("[DRY RUN] Would link:")
-    else:
-        print("Linking issues...")
+    # Extract label and assignee IDs
+    label_ids = [label['id'] for label in child_issue['labels']['nodes']]
+    assignee_ids = [assignee['id'] for assignee in child_issue['assignees']['nodes']]
 
-    success = link_issues(
-        repo,
-        parent_issue["number"],
-        parent_issue["body"] or "",
-        child_issue["number"],
-        child_issue["title"],
-        dry_run=args.dry_run,
+    if args.dry_run:
+        print("[DRY RUN] Would perform:")
+        print(f"  1. Close issue #{args.child}")
+        print(f"  2. Recreate with same content but parentIssueId set to #{args.parent}")
+        print(f"  3. Preserve {len(label_ids)} labels and {len(assignee_ids)} assignees")
+        sys.exit(0)
+
+    # Warn user
+    print("⚠️  WARNING: This will close and recreate the child issue!")
+    print(f"    Issue #{args.child} will be closed and a new issue created.")
+    print(f"    Content, labels, and assignees will be preserved.")
+    print()
+
+    # Close the child issue
+    print(f"Closing issue #{args.child}...")
+    close_comment = f"""This issue is being closed and recreated to establish a parent-child relationship with #{args.parent}.
+
+GitHub's API only supports setting `parentIssueId` during issue creation, not when updating existing issues.
+
+The issue will be recreated with the same content, labels, and assignees."""
+
+    if not close_issue(repo, args.child, close_comment):
+        print("Error: Failed to close child issue")
+        sys.exit(1)
+
+    print(f"  ✓ Closed issue #{args.child}")
+    print()
+
+    # Recreate with parent relationship
+    print(f"Creating new issue as sub-task of #{args.parent}...")
+
+    # Update body to reference old issue
+    updated_body = f"""*[Recreated from #{args.child} to establish parent-child relationship]*
+
+{child_issue['body'] or ''}"""
+
+    success, new_number, url = create_issue_with_parent(
+        repo_id,
+        parent_issue['id'],
+        child_issue['title'],
+        updated_body,
+        label_ids,
+        assignee_ids,
+        token
     )
 
-    if success:
-        print()
-        print("✓ Link operation completed successfully")
-        if not args.dry_run:
-            print(f"  View parent issue: https://github.com/{repo}/issues/{args.parent}")
-            print(f"  View child issue: https://github.com/{repo}/issues/{args.child}")
-        sys.exit(0)
-    else:
-        print()
-        print("✗ Link operation failed")
+    if not success:
+        print(f"Error: Failed to create new issue: {url}")
         sys.exit(1)
+
+    print(f"  ✓ Created issue #{new_number}")
+    print(f"  URL: {url}")
+    print()
+
+    print("✓ Link operation completed successfully")
+    print(f"  Old issue #{args.child} closed")
+    print(f"  New issue #{new_number} created as sub-task of #{args.parent}")
+    print(f"  View parent: https://github.com/{repo}/issues/{args.parent}")
+    print(f"  View child: https://github.com/{repo}/issues/{new_number}")
+
+    sys.exit(0)
 
 
 if __name__ == "__main__":

@@ -1,27 +1,40 @@
 ---
 name: gh-issue-link-parent-to-child
-description: Link existing GitHub child issues to parent issues, establishing official parent-child sub-task relationships. Use when issues were created separately but need to be connected, or when fixing missing sub-task relationships. Requires both parent and child issue numbers.
+description: Link existing GitHub child issues to parent issues, establishing official parent-child sub-task relationships. Use when issues were created separately but need to be connected, or when fixing missing sub-task relationships. Requires both parent and child issue numbers. WARNING - Closes and recreates the child issue.
 ---
 
 # Link GitHub Child Issues to Parent Issues
 
 Link an existing GitHub issue as an official sub-task of another issue, establishing a proper parent-child relationship.
 
+## ⚠️ IMPORTANT: How This Works
+
+**GitHub's API limitation:** You can ONLY set `parentIssueId` when creating an issue, NOT when updating existing issues.
+
+**What this skill does:**
+1. Closes the child issue with an explanatory comment
+2. Recreates it with identical content but with `parentIssueId` set
+3. Preserves title, body, labels, and assignees
+4. Adds a note referencing the original issue number
+
+**Result:** The child issue gets a new issue number but establishes a proper parent-child relationship.
+
 ## When to Use This Skill
 
 Use this skill when you need to:
 
-1. **Link existing issues** as sub-tasks without creating new issues
+1. **Link existing issues** as sub-tasks (they will be closed and recreated)
 2. **Establish parent-child relationships** for issues that were created separately
 3. **Fix missing sub-task relationships** when issues weren't properly linked initially
 4. **Create two-level hierarchies** (Epic → Phase → Sub-tasks)
 
 ## What This Skill Does
 
-- Links an existing "child" issue as a tracked sub-issue of a "parent" issue
-- Uses GitHub's official GraphQL API to create proper parent-child relationships
-- Shows the relationship in GitHub's UI (child appears in parent's "Tracked by" section)
-- Validates both issues exist before attempting to link them
+- Closes the existing "child" issue with an explanatory comment
+- Recreates it as a sub-task of the "parent" issue using GraphQL `createIssue` with `parentIssueId`
+- Preserves all content, labels, and assignees from the original issue
+- Shows the relationship in GitHub's UI (child appears in parent's "Sub-issues" dropdown)
+- Validates both issues exist before making changes
 
 ## Usage
 
@@ -67,7 +80,7 @@ Requires GitHub authentication:
 ### Example 1: Link Sub-Task to Phase
 
 ```bash
-# Link issue #103 as a sub-task of issue #92
+# Link issue #103 as a sub-task of issue #92 (closes and recreates #103)
 python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
 
@@ -77,6 +90,7 @@ Repository: codekiln/langstar
 Parent Issue: #92
 Child Issue: #103
 
+Fetching repository ID...
 Fetching parent issue...
   #92: Phase 3: CLI Commands Implementation
   State: OPEN
@@ -85,15 +99,22 @@ Fetching child issue...
   #103: feat(cli): Add deployment management for LangGraph assistants
   State: OPEN
 
-Linking issues...
-✓ Successfully linked issues
-  Parent: #92 - Phase 3: CLI Commands Implementation
-  Tracked issues:
-    - #103: feat(cli): Add deployment management for LangGraph assistants
+⚠️  WARNING: This will close and recreate the child issue!
+    Issue #103 will be closed and a new issue created.
+    Content, labels, and assignees will be preserved.
+
+Closing issue #103...
+  ✓ Closed issue #103
+
+Creating new issue as sub-task of #92...
+  ✓ Created issue #122
+  URL: https://github.com/codekiln/langstar/issues/122
 
 ✓ Link operation completed successfully
-  View parent issue: https://github.com/codekiln/langstar/issues/92
-  View child issue: https://github.com/codekiln/langstar/issues/103
+  Old issue #103 closed
+  New issue #122 created as sub-task of #92
+  View parent: https://github.com/codekiln/langstar/issues/92
+  View child: https://github.com/codekiln/langstar/issues/122
 ```
 
 ### Example 2: Preview Before Linking
@@ -110,11 +131,12 @@ python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py \
 
 | Feature | github-issue-breakdown | gh-issue-link-parent-to-child |
 |---------|----------------------|-------------------|
-| **Creates new issues** | ✓ Yes | ✗ No |
-| **Links existing issues** | ✗ No | ✓ Yes |
+| **Creates new issues** | ✓ Yes (from scratch) | ✓ Yes (by recreating) |
+| **Closes issues** | ✗ No | ✓ Yes (child issue) |
+| **Preserves issue numbers** | N/A | ✗ No (gets new number) |
 | **Parses task lists** | ✓ Yes | ✗ No |
 | **One-to-many linking** | ✓ Yes (creates multiple) | ✗ No (one at a time) |
-| **Use case** | Convert task list to sub-issues | Link pre-existing issues |
+| **Use case** | Convert task list to sub-issues | Retrofit parent-child relationship |
 
 ## When to Use Each Skill
 
@@ -122,24 +144,30 @@ python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py \
 - When you have a task list in an issue and want to create sub-issues from it
 - When creating a new Epic/parent issue that needs sub-issues
 - When you want to generate multiple sub-issues at once
+- **PREFERRED:** When planning ahead, always use this skill to avoid recreating issues
 
 **Use `gh-issue-link-parent-to-child`:**
 - When you already have issues created but they're not properly linked
 - When you need to establish parent-child relationships after the fact
 - When you created issues separately and now want to connect them
 - When fixing incorrect or missing parent-child relationships
+- **CAUTION:** This closes and recreates the child issue (new issue number)
+
+**⚠️ Best Practice:** Plan ahead and use `github-issue-breakdown` instead of creating issues manually, to avoid the need to close and recreate them later.
 
 ## Common Workflows
 
 ### Workflow 1: Fixing Missing Relationships
 
-1. You created issue #103 separately
+1. You created issue #103 separately (without parent relationship)
 2. Later realized #103 should be a sub-task of #92
 3. Use `gh-issue-link-parent-to-child` to establish the relationship:
 
 ```bash
 python .claude/skills/gh-issue-link-parent-to-child/scripts/link_issue.py --parent 92 --child 103
 ```
+
+**Result:** Issue #103 is closed and recreated (e.g., as #122) with parent relationship to #92
 
 ### Workflow 2: Creating Two-Level Hierarchy
 
@@ -205,32 +233,36 @@ gh auth login
 
 ## Implementation Details
 
-The skill uses GitHub's GraphQL API mutation:
+The skill uses GitHub's GraphQL API `createIssue` mutation with `parentIssueId`:
 
 ```graphql
-mutation($parentId: ID!, $childId: ID!) {
-  updateIssue(input: {
-    id: $parentId
-    trackedIssueIds: [$childId]
+mutation($repoId: ID!, $parentId: ID!, $title: String!, $body: String, $labelIds: [ID!], $assigneeIds: [ID!]) {
+  createIssue(input: {
+    repositoryId: $repoId
+    parentIssueId: $parentId
+    title: $title
+    body: $body
+    labelIds: $labelIds
+    assigneeIds: $assigneeIds
   }) {
     issue {
+      id
       number
       title
-      trackedIssues(first: 10) {
-        nodes {
-          number
-          title
-        }
-      }
+      url
     }
   }
 }
 ```
 
+**Why not `updateIssue`?**
+GitHub's GraphQL API does NOT support `parentIssueId` in `updateIssue`. You can only set a parent when creating an issue, not when updating an existing one.
+
 This creates an official parent-child relationship that:
-- Shows child in parent's "Tracked by" section in GitHub UI
-- Updates parent's task list checkboxes when child is closed
+- Shows child in parent's "Sub-issues" dropdown in GitHub UI
+- Shows parent reference on the child issue
 - Creates proper issue hierarchy for project management
+- Allows the child to be closed independently while tracking progress
 
 ## See Also
 
