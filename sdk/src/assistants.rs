@@ -57,8 +57,9 @@ pub struct UpdateAssistantRequest {
 /// Request to search for assistants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssistantSearchRequest {
-    /// Search query (searches assistant names)
-    pub query: String,
+    /// Search query (searches assistant names). Empty string lists all assistants.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
     /// Maximum number of results (default: 20)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
@@ -83,12 +84,19 @@ impl<'a> AssistantClient<'a> {
     /// # Arguments
     /// * `limit` - Maximum number of assistants to return (default: 20)
     /// * `offset` - Number of assistants to skip (default: 0)
+    ///
+    /// # Note
+    /// This method uses the POST /assistants/search endpoint with an empty query,
+    /// which is the correct way to list all assistants in the LangGraph API.
     pub async fn list(&self, limit: Option<u32>, offset: Option<u32>) -> Result<Vec<Assistant>> {
-        let limit = limit.unwrap_or(20);
-        let offset = offset.unwrap_or(0);
+        let request_body = AssistantSearchRequest {
+            query: None, // Empty query lists all assistants
+            limit,
+            offset,
+        };
 
-        let path = format!("/assistants?limit={}&offset={}", limit, offset);
-        let request = self.client.langgraph_get(&path)?;
+        let path = "/assistants/search";
+        let request = self.client.langgraph_post(path)?.json(&request_body);
 
         // LangGraph API returns a paginated response with an "assistants" field
         #[derive(Deserialize)]
@@ -107,7 +115,7 @@ impl<'a> AssistantClient<'a> {
     /// * `limit` - Maximum number of results (default: 20)
     pub async fn search(&self, query: &str, limit: Option<u32>) -> Result<Vec<Assistant>> {
         let request_body = AssistantSearchRequest {
-            query: query.to_string(),
+            query: Some(query.to_string()),
             limit,
             offset: None,
         };
@@ -241,5 +249,29 @@ mod tests {
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("graph-123"));
         assert!(json.contains("My Assistant"));
+    }
+
+    #[test]
+    fn test_search_request_serialization() {
+        // Test with query
+        let request = AssistantSearchRequest {
+            query: Some("test".to_string()),
+            limit: Some(10),
+            offset: Some(5),
+        };
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(json.contains("test"));
+        assert!(json.contains("\"limit\":10"));
+        assert!(json.contains("\"offset\":5"));
+
+        // Test without query (for list all)
+        let request = AssistantSearchRequest {
+            query: None,
+            limit: Some(20),
+            offset: None,
+        };
+        let json = serde_json::to_string(&request).unwrap();
+        assert!(!json.contains("query")); // Should be omitted when None
+        assert!(json.contains("\"limit\":20"));
     }
 }
