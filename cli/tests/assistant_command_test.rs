@@ -64,7 +64,9 @@ fn test_assistant_create_basic() {
 
     let Some((deployment_name, _graph_name)) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
-        println!("Set LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID, and TEST_GRAPH_ID to run this test");
+        println!(
+            "Set LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID, and TEST_GRAPH_ID to run this test"
+        );
         return;
     };
     let assistant_name = generate_test_name("cli-test-assistant");
@@ -121,7 +123,10 @@ fn test_assistant_lifecycle() {
     println!("    https://github.com/codekiln/langstar/issues/131");
     println!("\n==================================================\n");
 
-    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
+    let Some((deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
     let assistant_name = generate_test_name("cli-lifecycle-test");
 
     // Step 1: Create
@@ -282,7 +287,10 @@ fn test_assistant_output_formats() {
     println!("    https://github.com/codekiln/langstar/issues/131");
     println!("\n==================================================\n");
 
-    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
+    let Some((deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
     let assistant_name = generate_test_name("cli-format-test");
 
     // Create assistant
@@ -383,7 +391,10 @@ fn test_deployment_discovery_workflow() {
     println!("Test: Deployment Discovery Workflow");
     println!("==================================================\n");
 
-    let Some((_deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
+    let Some((_deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
 
     // Step 1: List deployments
     println!("1. List available deployments");
@@ -459,7 +470,10 @@ fn test_error_handling_nonexistent_deployment() {
     println!("Test: Error Handling - Nonexistent Deployment");
     println!("==================================================\n");
 
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
     let assistant_name = generate_test_name("error-test");
 
     println!("Attempting to create assistant with nonexistent deployment...");
@@ -515,7 +529,10 @@ fn test_assistant_list() {
     println!("    https://github.com/codekiln/langstar/issues/127");
     println!("\n==================================================\n");
 
-    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
+    let Some((deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
 
     let mut cmd = langstar_cmd();
     cmd.args(["assistant", "list", "--deployment", &deployment_name]);
@@ -543,7 +560,10 @@ fn test_assistant_search() {
     println!("    https://github.com/codekiln/langstar/issues/128");
     println!("\n==================================================\n");
 
-    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
+    let Some((deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
 
     let mut cmd = langstar_cmd();
     cmd.args([

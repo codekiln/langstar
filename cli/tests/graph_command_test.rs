@@ -75,7 +75,10 @@ fn test_graph_list_basic() {
 
 #[test]
 fn test_graph_list_with_limit() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with --limit flag");
 
@@ -93,7 +96,10 @@ fn test_graph_list_with_limit() {
 
 #[test]
 fn test_graph_list_json_output() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with JSON output");
 
@@ -123,7 +129,10 @@ fn test_graph_list_json_output() {
 
 #[test]
 fn test_graph_list_with_deployment_type_filter() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with --deployment-type filter");
 
@@ -141,7 +150,10 @@ fn test_graph_list_with_deployment_type_filter() {
 
 #[test]
 fn test_graph_list_with_status_filter() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with --status filter");
 
@@ -159,7 +171,10 @@ fn test_graph_list_with_status_filter() {
 
 #[test]
 fn test_graph_list_with_name_filter() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with --name-contains filter");
 
@@ -177,7 +192,10 @@ fn test_graph_list_with_name_filter() {
 
 #[test]
 fn test_graph_list_invalid_deployment_type() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with invalid --deployment-type");
 
@@ -203,7 +221,10 @@ fn test_graph_list_invalid_deployment_type() {
 
 #[test]
 fn test_graph_list_invalid_status() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with invalid --status");
 
@@ -229,7 +250,10 @@ fn test_graph_list_invalid_status() {
 
 #[test]
 fn test_graph_list_multiple_filters() {
-    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
 
     println!("Testing graph list with multiple filters");
 
