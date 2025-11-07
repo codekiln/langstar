@@ -28,7 +28,7 @@ langstar prompt list
 ### For LangGraph Assistants Only
 
 ```bash
-export LANGGRAPH_API_KEY="<your-api-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 langstar assistant list
 ```
 
@@ -36,10 +36,10 @@ langstar assistant list
 
 ```bash
 export LANGSMITH_API_KEY="<your-langsmith-key>"
-export LANGGRAPH_API_KEY="<your-langgraph-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 
 langstar prompt list      # Uses LANGSMITH_API_KEY
-langstar assistant list   # Uses LANGGRAPH_API_KEY
+langstar assistant list   # Uses LANGSMITH_API_KEY
 ```
 
 ## Configuration Methods
@@ -93,7 +93,7 @@ organization_id = "<your-org-id>"        # Optional
 workspace_id = "<your-workspace-id>"     # Optional
 
 # LangGraph configuration (for assistant commands)
-langgraph_api_key = "<your-langgraph-key>"
+# Assistants use the same langsmith_api_key
 ```
 
 ### Complete Example
@@ -118,7 +118,7 @@ workspace_name = "My Workspace"  # Informational only
 
 # LangGraph API configuration
 # Separate key for LangGraph assistants
-langgraph_api_key = "<your-langgraph-key>"
+# Assistants use the same langsmith_api_key
 ```
 
 ## Environment Variables
@@ -153,7 +153,7 @@ Used by `langstar assistant *` commands:
 
 ```bash
 # Preferred
-export LANGGRAPH_API_KEY="<your-api-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 
 # Or fallback to LangSmith key
 export LANGSMITH_API_KEY="<your-api-key>"
@@ -245,12 +245,12 @@ LangGraph assistants are deployment-level resources:
 
 | Option | Required | Purpose |
 |--------|----------|---------|
-| `langgraph_api_key` | Yes | Authentication + deployment scoping |
+| `langsmith_api_key` | Yes | Authentication + deployment scoping |
 
 #### How It Works
 
 ```bash
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 langstar assistant list
 # Returns: All assistants in the deployment tied to this API key
 ```
@@ -331,7 +331,7 @@ mkdir -p ~/.langstar
 cat > ~/.langstar/config.toml <<EOF
 [langstar]
 langsmith_api_key = "<your-langsmith-key>"
-langgraph_api_key = "<your-langgraph-key>"
+# Assistants use the same langsmith_api_key
 output_format = "table"
 EOF
 ```
@@ -352,7 +352,7 @@ langstar assistant list
 # ~/.langstar/config.toml
 [langstar]
 langsmith_api_key = "<your-key>"
-langgraph_api_key = "<your-key>"
+langsmith_api_key = "<your-key>"
 
 # Scope prompts to team organization
 organization_id = "<team-org-id>"
@@ -379,7 +379,7 @@ langstar assistant list
 # ~/.langstar/config.toml
 [langstar]
 langsmith_api_key = "<your-key>"
-langgraph_api_key = "<your-key>"
+langsmith_api_key = "<your-key>"
 
 # Default organization (can be overridden)
 organization_id = "<default-org-id>"
@@ -406,7 +406,7 @@ langstar prompt search "query" --workspace-id "<client-b-workspace-id>"
 # .github/workflows/test.yml
 env:
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-  LANGGRAPH_API_KEY: ${{ secrets.LANGGRAPH_API_KEY }}
+  LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
   LANGSTAR_OUTPUT_FORMAT: json
 ```
 
@@ -425,11 +425,11 @@ langstar assistant search "test-bot" --format json
 ```bash
 # Development
 export LANGSMITH_API_KEY="<dev-key>"
-export LANGGRAPH_API_KEY="<dev-key>"
+export LANGSMITH_API_KEY="<dev-key>"
 
 # Production (use different keys)
 export LANGSMITH_API_KEY="<prod-key>"
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 ```
 
 **Usage:**
@@ -439,7 +439,7 @@ export LANGGRAPH_API_KEY="<prod-key>"
 langstar assistant list
 
 # Deploy to production (different API key automatically scopes to prod deployment)
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 langstar assistant create --graph-id "<graph-id>" --name "Prod Bot"
 ```
 
@@ -489,7 +489,7 @@ Output Format: table
 ```bash
 export LANGSMITH_API_KEY="<key>"
 export LANGSMITH_ORGANIZATION_ID="<org-id>"
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 ```
 
 **After:**
@@ -501,13 +501,13 @@ cat > ~/.langstar/config.toml <<EOF
 [langstar]
 langsmith_api_key = "<key>"
 organization_id = "<org-id>"
-langgraph_api_key = "<key>"
+langsmith_api_key = "<key>"
 EOF
 
 # Remove environment variables if desired
 unset LANGSMITH_API_KEY
 unset LANGSMITH_ORGANIZATION_ID
-unset LANGGRAPH_API_KEY
+unset LANGSMITH_API_KEY
 ```
 
 **Benefits:**
@@ -528,7 +528,7 @@ export LANGSMITH_API_KEY="<same-key-for-both>"
 
 ```bash
 export LANGSMITH_API_KEY="<langsmith-key>"
-export LANGGRAPH_API_KEY="<langgraph-key>"
+export LANGSMITH_API_KEY="<langgraph-key>"
 ```
 
 **When to do this:**
@@ -616,10 +616,10 @@ Check which key is being used:
 langstar config
 ```
 
-Ensure `LANGGRAPH_API_KEY` is set (not just `LANGSMITH_API_KEY`):
+Ensure `LANGSMITH_API_KEY` is set (not just `LANGSMITH_API_KEY`):
 
 ```bash
-export LANGGRAPH_API_KEY="<your-langgraph-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 ```
 
 ### Unexpected Scoping Behavior
@@ -699,7 +699,7 @@ mkdir -p ~/.langstar
 cat > ~/.langstar/config.toml <<EOF
 [langstar]
 langsmith_api_key = "<your-key>"
-langgraph_api_key = "<your-key>"
+langsmith_api_key = "<your-key>"
 EOF
 
 # Restrict access to owner only

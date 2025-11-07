@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2025-01-07
+## [0.2.0]
 
 ### Added
 
@@ -80,20 +80,17 @@ None. Version 0.2.0 adds new features without changing existing functionality.
 
 #### Configuration
 
-- **Separate API keys** - Now supports distinct keys for each service:
+- **Unified API key** - Uses `LANGSMITH_API_KEY` for both services:
   - `LANGSMITH_API_KEY` for LangSmith prompts
-  - `LANGGRAPH_API_KEY` for LangGraph assistants (with fallback to `LANGSMITH_API_KEY`)
+  - `LANGSMITH_API_KEY` for LangGraph assistants (LangGraph Cloud is part of LangSmith)
 
-- **Configuration file structure** - Added LangGraph section:
+- **Configuration file structure** - Simplified configuration:
   ```toml
   [langstar]
-  # LangSmith configuration
+  # LangSmith configuration (for both prompts and assistants)
   langsmith_api_key = "<key>"
-  organization_id = "<org-id>"    # Optional
-  workspace_id = "<workspace-id>" # Optional
-
-  # LangGraph configuration (new)
-  langgraph_api_key = "<key>"
+  organization_id = "<org-id>"    # Optional (prompts only)
+  workspace_id = "<workspace-id>" # Optional (prompts only)
   ```
 
 #### Documentation
@@ -186,21 +183,20 @@ None. Version 0.2.0 adds new features without changing existing functionality.
 
 No breaking changes. Existing v0.1.0 configurations continue to work. To use new assistant features:
 
-1. Set `LANGGRAPH_API_KEY` (or use `LANGSMITH_API_KEY` as fallback)
+1. Ensure `LANGSMITH_API_KEY` is set (same key works for both prompts and assistants)
 2. Use `langstar assistant` commands
 
 **Configuration Migration:**
 
 ```bash
-# v0.1.0 (still works)
+# v0.1.0 (still works in v0.2.0)
 export LANGSMITH_API_KEY="<key>"
 langstar prompt list
 
-# v0.2.0 (recommended for assistants)
-export LANGSMITH_API_KEY="<langsmith-key>"
-export LANGGRAPH_API_KEY="<langgraph-key>"
+# v0.2.0 (same key for both services)
+export LANGSMITH_API_KEY="<key>"
 langstar prompt list      # Uses LANGSMITH_API_KEY
-langstar assistant list   # Uses LANGGRAPH_API_KEY
+langstar assistant list   # Uses LANGSMITH_API_KEY (LangGraph is part of LangSmith)
 ```
 
 ---

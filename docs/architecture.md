@@ -210,7 +210,7 @@ X-Tenant-Id: <workspace-id>   # Optional, for narrower scoping
 
 **LangGraph:**
 ```http
-x-api-key: <LANGGRAPH_API_KEY>
+x-api-key: <LANGSMITH_API_KEY>
 # No additional scoping headers
 ```
 
@@ -298,7 +298,7 @@ LangGraph API → Returns assistants for this deployment
 fn build_langgraph_headers(&self) -> Result<HeaderMap> {
     let mut headers = HeaderMap::new();
 
-    // Use LANGGRAPH_API_KEY or fall back to LANGSMITH_API_KEY
+    // Use LANGSMITH_API_KEY or fall back to LANGSMITH_API_KEY
     let api_key = self.langgraph_config.api_key
         .as_ref()
         .or(self.langsmith_config.api_key.as_ref())
@@ -561,7 +561,7 @@ pub struct Config {
     pub workspace_id: Option<String>,
 
     // LangGraph configuration
-    pub langgraph_api_key: Option<String>,
+    pub langsmith_api_key: Option<String>,
 
     // General settings
     pub output_format: OutputFormat,

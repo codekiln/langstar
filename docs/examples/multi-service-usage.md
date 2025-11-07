@@ -44,7 +44,7 @@ This guide demonstrates how to use both LangSmith prompts and LangGraph assistan
 ```bash
 # Set both API keys
 export LANGSMITH_API_KEY="<your-langsmith-key>"
-export LANGGRAPH_API_KEY="<your-langgraph-key>"
+export LANGSMITH_API_KEY="<your-langgraph-key>"
 ```
 
 Or in `~/.langstar/config.toml`:
@@ -55,7 +55,7 @@ Or in `~/.langstar/config.toml`:
 langsmith_api_key = "<your-langsmith-key>"
 
 # LangGraph configuration
-langgraph_api_key = "<your-langgraph-key>"
+langsmith_api_key = "<your-langgraph-key>"
 ```
 
 ### Complete Setup with Scoping
@@ -67,7 +67,7 @@ export LANGSMITH_ORGANIZATION_ID="<org-id>"
 export LANGSMITH_WORKSPACE_ID="<workspace-id>"
 
 # LangGraph (no scoping needed)
-export LANGGRAPH_API_KEY="<your-langgraph-key>"
+export LANGSMITH_API_KEY="<your-langgraph-key>"
 ```
 
 Or in `~/.langstar/config.toml`:
@@ -80,7 +80,7 @@ organization_id = "<org-id>"
 workspace_id = "<workspace-id>"
 
 # LangGraph configuration (simple)
-langgraph_api_key = "<your-langgraph-key>"
+langsmith_api_key = "<your-langgraph-key>"
 ```
 
 ### Verifying Configuration
@@ -165,7 +165,7 @@ langstar prompt get team/customer-service-v3
 # (Use LangSmith web UI or API to test)
 
 # 3. Once finalized, deploy as LangGraph assistant
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 
 langstar assistant create \
   --graph-id graph_customer_service \
@@ -187,15 +187,15 @@ langstar assistant get <assistant-id>
 # Environment-specific configurations
 # dev.env
 export LANGSMITH_WORKSPACE_ID="<dev-workspace-id>"
-export LANGGRAPH_API_KEY="<dev-deployment-key>"
+export LANGSMITH_API_KEY="<dev-deployment-key>"
 
 # staging.env
 export LANGSMITH_WORKSPACE_ID="<staging-workspace-id>"
-export LANGGRAPH_API_KEY="<staging-deployment-key>"
+export LANGSMITH_API_KEY="<staging-deployment-key>"
 
 # prod.env
 export LANGSMITH_WORKSPACE_ID="<prod-workspace-id>"
-export LANGGRAPH_API_KEY="<prod-deployment-key>"
+export LANGSMITH_API_KEY="<prod-deployment-key>"
 ```
 
 **Workflow:**
@@ -238,7 +238,7 @@ langstar prompt get team/shared-template-v1
 # Each member has their own LangGraph deployment
 export LANGSMITH_API_KEY="<key>"
 export LANGSMITH_ORGANIZATION_ID="<org-id>"
-export LANGGRAPH_API_KEY="<member-deployment-key>"
+export LANGSMITH_API_KEY="<member-deployment-key>"
 
 # Reference shared prompt
 langstar prompt get team/shared-template-v1
@@ -264,7 +264,7 @@ export LANGSMITH_WORKSPACE_ID="<workspace>"
 langstar prompt search "variant" --format json > variants.json
 
 # 2. For each variant, create a test assistant in LangGraph
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 
 for variant in $(jq -r '.[].name' variants.json); do
   echo "Creating assistant for $variant..."
@@ -312,7 +312,7 @@ export LANGSMITH_WORKSPACE_ID="<prompt-library>"
 langstar prompt list | grep "customer-service"
 
 # Deploy agent that references these prompts
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 
 langstar assistant create \
   --graph-id graph_customer_service \
@@ -355,15 +355,15 @@ ENV="$1"  # dev, staging, or prod
 case "$ENV" in
   dev)
     export LANGSMITH_WORKSPACE_ID="<dev-workspace>"
-    export LANGGRAPH_API_KEY="<dev-deployment-key>"
+    export LANGSMITH_API_KEY="<dev-deployment-key>"
     ;;
   staging)
     export LANGSMITH_WORKSPACE_ID="<staging-workspace>"
-    export LANGGRAPH_API_KEY="<staging-deployment-key>"
+    export LANGSMITH_API_KEY="<staging-deployment-key>"
     ;;
   prod)
     export LANGSMITH_WORKSPACE_ID="<prod-workspace>"
-    export LANGGRAPH_API_KEY="<prod-deployment-key>"
+    export LANGSMITH_API_KEY="<prod-deployment-key>"
     ;;
   *)
     echo "Usage: $0 {dev|staging|prod}"
@@ -394,7 +394,7 @@ langstar prompt list --public  # Shared public prompts
 
 ```bash
 # Team A has their own deployment
-export LANGGRAPH_API_KEY="<team-a-key>"
+export LANGSMITH_API_KEY="<team-a-key>"
 
 langstar assistant create \
   --graph-id graph_team_a \
@@ -406,7 +406,7 @@ langstar assistant create \
 
 ```bash
 # Team B has their own deployment
-export LANGGRAPH_API_KEY="<team-b-key>"
+export LANGSMITH_API_KEY="<team-b-key>"
 
 langstar assistant create \
   --graph-id graph_team_b \
@@ -423,7 +423,7 @@ Use different API keys for LangSmith and LangGraph:
 ```bash
 # ✅ Good: Separate keys
 export LANGSMITH_API_KEY="<langsmith-specific-key>"
-export LANGGRAPH_API_KEY="<langgraph-specific-key>"
+export LANGSMITH_API_KEY="<langgraph-specific-key>"
 
 # ⚠️ Acceptable but not ideal: Same key for both
 export LANGSMITH_API_KEY="<shared-key>"
@@ -440,11 +440,11 @@ export LANGSMITH_API_KEY="<shared-key>"
 ```bash
 # Development
 export LANGSMITH_WORKSPACE_ID="<dev-workspace>"
-export LANGGRAPH_API_KEY="<dev-deployment>"
+export LANGSMITH_API_KEY="<dev-deployment>"
 
 # Production
 export LANGSMITH_WORKSPACE_ID="<prod-workspace>"
-export LANGGRAPH_API_KEY="<prod-deployment>"
+export LANGSMITH_API_KEY="<prod-deployment>"
 ```
 
 **Benefits:**
@@ -486,7 +486,7 @@ Keep a registry file:
 langsmith_api_key = "<prod-langsmith-key>"
 organization_id = "<prod-org>"
 workspace_id = "<prod-workspace>"
-langgraph_api_key = "<prod-deployment-key>"
+langsmith_api_key = "<prod-deployment-key>"
 ```
 
 Override for development:
@@ -494,7 +494,7 @@ Override for development:
 ```bash
 # dev-override.env
 export LANGSMITH_WORKSPACE_ID="<dev-workspace>"
-export LANGGRAPH_API_KEY="<dev-deployment-key>"
+export LANGSMITH_API_KEY="<dev-deployment-key>"
 
 source dev-override.env
 langstar prompt list       # Dev workspace
@@ -519,7 +519,7 @@ PROMPT_DETAILS=$(langstar prompt get "$PROMPT_NAME" --format json)
 PROMPT_TEMPLATE=$(echo "$PROMPT_DETAILS" | jq -r '.template')
 
 # Update assistant with new prompt
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 
 langstar assistant update "$ASSISTANT_ID" \
   --config "{\"prompt_template\": \"$PROMPT_TEMPLATE\"}"
@@ -544,10 +544,10 @@ langstar assistant list  # May fail or use wrong deployment
 ```bash
 # Use correct key for each service
 export LANGSMITH_API_KEY="<langsmith-key>"
-export LANGGRAPH_API_KEY="<langgraph-key>"
+export LANGSMITH_API_KEY="<langgraph-key>"
 
 langstar prompt list      # Uses LANGSMITH_API_KEY
-langstar assistant list   # Uses LANGGRAPH_API_KEY
+langstar assistant list   # Uses LANGSMITH_API_KEY
 ```
 
 ### Pitfall 2: Scoping Confusion
@@ -578,7 +578,7 @@ langstar assistant list  # No scoping for assistants
 ```bash
 # Dev workspace but prod deployment
 export LANGSMITH_WORKSPACE_ID="<dev-workspace>"
-export LANGGRAPH_API_KEY="<prod-deployment>"
+export LANGSMITH_API_KEY="<prod-deployment>"
 
 # This creates confusion - dev prompts, prod assistants
 ```
@@ -588,7 +588,7 @@ export LANGGRAPH_API_KEY="<prod-deployment>"
 ```bash
 # Match workspace to deployment
 export LANGSMITH_WORKSPACE_ID="<dev-workspace>"
-export LANGGRAPH_API_KEY="<dev-deployment>"
+export LANGSMITH_API_KEY="<dev-deployment>"
 ```
 
 ## Troubleshooting Multi-Service Issues
@@ -607,11 +607,11 @@ langstar config
 
 # Verify environment
 env | grep LANGSMITH_API_KEY
-env | grep LANGGRAPH_API_KEY
+env | grep LANGSMITH_API_KEY
 
 # Set explicit keys
 export LANGSMITH_API_KEY="<langsmith-key>"
-export LANGGRAPH_API_KEY="<langgraph-key>"
+export LANGSMITH_API_KEY="<langgraph-key>"
 ```
 
 ### Issue: Can't find resources in one service
@@ -643,11 +643,11 @@ export LANGGRAPH_API_KEY="<langgraph-key>"
 unset LANGSMITH_API_KEY
 unset LANGSMITH_ORGANIZATION_ID
 unset LANGSMITH_WORKSPACE_ID
-unset LANGGRAPH_API_KEY
+unset LANGSMITH_API_KEY
 
 # Set minimal configuration
 export LANGSMITH_API_KEY="<key>"
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 
 # Test each service independently
 langstar prompt list

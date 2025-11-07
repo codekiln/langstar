@@ -25,15 +25,14 @@
 //!
 //! ## Configuration
 //!
-//! Assistants require only an API key:
+//! Assistants require only an API key (same as prompts):
 //!
 //! ```bash
-//! export LANGGRAPH_API_KEY="<your-api-key>"
-//! # Or fallback to:
 //! export LANGSMITH_API_KEY="<your-api-key>"
 //! ```
 //!
-//! No organization or workspace configuration is needed.
+//! No organization or workspace configuration is needed for assistants.
+//! Note: LangGraph Cloud is part of LangSmith, so the same API key is used for both services.
 //!
 //! ## Usage Example
 //!

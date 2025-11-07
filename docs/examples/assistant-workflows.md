@@ -33,7 +33,7 @@ This guide demonstrates common workflows for managing LangGraph assistants using
 User → API Key → Deployment → Assistants
 ```
 
-Your `LANGGRAPH_API_KEY` is tied to a specific deployment, so all assistant operations automatically scope to that deployment.
+Your `LANGSMITH_API_KEY` is tied to a specific deployment, so all assistant operations automatically scope to that deployment.
 
 ## Basic Assistant Management
 
@@ -42,14 +42,14 @@ Your `LANGGRAPH_API_KEY` is tied to a specific deployment, so all assistant oper
 Minimal setup - just your API key:
 
 ```bash
-export LANGGRAPH_API_KEY="<your-api-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 ```
 
 Or in `~/.langstar/config.toml`:
 
 ```toml
 [langstar]
-langgraph_api_key = "<your-api-key>"
+langsmith_api_key = "<your-api-key>"
 ```
 
 **That's it!** No additional configuration needed.
@@ -410,15 +410,15 @@ If you have multiple LangGraph deployments (dev, staging, prod), each has its ow
 
 ```bash
 # Development
-export LANGGRAPH_API_KEY="<dev-key>"
+export LANGSMITH_API_KEY="<dev-key>"
 langstar assistant list
 
 # Staging
-export LANGGRAPH_API_KEY="<staging-key>"
+export LANGSMITH_API_KEY="<staging-key>"
 langstar assistant list
 
 # Production
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 langstar assistant list
 ```
 
@@ -427,14 +427,14 @@ langstar assistant list
 ```bash
 #!/bin/bash
 # dev-assistant.sh
-export LANGGRAPH_API_KEY="<dev-key>"
+export LANGSMITH_API_KEY="<dev-key>"
 langstar assistant "$@"
 ```
 
 ```bash
 #!/bin/bash
 # prod-assistant.sh
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 langstar assistant "$@"
 ```
 
@@ -451,15 +451,15 @@ chmod +x dev-assistant.sh prod-assistant.sh
 
 ```bash
 # dev.env
-export LANGGRAPH_API_KEY="<dev-key>"
+export LANGSMITH_API_KEY="<dev-key>"
 export ENV_NAME="development"
 
 # staging.env
-export LANGGRAPH_API_KEY="<staging-key>"
+export LANGSMITH_API_KEY="<staging-key>"
 export ENV_NAME="staging"
 
 # prod.env
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 export ENV_NAME="production"
 ```
 
@@ -495,7 +495,7 @@ fi
 
 # Get assistant details from staging
 echo "Fetching assistant from staging..."
-export LANGGRAPH_API_KEY="$STAGING_KEY"
+export LANGSMITH_API_KEY="$STAGING_KEY"
 DETAILS=$(langstar assistant get "$ASSISTANT_ID" --format json)
 
 NAME=$(echo "$DETAILS" | jq -r '.name')
@@ -504,7 +504,7 @@ CONFIG=$(echo "$DETAILS" | jq -c '.config')
 
 # Create in production
 echo "Creating in production..."
-export LANGGRAPH_API_KEY="$PROD_KEY"
+export LANGSMITH_API_KEY="$PROD_KEY"
 langstar assistant create \
   --graph-id "$GRAPH_ID" \
   --name "$NAME" \
@@ -527,11 +527,11 @@ chmod +x promote-assistant.sh
 # compare-deployments.sh
 
 # Export dev assistants
-export LANGGRAPH_API_KEY="<dev-key>"
+export LANGSMITH_API_KEY="<dev-key>"
 langstar assistant list --format json > dev-assistants.json
 
 # Export prod assistants
-export LANGGRAPH_API_KEY="<prod-key>"
+export LANGSMITH_API_KEY="<prod-key>"
 langstar assistant list --format json > prod-assistants.json
 
 # Compare
@@ -792,8 +792,8 @@ Keep a registry:
 # Verify configuration
 langstar config
 
-# Ensure LANGGRAPH_API_KEY is set
-env | grep LANGGRAPH_API_KEY
+# Ensure LANGSMITH_API_KEY is set
+env | grep LANGSMITH_API_KEY
 ```
 
 **Common mistake:**
@@ -804,7 +804,7 @@ export LANGSMITH_API_KEY="<key>"
 langstar assistant list  # Fails or uses wrong deployment
 
 # ✅ Correct: Use LangGraph key
-export LANGGRAPH_API_KEY="<langgraph-key>"
+export LANGSMITH_API_KEY="<langgraph-key>"
 langstar assistant list
 ```
 
@@ -812,14 +812,14 @@ langstar assistant list
 
 **Check deployment:**
 
-Your `LANGGRAPH_API_KEY` may be for a different deployment:
+Your `LANGSMITH_API_KEY` may be for a different deployment:
 
 ```bash
 # Verify you're using the correct key
-echo $LANGGRAPH_API_KEY
+echo $LANGSMITH_API_KEY
 
 # Try a different key if you have multiple deployments
-export LANGGRAPH_API_KEY="<different-deployment-key>"
+export LANGSMITH_API_KEY="<different-deployment-key>"
 langstar assistant list
 ```
 

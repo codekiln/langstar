@@ -154,7 +154,7 @@ env | grep LANGGRAPH
 
 # Unset to use config file
 unset LANGSMITH_API_KEY
-unset LANGGRAPH_API_KEY
+unset LANGSMITH_API_KEY
 ```
 
 **2. TOML syntax errors:**
@@ -257,7 +257,7 @@ export LANGSMITH_API_KEY="<langsmith-key>"
 langstar assistant list  # Fails or wrong deployment
 
 # Solution: Use correct key
-export LANGGRAPH_API_KEY="<langgraph-key>"
+export LANGSMITH_API_KEY="<langgraph-key>"
 langstar assistant list
 ```
 
@@ -385,10 +385,10 @@ $ langstar assistant list
 ```bash
 # Check which API key is set
 langstar config
-env | grep LANGGRAPH_API_KEY
+env | grep LANGSMITH_API_KEY
 
 # Verify you're using the correct deployment key
-export LANGGRAPH_API_KEY="<correct-deployment-key>"
+export LANGSMITH_API_KEY="<correct-deployment-key>"
 langstar assistant list
 ```
 
@@ -813,14 +813,14 @@ cat ~/.langstar/config.toml
 unset LANGSMITH_API_KEY
 unset LANGSMITH_ORGANIZATION_ID
 unset LANGSMITH_WORKSPACE_ID
-unset LANGGRAPH_API_KEY
+unset LANGSMITH_API_KEY
 
 # Remove config file
 rm ~/.langstar/config.toml
 
 # Start fresh
 export LANGSMITH_API_KEY="<key>"
-export LANGGRAPH_API_KEY="<key>"
+export LANGSMITH_API_KEY="<key>"
 ```
 
 ### Test Connectivity

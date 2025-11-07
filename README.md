@@ -29,9 +29,9 @@ cargo install --path cli
 
 ### Configuration Quick Start
 
-> **⚠️ Important**: Different Langstar commands require different API keys and configuration.
+> **⚠️ Important**: Langstar commands have different configuration requirements depending on which service you're using.
 
-Langstar interacts with **two distinct LangChain services**, each with different configuration requirements:
+Langstar provides access to **LangSmith services** including both prompts and LangGraph Cloud deployments (assistants):
 
 #### For LangSmith Prompts (`langstar prompt *`)
 
@@ -57,7 +57,7 @@ langstar prompt list
 #### For LangGraph Assistants (`langstar assistant *`)
 
 **Required:**
-- `LANGGRAPH_API_KEY` - Your LangGraph Cloud API key (or `LANGSMITH_API_KEY` as fallback)
+- `LANGSMITH_API_KEY` - Same API key as prompts (LangGraph Cloud is part of LangSmith)
 
 **Not Used:**
 - ❌ Organization/workspace IDs are **not applicable** for assistants
@@ -66,11 +66,11 @@ langstar prompt list
 **Example:**
 ```bash
 # Simple setup - no scoping needed
-export LANGGRAPH_API_KEY="<your-api-key>"
+export LANGSMITH_API_KEY="<your-api-key>"
 langstar assistant list
 ```
 
-> **Why the difference?** LangSmith uses a hierarchical organization/workspace model for prompts, while LangGraph uses deployment-level resources for assistants. Access to assistants is controlled entirely by your API key and deployment permissions.
+> **Why the difference?** LangSmith uses a hierarchical organization/workspace model for prompts, while LangGraph assistants are deployment-level resources. Access to assistants is controlled entirely by your API key and deployment permissions.
 
 For complete configuration details, see the [Configuration Guide](#configuration).
 
@@ -163,13 +163,10 @@ Create a configuration file at `~/.langstar/config.toml`:
 # Output format (table or json)
 output_format = "table"
 
-# LangSmith configuration (for prompt commands)
-langsmith_api_key = "<your-langsmith-key>"
-organization_id = "<your-org-id>"        # Optional: scope to organization
-workspace_id = "<your-workspace-id>"     # Optional: scope to workspace
-
-# LangGraph configuration (for assistant commands)
-langgraph_api_key = "<your-langgraph-key>"  # No scoping needed
+# LangSmith configuration (for both prompt and assistant commands)
+langsmith_api_key = "<your-api-key>"
+organization_id = "<your-org-id>"        # Optional: scope to organization (prompts only)
+workspace_id = "<your-workspace-id>"     # Optional: scope to workspace (prompts only)
 ```
 
 ### Environment Variables
@@ -195,9 +192,7 @@ export LANGSMITH_WORKSPACE_NAME="<workspace-name>"   # Informational only
 #### LangGraph Service (for `langstar assistant *` commands)
 
 ```bash
-# Required (either one)
-export LANGGRAPH_API_KEY="<your-api-key>"
-# Or fallback to:
+# Required (same as prompts)
 export LANGSMITH_API_KEY="<your-api-key>"
 ```
 
@@ -206,6 +201,7 @@ export LANGSMITH_API_KEY="<your-api-key>"
 - ❌ No workspace ID
 - ❌ No deployment configuration
 - ✅ Assistants are automatically scoped to your API key and deployment
+- ✅ Uses the same `LANGSMITH_API_KEY` as prompt commands
 
 ### Viewing Current Configuration
 
@@ -225,30 +221,25 @@ This displays:
 ```
 Configuration file: ~/.langstar/config.toml
 
-LangSmith Configuration (for 'prompt' commands):
+LangSmith Configuration:
   API key: configured
   Organization ID: <your-org-id> (scopes prompt operations)
   Workspace ID: <your-workspace-id> (narrows scope further)
-  → Prompt commands will use workspace-scoped resources
 
-LangGraph Configuration (for 'assistant' commands):
-  API key: configured
-  → Assistant commands use deployment-level resources
-  → No organization/workspace scoping available
+  → Prompt commands will use workspace-scoped resources
+  → Assistant commands use deployment-level resources (same API key, no org/workspace scoping)
 ```
 
 ### Troubleshooting Configuration
 
 **"Authentication failed" errors:**
-1. Check which service you're using (`prompt` vs `assistant`)
-2. Verify you have the correct API key set:
-   - `LANGSMITH_API_KEY` for prompt commands
-   - `LANGGRAPH_API_KEY` for assistant commands
-3. Ensure your API key is valid and not expired
+1. Verify you have `LANGSMITH_API_KEY` set (used for both prompts and assistants)
+2. Ensure your API key is valid and not expired
+3. Check that the key has access to the resources you're trying to access
 
 **"No assistants found" but I have assistants:**
 - Assistants are deployment-level resources
-- Ensure your `LANGGRAPH_API_KEY` matches your deployment
+- Ensure your `LANGSMITH_API_KEY` has access to the deployment
 - Unlike prompts, assistants do NOT support org/workspace scoping
 
 For more troubleshooting help, see the [Troubleshooting Guide](./docs/troubleshooting.md).
