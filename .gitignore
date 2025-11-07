@@ -8,6 +8,9 @@ __pycache__/
 node_modules/
 .claude/settings.local.json
 
+# Git worktrees
+wip/
+
 # Local dev container overrides (never commit these)
 .devcontainer/devcontainer.local.json
 .devcontainer/docker-compose.override.yml
