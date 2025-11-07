@@ -105,7 +105,7 @@ pub enum AssistantCommands {
         assistant_id: String,
 
         /// Skip confirmation prompt
-        #[arg(short, long)]
+        #[arg(short = 'y', long)]
         force: bool,
     },
 }
