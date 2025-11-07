@@ -7,7 +7,7 @@
 
 ## Features
 
-- **Spec-Driven SDK** - Generated directly from OpenAPI specifications for guaranteed API coverage
+- **Type-Safe SDK** - Rust types for LangSmith and LangGraph APIs (OpenAPI generation planned - see [#114](https://github.com/codekiln/langstar/issues/114))
 - **Ergonomic CLI** - Built with [clap](https://docs.rs/clap/) for excellent UX
 - **Multiple Output Formats** - JSON for scripting, tables for human readability
 - **Configuration Management** - Support for config files and environment variables
@@ -16,14 +16,7 @@
 
 ## Quick Start
 
-### Prerequisites
-
-- Rust 1.78+ (or latest stable)
-- LangSmith API key (get one at [smith.langchain.com](https://smith.langchain.com))
-
 ### Installation
-
-#### From Source
 
 ```bash
 # Clone the repository
@@ -34,61 +27,69 @@ cd langstar
 cargo install --path cli
 ```
 
-### Configuration
+### Configuration Quick Start
 
-Set your API key via environment variable:
+> **⚠️ Important**: Langstar commands have different configuration requirements depending on which service you're using.
 
+Langstar provides access to **LangSmith services** including both prompts and LangGraph Cloud deployments (assistants):
+
+#### For LangSmith Prompts (`langstar prompt *`)
+
+**Required:**
+- `LANGSMITH_API_KEY` - Your LangSmith API key ([get one here](https://smith.langchain.com))
+
+**Optional (for organization/workspace scoping):**
+- `LANGSMITH_ORGANIZATION_ID` - Scope operations to a specific organization
+- `LANGSMITH_WORKSPACE_ID` - Scope operations to a specific workspace
+
+**Example:**
 ```bash
-export LANGSMITH_API_KEY="your-api-key-here"
+# Minimal setup (personal prompts)
+export LANGSMITH_API_KEY="<your-api-key>"
+langstar prompt list
+
+# With workspace scoping (team prompts)
+export LANGSMITH_API_KEY="<your-api-key>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
+langstar prompt list
 ```
 
-Or create a config file at `~/.config/langstar/config.toml`:
+#### For LangGraph Assistants (`langstar assistant *`)
 
-```toml
-langsmith_api_key = "your-api-key-here"
-output_format = "table"
+**Required:**
+- `LANGSMITH_API_KEY` - Same API key as prompts (LangGraph Cloud is part of LangSmith)
+
+**Not Used:**
+- ❌ Organization/workspace IDs are **not applicable** for assistants
+- ❌ Assistants are **deployment-level resources**, not organization-scoped
+
+**Example:**
+```bash
+# Simple setup - no scoping needed
+export LANGSMITH_API_KEY="<your-api-key>"
+langstar assistant list
 ```
 
-#### Organization and Workspace Scoping
+> **Why the difference?** LangSmith uses a hierarchical organization/workspace model for prompts, while LangGraph assistants are deployment-level resources. Access to assistants is controlled entirely by your API key and deployment permissions.
 
-Langstar supports scoping operations to a specific organization or workspace. This is useful when working with team prompts or enterprise deployments.
+For complete configuration details, see the [Configuration Guide](#configuration).
 
-**Configuration Methods:**
+### Usage Examples
 
-1. **Environment Variables:**
-   ```bash
-   export LANGSMITH_ORGANIZATION_ID="your-org-id"
-   export LANGSMITH_WORKSPACE_ID="your-workspace-id"
-   ```
-
-2. **Config File (`~/.config/langstar/config.toml`):**
-   ```toml
-   organization_id = "your-org-id"
-   workspace_id = "your-workspace-id"
-   ```
-
-3. **CLI Flags (per command):**
-   ```bash
-   langstar prompt list --organization-id "your-org-id"
-   langstar prompt list --workspace-id "your-workspace-id"
-   ```
-
-**Precedence Order:** CLI flags → config file → environment variables
-
-**Default Behavior:**
-- When scoped (org/workspace ID set), operations **default to private prompts only**
-- Use `--public` flag to explicitly access public prompts when scoped
-- Without scoping, all prompts (public and private) are accessible
-
-For detailed documentation on scoping, see [docs/usage/scoping.md](./docs/usage/scoping.md).
-
-### Usage
+#### General Commands
 
 ```bash
 # Show help
 langstar --help
 
-# List prompts from LangSmith
+# Show current configuration
+langstar config
+```
+
+#### LangSmith Prompts (Organization/Workspace Scoped)
+
+```bash
+# List all accessible prompts
 langstar prompt list
 
 # Get details of a specific prompt
@@ -97,21 +98,155 @@ langstar prompt get owner/prompt-name
 # Search for prompts
 langstar prompt search "query"
 
+# Organization-scoped operations
+langstar prompt list --organization-id "<your-org-id>"  # Private prompts in org
+langstar prompt list --organization-id "<your-org-id>" --public  # Public prompts in org
+
+# Workspace-scoped operations (narrower scope)
+langstar prompt search "rag" --workspace-id "<your-workspace-id>"
+
 # Output as JSON for scripting
 langstar prompt list --format json
-
-# Show configuration
-langstar config
-
-# Scoped operations (organization/workspace)
-langstar prompt list --organization-id "your-org-id"  # List private prompts in org
-langstar prompt list --organization-id "your-org-id" --public  # List public prompts in org
-langstar prompt search "rag" --workspace-id "your-workspace-id"  # Search within workspace
 ```
+
+#### LangGraph Assistants (Deployment-Level)
+
+```bash
+# List all assistants (scoped to your API key/deployment)
+langstar assistant list
+
+# List with pagination
+langstar assistant list --limit 10 --offset 20
+
+# Search for assistants by name
+langstar assistant search "customer-service"
+
+# Get details of a specific assistant
+langstar assistant get <assistant-id>
+
+# Create a new assistant
+langstar assistant create --graph-id <graph-id> --name "My Assistant"
+
+# Create with configuration
+langstar assistant create --graph-id <graph-id> --name "Configured Bot" \
+  --config '{"temperature": 0.7}'
+
+# Update an assistant
+langstar assistant update <assistant-id> --name "Updated Name"
+
+# Delete an assistant
+langstar assistant delete <assistant-id>
+langstar assistant delete <assistant-id> --force  # Skip confirmation
+
+# JSON output
+langstar assistant list --format json
+```
+
+## Configuration
+
+This section provides detailed configuration options for both LangSmith and LangGraph services.
+
+### Configuration Methods
+
+Langstar supports three configuration methods, in order of precedence:
+
+1. **Command-line flags** (highest priority)
+2. **Configuration file** (`~/.langstar/config.toml`)
+3. **Environment variables** (lowest priority)
+
+### Configuration File Format
+
+Create a configuration file at `~/.langstar/config.toml`:
+
+```toml
+[langstar]
+# Output format (table or json)
+output_format = "table"
+
+# LangSmith configuration (for both prompt and assistant commands)
+langsmith_api_key = "<your-api-key>"
+organization_id = "<your-org-id>"        # Optional: scope to organization (prompts only)
+workspace_id = "<your-workspace-id>"     # Optional: scope to workspace (prompts only)
+```
+
+### Environment Variables
+
+#### LangSmith Service (for `langstar prompt *` commands)
+
+```bash
+# Required
+export LANGSMITH_API_KEY="<your-api-key>"
+
+# Optional: Organization/Workspace scoping
+export LANGSMITH_ORGANIZATION_ID="<your-org-id>"
+export LANGSMITH_ORGANIZATION_NAME="<org-name>"      # Informational only
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_NAME="<workspace-name>"   # Informational only
+```
+
+**Scoping Behavior:**
+- When scoped (org/workspace ID set), operations **default to private prompts only**
+- Use `--public` flag to explicitly access public prompts when scoped
+- Without scoping, all prompts (public and private) are accessible
+
+#### LangGraph Service (for `langstar assistant *` commands)
+
+```bash
+# Required (same as prompts)
+export LANGSMITH_API_KEY="<your-api-key>"
+```
+
+**No Additional Configuration Needed:**
+- ❌ No organization ID
+- ❌ No workspace ID
+- ❌ No deployment configuration
+- ✅ Assistants are automatically scoped to your API key and deployment
+- ✅ Uses the same `LANGSMITH_API_KEY` as prompt commands
+
+### Viewing Current Configuration
+
+Check your current configuration at any time:
+
+```bash
+langstar config
+```
+
+This displays:
+- Configuration file location
+- Which API keys are configured (without showing the actual keys)
+- Organization/workspace scoping status
+- Output format settings
+
+**Example output:**
+```
+Configuration file: ~/.langstar/config.toml
+
+LangSmith Configuration:
+  API key: configured
+  Organization ID: <your-org-id> (scopes prompt operations)
+  Workspace ID: <your-workspace-id> (narrows scope further)
+
+  → Prompt commands will use workspace-scoped resources
+  → Assistant commands use deployment-level resources (same API key, no org/workspace scoping)
+```
+
+### Troubleshooting Configuration
+
+**"Authentication failed" errors:**
+1. Verify you have `LANGSMITH_API_KEY` set (used for both prompts and assistants)
+2. Ensure your API key is valid and not expired
+3. Check that the key has access to the resources you're trying to access
+
+**"No assistants found" but I have assistants:**
+- Assistants are deployment-level resources
+- Ensure your `LANGSMITH_API_KEY` has access to the deployment
+- Unlike prompts, assistants do NOT support org/workspace scoping
+
+For more troubleshooting help, see the [Troubleshooting Guide](./docs/troubleshooting.md).
 
 ## Architecture
 
-Langstar follows a **spec-driven, thin-wrapper architecture**:
+Langstar follows a **spec-driven, thin-wrapper architecture** and implements a **multi-service SDK** that cleanly separates LangSmith and LangGraph concerns.
 
 ```
 langstar-rs/
@@ -120,7 +255,8 @@ langstar-rs/
 │   │   ├── auth.rs        # Authentication helpers
 │   │   ├── client.rs      # HTTP client configuration
 │   │   ├── error.rs       # Error types
-│   │   ├── prompts.rs     # LangSmith Prompts API
+│   │   ├── prompts.rs     # LangSmith Prompts API (org/workspace scoped)
+│   │   ├── assistants.rs  # LangGraph Assistants API (deployment-level)
 │   │   ├── generated/     # OpenAPI-generated code
 │   │   └── lib.rs
 │   └── Cargo.toml
@@ -137,10 +273,48 @@ langstar-rs/
 
 ### Design Principles
 
-1. **Spec-Driven Development** - Generate code from OpenAPI specs, don't hand-write API wrappers
+1. **Spec-Driven Development** - Design goal to generate code from OpenAPI specs (tracked in [#114](https://github.com/codekiln/langstar/issues/114))
 2. **Thin Wrapper Pattern** - Add only lightweight ergonomic helpers, no business logic duplication
 3. **Automation-First** - Design for both human and AI agent usage
 4. **Zero Surprises** - Type-safe, predictable behavior with clear error messages
+5. **Service Separation** - Clean boundaries between LangSmith and LangGraph APIs
+
+### Resource Scoping Models
+
+Langstar interacts with two LangChain services that have fundamentally different resource scoping models:
+
+| Service | Scope Level | Headers Used | Multi-tenancy |
+|---------|-------------|--------------|---------------|
+| **LangSmith (Prompts)** | Organization/Workspace | `x-api-key`, `x-organization-id`, `X-Tenant-Id` | Yes |
+| **LangGraph (Assistants)** | Deployment-level | `x-api-key` only | No |
+
+#### LangSmith (Organization/Workspace Model)
+
+LangSmith uses hierarchical multi-tenancy:
+- Organizations contain multiple workspaces
+- Workspaces contain prompts
+- API requests can be scoped to org or workspace via headers
+- Headers: `x-organization-id`, `X-Tenant-Id`
+
+**SDK Implementation:** The `langsmith_*()` methods in `client.rs` add organization and workspace headers when configured.
+
+#### LangGraph (Deployment Model)
+
+LangGraph uses deployment-level resources:
+- Assistants belong to a specific deployment
+- Access controlled by API key (tied to deployment)
+- No additional scoping headers needed
+- Simpler model for graph-based applications
+
+**SDK Implementation:** The `langgraph_*()` methods in `client.rs` do NOT add scoping headers, as assistants are deployment-level resources.
+
+**Key Insight**: This architectural difference is reflected throughout the codebase:
+- CLI flag design (prompts have `--organization-id`/`--workspace-id`, assistants don't)
+- Configuration file structure (separate sections for each service)
+- Error messages (guide users to correct API key for each service)
+- Documentation (emphasizes the scoping difference)
+
+For detailed architecture documentation, see [docs/architecture.md](./docs/architecture.md).
 
 ## Development
 
