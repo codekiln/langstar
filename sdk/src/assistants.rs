@@ -37,12 +37,13 @@
 //! ## Usage Example
 //!
 //! ```no_run
-//! use langstar_sdk::LangchainClient;
+//! use langstar_sdk::{LangchainClient, AuthConfig};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     // Create client (scoped to deployment by API key)
-//!     let client = LangchainClient::new()?;
+//!     // Create auth config and client (scoped to deployment by API key)
+//!     let auth = AuthConfig::new(None, Some("your-api-key".into()), None, None);
+//!     let client = LangchainClient::new(auth)?;
 //!
 //!     // List assistants in this deployment
 //!     let assistants = client.assistants().list(Some(10), None).await?;
