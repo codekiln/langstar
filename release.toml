@@ -1,0 +1,48 @@
+# cargo-release configuration
+# See https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
+
+# Disable publishing to crates.io (we're just doing GitHub releases)
+publish = false
+
+# Pre-release replacements (update version references in files)
+pre-release-replacements = [
+  { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}}", min = 1 },
+  { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
+  { file = "CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}", min = 1 },
+  { file = "CHANGELOG.md", search = "<!-- next-header -->", replace = "<!-- next-header -->\n\n## [Unreleased] - ReleaseDate", exactly = 1 },
+  { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/codekiln/langstar/compare/{{tag_name}}...HEAD", exactly = 1 },
+]
+
+# Tag name format
+tag-name = "v{{version}}"
+
+# Tag message format
+tag-message = "Release {{version}}"
+
+# Sign tags
+sign-tag = false
+
+# Sign commits
+sign-commit = false
+
+# Push to remote
+push = true
+
+# Push tags
+push-tags = true
+
+# Disable pre-release-commit-message (we'll use git-cliff for changelog)
+# This prevents cargo-release from trying to update CHANGELOG.md automatically
+enable-all-features = true
+
+# Allow dirty working directory (since we might be making changes)
+allow-branch = ["main", "master"]
+
+# Don't verify crate can be built
+verify = true
+
+# Consolidate commits
+consolidate-commits = true
+
+# Pre-release hook to update changelog with git-cliff
+pre-release-hook = ["git-cliff", "--tag", "v{{version}}", "--output", "CHANGELOG.md"]
