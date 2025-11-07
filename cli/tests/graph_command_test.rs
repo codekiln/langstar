@@ -25,16 +25,28 @@ fn langstar_cmd() -> Command {
     Command::new(bin)
 }
 
+/// Helper to verify required environment variables
+/// Returns None if credentials are not available (tests will be skipped)
+fn check_env_vars() -> Option<String> {
+    let api_key = std::env::var("LANGSMITH_API_KEY").ok()?;
+    let workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID").ok()?;
+
+    if api_key.is_empty() || workspace_id.is_empty() {
+        return None;
+    }
+
+    println!("Testing with workspace ID: {}", workspace_id);
+    Some(workspace_id)
+}
+
 #[test]
 fn test_graph_list_basic() {
-    // Requires LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    let Some(workspace_id) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
 
     println!("Testing basic graph list command");
-    println!("Workspace ID: {}", workspace_id);
 
     let mut cmd = langstar_cmd();
     cmd.args(["graph", "list"]);
@@ -63,10 +75,7 @@ fn test_graph_list_basic() {
 
 #[test]
 fn test_graph_list_with_limit() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with --limit flag");
 
@@ -84,10 +93,7 @@ fn test_graph_list_with_limit() {
 
 #[test]
 fn test_graph_list_json_output() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with JSON output");
 
@@ -117,10 +123,7 @@ fn test_graph_list_json_output() {
 
 #[test]
 fn test_graph_list_with_deployment_type_filter() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with --deployment-type filter");
 
@@ -138,10 +141,7 @@ fn test_graph_list_with_deployment_type_filter() {
 
 #[test]
 fn test_graph_list_with_status_filter() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with --status filter");
 
@@ -159,10 +159,7 @@ fn test_graph_list_with_status_filter() {
 
 #[test]
 fn test_graph_list_with_name_filter() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with --name-contains filter");
 
@@ -180,10 +177,7 @@ fn test_graph_list_with_name_filter() {
 
 #[test]
 fn test_graph_list_invalid_deployment_type() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with invalid --deployment-type");
 
@@ -209,10 +203,7 @@ fn test_graph_list_invalid_deployment_type() {
 
 #[test]
 fn test_graph_list_invalid_status() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with invalid --status");
 
@@ -238,10 +229,7 @@ fn test_graph_list_invalid_status() {
 
 #[test]
 fn test_graph_list_multiple_filters() {
-    let _api_key =
-        std::env::var("LANGSMITH_API_KEY").expect("LANGSMITH_API_KEY must be set for this test");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for this test");
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
 
     println!("Testing graph list with multiple filters");
 

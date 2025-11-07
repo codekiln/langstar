@@ -11,10 +11,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// 4. Outputs JSON and table formats
 ///
 /// **Prerequisites:**
-/// 1. Valid LANGSMITH_API_KEY environment variable
-/// 2. Valid LANGGRAPH_API_KEY environment variable
-/// 3. Valid LANGCHAIN_WORKSPACE_ID environment variable
-/// 4. TEST_GRAPH_ID environment variable (deployment name)
+/// 1. Valid LANGSMITH_API_KEY environment variable (used for both LangSmith and LangGraph)
+/// 2. Valid LANGCHAIN_WORKSPACE_ID environment variable
+/// 3. TEST_GRAPH_ID environment variable (deployment name)
 ///
 /// **Known Issues:**
 /// - List command blocked by #127 (405 Method Not Allowed)
@@ -43,18 +42,18 @@ fn generate_test_name(prefix: &str) -> String {
 }
 
 /// Helper to verify required environment variables
-fn check_env_vars() -> (String, String) {
-    let _langsmith_key = std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for assistant tests");
-    let _langgraph_key = std::env::var("LANGGRAPH_API_KEY")
-        .expect("LANGGRAPH_API_KEY must be set for assistant tests");
-    let _workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID")
-        .expect("LANGCHAIN_WORKSPACE_ID must be set for assistant tests");
-    let deployment_name =
-        std::env::var("TEST_GRAPH_ID").expect("TEST_GRAPH_ID must be set for assistant tests");
+/// Returns None if credentials are not available (tests will be skipped)
+fn check_env_vars() -> Option<(String, String)> {
+    let langsmith_key = std::env::var("LANGSMITH_API_KEY").ok()?;
+    let workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID").ok()?;
+    let deployment_name = std::env::var("TEST_GRAPH_ID").ok()?;
+
+    if langsmith_key.is_empty() || workspace_id.is_empty() || deployment_name.is_empty() {
+        return None;
+    }
 
     println!("Using test deployment: {}", deployment_name);
-    (deployment_name, "test_graph".to_string())
+    Some((deployment_name, "test_graph".to_string()))
 }
 
 #[test]
@@ -63,7 +62,11 @@ fn test_assistant_create_basic() {
     println!("Test: Assistant Create (Basic)");
     println!("==================================================\n");
 
-    let (deployment_name, _graph_name) = check_env_vars();
+    let Some((deployment_name, _graph_name)) = check_env_vars() else {
+        println!("Skipping test: Required environment variables not set");
+        println!("Set LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID, and TEST_GRAPH_ID to run this test");
+        return;
+    };
     let assistant_name = generate_test_name("cli-test-assistant");
 
     println!("Creating assistant: {}", assistant_name);
@@ -118,7 +121,7 @@ fn test_assistant_lifecycle() {
     println!("    https://github.com/codekiln/langstar/issues/131");
     println!("\n==================================================\n");
 
-    let (deployment_name, _graph_name) = check_env_vars();
+    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
     let assistant_name = generate_test_name("cli-lifecycle-test");
 
     // Step 1: Create
@@ -279,7 +282,7 @@ fn test_assistant_output_formats() {
     println!("    https://github.com/codekiln/langstar/issues/131");
     println!("\n==================================================\n");
 
-    let (deployment_name, _graph_name) = check_env_vars();
+    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
     let assistant_name = generate_test_name("cli-format-test");
 
     // Create assistant
@@ -380,7 +383,7 @@ fn test_deployment_discovery_workflow() {
     println!("Test: Deployment Discovery Workflow");
     println!("==================================================\n");
 
-    let (_deployment_name, _graph_name) = check_env_vars();
+    let Some((_deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
 
     // Step 1: List deployments
     println!("1. List available deployments");
@@ -456,7 +459,7 @@ fn test_error_handling_nonexistent_deployment() {
     println!("Test: Error Handling - Nonexistent Deployment");
     println!("==================================================\n");
 
-    let _env_check = check_env_vars();
+    if check_env_vars().is_none() { println!("Skipping test: Required environment variables not set"); return; }
     let assistant_name = generate_test_name("error-test");
 
     println!("Attempting to create assistant with nonexistent deployment...");
@@ -512,7 +515,7 @@ fn test_assistant_list() {
     println!("    https://github.com/codekiln/langstar/issues/127");
     println!("\n==================================================\n");
 
-    let (deployment_name, _graph_name) = check_env_vars();
+    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
 
     let mut cmd = langstar_cmd();
     cmd.args(["assistant", "list", "--deployment", &deployment_name]);
@@ -540,7 +543,7 @@ fn test_assistant_search() {
     println!("    https://github.com/codekiln/langstar/issues/128");
     println!("\n==================================================\n");
 
-    let (deployment_name, _graph_name) = check_env_vars();
+    let Some((deployment_name, _graph_name)) = check_env_vars() else { println!("Skipping test: Required environment variables not set"); return; };
 
     let mut cmd = langstar_cmd();
     cmd.args([
