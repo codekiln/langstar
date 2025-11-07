@@ -7,7 +7,7 @@
 
 ## Features
 
-- **Spec-Driven SDK** - Generated directly from OpenAPI specifications for guaranteed API coverage
+- **Type-Safe SDK** - Rust types for LangSmith and LangGraph APIs (OpenAPI generation planned - see [#114](https://github.com/codekiln/langstar/issues/114))
 - **Ergonomic CLI** - Built with [clap](https://docs.rs/clap/) for excellent UX
 - **Multiple Output Formats** - JSON for scripting, tables for human readability
 - **Configuration Management** - Support for config files and environment variables
@@ -273,7 +273,7 @@ langstar-rs/
 
 ### Design Principles
 
-1. **Spec-Driven Development** - Generate code from OpenAPI specs, don't hand-write API wrappers
+1. **Spec-Driven Development** - Design goal to generate code from OpenAPI specs (tracked in [#114](https://github.com/codekiln/langstar/issues/114))
 2. **Thin Wrapper Pattern** - Add only lightweight ergonomic helpers, no business logic duplication
 3. **Automation-First** - Design for both human and AI agent usage
 4. **Zero Surprises** - Type-safe, predictable behavior with clear error messages

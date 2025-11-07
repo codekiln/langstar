@@ -66,14 +66,18 @@ Langstar is a unified Rust CLI for the LangChain ecosystem, providing ergonomic 
 **Example:**
 
 ```rust
-// Generated from OpenAPI spec
+// Hand-written types (v0.2.0)
+// Note: OpenAPI spec generation is planned for future versions (see #114)
 pub struct Prompt {
     pub id: String,
     pub name: String,
     pub owner: String,
-    // ... other fields from spec
+    // ... other fields matching the API
 }
 ```
+
+**Note:** While the design principle is spec-driven development, v0.2.0 uses hand-written types.
+Full OpenAPI code generation is tracked in [#114](https://github.com/codekiln/langstar/issues/114).
 
 ### 2. Thin Wrapper Pattern
 
@@ -317,7 +321,7 @@ fn build_langgraph_headers(&self) -> Result<HeaderMap> {
 
 This is NOT a limitation or missing feature—it's the intended design:
 
-1. **API Key = Deployment**: Your API key determines which deployment you access
+1. **API Key = Deployments**: Your API key determines which deployments you can access
 2. **Simpler Model**: No need for organization/workspace hierarchy
 3. **Clear Boundaries**: Each deployment is independent
 4. **Access Control**: Managed at API key/deployment level
