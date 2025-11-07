@@ -1,8 +1,74 @@
+//! LangGraph Assistants API
+//!
+//! This module provides access to the LangGraph Cloud Assistants API.
+//!
+//! ## Deployment-Level Resources
+//!
+//! **Important:** Assistants are deployment-level resources in LangGraph Cloud.
+//! Unlike LangSmith prompts, they are NOT scoped by organization or workspace.
+//!
+//! ### What This Means
+//!
+//! - Each assistant belongs to a specific LangGraph deployment
+//! - Your API key determines which deployment you're accessing
+//! - No additional scoping headers are needed or supported
+//! - Access control is handled entirely at the API key/deployment level
+//!
+//! ### Comparison with LangSmith Prompts
+//!
+//! | Aspect | LangSmith Prompts | LangGraph Assistants |
+//! |--------|-------------------|----------------------|
+//! | Scoping | Organization/Workspace | Deployment |
+//! | Headers | `x-organization-id`, `X-Tenant-Id` | `x-api-key` only |
+//! | Multi-tenancy | Yes | No |
+//! | Access model | Hierarchical | Flat |
+//!
+//! ## Configuration
+//!
+//! Assistants require only an API key:
+//!
+//! ```bash
+//! export LANGGRAPH_API_KEY="<your-api-key>"
+//! # Or fallback to:
+//! export LANGSMITH_API_KEY="<your-api-key>"
+//! ```
+//!
+//! No organization or workspace configuration is needed.
+//!
+//! ## Usage Example
+//!
+//! ```no_run
+//! use langstar_sdk::LangchainClient;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     // Create client (scoped to deployment by API key)
+//!     let client = LangchainClient::new()?;
+//!
+//!     // List assistants in this deployment
+//!     let assistants = client.assistants().list(Some(10), None).await?;
+//!
+//!     for assistant in assistants {
+//!         println!("{}: {}", assistant.assistant_id, assistant.name);
+//!     }
+//!
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## API Reference
+//!
+//! For detailed API documentation, see:
+//! - [LangGraph Cloud Documentation](https://langchain-ai.github.io/langgraph/cloud/)
+//! - [Assistants API Reference](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref/)
+
 use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
 
 /// A LangGraph assistant (configured instance of a graph)
+///
+/// Assistants are deployment-level resources, automatically scoped to your API key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Assistant {
     /// Unique identifier for the assistant

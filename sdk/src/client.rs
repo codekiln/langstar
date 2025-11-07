@@ -228,6 +228,26 @@ impl LangchainClient {
     }
 
     /// Create a GET request to LangGraph API
+    ///
+    /// ## Deployment-Level Resources
+    ///
+    /// **Important:** Unlike `langsmith_get()`, this method does NOT add organization
+    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
+    ///
+    /// LangGraph assistants are deployment-level resources. The API key used in the
+    /// request is tied to a specific deployment, and all operations are automatically
+    /// scoped to that deployment. No additional scoping is needed or supported.
+    ///
+    /// ### Why No Scoping Headers?
+    ///
+    /// LangGraph and LangSmith have different resource models:
+    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
+    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
+    ///
+    /// This is the intended design, not a limitation. Access control for LangGraph
+    /// resources is managed entirely at the API key/deployment level.
+    ///
+    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langgraph_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
@@ -240,6 +260,26 @@ impl LangchainClient {
     }
 
     /// Create a POST request to LangGraph API
+    ///
+    /// ## Deployment-Level Resources
+    ///
+    /// **Important:** Unlike `langsmith_post()`, this method does NOT add organization
+    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
+    ///
+    /// LangGraph assistants are deployment-level resources. The API key used in the
+    /// request is tied to a specific deployment, and all operations are automatically
+    /// scoped to that deployment. No additional scoping is needed or supported.
+    ///
+    /// ### Why No Scoping Headers?
+    ///
+    /// LangGraph and LangSmith have different resource models:
+    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
+    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
+    ///
+    /// This is the intended design, not a limitation. Access control for LangGraph
+    /// resources is managed entirely at the API key/deployment level.
+    ///
+    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
     pub fn langgraph_post(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langgraph_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
