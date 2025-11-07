@@ -55,13 +55,13 @@ This project uses a **validate-on-PR, release-on-tag** CI/CD pipeline strategy, 
 
 ### Prerequisites
 
-1. **Install tools**:
-   ```bash
-   # Install cargo-release for version management
-   cargo install cargo-release
+1. **Tools** (pre-installed in devcontainer):
+   - `cargo-release` - Version management and release automation
+   - `git-cliff` - Changelog generation from conventional commits
 
-   # Install git-cliff for changelog generation
-   cargo install git-cliff
+   **Note**: If not using the devcontainer, install manually:
+   ```bash
+   cargo install cargo-release git-cliff
    ```
 
 2. **Ensure clean state**:
