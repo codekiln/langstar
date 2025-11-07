@@ -98,14 +98,9 @@ impl<'a> AssistantClient<'a> {
         let path = "/assistants/search";
         let request = self.client.langgraph_post(path)?.json(&request_body);
 
-        // LangGraph API returns a paginated response with an "assistants" field
-        #[derive(Deserialize)]
-        struct ListAssistantsResponse {
-            assistants: Vec<Assistant>,
-        }
-
-        let response: ListAssistantsResponse = self.client.execute(request).await?;
-        Ok(response.assistants)
+        // LangGraph API returns a raw array of assistants
+        let response: Vec<Assistant> = self.client.execute(request).await?;
+        Ok(response)
     }
 
     /// Search for assistants by name
@@ -123,14 +118,9 @@ impl<'a> AssistantClient<'a> {
         let path = "/assistants/search";
         let request = self.client.langgraph_post(path)?.json(&request_body);
 
-        // LangGraph API returns a list of assistants
-        #[derive(Deserialize)]
-        struct SearchAssistantsResponse {
-            assistants: Vec<Assistant>,
-        }
-
-        let response: SearchAssistantsResponse = self.client.execute(request).await?;
-        Ok(response.assistants)
+        // LangGraph API returns a raw array of assistants
+        let response: Vec<Assistant> = self.client.execute(request).await?;
+        Ok(response)
     }
 
     /// Get a specific assistant by ID
