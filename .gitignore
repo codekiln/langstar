@@ -1,9 +1,15 @@
 *~
 .DS_Store
 __pycache__/
+*.pyc
+*.pyo
 .venv/
+.env
 node_modules/
 .claude/settings.local.json
+
+# Git worktrees
+wip/
 
 # Local dev container overrides (never commit these)
 .devcontainer/devcontainer.local.json

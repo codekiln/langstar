@@ -123,13 +123,121 @@ Add backtrace for error details:
 RUST_BACKTRACE=1 cargo test --test integration_test -- --ignored --nocapture
 ```
 
+## Assistant Integration Tests
+
+### Prerequisites
+
+**1. Deploy Test LangGraph Application**
+
+Before running assistant integration tests, you must deploy the test graph:
+
+1. Follow the deployment guide: `../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`
+2. Deploy to LangGraph Cloud via LangSmith UI
+3. Note the **Graph ID** from the deployment
+
+**2. Set Required Environment Variables**
+
+```bash
+# Required for all tests
+export LANGSMITH_API_KEY="<your-api-key>"
+export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+
+# Required for assistant integration tests
+export TEST_GRAPH_ID="<graph-id-from-deployment>"
+
+# Optional: For specific test scenarios
+export TEST_DEPLOYMENT_ID="<deployment-id>"
+export TEST_ASSISTANT_ID="<existing-assistant-id>"
+```
+
+**Where to find these values:**
+
+- **LANGSMITH_API_KEY**: https://smith.langchain.com/settings → "API Keys"
+- **LANGCHAIN_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
+- **TEST_GRAPH_ID**: Deployment details page → "Graph ID" field (after deploying test graph)
+- **TEST_DEPLOYMENT_ID**: Deployment details page (optional)
+
+### Running Assistant Tests
+
+```bash
+# Run all assistant integration tests
+cargo test --test assistant_integration_test -- --ignored --nocapture
+
+# Run specific assistant test
+cargo test --test assistant_integration_test test_assistant_lifecycle -- --ignored --nocapture
+```
+
+### Available Assistant Tests
+
+**Note**: Assistant integration tests are part of Phase 5 (Issue #94) and will be implemented after Phase 4 deployment setup is complete.
+
+**Planned tests include:**
+
+- `test_assistant_lifecycle` - Full CRUD lifecycle (create, get, update, delete)
+- `test_assistant_search_exact_match` - Search by exact name
+- `test_assistant_search_partial_match` - Search with partial name matching
+- `test_assistant_search_no_results` - Search with no matching results
+- `test_assistant_list` - List all assistants with pagination
+- `test_assistant_error_handling` - 404, auth failures, invalid configs
+
+**Test Cleanup:**
+
+Assistant tests use timestamped names (e.g., `test-assistant-1234567890`) to avoid conflicts. Tests include cleanup steps to delete created assistants. If tests fail midway, you may need to manually clean up:
+
+```bash
+# List test assistants (once CLI is implemented)
+langstar assistant list | grep "test-assistant"
+
+# Delete manually via LangSmith UI or CLI
+langstar assistant delete <assistant-id>
+```
+
+### Troubleshooting Assistant Tests
+
+**Error:** "TEST_GRAPH_ID environment variable not set"
+
+**Solution:**
+1. Deploy test graph (see `../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`)
+2. Set `TEST_GRAPH_ID` environment variable
+
+---
+
+**Error:** "Invalid graph_id"
+
+**Solution:**
+1. Verify deployment is active in LangSmith UI
+2. Check Graph ID matches exactly (case-sensitive)
+3. Ensure workspace ID is correct
+
+---
+
+**Error:** "Authentication failed"
+
+**Solution:**
+1. Verify `LANGSMITH_API_KEY` is valid
+2. Check API key has "Assistants" permissions
+3. Verify `LANGCHAIN_WORKSPACE_ID` matches your workspace
+
+---
+
+**Error:** "404 Not Found" when creating assistant
+
+**Solution:**
+1. Verify test graph deployment is active
+2. Check deployment status in LangSmith UI
+3. Confirm Graph ID is from an active deployment
+
+---
+
 ## Future Integration Tests
 
 Potential tests to add:
 
 - [ ] Test retrieving a specific prompt by handle
 - [ ] Test searching prompts with query parameters
-- [ ] Test LangGraph Cloud API endpoints
+- [ ] Test LangGraph Cloud deployment listing and details
 - [ ] Test authentication error handling
 - [ ] Test rate limiting behavior
 - [ ] Test pagination for large result sets
+- [x] Test assistant CRUD operations (Phase 5)
+- [x] Test assistant search functionality (Phase 5)

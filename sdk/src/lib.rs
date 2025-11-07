@@ -23,15 +23,25 @@
 //! }
 //! ```
 
+pub mod assistants;
 pub mod auth;
 pub mod client;
+pub mod deployments;
 pub mod error;
 pub mod organization;
 pub mod prompts;
 
 // Re-export commonly used types
+pub use assistants::{
+    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
+    UpdateAssistantRequest,
+};
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
+pub use deployments::{
+    Deployment, DeploymentClient, DeploymentFilters, DeploymentSecret, DeploymentSource,
+    DeploymentStatus, DeploymentType, DeploymentsList,
+};
 pub use error::{LangstarError, Result};
 pub use organization::{Organization, Workspace};
 pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};

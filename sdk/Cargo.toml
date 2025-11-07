@@ -17,6 +17,7 @@ thiserror.workspace = true
 # Additional SDK-specific dependencies
 url = "2.5"
 base64 = "0.22"
+urlencoding = "2.1"
 
 [dev-dependencies]
 tokio-test = "0.4"

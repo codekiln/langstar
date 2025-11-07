@@ -11,7 +11,12 @@ This skill automates breaking down GitHub issues into official GitHub sub-issues
 
 ## When to Use This Skill
 
+**⚠️ CRITICAL: Use this skill IMMEDIATELY after creating an Epic/parent issue with a task list!**
+
+**DO NOT manually create sub-issues** - they won't have proper GitHub parent-child relationships and won't show in the sub-issue UI.
+
 Use this skill when:
+- **Right after creating an Epic** - Run this immediately to create official sub-issues ⭐ **MOST IMPORTANT**
 - User requests breaking down an issue into sub-tasks (e.g., "break down issue #47 into sub-issues")
 - User mentions converting a task list into sub-issues
 - User is working with complex features that need hierarchical task management
@@ -23,6 +28,39 @@ Use this skill when:
 - "Create sub-issues from issue 47"
 - "Convert the task list in issue #42 to sub-issues"
 - "Use github-issue-breakdown on issue 42"
+
+**⚠️ Common Mistake to Avoid:**
+
+❌ **WRONG - Creates informal sub-tasks WITHOUT parent-child links:**
+```bash
+# Create epic
+gh issue create --title "Epic: Feature X"
+
+# Manually create sub-issues (NO PARENT-CHILD LINK!)
+gh issue create --title "Phase 1" --body "Sub-task of #42"
+gh issue create --title "Phase 2" --body "Sub-task of #42"
+# Result: Issues exist but aren't real sub-issues
+```
+
+✅ **CORRECT - Creates official sub-issues WITH parent-child links:**
+```bash
+# Create epic with task list
+gh issue create --title "Epic: Feature X" --body "## Tasks
+- [ ] Phase 1: Setup
+- [ ] Phase 2: Implementation"
+
+# IMMEDIATELY use this skill to create official sub-issues
+python scripts/create_subissues.py --issue 42 --yes
+# Result: Proper sub-issues that show in GitHub UI
+```
+
+**Why this matters:**
+- Manual issues only have informal text links ("Sub-task of #X")
+- They don't show in GitHub's sub-issue UI
+- No automatic tracking of parent-child relationships
+- Can't use GitHub's task completion features
+- Harder to track Epic progress
+- Must be recreated to fix (GitHub doesn't support retroactive conversion)
 
 ## Quick Start
 

@@ -1,23 +1,20 @@
 # GitHub Issue-Driven Development Workflow
 
-This document outlines the preferred development workflow for the Langstar project, leveraging GitHub issues and Claude Code GitHub Actions for streamlined branch management and pull requests.
+## Key Concept
+
+1. Each github pull request should be opened from a feature branch that closes a single github issue.
+2. Github issues use sub-tasks for hierarchy, representing parent child relationships.
+   There may be more than one level to the hierarchy. 
+3. If github issue "#333 implement kingdom" depends on "#666 implement phylum" depends on #999 implement class, then
+   user/999-implement-class will PR into user/666-implement-phylum, and user/666-implement-phylum will PR into user/333-implement-kingdom.
 
 ## Workflow Overview
 
-The standard development process follows these steps:
-
-1. **Create GitHub Issue** - Document the feature, bug, or task
+1. **Create GitHub Issue** - Document the feature, bug, or task. Ensure parent child issue relationships are in place, if applicable.
 2. **Branch Creation** - Create or use automated branch creation for the issue
 3. **Development** - Implement changes on the issue branch
 4. **Pull Request** - Submit a PR referencing the original issue
 5. **Review & Merge** - Review, approve, and merge the PR (closes the issue)
-
-## Benefits
-
-- **Traceability**: Every change traces back to an issue for clear context
-- **Automation**: Leverage Claude Code's GitHub Actions for streamlined workflows
-- **Consistency**: Standardized process across the team
-- **History**: Clear audit trail of what was done and why
 
 ---
 
@@ -493,3 +490,14 @@ This workflow ensures:
 - The team maintains a clear history of all work
 
 By following this process, we maintain high code quality, clear communication, and efficient collaboration.
+- Each PR should fix exactly one github issue. The first line of the PR and the PR commit should contain special github syntax which, upon PR merge, will mark the issue as fixed. As per [Using keywords in issues and pull requests - GitHub Enterprise Cloud Docs](https://docs.github.com/en/enterprise-cloud@latest/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests), any of the following can be used: 
+close
+closes
+closed
+fix
+fixes
+fixed
+resolve
+resolves
+resolved
+For example, Closes #10 or Fixes octo-org/octo-repo#100.

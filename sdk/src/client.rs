@@ -7,6 +7,7 @@ use std::time::Duration;
 /// Base URLs for LangChain services
 pub const LANGSMITH_API_BASE: &str = "https://api.smith.langchain.com";
 pub const LANGGRAPH_API_BASE: &str = "https://api.langgraph.cloud";
+pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 
 /// HTTP client for interacting with LangChain APIs
 #[derive(Clone)]
@@ -15,6 +16,7 @@ pub struct LangchainClient {
     auth: AuthConfig,
     langsmith_base_url: String,
     langgraph_base_url: String,
+    control_plane_base_url: String,
     /// Optional organization ID for API requests (used in x-organization-id header)
     organization_id: Option<String>,
     /// Optional workspace ID for narrower scoping (used in X-Tenant-Id header)
@@ -39,6 +41,7 @@ impl LangchainClient {
             auth,
             langsmith_base_url: LANGSMITH_API_BASE.to_string(),
             langgraph_base_url: LANGGRAPH_API_BASE.to_string(),
+            control_plane_base_url: CONTROL_PLANE_API_BASE.to_string(),
             organization_id,
             workspace_id,
         })
@@ -74,11 +77,34 @@ impl LangchainClient {
         self.workspace_id.as_deref()
     }
 
+    /// Override the LangGraph base URL for deployment-specific operations
+    ///
+    /// This method allows you to set a custom LangGraph deployment URL
+    /// instead of using the default `https://api.langgraph.cloud`.
+    /// This is useful when targeting a specific LangGraph deployment
+    /// that has a custom URL (e.g., from Control Plane API's `custom_url` field).
+    ///
+    /// # Arguments
+    /// * `url` - The custom deployment URL (e.g., "https://my-deployment.us.langgraph.app")
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{LangchainClient, AuthConfig};
+    /// # let auth = AuthConfig::new(None, Some("key".into()), None, None);
+    /// let client = LangchainClient::new(auth).unwrap()
+    ///     .with_langgraph_url("https://my-deployment.us.langgraph.app".to_string());
+    /// ```
+    pub fn with_langgraph_url(mut self, url: String) -> Self {
+        self.langgraph_base_url = url;
+        self
+    }
+
     /// Create a new client with custom base URLs (useful for testing)
     pub fn with_base_urls(
         auth: AuthConfig,
         langsmith_base_url: String,
         langgraph_base_url: String,
+        control_plane_base_url: String,
     ) -> Result<Self> {
         let http_client = HttpClient::builder()
             .timeout(Duration::from_secs(30))
@@ -92,6 +118,7 @@ impl LangchainClient {
             auth,
             langsmith_base_url,
             langgraph_base_url,
+            control_plane_base_url,
             organization_id,
             workspace_id,
         })
@@ -178,7 +205,49 @@ impl LangchainClient {
         Ok(request)
     }
 
+    /// Create a GET request to Control Plane API
+    ///
+    /// The Control Plane API uses the same authentication as LangSmith:
+    /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
+    pub fn control_plane_get(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+
+        let mut request = self
+            .http_client
+            .get(&url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add workspace ID header if set (required for Control Plane API)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
     /// Create a GET request to LangGraph API
+    ///
+    /// ## Deployment-Level Resources
+    ///
+    /// **Important:** Unlike `langsmith_get()`, this method does NOT add organization
+    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
+    ///
+    /// LangGraph assistants are deployment-level resources. The API key used in the
+    /// request is tied to a specific deployment, and all operations are automatically
+    /// scoped to that deployment. No additional scoping is needed or supported.
+    ///
+    /// ### Why No Scoping Headers?
+    ///
+    /// LangGraph and LangSmith have different resource models:
+    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
+    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
+    ///
+    /// This is the intended design, not a limitation. Access control for LangGraph
+    /// resources is managed entirely at the API key/deployment level.
+    ///
+    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
         let api_key = self.auth.require_langgraph_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
@@ -186,6 +255,62 @@ impl LangchainClient {
         Ok(self
             .http_client
             .get(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
+    /// Create a POST request to LangGraph API
+    ///
+    /// ## Deployment-Level Resources
+    ///
+    /// **Important:** Unlike `langsmith_post()`, this method does NOT add organization
+    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
+    ///
+    /// LangGraph assistants are deployment-level resources. The API key used in the
+    /// request is tied to a specific deployment, and all operations are automatically
+    /// scoped to that deployment. No additional scoping is needed or supported.
+    ///
+    /// ### Why No Scoping Headers?
+    ///
+    /// LangGraph and LangSmith have different resource models:
+    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
+    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
+    ///
+    /// This is the intended design, not a limitation. Access control for LangGraph
+    /// resources is managed entirely at the API key/deployment level.
+    ///
+    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
+    pub fn langgraph_post(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .post(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
+    /// Create a PATCH request to LangGraph API
+    pub fn langgraph_patch(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .patch(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json"))
+    }
+
+    /// Create a DELETE request to LangGraph API
+    pub fn langgraph_delete(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langgraph_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+
+        Ok(self
+            .http_client
+            .delete(&url)
             .header("x-api-key", api_key)
             .header("Content-Type", "application/json"))
     }
