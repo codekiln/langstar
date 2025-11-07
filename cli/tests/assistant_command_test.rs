@@ -20,7 +20,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// - Search command blocked by #128 (JSON decode error)
 ///
 /// Run with: cargo test --test assistant_command_test -- --nocapture
-
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()

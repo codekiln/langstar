@@ -13,7 +13,6 @@ use escargot::CargoBuild;
 /// 2. Valid LANGCHAIN_WORKSPACE_ID environment variable (required for Control Plane API)
 ///
 /// Run with: cargo test --test graph_command_test
-
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
@@ -41,7 +40,7 @@ fn check_env_vars() -> Option<String> {
 
 #[test]
 fn test_graph_list_basic() {
-    let Some(workspace_id) = check_env_vars() else {
+    let Some(_workspace_id) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };

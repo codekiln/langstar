@@ -32,10 +32,12 @@ async fn discover_test_deployment(client: &LangchainClient) -> (String, String) 
         .resources
         .iter()
         .find(|d| d.name == test_deployment_name || d.id == test_deployment_name)
-        .expect(&format!(
-            "Test deployment not found. Expected deployment name: {}",
-            test_deployment_name
-        ));
+        .unwrap_or_else(|| {
+            panic!(
+                "Test deployment not found. Expected deployment name: {}",
+                test_deployment_name
+            )
+        });
 
     println!("✓ Found test deployment:");
     println!("  Name: {}", test_deployment.name);
@@ -309,7 +311,7 @@ async fn test_assistant_search() {
     println!("  Results found: {}", exact_results.len());
 
     assert!(
-        exact_results.len() >= 1,
+        !exact_results.is_empty(),
         "Expected at least 1 result for exact match"
     );
     let found_exact = exact_results.iter().any(|a| a.name == assistant1_name);
