@@ -53,15 +53,13 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-1}
 
-      # LangSmith Configuration
+      # LangChain API Configuration
+      # Both LangSmith and LangGraph Cloud use LANGSMITH_API_KEY for authentication
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
       LANGSMITH_ORGANIZATION_NAME: ${LANGSMITH_ORGANIZATION_NAME}
       LANGSMITH_ORGANIZATION_ID: ${LANGSMITH_ORGANIZATION_ID}
       LANGSMITH_WORKSPACE_NAME: ${LANGSMITH_WORKSPACE_NAME}
       LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID}
-
-      # LangGraph Configuration (uses same API key as LangSmith)
-      LANGGRAPH_API_KEY: ${LANGGRAPH_API_KEY}
       LANGCHAIN_WORKSPACE_ID: ${LANGCHAIN_WORKSPACE_ID}
 
       # Test LangGraph Deployment (for Phase 5 integration testing)
