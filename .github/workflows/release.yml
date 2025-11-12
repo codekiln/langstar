@@ -30,11 +30,9 @@ jobs:
           echo "Version: $VERSION"
 
       - name: Install git-cliff
-        run: |
-          wget -q https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-$(uname -m)-unknown-linux-gnu.tar.gz
-          tar -xzf git-cliff-$(uname -m)-unknown-linux-gnu.tar.gz
-          chmod +x git-cliff
-          sudo mv git-cliff /usr/local/bin/
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
 
       - name: Generate changelog
         id: changelog
