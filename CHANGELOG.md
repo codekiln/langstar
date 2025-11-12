@@ -1,5 +1,151 @@
 # Changelog
 
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.3.0] - 2025-11-12
+
+### ✨ Features
+
+- ✨ feat: add automated CI/CD release pipeline with cross-platform builds (#146)
+
+* ✨ feat: add automated CI/CD release pipeline with cross-platform builds
+
+Implements industry best-practice release workflow following the research from issue #9.
+
+## Changes
+
+### GitHub Actions Workflows
+- Add release.yml workflow triggered by version tags (v*)
+- Builds cross-platform binaries: Linux (musl/gnu), macOS (Intel/ARM), Windows
+- Generates changelogs using git-cliff
+- Creates GitHub Releases with artifacts and SHA256 checksums
+- Automatic pre-release detection (alpha/beta/rc versions)
+
+### Configuration Files
+- cliff.toml: git-cliff configuration for Conventional Emoji Commits
+  - Parses emoji and conventional commit formats
+  - Groups changes by type (Breaking Changes, Features, Bug Fixes, etc.)
+  - Links to GitHub PRs automatically
+
+- release.toml: cargo-release configuration for version management
+  - Integrates with git-cliff for changelog generation
+  - Automates version bumping and tagging
+  - Disables crates.io publishing (GitHub releases only)
+
+### Documentation
+- docs/dev/ci-cd.md: Comprehensive CI/CD pipeline documentation
+  - Release process guide (automated and manual)
+  - Semantic versioning rules based on commit types
+  - Troubleshooting guide
+  - Best practices and security considerations
+
+### Claude Code Skill
+- .claude/skills/bump-release/: Local release management skill
+  - Custom scripts for commit analysis and version bumping
+  - Alternative to cargo-release for manual control
+  - Comprehensive workflow documentation
+
+## Release Process
+
+Using cargo-release (recommended):
+```bash
+cargo install cargo-release git-cliff
+cargo release patch --execute  # Bug fixes
+cargo release minor --execute  # Features
+cargo release major --execute  # Breaking changes
+```
+
+Manual process:
+```bash
+git tag -a v1.2.3 -m "Release v1.2.3"
+git push origin v1.2.3
+# GitHub Actions handles the rest
+```
+
+## Implementation Details
+
+Follows research recommendations from issue #9:
+- ✅ Validate on PR, release on tag pattern
+- ✅ Uses Rust ecosystem tools (cargo-release, git-cliff)
+- ✅ Strong provenance with checksums and tagged releases
+- ✅ Cross-platform binary distribution
+- ✅ Automated changelog generation
+- ✅ Full Conventional Emoji Commits support
+
+Fixes #9
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🔧 build: install cargo-release and git-cliff in devcontainer
+
+Adds cargo-release and git-cliff to devcontainer postCreateCommand so they
+are automatically available to all developers and maintainers.
+
+Changes:
+- .devcontainer/devcontainer.json: Add cargo install commands to postCreateCommand
+- docs/dev/ci-cd.md: Update prerequisites to note tools are pre-installed
+
+This ensures consistent tooling across all developers using the devcontainer
+and removes the manual installation step from the release process.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat: add official installer script for langstar CLI (#149)
+
+Implements end-user installer script with comprehensive features:
+
+- Platform detection (Linux x86_64, macOS Intel/ARM64)
+- Automatic version detection (latest from GitHub API)
+- SHA256 checksum verification
+- Idempotent installation (safe to re-run)
+- System-wide (/usr/local/bin) or user-local (~/.local/bin) installation
+- Custom prefix support via --prefix flag
+- Update detection and upgrade support
+- Clear error messages and progress output
+- Comprehensive help documentation
+
+Changes:
+- Added scripts/install.sh (executable installer script)
+- Updated README.md with quick install instructions
+- Created docs/installation.md (comprehensive guide)
+- Added scripts/test-installer.md (testing checklist)
+
+The installer downloads pre-built binaries from GitHub releases,
+eliminating the need for Rust toolchain installation for end-users.
+
+Fixes #148
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🔧 Build System
+
+- 🔧 build(devcontainer): use Claude native installer instead of npm (#147)
+
+Replace npm installation with official native installer method as
+recommended in Claude Code documentation. This provides:
+- Self-contained executable without Node.js dependency
+- Improved auto-updater stability
+- Follows official best practices
+
+Uses wget (already available in base image) instead of curl to avoid
+adding unnecessary dependencies and reduce security surface area.
+
+Fixes #125
+
+# Changelog
+
 All notable changes to Langstar will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
