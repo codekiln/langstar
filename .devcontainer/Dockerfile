@@ -98,8 +98,10 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
   -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
   -x
 
-# Install Claude
-RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+# Install Claude using native installer (recommended method)
+# https://code.claude.com/docs/en/setup.md
+# Using wget (already available) instead of curl for security
+RUN wget -qO- https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_VERSION}
 
 # --------------------↑-FROM CLAUDE CODE DEVCONTAINER-↑--------------------
 
