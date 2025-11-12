@@ -18,6 +18,48 @@
 
 ### Installation
 
+#### Quick Install (Recommended for Users)
+
+Install the latest release with our installer script:
+
+```bash
+# Quick install (recommended)
+curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | sh
+```
+
+Or download and run manually:
+
+```bash
+curl -LO https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Install options:**
+```bash
+# Install specific version
+./install.sh --version 0.2.0
+
+# Install to custom location
+./install.sh --prefix ~/.local/bin
+
+# See all options
+./install.sh --help
+```
+
+The installer script:
+- ✅ Downloads pre-built binaries (no compilation needed)
+- ✅ Verifies SHA256 checksums
+- ✅ Supports Linux (x86_64) and macOS (Intel/Apple Silicon)
+- ✅ Installs to `/usr/local/bin` or `~/.local/bin`
+- ✅ Handles updates automatically
+
+For detailed installation instructions, see [docs/installation.md](./docs/installation.md).
+
+#### Build from Source (For Development)
+
+If you want to contribute or build from source:
+
 ```bash
 # Clone the repository
 git clone https://github.com/codekiln/langstar.git
