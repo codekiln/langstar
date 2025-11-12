@@ -73,29 +73,16 @@ jobs:
             artifact_name: langstar
             asset_name: langstar-$VERSION-x86_64-linux-musl
 
-          # Linux x86_64 (gnu)
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            artifact_name: langstar
-            asset_name: langstar-$VERSION-x86_64-linux-gnu
-
-          # macOS x86_64
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            artifact_name: langstar
-            asset_name: langstar-$VERSION-x86_64-macos
-
           # macOS ARM64 (Apple Silicon)
           - target: aarch64-apple-darwin
             os: macos-latest
             artifact_name: langstar
             asset_name: langstar-$VERSION-aarch64-macos
 
-          # Windows x86_64
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            artifact_name: langstar.exe
-            asset_name: langstar-$VERSION-x86_64-windows
+          # TODO: Add more platforms after these two work
+          # - x86_64-unknown-linux-gnu (Linux gnu)
+          # - x86_64-apple-darwin (macOS Intel)
+          # - x86_64-pc-windows-msvc (Windows)
 
     steps:
       - name: Checkout code
