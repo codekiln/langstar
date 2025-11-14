@@ -8,9 +8,9 @@
   // Dev Container features (installed by VS Code, not Docker Compose)
   "features": {
     // "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
-    "ghcr.io/devcontainers-extra/features/mise:1": {},
-    "ghcr.io/devcontainers-extra/features/uv:1": {}
+    // "ghcr.io/devcontainers/features/github-cli:1": {},
+    // "ghcr.io/devcontainers-extra/features/mise:1": {},
+    // "ghcr.io/devcontainers-extra/features/uv:1": {}
   },
 
   // VS Code customizations
@@ -47,6 +47,6 @@
   "remoteUser": "node",
 
   // Lifecycle commands
-  "postCreateCommand": "echo 'eval \"$(mise activate zsh)\"' >> ~/.zshrc && mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && cargo install cargo-release git-cliff",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/setup-github-auth.sh"
 }

@@ -123,15 +123,21 @@ RUN wget -qO- https://claude.ai/install.sh | bash -s ${CLAUDE_CODE_VERSION}
 
 # --------------------↓-CUSTOMIZATIONS FOR NODE USER-↓--------------------
 
-# Note: mise and uv are installed via devcontainer features (applied after Dockerfile)
-# - mise: "ghcr.io/devcontainers-extra/features/mise:1"
-# - uv: "ghcr.io/devcontainers-extra/features/uv:1"
-# See devcontainer.json features section
+# Install mise directly (replaces devcontainer feature due to VS Code 1.106.0 TLS issue)
+# https://mise.jdx.dev/installing-mise.html
+RUN curl https://mise.run | sh && \
+    echo 'eval "$(~/.local/bin/mise activate zsh)"' >> "/home/node/.zshrc" && \
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "/home/node/.zshrc"
+
+# Install uv directly (replaces devcontainer feature due to VS Code 1.106.0 TLS issue)
+# https://docs.astral.sh/uv/getting-started/installation/
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "/home/node/.zshrc"
 
 # Note: mise.toml installation happens in postCreateCommand in devcontainer.json
 
 # RUN npm i -g rulesync
 
-# Aliases (mise shell integration happens in postCreateCommand after feature is installed)
+# Aliases
 RUN echo "alias claude=\"claude --dangerously-skip-permissions\"" >> "/home/node/.zshrc"
 
