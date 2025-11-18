@@ -6,7 +6,7 @@
 
 use assert_cmd::Command;
 use escargot::CargoBuild;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 /// Test deployment that automatically manages lifecycle
 pub struct TestDeployment {
