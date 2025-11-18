@@ -20,13 +20,19 @@ impl TestDeployment {
     /// This function:
     /// 1. Generates a unique deployment name with timestamp
     /// 2. Runs `langstar graph create --wait` to create deployment
-    /// 3. Waits for deployment to reach READY status
+    /// 3. Waits for deployment to reach READY status (auto-discovers integration_id)
     /// 4. Returns deployment info for use in tests
+    ///
+    /// # Prerequisites
+    ///
+    /// Requires at least one GitHub deployment to exist (for integration_id discovery).
+    /// If this is your first deployment, create it via LangSmith UI first.
     ///
     /// # Panics
     ///
     /// Panics if:
     /// - Required environment variables not set (LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID)
+    /// - No existing GitHub deployments found (for integration_id)
     /// - Deployment creation fails
     /// - Deployment doesn't reach READY status within timeout
     pub fn create() -> Self {
@@ -41,6 +47,7 @@ impl TestDeployment {
 
         println!("\n=================================================");
         println!("🚀 Creating test deployment: {}", deployment_name);
+        println!("   (Will auto-discover GitHub integration_id from existing deployments)");
         println!("=================================================\n");
 
         // Build langstar binary
@@ -52,6 +59,7 @@ impl TestDeployment {
             .to_owned();
 
         // Create deployment with --wait flag
+        // Note: integration_id will be auto-discovered from existing GitHub deployments
         let mut cmd = Command::new(&bin);
         cmd.args([
             "graph",
