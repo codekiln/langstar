@@ -173,8 +173,12 @@ pub struct CreateDeploymentRequest {
     pub source: String,
     /// Source configuration (repository URL, branch, etc.)
     pub source_config: serde_json::Value,
+    /// Source revision configuration (commit hash, tag, etc.)
+    pub source_revision_config: serde_json::Value,
     /// Deployment type (dev_free, dev, or prod)
     pub deployment_type: String,
+    /// Environment variable secrets
+    pub secrets: Vec<DeploymentSecret>,
     /// Optional environment variables
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env_vars: Option<HashMap<String, String>>,
@@ -194,11 +198,14 @@ impl CreateDeploymentRequest {
         source_config: serde_json::Value,
         deployment_type: String,
     ) -> Self {
+        use serde_json::json;
         Self {
             name,
             source,
             source_config,
+            source_revision_config: json!({}), // Empty object for default/auto revision
             deployment_type,
+            secrets: Vec::new(), // Empty secrets list by default
             env_vars: None,
         }
     }
@@ -206,6 +213,21 @@ impl CreateDeploymentRequest {
     /// Add environment variables to the deployment
     pub fn with_env_vars(mut self, env_vars: HashMap<String, String>) -> Self {
         self.env_vars = Some(env_vars);
+        self
+    }
+
+    /// Add secrets to the deployment
+    pub fn with_secrets(mut self, secrets: Vec<DeploymentSecret>) -> Self {
+        self.secrets = secrets;
+        self
+    }
+
+    /// Set the source revision configuration
+    pub fn with_source_revision_config(
+        mut self,
+        source_revision_config: serde_json::Value,
+    ) -> Self {
+        self.source_revision_config = source_revision_config;
         self
     }
 }
