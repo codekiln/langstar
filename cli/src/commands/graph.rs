@@ -53,6 +53,10 @@ pub enum GraphCommands {
         #[arg(long)]
         branch: Option<String>,
 
+        /// GitHub integration ID (for github source, optional - will auto-discover from existing deployments if not provided)
+        #[arg(long)]
+        integration_id: Option<String>,
+
         /// Deployment type (dev_free, dev, or prod)
         #[arg(short = 't', long, default_value = "dev_free")]
         deployment_type: String,
@@ -243,6 +247,7 @@ impl GraphCommands {
                 source,
                 repo_url,
                 branch,
+                integration_id,
                 deployment_type,
                 env,
                 wait,
@@ -262,41 +267,61 @@ impl GraphCommands {
                     }
                 }
 
-                // For GitHub sources, we need to discover integration_id from existing deployments
+                // Determine integration_id with precedence: CLI flag > config/env > auto-discovery
                 let integration_id = if source == "github" {
-                    formatter.info("Looking up GitHub integration ID from existing deployments...");
+                    // 1. CLI flag (highest priority)
+                    if let Some(id) = integration_id {
+                        formatter.info("Using GitHub integration ID from command line");
+                        Some(id.clone())
+                    }
+                    // 2. Config/env var
+                    else if let Some(id) = &config.github_integration_id {
+                        formatter.info("Using GitHub integration ID from config/environment");
+                        Some(id.clone())
+                    }
+                    // 3. Auto-discovery (fallback for backward compatibility)
+                    else {
+                        formatter
+                            .info("Looking up GitHub integration ID from existing deployments...");
 
-                    // Query existing deployments to find integration_id
-                    let existing = client.deployments().list(Some(100), Some(0), None).await?;
+                        // Query existing deployments to find integration_id
+                        let existing = client.deployments().list(Some(100), Some(0), None).await?;
 
-                    // Find first GitHub deployment and extract integration_id
-                    let github_deployment = existing.resources.iter().find(|d| {
-                        d.source == langstar_sdk::DeploymentSource::Github
-                            && d.source_config.is_some()
-                    });
+                        // Find first GitHub deployment and extract integration_id
+                        let github_deployment = existing.resources.iter().find(|d| {
+                            d.source == langstar_sdk::DeploymentSource::Github
+                                && d.source_config.is_some()
+                        });
 
-                    if let Some(deployment) = github_deployment {
-                        if let Some(config) = &deployment.source_config {
-                            if let Some(id) = config.get("integration_id").and_then(|v| v.as_str())
-                            {
-                                formatter.info(&format!("Found GitHub integration ID: {}", id));
-                                Some(id.to_string())
+                        if let Some(deployment) = github_deployment {
+                            if let Some(source_config) = &deployment.source_config {
+                                if let Some(id) =
+                                    source_config.get("integration_id").and_then(|v| v.as_str())
+                                {
+                                    formatter.info(&format!("Found GitHub integration ID: {}", id));
+                                    Some(id.to_string())
+                                } else {
+                                    return Err(crate::error::CliError::Config(
+                                        "Found GitHub deployment but integration_id is missing from source_config".to_string()
+                                    ));
+                                }
                             } else {
-                                return Err(crate::error::CliError::Config(
-                                    "Found GitHub deployment but integration_id is missing from source_config".to_string()
-                                ));
+                                None
                             }
                         } else {
-                            None
+                            // No existing deployments found - provide helpful error
+                            return Err(crate::error::CliError::Config(
+                                "GitHub integration ID not found. Please provide it via:\n\
+                                1. CLI flag: --integration-id <your-integration-id>\n\
+                                2. Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID=<your-integration-id>\n\
+                                3. Config file: github_integration_id = \"<your-integration-id>\"\n\n\
+                                To get your integration ID:\n\
+                                1. Log in to LangSmith UI (https://smith.langchain.com/)\n\
+                                2. Navigate to Deployments → + New Deployment\n\
+                                3. Click 'Import from GitHub' and authorize the 'hosted-langserve' GitHub app\n\
+                                4. After setup, you can find your integration ID in existing deployment configs".to_string()
+                            ));
                         }
-                    } else {
-                        return Err(crate::error::CliError::Config(
-                            "No existing GitHub deployments found. To create your first GitHub deployment:\n\
-                            1. Log in to LangSmith UI (https://smith.langchain.com/)\n\
-                            2. Navigate to Deployments → + New Deployment\n\
-                            3. Click 'Import from GitHub' and authorize the 'hosted-langserve' GitHub app\n\
-                            4. After setup, you can create additional deployments via CLI".to_string()
-                        ));
                     }
                 } else {
                     None
