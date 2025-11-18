@@ -262,6 +262,46 @@ impl GraphCommands {
                     }
                 }
 
+                // For GitHub sources, we need to discover integration_id from existing deployments
+                let integration_id = if source == "github" {
+                    formatter.info("Looking up GitHub integration ID from existing deployments...");
+
+                    // Query existing deployments to find integration_id
+                    let existing = client.deployments().list(Some(100), Some(0), None).await?;
+
+                    // Find first GitHub deployment and extract integration_id
+                    let github_deployment = existing.resources.iter().find(|d| {
+                        d.source == langstar_sdk::DeploymentSource::Github
+                            && d.source_config.is_some()
+                    });
+
+                    if let Some(deployment) = github_deployment {
+                        if let Some(config) = &deployment.source_config {
+                            if let Some(id) = config.get("integration_id").and_then(|v| v.as_str())
+                            {
+                                formatter.info(&format!("Found GitHub integration ID: {}", id));
+                                Some(id.to_string())
+                            } else {
+                                return Err(crate::error::CliError::Config(
+                                    "Found GitHub deployment but integration_id is missing from source_config".to_string()
+                                ));
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        return Err(crate::error::CliError::Config(
+                            "No existing GitHub deployments found. To create your first GitHub deployment:\n\
+                            1. Log in to LangSmith UI (https://smith.langchain.com/)\n\
+                            2. Navigate to Deployments → + New Deployment\n\
+                            3. Click 'Import from GitHub' and authorize the 'hosted-langserve' GitHub app\n\
+                            4. After setup, you can create additional deployments via CLI".to_string()
+                        ));
+                    }
+                } else {
+                    None
+                };
+
                 // Build source_config based on source type
                 let source_config = match source.as_str() {
                     "github" => {
@@ -270,20 +310,28 @@ impl GraphCommands {
                                 "repo_url is required for github source".to_string(),
                             )
                         })?;
-                        let branch = branch.as_ref().ok_or_else(|| {
-                            crate::error::CliError::Config(
+                        // Validate branch is present
+                        if branch.is_none() {
+                            return Err(crate::error::CliError::Config(
                                 "branch is required for github source".to_string(),
-                            )
-                        })?;
+                            ));
+                        }
+
+                        // Include integration_id for GitHub sources
                         json!({
+                            "integration_id": integration_id,
                             "repo_url": repo,
-                            "branch": branch
+                            "deployment_type": deployment_type,
+                            "build_on_push": false,
+                            "custom_url": null,
+                            "resource_spec": null,
                         })
                     }
                     "external_docker" => {
-                        // For external_docker, different config may be needed
-                        // This is a placeholder - adjust based on actual API requirements
-                        json!({})
+                        // For external_docker, integration_id must be null
+                        json!({
+                            "integration_id": null
+                        })
                     }
                     _ => {
                         return Err(crate::error::CliError::Config(format!(
