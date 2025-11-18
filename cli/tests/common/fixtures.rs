@@ -25,14 +25,18 @@ impl TestDeployment {
     ///
     /// # Prerequisites
     ///
-    /// Requires at least one GitHub deployment to exist (for integration_id discovery).
-    /// If this is your first deployment, create it via LangSmith UI first.
+    /// Requires GitHub integration ID to be available via one of:
+    /// - Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
+    /// - Config file: github_integration_id field
+    /// - Auto-discovery: At least one existing GitHub deployment
+    ///
+    /// For first-time setup, create initial deployment via LangSmith UI or set integration_id.
     ///
     /// # Panics
     ///
     /// Panics if:
     /// - Required environment variables not set (LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID)
-    /// - No existing GitHub deployments found (for integration_id)
+    /// - GitHub integration ID cannot be determined (not in config/env and no existing deployments)
     /// - Deployment creation fails
     /// - Deployment doesn't reach READY status within timeout
     pub fn create() -> Self {
@@ -47,7 +51,7 @@ impl TestDeployment {
 
         println!("\n=================================================");
         println!("🚀 Creating test deployment: {}", deployment_name);
-        println!("   (Will auto-discover GitHub integration_id from existing deployments)");
+        println!("   (Integration ID: CLI flag > env/config > auto-discovery)");
         println!("=================================================\n");
 
         // Build langstar binary

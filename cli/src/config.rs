@@ -16,6 +16,9 @@ pub struct Config {
     /// Optional workspace ID for narrower scoping of LangSmith operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub workspace_id: Option<String>,
+    /// Optional GitHub integration ID for deployment creation
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub github_integration_id: Option<String>,
     /// Default output format (json or table)
     #[serde(default = "default_output_format")]
     pub output_format: String,
@@ -32,6 +35,7 @@ impl Default for Config {
             langgraph_api_key: None,
             organization_id: None,
             workspace_id: None,
+            github_integration_id: None,
             output_format: default_output_format(),
         }
     }
@@ -60,6 +64,9 @@ impl Config {
         }
         if let Ok(workspace_id) = std::env::var("LANGSMITH_WORKSPACE_ID") {
             config.workspace_id = Some(workspace_id);
+        }
+        if let Ok(integration_id) = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID") {
+            config.github_integration_id = Some(integration_id);
         }
         if let Ok(format) = std::env::var("LANGSTAR_OUTPUT_FORMAT") {
             config.output_format = format;
@@ -148,6 +155,7 @@ mod tests {
             langgraph_api_key: None,
             organization_id: Some("test_org_id".to_string()),
             workspace_id: None,
+            github_integration_id: None,
             output_format: "json".to_string(),
         };
 
@@ -166,6 +174,7 @@ mod tests {
             langgraph_api_key: None,
             organization_id: None,
             workspace_id: Some("test_workspace_id".to_string()),
+            github_integration_id: None,
             output_format: "table".to_string(),
         };
 
@@ -181,6 +190,7 @@ mod tests {
             langgraph_api_key: None,
             organization_id: Some("org_123".to_string()),
             workspace_id: Some("workspace_456".to_string()),
+            github_integration_id: None,
             output_format: "table".to_string(),
         };
 
