@@ -204,6 +204,15 @@ langstar graph create \
   --branch main \
   --deployment-type dev_free
 
+# Create and wait for deployment to be READY
+langstar graph create \
+  --name "my-deployment" \
+  --source github \
+  --repo-url https://github.com/owner/repo \
+  --branch main \
+  --deployment-type dev_free \
+  --wait
+
 # Create with environment variables
 langstar graph create \
   --name "production-deployment" \

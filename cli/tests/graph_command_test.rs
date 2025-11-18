@@ -335,6 +335,186 @@ fn test_graph_create_basic() {
 }
 
 #[test]
+#[ignore] // Requires actual API access and creates resources
+fn test_graph_create_with_wait() {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
+
+    println!("Testing graph create command with --wait flag");
+
+    // Generate unique deployment name
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+    let deployment_name = format!("cli-test-deployment-wait-{}", timestamp);
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "graph",
+        "create",
+        "--name",
+        &deployment_name,
+        "--source",
+        "github",
+        "--repo-url",
+        "https://github.com/langchain-ai/langgraph-example",
+        "--branch",
+        "main",
+        "--deployment-type",
+        "dev_free",
+        "--wait",
+    ]);
+
+    // Run the command (this will take time as it waits for READY status)
+    let output = cmd.output().expect("Failed to execute command");
+
+    println!("Exit status: {}", output.status);
+    println!("Stdout:\n{}", String::from_utf8_lossy(&output.stdout));
+    println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
+
+    // Should succeed
+    assert!(
+        output.status.success(),
+        "Graph create command with --wait should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Should show polling messages
+    assert!(
+        stdout.contains("Waiting for deployment") || stdout.contains("Status:"),
+        "Output should show polling status"
+    );
+
+    // Should show deployment is ready
+    assert!(
+        stdout.contains("ready") || stdout.contains("READY") || stdout.contains("Ready"),
+        "Output should confirm deployment is ready"
+    );
+
+    println!(
+        "✓ CLI successfully created deployment with --wait: {}",
+        deployment_name
+    );
+}
+
+#[test]
+#[ignore] // Requires actual API access - full lifecycle test
+fn test_deployment_full_lifecycle() {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    if check_env_vars().is_none() {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    }
+
+    println!("\n==================================================");
+    println!("Test: Deployment Full Lifecycle (Create, List, Delete)");
+    println!("==================================================\n");
+
+    // Generate unique deployment name
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+    let deployment_name = format!("cli-test-lifecycle-{}", timestamp);
+
+    // Step 1: Create deployment
+    println!("Step 1: Creating deployment '{}'", deployment_name);
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "graph",
+        "create",
+        "--name",
+        &deployment_name,
+        "--source",
+        "github",
+        "--repo-url",
+        "https://github.com/langchain-ai/langgraph-example",
+        "--branch",
+        "main",
+        "--deployment-type",
+        "dev_free",
+    ]);
+
+    let output = cmd.output().expect("Failed to create deployment");
+    assert!(
+        output.status.success(),
+        "Create command should succeed. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("Create output:\n{}", stdout);
+
+    // Extract deployment ID from output (format: "ID: <id>")
+    let deployment_id = stdout
+        .lines()
+        .find(|line| line.contains("ID:"))
+        .and_then(|line| line.split("ID:").nth(1))
+        .map(|s| s.trim().to_string())
+        .expect("Should find deployment ID in output");
+
+    println!("✓ Created deployment with ID: {}", deployment_id);
+
+    // Step 2: List deployments and verify it exists
+    println!("\nStep 2: Listing deployments to verify creation");
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "list", "--name-contains", &deployment_name]);
+
+    let output = cmd.output().expect("Failed to list deployments");
+    assert!(output.status.success(), "List command should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains(&deployment_name),
+        "List should contain newly created deployment"
+    );
+    println!("✓ Deployment found in list");
+
+    // Step 3: Delete deployment
+    println!("\nStep 3: Deleting deployment '{}'", deployment_id);
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "delete", &deployment_id, "--yes"]);
+
+    let output = cmd.output().expect("Failed to delete deployment");
+    assert!(
+        output.status.success(),
+        "Delete command should succeed. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("deleted") || stdout.contains("Successfully"),
+        "Delete should confirm success"
+    );
+    println!("✓ Deployment deleted successfully");
+
+    // Step 4: Verify deletion
+    println!("\nStep 4: Verifying deployment was deleted");
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "list", "--name-contains", &deployment_name]);
+
+    let output = cmd.output().expect("Failed to list deployments");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        !stdout.contains(&deployment_name) || stdout.contains("No deployments"),
+        "Deployment should not appear in list after deletion"
+    );
+    println!("✓ Deployment successfully removed from list");
+
+    println!("\n==================================================");
+    println!("✓ Full lifecycle test completed successfully");
+    println!("==================================================\n");
+}
+
+#[test]
 fn test_graph_create_missing_repo_url() {
     if check_env_vars().is_none() {
         println!("Skipping test: Required environment variables not set");

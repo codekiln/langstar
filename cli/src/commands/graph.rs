@@ -60,6 +60,10 @@ pub enum GraphCommands {
         /// Environment variables (KEY=VALUE format, can be specified multiple times)
         #[arg(short, long)]
         env: Vec<String>,
+
+        /// Wait for deployment to reach READY status
+        #[arg(short, long)]
+        wait: bool,
     },
 
     /// Delete a LangGraph deployment by ID
@@ -241,6 +245,7 @@ impl GraphCommands {
                 branch,
                 deployment_type,
                 env,
+                wait,
             } => {
                 formatter.info(&format!("Creating deployment '{}'...", name));
 
@@ -301,16 +306,68 @@ impl GraphCommands {
                 }
 
                 // Execute the creation
-                let deployment = client.deployments().create(request).await?;
+                let mut deployment = client.deployments().create(request).await?;
 
-                if format == OutputFormat::Json {
+                if format == OutputFormat::Json && !*wait {
                     formatter.print(&deployment)?;
-                } else {
+                } else if !*wait {
                     formatter.success(&format!(
                         "Created deployment: {} (ID: {})",
                         name, deployment.id
                     ));
                     formatter.info(&format!("Status: {:?}", deployment.status));
+                }
+
+                // Poll for READY status if --wait flag is set
+                if *wait {
+                    formatter.info("⏳ Waiting for deployment to be ready...");
+
+                    let start_time = std::time::Instant::now();
+                    let mut poll_count = 0;
+
+                    loop {
+                        // Check current status
+                        if deployment.status == DeploymentStatus::Ready {
+                            break;
+                        }
+
+                        // Determine polling interval based on elapsed time
+                        let elapsed = start_time.elapsed().as_secs();
+                        let poll_interval = if elapsed < 30 {
+                            // First 30 seconds: poll every 10 seconds
+                            std::time::Duration::from_secs(10)
+                        } else {
+                            // After 30 seconds: poll every 30 seconds
+                            std::time::Duration::from_secs(30)
+                        };
+
+                        poll_count += 1;
+                        formatter.info(&format!(
+                            "⏳ Status: {:?} (check #{}, elapsed: {}s)",
+                            deployment.status, poll_count, elapsed
+                        ));
+
+                        // Wait before next poll
+                        tokio::time::sleep(poll_interval).await;
+
+                        // Fetch updated deployment status
+                        deployment = client.deployments().get(&deployment.id).await?;
+                    }
+
+                    // Deployment is ready
+                    if format == OutputFormat::Json {
+                        formatter.print(&deployment)?;
+                    } else {
+                        formatter.success(&format!(
+                            "✓ Deployment ready: {} (ID: {})",
+                            name, deployment.id
+                        ));
+                        formatter.info(&format!("Status: {:?}", deployment.status));
+                        formatter.info(&format!(
+                            "Total wait time: {}s",
+                            start_time.elapsed().as_secs()
+                        ));
+                    }
                 }
 
                 Ok(())
