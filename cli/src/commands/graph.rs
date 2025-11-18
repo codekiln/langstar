@@ -3,7 +3,8 @@ use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::{
-    Deployment, DeploymentFilters, DeploymentStatus, DeploymentType, LangchainClient,
+    CreateDeploymentRequest, Deployment, DeploymentFilters, DeploymentStatus, DeploymentType,
+    LangchainClient,
 };
 use serde_json::json;
 use tabled::Tabled;
@@ -32,6 +33,43 @@ pub enum GraphCommands {
         /// Filter by name (substring match)
         #[arg(long)]
         name_contains: Option<String>,
+    },
+
+    /// Create a new LangGraph deployment
+    Create {
+        /// Name of the deployment
+        #[arg(short, long)]
+        name: String,
+
+        /// Source type (github or external_docker)
+        #[arg(short, long, default_value = "github")]
+        source: String,
+
+        /// Repository URL (for github source)
+        #[arg(long)]
+        repo_url: Option<String>,
+
+        /// Git branch (for github source)
+        #[arg(long)]
+        branch: Option<String>,
+
+        /// Deployment type (dev_free, dev, or prod)
+        #[arg(short = 't', long, default_value = "dev_free")]
+        deployment_type: String,
+
+        /// Environment variables (KEY=VALUE format, can be specified multiple times)
+        #[arg(short, long)]
+        env: Vec<String>,
+    },
+
+    /// Delete a LangGraph deployment by ID
+    Delete {
+        /// Deployment ID to delete
+        deployment_id: String,
+
+        /// Skip confirmation prompt
+        #[arg(short = 'y', long)]
+        yes: bool,
     },
 }
 
@@ -190,6 +228,130 @@ impl GraphCommands {
                         "\nTotal: {} deployment(s) (offset: {})",
                         deployments_list.resources.len(),
                         deployments_list.offset
+                    ));
+                }
+
+                Ok(())
+            }
+
+            GraphCommands::Create {
+                name,
+                source,
+                repo_url,
+                branch,
+                deployment_type,
+                env,
+            } => {
+                formatter.info(&format!("Creating deployment '{}'...", name));
+
+                // Parse environment variables
+                let mut env_vars = std::collections::HashMap::new();
+                for env_str in env {
+                    if let Some((key, value)) = env_str.split_once('=') {
+                        env_vars.insert(key.to_string(), value.to_string());
+                    } else {
+                        return Err(crate::error::CliError::Config(format!(
+                            "Invalid environment variable format: {}. Expected KEY=VALUE",
+                            env_str
+                        )));
+                    }
+                }
+
+                // Build source_config based on source type
+                let source_config = match source.as_str() {
+                    "github" => {
+                        let repo = repo_url.as_ref().ok_or_else(|| {
+                            crate::error::CliError::Config(
+                                "repo_url is required for github source".to_string(),
+                            )
+                        })?;
+                        let branch = branch.as_ref().ok_or_else(|| {
+                            crate::error::CliError::Config(
+                                "branch is required for github source".to_string(),
+                            )
+                        })?;
+                        json!({
+                            "repo_url": repo,
+                            "branch": branch
+                        })
+                    }
+                    "external_docker" => {
+                        // For external_docker, different config may be needed
+                        // This is a placeholder - adjust based on actual API requirements
+                        json!({})
+                    }
+                    _ => {
+                        return Err(crate::error::CliError::Config(format!(
+                            "Invalid source type: {}. Valid values: github, external_docker",
+                            source
+                        )));
+                    }
+                };
+
+                // Create the request
+                let mut request = CreateDeploymentRequest::new(
+                    name.clone(),
+                    source.clone(),
+                    source_config,
+                    deployment_type.clone(),
+                );
+
+                if !env_vars.is_empty() {
+                    request = request.with_env_vars(env_vars);
+                }
+
+                // Execute the creation
+                let deployment = client.deployments().create(request).await?;
+
+                if format == OutputFormat::Json {
+                    formatter.print(&deployment)?;
+                } else {
+                    formatter.success(&format!(
+                        "Created deployment: {} (ID: {})",
+                        name, deployment.id
+                    ));
+                    formatter.info(&format!("Status: {:?}", deployment.status));
+                }
+
+                Ok(())
+            }
+
+            GraphCommands::Delete { deployment_id, yes } => {
+                // Confirmation prompt (unless --yes is provided)
+                if !yes {
+                    formatter.info(&format!(
+                        "Are you sure you want to delete deployment '{}'?",
+                        deployment_id
+                    ));
+                    formatter.info("This action cannot be undone. Use --yes to skip this prompt.");
+
+                    // Read from stdin
+                    use std::io::{self, Write};
+                    print!("Type 'yes' to confirm: ");
+                    io::stdout().flush().unwrap();
+                    let mut confirmation = String::new();
+                    io::stdin().read_line(&mut confirmation).unwrap();
+
+                    if confirmation.trim().to_lowercase() != "yes" {
+                        formatter.info("Deletion cancelled.");
+                        return Ok(());
+                    }
+                }
+
+                formatter.info(&format!("Deleting deployment '{}'...", deployment_id));
+
+                // Execute the deletion
+                client.deployments().delete(deployment_id).await?;
+
+                if format == OutputFormat::Json {
+                    formatter.print(&json!({
+                        "status": "deleted",
+                        "deployment_id": deployment_id
+                    }))?;
+                } else {
+                    formatter.success(&format!(
+                        "Successfully deleted deployment: {}",
+                        deployment_id
                     ));
                 }
 
