@@ -404,7 +404,7 @@ fn test_graph_create_with_wait() {
 }
 
 #[test]
-#[ignore] // Requires actual API access - full lifecycle test
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_full_lifecycle() {
     use std::time::{SystemTime, UNIX_EPOCH};
 
