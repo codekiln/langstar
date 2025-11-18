@@ -39,8 +39,8 @@ pub use assistants::{
 pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use deployments::{
-    Deployment, DeploymentClient, DeploymentFilters, DeploymentSecret, DeploymentSource,
-    DeploymentStatus, DeploymentType, DeploymentsList,
+    CreateDeploymentRequest, Deployment, DeploymentClient, DeploymentFilters, DeploymentSecret,
+    DeploymentSource, DeploymentStatus, DeploymentType, DeploymentsList,
 };
 pub use error::{LangstarError, Result};
 pub use organization::{Organization, Workspace};

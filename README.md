@@ -184,6 +184,52 @@ langstar assistant delete <assistant-id> --force  # Skip confirmation
 langstar assistant list --format json
 ```
 
+#### LangGraph Deployments (Control Plane)
+
+```bash
+# List all deployments
+langstar graph list
+
+# List with filters
+langstar graph list --limit 20 --status READY --deployment-type prod
+
+# Create a new deployment
+langstar graph create \
+  --name "my-deployment" \
+  --source github \
+  --repo-url https://github.com/owner/repo \
+  --branch main \
+  --deployment-type dev_free
+
+# Create with environment variables
+langstar graph create \
+  --name "production-deployment" \
+  --source github \
+  --repo-url https://github.com/owner/repo \
+  --branch main \
+  --deployment-type prod \
+  --env "API_KEY=value1" \
+  --env "DEBUG=true"
+
+# Delete a deployment (with confirmation)
+langstar graph delete <deployment-id>
+
+# Delete without confirmation
+langstar graph delete <deployment-id> --yes
+
+# JSON output
+langstar graph list --format json
+```
+
+**Deployment Types:**
+- `dev_free` - Free development deployment
+- `dev` - Paid development deployment
+- `prod` - Production deployment with HA and autoscaling
+
+**Source Types:**
+- `github` - Deploy from a GitHub repository (requires `--repo-url` and `--branch`)
+- `external_docker` - Deploy from an external Docker image
+
 ## Configuration
 
 This section provides detailed configuration options for both LangSmith and LangGraph services.

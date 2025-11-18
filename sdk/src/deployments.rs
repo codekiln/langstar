@@ -1,6 +1,7 @@
 use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// A secret environment variable for a deployment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -163,6 +164,52 @@ pub struct DeploymentFilters {
     pub image_version: Option<String>,
 }
 
+/// Request to create a new deployment
+#[derive(Debug, Clone, Serialize)]
+pub struct CreateDeploymentRequest {
+    /// Name of the deployment
+    pub name: String,
+    /// Source type (e.g., "github", "external_docker")
+    pub source: String,
+    /// Source configuration (repository URL, branch, etc.)
+    pub source_config: serde_json::Value,
+    /// Deployment type (dev_free, dev, or prod)
+    pub deployment_type: String,
+    /// Optional environment variables
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub env_vars: Option<HashMap<String, String>>,
+}
+
+impl CreateDeploymentRequest {
+    /// Create a new deployment request
+    ///
+    /// # Arguments
+    /// * `name` - Name for the deployment
+    /// * `source` - Source type (e.g., "github")
+    /// * `source_config` - Configuration for the source (repo URL, branch, etc.)
+    /// * `deployment_type` - Type of deployment (dev_free, dev, or prod)
+    pub fn new(
+        name: String,
+        source: String,
+        source_config: serde_json::Value,
+        deployment_type: String,
+    ) -> Self {
+        Self {
+            name,
+            source,
+            source_config,
+            deployment_type,
+            env_vars: None,
+        }
+    }
+
+    /// Add environment variables to the deployment
+    pub fn with_env_vars(mut self, env_vars: HashMap<String, String>) -> Self {
+        self.env_vars = Some(env_vars);
+        self
+    }
+}
+
 /// Client for interacting with LangGraph Control Plane Deployments API
 pub struct DeploymentClient<'a> {
     client: &'a LangchainClient,
@@ -234,6 +281,93 @@ impl<'a> DeploymentClient<'a> {
         let request = self.client.control_plane_get(&path)?;
         let response: Deployment = self.client.execute(request).await?;
         Ok(response)
+    }
+
+    /// Create a new deployment
+    ///
+    /// # Arguments
+    /// * `request` - The deployment creation request with name, source, config, and type
+    ///
+    /// # Returns
+    /// The created `Deployment` object with ID and status
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{LangchainClient, AuthConfig};
+    /// # use langstar_sdk::deployments::CreateDeploymentRequest;
+    /// # use serde_json::json;
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let auth = AuthConfig::new(None, Some("key".into()), None, Some("ws_id".into()));
+    /// # let client = LangchainClient::new(auth)?;
+    /// let source_config = json!({
+    ///     "repo_url": "https://github.com/owner/repo",
+    ///     "branch": "main"
+    /// });
+    ///
+    /// let request = CreateDeploymentRequest::new(
+    ///     "my-deployment".to_string(),
+    ///     "github".to_string(),
+    ///     source_config,
+    ///     "dev_free".to_string(),
+    /// );
+    ///
+    /// let deployment = client.deployments().create(request).await?;
+    /// println!("Created deployment: {}", deployment.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create(&self, request: CreateDeploymentRequest) -> Result<Deployment> {
+        let path = "/v2/deployments";
+        let http_request = self.client.control_plane_post(path)?.json(&request);
+        let response: Deployment = self.client.execute(http_request).await?;
+        Ok(response)
+    }
+
+    /// Delete a deployment by ID
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment to delete
+    ///
+    /// # Returns
+    /// `Ok(())` if the deployment was successfully deleted
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - The deployment does not exist (404)
+    /// - The user lacks permission to delete the deployment
+    /// - The API request fails
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{LangchainClient, AuthConfig};
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let auth = AuthConfig::new(None, Some("key".into()), None, Some("ws_id".into()));
+    /// # let client = LangchainClient::new(auth)?;
+    /// client.deployments().delete("abc-123e4567-e89b-12d3").await?;
+    /// println!("Deployment deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn delete(&self, deployment_id: &str) -> Result<()> {
+        let path = format!("/v2/deployments/{}", deployment_id);
+        let request = self.client.control_plane_delete(&path)?;
+
+        // Execute request and ignore response body (DELETE typically returns empty or status)
+        let response = request.send().await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(crate::error::LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
     }
 }
 
@@ -372,5 +506,93 @@ mod tests {
 
         let deployment: Deployment = serde_json::from_str(json_without_url).unwrap();
         assert_eq!(deployment.custom_url(), None);
+    }
+
+    #[test]
+    fn test_create_deployment_request_serialization() {
+        use serde_json::json;
+
+        let source_config = json!({
+            "repo_url": "https://github.com/owner/repo",
+            "branch": "main"
+        });
+
+        let request = CreateDeploymentRequest::new(
+            "test-deployment".to_string(),
+            "github".to_string(),
+            source_config,
+            "dev_free".to_string(),
+        );
+
+        let json = serde_json::to_value(&request).unwrap();
+
+        assert_eq!(json["name"], "test-deployment");
+        assert_eq!(json["source"], "github");
+        assert_eq!(json["deployment_type"], "dev_free");
+        assert_eq!(
+            json["source_config"]["repo_url"],
+            "https://github.com/owner/repo"
+        );
+        assert_eq!(json["source_config"]["branch"], "main");
+        assert!(json["env_vars"].is_null()); // Should be omitted when None
+    }
+
+    #[test]
+    fn test_create_deployment_request_with_env_vars() {
+        use serde_json::json;
+
+        let source_config = json!({
+            "repo_url": "https://github.com/owner/repo",
+            "branch": "main"
+        });
+
+        let mut env_vars = HashMap::new();
+        env_vars.insert("API_KEY".to_string(), "secret123".to_string());
+        env_vars.insert("DEBUG".to_string(), "true".to_string());
+
+        let request = CreateDeploymentRequest::new(
+            "test-deployment".to_string(),
+            "github".to_string(),
+            source_config,
+            "dev_free".to_string(),
+        )
+        .with_env_vars(env_vars);
+
+        let json = serde_json::to_value(&request).unwrap();
+
+        assert_eq!(json["name"], "test-deployment");
+        assert!(json["env_vars"].is_object());
+        assert_eq!(json["env_vars"]["API_KEY"], "secret123");
+        assert_eq!(json["env_vars"]["DEBUG"], "true");
+    }
+
+    #[test]
+    fn test_create_deployment_request_builder_pattern() {
+        use serde_json::json;
+
+        let source_config = json!({
+            "repo_url": "https://github.com/owner/repo",
+            "branch": "main"
+        });
+
+        // Test builder pattern
+        let request = CreateDeploymentRequest::new(
+            "test-deployment".to_string(),
+            "github".to_string(),
+            source_config,
+            "prod".to_string(),
+        );
+
+        assert_eq!(request.name, "test-deployment");
+        assert_eq!(request.source, "github");
+        assert_eq!(request.deployment_type, "prod");
+        assert!(request.env_vars.is_none());
+
+        // Add env vars using builder
+        let mut env_vars = HashMap::new();
+        env_vars.insert("KEY".to_string(), "value".to_string());
+
+        let request_with_env = request.with_env_vars(env_vars);
+        assert!(request_with_env.env_vars.is_some());
     }
 }
