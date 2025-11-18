@@ -126,6 +126,54 @@ members = [
 
 ### Critical (Must Address)
 
+#### 0. Parallel Migration Strategy (NON-NEGOTIABLE)
+
+**Requirement:** The current manual SDK MUST continue to work until the layered architecture is proven acceptable.
+
+**Migration Approach:**
+```
+Phase 2A: Proof of Concept (Parallel)
+├── Keep: Existing manual SDK (untouched)
+├── Add: Generated SDK (new, in parallel)
+└── Test: Manual wrappers over generated (prove viability)
+
+Phase 2B: Validation (Parallel)
+├── Keep: Existing manual SDK (fallback)
+├── Validate: Generated + manual wrappers work correctly
+└── Test: CLI works with BOTH old and new SDK paths
+
+Phase 2C: Migration (Only after validation)
+├── Switch: CLI uses new layered SDK
+├── Remove: Old manual-only code (after confirmation)
+└── Document: Migration complete
+```
+
+**Key Principles:**
+- ❌ DO NOT refactor existing manual SDK until layered approach is proven
+- ✅ Build layered SDK in parallel (new workspace members)
+- ✅ Create feature flag or separate modules for testing
+- ✅ Maintain two working paths until validation complete
+- ✅ Easy rollback if layered approach fails
+
+**Validation Criteria (Must Pass All):**
+- [ ] Generated SDK compiles and passes basic tests
+- [ ] Manual wrappers successfully call generated layer
+- [ ] All existing CLI commands work unchanged
+- [ ] No performance regressions (build time, runtime)
+- [ ] Error handling works correctly
+- [ ] Authentication works correctly
+- [ ] ALL existing tests pass without modification
+
+**Only after ALL criteria pass:** Begin migrating existing manual SDK to use generated layer.
+
+**Rollback Plan:**
+If layered approach doesn't work:
+1. Delete `sdk/src/generated/` directory
+2. Remove generated crate dependencies
+3. Keep existing manual SDK (unchanged)
+4. Document why approach failed
+5. Consider alternatives
+
 #### 1. Fix PR #158 Issue Links
 
 **Problem:** PR #158 body says "Fixes codekiln/langstar#114" but should reference Phase 1 sub-issue
@@ -343,35 +391,49 @@ impl From<GeneratedLangsmithError> for LangstarError {
 
 ## Phase 2 Implementation Path
 
-### Recommended Order
+### Recommended Order (Parallel Migration)
 
-**Week 1: Proof of Concept**
+**Week 1: Generator Selection & Proof of Concept**
 1. Test both `openapi-generator-cli` and `progenitor`
-2. Generate LangSmith SDK (don't commit)
-3. Write ONE manual wrapper (e.g., `list_prompts`)
-4. Validate approach works
-5. Document chosen generator
+2. Compare output quality, idiomaticity, build time
+3. Generate LangSmith SDK to `/tmp` (don't commit yet)
+4. Write ONE NEW wrapper in parallel (e.g., `sdk/src/experimental/prompts_v2.rs`)
+5. Validate generated → manual → CLI chain works
+6. Document chosen generator with rationale
+7. **Deliverable:** Generator decision + working proof-of-concept
 
-**Week 2: Infrastructure**
-1. Update `tools/generate_sdk.sh` for chosen generator
-2. Create `tools/specs/versions.json` structure
-3. Create `tools/check_spec_drift.sh` script
-4. Create `tools/fetch_specs.sh` script
-5. Initialize version tracking
+**Week 2: Parallel Infrastructure Setup**
+1. Create `sdk/src/generated/` as NEW workspace members
+2. Update `tools/generate_sdk.sh` for chosen generator
+3. Create `tools/specs/versions.json` structure
+4. Create `tools/check_spec_drift.sh` script
+5. Generate and commit LangSmith + LangGraph SDKs
+6. **Keep:** Existing manual SDK untouched (still works)
+7. **Deliverable:** Generated SDKs exist in parallel
 
-**Week 3: Migration**
-1. Generate and commit LangSmith SDK
-2. Refactor `sdk/src/prompts.rs` to wrap generated
-3. Refactor remaining manual modules incrementally
-4. Update tests
-5. Verify no CLI regressions
+**Week 3: Parallel Validation (Both Paths Work)**
+1. Create NEW manual wrappers that use generated layer
+2. Add feature flag or module namespace (e.g., `sdk::v2`)
+3. Wire up ONE CLI command to use new layered path
+4. Run ALL tests against BOTH old and new paths
+5. Compare performance, error handling, behavior
+6. **Keep:** Old path still default, new path experimental
+7. **Deliverable:** Validation that layered approach works
 
-**Week 4: Documentation & Cleanup**
-1. Create `sdk/CHANGELOG.md` and `tools/specs/CHANGELOG.md`
-2. Document developer workflow
-3. Create runbook for spec updates
-4. Update README with SDK generation info
-5. Final testing and PR
+**Week 4: Migration (Only After Validation)**
+1. If validation passed: Switch CLI to use layered SDK
+2. Remove old manual-only implementations
+3. Create changelogs: `sdk/CHANGELOG.md`, `tools/specs/CHANGELOG.md`
+4. Document developer workflow and runbook
+5. Update README with SDK generation info
+6. Final testing and PR
+7. **If validation failed:** Keep old approach, document learnings
+
+**Critical Gates:**
+- ✅ Gate 1 (Week 1→2): Generator chosen and proven viable
+- ✅ Gate 2 (Week 2→3): Generated SDK compiles and builds cleanly
+- ✅ Gate 3 (Week 3→4): Layered approach validated (all tests pass)
+- ✅ Gate 4 (Week 4): Only migrate if ALL gates passed
 
 ## Conclusion
 
