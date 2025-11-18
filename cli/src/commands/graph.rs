@@ -293,13 +293,26 @@ impl GraphCommands {
                     }
                 };
 
+                // Build source_revision_config based on source type
+                let source_revision_config = match source.as_str() {
+                    "github" => {
+                        let branch = branch.as_ref().unwrap(); // Already validated above
+                        json!({
+                            "repo_ref": branch,
+                            "langgraph_config_path": "langgraph.json"  // Default config path
+                        })
+                    }
+                    _ => json!(null), // null for non-github sources
+                };
+
                 // Create the request
                 let mut request = CreateDeploymentRequest::new(
                     name.clone(),
                     source.clone(),
                     source_config,
                     deployment_type.clone(),
-                );
+                )
+                .with_source_revision_config(source_revision_config);
 
                 if !env_vars.is_empty() {
                     request = request.with_env_vars(env_vars);
