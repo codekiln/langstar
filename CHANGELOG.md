@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `langstar graph delete` command with confirmation prompt
   - Support for environment variables via `--env KEY=VALUE` flag
   - Support for deployment types: `dev_free`, `dev`, `prod`
+  - Added `--wait` flag to poll deployment status until READY
+  - Adaptive polling: 10s intervals for first 30s, then 30s intervals
+  - Progress indicators during deployment status polling
   - JSON and table output formats
   - Input validation for required fields and source types
 
@@ -28,7 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 🧪 test(cli): add integration tests for deployment lifecycle (#160)
   - Tests for `graph create` with various configurations
+  - Tests for `graph create --wait` with status polling
   - Tests for `graph delete` with confirmation behavior
+  - Full lifecycle test (create → list → delete → verify)
   - Tests for validation and error handling
   - Tests for environment variable parsing
 
@@ -36,8 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 📚 docs: update README with graph deployment commands (#160)
   - Added usage examples for create and delete commands
+  - Documented `--wait` flag for polling deployment status
   - Documented deployment types and source types
   - Added examples with environment variables
+  - Added example for waiting for deployment to be ready
 
 ## [0.3.0] - 2025-11-12
 
