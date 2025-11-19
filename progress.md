@@ -416,6 +416,77 @@ Project (v1 API concept = Deployment in v2 API)
 3. **Accept limitation**: Document that users must manually obtain URLs from UI
 4. **Investigate session auth**: See if we can programmatically authenticate to v1 API
 
+### ✅ SOLUTION: Switch to external_docker Deployments
+
+**Decision:** Use `external_docker` source type instead of `github` source type.
+
+**Why This Solves the Problem:**
+
+1. **Simple URL Pattern:**
+   ```
+   https://{deployment-name}.langchain.dev
+   ```
+   No hash computation needed - just string formatting!
+
+2. **Proven Approach:**
+   - Used by `langchain-ai/cicd-pipeline-example`
+   - Recommended for CI/CD workflows
+   - Production-ready
+
+3. **GitHub Actions Integration:**
+   - Uses GitHub Container Registry (ghcr.io)
+   - Built-in authentication via `GITHUB_TOKEN` (no secrets needed!)
+   - No Docker Hub rate limits (Docker Hub: 200 pulls/6 hours on free tier)
+   - Free for both public and private images
+
+4. **Image Naming:**
+   ```
+   ghcr.io/{owner}/{repo}:tag
+   Example: ghcr.io/codekiln/langstar:test-latest
+   ```
+
+**Implementation Plan:**
+
+1. **Create GitHub Action** (create as sub-issue):
+   - Build Docker image from test fixtures
+   - Push to ghcr.io using built-in `GITHUB_TOKEN`
+   - Tag with `test-latest` for integration tests
+   - Reference: `/workspace/reference/repo/langchain-ai/cicd-pipeline-example`
+
+2. **Update Test Fixtures:**
+   - Change `--source` from `github` to `external_docker`
+   - Change `--repo-url` to `--image-uri ghcr.io/codekiln/langstar:test-latest`
+   - Remove GitHub-specific parameters (branch, config-path, integration-id)
+
+3. **Add URL Resolution Logic:**
+   ```rust
+   pub fn resolve_deployment_url(deployment: &Deployment) -> Result<String> {
+       match deployment.source {
+           DeploymentSource::ExternalDocker => {
+               Ok(format!("https://{}.langchain.dev", deployment.name))
+           }
+           _ => Err(CliError::Config("Only external_docker supported".into()))
+       }
+   }
+   ```
+
+4. **Update SDK:**
+   - Add `external_docker` source creation support
+   - Update `CreateDeploymentRequest` to handle Docker image URIs
+
+**Benefits:**
+- ✅ Unblocks integration tests immediately
+- ✅ No reverse engineering needed
+- ✅ Standard Docker workflow
+- ✅ Free GitHub Container Registry
+- ✅ No rate limits
+- ✅ Production-ready approach
+
+**Next Action:**
+- Create GitHub issue documenting this approach
+- Use `gh-sub-issue` to create sub-issue for GitHub Action implementation
+- Implement changes as documented above
+
 ### 📋 Next Steps
 
 **To Unblock Testing:**
