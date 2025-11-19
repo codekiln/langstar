@@ -357,9 +357,12 @@ Through investigation with deployment `test-url-investigation` (ID: `b71815d5-a2
 
 ### 🎯 Solution Found: OpenAPI Spec Analysis
 
-**Analyzed:** `https://langchain-ai.github.io/langgraph/cloud/reference/api/openapi_control_plane.json`
+**Analyzed:**
+- `https://langchain-ai.github.io/langgraph/cloud/reference/api/openapi_control_plane.json`
+- `https://github.com/langchain-ai/cicd-pipeline-example`
+- Official Control Plane API documentation
 
-**Data Model:**
+**Data Model (from OpenAPI spec):**
 ```
 Project (v1 API concept = Deployment in v2 API)
   └─ resource: ResourceService
@@ -369,26 +372,49 @@ Project (v1 API concept = Deployment in v2 API)
        └─ url: string | null  ← deployment URL
 ```
 
-**Key Insights:**
+**Key Findings:**
 
-1. **v1 vs v2 terminology:**
-   - v1 API: "Projects" (internal/UI, session auth)
-   - v2 API: "Deployments" (public, API key auth)
-   - Project ID == Deployment ID (same UUID)
+1. **Two parallel Control Plane APIs:**
+   - **v1 `/projects`**: Contains `resource.url` with deployment URL (requires session auth, NOT API keys)
+   - **v2 `/deployments`**: Public API with API key auth, but does NOT return URLs for GitHub deployments
 
-2. **URL location in v1 API:**
-   - Endpoint: `/v1/projects/{project_id}`
-   - Response includes: `resource.url` (deployment URL)
-   - Response includes: `resource.id.name` (hostname for construction)
+2. **URL Pattern for GitHub Cloud SaaS Deployments:**
+   - Format: `https://{deployment-name}-{hash}.us.langgraph.app`
+   - Example: `https://test-url-investigation-2-3759548fa6535a80b5ac084029b50729.us.langgraph.app`
+   - Hash is 32 hex characters (MD5-like format)
 
-3. **v2 API limitations:**
-   - `/v2/deployments/{id}` does NOT include `resource` field
-   - `/v2/deployments/{id}/revisions/{revision_id}` endpoint exists but schema unclear
+3. **URL Pattern for external_docker Deployments:**
+   - Format: `https://{deployment-name}.langchain.dev`
+   - Example from cicd-pipeline-example: `https://text2sql-agent-pr-123.langchain.dev`
+   - Much simpler - just the deployment name
 
-4. **Proposed Solution:**
-   - **Option A**: Use v1 projects API (but requires session auth - may not work with API keys)
-   - **Option B**: Construct URL from deployment/revision data using pattern discovered
-   - **Option C**: Check if v2 revisions endpoint actually returns URL (schema may be incomplete)
+4. **v2 API Tested:**
+   - ✅ `/v2/deployments/{id}` - Returns `custom_url: null` for GitHub deployments
+   - ✅ `/v2/deployments/{id}/revisions/{revision_id}` - Works, but no URL fields
+   - ❌ `/v1/projects` - Returns "Invalid token" with API key auth
+
+5. **Documentation Gap:**
+   - Official API docs show `<DEPLOYMENT_URL>` placeholder in all examples
+   - Never explains how to programmatically obtain this URL
+   - cicd-pipeline-example only shows external_docker (self-hosted) pattern
+
+### 🚧 Current Blocker: No Programmatic Way to Get GitHub Deployment URLs
+
+**Problem:**
+- GitHub Cloud SaaS deployments URL is NOT returned by v2 `/deployments` API
+- v1 `/projects` API has the URL but requires session auth (browser/UI), not API keys
+- No documented way to obtain deployment URLs programmatically
+
+**Tested Solutions:**
+- ❌ Using deployment ID as hostname: `https://{deployment-id}.us.langgraph.app` (connection failed)
+- ❌ Accessing v1 projects API with API keys: Returns "Invalid token"
+- ❌ v2 revisions API: Doesn't include URL fields
+
+**Remaining Options:**
+1. **File issue with LangChain**: Request v2 API to include deployment URLs
+2. **Reverse-engineer hash generation**: Figure out how `3759548fa6535a80b5ac084029b50729` is computed
+3. **Accept limitation**: Document that users must manually obtain URLs from UI
+4. **Investigate session auth**: See if we can programmatically authenticate to v1 API
 
 ### 📋 Next Steps
 
