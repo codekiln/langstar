@@ -35,6 +35,12 @@ pub enum GraphCommands {
         name_contains: Option<String>,
     },
 
+    /// Get a specific deployment by ID
+    Get {
+        /// Deployment ID
+        deployment_id: String,
+    },
+
     /// Create a new LangGraph deployment
     Create {
         /// Name of the deployment
@@ -242,6 +248,17 @@ impl GraphCommands {
                         deployments_list.offset
                     ));
                 }
+
+                Ok(())
+            }
+
+            GraphCommands::Get { deployment_id } => {
+                formatter.info(&format!("Fetching deployment '{}'...", deployment_id));
+
+                let deployment = client.deployments().get(deployment_id).await?;
+
+                // Output in JSON format
+                formatter.print(&serde_json::to_value(&deployment)?)?;
 
                 Ok(())
             }
