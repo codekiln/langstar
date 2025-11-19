@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'cli/tests/fixtures/test-graph-deployment/**'
+      - 'tests/fixtures/test-graph-deployment/**'
       - '.github/workflows/build-test-image.yml'
   workflow_dispatch:  # Allow manual trigger for testing
 
@@ -37,7 +37,7 @@ jobs:
       - name: Build and push test image
         uses: docker/build-push-action@v5
         with:
-          context: cli/tests/fixtures/test-graph-deployment
+          context: tests/fixtures/test-graph-deployment
           push: true
           tags: ghcr.io/codekiln/langstar:test-latest
           platforms: linux/amd64
