@@ -15,13 +15,14 @@ pub struct TestDeployment {
 }
 
 impl TestDeployment {
-    /// Create a new test deployment and wait for it to be READY
+    /// Create or reuse a test deployment
     ///
     /// This function:
-    /// 1. Generates a unique deployment name with timestamp
-    /// 2. Runs `langstar graph create --wait` to create deployment
-    /// 3. Waits for deployment to reach READY status (auto-discovers integration_id)
-    /// 4. Returns deployment info for use in tests
+    /// 1. Checks for existing READY test deployments (name starts with "test-deployment-")
+    /// 2. Reuses the most recent one if found
+    /// 3. Creates a new deployment if none exist
+    /// 4. Waits for deployment to reach READY status
+    /// 5. Returns deployment info for use in tests
     ///
     /// # Prerequisites
     ///
@@ -42,6 +43,90 @@ impl TestDeployment {
     pub fn create() -> Self {
         Self::check_env_vars();
 
+        // Try to find and reuse existing test deployment
+        if let Some(existing) = Self::find_active_test_deployment() {
+            println!("\n=================================================");
+            println!("♻️  Reusing existing test deployment");
+            println!("   Name: {}", existing.name);
+            println!("   ID: {}", existing.id);
+            println!("=================================================\n");
+            return existing;
+        }
+
+        // No existing deployment found, create new one
+        println!("\n=================================================");
+        println!("🔍 No existing test deployment found");
+        println!("   Creating new deployment...");
+        println!("=================================================\n");
+
+        Self::create_new_deployment()
+    }
+
+    /// Find an existing active test deployment
+    ///
+    /// Queries for deployments matching:
+    /// - Name starts with "test-deployment-"
+    /// - Status is READY
+    /// - Source is github
+    ///
+    /// Returns the most recent matching deployment, or None if no matches found.
+    fn find_active_test_deployment() -> Option<Self> {
+        // Build langstar binary
+        let bin = CargoBuild::new()
+            .bin("langstar")
+            .run()
+            .ok()?
+            .path()
+            .to_owned();
+
+        // Query deployments with filter for test deployments
+        let mut cmd = Command::new(&bin);
+        cmd.args([
+            "graph",
+            "list",
+            "--name-contains",
+            "test-deployment-",
+            "--status",
+            "READY",
+            "--format",
+            "json",
+        ]);
+
+        let output = cmd.output().ok()?;
+
+        if !output.status.success() {
+            eprintln!(
+                "⚠️  Warning: Failed to query existing deployments.\nStderr: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return None;
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        // Parse JSON output
+        let json: serde_json::Value = serde_json::from_str(&stdout).ok()?;
+
+        // Get deployments array
+        let deployments = json.as_array()?;
+
+        if deployments.is_empty() {
+            return None;
+        }
+
+        // Find most recent deployment (first in list, as API returns most recent first)
+        let deployment = &deployments[0];
+
+        let id = deployment["id"].as_str()?.to_string();
+        let name = deployment["name"].as_str()?.to_string();
+
+        Some(Self { id, name })
+    }
+
+    /// Create a new test deployment
+    ///
+    /// This is the original creation logic, now separated from the reuse logic.
+    fn create_new_deployment() -> Self {
         // Generate unique deployment name with timestamp
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -177,12 +262,16 @@ impl TestDeployment {
     }
 }
 
-impl Drop for TestDeployment {
-    /// Automatically clean up deployment when TestDeployment goes out of scope
-    fn drop(&mut self) {
-        self.cleanup();
-    }
-}
+// NOTE: Automatic cleanup is disabled to allow deployment reuse across test runs.
+// Test deployments are now reused to save API quota and speed up test startup.
+// To manually clean up old test deployments, use: langstar graph delete <id> --yes
+//
+// impl Drop for TestDeployment {
+//     /// Automatically clean up deployment when TestDeployment goes out of scope
+//     fn drop(&mut self) {
+//         self.cleanup();
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
