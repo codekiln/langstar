@@ -409,7 +409,7 @@ impl GraphCommands {
                             "langgraph_config_path": config_path
                         })
                     }
-                    _ => json!(null), // null for non-github sources
+                    _ => json!({}), // empty object for non-github sources
                 };
 
                 // Create the request
