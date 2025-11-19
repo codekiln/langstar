@@ -283,10 +283,37 @@ The `custom_url` field in `source_config` is only for `external_docker` deployme
 3. **SDK Enhancement**: Add method to connect by deployment ID without explicit URL
 4. **Alternative Field**: Check if URL is in a different field (listener_config, revision, etc.)
 
-**Investigation Needed:**
-- Find the correct URL pattern for GitHub deployments on LangGraph Platform
-- Check if URL is available through a different API endpoint
-- Verify if Python LangGraph SDK handles this differently
+**SOLUTION FOUND:**
+
+Through investigation with deployment `test-url-investigation` (ID: `b71815d5-a2c5-411d-abd6-b2fc7812d39a`), we discovered:
+
+1. **The `/v1/projects/{project_id}/revisions/{revision_id}` API** (internal/UI-only) returns:
+   ```json
+   {
+     "resource": {
+       "id": {
+         "name": "test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc-c89ccf8cf"
+       }
+     }
+   }
+   ```
+
+2. **The deployment URL pattern is:**
+   - resource.id.name format: `<deployment-name>-<hash>-<suffix>`
+   - URL hostname (remove last segment): `<deployment-name>-<hash>`
+   - Full URL: `https://<hostname>.us.langgraph.app`
+
+3. **Example:**
+   - resource.id.name: `test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc-c89ccf8cf`
+   - Hostname: `test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc`
+   - URL: `https://test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc.us.langgraph.app`
+
+**Implementation Required:**
+1. Add `/v2/deployments/{id}/revisions/{revision_id}` endpoint to SDK
+2. Create `Revision` struct with `resource` field
+3. Extract hostname from `resource.id.name` (remove last hyphen-segment)
+4. Construct URL: `https://{hostname}.us.langgraph.app`
+5. Update `resolve_deployment_url()` in assistant.rs to use this
 
 ### 📋 Next Steps
 
