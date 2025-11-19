@@ -164,7 +164,7 @@ impl TestDeployment {
             "--config-path",
             "tests/fixtures/test-graph-deployment/langgraph.json",
             "--deployment-type",
-            "dev_free",
+            "dev",
             "--wait",
             "--format",
             "json",
