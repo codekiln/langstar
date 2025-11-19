@@ -315,6 +315,81 @@ Through investigation with deployment `test-url-investigation` (ID: `b71815d5-a2
 4. Construct URL: `https://{hostname}.us.langgraph.app`
 5. Update `resolve_deployment_url()` in assistant.rs to use this
 
+### 🔍 Investigation Update (Second Test Deployment)
+
+**Deployment Created:** `test-url-investigation-2` (ID: `4ddbb7b1-a88c-4368-9136-6902a9822655`)
+- Status: READY
+- Revision ID: `85b429fa-896b-4968-af01-15400aede2d0`
+
+**Key Findings:**
+
+1. **`/v2/deployments/{id}` API (public)** - Does NOT return deployment URL:
+   ```json
+   {
+     "source_config": {
+       "custom_url": null,  // Still null after READY
+       ...
+     }
+   }
+   ```
+
+2. **`/v2/deployments/{id}/revisions/{revision_id}` API EXISTS** in OpenAPI spec:
+   - Found in public API: `https://api.host.langchain.com/openapi.json`
+   - Returns `Revision` schema with fields: `id`, `created_at`, `updated_at`, `status`, `source`, `source_revision_config`
+   - **BUT**: OpenAPI schema does NOT include `resource` field or URL information
+   - **HOWEVER**: This doesn't mean the actual API response won't include it (schemas can be incomplete)
+
+3. **Two Possible Scenarios:**
+   a) **v2 revision API returns URL** - OpenAPI schema is incomplete, actual response includes URL
+   b) **v2 revision API does NOT return URL** - Only v1 (internal) API has URL, need workaround
+
+4. **Next Step:**
+   - Implement SDK support for `/v2/deployments/{id}/revisions/{revision_id}`
+   - Test what the actual API response contains (may differ from OpenAPI schema)
+   - If URL is present → use it directly
+   - If URL is absent → use hostname construction workaround from `resource.id.name`
+
+**Reference from control-plane-api-demo:**
+- Example workflow uses `/v1/projects` API to create `external_docker` deployments
+- Sets `image_path` to Docker image URL
+- For external_docker, `custom_url` is user-provided
+- Does NOT solve GitHub deployment URL discovery
+
+### 🎯 Solution Found: OpenAPI Spec Analysis
+
+**Analyzed:** `https://langchain-ai.github.io/langgraph/cloud/reference/api/openapi_control_plane.json`
+
+**Data Model:**
+```
+Project (v1 API concept = Deployment in v2 API)
+  └─ resource: ResourceService
+       ├─ id: ResourceId
+       │    ├─ type: "revisions" | "services"
+       │    └─ name: string  ← hostname for URL construction
+       └─ url: string | null  ← deployment URL
+```
+
+**Key Insights:**
+
+1. **v1 vs v2 terminology:**
+   - v1 API: "Projects" (internal/UI, session auth)
+   - v2 API: "Deployments" (public, API key auth)
+   - Project ID == Deployment ID (same UUID)
+
+2. **URL location in v1 API:**
+   - Endpoint: `/v1/projects/{project_id}`
+   - Response includes: `resource.url` (deployment URL)
+   - Response includes: `resource.id.name` (hostname for construction)
+
+3. **v2 API limitations:**
+   - `/v2/deployments/{id}` does NOT include `resource` field
+   - `/v2/deployments/{id}/revisions/{revision_id}` endpoint exists but schema unclear
+
+4. **Proposed Solution:**
+   - **Option A**: Use v1 projects API (but requires session auth - may not work with API keys)
+   - **Option B**: Construct URL from deployment/revision data using pattern discovered
+   - **Option C**: Check if v2 revisions endpoint actually returns URL (schema may be incomplete)
+
 ### 📋 Next Steps
 
 **To Unblock Testing:**
