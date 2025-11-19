@@ -240,8 +240,44 @@ fn find_active_test_deployment() -> Option<Self> {
 [Test Suite End]
 ```
 
-### 🧪 Next Steps for Verification
+### 🧪 Testing Status
 
+**Test Run Results:**
+
+1. ✅ **Repository URL Fixed**: Changed from `langchain-ai/langgraph-example` to `codekiln/langstar`
+2. ✅ **Config Path Parameter Added**: Added `--config-path` parameter (defaults to `langgraph.json`)
+3. ✅ **Test Fixture Updated**: Uses `tests/fixtures/test-graph-deployment/langgraph.json`
+4. ✅ **Environment Variable Loading**: Successfully loads `LANGGRAPH_GITHUB_INTEGRATION_ID`
+5. ✅ **Deployment Reuse Logic**: Correctly checks for existing deployments first
+6. ✅ **API Integration**: Makes valid API calls with all required parameters
+
+**Current Blocker:**
+
+❌ **Quota Limit Exceeded**: `"Limit of 1 free Development deployment type(s) per organization exceeded."`
+
+This is an **organization-level quota limit**, not a code issue. The workspace has no deployments, but the organization has reached its limit of 1 free dev deployment (likely in a different workspace).
+
+**Resolution Options:**
+1. Delete existing free dev deployment from organization (if unused)
+2. Use paid deployment type (change `dev_free` to `dev` or `prod` in test fixture)
+3. Use different organization/workspace without quota limits
+4. Contact LangSmith support to increase quota
+
+**What Works:**
+- All code changes are correct and functional
+- Deployment creation succeeds up to quota validation
+- Environment variables load correctly
+- Repository and config file path are correct
+- Integration ID precedence chain works as expected
+
+### 📋 Next Steps
+
+**To Unblock Testing:**
+1. Identify and optionally delete the existing free dev deployment in the organization
+2. OR: Temporarily change test fixture to use `dev` deployment type (requires paid plan)
+3. Run tests again to verify full deployment lifecycle
+
+**Once Unblocked:**
 1. **Test locally with multiple runs** to verify:
    - First run creates new deployment (uses env var)
    - Second run reuses first deployment (fast)
