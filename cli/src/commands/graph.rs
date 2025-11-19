@@ -57,6 +57,10 @@ pub enum GraphCommands {
         #[arg(long)]
         integration_id: Option<String>,
 
+        /// Path to langgraph.json config file in repository (for github source)
+        #[arg(long, default_value = "langgraph.json")]
+        config_path: String,
+
         /// Deployment type (dev_free, dev, or prod)
         #[arg(short = 't', long, default_value = "dev_free")]
         deployment_type: String,
@@ -248,6 +252,7 @@ impl GraphCommands {
                 repo_url,
                 branch,
                 integration_id,
+                config_path,
                 deployment_type,
                 env,
                 wait,
@@ -372,7 +377,7 @@ impl GraphCommands {
                         let branch = branch.as_ref().unwrap(); // Already validated above
                         json!({
                             "repo_ref": branch,
-                            "langgraph_config_path": "langgraph.json"  // Default config path
+                            "langgraph_config_path": config_path
                         })
                     }
                     _ => json!(null), // null for non-github sources

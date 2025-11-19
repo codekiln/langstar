@@ -148,7 +148,7 @@ impl TestDeployment {
             .to_owned();
 
         // Create deployment with --wait flag
-        // Note: integration_id will be auto-discovered from existing GitHub deployments
+        // Uses LANGGRAPH_GITHUB_INTEGRATION_ID from environment variable
         let mut cmd = Command::new(&bin);
         cmd.args([
             "graph",
@@ -158,9 +158,11 @@ impl TestDeployment {
             "--source",
             "github",
             "--repo-url",
-            "https://github.com/langchain-ai/langgraph-example",
+            "https://github.com/codekiln/langstar",
             "--branch",
             "main",
+            "--config-path",
+            "tests/fixtures/test-graph-deployment/langgraph.json",
             "--deployment-type",
             "dev_free",
             "--wait",
