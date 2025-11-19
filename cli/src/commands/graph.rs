@@ -67,6 +67,11 @@ pub enum GraphCommands {
         #[arg(long, default_value = "langgraph.json")]
         config_path: String,
 
+        /// Docker image URI (for external_docker source)
+        /// Example: ghcr.io/owner/repo:tag
+        #[arg(long)]
+        image_uri: Option<String>,
+
         /// Deployment type (dev_free, dev, or prod)
         #[arg(short = 't', long, default_value = "dev_free")]
         deployment_type: String,
@@ -270,6 +275,7 @@ impl GraphCommands {
                 branch,
                 integration_id,
                 config_path,
+                image_uri,
                 deployment_type,
                 env,
                 wait,
@@ -375,9 +381,15 @@ impl GraphCommands {
                         })
                     }
                     "external_docker" => {
-                        // For external_docker, integration_id must be null
+                        let image = image_uri.as_ref().ok_or_else(|| {
+                            crate::error::CliError::Config(
+                                "image_uri is required for external_docker source".to_string(),
+                            )
+                        })?;
+                        // For external_docker, integration_id must be null, image_path is required
                         json!({
-                            "integration_id": null
+                            "integration_id": null,
+                            "image_path": image
                         })
                     }
                     _ => {

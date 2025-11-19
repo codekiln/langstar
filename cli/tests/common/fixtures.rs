@@ -26,18 +26,15 @@ impl TestDeployment {
     ///
     /// # Prerequisites
     ///
-    /// Requires GitHub integration ID to be available via one of:
-    /// - Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
-    /// - Config file: github_integration_id field
-    /// - Auto-discovery: At least one existing GitHub deployment
-    ///
-    /// For first-time setup, create initial deployment via LangSmith UI or set integration_id.
+    /// Uses external_docker source type with pre-built Docker image from GitHub Container Registry:
+    /// - Image: ghcr.io/codekiln/langstar:test-latest
+    /// - Built by: .github/workflows/build-test-image.yml
+    /// - No GitHub integration ID required
     ///
     /// # Panics
     ///
     /// Panics if:
     /// - Required environment variables not set (LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID)
-    /// - GitHub integration ID cannot be determined (not in config/env and no existing deployments)
     /// - Deployment creation fails
     /// - Deployment doesn't reach READY status within timeout
     pub fn create() -> Self {
@@ -67,7 +64,7 @@ impl TestDeployment {
     /// Queries for deployments matching:
     /// - Name starts with "test-deployment-"
     /// - Status is READY
-    /// - Source is github
+    /// - Source is external_docker
     ///
     /// Returns the most recent matching deployment, or None if no matches found.
     fn find_active_test_deployment() -> Option<Self> {
@@ -136,7 +133,8 @@ impl TestDeployment {
 
         println!("\n=================================================");
         println!("🚀 Creating test deployment: {}", deployment_name);
-        println!("   (Integration ID: CLI flag > env/config > auto-discovery)");
+        println!("   Source: external_docker");
+        println!("   Image: ghcr.io/codekiln/langstar:test-latest");
         println!("=================================================\n");
 
         // Build langstar binary
@@ -148,7 +146,7 @@ impl TestDeployment {
             .to_owned();
 
         // Create deployment with --wait flag
-        // Uses LANGGRAPH_GITHUB_INTEGRATION_ID from environment variable
+        // Uses pre-built Docker image from GitHub Container Registry
         let mut cmd = Command::new(&bin);
         cmd.args([
             "graph",
@@ -156,13 +154,9 @@ impl TestDeployment {
             "--name",
             &deployment_name,
             "--source",
-            "github",
-            "--repo-url",
-            "https://github.com/codekiln/langstar",
-            "--branch",
-            "main",
-            "--config-path",
-            "tests/fixtures/test-graph-deployment/langgraph.json",
+            "external_docker",
+            "--image-uri",
+            "ghcr.io/codekiln/langstar:test-latest",
             "--deployment-type",
             "dev",
             "--wait",

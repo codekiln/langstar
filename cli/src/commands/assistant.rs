@@ -151,18 +151,20 @@ impl From<&Assistant> for AssistantRow {
     }
 }
 
-/// Resolve a deployment name or ID to its custom URL
+/// Resolve a deployment name or ID to its deployment URL
 ///
 /// This function queries the Control Plane API to find a deployment by name or ID,
-/// then extracts the `custom_url` from the deployment's `source_config`.
+/// then determines the deployment URL based on the source type:
+/// - For `external_docker`: Constructs URL as `https://{name}.langchain.dev`
+/// - For `github`: Attempts to extract `custom_url` from `source_config` (legacy)
 ///
 /// # Arguments
 /// * `config` - CLI configuration containing API keys and workspace ID
 /// * `deployment_name_or_id` - Deployment name or UUID to look up
 ///
 /// # Returns
-/// * `Ok(String)` - The deployment's custom URL
-/// * `Err` - If deployment not found, no custom_url, or API error
+/// * `Ok(String)` - The deployment's URL
+/// * `Err` - If deployment not found, unsupported source type, or API error
 async fn resolve_deployment_url(config: &Config, deployment_name_or_id: &str) -> Result<String> {
     // Create Control Plane client for deployment lookup
     let auth = AuthConfig::new(
@@ -188,13 +190,29 @@ async fn resolve_deployment_url(config: &Config, deployment_name_or_id: &str) ->
             ))
         })?;
 
-    // Extract custom_url
-    deployment.custom_url().ok_or_else(|| {
-        CliError::Config(format!(
-            "Deployment '{}' has no custom_url in source_config",
-            deployment.name
-        ))
-    })
+    // Determine URL based on source type
+    use langstar_sdk::DeploymentSource;
+    match deployment.source {
+        DeploymentSource::ExternalDocker => {
+            // For external_docker, construct URL using deployment name
+            Ok(format!("https://{}.langchain.dev", deployment.name))
+        }
+        DeploymentSource::Github => {
+            // For github, try to extract custom_url from source_config (legacy support)
+            deployment.custom_url().ok_or_else(|| {
+                CliError::Config(format!(
+                    "GitHub deployment '{}' has no custom_url in source_config. \
+                     GitHub Cloud SaaS deployments require manual URL lookup from the UI. \
+                     Consider using external_docker deployments for programmatic access.",
+                    deployment.name
+                ))
+            })
+        }
+        DeploymentSource::Unknown => Err(CliError::Config(format!(
+            "Deployment '{}' has unsupported source type: {:?}",
+            deployment.name, deployment.source
+        ))),
+    }
 }
 
 impl AssistantCommands {

@@ -509,3 +509,84 @@ Project (v1 API concept = Deployment in v2 API)
 
 - `183a154` - ✨ feat(config): add LANGGRAPH_GITHUB_INTEGRATION_ID config support
 - `b0be38a` - 🩹 fix: auto-discover GitHub integration_id from existing deployments
+
+---
+
+## 🔄 Branch Rebase Completed (2025-11-19)
+
+### ✅ Rebase Summary
+
+**Branch:** `codekiln/171-switch-to-external-docker`
+
+**Actions Completed:**
+1. ✅ Rebased 17 commits onto latest main (dc62536)
+2. ✅ Incorporated PR #177 changes (build-test-image.yml workflow)
+3. ✅ Force pushed to origin
+4. ✅ No conflicts encountered
+5. ✅ Branch now includes Docker image build workflow
+
+**Current State:**
+- Branch is up to date with `origin/main`
+- Includes new `.github/workflows/build-test-image.yml` workflow
+- Docker image `ghcr.io/codekiln/langstar:test-latest` is being built successfully
+- Ready for external_docker implementation
+
+### 📊 Implementation Review Completed
+
+**What's Implemented (17 commits):**
+- ✅ Deployment CRUD commands (create/delete/get/list)
+- ✅ `--wait` flag for deployment polling
+- ✅ GitHub integration ID configuration
+- ✅ Test fixture infrastructure with deployment reuse
+- ✅ `--config-path` parameter
+- ✅ SDK: `DeploymentSource::ExternalDocker` enum variant
+- ✅ SDK: `CreateDeploymentRequest` structure
+- ✅ Docker image build workflow (via PR #177)
+
+**What's NOT Implemented (Issue #171 Requirements):**
+- ❌ CLI: `--image-uri` parameter for external_docker deployments
+- ❌ CLI: Proper `source_config` with `image_path` field for external_docker
+- ❌ CLI: `resolve_deployment_url()` function for external_docker
+- ❌ Test fixtures: Still use `--source github` (need to switch to `external_docker`)
+- ❌ SDK documentation: No external_docker examples
+
+### 📋 Remaining Work (7 Tasks)
+
+**Priority order:**
+
+1. **Add `--image-uri` parameter** to `cli/src/commands/graph.rs`
+   - New flag for external_docker source type
+   - Example: `--image-uri ghcr.io/codekiln/langstar:test-latest`
+
+2. **Update `source_config` builder** in `cli/src/commands/graph.rs` (line ~377)
+   - Add `image_path` field for external_docker
+   - Current: `json!({"integration_id": null})`
+   - Needed: `json!({"integration_id": null, "image_path": image_uri})`
+
+3. **Add `resolve_deployment_url()` function** in `cli/src/commands/assistant.rs` or helper
+   - Simple string formatting: `format!("https://{}.langchain.dev", deployment.name)`
+   - Match on `DeploymentSource::ExternalDocker`
+
+4. **Update test fixtures** in `cli/tests/common/fixtures.rs` (line ~159)
+   - Change: `--source github` → `--source external_docker`
+   - Change: `--repo-url`, `--branch`, `--config-path` → `--image-uri ghcr.io/codekiln/langstar:test-latest`
+   - Remove: `--integration-id` requirement
+
+5. **Run pre-commit checks**
+   - `cargo fmt`
+   - `cargo check --workspace --all-features`
+   - `cargo clippy --workspace --all-features -- -D warnings`
+   - `cargo test --workspace --all-features`
+   - `cargo fmt --check`
+
+6. **Test integration tests** with external_docker
+   - Verify deployment creation with Docker image
+   - Verify URL resolution works
+   - Verify assistant commands work
+
+7. **Update SDK documentation**
+   - Add external_docker examples to SDK docs
+
+### 🎯 Next Action
+
+Switch to `/workspace` (main worktree) or stay in `/workspace/wip/codekiln-171-switch-to-external-docker` worktree and begin implementing the 7 remaining tasks in priority order.
