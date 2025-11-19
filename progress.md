@@ -251,24 +251,42 @@ fn find_active_test_deployment() -> Option<Self> {
 5. ✅ **Deployment Reuse Logic**: Correctly checks for existing deployments first
 6. ✅ **API Integration**: Makes valid API calls with all required parameters
 
+**Previous Blocker (RESOLVED):**
+~~❌ **Quota Limit Exceeded**: Changed deployment type from `dev_free` to `dev` to bypass organization quota~~
+
 **Current Blocker:**
 
-❌ **Quota Limit Exceeded**: `"Limit of 1 free Development deployment type(s) per organization exceeded."`
+❌ **GitHub Deployments Missing URL**: `"Deployment 'X' has no custom_url in source_config"`
 
-This is an **organization-level quota limit**, not a code issue. The workspace has no deployments, but the organization has reached its limit of 1 free dev deployment (likely in a different workspace).
+**Root Cause:**
+The `custom_url` field in `source_config` is only for `external_docker` deployments where users provide their own URL. For GitHub deployments on LangGraph Platform (Cloud SaaS), the platform generates a URL automatically, but this URL is NOT stored in the deployment's `source_config`.
 
-**Resolution Options:**
-1. Delete existing free dev deployment from organization (if unused)
-2. Use paid deployment type (change `dev_free` to `dev` or `prod` in test fixture)
-3. Use different organization/workspace without quota limits
-4. Contact LangSmith support to increase quota
+**Impact:**
+- Deployment creation works ✅ (test deployment created successfully in 13.1s)
+- Assistant commands fail ❌ because they expect `custom_url` to connect to deployment
 
 **What Works:**
-- All code changes are correct and functional
-- Deployment creation succeeds up to quota validation
-- Environment variables load correctly
-- Repository and config file path are correct
-- Integration ID precedence chain works as expected
+- ✅ Deployment creation succeeds for GitHub deployments
+- ✅ Environment variables load correctly
+- ✅ Repository and config file path are correct
+- ✅ Integration ID precedence chain works as expected
+- ✅ Deployment reuse logic works correctly
+- ✅ `--config-path` parameter works correctly
+
+**What Doesn't Work:**
+- ❌ Assistant commands can't find deployment URL for GitHub deployments
+- ❌ `custom_url` is `null` for Platform-managed GitHub deployments
+
+**Resolution Options:**
+1. **API Enhancement**: Control Plane API should return deployment URL in response
+2. **URL Construction**: Construct URL from deployment ID (format: `https://<id>.us.langgraph.app`?)
+3. **SDK Enhancement**: Add method to connect by deployment ID without explicit URL
+4. **Alternative Field**: Check if URL is in a different field (listener_config, revision, etc.)
+
+**Investigation Needed:**
+- Find the correct URL pattern for GitHub deployments on LangGraph Platform
+- Check if URL is available through a different API endpoint
+- Verify if Python LangGraph SDK handles this differently
 
 ### 📋 Next Steps
 
