@@ -19,7 +19,7 @@ struct DeploymentGuard {
 
 impl DeploymentGuard {
     /// Create a new deployment guard
-    fn new(_client: &LangchainClient, deployment_id: String) -> Self {
+    fn new(deployment_id: String) -> Self {
         Self {
             deployment_id,
             armed: true,
@@ -409,7 +409,7 @@ async fn test_deployment_workflow_full_lifecycle() {
     println!();
 
     // Create RAII guard for automatic cleanup on failure
-    let mut guard = DeploymentGuard::new(&client, deployment_id.clone());
+    let mut guard = DeploymentGuard::new(deployment_id.clone());
 
     // Validate deployment creation response
     assert_eq!(

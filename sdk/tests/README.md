@@ -260,9 +260,14 @@ export REPOSITORY_NAME="langstar"                      # Default: "langstar"
 
 ### Running Deployment Tests
 
-**Full deployment workflow (5-30 minutes):**
+**Full deployment workflow (5-30 minutes, persistent deployment):**
 ```bash
 cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture
+```
+
+**Full lifecycle deployment workflow (pre-release validation, 20-30 minutes):**
+```bash
+cargo test --test integration_deployment_workflow test_deployment_workflow_full_lifecycle -- --ignored --nocapture
 ```
 
 **List deployments:**
@@ -292,9 +297,31 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 
 ### Available Deployment Tests
 
-#### `test_deployment_workflow` (Full Lifecycle)
+#### `test_deployment_workflow` (Persistent Deployment)
 
-**Duration:** 5-30 minutes
+**Duration:** 5-30 minutes (first run: ~22 min, subsequent runs: ~6 min)
+
+**What it tests:**
+1. Finding GitHub integration ID dynamically
+2. Using a persistent deployment named "langstar-integration-test" with get-or-create pattern
+3. Listing revisions and polling first revision to DEPLOYED status
+4. Patching deployment (triggers new revision)
+5. Polling second revision to DEPLOYED status
+6. Validating deployment source, URL, and final status
+7. Reuses existing deployment; does not perform cleanup
+
+**Validations:**
+- ✅ Deployment source is "github"
+- ✅ Deployment has custom_url in source_config
+- ✅ Final revision status is Deployed
+
+**Performance:**
+- First run creates deployment (~22 minutes)
+- Subsequent runs reuse deployment (~6 minutes, 73% time reduction)
+
+#### `test_deployment_workflow_full_lifecycle` (Complete Lifecycle)
+
+**Duration:** 20-30 minutes
 
 **What it tests:**
 1. Finding GitHub integration ID dynamically
@@ -303,13 +330,20 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 4. Patching deployment (triggers new revision)
 5. Polling second revision to DEPLOYED status
 6. Validating deployment source, URL, and final status
-7. Cleanup with RAII guard
+7. Cleanup with RAII guard (deletes deployment after test)
 
 **Validations:**
 - ✅ Deployment source is "github"
 - ✅ Deployment has custom_url in source_config
 - ✅ Final revision status is Deployed
 - ✅ Automatic cleanup on test failure
+
+**Use Cases:**
+- Pre-release validation requiring complete create/delete cycle
+- Testing deployment cleanup functionality
+- Scenarios requiring a fresh deployment each run
+
+Creates a uniquely-named deployment and performs a complete lifecycle test including cleanup. This test creates a new deployment each run with RAII guard protection.
 
 #### `test_list_deployments` (Read-Only)
 
@@ -349,21 +383,22 @@ The `DeploymentGuard` struct provides automatic cleanup to prevent orphaned depl
 // Create deployment
 let deployment = client.deployments().create(&request).await?;
 
-// Guard ensures cleanup even on panic
-let mut guard = DeploymentGuard::new(&client, deployment.id.clone());
+// Guard ensures cleanup reminder on test failure
+let mut guard = DeploymentGuard::new(deployment.id.clone());
 
 // ... test operations that might fail ...
 
 // Manually delete and disarm guard on success
 client.deployments().delete(&deployment.id).await?;
-guard.disarm();  // Prevents double-deletion
+guard.disarm();  // Prevents warning about manual cleanup
 ```
 
 **Features:**
-- Implements Drop trait for automatic cleanup
-- Uses blocking runtime in Drop (required since Drop can't be async)
-- Provides `disarm()` method to skip cleanup after manual deletion
-- Prints cleanup status for debugging
+- Implements Drop trait for warning-based cleanup reminders
+- Drop implementation prints warnings via `eprintln!` (no automatic cleanup performed)
+- Provides `disarm()` method to skip warning after manual deletion
+- Prints deployment ID and cleanup instructions for debugging
+- Note: Automatic cleanup from Drop is not supported in async contexts
 
 ### Troubleshooting Deployment Tests
 
