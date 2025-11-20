@@ -163,6 +163,87 @@ pub struct DeploymentFilters {
     pub image_version: Option<String>,
 }
 
+/// Request to create a new deployment
+#[derive(Debug, Clone, Serialize)]
+pub struct CreateDeploymentRequest {
+    /// Name of the deployment
+    pub name: String,
+    /// Source type (e.g., "github")
+    pub source: String,
+    /// Source configuration
+    pub source_config: serde_json::Value,
+    /// Source revision configuration
+    pub source_revision_config: serde_json::Value,
+    /// Environment variable secrets (required, use empty vec if none)
+    pub secrets: Vec<DeploymentSecret>,
+}
+
+/// Request to update an existing deployment
+#[derive(Debug, Clone, Serialize)]
+pub struct PatchDeploymentRequest {
+    /// Source configuration (partial update)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_config: Option<serde_json::Value>,
+    /// Source revision configuration (partial update)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_revision_config: Option<serde_json::Value>,
+}
+
+/// Status of a deployment revision
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevisionStatus {
+    /// Revision is queued for building
+    Queued,
+    /// Revision is building
+    Building,
+    /// Revision build succeeded
+    BuildSucceeded,
+    /// Revision build failed
+    BuildFailed,
+    /// Revision is awaiting deployment
+    AwaitingDeploy,
+    /// Revision is deploying
+    Deploying,
+    /// Revision is fully deployed and operational
+    Deployed,
+    /// Revision deployment failed
+    DeployFailed,
+    /// Revision deployment was cancelled
+    Cancelled,
+    /// Revision status is unknown
+    #[default]
+    Unknown,
+}
+
+/// A deployment revision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Revision {
+    /// Unique identifier for the revision
+    pub id: String,
+    /// Deployment ID this revision belongs to (optional in list responses)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deployment_id: Option<String>,
+    /// Current status of the revision
+    pub status: RevisionStatus,
+    /// When the revision was created
+    pub created_at: String,
+    /// When the revision was last updated
+    pub updated_at: String,
+    /// Source revision configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_revision_config: Option<serde_json::Value>,
+}
+
+/// Response from listing revisions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevisionsList {
+    /// List of revisions (sorted by created_at descending)
+    pub resources: Vec<Revision>,
+    /// Offset for pagination
+    pub offset: i32,
+}
+
 /// Client for interacting with LangGraph Control Plane Deployments API
 pub struct DeploymentClient<'a> {
     client: &'a LangchainClient,
@@ -233,6 +314,83 @@ impl<'a> DeploymentClient<'a> {
         let path = format!("/v2/deployments/{}", deployment_id);
         let request = self.client.control_plane_get(&path)?;
         let response: Deployment = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// Create a new deployment
+    ///
+    /// # Arguments
+    /// * `request` - The deployment creation request
+    pub async fn create(&self, request: &CreateDeploymentRequest) -> Result<Deployment> {
+        let path = "/v2/deployments";
+        let req = self.client.control_plane_post(path)?.json(request);
+        let response: Deployment = self.client.execute(req).await?;
+        Ok(response)
+    }
+
+    /// Update (patch) an existing deployment
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment to update
+    /// * `request` - The deployment update request
+    pub async fn patch(
+        &self,
+        deployment_id: &str,
+        request: &PatchDeploymentRequest,
+    ) -> Result<Deployment> {
+        let path = format!("/v2/deployments/{}", deployment_id);
+        let req = self.client.control_plane_patch(&path)?.json(request);
+        let response: Deployment = self.client.execute(req).await?;
+        Ok(response)
+    }
+
+    /// Delete a deployment
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment to delete
+    pub async fn delete(&self, deployment_id: &str) -> Result<()> {
+        let path = format!("/v2/deployments/{}", deployment_id);
+        let request = self.client.control_plane_delete(&path)?;
+        let response = request.send().await?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(crate::error::LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// List revisions for a deployment
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment
+    pub async fn list_revisions(&self, deployment_id: &str) -> Result<RevisionsList> {
+        let path = format!("/v2/deployments/{}/revisions", deployment_id);
+        let request = self.client.control_plane_get(&path)?;
+        let response: RevisionsList = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// Get a specific revision
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment
+    /// * `revision_id` - UUID of the revision
+    pub async fn get_revision(&self, deployment_id: &str, revision_id: &str) -> Result<Revision> {
+        let path = format!(
+            "/v2/deployments/{}/revisions/{}",
+            deployment_id, revision_id
+        );
+        let request = self.client.control_plane_get(&path)?;
+        let response: Revision = self.client.execute(request).await?;
         Ok(response)
     }
 }

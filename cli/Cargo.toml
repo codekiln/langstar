@@ -40,3 +40,7 @@ assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.12"
 escargot = "0.5"
+
+[features]
+# Feature flag to enable integration tests that require API access
+integration-tests = []

@@ -227,6 +227,72 @@ impl LangchainClient {
         Ok(request)
     }
 
+    /// Create a POST request to Control Plane API
+    ///
+    /// The Control Plane API uses the same authentication as LangSmith:
+    /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
+    pub fn control_plane_post(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+
+        let mut request = self
+            .http_client
+            .post(&url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add workspace ID header if set (required for Control Plane API)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
+    /// Create a PATCH request to Control Plane API
+    ///
+    /// The Control Plane API uses the same authentication as LangSmith:
+    /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
+    pub fn control_plane_patch(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+
+        let mut request = self
+            .http_client
+            .patch(&url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add workspace ID header if set (required for Control Plane API)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
+    /// Create a DELETE request to Control Plane API
+    ///
+    /// The Control Plane API uses the same authentication as LangSmith:
+    /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
+    pub fn control_plane_delete(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+
+        let mut request = self
+            .http_client
+            .delete(&url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add workspace ID header if set (required for Control Plane API)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
     /// Create a GET request to LangGraph API
     ///
     /// ## Deployment-Level Resources
