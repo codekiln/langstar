@@ -216,6 +216,7 @@ impl TestDeployment {
     /// # Panics
     ///
     /// Panics if deletion fails
+    #[allow(dead_code)]
     pub fn cleanup(&self) {
         println!("\n=================================================");
         println!("🧹 Cleaning up test deployment: {}", self.name);

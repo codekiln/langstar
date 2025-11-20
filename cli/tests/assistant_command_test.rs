@@ -82,6 +82,7 @@ fn get_test_deployment() -> Option<(String, String)> {
 }
 
 #[test]
+#[ignore] // Blocked - GitHub deployments don't have custom_url in source_config (URL only in v1 API)
 fn test_assistant_create_basic() {
     println!("==================================================");
     println!("Test: Assistant Create (Basic)");
