@@ -28,6 +28,7 @@ pub mod auth;
 pub mod client;
 pub mod deployments;
 pub mod error;
+pub mod integrations;
 pub mod organization;
 pub mod prompts;
 
@@ -40,8 +41,10 @@ pub use auth::AuthConfig;
 pub use client::{LangchainClient, ListResponse};
 pub use deployments::{
     CreateDeploymentRequest, Deployment, DeploymentClient, DeploymentFilters, DeploymentSecret,
-    DeploymentSource, DeploymentStatus, DeploymentType, DeploymentsList,
+    DeploymentSource, DeploymentStatus, DeploymentType, DeploymentsList, PatchDeploymentRequest,
+    Revision, RevisionStatus, RevisionsList,
 };
 pub use error::{LangstarError, Result};
+pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
 pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};

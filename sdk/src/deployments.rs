@@ -1,7 +1,6 @@
 use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// A secret environment variable for a deployment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -169,67 +168,78 @@ pub struct DeploymentFilters {
 pub struct CreateDeploymentRequest {
     /// Name of the deployment
     pub name: String,
-    /// Source type (e.g., "github", "external_docker")
+    /// Source type (e.g., "github")
     pub source: String,
-    /// Source configuration (repository URL, branch, etc.)
+    /// Source configuration
     pub source_config: serde_json::Value,
-    /// Source revision configuration (commit hash, tag, etc.)
+    /// Source revision configuration
     pub source_revision_config: serde_json::Value,
-    /// Deployment type (dev_free, dev, or prod)
-    pub deployment_type: String,
-    /// Environment variable secrets
+    /// Environment variable secrets (required, use empty vec if none)
     pub secrets: Vec<DeploymentSecret>,
-    /// Optional environment variables
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub env_vars: Option<HashMap<String, String>>,
 }
 
-impl CreateDeploymentRequest {
-    /// Create a new deployment request
-    ///
-    /// # Arguments
-    /// * `name` - Name for the deployment
-    /// * `source` - Source type (e.g., "github")
-    /// * `source_config` - Configuration for the source (repo URL, branch, etc.)
-    /// * `deployment_type` - Type of deployment (dev_free, dev, or prod)
-    pub fn new(
-        name: String,
-        source: String,
-        source_config: serde_json::Value,
-        deployment_type: String,
-    ) -> Self {
-        use serde_json::json;
-        Self {
-            name,
-            source,
-            source_config,
-            source_revision_config: json!({}), // Empty object for default/auto revision
-            deployment_type,
-            secrets: Vec::new(), // Empty secrets list by default
-            env_vars: None,
-        }
-    }
+/// Request to update an existing deployment
+#[derive(Debug, Clone, Serialize)]
+pub struct PatchDeploymentRequest {
+    /// Source configuration (partial update)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_config: Option<serde_json::Value>,
+    /// Source revision configuration (partial update)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_revision_config: Option<serde_json::Value>,
+}
 
-    /// Add environment variables to the deployment
-    pub fn with_env_vars(mut self, env_vars: HashMap<String, String>) -> Self {
-        self.env_vars = Some(env_vars);
-        self
-    }
+/// Status of a deployment revision
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum RevisionStatus {
+    /// Revision is queued for building
+    Queued,
+    /// Revision is building
+    Building,
+    /// Revision build succeeded
+    BuildSucceeded,
+    /// Revision build failed
+    BuildFailed,
+    /// Revision is deploying
+    Deploying,
+    /// Revision is fully deployed and operational
+    Deployed,
+    /// Revision deployment failed
+    DeployFailed,
+    /// Revision deployment was cancelled
+    Cancelled,
+    /// Revision status is unknown
+    #[default]
+    Unknown,
+}
 
-    /// Add secrets to the deployment
-    pub fn with_secrets(mut self, secrets: Vec<DeploymentSecret>) -> Self {
-        self.secrets = secrets;
-        self
-    }
+/// A deployment revision
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Revision {
+    /// Unique identifier for the revision
+    pub id: String,
+    /// Deployment ID this revision belongs to (optional in list responses)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deployment_id: Option<String>,
+    /// Current status of the revision
+    pub status: RevisionStatus,
+    /// When the revision was created
+    pub created_at: String,
+    /// When the revision was last updated
+    pub updated_at: String,
+    /// Source revision configuration
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_revision_config: Option<serde_json::Value>,
+}
 
-    /// Set the source revision configuration
-    pub fn with_source_revision_config(
-        mut self,
-        source_revision_config: serde_json::Value,
-    ) -> Self {
-        self.source_revision_config = source_revision_config;
-        self
-    }
+/// Response from listing revisions
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevisionsList {
+    /// List of revisions (sorted by created_at descending)
+    pub resources: Vec<Revision>,
+    /// Offset for pagination
+    pub offset: i32,
 }
 
 /// Client for interacting with LangGraph Control Plane Deployments API
@@ -308,73 +318,37 @@ impl<'a> DeploymentClient<'a> {
     /// Create a new deployment
     ///
     /// # Arguments
-    /// * `request` - The deployment creation request with name, source, config, and type
-    ///
-    /// # Returns
-    /// The created `Deployment` object with ID and status
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use langstar_sdk::{LangchainClient, AuthConfig};
-    /// # use langstar_sdk::deployments::CreateDeploymentRequest;
-    /// # use serde_json::json;
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let auth = AuthConfig::new(None, Some("key".into()), None, Some("ws_id".into()));
-    /// # let client = LangchainClient::new(auth)?;
-    /// let source_config = json!({
-    ///     "repo_url": "https://github.com/owner/repo",
-    ///     "branch": "main"
-    /// });
-    ///
-    /// let request = CreateDeploymentRequest::new(
-    ///     "my-deployment".to_string(),
-    ///     "github".to_string(),
-    ///     source_config,
-    ///     "dev_free".to_string(),
-    /// );
-    ///
-    /// let deployment = client.deployments().create(request).await?;
-    /// println!("Created deployment: {}", deployment.id);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn create(&self, request: CreateDeploymentRequest) -> Result<Deployment> {
+    /// * `request` - The deployment creation request
+    pub async fn create(&self, request: &CreateDeploymentRequest) -> Result<Deployment> {
         let path = "/v2/deployments";
-        let http_request = self.client.control_plane_post(path)?.json(&request);
-        let response: Deployment = self.client.execute(http_request).await?;
+        let req = self.client.control_plane_post(path)?.json(request);
+        let response: Deployment = self.client.execute(req).await?;
         Ok(response)
     }
 
-    /// Delete a deployment by ID
+    /// Update (patch) an existing deployment
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment to update
+    /// * `request` - The deployment update request
+    pub async fn patch(
+        &self,
+        deployment_id: &str,
+        request: &PatchDeploymentRequest,
+    ) -> Result<Deployment> {
+        let path = format!("/v2/deployments/{}", deployment_id);
+        let req = self.client.control_plane_patch(&path)?.json(request);
+        let response: Deployment = self.client.execute(req).await?;
+        Ok(response)
+    }
+
+    /// Delete a deployment
     ///
     /// # Arguments
     /// * `deployment_id` - UUID of the deployment to delete
-    ///
-    /// # Returns
-    /// `Ok(())` if the deployment was successfully deleted
-    ///
-    /// # Errors
-    /// Returns an error if:
-    /// - The deployment does not exist (404)
-    /// - The user lacks permission to delete the deployment
-    /// - The API request fails
-    ///
-    /// # Example
-    /// ```no_run
-    /// # use langstar_sdk::{LangchainClient, AuthConfig};
-    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let auth = AuthConfig::new(None, Some("key".into()), None, Some("ws_id".into()));
-    /// # let client = LangchainClient::new(auth)?;
-    /// client.deployments().delete("abc-123e4567-e89b-12d3").await?;
-    /// println!("Deployment deleted successfully");
-    /// # Ok(())
-    /// # }
-    /// ```
     pub async fn delete(&self, deployment_id: &str) -> Result<()> {
         let path = format!("/v2/deployments/{}", deployment_id);
         let request = self.client.control_plane_delete(&path)?;
-
-        // Execute request and ignore response body (DELETE typically returns empty or status)
         let response = request.send().await?;
 
         let status = response.status();
@@ -390,6 +364,32 @@ impl<'a> DeploymentClient<'a> {
         }
 
         Ok(())
+    }
+
+    /// List revisions for a deployment
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment
+    pub async fn list_revisions(&self, deployment_id: &str) -> Result<RevisionsList> {
+        let path = format!("/v2/deployments/{}/revisions", deployment_id);
+        let request = self.client.control_plane_get(&path)?;
+        let response: RevisionsList = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// Get a specific revision
+    ///
+    /// # Arguments
+    /// * `deployment_id` - UUID of the deployment
+    /// * `revision_id` - UUID of the revision
+    pub async fn get_revision(&self, deployment_id: &str, revision_id: &str) -> Result<Revision> {
+        let path = format!(
+            "/v2/deployments/{}/revisions/{}",
+            deployment_id, revision_id
+        );
+        let request = self.client.control_plane_get(&path)?;
+        let response: Revision = self.client.execute(request).await?;
+        Ok(response)
     }
 }
 
@@ -528,93 +528,5 @@ mod tests {
 
         let deployment: Deployment = serde_json::from_str(json_without_url).unwrap();
         assert_eq!(deployment.custom_url(), None);
-    }
-
-    #[test]
-    fn test_create_deployment_request_serialization() {
-        use serde_json::json;
-
-        let source_config = json!({
-            "repo_url": "https://github.com/owner/repo",
-            "branch": "main"
-        });
-
-        let request = CreateDeploymentRequest::new(
-            "test-deployment".to_string(),
-            "github".to_string(),
-            source_config,
-            "dev_free".to_string(),
-        );
-
-        let json = serde_json::to_value(&request).unwrap();
-
-        assert_eq!(json["name"], "test-deployment");
-        assert_eq!(json["source"], "github");
-        assert_eq!(json["deployment_type"], "dev_free");
-        assert_eq!(
-            json["source_config"]["repo_url"],
-            "https://github.com/owner/repo"
-        );
-        assert_eq!(json["source_config"]["branch"], "main");
-        assert!(json["env_vars"].is_null()); // Should be omitted when None
-    }
-
-    #[test]
-    fn test_create_deployment_request_with_env_vars() {
-        use serde_json::json;
-
-        let source_config = json!({
-            "repo_url": "https://github.com/owner/repo",
-            "branch": "main"
-        });
-
-        let mut env_vars = HashMap::new();
-        env_vars.insert("API_KEY".to_string(), "secret123".to_string());
-        env_vars.insert("DEBUG".to_string(), "true".to_string());
-
-        let request = CreateDeploymentRequest::new(
-            "test-deployment".to_string(),
-            "github".to_string(),
-            source_config,
-            "dev_free".to_string(),
-        )
-        .with_env_vars(env_vars);
-
-        let json = serde_json::to_value(&request).unwrap();
-
-        assert_eq!(json["name"], "test-deployment");
-        assert!(json["env_vars"].is_object());
-        assert_eq!(json["env_vars"]["API_KEY"], "secret123");
-        assert_eq!(json["env_vars"]["DEBUG"], "true");
-    }
-
-    #[test]
-    fn test_create_deployment_request_builder_pattern() {
-        use serde_json::json;
-
-        let source_config = json!({
-            "repo_url": "https://github.com/owner/repo",
-            "branch": "main"
-        });
-
-        // Test builder pattern
-        let request = CreateDeploymentRequest::new(
-            "test-deployment".to_string(),
-            "github".to_string(),
-            source_config,
-            "prod".to_string(),
-        );
-
-        assert_eq!(request.name, "test-deployment");
-        assert_eq!(request.source, "github");
-        assert_eq!(request.deployment_type, "prod");
-        assert!(request.env_vars.is_none());
-
-        // Add env vars using builder
-        let mut env_vars = HashMap::new();
-        env_vars.insert("KEY".to_string(), "value".to_string());
-
-        let request_with_env = request.with_env_vars(env_vars);
-        assert!(request_with_env.env_vars.is_some());
     }
 }

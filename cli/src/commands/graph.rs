@@ -401,20 +401,23 @@ impl GraphCommands {
                 };
 
                 // Create the request
-                let mut request = CreateDeploymentRequest::new(
-                    name.clone(),
-                    source.clone(),
-                    source_config,
-                    deployment_type.clone(),
-                )
-                .with_source_revision_config(source_revision_config);
+                // Convert env_vars HashMap to Vec<DeploymentSecret>
+                use langstar_sdk::DeploymentSecret;
+                let secrets: Vec<DeploymentSecret> = env_vars
+                    .into_iter()
+                    .map(|(name, value)| DeploymentSecret { name, value })
+                    .collect();
 
-                if !env_vars.is_empty() {
-                    request = request.with_env_vars(env_vars);
-                }
+                let request = CreateDeploymentRequest {
+                    name: name.clone(),
+                    source: source.clone(),
+                    source_config,
+                    source_revision_config,
+                    secrets,
+                };
 
                 // Execute the creation
-                let mut deployment = client.deployments().create(request).await?;
+                let mut deployment = client.deployments().create(&request).await?;
 
                 if format == OutputFormat::Json && !*wait {
                     formatter.print(&deployment)?;
