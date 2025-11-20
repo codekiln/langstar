@@ -405,6 +405,7 @@ fn test_graph_create_with_wait() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[ignore] // Blocked - Requires GitHub integration with repo access permissions
 fn test_deployment_full_lifecycle() {
     use std::time::{SystemTime, UNIX_EPOCH};
 
