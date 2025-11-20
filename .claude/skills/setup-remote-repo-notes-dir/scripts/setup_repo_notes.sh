@@ -59,10 +59,48 @@ fi
 
 info "Repository: $ORG/$REPO"
 
+# Detect if we're in a git worktree and find the root directory
+ROOT_DIR="$(pwd)"
+IN_WORKTREE=false
+
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    # In a worktree, .git in the working directory is a file (not a directory) containing "gitdir: ..."
+    WORK_TREE_ROOT=$(git rev-parse --show-toplevel)
+    GIT_FILE="$WORK_TREE_ROOT/.git"
+
+    # Check if .git is a file pointing to a worktrees directory
+    if [ -f "$GIT_FILE" ]; then
+        # It's a file, read it to see if it points to a worktree
+        GIT_CONTENT=$(cat "$GIT_FILE")
+        if [[ "$GIT_CONTENT" == *"/worktrees/"* ]]; then
+            IN_WORKTREE=true
+            # Extract the main repo path from the worktree git file
+            # Format: "gitdir: /workspace/.git/worktrees/branch-name"
+            MAIN_GIT_DIR=$(echo "$GIT_CONTENT" | sed 's|gitdir: ||' | sed 's|/worktrees/.*||')
+            ROOT_DIR=$(dirname "$MAIN_GIT_DIR")
+            info "Detected worktree environment"
+            info "Root directory: $ROOT_DIR"
+        fi
+    else
+        # .git is a directory, we're in the main repository
+        ROOT_DIR="$WORK_TREE_ROOT"
+    fi
+fi
+
 # Define directory structure
-BASE_DIR="reference/repo/$ORG/$REPO"
-NOTES_DIR="$BASE_DIR/notes"
-CODE_DIR="$BASE_DIR/code"
+# Clone directory: always in root (shared across worktrees)
+CODE_DIR="$ROOT_DIR/reference/repo/$ORG/$REPO/code"
+
+# Notes directory: in worktree if applicable, otherwise in root
+if [ "$IN_WORKTREE" = true ]; then
+    # Notes go in the worktree's local reference/ directory
+    NOTES_DIR="$(pwd)/reference/repo/$ORG/$REPO/notes"
+    BASE_DIR="$(pwd)/reference/repo/$ORG/$REPO"
+else
+    # Notes go in root alongside code
+    NOTES_DIR="$ROOT_DIR/reference/repo/$ORG/$REPO/notes"
+    BASE_DIR="$ROOT_DIR/reference/repo/$ORG/$REPO"
+fi
 
 # Create directory structure
 info "Creating directory structure..."
@@ -94,7 +132,7 @@ else
 
 - **Repository**: [$ORG/$REPO]($GITHUB_URL)
 - **Date Created**: $(date +"%Y-%m-%d")
-- **Cloned to**: \`../$CODE_DIR\`
+- **Cloned to**: \`$CODE_DIR\`
 
 ## Purpose
 
@@ -116,13 +154,13 @@ EOF
     success "Created $NOTES_README"
 fi
 
-# Update .gitignore to exclude code directories
-GITIGNORE_FILE=".gitignore"
+# Update .gitignore to exclude code directories (always in root)
+GITIGNORE_FILE="$ROOT_DIR/.gitignore"
 GITIGNORE_PATTERN="reference/repo/**/code/"
 
 info "Updating .gitignore..."
 if [ ! -f "$GITIGNORE_FILE" ]; then
-    warn ".gitignore not found, creating new one"
+    warn ".gitignore not found at $ROOT_DIR, creating new one"
     touch "$GITIGNORE_FILE"
 fi
 
@@ -141,11 +179,22 @@ echo "════════════════════════�
 success "Setup complete!"
 echo "═══════════════════════════════════════════════════════════"
 echo ""
-echo "Directory structure:"
-echo "  📁 $BASE_DIR/"
-echo "  ├── 📝 notes/          (committed - add your documentation here)"
-echo "  │   └── README.md"
-echo "  └── 💻 code/           (gitignored - cloned repository)"
+
+if [ "$IN_WORKTREE" = true ]; then
+    echo "Worktree-aware structure:"
+    echo "  📝 Notes (worktree-local): $NOTES_DIR"
+    echo "  💻 Code (shared in root): $CODE_DIR"
+    echo ""
+    info "Notes are local to this worktree and can be committed with your branch work"
+    info "Code is shared across all worktrees (saves disk space)"
+else
+    echo "Directory structure:"
+    echo "  📁 $BASE_DIR/"
+    echo "  ├── 📝 notes/          (committed - add your documentation here)"
+    echo "  │   └── README.md"
+    echo "  └── 💻 code/           (gitignored - cloned repository)"
+fi
+
 echo ""
 info "Next steps:"
 echo "  1. Add your notes to: $NOTES_README"

@@ -1,0 +1,46 @@
+name: Build Test Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/fixtures/test-graph-deployment/**'
+      - '.github/workflows/build-test-image.yml'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # Security: Ensure this only runs for repository owner
+    # This prevents forks from pushing to GHCR
+    if: github.repository_owner == 'codekiln'
+
+    permissions:
+      contents: read
+      packages: write  # Required for GHCR push
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install LangGraph CLI
+        run: pip install langgraph-cli
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push test image with LangGraph CLI
+        run: |
+          cd tests/fixtures/test-graph-deployment
+          langgraph build -t ghcr.io/codekiln/langstar:test-latest --platform linux/amd64
+          docker push ghcr.io/codekiln/langstar:test-latest

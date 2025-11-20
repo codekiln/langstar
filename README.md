@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/codekiln/langstar/workflows/CI/badge.svg)](https://github.com/codekiln/langstar/actions)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange.svg)](https://github.com/codekiln/langstar/issues)
+
+> **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution in production environments.
 
 **Langstar** is a unified Rust CLI for the LangChain ecosystem, providing ergonomic access to LangSmith, LangGraph Cloud, and other LangChain services.
 
