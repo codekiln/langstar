@@ -229,15 +229,177 @@ langstar assistant delete <assistant-id>
 
 ---
 
+## Deployment Workflow Integration Tests
+
+### Overview
+
+The `integration_deployment_workflow.rs` file contains tests for LangGraph Cloud deployment operations including:
+- Full deployment lifecycle (create, patch, poll, delete)
+- GitHub integration discovery and repository access
+- Deployment URL extraction helpers
+- RAII cleanup guards for resource management
+
+### Prerequisites
+
+**Required Environment Variables:**
+```bash
+export LANGSMITH_API_KEY="<your-api-key>"              # Required
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"    # Required
+```
+
+**Optional Environment Variables:**
+```bash
+export REPOSITORY_OWNER="codekiln"                     # Default: "codekiln"
+export REPOSITORY_NAME="langstar"                      # Default: "langstar"
+```
+
+**GitHub Integration Setup:**
+- At least one GitHub integration must be configured in your workspace
+- Integration must have access to the target repository
+- Repository must contain `tests/fixtures/test-graph-deployment/langgraph.json`
+
+### Running Deployment Tests
+
+**Full deployment workflow (5-30 minutes):**
+```bash
+cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture
+```
+
+**List deployments:**
+```bash
+cargo test --test integration_deployment_workflow test_list_deployments -- --ignored --nocapture
+```
+
+**List GitHub integrations:**
+```bash
+cargo test --test integration_deployment_workflow test_list_github_integrations -- --ignored --nocapture
+```
+
+**List repositories:**
+```bash
+cargo test --test integration_deployment_workflow test_list_github_repositories -- --ignored --nocapture
+```
+
+**Find integration for repo:**
+```bash
+cargo test --test integration_deployment_workflow test_find_integration_for_repo -- --ignored --nocapture
+```
+
+**Unit test (no API, <1s):**
+```bash
+cargo test --test integration_deployment_workflow test_deployment_url_extraction
+```
+
+### Available Deployment Tests
+
+#### `test_deployment_workflow` (Full Lifecycle)
+
+**Duration:** 5-30 minutes
+
+**What it tests:**
+1. Finding GitHub integration ID dynamically
+2. Creating deployment with timestamp-based unique name
+3. Listing revisions and polling first revision to DEPLOYED status
+4. Patching deployment (triggers new revision)
+5. Polling second revision to DEPLOYED status
+6. Validating deployment source, URL, and final status
+7. Cleanup with RAII guard
+
+**Validations:**
+- ✅ Deployment source is "github"
+- ✅ Deployment has custom_url in source_config
+- ✅ Final revision status is Deployed
+- ✅ Automatic cleanup on test failure
+
+#### `test_list_deployments` (Read-Only)
+
+**Duration:** 1-3 seconds
+
+Lists deployments with limit parameter to verify basic API functionality.
+
+#### `test_list_github_integrations` (Read-Only)
+
+**Duration:** 1-3 seconds
+
+Lists all configured GitHub integrations for the workspace. Shows integration ID, name, provider, and organization.
+
+#### `test_list_github_repositories` (Read-Only)
+
+**Duration:** 2-5 seconds
+
+Lists all repositories accessible through a GitHub integration. Validates integration permissions and repository access.
+
+#### `test_find_integration_for_repo` (Key Operation)
+
+**Duration:** 2-5 seconds
+
+Finds the correct GitHub integration for a given repository owner and name. This is the core operation used by the deployment workflow to dynamically discover integration IDs.
+
+#### `test_deployment_url_extraction` (Unit Test)
+
+**Duration:** <1 second
+
+Pure unit test that validates the `custom_url()` helper method for extracting deployment URLs from source_config JSON. No API calls.
+
+### DeploymentGuard (RAII Cleanup)
+
+The `DeploymentGuard` struct provides automatic cleanup to prevent orphaned deployments when tests fail:
+
+```rust
+// Create deployment
+let deployment = client.deployments().create(&request).await?;
+
+// Guard ensures cleanup even on panic
+let mut guard = DeploymentGuard::new(&client, deployment.id.clone());
+
+// ... test operations that might fail ...
+
+// Manually delete and disarm guard on success
+client.deployments().delete(&deployment.id).await?;
+guard.disarm();  // Prevents double-deletion
+```
+
+**Features:**
+- Implements Drop trait for automatic cleanup
+- Uses blocking runtime in Drop (required since Drop can't be async)
+- Provides `disarm()` method to skip cleanup after manual deletion
+- Prints cleanup status for debugging
+
+### Troubleshooting Deployment Tests
+
+**"Failed to find GitHub integration for repository"**
+
+Solution:
+1. Verify GitHub integration exists in LangSmith UI
+2. Check integration has repository access configured
+3. Verify `REPOSITORY_OWNER` and `REPOSITORY_NAME` environment variables
+
+**"Timeout waiting for revision to be DEPLOYED after 30 minutes"**
+
+Solution:
+1. Check deployment status in LangSmith UI
+2. Review deployment logs for build errors
+3. Verify `langgraph.json` is valid at the specified path
+4. Confirm GitHub integration has proper permissions
+
+**"Failed to list GitHub repositories: Forbidden"**
+
+Solution:
+1. Verify API key has integration read permissions
+2. Check workspace ID is correct
+3. Ensure integration is in the same workspace
+
 ## Future Integration Tests
 
 Potential tests to add:
 
 - [ ] Test retrieving a specific prompt by handle
 - [ ] Test searching prompts with query parameters
-- [ ] Test LangGraph Cloud deployment listing and details
 - [ ] Test authentication error handling
 - [ ] Test rate limiting behavior
 - [ ] Test pagination for large result sets
 - [x] Test assistant CRUD operations (Phase 5)
 - [x] Test assistant search functionality (Phase 5)
+- [x] Test LangGraph Cloud deployment workflow (Issue #185)
+- [x] Test GitHub integration operations (Issue #186)
+- [x] Test RAII cleanup guards (Issue #186)
