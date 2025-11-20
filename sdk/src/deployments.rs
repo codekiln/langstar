@@ -201,6 +201,8 @@ pub enum RevisionStatus {
     BuildSucceeded,
     /// Revision build failed
     BuildFailed,
+    /// Revision is awaiting deployment
+    AwaitingDeploy,
     /// Revision is deploying
     Deploying,
     /// Revision is fully deployed and operational
