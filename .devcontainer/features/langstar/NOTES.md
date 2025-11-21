@@ -90,16 +90,33 @@ langstar --version
 
 ## Configuration
 
-After installation, you'll need to configure Langstar with your LangSmith API credentials:
+After installation, you'll need to configure Langstar with your LangSmith API credentials.
+
+### Method 1: Environment Variables (Recommended for Devcontainers)
 
 ```bash
-# Set environment variables
 export LANGSMITH_API_KEY="your-api-key"
-export LANGSMITH_ORGANIZATION_ID="your-org-id"
+export LANGSMITH_ORGANIZATION_ID="your-org-id"  # Optional
+export LANGSMITH_WORKSPACE_ID="your-workspace-id"  # Optional
+```
 
-# Or use langstar's configuration commands
-langstar config set api-key "your-api-key"
-langstar config set org-id "your-org-id"
+### Method 2: Configuration File
+
+Create or edit `~/.config/langstar/config.toml`:
+
+```toml
+[langstar]
+langsmith_api_key = "your-api-key"
+organization_id = "your-org-id"  # Optional
+workspace_id = "your-workspace-id"  # Optional
+```
+
+### Verify Configuration
+
+Check your configuration with:
+
+```bash
+langstar config
 ```
 
 ## Documentation
