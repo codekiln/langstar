@@ -137,8 +137,12 @@ detect_platform() {
                     # Prefer musl build for Linux (fully static, no dependencies)
                     platform="x86_64-linux-musl"
                     ;;
+                aarch64|arm64)
+                    # ARM64 musl build for Linux (Docker on Apple Silicon, ARM servers)
+                    platform="aarch64-linux-musl"
+                    ;;
                 *)
-                    die "Unsupported Linux architecture: $arch (only x86_64 is supported)"
+                    die "Unsupported Linux architecture: $arch (only x86_64 and aarch64 are supported)"
                     ;;
             esac
             ;;
