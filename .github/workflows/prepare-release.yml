@@ -1,0 +1,184 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - major
+          - minor
+          - patch
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for version analysis
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Analyze commits and determine version
+        id: version
+        run: |
+          # Get current version from root Cargo.toml
+          CURRENT=$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+          # Determine bump type
+          BUMP_TYPE="${{ github.event.inputs.bump }}"
+
+          if [ "$BUMP_TYPE" = "auto" ]; then
+            # Use Python script to analyze commits
+            python3 .claude/skills/bump-release/scripts/analyze_commits.py \
+              --current-version "$CURRENT" \
+              --format bump-type
+            BUMP_TYPE_AUTO=$?
+
+            # Map exit code to bump type (NONE=0, PATCH=1, MINOR=2, MAJOR=3)
+            case $BUMP_TYPE_AUTO in
+              0) BUMP_TYPE="none" ;;
+              1) BUMP_TYPE="patch" ;;
+              2) BUMP_TYPE="minor" ;;
+              3) BUMP_TYPE="major" ;;
+              *) BUMP_TYPE="none" ;;
+            esac
+          fi
+
+          echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
+
+          # Calculate new version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case $BUMP_TYPE in
+            major)
+              NEW_VERSION="$((MAJOR + 1)).0.0"
+              ;;
+            minor)
+              NEW_VERSION="${MAJOR}.$((MINOR + 1)).0"
+              ;;
+            patch)
+              NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+              ;;
+            *)
+              echo "No version bump needed"
+              NEW_VERSION="$CURRENT"
+              ;;
+          esac
+
+          echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bump type: $BUMP_TYPE"
+          echo "Current version: $CURRENT"
+          echo "New version: $NEW_VERSION"
+
+      - name: Check if bump is needed
+        id: check_bump
+        run: |
+          if [ "${{ steps.version.outputs.bump_type }}" = "none" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "::warning::No releasable commits found. No version bump needed."
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Cargo.toml files
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new }}"
+
+          # Use Python script to update all Cargo.toml files
+          python3 .claude/skills/bump-release/scripts/bump_version.py \
+            "$NEW_VERSION" \
+            --root . \
+            --workspace-deps \
+            --verbose
+
+      - name: Update Cargo.lock
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          cargo check --workspace
+
+      - name: Generate changelog
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="${{ steps.version.outputs.new }}"
+
+          # Generate changelog entry for this version
+          git-cliff --tag "v$NEW_VERSION" --unreleased -o CHANGELOG_ENTRY.md
+
+          # Prepend to existing CHANGELOG.md if it exists
+          if [ -f CHANGELOG.md ]; then
+            cat CHANGELOG_ENTRY.md CHANGELOG.md > CHANGELOG_TEMP.md
+            mv CHANGELOG_TEMP.md CHANGELOG.md
+          else
+            mv CHANGELOG_ENTRY.md CHANGELOG.md
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_bump.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: release/v${{ steps.version.outputs.new }}
+          delete-branch: true
+          title: '🔖 release: bump version to v${{ steps.version.outputs.new }}'
+          body: |
+            ## Release v${{ steps.version.outputs.new }}
+
+            Auto-generated release PR from workflow dispatch.
+
+            **Bump type**: ${{ steps.version.outputs.bump_type }}
+            **Current version**: ${{ steps.version.outputs.current }}
+            **New version**: ${{ steps.version.outputs.new }}
+
+            ### Changelog
+
+            See CHANGELOG.md for details.
+
+            ### Pre-merge Checklist
+
+            - [ ] Review changelog for accuracy
+            - [ ] Verify version numbers in all Cargo.toml files
+            - [ ] Ensure CI passes
+            - [ ] Test release artifacts build correctly
+
+            ---
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>
+          commit-message: |
+            🔖 release: bump version to v${{ steps.version.outputs.new }}
+
+            Automated version bump from ${{ steps.version.outputs.current }} to ${{ steps.version.outputs.new }}
+
+            Bump type: ${{ steps.version.outputs.bump_type }}
+
+            🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+            Co-Authored-By: Claude <noreply@anthropic.com>
+          labels: |
+            release
+            automated
