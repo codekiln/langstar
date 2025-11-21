@@ -130,12 +130,15 @@ jobs:
 
           NEW_VERSION="${{ steps.version.outputs.new }}"
 
-          # Use Python script to update all Cargo.toml files
-          python3 .claude/skills/bump-release/scripts/bump_version.py \
-            "$NEW_VERSION" \
-            --root . \
-            --workspace-deps \
-            --verbose
+          # Update version in [workspace.package] section of root Cargo.toml
+          # Workspace members inherit this version via version.workspace = true
+          sed -i.bak -E '/^\[workspace\.package\]/,/^\[/ s/^version = "[^"]+"/version = "'"$NEW_VERSION"'"/' Cargo.toml
+          rm Cargo.toml.bak
+
+          echo "Updated root Cargo.toml [workspace.package] version to $NEW_VERSION"
+
+          # Verify the update
+          grep -A 5 '^\[workspace\.package\]' Cargo.toml | grep version
 
       - name: Update Cargo.lock
         if: steps.check_bump.outputs.skip != 'true'
