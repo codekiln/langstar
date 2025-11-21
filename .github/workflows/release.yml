@@ -114,13 +114,19 @@ jobs:
             artifact_name: langstar
             asset_platform: x86_64-linux-musl
 
+          # Linux ARM64 (musl for static linking)
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            artifact_name: langstar
+            asset_platform: aarch64-linux-musl
+
           # macOS ARM64 (Apple Silicon)
           - target: aarch64-apple-darwin
             os: macos-latest
             artifact_name: langstar
             asset_platform: aarch64-macos
 
-          # TODO: Add more platforms after these two work
+          # TODO: Add more platforms after these work
           # - x86_64-unknown-linux-gnu (Linux gnu)
           # - x86_64-apple-darwin (macOS Intel)
           # - x86_64-pc-windows-msvc (Windows)
@@ -139,11 +145,23 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      - name: Install musl tools (Linux musl only)
+      - name: Install musl tools (Linux x86_64 musl)
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools
+
+      - name: Install cross-compilation tools (Linux ARM64 musl)
+        if: matrix.target == 'aarch64-unknown-linux-musl'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu musl-tools
+          # Configure cargo to use the ARM64 linker
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml <<EOF
+          [target.aarch64-unknown-linux-musl]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
 
       - name: Build release binary
         run: cargo build --release --locked --target ${{ matrix.target }}
@@ -151,7 +169,13 @@ jobs:
       - name: Strip binary (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            # Use ARM64-specific strip for cross-compiled binaries
+            aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          else
+            # Use default strip for native builds
+            strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          fi
 
       - name: Create archive (Unix)
         if: matrix.os != 'windows-latest'
