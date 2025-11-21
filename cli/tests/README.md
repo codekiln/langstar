@@ -45,7 +45,7 @@ Set required environment variables:
 
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
-export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 ```
 
 ### Running Locally
@@ -130,12 +130,12 @@ All test deployments are automatically deleted:
 
 ### "Skipping test: Required environment variables not set"
 
-**Cause**: Missing `LANGSMITH_API_KEY` or `LANGCHAIN_WORKSPACE_ID`
+**Cause**: Missing `LANGSMITH_API_KEY` or `LANGSMITH_WORKSPACE_ID`
 
 **Solution**: Set environment variables:
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
-export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 ```
 
 ### "Failed to create test deployment"

@@ -10,7 +10,7 @@ use escargot::CargoBuild;
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY environment variable
-/// 2. Valid LANGCHAIN_WORKSPACE_ID environment variable (required for Control Plane API)
+/// 2. Valid LANGSMITH_WORKSPACE_ID environment variable (required for Control Plane API)
 ///
 /// Run with: cargo test --test graph_command_test
 /// Helper function to get a CLI command builder
@@ -28,7 +28,7 @@ fn langstar_cmd() -> Command {
 /// Returns None if credentials are not available (tests will be skipped)
 fn check_env_vars() -> Option<String> {
     let api_key = std::env::var("LANGSMITH_API_KEY").ok()?;
-    let workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID").ok()?;
+    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok()?;
 
     if api_key.is_empty() || workspace_id.is_empty() {
         return None;

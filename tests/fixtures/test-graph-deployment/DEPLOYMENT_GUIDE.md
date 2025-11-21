@@ -209,7 +209,7 @@ After successful deployment, set these environment variables on your local machi
 ```bash
 # Required for authentication
 export LANGSMITH_API_KEY="<your-api-key>"
-export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 
 # Required for assistant tests
 export TEST_GRAPH_ID="<graph-id-from-deployment>"
@@ -221,7 +221,7 @@ export TEST_DEPLOYMENT_ID="<deployment-id>"
 **Where to find these:**
 
 - **LANGSMITH_API_KEY**: https://smith.langchain.com/settings → "API Keys" → "Create API Key"
-- **LANGCHAIN_WORKSPACE_ID**:
+- **LANGSMITH_WORKSPACE_ID**:
   - LangSmith UI → "Settings" → "Workspace"
   - Or via API: `curl -H "X-API-Key: $LANGSMITH_API_KEY" https://api.smith.langchain.com/api/v1/workspaces`
 - **TEST_GRAPH_ID**: Deployment details page → "Graph ID" field
@@ -234,7 +234,7 @@ To persist these variables:
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
 echo 'export LANGSMITH_API_KEY="<your-key>"' >> ~/.bashrc
-echo 'export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"' >> ~/.bashrc
+echo 'export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"' >> ~/.bashrc
 echo 'export TEST_GRAPH_ID="<your-graph-id>"' >> ~/.bashrc
 
 # Reload shell
@@ -250,7 +250,7 @@ If running tests in CI/CD, add these as secrets:
 1. Go to repository → Settings → Secrets and variables → Actions
 2. Add new repository secrets:
    - `LANGSMITH_API_KEY`
-   - `LANGCHAIN_WORKSPACE_ID`
+   - `LANGSMITH_WORKSPACE_ID`
    - `TEST_GRAPH_ID`
 
 **In workflow file:**
@@ -259,7 +259,7 @@ If running tests in CI/CD, add these as secrets:
 - name: Run integration tests
   env:
     LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-    LANGCHAIN_WORKSPACE_ID: ${{ secrets.LANGCHAIN_WORKSPACE_ID }}
+    LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
     TEST_GRAPH_ID: ${{ secrets.TEST_GRAPH_ID }}
   run: |
     cargo test --test assistant_integration_test -- --ignored --nocapture

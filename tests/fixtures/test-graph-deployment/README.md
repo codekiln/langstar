@@ -122,7 +122,7 @@ After deployment, set these environment variables for integration tests:
 ```bash
 # Required for all tests
 export LANGSMITH_API_KEY="<your-api-key>"
-export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 
 # Required for assistant tests
 export TEST_GRAPH_ID="<graph-id-from-deployment>"
@@ -134,7 +134,7 @@ export TEST_DEPLOYMENT_ID="<deployment-id>"
 **Finding these values:**
 
 - **LANGSMITH_API_KEY**: [LangSmith Settings](https://smith.langchain.com/settings)
-- **LANGCHAIN_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
+- **LANGSMITH_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
 - **TEST_GRAPH_ID**: After deployment, go to deployment details → Copy Graph ID
 - **TEST_DEPLOYMENT_ID**: Deployment URL or details page
 

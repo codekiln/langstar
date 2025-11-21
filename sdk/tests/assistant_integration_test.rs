@@ -62,7 +62,7 @@ async fn discover_test_deployment(client: &LangchainClient) -> (String, String) 
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY
-/// 2. Valid LANGCHAIN_WORKSPACE_ID
+/// 2. Valid LANGSMITH_WORKSPACE_ID
 /// 3. TEST_GRAPH_ID environment variable set (from deployed test graph)
 ///
 /// Run with: cargo test --test assistant_integration_test -- --ignored --nocapture
@@ -75,13 +75,13 @@ async fn test_assistant_lifecycle() {
 
     // Load authentication from environment
     let auth =
-        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must be set");
+        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set");
 
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required");
 
     if auth.workspace_id.is_none() {
-        panic!("LANGCHAIN_WORKSPACE_ID is required for assistant tests");
+        panic!("LANGSMITH_WORKSPACE_ID is required for assistant tests");
     }
 
     // Create client
@@ -220,11 +220,11 @@ async fn test_assistant_search() {
 
     // Setup
     let auth =
-        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must be set");
+        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set");
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required");
     if auth.workspace_id.is_none() {
-        panic!("LANGCHAIN_WORKSPACE_ID is required");
+        panic!("LANGSMITH_WORKSPACE_ID is required");
     }
 
     let client = LangchainClient::new(auth).expect("Failed to create client");
@@ -369,11 +369,11 @@ async fn test_list_assistants() {
 
     // Setup
     let auth =
-        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must be set");
+        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set");
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required");
     if auth.workspace_id.is_none() {
-        panic!("LANGCHAIN_WORKSPACE_ID is required");
+        panic!("LANGSMITH_WORKSPACE_ID is required");
     }
 
     let client = LangchainClient::new(auth).expect("Failed to create client");
@@ -478,11 +478,11 @@ async fn test_error_handling() {
 
     // Setup
     let auth =
-        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must be set");
+        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set");
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required");
     if auth.workspace_id.is_none() {
-        panic!("LANGCHAIN_WORKSPACE_ID is required");
+        panic!("LANGSMITH_WORKSPACE_ID is required");
     }
 
     let client = LangchainClient::new(auth).expect("Failed to create client");

@@ -36,7 +36,7 @@ impl TestDeployment {
     /// # Panics
     ///
     /// Panics if:
-    /// - Required environment variables not set (LANGSMITH_API_KEY, LANGCHAIN_WORKSPACE_ID)
+    /// - Required environment variables not set (LANGSMITH_API_KEY, LANGSMITH_WORKSPACE_ID)
     /// - GitHub integration ID cannot be determined (not in config/env and no existing deployments)
     /// - Deployment creation fails
     /// - Deployment doesn't reach READY status within timeout
@@ -252,12 +252,12 @@ impl TestDeployment {
     fn check_env_vars() {
         let api_key = std::env::var("LANGSMITH_API_KEY")
             .expect("LANGSMITH_API_KEY environment variable must be set for integration tests");
-        let workspace_id = std::env::var("LANGCHAIN_WORKSPACE_ID").expect(
-            "LANGCHAIN_WORKSPACE_ID environment variable must be set for integration tests",
+        let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").expect(
+            "LANGSMITH_WORKSPACE_ID environment variable must be set for integration tests",
         );
 
         if api_key.is_empty() || workspace_id.is_empty() {
-            panic!("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must not be empty");
+            panic!("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must not be empty");
         }
 
         println!("✓ Environment variables validated");

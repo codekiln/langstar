@@ -68,13 +68,13 @@ impl Drop for DeploymentGuard {
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY with write permissions
-/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGCHAIN_WORKSPACE_ID)
+/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGSMITH_WORKSPACE_ID)
 /// 3. GitHub integration configured with access to the target repository
 /// 4. Repository must contain tests/fixtures/test-graph-deployment/langgraph.json
 ///
 /// **Environment Variables:**
 /// - LANGSMITH_API_KEY: Required
-/// - LANGSMITH_WORKSPACE_ID or LANGCHAIN_WORKSPACE_ID: Required
+/// - LANGSMITH_WORKSPACE_ID or LANGSMITH_WORKSPACE_ID: Required
 /// - REPOSITORY_OWNER: Default "codekiln"
 /// - REPOSITORY_NAME: Default "langstar"
 ///
@@ -318,13 +318,13 @@ async fn test_deployment_workflow() {
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY with write permissions
-/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGCHAIN_WORKSPACE_ID)
+/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGSMITH_WORKSPACE_ID)
 /// 3. GitHub integration configured with access to the target repository
 /// 4. Repository must contain tests/fixtures/test-graph-deployment/langgraph.json
 ///
 /// **Environment Variables:**
 /// - LANGSMITH_API_KEY: Required
-/// - LANGSMITH_WORKSPACE_ID or LANGCHAIN_WORKSPACE_ID: Required
+/// - LANGSMITH_WORKSPACE_ID or LANGSMITH_WORKSPACE_ID: Required
 /// - REPOSITORY_OWNER: Default "codekiln"
 /// - REPOSITORY_NAME: Default "langstar"
 ///
