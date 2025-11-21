@@ -169,7 +169,13 @@ jobs:
       - name: Strip binary (Unix)
         if: matrix.os != 'windows-latest'
         run: |
-          strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+            # Use ARM64-specific strip for cross-compiled binaries
+            aarch64-linux-gnu-strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          else
+            # Use default strip for native builds
+            strip target/${{ matrix.target }}/release/${{ matrix.artifact_name }} || true
+          fi
 
       - name: Create archive (Unix)
         if: matrix.os != 'windows-latest'
