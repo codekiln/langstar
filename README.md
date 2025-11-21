@@ -10,12 +10,9 @@
 
 ## Features
 
-- **Type-Safe SDK** - Rust types for LangSmith and LangGraph APIs (OpenAPI generation planned - see [#114](https://github.com/codekiln/langstar/issues/114))
-- **Ergonomic CLI** - Built with [clap](https://docs.rs/clap/) for excellent UX
 - **Multiple Output Formats** - JSON for scripting, tables for human readability
 - **Configuration Management** - Support for config files and environment variables
 - **Automation-Friendly** - Designed for both interactive use and AI agent invocation
-- **Type-Safe** - Leverages Rust's type system for safety and reliability
 
 ## Quick Start
 
