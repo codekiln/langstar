@@ -1,0 +1,99 @@
+name: Auto-Tag Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  auto-tag:
+    name: Auto-Tag Release
+    # Only run if PR was merged and title starts with release emoji
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, '🔖 release:')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Checkout the merge commit from the PR
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Extract version from PR title
+        id: version
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "PR Title: $TITLE"
+
+          # Extract version number (e.g., "🔖 release: bump version to v0.4.1" -> "0.4.1")
+          VERSION=$(echo "$TITLE" | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+')
+
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: Could not extract version from PR title: $TITLE"
+            echo "Expected format: '🔖 release: bump version to vX.Y.Z'"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Verify CI passed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Verifying CI checks passed for PR #${{ github.event.pull_request.number }}..."
+
+          # Check that all required CI checks passed
+          # This uses gh pr checks which shows the status of all checks
+          gh pr checks ${{ github.event.pull_request.number }} --required || {
+            echo "ERROR: Required CI checks did not pass"
+            exit 1
+          }
+
+          echo "✓ All required CI checks passed"
+
+      - name: Verify version matches Cargo.toml
+        run: |
+          CARGO_VERSION=$(grep -m1 '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+
+          echo "Version in Cargo.toml: $CARGO_VERSION"
+          echo "Version from PR title: $EXPECTED_VERSION"
+
+          if [ "$CARGO_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "ERROR: Version mismatch!"
+            echo "  Cargo.toml: $CARGO_VERSION"
+            echo "  PR title:   $EXPECTED_VERSION"
+            exit 1
+          fi
+
+          echo "✓ Version matches"
+
+      - name: Create and push tag
+        run: |
+          TAG_NAME="v${{ steps.version.outputs.version }}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "WARNING: Tag $TAG_NAME already exists, skipping tag creation"
+            exit 0
+          fi
+
+          # Create annotated tag
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+
+          # Push tag to origin
+          git push origin "$TAG_NAME"
+
+          echo "✓ Created and pushed tag: $TAG_NAME"
+          echo "✓ This will trigger the release workflow automatically"
