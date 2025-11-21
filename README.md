@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-alpha-orange.svg)](https://github.com/codekiln/langstar/issues)
 
-> **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution in production environments.
+> **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution.
 
-**Langstar** is a unified Rust CLI for the LangChain ecosystem, providing ergonomic access to LangSmith, LangGraph Cloud, and other LangChain services.
+**Langstar** is a unified CLI for the LangChain ecosystem, providing ergonomic access to LangSmith, LangGraph Cloud, and other LangChain services.
 
 ## Features
 
@@ -466,7 +466,7 @@ LANGSMITH_API_KEY="your-key" cargo run --bin langstar -- prompt list --format js
 
 ## Contributing
 
-Contributions are welcome! This project follows a GitHub issue-driven development workflow.
+This project follows a GitHub issue-driven development workflow.
 
 ### Development Workflow
 
@@ -531,7 +531,7 @@ This project uses [Conventional Emoji Commits](https://conventional-emoji-commit
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Resources
 
@@ -552,8 +552,3 @@ Key documentation:
 
 This project uses a devcontainer for consistent development environment. See [.devcontainer](./.devcontainer) for configuration details.
 
-For more information about the project setup and configuration, see [CLAUDE.md](./CLAUDE.md).
-
----
-
-Built with ❤️ using Rust
