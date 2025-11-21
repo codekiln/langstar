@@ -6,7 +6,7 @@ use langstar_sdk::{AuthConfig, DeploymentFilters, DeploymentType, LangchainClien
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY
-/// 2. Valid LANGCHAIN_WORKSPACE_ID (tenant ID)
+/// 2. Valid LANGSMITH_WORKSPACE_ID (tenant ID)
 /// 3. At least one LangGraph deployment in your workspace
 ///
 /// Run with: cargo test --test graph_integration_test -- --ignored --nocapture
@@ -15,14 +15,14 @@ use langstar_sdk::{AuthConfig, DeploymentFilters, DeploymentType, LangchainClien
 async fn test_list_deployments() {
     // Load authentication from environment
     let auth = AuthConfig::from_env()
-        .expect("LANGSMITH_API_KEY and LANGCHAIN_WORKSPACE_ID must be set for integration tests");
+        .expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
     // Verify we have required credentials
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required for this test");
 
     if auth.workspace_id.is_none() {
-        panic!("LANGCHAIN_WORKSPACE_ID is required for Control Plane API access");
+        panic!("LANGSMITH_WORKSPACE_ID is required for Control Plane API access");
     }
 
     // Create client

@@ -71,7 +71,7 @@ jobs:
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-          LANGCHAIN_WORKSPACE_ID: ${{ secrets.LANGCHAIN_WORKSPACE_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
 
   clippy:
     name: Clippy

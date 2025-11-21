@@ -140,7 +140,7 @@ Before running assistant integration tests, you must deploy the test graph:
 ```bash
 # Required for all tests
 export LANGSMITH_API_KEY="<your-api-key>"
-export LANGCHAIN_WORKSPACE_ID="<your-workspace-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 
 # Required for assistant integration tests
 export TEST_GRAPH_ID="<graph-id-from-deployment>"
@@ -153,7 +153,7 @@ export TEST_ASSISTANT_ID="<existing-assistant-id>"
 **Where to find these values:**
 
 - **LANGSMITH_API_KEY**: https://smith.langchain.com/settings → "API Keys"
-- **LANGCHAIN_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
+- **LANGSMITH_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
 - **TEST_GRAPH_ID**: Deployment details page → "Graph ID" field (after deploying test graph)
 - **TEST_DEPLOYMENT_ID**: Deployment details page (optional)
 
@@ -216,7 +216,7 @@ langstar assistant delete <assistant-id>
 **Solution:**
 1. Verify `LANGSMITH_API_KEY` is valid
 2. Check API key has "Assistants" permissions
-3. Verify `LANGCHAIN_WORKSPACE_ID` matches your workspace
+3. Verify `LANGSMITH_WORKSPACE_ID` matches your workspace
 
 ---
 
