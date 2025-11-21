@@ -10,8 +10,49 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  verify-ci:
+    name: Verify CI Passed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Check job
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'Check'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+      - name: Wait for Test job
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'Test'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+      - name: Wait for Clippy job
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: 'Clippy'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
+      - name: Wait for Build jobs
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-regexp: 'Build \(.*\)'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success
+
   create-release:
     name: Create Release
+    needs: verify-ci
     runs-on: ubuntu-latest
     permissions:
       contents: write
