@@ -1,0 +1,26 @@
+name: "Release dev container features & Generate Documentation"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # Only allow manual dispatch from main branch
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: "Publish Features"
+        uses: devcontainers/action@v1
+        with:
+          publish-features: "true"
+          base-path-to-features: "./.devcontainer/features"
+          generate-docs: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
