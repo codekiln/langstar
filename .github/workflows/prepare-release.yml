@@ -43,19 +43,23 @@ jobs:
       - name: Analyze commits and determine version
         id: version
         run: |
-          # Get current version from root Cargo.toml
-          CURRENT=$(grep '^version' Cargo.toml | head -1 | cut -d'"' -f2)
+          set -euo pipefail  # Exit on error, undefined variables, and pipe failures
+
+          # Get current version from root Cargo.toml ([workspace.package] section)
+          CURRENT=$(awk '/^\[workspace\.package\]/{f=1} f && /^version = /{print; exit}' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
 
           # Determine bump type
           BUMP_TYPE="${{ github.event.inputs.bump }}"
 
           if [ "$BUMP_TYPE" = "auto" ]; then
-            # Use Python script to analyze commits
+            # Use Python script to analyze commits and capture exit code
+            set +e  # Temporarily disable exit on error to capture exit code
             python3 .claude/skills/bump-release/scripts/analyze_commits.py \
               --current-version "$CURRENT" \
               --format bump-type
             BUMP_TYPE_AUTO=$?
+            set -e  # Re-enable exit on error
 
             # Map exit code to bump type (NONE=0, PATCH=1, MINOR=2, MAJOR=3)
             case $BUMP_TYPE_AUTO in
@@ -69,8 +73,10 @@ jobs:
 
           echo "bump_type=$BUMP_TYPE" >> $GITHUB_OUTPUT
 
-          # Calculate new version
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          # Calculate new version (handle 'v' prefix and pre-release tags)
+          CURRENT_CLEAN="${CURRENT#v}"  # Remove 'v' prefix if present
+          CURRENT_CLEAN="${CURRENT_CLEAN%%[-+]*}"  # Remove pre-release/build metadata
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_CLEAN"
 
           case $BUMP_TYPE in
             major)
@@ -84,18 +90,20 @@ jobs:
               ;;
             *)
               echo "No version bump needed"
-              NEW_VERSION="$CURRENT"
+              NEW_VERSION="$CURRENT_CLEAN"
               ;;
           esac
 
           echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Bump type: $BUMP_TYPE"
-          echo "Current version: $CURRENT"
+          echo "Current version: $CURRENT_CLEAN"
           echo "New version: $NEW_VERSION"
 
       - name: Check if bump is needed
         id: check_bump
         run: |
+          set -euo pipefail
+
           if [ "${{ steps.version.outputs.bump_type }}" = "none" ]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "::warning::No releasable commits found. No version bump needed."
@@ -106,6 +114,8 @@ jobs:
       - name: Update Cargo.toml files
         if: steps.check_bump.outputs.skip != 'true'
         run: |
+          set -euo pipefail
+
           NEW_VERSION="${{ steps.version.outputs.new }}"
 
           # Use Python script to update all Cargo.toml files
@@ -118,23 +128,19 @@ jobs:
       - name: Update Cargo.lock
         if: steps.check_bump.outputs.skip != 'true'
         run: |
+          set -euo pipefail
+
           cargo check --workspace
 
       - name: Generate changelog
         if: steps.check_bump.outputs.skip != 'true'
         run: |
+          set -euo pipefail
+
           NEW_VERSION="${{ steps.version.outputs.new }}"
 
-          # Generate changelog entry for this version
-          git-cliff --tag "v$NEW_VERSION" --unreleased -o CHANGELOG_ENTRY.md
-
-          # Prepend to existing CHANGELOG.md if it exists
-          if [ -f CHANGELOG.md ]; then
-            cat CHANGELOG_ENTRY.md CHANGELOG.md > CHANGELOG_TEMP.md
-            mv CHANGELOG_TEMP.md CHANGELOG.md
-          else
-            mv CHANGELOG_ENTRY.md CHANGELOG.md
-          fi
+          # Use git-cliff's prepend mode to properly update CHANGELOG.md
+          git-cliff --tag "v$NEW_VERSION" --prepend CHANGELOG.md
 
       - name: Create Pull Request
         if: steps.check_bump.outputs.skip != 'true'
