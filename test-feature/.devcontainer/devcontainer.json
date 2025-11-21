@@ -1,0 +1,10 @@
+{
+    "name": "Langstar Feature Test",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "../features/langstar": {
+            "version": "latest"
+        }
+    },
+    "postCreateCommand": "langstar --version"
+}
