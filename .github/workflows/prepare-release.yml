@@ -35,6 +35,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install Python dependencies
+        run: |
+          pip install toml
+
       - name: Install git-cliff
         uses: taiki-e/install-action@v2
         with:
@@ -45,19 +49,18 @@ jobs:
         run: |
           set -euo pipefail  # Exit on error, undefined variables, and pipe failures
 
-          # Get current version from root Cargo.toml ([workspace.package] section)
-          CURRENT=$(awk '/^\[workspace\.package\]/{f=1} f && /^version = /{print; exit}' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          # Get current version from root Cargo.toml using Python TOML parser
+          CURRENT=$(python3 -c "import toml; print(toml.load(open('Cargo.toml'))['workspace']['package']['version'])")
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
 
           # Determine bump type
           BUMP_TYPE="${{ github.event.inputs.bump }}"
 
           if [ "$BUMP_TYPE" = "auto" ]; then
-            # Use Python script to analyze commits and capture exit code
+            # Use Python script to analyze commits (only use exit code, not stdout)
             set +e  # Temporarily disable exit on error to capture exit code
             python3 .claude/skills/bump-release/scripts/analyze_commits.py \
-              --current-version "$CURRENT" \
-              --format bump-type
+              --current-version "$CURRENT" > /dev/null
             BUMP_TYPE_AUTO=$?
             set -e  # Re-enable exit on error
 
@@ -77,6 +80,15 @@ jobs:
           CURRENT_CLEAN="${CURRENT#v}"  # Remove 'v' prefix if present
           CURRENT_CLEAN="${CURRENT_CLEAN%%[-+]*}"  # Remove pre-release/build metadata
           IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_CLEAN"
+
+          # Validate that MAJOR, MINOR, PATCH are all non-empty and integers
+          for var_name in MAJOR MINOR PATCH; do
+            var_value="${!var_name}"
+            if ! [[ "$var_value" =~ ^[0-9]+$ ]]; then
+              echo "Error: Version component '$var_name' is invalid ('$var_value') in version '$CURRENT_CLEAN'"
+              exit 1
+            fi
+          done
 
           case $BUMP_TYPE in
             major)
@@ -146,6 +158,9 @@ jobs:
         if: steps.check_bump.outputs.skip != 'true'
         uses: peter-evans/create-pull-request@v5
         with:
+          # NOTE: Using secrets.GITHUB_TOKEN will NOT trigger other workflows (like CI) on the created PR
+          # due to GitHub's security restrictions to prevent recursive workflow triggers.
+          # If you want CI to run automatically on release PRs, use a Personal Access Token (PAT) instead.
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: release/v${{ steps.version.outputs.new }}
           delete-branch: true
