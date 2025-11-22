@@ -380,3 +380,34 @@ Make it executable: `chmod +x .git/hooks/pre-commit`
 
 **Note**: This runs on every commit. If it's too slow, consider a lighter version that only runs `cargo fmt` and `cargo check --workspace`.
 - We follow a principled github issue -> pr workflow. If, in the course of working on an issue/PR another task comes up, the standard operating procedure (SOP) should be to 1.) file a new issue, 2.) if we are to begin development on it immediately in a feature branch, create a new feature branch off of the current feature branch that lists the new issue number and slug, 3.) PR from the new feature branch into the old feature branch with a PR description that will close the newly opened feature
+
+### Manual Version Bumps Require Proper PR Title and Changelog
+
+**Lesson from #243**: When manually bumping versions (bypassing `prepare-release` workflow):
+
+1. **PR title MUST start with `🔖 release:`**
+   - ✅ Correct: `🔖 release: bump version to v0.4.3`
+   - ❌ Wrong: `🔧 chore: bump version to v0.4.3`
+   - The `auto-tag-release` workflow checks: `startsWith(github.event.pull_request.title, '🔖 release:')`
+   - If title is wrong, workflow won't trigger and you must manually create tag
+
+2. **MUST update CHANGELOG.md with git-cliff**
+   - Version bumps without changelog entries break release workflow invariant
+   - Run: `git-cliff --tag "vX.Y.Z" --unreleased --prepend CHANGELOG.md`
+   - For version skips, write minimal entry explaining the skip (see v0.4.3 example)
+   - Never bump version without updating changelog
+
+3. **If auto-tag-release doesn't trigger after merge:**
+   ```bash
+   git checkout main && git pull
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+   This manually creates the tag and triggers the release workflow.
+
+**Why this matters:**
+- The release workflow requires both: (1) changelog entry for every version, (2) specific PR title format
+- If either is missing, releases won't publish automatically
+- Manual tag creation is recovery mechanism, not preferred workflow
+
+**References:** Issue #243 (v0.4.3 version skip), auto-tag-release.yml:12, prepare-release.yml:159-167
