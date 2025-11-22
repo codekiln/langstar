@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-11-22
+
+### 🔧 Build System
+
+- 🔧 chore: bump version to v0.4.3 (skip v0.4.2 due to pre-existing tags) (#243)
+
+**Version Skip Notice**: This release increments from v0.4.1 to v0.4.3, skipping v0.4.2.
+
+**Reason**: Tags v0.4.1 and v0.4.2 were manually created during workflow development (Nov 21) before the automated release workflow was operational. To avoid conflicts with these pre-existing tags and releases, the version was incremented to v0.4.3.
+
+**Changes**:
+- Update workspace version in Cargo.toml: 0.4.1 → 0.4.3
+- Update Cargo.lock to reflect new version
+
+**Note**: No functional changes or new features in this release. This is purely an administrative version bump to resolve version conflicts. For features and changes released in v0.4.1, see the v0.4.1 section below.
+
 ## [0.4.1] - 2025-11-22
 
 ### ✨ Features
