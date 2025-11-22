@@ -170,10 +170,10 @@ jobs:
         if: steps.check_bump.outputs.skip != 'true'
         uses: peter-evans/create-pull-request@v5
         with:
-          # NOTE: Using secrets.GITHUB_TOKEN will NOT trigger other workflows (like CI) on the created PR
-          # due to GitHub's security restrictions to prevent recursive workflow triggers.
-          # If you want CI to run automatically on release PRs, use a Personal Access Token (PAT) instead.
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Use PAT to trigger CI workflows on the created PR
+          # Requires RELEASE_PAT secret with repo permissions
+          # See: https://github.com/settings/tokens/new?scopes=repo&description=Release%20PR%20Creation
+          token: ${{ secrets.RELEASE_PAT }}
           branch: release/v${{ steps.version.outputs.new }}
           delete-branch: true
           title: '🔖 release: bump version to v${{ steps.version.outputs.new }}'
