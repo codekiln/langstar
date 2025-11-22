@@ -163,7 +163,8 @@ jobs:
           NEW_VERSION="${{ steps.version.outputs.new }}"
 
           # Use git-cliff's prepend mode to properly update CHANGELOG.md
-          git-cliff --tag "v$NEW_VERSION" --prepend CHANGELOG.md
+          # --unreleased flag includes commits since last tag
+          git-cliff --tag "v$NEW_VERSION" --unreleased --prepend CHANGELOG.md
 
       - name: Create Pull Request
         if: steps.check_bump.outputs.skip != 'true'
