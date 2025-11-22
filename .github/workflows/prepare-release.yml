@@ -132,13 +132,21 @@ jobs:
 
           # Update version in [workspace.package] section of root Cargo.toml
           # Workspace members inherit this version via version.workspace = true
-          sed -i.bak -E '/^\[workspace\.package\]/,/^\[/ s/^version = "[^"]+"/version = "'"$NEW_VERSION"'"/' Cargo.toml
+          if ! sed -i.bak -E '/^\[workspace\.package\]/,/^\[/ s/^version = "[^"]+"/version = "'"$NEW_VERSION"'"/' Cargo.toml; then
+            echo "Error: Failed to update version in Cargo.toml"
+            exit 1
+          fi
           rm Cargo.toml.bak
 
           echo "Updated root Cargo.toml [workspace.package] version to $NEW_VERSION"
 
-          # Verify the update
-          grep -A 5 '^\[workspace\.package\]' Cargo.toml | grep version
+          # Verify the update actually happened
+          if grep -A 5 '^\[workspace\.package\]' Cargo.toml | grep -q "^version = \"$NEW_VERSION\""; then
+            echo "✓ Successfully verified version is set to $NEW_VERSION"
+          else
+            echo "✗ Version verification failed - expected $NEW_VERSION"
+            exit 1
+          fi
 
       - name: Update Cargo.lock
         if: steps.check_bump.outputs.skip != 'true'
