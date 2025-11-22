@@ -5,6 +5,235 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-11-22
+
+### ✨ Features
+
+- ✨ feat: add Linux ARM64 (aarch64) binary support (#219)
+
+* ✨ feat: add Linux ARM64 (aarch64) binary support
+
+Enables langstar CLI installation on ARM64 Linux systems (Docker Desktop
+on Apple Silicon, ARM servers, Raspberry Pi, etc.).
+
+## Changes
+
+**Release Workflow:**
+- Add aarch64-unknown-linux-musl build target
+- Install cross-compilation tools (gcc-aarch64-linux-gnu, musl-tools)
+- Configure cargo linker for ARM64 cross-compilation
+- Build and publish ARM64 Linux binaries in releases
+
+**Install Script:**
+- Detect aarch64/arm64 architecture on Linux
+- Download aarch64-linux-musl binaries for ARM64
+- Update error message to indicate both x86_64 and aarch64 support
+
+## Testing
+
+After next release (v0.4.2):
+- ✅ Works on x86_64 Linux
+- ✅ Works on ARM64 macOS (via Docker Desktop Linux VM)
+- ✅ Works on ARM64 Linux servers
+
+## Use Cases
+
+- **Docker Desktop on Apple Silicon**: Most common case
+- **ARM servers**: AWS Graviton, Oracle Ampere, etc.
+- **Edge devices**: Raspberry Pi 4/5 with 64-bit OS
+- **CI/CD**: GitHub Actions ARM runners
+
+Fixes #218
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): use aarch64-linux-gnu-strip for ARM64 cross-compiled binaries
+
+Addresses Copilot review comment about incorrect strip command for
+cross-compiled ARM64 binaries.
+
+The generic 'strip' command cannot correctly strip ARM64 binaries when
+running on x86_64 hosts during cross-compilation. This change:
+
+- Uses aarch64-linux-gnu-strip for aarch64-unknown-linux-musl target
+- Falls back to generic strip for native builds (x86_64-linux, macos)
+- Maintains '|| true' to prevent build failure if strip fails
+
+This ensures ARM64 binaries are properly stripped during the release
+build process.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(ci): add workflow_dispatch to automate release PR generation (#217)
+
+* ✨ feat(ci): add workflow_dispatch to automate release PR generation
+
+Implements Phase 3 of release epic (#195) - automated release PR creation.
+
+Creates .github/workflows/prepare-release.yml that:
+- Analyzes commits since last release using Conventional Emoji Commits
+- Determines version bump (MAJOR/MINOR/PATCH or auto)
+- Updates all workspace Cargo.toml files
+- Generates changelog with git-cliff
+- Creates PR with title: 🔖 release: bump version to vX.Y.Z
+
+The workflow can be triggered manually via GitHub Actions UI with
+configurable bump type (auto/major/minor/patch).
+
+Success criteria met:
+✅ GitHub UI has "Prepare Release" workflow button
+✅ Version determined from Conventional Emoji Commits
+✅ All Cargo.toml files updated automatically
+✅ Changelog generated with git-cliff
+✅ PR ready for review with proper metadata
+
+Fixes #199
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): address code review comments for prepare-release workflow
+
+Addresses all Copilot review suggestions:
+
+1. **Fix Python script exit code handling** (line 57):
+   - Wrapped script call with set +e / set -e to capture exit code
+   - Non-zero exit codes no longer cause workflow failure
+
+2. **Fix changelog generation** (line 138):
+   - Use git-cliff --prepend mode instead of manual concatenation
+   - Avoids duplicate headers and malformed markdown
+
+3. **Add error handling to bash scripts** (line 95):
+   - Added "set -euo pipefail" to all multi-line bash blocks
+   - Ensures failures are caught early and undefined variables error
+
+4. **Fix version parsing** (line 73):
+   - Strip 'v' prefix before parsing: ${CURRENT#v}
+   - Remove pre-release/build metadata: ${CURRENT_CLEAN%%[-+]*}
+   - Handles versions like "v1.2.3" or "1.2.3-alpha" correctly
+
+5. **Use robust Cargo.toml version extraction** (line 47):
+   - Use awk to target [workspace.package] section specifically
+   - More reliable than grep for multi-section Cargo.toml files
+   - Matches approach from auto-tag-release.yml workflow
+
+All bash scripts now follow best practices with proper error handling
+and the workflow is more robust against edge cases.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): address second round of code review comments
+
+Addresses all review comments from PR review #3494454207:
+
+1. **Remove unnecessary --format bump-type argument** (line 60):
+   - Script was called with --format bump-type but stdout was unused
+   - Now redirects stdout to /dev/null since we only use exit code
+   - Cleaner and more explicit about intent
+
+2. **Use Python TOML parser for version extraction** (line 53):
+   - Replaced fragile awk pattern with proper TOML parser
+   - More robust handling of TOML formatting variations
+   - Added pip install toml step
+
+3. **Add validation for version components** (line 85-91):
+   - Validate MAJOR, MINOR, PATCH are non-empty integers
+   - Fail fast with clear error message if version format is invalid
+   - Prevents silent failures from malformed versions
+
+4. **Add comment about GITHUB_TOKEN limitation** (line 161-163):
+   - Document that GITHUB_TOKEN won't trigger other workflows
+   - Explain this is intentional security restriction
+   - Note PAT option if automatic CI triggering is desired
+
+Note on comment #2: Did not consolidate version calculation into Python
+script because manual bump types (major/minor/patch selected by user)
+still require bash calculation. The Python script only supports "auto"
+mode which analyzes commits. Keeping bash calculation for consistency
+and to support all bump type options.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(ci): fix workspace version update in prepare-release workflow (#222)
+
+* 🩹 fix(ci): update workspace.package version instead of individual packages
+
+Fixes workflow failure where bump_version.py couldn't find versions in
+CLI and SDK Cargo.toml files.
+
+Issue: Workspace members use version.workspace = true to inherit from
+root [workspace.package] section. The Python script looks for [package]
+version fields which don't exist in members.
+
+Solution: Use sed to directly update [workspace.package] version in root
+Cargo.toml. Members automatically inherit the new version.
+
+This is simpler and correct for workspace-based projects.
+
+Fixes workflow run failure:
+https://github.com/codekiln/langstar/actions/runs/19584495703
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): add robust verification for version update
+
+Addresses Copilot review comments:
+
+1. Check sed exit code to catch failures early
+2. Verify the version was actually updated to expected value
+3. Fail fast with clear error message if verification fails
+
+Previously the verification only displayed the version line but didn't
+validate it matched the expected new version. Now it explicitly checks
+for the exact version string and exits with error if not found.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(ci): add --unreleased flag to git-cliff command (#224)
+
+Fixes workflow failure where git-cliff was missing required flag.
+
+Error:
+```
+ERROR git_cliff > Argument error: `'-u' or '-l' is not specified`
+```
+
+git-cliff requires either -u/--unreleased or -l/--latest when using
+--prepend mode. Added --unreleased to include all commits since the
+last tag.
+
+Fixes #199
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.4.0] - 2025-11-20
 
 ### ✨ Features
