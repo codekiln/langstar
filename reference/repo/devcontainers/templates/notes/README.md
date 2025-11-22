@@ -28,7 +28,7 @@ The repository uses **one main test workflow**:
 **Templates are more complex**:
 1. **Template Configuration** - Must handle `devcontainer-template.json` options
 2. **Smoke Tests** - More involved than feature tests
-3. **Extension Stubbing** - Fakes VS Code Server for validation
+3. **Extension Stubbing** - Fakes the VS Code Server for validation
 4. **Test Directory Structure** - Templates have `test/<template>/` with project files
 
 ### Test Command Pattern
