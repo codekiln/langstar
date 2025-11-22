@@ -159,4 +159,4 @@ jobs:
     steps:
       - name: Check all job results
         run: |
-          jq --exit-status 'all(.result == "success")' <<< '${{ toJson(needs) }}'
+          jq --exit-status 'all(.result == "success" or .result == "skipped")' <<< '${{ toJson(needs) }}'
