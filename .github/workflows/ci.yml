@@ -147,6 +147,14 @@ jobs:
           name: langstar-macos
           path: target/release/langstar
 
+  # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
+  # This job aggregates all CI results into a single "All Jobs" check.
+  # Branch protection requires this check - removing it will block ALL merges to main.
+  #
+  # When adding/removing jobs above:
+  # 1. Update the 'needs' list below to include all CI jobs
+  # 2. Test that "All Jobs" check still appears in PRs
+  # 3. See .github/workflows/README.md for complete procedure
   all-jobs:
     name: All Jobs
     if: always()
