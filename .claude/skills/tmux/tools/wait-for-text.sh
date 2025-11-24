@@ -67,7 +67,7 @@ while true; do
   # -J joins wrapped lines, -S uses negative index to read last N lines
   pane_text="$(tmux capture-pane -p -J -t "$target" -S "-${lines}" 2>/dev/null || true)"
 
-  if printf '%s\n' "$pane_text" | grep $grep_flag -- "$pattern" >/dev/null 2>&1; then
+  if printf '%s\n' "$pane_text" | grep "$grep_flag" -- "$pattern" >/dev/null 2>&1; then
     exit 0
   fi
 
