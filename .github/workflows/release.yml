@@ -50,9 +50,33 @@ jobs:
           wait-interval: 10
           allowed-conclusions: success
 
+  pre-release-validation:
+    name: Pre-Release Validation
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run full lifecycle deployment test
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+        run: |
+          cargo test --test integration_deployment_workflow \
+            test_deployment_workflow_full_lifecycle -- \
+            --ignored --nocapture
+
   create-release:
     name: Create Release
-    needs: verify-ci
+    needs: [verify-ci, pre-release-validation]
     runs-on: ubuntu-latest
     permissions:
       contents: write
