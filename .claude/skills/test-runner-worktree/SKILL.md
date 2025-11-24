@@ -17,7 +17,7 @@ source /workspace/.devcontainer/.env
 ```
 
 **Why this matters:**
-- Integration tests require `LANGSMITH_API_KEY`, `ANTHROPIC_API_KEY`, and other credentials
+- Integration tests require `LANGSMITH_API_KEY` and other credentials
 - Worktrees do NOT automatically inherit environment variables from the main workspace
 - Tests will fail with authentication errors or panics if variables are missing
 - This was the root cause of test failures in issue #232
