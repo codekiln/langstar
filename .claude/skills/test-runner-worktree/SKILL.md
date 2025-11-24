@@ -226,7 +226,7 @@ cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace 
 ```
 
 **Symptom:** Tests fail with cryptic errors like:
-- `byte index 8 is out of bounds of ``
+- `byte index 8 is out of bounds of \`\``
 - `thread 'main' panicked at cli/src/commands/prompt.rs:183:52`
 - Authentication failures in integration tests
 
@@ -579,6 +579,6 @@ cargo test --test integration_test -- --ignored --nocapture
 
 **The #1 cause of test failures in worktrees is missing environment variables.** Always source them first, especially before running pre-commit checks.
 
-**The #1 symptom:** Cryptic panics like `byte index 8 is out of bounds of `` ` that disappear after sourcing environment variables.
+**The #1 symptom:** Cryptic panics like `byte index 8 is out of bounds of \`\`` that disappear after sourcing environment variables.
 
 These principles save time, prevent confusion, and improve security.
