@@ -5,6 +5,290 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-11-24
+
+### ✨ Features
+
+- ✨ feat(release): complete automated release PR generation pipeline (#264)
+
+* ✨ feat(release): add version validation and draft releases (#262)
+
+* ✨ feat(release): add version validation and draft releases
+
+Implements Phase 3 (final phase) of automated release pipeline (#199).
+
+## Changes
+
+### Version Validation (release.yml:77-92)
+- Validates git tag matches Cargo.toml version before creating release
+- Fails fast with clear error message if mismatch detected
+- Prevents confusing releases (learned from PR #239)
+- Pattern from ripgrep's battle-tested release workflow
+
+### Draft Releases (release.yml:115)
+- Changed `draft: false` to `draft: true`
+- Enables human review before publishing releases
+- Allows artifact verification and testing before public release
+- Two-phase release: create → build → review → publish
+
+### Documentation (.github/workflows/README.md)
+- Added "Release Workflow: Draft Releases" section
+- Documents complete release flow from PR to published release
+- Explains version validation and troubleshooting
+- Includes draft release review and publishing procedure
+
+## Testing
+
+All tests pass with proper environment sourcing:
+- cargo fmt: ✓
+- cargo check --workspace --all-features: ✓
+- cargo clippy --workspace --all-features: ✓
+- cargo test --workspace --all-features: ✓
+
+Note: Required sourcing /workspace/.devcontainer/.env for integration tests
+(per test-runner-worktree skill guidance)
+
+## References
+
+- Research: reference/research/228-rust-cli-release-patterns-synthesis.md
+- Parent: #199 (workflow_dispatch for automated release PRs)
+- Epic: #195 (CI-driven release management)
+
+Fixes #232
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(skill): emphasize environment sourcing in test-runner-worktree
+
+Updates test-runner-worktree skill to prevent test failures from missing
+environment variables in worktrees.
+
+## Changes
+
+### Updated Description (YAML frontmatter)
+- More specific trigger terms: "cargo test fails", "authentication errors"
+- Explicitly mentions LANGSMITH_API_KEY and ANTHROPIC_API_KEY requirements
+- Better matches when Claude should activate this skill
+
+### Added Critical First Step Section
+- Prominent warning at the top of the skill
+- Clear command: `source /workspace/.devcontainer/.env`
+- Explains why this is necessary (worktrees don't inherit env vars)
+- References issue #232 where missing env vars caused test failures
+
+### Updated All Workflows and Templates
+- Workflow 1 (Run Tests in Worktree): Sources env vars as step 2
+- Workflow 3 (Pre-Commit Testing): Added env sourcing before tests
+- Template 1-3: All include `source /workspace/.devcontainer/.env` first
+- Complete Test Flow: Env sourcing is step 2 (after cd)
+
+### Enhanced Key Takeaways
+- #1 takeaway now emphasizes environment sourcing FIRST
+- Added note: "The #1 cause of test failures in worktrees is missing
+  environment variables"
+- References both issue #186 (original) and #232 (recent failure)
+
+## Why This Matters
+
+In issue #232, tests failed with authentication errors and panics due to
+missing environment variables. The skill documentation didn't make this
+critical step prominent enough. These changes ensure:
+
+1. Claude activates this skill when seeing test failures
+2. The first thing Claude does is source environment variables
+3. All workflow examples include env sourcing as a critical first step
+
+## Best Practices Followed
+
+Per https://code.claude.com/docs/en/skills.md:
+- ✅ Specific description with trigger terms users would mention
+- ✅ Focused on single capability (test running in worktrees)
+- ✅ Clear, actionable instructions
+- ✅ Tested against actual failure scenario (issue #232)
+
+Related: #232
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .claude/skills/test-runner-worktree/SKILL.md
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+* fix: Update .github/workflows/release.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/release.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+## [0.5.0] - 2025-11-24
+
+### ✨ Features
+
+- ✨ feat: add pre-release validation tests to release workflow (#268)
+
+Add comprehensive pre-release validation job that runs full lifecycle
+deployment test before creating releases. This quality gate ensures
+the complete deployment workflow (create, update, delete) works
+correctly before publishing releases.
+
+Changes:
+- Add pre-release-validation job to release.yml
+- Run test_deployment_workflow_full_lifecycle before release creation
+- Configure 45-minute timeout (test takes ~20-30 minutes)
+- Require LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID secrets
+- Block release if validation fails
+- Update CI/CD documentation with new workflow step
+
+The test validates:
+- Creating fresh deployment with unique name
+- Waiting for deployment to be READY
+- Patching deployment (triggers new revision)
+- Waiting for new revision to be DEPLOYED
+- Deleting deployment (cleanup via DeploymentGuard)
+
+Fixes #207
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(install): redirect output functions to stderr to prevent command substitution capture (#265)
+
+## Problem
+When using the installer with automatic version detection (no --version flag), the
+info() messages were being captured in command substitutions, corrupting the version
+string and causing URL construction to fail.
+
+Example error:
+```
+https://github.com/codekiln/langstar/releases/download/v[INFO] Fetching latest version...
+0.4.3/langstar-[INFO] Fetching latest version...
+0.4.3-aarch64-linux-musl.tar.gz
+```
+
+## Solution
+Redirect info(), warn(), and success() functions to stderr (>&2) to match error()
+function behavior. This prevents their output from being captured when the function
+is called within a command substitution like $(get_latest_version).
+
+## Changes
+- scripts/install.sh: Redirect info(), warn(), success() to stderr
+- scripts/install.sh: Update usage comment to use bash instead of sh (script requires bash syntax)
+- README.md: Update install command to use bash instead of sh
+- README.md: Update example version from 0.2.0 to 0.4.3
+- README.md: Add aarch64 to supported Linux architectures
+
+## Testing
+Tested on Linux aarch64:
+- ✅ Default install (latest version with automatic detection)
+- ✅ Version-specific install (--version 0.4.3)
+- ✅ Custom prefix install (--prefix)
+- ✅ Checksum validation
+- ✅ Binary functionality verification
+- ✅ One-line curl | bash install
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add manual version bump requirements and lessons learned (#256)
+
+* 📚 docs: add manual version bump requirements and lessons learned
+
+Documents critical lessons from v0.4.3 version bump (#243):
+
+1. PR title must start with 🔖 release: for auto-tag-release trigger
+2. CHANGELOG.md must be updated with git-cliff (no version bumps without changelog)
+3. Manual tag creation recovery if auto-tag-release doesn't trigger
+
+These lessons prevent future mistakes when manually bumping versions outside
+the prepare-release workflow.
+
+Fixes #255
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(docs): move detailed procedures out of README to reduce context
+
+- Created docs/dev/procedures.md for detailed step-by-step procedures
+- Reduced README.md from ~413 lines to 177 lines (~236 line reduction)
+- Moved "Working with Phased/Sub-Task Issues" details to procedures.md
+- Moved "Pre-Commit Checklist" details to procedures.md
+- Kept high-level summaries in README with links to procedures.md
+
+This reduces Claude's context load by ~236 lines while maintaining
+accessibility through markdown links.
+
+Fixes #255
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: analyze CI testing patterns for devcontainer features (#257)
+
+* 📚 docs: analyze CI testing patterns for devcontainer features
+
+Complete analysis of devcontainers/features and devcontainers/templates
+repositories to inform implementation of automated CI testing for langstar.
+
+Key deliverables:
+- Detailed analysis of devcontainers/features CI workflows
+- Comparison of features vs templates testing approaches
+- 3-phase implementation plan with ready-to-use workflow files
+- Test script templates and success criteria
+
+Fixes #246
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update reference/repo/devcontainers/templates/notes/README.md
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs: add epic and sub-issue naming conventions (#259)
+
+Documents hierarchical naming convention for multi-phase features:
+- Three-level hierarchy (Epic → Phase → Task)
+- Naming format: {parent}.{sequence}-{slug} {description}
+- Milestone requirement for all levels
+- Reference to gh-sub-issue skill for establishing relationships
+- Complete example from devcontainer-feature epic (#201)
+
+Fixes #258
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.4.3] - 2025-11-22
 
 ### 🔧 Build System
