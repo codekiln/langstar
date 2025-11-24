@@ -72,12 +72,16 @@ impl TestDeployment {
     /// Returns the most recent matching deployment, or None if no matches found.
     fn find_active_test_deployment() -> Option<Self> {
         // Build langstar binary
-        let bin = CargoBuild::new()
-            .bin("langstar")
-            .run()
-            .ok()?
-            .path()
-            .to_owned();
+        let bin = match CargoBuild::new().bin("langstar").run() {
+            Ok(bin) => bin.path().to_owned(),
+            Err(e) => {
+                eprintln!(
+                    "⚠️  Warning: Failed to build langstar binary for deployment query.\nError: {}",
+                    e
+                );
+                return None;
+            }
+        };
 
         // Query deployments with filter for test deployments
         let mut cmd = Command::new(&bin);
@@ -92,11 +96,20 @@ impl TestDeployment {
             "json",
         ]);
 
-        let output = cmd.output().ok()?;
+        let output = match cmd.output() {
+            Ok(output) => output,
+            Err(e) => {
+                eprintln!(
+                    "⚠️  Warning: Failed to execute deployment query command.\nError: {}",
+                    e
+                );
+                return None;
+            }
+        };
 
         if !output.status.success() {
             eprintln!(
-                "⚠️  Warning: Failed to query existing deployments.\nStderr: {}",
+                "⚠️  Warning: Deployment query command failed.\nStderr: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
             return None;
@@ -105,10 +118,28 @@ impl TestDeployment {
         let stdout = String::from_utf8_lossy(&output.stdout);
 
         // Parse JSON output
-        let json: serde_json::Value = serde_json::from_str(&stdout).ok()?;
+        let json: serde_json::Value = match serde_json::from_str(&stdout) {
+            Ok(json) => json,
+            Err(e) => {
+                eprintln!(
+                    "⚠️  Warning: Failed to parse deployment query JSON.\nError: {}\nOutput: {}",
+                    e, stdout
+                );
+                return None;
+            }
+        };
 
-        // Get deployments array
-        let deployments = json.as_array()?;
+        // Get deployments array from the "resources" field
+        let deployments = match json["resources"].as_array() {
+            Some(arr) => arr,
+            None => {
+                eprintln!(
+                    "⚠️  Warning: JSON response missing 'resources' array.\nJSON keys: {:?}",
+                    json.as_object().map(|obj| obj.keys().collect::<Vec<_>>())
+                );
+                return None;
+            }
+        };
 
         if deployments.is_empty() {
             return None;
@@ -117,8 +148,31 @@ impl TestDeployment {
         // Find most recent deployment (first in list, as API returns most recent first)
         let deployment = &deployments[0];
 
-        let id = deployment["id"].as_str()?.to_string();
-        let name = deployment["name"].as_str()?.to_string();
+        let id = match deployment["id"].as_str() {
+            Some(id) => id.to_string(),
+            None => {
+                eprintln!(
+                    "⚠️  Warning: Deployment missing 'id' field.\nAvailable fields: {:?}",
+                    deployment
+                        .as_object()
+                        .map(|obj| obj.keys().collect::<Vec<_>>())
+                );
+                return None;
+            }
+        };
+
+        let name = match deployment["name"].as_str() {
+            Some(name) => name.to_string(),
+            None => {
+                eprintln!(
+                    "⚠️  Warning: Deployment missing 'name' field.\nAvailable fields: {:?}",
+                    deployment
+                        .as_object()
+                        .map(|obj| obj.keys().collect::<Vec<_>>())
+                );
+                return None;
+            }
+        };
 
         Some(Self { id, name })
     }
