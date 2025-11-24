@@ -530,7 +530,11 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< HEAD
           name: test-logs-failure-${{ steps.test-features.outputs.safe_image_name }}
+=======
+          name: test-logs-failure-${{ matrix.baseImage }}
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           path: |
             logs/*.log
           retention-days: 30
@@ -539,7 +543,11 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< HEAD
           name: test-logs-success-${{ steps.test-features.outputs.safe_image_name }}
+=======
+          name: test-logs-success-${{ matrix.baseImage }}
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           path: |
             logs/*.log
           retention-days: 7
@@ -570,6 +578,10 @@ jobs:
 
           if [ -f "$TEST_LOG" ]; then
             echo ""
+<<<<<<< HEAD
             echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ steps.test-features.outputs.safe_image_name }}"
+=======
+            echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ matrix.baseImage }}"
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           fi
           echo "::endgroup::"
