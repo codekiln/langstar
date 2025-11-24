@@ -70,6 +70,9 @@ services:
       CLAUDE_CONFIG_DIR: /home/node/.claude
       POWERLEVEL9K_DISABLE_GITSTATUS: "true"
 
+      # tmux skill configuration
+      CLAUDE_TMUX_SOCKET_DIR: /tmp/claude-tmux-sockets
+
       # Claude Code Token Configuration
       # max_tokens must be greater than thinking.budget_tokens
       # Recommended for Bedrock: MAX_OUTPUT=4096, THINKING=1024
