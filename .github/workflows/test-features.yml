@@ -501,6 +501,8 @@ jobs:
           echo "" >> "$SUMMARY_LOG"
 
           if [ $failed_features -gt 0 ]; then
+            # Remove trailing comma and space from failed_feature_names
+            failed_feature_names="${failed_feature_names%, }"
             echo "Failed features: ${failed_feature_names}" | tee -a "$TEST_LOG"
             echo "## Failed Features" >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
