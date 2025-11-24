@@ -286,6 +286,9 @@ jobs:
           # Sanitize base image name for use in filenames (replace / and : with -)
           SAFE_IMAGE_NAME=$(echo "${{ matrix.baseImage }}" | sed 's/[\/:]/-/g')
 
+          # Export as step output for use in artifact upload
+          echo "safe_image_name=${SAFE_IMAGE_NAME}" >> $GITHUB_OUTPUT
+
           # Define log file paths
           TEST_LOG="logs/test-${SAFE_IMAGE_NAME}.log"
           SUMMARY_LOG="logs/summary-${SAFE_IMAGE_NAME}.log"
@@ -376,7 +379,7 @@ jobs:
             if devcontainer up \
               --workspace-folder "${TEST_DIR}" \
               --log-level trace \
-              2>&1 | tee "$FEATURE_BUILD_LOG" | tee -a "$TEST_LOG"; then
+              2>&1 | tee -a "$TEST_LOG" "$FEATURE_BUILD_LOG"; then
               echo "✓ Container build and startup successful" | tee -a "$TEST_LOG"
             else
               echo "✗ Container build/startup failed" | tee -a "$TEST_LOG"
@@ -418,7 +421,11 @@ jobs:
               echo "✗ ${feature} command verification failed" | tee -a "$TEST_LOG"
               echo "" | tee -a "$TEST_LOG"
               echo "=== Execution Log ===" | tee -a "$TEST_LOG"
-              cat "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"
+              if [ -f "$FEATURE_EXEC_LOG" ]; then
+                cat "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"
+              else
+                echo "(Execution log not available)" | tee -a "$TEST_LOG"
+              fi
               echo "====================" | tee -a "$TEST_LOG"
 
               # Track failure
@@ -494,10 +501,12 @@ jobs:
           echo "" >> "$SUMMARY_LOG"
 
           if [ $failed_features -gt 0 ]; then
+            # Remove trailing comma and space from failed_feature_names
+            failed_feature_names="${failed_feature_names%, }"
             echo "Failed features: ${failed_feature_names}" | tee -a "$TEST_LOG"
             echo "## Failed Features" >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
-            echo "${failed_feature_names}" | sed 's/, /\n- /g' | sed 's/^/- /' >> "$SUMMARY_LOG"
+            echo "${failed_feature_names%%, }" | tr ',' '\n' | sed 's/^/- /' >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
             echo "❌ Some tests failed. Check logs for details." >> "$SUMMARY_LOG"
             echo "::endgroup::"
@@ -527,7 +536,11 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< HEAD
+          name: test-logs-failure-${{ steps.test-features.outputs.safe_image_name }}
+=======
           name: test-logs-failure-${{ matrix.baseImage }}
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           path: |
             logs/*.log
           retention-days: 30
@@ -536,7 +549,11 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
+<<<<<<< HEAD
+          name: test-logs-success-${{ steps.test-features.outputs.safe_image_name }}
+=======
           name: test-logs-success-${{ matrix.baseImage }}
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           path: |
             logs/*.log
           retention-days: 7
@@ -567,6 +584,10 @@ jobs:
 
           if [ -f "$TEST_LOG" ]; then
             echo ""
+<<<<<<< HEAD
+            echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ steps.test-features.outputs.safe_image_name }}"
+=======
             echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ matrix.baseImage }}"
+>>>>>>> origin/codekiln/240-implement-automated-ci-testing
           fi
           echo "::endgroup::"
