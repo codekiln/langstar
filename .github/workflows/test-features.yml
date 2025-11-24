@@ -248,6 +248,15 @@ jobs:
         run: |
           echo "Testing features on base image: ${{ matrix.baseImage }}"
           echo "============================================"
+          echo ""
+          echo "Test Isolation Guarantees:"
+          echo "- Each test runs in a unique temporary directory (mktemp -d)"
+          echo "- Each test gets a fresh container instance"
+          echo "- Containers are explicitly stopped and removed after each test"
+          echo "- No shared state between tests"
+          echo "- Tests can run in any order"
+          echo "============================================"
+          echo ""
 
           # Get list of features to test
           if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
@@ -308,6 +317,13 @@ jobs:
               echo "=== Build Log ==="
               cat "${TEST_DIR}/build.log"
               echo "================="
+
+              # Clean up any containers before failing
+              CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+              if [ -n "$CONTAINER_NAME" ]; then
+                docker rm -f "${CONTAINER_NAME}" || true
+              fi
+
               rm -rf "${TEST_DIR}"
               exit 1
             fi
@@ -329,6 +345,13 @@ jobs:
               echo "=== Execution Log ==="
               cat "${TEST_DIR}/exec.log"
               echo "===================="
+
+              # Clean up containers before failing
+              CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+              if [ -n "$CONTAINER_NAME" ]; then
+                docker rm -f "${CONTAINER_NAME}" || true
+              fi
+
               rm -rf "${TEST_DIR}"
               exit 1
             fi
@@ -336,9 +359,29 @@ jobs:
 
             echo "✓ Feature ${feature} passed all tests"
 
-            # Clean up this feature's test directory
-            echo "Cleaning up test directory: ${TEST_DIR}"
+            # Clean up containers and test directory to ensure isolation
+            echo "Cleaning up containers and test directory for isolation..."
+
+            # Stop and remove any containers associated with this test workspace
+            # The devcontainer CLI names containers based on workspace folder
+            CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+            if [ -n "$CONTAINER_NAME" ]; then
+              echo "Stopping and removing container: ${CONTAINER_NAME}"
+              docker rm -f "${CONTAINER_NAME}" || true
+            else
+              # Fallback: try finding by workspace folder path in labels
+              CONTAINERS=$(docker ps -a --filter "label=devcontainer.config_file=${TEST_DIR}/.devcontainer.json" --format "{{.Names}}")
+              if [ -n "$CONTAINERS" ]; then
+                echo "Stopping and removing containers: ${CONTAINERS}"
+                echo "$CONTAINERS" | xargs -r docker rm -f || true
+              fi
+            fi
+
+            # Remove the test directory
+            echo "Removing test directory: ${TEST_DIR}"
             rm -rf "${TEST_DIR}"
+
+            echo "✓ Cleanup completed for ${feature}"
           done
 
           echo ""
