@@ -3,7 +3,7 @@
 # https://github.com/codekiln/langstar
 #
 # Usage:
-#   curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | sh
+#   curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash
 #
 # Or download and run:
 #   curl -LO https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh
@@ -47,11 +47,11 @@ fi
 
 # Output functions
 info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    echo -e "${GREEN}[INFO]${NC} $1" >&2
 }
 
 warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    echo -e "${YELLOW}[WARN]${NC} $1" >&2
 }
 
 error() {
@@ -59,7 +59,7 @@ error() {
 }
 
 success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+    echo -e "${GREEN}[SUCCESS]${NC} $1" >&2
 }
 
 die() {

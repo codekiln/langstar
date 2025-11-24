@@ -24,7 +24,7 @@ Install the latest release with our installer script:
 
 ```bash
 # Quick install (recommended)
-curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | sh
+curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash
 ```
 
 Or download and run manually:
@@ -38,7 +38,7 @@ chmod +x install.sh
 **Install options:**
 ```bash
 # Install specific version
-./install.sh --version 0.2.0
+./install.sh --version 0.4.3
 
 # Install to custom location
 ./install.sh --prefix ~/.local/bin
@@ -50,7 +50,7 @@ chmod +x install.sh
 The installer script:
 - ✅ Downloads pre-built binaries (no compilation needed)
 - ✅ Verifies SHA256 checksums
-- ✅ Supports Linux (x86_64) and macOS (Intel/Apple Silicon)
+- ✅ Supports Linux (x86_64, aarch64) and macOS (Intel/Apple Silicon)
 - ✅ Installs to `/usr/local/bin` or `~/.local/bin`
 - ✅ Handles updates automatically
 
