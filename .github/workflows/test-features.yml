@@ -71,22 +71,105 @@ jobs:
           echo "Testing features on base image: ${{ matrix.baseImage }}"
           echo "============================================"
 
-          # TODO: Implement feature testing with Dev Container CLI
-          # This is the foundational workflow structure
-          # Subsequent tasks will add:
-          # - Dev Container CLI-based feature installation testing (#248)
-          # - Smoke tests to verify langstar command (#250)
-          # - Feature metadata linting (#251)
+          # Get list of features to test
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
 
-          echo "⚠️  Feature testing implementation pending"
-          echo "This workflow establishes the CI structure."
-          echo "Follow-up tasks will implement actual tests."
+          # Find all features
+          features=$(find ${{ env.FEATURE_BASE_PATH }} -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+
+          # Get absolute path to features directory
+          FEATURES_ABS_PATH=$(cd "${{ env.FEATURE_BASE_PATH }}" && pwd)
+          echo "Features directory: ${FEATURES_ABS_PATH}"
+
+          # Test each feature
+          for feature in $features; do
+            echo ""
+            echo "=========================================="
+            echo "Testing feature: ${feature}"
+            echo "=========================================="
+
+            # Create temporary directory for test devcontainer
+            TEST_DIR=$(mktemp -d -t "test-${feature}-XXXXXX")
+            echo "Created test directory: ${TEST_DIR}"
+
+            # Create test devcontainer.json that references the local feature
+            cat > "${TEST_DIR}/.devcontainer.json" <<EOF
+          {
+            "name": "Test ${feature}",
+            "image": "${{ matrix.baseImage }}",
+            "features": {
+              "${FEATURES_ABS_PATH}/${feature}": {}
+            }
+          }
+          EOF
+
+            echo "Created test devcontainer.json:"
+            cat "${TEST_DIR}/.devcontainer.json"
+            echo ""
+
+            # Build and start container with feature using Dev Container CLI
+            echo "Building and starting test container with ${feature} feature..."
+            echo "This will:"
+            echo "  1. Pull base image: ${{ matrix.baseImage }}"
+            echo "  2. Install feature: ${feature}"
+            echo "  3. Verify installation"
+            echo ""
+
+            if devcontainer up \
+              --workspace-folder "${TEST_DIR}" \
+              --log-level trace \
+              2>&1 | tee "${TEST_DIR}/build.log"; then
+              echo "✓ Container build and startup successful"
+            else
+              echo "✗ Container build/startup failed"
+              echo ""
+              echo "=== Build Log ==="
+              cat "${TEST_DIR}/build.log"
+              echo "================="
+              rm -rf "${TEST_DIR}"
+              exit 1
+            fi
+            echo ""
+
+            # Execute commands inside container to verify installation
+            echo "Verifying ${feature} installation..."
+            echo "Running: command -v ${feature} && ${feature} --version"
+
+            if devcontainer exec \
+              --workspace-folder "${TEST_DIR}" \
+              --log-level trace \
+              bash -c "command -v ${feature} && ${feature} --version" \
+              2>&1 | tee "${TEST_DIR}/exec.log"; then
+              echo "✓ ${feature} command verified successfully"
+            else
+              echo "✗ ${feature} command verification failed"
+              echo ""
+              echo "=== Execution Log ==="
+              cat "${TEST_DIR}/exec.log"
+              echo "===================="
+              rm -rf "${TEST_DIR}"
+              exit 1
+            fi
+            echo ""
+
+            echo "✓ Feature ${feature} passed all tests"
+
+            # Clean up this feature's test directory
+            echo "Cleaning up test directory: ${TEST_DIR}"
+            rm -rf "${TEST_DIR}"
+          done
+
           echo ""
-          echo "Next steps (from parent issue #240):"
-          echo "- #248: Implement Dev Container CLI testing"
-          echo "- #249: Add OS distribution matrix testing"
-          echo "- #250: Create automated smoke tests"
-          echo "- #251: Add feature metadata linting"
+          echo "=========================================="
+          echo "All features tested successfully!"
+          echo "=========================================="
 
       - name: Report results
         if: always()
