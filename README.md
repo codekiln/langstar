@@ -69,6 +69,29 @@ cd langstar
 cargo install --path cli
 ```
 
+#### DevContainer Feature (For Development Containers)
+
+The easiest way to use Langstar in development containers is via our official DevContainer feature:
+
+```jsonc
+// Add to .devcontainer/devcontainer.json
+{
+    "features": {
+        "ghcr.io/codekiln/langstar/langstar:1": {
+            "version": "latest"
+        }
+    }
+}
+```
+
+**Benefits:**
+- ✅ Automatic installation in devcontainers, GitHub Codespaces, and devpod
+- ✅ Supports x86_64 and ARM64 architectures
+- ✅ Version pinning support (`"latest"` or specific version like `"v0.4.0"`)
+- ✅ Tested across Ubuntu, Debian, and Alpine base images
+
+For complete documentation and examples, see [docs/devcontainer-feature.md](./docs/devcontainer-feature.md).
+
 ### Configuration Quick Start
 
 > **⚠️ Important**: Langstar commands have different configuration requirements depending on which service you're using.

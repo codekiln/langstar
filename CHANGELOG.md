@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 📚 Documentation
+
+- **DevContainer Feature Documentation** - Completed devcontainer-feature milestone (#201)
+  - Added comprehensive DevContainer feature documentation to main README.md
+  - Created detailed feature guide at `docs/devcontainer-feature.md` covering:
+    - Feature options and configuration
+    - Compatibility matrix (Ubuntu 22.04/24.04, Debian 11/12, Alpine 3.18/3.19)
+    - Architecture support (x86_64, ARM64)
+    - Installation examples (basic, pinned versions, multi-feature)
+    - Environment-specific configurations (local dev, Codespaces, CI/CD)
+    - Team collaboration patterns
+    - Troubleshooting and security considerations
+  - Created `docs/examples/devcontainer-feature-examples.md` with real-world examples:
+    - Basic usage patterns
+    - Version management strategies
+    - Multi-feature configurations (Rust, Python, Node.js stacks)
+    - CI/CD integration (GitHub Actions, GitLab CI, CircleCI)
+    - Advanced scenarios and best practices
+  - Feature published to: `ghcr.io/codekiln/langstar/langstar:1`
+
+**Milestone Complete:** This completes Phase 4 (final phase) of the devcontainer-feature milestone (#201):
+- ✅ Phase 1 (#202): Feature implementation
+- ✅ Phase 2 (#203): Publishing to GHCR
+- ✅ Phase 3 (#240): Comprehensive CI testing across 6 OS distributions
+- ✅ Phase 4 (#204): Documentation and public discovery
+
+The Langstar CLI can now be easily installed in any devcontainer by adding a single feature to `devcontainer.json`. The feature is production-ready, thoroughly tested, and comprehensively documented.
+
+Fixes #204
+
 ## [0.5.1] - 2025-11-24
 
 ### ✨ Features
