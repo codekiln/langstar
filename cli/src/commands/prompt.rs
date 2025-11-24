@@ -180,9 +180,19 @@ impl PromptCommands {
     /// Print scope information for verbose output
     fn print_scope_info(client: &LangchainClient, visibility: Visibility) {
         let scope = if let Some(workspace_id) = client.workspace_id() {
-            format!("Workspace ({})", &workspace_id[..8])
+            let truncated = if workspace_id.len() >= 8 {
+                &workspace_id[..8]
+            } else {
+                workspace_id
+            };
+            format!("Workspace ({})", truncated)
         } else if let Some(org_id) = client.organization_id() {
-            format!("Organization ({})", &org_id[..8])
+            let truncated = if org_id.len() >= 8 {
+                &org_id[..8]
+            } else {
+                org_id
+            };
+            format!("Organization ({})", truncated)
         } else {
             "Global".to_string()
         };

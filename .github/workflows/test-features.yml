@@ -163,10 +163,14 @@ jobs:
 
             # Run Dev Container CLI validation
             echo "4. Running Dev Container CLI validation..."
-            if devcontainer features validate "$feature_path" > /dev/null 2>&1; then
+            validation_output=$(devcontainer features validate "$feature_path" 2>&1)
+            validation_exit_code=$?
+            if [ $validation_exit_code -eq 0 ]; then
               echo "✓ Dev Container CLI validation passed"
             else
               echo "✗ Dev Container CLI validation failed"
+              echo "Validation error output:"
+              echo "$validation_output"
               failed_features="${failed_features}${feature} "
               continue
             fi
