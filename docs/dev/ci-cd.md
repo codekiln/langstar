@@ -34,12 +34,25 @@ This project uses a **validate-on-PR, release-on-tag** CI/CD pipeline strategy, 
 **Purpose**: Build release artifacts and publish GitHub releases
 
 **Jobs**:
-1. **Create Release**
+1. **Verify CI** (quality gate)
+   - Wait for Check, Test, Clippy, and Build jobs to pass
+   - Ensures all CI checks complete before proceeding
+
+2. **Pre-Release Validation** (quality gate)
+   - Run full lifecycle deployment test
+   - Test creates, updates, and deletes a deployment (~20-30 minutes)
+   - Validates SDK deployment workflow works before releasing
+   - Requires secrets: `LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`
+   - Timeout: 45 minutes
+   - **If this job fails, the release is blocked**
+
+3. **Create Release**
    - Generate changelog using `git-cliff`
    - Create GitHub Release with changelog
    - Determine if pre-release based on version suffix
+   - Only runs if CI verification and pre-release validation pass
 
-2. **Build Release**
+4. **Build Release**
    - Build binaries for multiple platforms:
      - `x86_64-unknown-linux-musl` (static Linux)
      - `x86_64-unknown-linux-gnu` (dynamic Linux)
