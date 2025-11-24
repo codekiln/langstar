@@ -56,7 +56,8 @@ if [ -n "${VERSION}" ] && [ "${VERSION}" != "latest" ]; then
     echo "Test 4: Verify installed version matches requested version..."
     version_output=$(langstar --version 2>&1)
     # Extract version number from output (assuming format like "langstar v0.4.1" or "langstar 0.4.1")
-    installed_version=$(echo "${version_output}" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+    # Supports pre-release versions (e.g., 1.2.3-beta.1) and build metadata (e.g., 1.2.3+20130313144700)
+    installed_version=$(echo "${version_output}" | grep -oE 'v?[0-9]+\.[0-9]+\.[0-9]+[^[:space:]]*' | head -n1)
     # Normalize VERSION (remove 'v' prefix if present)
     requested_version="${VERSION#v}"
     installed_version="${installed_version#v}"

@@ -3,11 +3,10 @@ name: Test DevContainer Features
 on:
   push:
     branches: [main]
-    paths:
-      - '.devcontainer/features/**'
-  push:
     tags:
       - 'v*'  # Test when binary releases happen
+    paths:
+      - '.devcontainer/features/**'
   pull_request:
     paths:
       - '.devcontainer/features/**'
@@ -238,8 +237,6 @@ jobs:
           fi
           echo "Features found:"
           echo "$features"
-          # Note: The 'features' output is not used by subsequent steps in this scaffolding workflow.
-          # Future PRs will reference this output (see #248, #250, #251).
           echo "features<<EOF" >> $GITHUB_OUTPUT
           echo "$features" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -506,7 +503,7 @@ jobs:
             echo "Failed features: ${failed_feature_names}" | tee -a "$TEST_LOG"
             echo "## Failed Features" >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
-            echo "${failed_feature_names%%, }" | tr ',' '\n' | sed 's/^/- /' >> "$SUMMARY_LOG"
+            echo "${failed_feature_names}" | tr ',' '\n' | sed 's/^/- /' >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
             echo "❌ Some tests failed. Check logs for details." >> "$SUMMARY_LOG"
             echo "::endgroup::"
