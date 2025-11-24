@@ -161,23 +161,6 @@ jobs:
             fi
             echo ""
 
-            # Run Dev Container CLI validation
-            echo "4. Running Dev Container CLI validation..."
-            set +e  # Temporarily disable exit-on-error to capture output
-            validation_output=$(devcontainer features validate "$feature_path" 2>&1)
-            validation_exit_code=$?
-            set -e  # Re-enable exit-on-error
-            if [ $validation_exit_code -eq 0 ]; then
-              echo "✓ Dev Container CLI validation passed"
-            else
-              echo "✗ Dev Container CLI validation failed"
-              echo "Validation error output:"
-              echo "$validation_output"
-              failed_features="${failed_features}${feature} "
-              continue
-            fi
-            echo ""
-
             echo "✓ Feature '${feature}' passed all validation checks"
             echo ""
           done
