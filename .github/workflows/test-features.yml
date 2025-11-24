@@ -1,0 +1,567 @@
+name: Test DevContainer Features
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'  # Test when binary releases happen
+    paths:
+      - '.devcontainer/features/**'
+  pull_request:
+    paths:
+      - '.devcontainer/features/**'
+  workflow_dispatch:  # Allow manual testing
+
+env:
+  # Feature configuration
+  FEATURE_BASE_PATH: '.devcontainer/features'
+
+jobs:
+  validate-metadata:
+    name: Validate Feature Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Verify Dev Container CLI installation
+        run: |
+          echo "Dev Container CLI version:"
+          devcontainer --version
+
+      - name: Install jq for JSON validation
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate feature metadata
+        run: |
+          echo "=========================================="
+          echo "Validating Feature Metadata"
+          echo "=========================================="
+          echo ""
+
+          # Check if features directory exists
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
+
+          # Find all features
+          features=$(find "${{ env.FEATURE_BASE_PATH }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+
+          echo "Features found:"
+          echo "$features"
+          echo ""
+
+          # Track validation failures
+          failed_features=""
+
+          # Validate each feature
+          for feature in $features; do
+            echo "=========================================="
+            echo "Validating feature: ${feature}"
+            echo "=========================================="
+
+            feature_path="${{ env.FEATURE_BASE_PATH }}/${feature}"
+            metadata_file="${feature_path}/devcontainer-feature.json"
+
+            # Check if metadata file exists
+            if [ ! -f "$metadata_file" ]; then
+              echo "✗ Error: Metadata file not found: $metadata_file"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+
+            echo "Found metadata file: $metadata_file"
+            echo ""
+
+            # Validate JSON syntax
+            echo "1. Validating JSON syntax..."
+            if jq empty "$metadata_file" > /dev/null 2>&1; then
+              echo "✓ JSON syntax is valid"
+            else
+              echo "✗ JSON syntax validation failed"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+            echo ""
+
+            # Validate required fields
+            echo "2. Checking required fields..."
+            required_fields=("id" "version" "name" "description")
+            missing_fields=""
+
+            for field in "${required_fields[@]}"; do
+              value=$(jq -r ".${field} // empty" "$metadata_file")
+              if [ -z "$value" ] || [ "$value" = "null" ]; then
+                echo "✗ Missing required field: ${field}"
+                missing_fields="${missing_fields}${field} "
+              else
+                echo "✓ Field '${field}': ${value}"
+              fi
+            done
+
+            if [ -n "$missing_fields" ]; then
+              echo "✗ Missing required fields: ${missing_fields}"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+            echo ""
+
+            # Validate option definitions (if options exist)
+            echo "3. Validating option definitions..."
+            options=$(jq -r '.options // empty' "$metadata_file")
+            if [ -n "$options" ] && [ "$options" != "null" ]; then
+              # Check that each option has required properties
+              option_count=$(jq '.options | length' "$metadata_file")
+              echo "Found ${option_count} option(s)"
+
+              # Track if any option validation fails
+              option_validation_failed=false
+
+              option_keys=$(jq -r '.options | keys[]' "$metadata_file")
+              for option_key in $option_keys; do
+                # Check for required option properties: type, description
+                option_type=$(jq -r ".options[\"${option_key}\"].type // empty" "$metadata_file")
+                option_desc=$(jq -r ".options[\"${option_key}\"].description // empty" "$metadata_file")
+
+                if [ -z "$option_type" ]; then
+                  echo "✗ Option '${option_key}' missing 'type' field"
+                  option_validation_failed=true
+                else
+                  echo "✓ Option '${option_key}' has type: ${option_type}"
+                fi
+
+                if [ -z "$option_desc" ]; then
+                  echo "✗ Option '${option_key}' missing 'description' field"
+                  option_validation_failed=true
+                else
+                  echo "✓ Option '${option_key}' has description"
+                fi
+              done
+
+              # Add to failed features only once if any option validation failed
+              if [ "$option_validation_failed" = true ]; then
+                failed_features="${failed_features}${feature} "
+              fi
+            else
+              echo "No options defined (optional)"
+            fi
+            echo ""
+
+            echo "✓ Feature '${feature}' passed all validation checks"
+            echo ""
+          done
+
+          # Report results
+          echo "=========================================="
+          echo "Validation Summary"
+          echo "=========================================="
+          if [ -n "$failed_features" ]; then
+            echo "✗ The following features failed validation:"
+            for failed in $failed_features; do
+              echo "  - ${failed}"
+            done
+            exit 1
+          else
+            echo "✓ All features passed validation"
+          fi
+
+  test-features:
+    name: Test Features (${{ matrix.baseImage }})
+    needs: validate-metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        baseImage:
+          - 'mcr.microsoft.com/devcontainers/base:ubuntu-22.04'
+          - 'mcr.microsoft.com/devcontainers/base:ubuntu-24.04'
+          - 'mcr.microsoft.com/devcontainers/base:debian-12'
+          - 'mcr.microsoft.com/devcontainers/base:debian-11'
+          - 'mcr.microsoft.com/devcontainers/base:alpine-3.19'
+          - 'mcr.microsoft.com/devcontainers/base:alpine-3.18'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Verify Dev Container CLI installation
+        run: |
+          echo "Dev Container CLI version:"
+          devcontainer --version
+
+      - name: List features to test
+        id: list-features
+        run: |
+          echo "Discovering features in ${{ env.FEATURE_BASE_PATH }}..."
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
+          features=$(find ${{ env.FEATURE_BASE_PATH }} -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+          echo "Features found:"
+          echo "$features"
+          echo "features<<EOF" >> $GITHUB_OUTPUT
+          echo "$features" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Print environment information
+        run: |
+          echo "::group::Environment Information"
+          echo "============================================"
+          echo "Test Environment Configuration"
+          echo "============================================"
+          echo ""
+          echo "Base Image: ${{ matrix.baseImage }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Architecture: ${{ runner.arch }}"
+          echo "GitHub Workspace: $GITHUB_WORKSPACE"
+          echo "Feature Base Path: ${{ env.FEATURE_BASE_PATH }}"
+          echo "Test Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo ""
+          echo "System Information:"
+          uname -a
+          echo ""
+          echo "Docker Version:"
+          docker --version
+          echo ""
+          echo "Docker Info:"
+          docker info | grep -E '(Server Version|Storage Driver|Operating System|OSType|Architecture|CPUs|Total Memory)'
+          echo ""
+          echo "Node.js Version:"
+          node --version
+          echo ""
+          echo "npm Version:"
+          npm --version
+          echo ""
+          echo "Dev Container CLI Version:"
+          devcontainer --version
+          echo "::endgroup::"
+
+      - name: Test feature installation
+        id: test-features
+        run: |
+          # Create log directory for this test run
+          mkdir -p logs
+
+          # Sanitize base image name for use in filenames (replace / and : with -)
+          SAFE_IMAGE_NAME=$(echo "${{ matrix.baseImage }}" | sed 's/[\/:]/-/g')
+
+          # Export as step output for use in artifact upload
+          echo "safe_image_name=${SAFE_IMAGE_NAME}" >> $GITHUB_OUTPUT
+
+          # Define log file paths
+          TEST_LOG="logs/test-${SAFE_IMAGE_NAME}.log"
+          SUMMARY_LOG="logs/summary-${SAFE_IMAGE_NAME}.log"
+
+          # Initialize summary for GitHub Step Summary
+          echo "# Test Results for ${{ matrix.baseImage }}" > "$SUMMARY_LOG"
+          echo "" >> "$SUMMARY_LOG"
+          echo "**Test Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> "$SUMMARY_LOG"
+          echo "**Base Image:** \`${{ matrix.baseImage }}\`" >> "$SUMMARY_LOG"
+          echo "**Runner:** ${{ runner.os }} (${{ runner.arch }})" >> "$SUMMARY_LOG"
+          echo "" >> "$SUMMARY_LOG"
+
+          echo "::group::Test Configuration"
+          echo "Testing features on base image: ${{ matrix.baseImage }}" | tee -a "$TEST_LOG"
+          echo "============================================" | tee -a "$TEST_LOG"
+          echo "" | tee -a "$TEST_LOG"
+          echo "Test Isolation Guarantees:" | tee -a "$TEST_LOG"
+          echo "- Each test runs in a unique temporary directory (mktemp -d)" | tee -a "$TEST_LOG"
+          echo "- Each test gets a fresh container instance" | tee -a "$TEST_LOG"
+          echo "- Containers are explicitly stopped and removed after each test" | tee -a "$TEST_LOG"
+          echo "- No shared state between tests" | tee -a "$TEST_LOG"
+          echo "- Tests can run in any order" | tee -a "$TEST_LOG"
+          echo "============================================" | tee -a "$TEST_LOG"
+          echo "" | tee -a "$TEST_LOG"
+          echo "::endgroup::"
+
+          # Initialize counters for summary
+          total_features=0
+          passed_features=0
+          failed_features=0
+          failed_feature_names=""
+
+          # Get list of features to test
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
+
+          # Find all features
+          features=$(find ${{ env.FEATURE_BASE_PATH }} -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+
+          # Get absolute path to features directory
+          FEATURES_ABS_PATH=$(cd "${{ env.FEATURE_BASE_PATH }}" && pwd)
+          echo "Features directory: ${FEATURES_ABS_PATH}"
+
+          # Test each feature
+          for feature in $features; do
+            total_features=$((total_features + 1))
+
+            echo ""  | tee -a "$TEST_LOG"
+            echo "::group::Testing feature: ${feature}"
+            echo "==========================================" | tee -a "$TEST_LOG"
+            echo "Testing feature: ${feature}" | tee -a "$TEST_LOG"
+            echo "==========================================" | tee -a "$TEST_LOG"
+
+            # Create temporary directory for test devcontainer
+            TEST_DIR=$(mktemp -d -t "test-${feature}-XXXXXX")
+            FEATURE_BUILD_LOG="${TEST_DIR}/build.log"
+            FEATURE_EXEC_LOG="${TEST_DIR}/exec.log"
+
+            echo "Created test directory: ${TEST_DIR}" | tee -a "$TEST_LOG"
+            echo "" | tee -a "$TEST_LOG"
+
+            # Create test devcontainer.json that references the local feature
+            jq -n \
+              --arg name "Test ${feature}" \
+              --arg image "${{ matrix.baseImage }}" \
+              --arg featurePath "${FEATURES_ABS_PATH}/${feature}" \
+              '{name: $name, image: $image, features: {($featurePath): {}}}' \
+              > "${TEST_DIR}/.devcontainer.json"
+
+            echo "Created test devcontainer.json:" | tee -a "$TEST_LOG"
+            cat "${TEST_DIR}/.devcontainer.json" | tee -a "$TEST_LOG"
+            echo "" | tee -a "$TEST_LOG"
+
+            # Build and start container with feature using Dev Container CLI
+            echo "Building and starting test container with ${feature} feature..." | tee -a "$TEST_LOG"
+            echo "This will:" | tee -a "$TEST_LOG"
+            echo "  1. Pull base image: ${{ matrix.baseImage }}" | tee -a "$TEST_LOG"
+            echo "  2. Install feature: ${feature}" | tee -a "$TEST_LOG"
+            echo "  3. Verify installation" | tee -a "$TEST_LOG"
+            echo "" | tee -a "$TEST_LOG"
+
+            if devcontainer up \
+              --workspace-folder "${TEST_DIR}" \
+              --log-level trace \
+              2>&1 | tee -a "$TEST_LOG" "$FEATURE_BUILD_LOG"; then
+              echo "✓ Container build and startup successful" | tee -a "$TEST_LOG"
+            else
+              echo "✗ Container build/startup failed" | tee -a "$TEST_LOG"
+              echo "" | tee -a "$TEST_LOG"
+              echo "=== Build Log ===" | tee -a "$TEST_LOG"
+              cat "$FEATURE_BUILD_LOG" | tee -a "$TEST_LOG"
+              echo "=================" | tee -a "$TEST_LOG"
+
+              # Track failure
+              failed_features=$((failed_features + 1))
+              failed_feature_names="${failed_feature_names}${feature} (build failed), "
+
+              # Clean up any containers before continuing
+              CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+              if [ -n "$CONTAINER_NAME" ]; then
+                echo "Cleaning up container: ${CONTAINER_NAME}" | tee -a "$TEST_LOG"
+                docker rm -f "${CONTAINER_NAME}" || true
+              fi
+
+              rm -rf "${TEST_DIR}"
+              echo "::endgroup::"
+              continue
+            fi
+            echo "" | tee -a "$TEST_LOG"
+
+            # Execute commands inside container to verify installation
+            echo "Verifying ${feature} installation..." | tee -a "$TEST_LOG"
+            echo "Running: command -v ${feature} && ${feature} --version" | tee -a "$TEST_LOG"
+            echo "" | tee -a "$TEST_LOG"
+
+            if devcontainer exec \
+              --workspace-folder "${TEST_DIR}" \
+              --log-level trace \
+              bash -c "command -v '${feature}' && '${feature}' --version" \
+              2>&1 | tee "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"; then
+              echo "✓ ${feature} command verified successfully" | tee -a "$TEST_LOG"
+              passed_features=$((passed_features + 1))
+            else
+              echo "✗ ${feature} command verification failed" | tee -a "$TEST_LOG"
+              echo "" | tee -a "$TEST_LOG"
+              echo "=== Execution Log ===" | tee -a "$TEST_LOG"
+              if [ -f "$FEATURE_EXEC_LOG" ]; then
+                cat "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"
+              else
+                echo "(Execution log not available)" | tee -a "$TEST_LOG"
+              fi
+              echo "====================" | tee -a "$TEST_LOG"
+
+              # Track failure
+              failed_features=$((failed_features + 1))
+              failed_feature_names="${failed_feature_names}${feature} (verification failed), "
+
+              # Clean up containers before continuing
+              CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+              if [ -n "$CONTAINER_NAME" ]; then
+                echo "Cleaning up container: ${CONTAINER_NAME}" | tee -a "$TEST_LOG"
+                docker rm -f "${CONTAINER_NAME}" || true
+              fi
+
+              rm -rf "${TEST_DIR}"
+              echo "::endgroup::"
+              continue
+            fi
+            echo "" | tee -a "$TEST_LOG"
+
+            echo "✓ Feature ${feature} passed all tests" | tee -a "$TEST_LOG"
+
+            # Clean up containers and test directory to ensure isolation
+            echo "Cleaning up containers and test directory for isolation..." | tee -a "$TEST_LOG"
+
+            # Stop and remove any containers associated with this test workspace
+            # The devcontainer CLI names containers based on workspace folder
+            CONTAINER_NAME=$(docker ps -a --filter "label=devcontainer.local_folder=${TEST_DIR}" --format "{{.Names}}" | head -1)
+            if [ -n "$CONTAINER_NAME" ]; then
+              echo "Stopping and removing container: ${CONTAINER_NAME}" | tee -a "$TEST_LOG"
+              docker rm -f "${CONTAINER_NAME}" 2>&1 | tee -a "$TEST_LOG" || true
+            else
+              # Fallback: try finding by workspace folder path in labels
+              CONTAINERS=$(docker ps -a --filter "label=devcontainer.config_file=${TEST_DIR}/.devcontainer.json" --format "{{.Names}}")
+              if [ -n "$CONTAINERS" ]; then
+                echo "Stopping and removing containers: ${CONTAINERS}" | tee -a "$TEST_LOG"
+                echo "$CONTAINERS" | xargs -r docker rm -f 2>&1 | tee -a "$TEST_LOG" || true
+              fi
+            fi
+
+            # Copy individual feature logs to main logs directory
+            if [ -f "$FEATURE_BUILD_LOG" ]; then
+              cp "$FEATURE_BUILD_LOG" "logs/build-${feature}-${SAFE_IMAGE_NAME}.log"
+            fi
+            if [ -f "$FEATURE_EXEC_LOG" ]; then
+              cp "$FEATURE_EXEC_LOG" "logs/exec-${feature}-${SAFE_IMAGE_NAME}.log"
+            fi
+
+            # Remove the test directory
+            echo "Removing test directory: ${TEST_DIR}" | tee -a "$TEST_LOG"
+            rm -rf "${TEST_DIR}"
+
+            echo "✓ Cleanup completed for ${feature}" | tee -a "$TEST_LOG"
+            echo "::endgroup::"
+          done
+
+          echo "" | tee -a "$TEST_LOG"
+          echo "::group::Test Summary"
+          echo "==========================================" | tee -a "$TEST_LOG"
+          echo "Test Run Complete" | tee -a "$TEST_LOG"
+          echo "==========================================" | tee -a "$TEST_LOG"
+          echo "Total features tested: ${total_features}" | tee -a "$TEST_LOG"
+          echo "Passed: ${passed_features}" | tee -a "$TEST_LOG"
+          echo "Failed: ${failed_features}" | tee -a "$TEST_LOG"
+
+          # Generate summary report
+          echo "## Test Summary" >> "$SUMMARY_LOG"
+          echo "" >> "$SUMMARY_LOG"
+          echo "| Metric | Count |" >> "$SUMMARY_LOG"
+          echo "|--------|-------|" >> "$SUMMARY_LOG"
+          echo "| Total Features | ${total_features} |" >> "$SUMMARY_LOG"
+          echo "| ✅ Passed | ${passed_features} |" >> "$SUMMARY_LOG"
+          echo "| ❌ Failed | ${failed_features} |" >> "$SUMMARY_LOG"
+          echo "" >> "$SUMMARY_LOG"
+
+          if [ $failed_features -gt 0 ]; then
+            # Remove trailing comma and space from failed_feature_names
+            failed_feature_names="${failed_feature_names%, }"
+            echo "Failed features: ${failed_feature_names}" | tee -a "$TEST_LOG"
+            echo "## Failed Features" >> "$SUMMARY_LOG"
+            echo "" >> "$SUMMARY_LOG"
+            echo "${failed_feature_names}" | tr ',' '\n' | sed 's/^/- /' >> "$SUMMARY_LOG"
+            echo "" >> "$SUMMARY_LOG"
+            echo "❌ Some tests failed. Check logs for details." >> "$SUMMARY_LOG"
+            echo "::endgroup::"
+
+            # Output summary to GitHub Actions summary
+            cat "$SUMMARY_LOG" >> $GITHUB_STEP_SUMMARY
+
+            # Set output variable
+            echo "test_status=failed" >> $GITHUB_OUTPUT
+            echo "failed_count=${failed_features}" >> $GITHUB_OUTPUT
+
+            exit 1
+          else
+            echo "✅ All features tested successfully!" | tee -a "$TEST_LOG"
+            echo "✅ All tests passed!" >> "$SUMMARY_LOG"
+            echo "::endgroup::"
+
+            # Output summary to GitHub Actions summary
+            cat "$SUMMARY_LOG" >> $GITHUB_STEP_SUMMARY
+
+            # Set output variable
+            echo "test_status=success" >> $GITHUB_OUTPUT
+            echo "failed_count=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-failure-${{ steps.test-features.outputs.safe_image_name }}
+          path: |
+            logs/*.log
+          retention-days: 30
+
+      - name: Upload test logs on success
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-success-${{ steps.test-features.outputs.safe_image_name }}
+          path: |
+            logs/*.log
+          retention-days: 7
+
+      - name: Report results
+        if: always()
+        run: |
+          # Sanitize base image name for filenames
+          SAFE_IMAGE_NAME=$(echo "${{ matrix.baseImage }}" | sed 's/[\/:]/-/g')
+          TEST_LOG="logs/test-${SAFE_IMAGE_NAME}.log"
+          SUMMARY_LOG="logs/summary-${SAFE_IMAGE_NAME}.log"
+
+          echo "::group::Final Test Report"
+          echo "============================================"
+          echo "Feature testing completed for base image: ${{ matrix.baseImage }}"
+          echo "============================================"
+          echo "Job Status: ${{ job.status }}"
+          echo "Test Step Status: ${{ steps.test-features.outputs.test_status }}"
+          echo "Failed Count: ${{ steps.test-features.outputs.failed_count }}"
+          echo ""
+
+          if [ -f "$SUMMARY_LOG" ]; then
+            echo "Test Summary:"
+            echo "---"
+            cat "$SUMMARY_LOG"
+            echo "---"
+          fi
+
+          if [ -f "$TEST_LOG" ]; then
+            echo ""
+            echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ steps.test-features.outputs.safe_image_name }}"
+          fi
+          echo "::endgroup::"

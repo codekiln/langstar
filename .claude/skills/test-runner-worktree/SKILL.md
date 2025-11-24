@@ -10,7 +10,7 @@ Guide for running integration tests properly in both git worktrees and the main 
 
 ## ⚠️ CRITICAL FIRST STEP: Source Environment Variables
 
-**Before running ANY tests in a worktree, ALWAYS source environment variables:**
+**Before running ANY tests, pre-commit checks, or cargo commands in a worktree, ALWAYS source environment variables:**
 
 ```bash
 source /workspace/.devcontainer/.env
@@ -18,14 +18,28 @@ source /workspace/.devcontainer/.env
 
 **Why this matters:**
 - Integration tests require `LANGSMITH_API_KEY` and other credentials
+- **Pre-commit checks** (`cargo test`, `cargo clippy`, etc.) will fail without proper environment
 - Worktrees do NOT automatically inherit environment variables from the main workspace
 - Tests will fail with authentication errors or panics if variables are missing
 - This was the root cause of test failures in issue #232
+
+**This applies to:**
+- ✅ `cargo test` - Any test command
+- ✅ **Pre-commit checks** - The full `cargo fmt && cargo check && cargo clippy && cargo test` suite
+- ✅ `cargo clippy` - Linting may trigger tests
+- ✅ `cargo build` - Build may run build scripts that need credentials
+- ✅ Any cargo command that might run tests or build scripts
 
 **Quick Check:**
 ```bash
 # Verify environment variables are set
 [ -n "$LANGSMITH_API_KEY" ] && echo "✓ Ready to test" || echo "✗ Run: source /workspace/.devcontainer/.env"
+```
+
+**Quick Start for Pre-Commit Checks:**
+```bash
+# One command to source and run full pre-commit suite
+source /workspace/.devcontainer/.env && cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
 ```
 
 ## Overview
@@ -201,7 +215,36 @@ cargo fmt --check
 
 ## Common Mistakes to Avoid
 
-### ❌ Mistake 1: Asking User for Credentials When Already Set
+### ❌ Mistake 1: Running Pre-Commit Checks Without Sourcing Environment
+
+**Wrong approach:**
+```bash
+# Running pre-commit checks immediately in worktree without sourcing
+cd /workspace/wip/<worktree-name>
+cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
+# Tests will fail with "byte index out of bounds" or authentication errors
+```
+
+**Symptom:** Tests fail with cryptic errors like:
+- `byte index 8 is out of bounds of \`\``
+- `thread 'main' panicked at cli/src/commands/prompt.rs:183:52`
+- Authentication failures in integration tests
+
+**Correct approach:**
+```bash
+# ALWAYS source environment variables FIRST in worktrees
+cd /workspace/wip/<worktree-name>
+source /workspace/.devcontainer/.env
+cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
+```
+
+**Why this happens:**
+- Worktrees don't inherit environment variables from main workspace
+- Tests that require credentials fail without `LANGSMITH_API_KEY`
+- Some tests read empty environment variables and panic on string operations
+- This is the #1 cause of mysterious test failures in worktrees
+
+### ❌ Mistake 2: Asking User for Credentials When Already Set
 
 **Wrong approach:**
 ```bash
@@ -223,7 +266,7 @@ if [ -z "$LANGSMITH_API_KEY" ]; then
 fi
 ```
 
-### ❌ Mistake 2: Running Tests from Wrong Directory
+### ❌ Mistake 3: Running Tests from Wrong Directory
 
 **Wrong approach:**
 ```bash
@@ -241,7 +284,7 @@ cd /workspace/wip/codekiln-186-test-helpers
 cargo test --test integration_deployment_workflow -- --ignored
 ```
 
-### ❌ Mistake 3: Exposing Sensitive Environment Variables
+### ❌ Mistake 4: Exposing Sensitive Environment Variables
 
 **Wrong approach:**
 ```bash
@@ -256,7 +299,7 @@ echo "Using key: ${LANGSMITH_API_KEY}"
 [ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || echo "LANGSMITH_API_KEY not set"
 ```
 
-### ❌ Mistake 4: Not Understanding Test Context
+### ❌ Mistake 5: Not Understanding Test Context
 
 **Wrong approach:**
 ```bash
@@ -526,11 +569,16 @@ cargo test --test integration_test -- --ignored --nocapture
 ## Key Takeaways
 
 1. **ALWAYS source environment variables FIRST: `source /workspace/.devcontainer/.env`**
-2. **Always verify `pwd` before running tests**
-3. **Run tests from worktree when working on feature branch**
-4. **Never expose sensitive environment variable values**
-5. **Understand test context (main workspace vs worktree)**
+   - **This applies to ALL cargo commands in worktrees**, including pre-commit checks
+   - `cargo test`, `cargo clippy`, `cargo check`, `cargo build` may all require environment variables
+2. **Pre-commit checks MUST source environment first** - Don't run the pre-commit suite without sourcing
+3. **Always verify `pwd` before running tests** - Ensure you're in the correct worktree
+4. **Run tests from worktree when working on feature branch** - Use feature branch SDK
+5. **Never expose sensitive environment variable values** - Check without showing
+6. **Understand test context (main workspace vs worktree)** - Different SDK versions
 
-**The #1 cause of test failures in worktrees is missing environment variables.** Always source them first.
+**The #1 cause of test failures in worktrees is missing environment variables.** Always source them first, especially before running pre-commit checks.
+
+**The #1 symptom:** Cryptic panics like `byte index 8 is out of bounds of \`\`` that disappear after sourcing environment variables.
 
 These principles save time, prevent confusion, and improve security.
