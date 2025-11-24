@@ -479,10 +479,11 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **How:**
 ```bash
 # Modify the pull_request rule in the JSON:
+# Change required_approving_review_count from 1 to 2
 {
   "type": "pull_request",
   "parameters": {
-    "required_approving_review_count": 2,  # Changed from 1 to 2
+    "required_approving_review_count": 2,
     "require_code_owner_review": true,
     "dismiss_stale_reviews_on_push": false
   }
