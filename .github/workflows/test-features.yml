@@ -90,7 +90,7 @@ jobs:
 
             # Validate JSON syntax
             echo "1. Validating JSON syntax..."
-            if jq empty "$metadata_file" 2>&1; then
+            if jq empty "$metadata_file" > /dev/null 2>&1; then
               echo "✓ JSON syntax is valid"
             else
               echo "✗ JSON syntax validation failed"
