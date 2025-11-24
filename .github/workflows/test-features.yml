@@ -379,7 +379,7 @@ jobs:
             if devcontainer up \
               --workspace-folder "${TEST_DIR}" \
               --log-level trace \
-              2>&1 | tee "$FEATURE_BUILD_LOG" | tee -a "$TEST_LOG"; then
+              2>&1 | tee -a "$TEST_LOG" "$FEATURE_BUILD_LOG"; then
               echo "✓ Container build and startup successful" | tee -a "$TEST_LOG"
             else
               echo "✗ Container build/startup failed" | tee -a "$TEST_LOG"
@@ -421,7 +421,11 @@ jobs:
               echo "✗ ${feature} command verification failed" | tee -a "$TEST_LOG"
               echo "" | tee -a "$TEST_LOG"
               echo "=== Execution Log ===" | tee -a "$TEST_LOG"
-              cat "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"
+              if [ -f "$FEATURE_EXEC_LOG" ]; then
+                cat "$FEATURE_EXEC_LOG" | tee -a "$TEST_LOG"
+              else
+                echo "(Execution log not available)" | tee -a "$TEST_LOG"
+              fi
               echo "====================" | tee -a "$TEST_LOG"
 
               # Track failure
