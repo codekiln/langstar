@@ -1,6 +1,6 @@
 ---
 name: test-runner-worktree
-description: Guide for running integration tests properly in git worktrees and the main repository, with emphasis on environment variable sourcing and context awareness. Use when running tests, debugging test failures, or when users mention credentials, environment variables, worktrees, or test execution context.
+description: Run Rust cargo tests properly in git worktrees with environment variable sourcing. Use when cargo test fails, when seeing authentication errors, when test results differ between runs, or before running pre-commit checks in worktrees. Essential for integration tests requiring LANGSMITH_API_KEY or ANTHROPIC_API_KEY.
 scope: project
 ---
 
@@ -8,14 +8,34 @@ scope: project
 
 Guide for running integration tests properly in both git worktrees and the main repository, with emphasis on environment variable sourcing and working directory context.
 
+## ⚠️ CRITICAL FIRST STEP: Source Environment Variables
+
+**Before running ANY tests in a worktree, ALWAYS source environment variables:**
+
+```bash
+source /workspace/.devcontainer/.env
+```
+
+**Why this matters:**
+- Integration tests require `LANGSMITH_API_KEY`, `ANTHROPIC_API_KEY`, and other credentials
+- Worktrees do NOT automatically inherit environment variables from the main workspace
+- Tests will fail with authentication errors or panics if variables are missing
+- This was the root cause of test failures in issue #232
+
+**Quick Check:**
+```bash
+# Verify environment variables are set
+[ -n "$LANGSMITH_API_KEY" ] && echo "✓ Ready to test" || echo "✗ Run: source /workspace/.devcontainer/.env"
+```
+
 ## Overview
 
 During development in git worktrees, running tests requires careful attention to:
-1. **Environment variables** - Credentials may already be loaded from devcontainer
+1. **Environment variables** - MUST be sourced from `/workspace/.devcontainer/.env` before testing
 2. **Working directory** - Tests may behave differently in main vs worktree due to SDK version differences
 3. **Context awareness** - Understanding whether you're in main workspace or a feature branch worktree
 
-This skill codifies the lessons learned from issue #186 to prevent future confusion and wasted time.
+This skill codifies the lessons learned from issues #186 and #232 to prevent future confusion and wasted time.
 
 ## Key Principles
 
@@ -106,18 +126,15 @@ When working on a feature branch in a worktree, always run tests from the worktr
 # Step 1: Navigate to worktree
 cd /workspace/wip/<worktree-name>
 
-# Step 2: Verify you're in the correct location
+# Step 2: Source environment variables (CRITICAL - do this first!)
+source /workspace/.devcontainer/.env
+
+# Step 3: Verify you're in the correct location
 pwd
 # Should output: /workspace/wip/<worktree-name>
 
-# Step 3: Check environment variables (without exposing them)
-[ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || echo "LANGSMITH_API_KEY not set"
-
-# Step 4: Source devcontainer .env if needed
-if [ -z "$LANGSMITH_API_KEY" ]; then
-  source /workspace/.devcontainer/.env
-  echo "Sourced environment from /workspace/.devcontainer/.env"
-fi
+# Step 4: Verify environment variables are loaded
+[ -n "$LANGSMITH_API_KEY" ] && echo "✓ LANGSMITH_API_KEY is set" || echo "✗ LANGSMITH_API_KEY not set"
 
 # Step 5: Run tests
 # For unit tests (no API)
@@ -165,6 +182,9 @@ Before committing, run all checks from the worktree.
 ```bash
 # From worktree directory
 cd /workspace/wip/<worktree-name>
+
+# CRITICAL: Source environment variables first!
+source /workspace/.devcontainer/.env
 
 # Run pre-commit checklist
 cargo fmt
@@ -291,11 +311,11 @@ fi
 # Navigate to worktree
 cd /workspace/wip/<worktree-name>
 
+# Source environment (ALWAYS do this first!)
+source /workspace/.devcontainer/.env
+
 # Verify location
 pwd
-
-# Check environment
-[ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || source /workspace/.devcontainer/.env
 
 # Run specific test
 cargo test --test <test_file> <test_name> -- --ignored --nocapture
@@ -307,8 +327,8 @@ cargo test --test <test_file> <test_name> -- --ignored --nocapture
 # Navigate to worktree
 cd /workspace/wip/<worktree-name>
 
-# Check environment
-[ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || source /workspace/.devcontainer/.env
+# Source environment (ALWAYS do this first!)
+source /workspace/.devcontainer/.env
 
 # Run all integration tests (fast ones)
 cargo test --test integration_deployment_workflow test_list_ -- --ignored --nocapture
@@ -320,8 +340,8 @@ cargo test --test integration_deployment_workflow test_list_ -- --ignored --noca
 # Navigate to worktree
 cd /workspace/wip/<worktree-name>
 
-# Check environment
-[ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || source /workspace/.devcontainer/.env
+# Source environment (ALWAYS do this first!)
+source /workspace/.devcontainer/.env
 
 # Run test in background
 cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture > test_output.log 2>&1 &
@@ -482,14 +502,14 @@ cd /workspace/wip/<worktree-name> && [ -n "$LANGSMITH_API_KEY" ] || source /work
 ### Complete Test Flow
 
 ```bash
-# 1. Verify location
-pwd
-
-# 2. Navigate to worktree if needed
+# 1. Navigate to worktree
 cd /workspace/wip/<worktree-name>
 
-# 3. Check and source environment
-[ -n "$LANGSMITH_API_KEY" ] || source /workspace/.devcontainer/.env
+# 2. Source environment variables (CRITICAL FIRST STEP!)
+source /workspace/.devcontainer/.env
+
+# 3. Verify location
+pwd
 
 # 4. Run tests
 cargo test --test integration_test -- --ignored --nocapture
@@ -497,17 +517,20 @@ cargo test --test integration_test -- --ignored --nocapture
 
 ## Related Documentation
 
-- **Issue #186** - Where these patterns were discovered
+- **Issue #186** - Where environment sourcing patterns were discovered
+- **Issue #232** - Where test failures led to skill improvements
 - **git-worktrees skill** - For creating and managing worktrees
 - **Pre-Commit Checklist** - `@docs/dev/README.md` "Pre-Commit Checklist" section
 - **GitHub Workflow** - `@docs/dev/github-workflow.md`
 
 ## Key Takeaways
 
-1. **Always check environment variables before asking user**
+1. **ALWAYS source environment variables FIRST: `source /workspace/.devcontainer/.env`**
 2. **Always verify `pwd` before running tests**
 3. **Run tests from worktree when working on feature branch**
 4. **Never expose sensitive environment variable values**
 5. **Understand test context (main workspace vs worktree)**
+
+**The #1 cause of test failures in worktrees is missing environment variables.** Always source them first.
 
 These principles save time, prevent confusion, and improve security.
