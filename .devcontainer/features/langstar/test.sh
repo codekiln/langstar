@@ -61,6 +61,10 @@ if [ -n "${VERSION}" ] && [ "${VERSION}" != "latest" ]; then
     requested_version="${VERSION#v}"
     installed_version="${installed_version#v}"
 
+    if [ -z "${installed_version}" ]; then
+        echo "✗ FAILED: Could not parse version from output: ${version_output}"
+        exit 1
+    fi
     if [ "${installed_version}" = "${requested_version}" ]; then
         echo "✓ Installed version matches requested version"
         echo "  Requested: ${requested_version}"
