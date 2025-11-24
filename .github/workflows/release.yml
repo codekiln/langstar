@@ -81,7 +81,7 @@ jobs:
 
           if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
             echo "❌ Version mismatch detected!" >&2
-            echo "   Tag version:        v$TAG_VERSION" >&2
+            echo "   Tag version:        $TAG_VERSION" >&2
             echo "   Cargo.toml version: $CARGO_VERSION" >&2
             echo "" >&2
             echo "This usually means the prepare-release workflow was not used," >&2
