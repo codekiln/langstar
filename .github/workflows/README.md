@@ -9,6 +9,128 @@ This directory contains GitHub Actions workflows for CI/CD automation.
 - **auto-tag-release.yml** - Automatic git tag creation on release PR merge
 - **release.yml** - Build and publish release artifacts
 
+## Release Workflow: Draft Releases
+
+### Overview
+
+The release workflow creates **draft releases** to enable human review before publishing. This follows the ripgrep pattern and prevents accidental publication of problematic releases.
+
+### Complete Release Flow
+
+```
+1. Developer clicks "Prepare Release" → PR created automatically
+   ↓
+2. CI checks enforced by branch protection
+   ↓
+3. Developer reviews and merges PR → auto-tag-release creates git tag
+   ↓
+4. Tag triggers release.yml with version validation
+   ↓
+5. Build artifacts and create DRAFT release
+   ↓
+6. Developer reviews draft and clicks "Publish" ✅
+```
+
+### Version Validation (Implemented in Issue #232)
+
+Before creating a release, the workflow validates that the git tag matches `Cargo.toml` version:
+
+**Location**: `release.yml` lines 77-92
+
+```yaml
+- name: Validate tag matches Cargo.toml version
+  run: |
+    TAG_VERSION="${{ steps.get_version.outputs.version }}"
+    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | cut -d'"' -f2)
+
+    if [ "$TAG_VERSION" != "$CARGO_VERSION" ]; then
+      echo "❌ Version mismatch detected!" >&2
+      # ... error details ...
+      exit 1
+    fi
+
+    echo "✅ Version validation passed: $TAG_VERSION"
+```
+
+**Why this matters**: Prevents publishing releases with mismatched versions (learned from PR #239). If the tag is v0.4.3 but Cargo.toml says v0.4.4, the workflow fails with a clear error.
+
+### Draft Release Process
+
+**Why drafts?**
+- Review artifacts before making them public
+- Fix issues without embarrassing re-releases
+- Verify checksums and download links
+- Test installation before announcement
+
+**Location**: `release.yml` line 115 (`draft: true`)
+
+### How to Review and Publish a Draft Release
+
+1. **After PR merge**, the release workflow runs automatically
+2. **Check GitHub releases page**: https://github.com/codekiln/langstar/releases
+3. **Find the draft release** (will have "Draft" badge)
+4. **Review the release**:
+   - [ ] Changelog is accurate
+   - [ ] All artifacts uploaded (3 .tar.gz + 3 .sha256 files)
+   - [ ] SHA256 checksums present
+   - [ ] Version number correct
+5. **Test installation** (optional but recommended):
+   ```bash
+   # Download artifact from draft
+   # Verify SHA256
+   # Test binary works
+   ```
+6. **Click "Publish release"** when satisfied
+7. **Release becomes public** and appears on releases page
+
+### What Gets Built
+
+For each release, the workflow builds:
+
+| Platform | Target | Artifact Format |
+|----------|--------|----------------|
+| Linux x86_64 | `x86_64-unknown-linux-musl` | .tar.gz + .sha256 |
+| Linux ARM64 | `aarch64-unknown-linux-musl` | .tar.gz + .sha256 |
+| macOS ARM64 | `aarch64-apple-darwin` | .tar.gz + .sha256 |
+
+**Total**: 6 files (3 archives + 3 checksums)
+
+### Troubleshooting
+
+#### Version Mismatch Error
+
+**Symptom**: Release workflow fails with "Version mismatch detected!"
+
+**Cause**: Git tag version doesn't match `Cargo.toml` version
+
+**Solution**:
+```bash
+# Delete the incorrect tag
+git push --delete origin vX.Y.Z
+git tag -d vX.Y.Z
+
+# Fix Cargo.toml version OR create correct tag
+# If using prepare-release workflow, it should handle this automatically
+```
+
+#### Draft Release Not Appearing
+
+**Symptom**: Workflow runs but no draft release visible
+
+**Possible causes**:
+1. Workflow failed - Check Actions logs
+2. Permission issues - Verify GITHUB_TOKEN has write permissions
+3. Tag format incorrect - Must be `v*` (e.g., `v0.4.3`, not `0.4.3`)
+
+#### Artifacts Not Uploading
+
+**Symptom**: Draft release exists but no artifacts attached
+
+**Check**:
+1. Build jobs completed successfully - View workflow run
+2. Matrix builds ran for all platforms - Check job logs
+3. Upload step succeeded - Look for errors in "Upload release asset" steps
+
 ## Critical: The "All Jobs" Aggregation Gate
 
 ### What is it?
