@@ -5,6 +5,162 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-11-24
+
+### ✨ Features
+
+- ✨ feat: add pre-release validation tests to release workflow (#268)
+
+Add comprehensive pre-release validation job that runs full lifecycle
+deployment test before creating releases. This quality gate ensures
+the complete deployment workflow (create, update, delete) works
+correctly before publishing releases.
+
+Changes:
+- Add pre-release-validation job to release.yml
+- Run test_deployment_workflow_full_lifecycle before release creation
+- Configure 45-minute timeout (test takes ~20-30 minutes)
+- Require LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID secrets
+- Block release if validation fails
+- Update CI/CD documentation with new workflow step
+
+The test validates:
+- Creating fresh deployment with unique name
+- Waiting for deployment to be READY
+- Patching deployment (triggers new revision)
+- Waiting for new revision to be DEPLOYED
+- Deleting deployment (cleanup via DeploymentGuard)
+
+Fixes #207
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(install): redirect output functions to stderr to prevent command substitution capture (#265)
+
+## Problem
+When using the installer with automatic version detection (no --version flag), the
+info() messages were being captured in command substitutions, corrupting the version
+string and causing URL construction to fail.
+
+Example error:
+```
+https://github.com/codekiln/langstar/releases/download/v[INFO] Fetching latest version...
+0.4.3/langstar-[INFO] Fetching latest version...
+0.4.3-aarch64-linux-musl.tar.gz
+```
+
+## Solution
+Redirect info(), warn(), and success() functions to stderr (>&2) to match error()
+function behavior. This prevents their output from being captured when the function
+is called within a command substitution like $(get_latest_version).
+
+## Changes
+- scripts/install.sh: Redirect info(), warn(), success() to stderr
+- scripts/install.sh: Update usage comment to use bash instead of sh (script requires bash syntax)
+- README.md: Update install command to use bash instead of sh
+- README.md: Update example version from 0.2.0 to 0.4.3
+- README.md: Add aarch64 to supported Linux architectures
+
+## Testing
+Tested on Linux aarch64:
+- ✅ Default install (latest version with automatic detection)
+- ✅ Version-specific install (--version 0.4.3)
+- ✅ Custom prefix install (--prefix)
+- ✅ Checksum validation
+- ✅ Binary functionality verification
+- ✅ One-line curl | bash install
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add manual version bump requirements and lessons learned (#256)
+
+* 📚 docs: add manual version bump requirements and lessons learned
+
+Documents critical lessons from v0.4.3 version bump (#243):
+
+1. PR title must start with 🔖 release: for auto-tag-release trigger
+2. CHANGELOG.md must be updated with git-cliff (no version bumps without changelog)
+3. Manual tag creation recovery if auto-tag-release doesn't trigger
+
+These lessons prevent future mistakes when manually bumping versions outside
+the prepare-release workflow.
+
+Fixes #255
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(docs): move detailed procedures out of README to reduce context
+
+- Created docs/dev/procedures.md for detailed step-by-step procedures
+- Reduced README.md from ~413 lines to 177 lines (~236 line reduction)
+- Moved "Working with Phased/Sub-Task Issues" details to procedures.md
+- Moved "Pre-Commit Checklist" details to procedures.md
+- Kept high-level summaries in README with links to procedures.md
+
+This reduces Claude's context load by ~236 lines while maintaining
+accessibility through markdown links.
+
+Fixes #255
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: analyze CI testing patterns for devcontainer features (#257)
+
+* 📚 docs: analyze CI testing patterns for devcontainer features
+
+Complete analysis of devcontainers/features and devcontainers/templates
+repositories to inform implementation of automated CI testing for langstar.
+
+Key deliverables:
+- Detailed analysis of devcontainers/features CI workflows
+- Comparison of features vs templates testing approaches
+- 3-phase implementation plan with ready-to-use workflow files
+- Test script templates and success criteria
+
+Fixes #246
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update reference/repo/devcontainers/templates/notes/README.md
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs: add epic and sub-issue naming conventions (#259)
+
+Documents hierarchical naming convention for multi-phase features:
+- Three-level hierarchy (Epic → Phase → Task)
+- Naming format: {parent}.{sequence}-{slug} {description}
+- Milestone requirement for all levels
+- Reference to gh-sub-issue skill for establishing relationships
+- Complete example from devcontainer-feature epic (#201)
+
+Fixes #258
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.4.3] - 2025-11-22
 
 ### 🔧 Build System
