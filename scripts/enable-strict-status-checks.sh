@@ -54,26 +54,30 @@ echo ""
 # Fetch current ruleset
 echo "→ Fetching current ruleset..."
 TEMP_RULESET=$(mktemp)
-if ! gh api "repos/${REPO}/rulesets/${RULESET_ID}" > "$TEMP_RULESET" 2>/dev/null; then
+TEMP_FETCH_ERROR=$(mktemp)
+if ! gh api "repos/${REPO}/rulesets/${RULESET_ID}" > "$TEMP_RULESET" 2> "$TEMP_FETCH_ERROR"; then
     echo "❌ Error: Failed to fetch ruleset"
+    echo "   Details:"
+    cat "$TEMP_FETCH_ERROR"
     echo "   Make sure you have 'Administration' permissions for the repository"
-    rm -f "$TEMP_RULESET"
+    rm -f "$TEMP_RULESET" "$TEMP_FETCH_ERROR"
     exit 1
 fi
+rm -f "$TEMP_FETCH_ERROR"
 echo "✓ Ruleset fetched"
 echo ""
 
 # Check current strict mode setting
-CURRENT_STRICT=$(cat "$TEMP_RULESET" | jq -r '
+CURRENT_STRICT=$(jq -r '
   .rules[] | select(.type == "required_status_checks") | .parameters.strict_required_status_checks_policy
-')
+' "$TEMP_RULESET")
 
 echo "Current strict mode setting: ${CURRENT_STRICT}"
 echo ""
 
-# Clean up temporary file
-rm -f "$TEMP_RULESET"
 if [ "${CURRENT_STRICT}" == "true" ]; then
+    # Clean up temporary file
+    rm -f "$TEMP_RULESET"
     echo "✓ Strict mode is already enabled!"
     echo "  No changes needed."
     exit 0
@@ -82,7 +86,8 @@ fi
 echo "→ Preparing update payload..."
 
 # Prepare update payload (keep only updatable fields)
-cat /tmp/main-ruleset.json | jq '{
+TEMP_UPDATED=$(mktemp)
+jq '{
   name: .name,
   target: .target,
   enforcement: .enforcement,
@@ -94,7 +99,10 @@ cat /tmp/main-ruleset.json | jq '{
     else .
     end
   ))
-}' > /tmp/updated-main-ruleset.json
+}' "$TEMP_RULESET" > "$TEMP_UPDATED"
+
+# Clean up the original temp file now that we've processed it
+rm -f "$TEMP_RULESET"
 
 echo "✓ Update payload prepared"
 echo ""
@@ -106,21 +114,29 @@ echo ""
 
 # Apply the update
 echo "→ Applying update..."
+TEMP_RESULT=$(mktemp)
+TEMP_ERROR=$(mktemp)
 if ! gh api -X PUT "repos/${REPO}/rulesets/${RULESET_ID}" \
-  --input /tmp/updated-main-ruleset.json > /tmp/update-result.json 2>/dev/null; then
+  --input "$TEMP_UPDATED" > "$TEMP_RESULT" 2> "$TEMP_ERROR"; then
     echo "❌ Error: Failed to update ruleset"
+    echo "   Details:"
+    cat "$TEMP_ERROR"
     echo "   Make sure you have 'Administration' permissions for the repository"
+    rm -f "$TEMP_UPDATED" "$TEMP_RESULT" "$TEMP_ERROR"
     exit 1
 fi
+
+# Clean up temp files
+rm -f "$TEMP_UPDATED" "$TEMP_ERROR"
 
 echo "✓ Update applied successfully!"
 echo ""
 
 # Verify the change
 echo "→ Verifying update..."
-UPDATED_STRICT=$(cat /tmp/update-result.json | jq -r '
+UPDATED_STRICT=$(jq -r '
   .rules[] | select(.type == "required_status_checks") | .parameters.strict_required_status_checks_policy
-')
+' "$TEMP_RESULT")
 
 if [ "${UPDATED_STRICT}" == "true" ]; then
     echo "✓ Verification successful!"
@@ -137,11 +153,12 @@ if [ "${UPDATED_STRICT}" == "true" ]; then
     echo "View ruleset in GitHub:"
     echo "  https://github.com/${REPO}/rules/${RULESET_ID}"
     echo ""
+    # Clean up temp file
+    rm -f "$TEMP_RESULT"
 else
     echo "❌ Error: Verification failed"
     echo "   Expected strict mode to be true, but got: ${UPDATED_STRICT}"
+    # Clean up temp file
+    rm -f "$TEMP_RESULT"
     exit 1
 fi
-
-# Cleanup
-rm -f /tmp/main-ruleset.json /tmp/updated-main-ruleset.json /tmp/update-result.json
