@@ -18,8 +18,182 @@ env:
   FEATURE_BASE_PATH: '.devcontainer/features'
 
 jobs:
+  validate-metadata:
+    name: Validate Feature Metadata
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Verify Dev Container CLI installation
+        run: |
+          echo "Dev Container CLI version:"
+          devcontainer --version
+
+      - name: Install jq for JSON validation
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Validate feature metadata
+        run: |
+          echo "=========================================="
+          echo "Validating Feature Metadata"
+          echo "=========================================="
+          echo ""
+
+          # Check if features directory exists
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
+
+          # Find all features
+          features=$(find "${{ env.FEATURE_BASE_PATH }}" -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+
+          echo "Features found:"
+          echo "$features"
+          echo ""
+
+          # Track validation failures
+          failed_features=""
+
+          # Validate each feature
+          for feature in $features; do
+            echo "=========================================="
+            echo "Validating feature: ${feature}"
+            echo "=========================================="
+
+            feature_path="${{ env.FEATURE_BASE_PATH }}/${feature}"
+            metadata_file="${feature_path}/devcontainer-feature.json"
+
+            # Check if metadata file exists
+            if [ ! -f "$metadata_file" ]; then
+              echo "✗ Error: Metadata file not found: $metadata_file"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+
+            echo "Found metadata file: $metadata_file"
+            echo ""
+
+            # Validate JSON syntax
+            echo "1. Validating JSON syntax..."
+            if jq empty "$metadata_file" > /dev/null 2>&1; then
+              echo "✓ JSON syntax is valid"
+            else
+              echo "✗ JSON syntax validation failed"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+            echo ""
+
+            # Validate required fields
+            echo "2. Checking required fields..."
+            required_fields=("id" "version" "name" "description")
+            missing_fields=""
+
+            for field in "${required_fields[@]}"; do
+              value=$(jq -r ".${field} // empty" "$metadata_file")
+              if [ -z "$value" ] || [ "$value" = "null" ]; then
+                echo "✗ Missing required field: ${field}"
+                missing_fields="${missing_fields}${field} "
+              else
+                echo "✓ Field '${field}': ${value}"
+              fi
+            done
+
+            if [ -n "$missing_fields" ]; then
+              echo "✗ Missing required fields: ${missing_fields}"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+            echo ""
+
+            # Validate option definitions (if options exist)
+            echo "3. Validating option definitions..."
+            options=$(jq -r '.options // empty' "$metadata_file")
+            if [ -n "$options" ] && [ "$options" != "null" ]; then
+              # Check that each option has required properties
+              option_count=$(jq '.options | length' "$metadata_file")
+              echo "Found ${option_count} option(s)"
+
+              # Track if any option validation fails
+              option_validation_failed=false
+
+              option_keys=$(jq -r '.options | keys[]' "$metadata_file")
+              for option_key in $option_keys; do
+                # Check for required option properties: type, description
+                option_type=$(jq -r ".options[\"${option_key}\"].type // empty" "$metadata_file")
+                option_desc=$(jq -r ".options[\"${option_key}\"].description // empty" "$metadata_file")
+
+                if [ -z "$option_type" ]; then
+                  echo "✗ Option '${option_key}' missing 'type' field"
+                  option_validation_failed=true
+                else
+                  echo "✓ Option '${option_key}' has type: ${option_type}"
+                fi
+
+                if [ -z "$option_desc" ]; then
+                  echo "✗ Option '${option_key}' missing 'description' field"
+                  option_validation_failed=true
+                else
+                  echo "✓ Option '${option_key}' has description"
+                fi
+              done
+
+              # Add to failed features only once if any option validation failed
+              if [ "$option_validation_failed" = true ]; then
+                failed_features="${failed_features}${feature} "
+              fi
+            else
+              echo "No options defined (optional)"
+            fi
+            echo ""
+
+            # Run Dev Container CLI validation
+            echo "4. Running Dev Container CLI validation..."
+            if devcontainer features validate "$feature_path" > /dev/null 2>&1; then
+              echo "✓ Dev Container CLI validation passed"
+            else
+              echo "✗ Dev Container CLI validation failed"
+              failed_features="${failed_features}${feature} "
+              continue
+            fi
+            echo ""
+
+            echo "✓ Feature '${feature}' passed all validation checks"
+            echo ""
+          done
+
+          # Report results
+          echo "=========================================="
+          echo "Validation Summary"
+          echo "=========================================="
+          if [ -n "$failed_features" ]; then
+            echo "✗ The following features failed validation:"
+            for failed in $failed_features; do
+              echo "  - ${failed}"
+            done
+            exit 1
+          else
+            echo "✓ All features passed validation"
+          fi
+
   test-features:
     name: Test Features (${{ matrix.baseImage }})
+    needs: validate-metadata
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
