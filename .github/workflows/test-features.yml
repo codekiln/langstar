@@ -129,6 +129,9 @@ jobs:
               option_count=$(jq '.options | length' "$metadata_file")
               echo "Found ${option_count} option(s)"
 
+              # Track if any option validation fails
+              option_validation_failed=false
+
               option_keys=$(jq -r '.options | keys[]' "$metadata_file")
               for option_key in $option_keys; do
                 # Check for required option properties: type, description
@@ -137,18 +140,23 @@ jobs:
 
                 if [ -z "$option_type" ]; then
                   echo "✗ Option '${option_key}' missing 'type' field"
-                  failed_features="${failed_features}${feature} "
+                  option_validation_failed=true
                 else
                   echo "✓ Option '${option_key}' has type: ${option_type}"
                 fi
 
                 if [ -z "$option_desc" ]; then
                   echo "✗ Option '${option_key}' missing 'description' field"
-                  failed_features="${failed_features}${feature} "
+                  option_validation_failed=true
                 else
                   echo "✓ Option '${option_key}' has description"
                 fi
               done
+
+              # Add to failed features only once if any option validation failed
+              if [ "$option_validation_failed" = true ]; then
+                failed_features="${failed_features}${feature} "
+              fi
             else
               echo "No options defined (optional)"
             fi
