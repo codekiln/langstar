@@ -134,8 +134,8 @@ impl TestDeployment {
             Some(arr) => arr,
             None => {
                 eprintln!(
-                    "⚠️  Warning: JSON response missing 'resources' array.\nJSON: {}",
-                    json
+                    "⚠️  Warning: JSON response missing 'resources' array.\nJSON keys: {:?}",
+                    json.as_object().map(|obj| obj.keys().collect::<Vec<_>>())
                 );
                 return None;
             }
@@ -152,8 +152,10 @@ impl TestDeployment {
             Some(id) => id.to_string(),
             None => {
                 eprintln!(
-                    "⚠️  Warning: Deployment missing 'id' field.\nDeployment: {}",
+                    "⚠️  Warning: Deployment missing 'id' field.\nAvailable fields: {:?}",
                     deployment
+                        .as_object()
+                        .map(|obj| obj.keys().collect::<Vec<_>>())
                 );
                 return None;
             }
@@ -163,8 +165,10 @@ impl TestDeployment {
             Some(name) => name.to_string(),
             None => {
                 eprintln!(
-                    "⚠️  Warning: Deployment missing 'name' field.\nDeployment: {}",
+                    "⚠️  Warning: Deployment missing 'name' field.\nAvailable fields: {:?}",
                     deployment
+                        .as_object()
+                        .map(|obj| obj.keys().collect::<Vec<_>>())
                 );
                 return None;
             }
