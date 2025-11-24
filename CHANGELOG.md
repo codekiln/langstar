@@ -5,6 +5,134 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-11-24
+
+### ✨ Features
+
+- ✨ feat(release): complete automated release PR generation pipeline (#264)
+
+* ✨ feat(release): add version validation and draft releases (#262)
+
+* ✨ feat(release): add version validation and draft releases
+
+Implements Phase 3 (final phase) of automated release pipeline (#199).
+
+## Changes
+
+### Version Validation (release.yml:77-92)
+- Validates git tag matches Cargo.toml version before creating release
+- Fails fast with clear error message if mismatch detected
+- Prevents confusing releases (learned from PR #239)
+- Pattern from ripgrep's battle-tested release workflow
+
+### Draft Releases (release.yml:115)
+- Changed `draft: false` to `draft: true`
+- Enables human review before publishing releases
+- Allows artifact verification and testing before public release
+- Two-phase release: create → build → review → publish
+
+### Documentation (.github/workflows/README.md)
+- Added "Release Workflow: Draft Releases" section
+- Documents complete release flow from PR to published release
+- Explains version validation and troubleshooting
+- Includes draft release review and publishing procedure
+
+## Testing
+
+All tests pass with proper environment sourcing:
+- cargo fmt: ✓
+- cargo check --workspace --all-features: ✓
+- cargo clippy --workspace --all-features: ✓
+- cargo test --workspace --all-features: ✓
+
+Note: Required sourcing /workspace/.devcontainer/.env for integration tests
+(per test-runner-worktree skill guidance)
+
+## References
+
+- Research: reference/research/228-rust-cli-release-patterns-synthesis.md
+- Parent: #199 (workflow_dispatch for automated release PRs)
+- Epic: #195 (CI-driven release management)
+
+Fixes #232
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(skill): emphasize environment sourcing in test-runner-worktree
+
+Updates test-runner-worktree skill to prevent test failures from missing
+environment variables in worktrees.
+
+## Changes
+
+### Updated Description (YAML frontmatter)
+- More specific trigger terms: "cargo test fails", "authentication errors"
+- Explicitly mentions LANGSMITH_API_KEY and ANTHROPIC_API_KEY requirements
+- Better matches when Claude should activate this skill
+
+### Added Critical First Step Section
+- Prominent warning at the top of the skill
+- Clear command: `source /workspace/.devcontainer/.env`
+- Explains why this is necessary (worktrees don't inherit env vars)
+- References issue #232 where missing env vars caused test failures
+
+### Updated All Workflows and Templates
+- Workflow 1 (Run Tests in Worktree): Sources env vars as step 2
+- Workflow 3 (Pre-Commit Testing): Added env sourcing before tests
+- Template 1-3: All include `source /workspace/.devcontainer/.env` first
+- Complete Test Flow: Env sourcing is step 2 (after cd)
+
+### Enhanced Key Takeaways
+- #1 takeaway now emphasizes environment sourcing FIRST
+- Added note: "The #1 cause of test failures in worktrees is missing
+  environment variables"
+- References both issue #186 (original) and #232 (recent failure)
+
+## Why This Matters
+
+In issue #232, tests failed with authentication errors and panics due to
+missing environment variables. The skill documentation didn't make this
+critical step prominent enough. These changes ensure:
+
+1. Claude activates this skill when seeing test failures
+2. The first thing Claude does is source environment variables
+3. All workflow examples include env sourcing as a critical first step
+
+## Best Practices Followed
+
+Per https://code.claude.com/docs/en/skills.md:
+- ✅ Specific description with trigger terms users would mention
+- ✅ Focused on single capability (test running in worktrees)
+- ✅ Clear, actionable instructions
+- ✅ Tested against actual failure scenario (issue #232)
+
+Related: #232
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .claude/skills/test-runner-worktree/SKILL.md
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+* fix: Update .github/workflows/release.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/release.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 ## [0.5.0] - 2025-11-24
 
 ### ✨ Features
