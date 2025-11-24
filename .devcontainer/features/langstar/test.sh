@@ -42,7 +42,7 @@ if langstar --help &> /dev/null; then
     # Show first few lines of help output for verification
     help_preview=$(langstar --help 2>&1 | head -n 3)
     echo "  Preview:"
-    echo "    ${help_preview//$'\n'/$'\n    '}"
+    echo "${help_preview}" | sed 's/^/    /'
 else
     echo "✗ FAILED: langstar --help command failed"
     echo "  Expected: langstar --help should display help information"
