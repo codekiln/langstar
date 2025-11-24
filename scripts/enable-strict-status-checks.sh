@@ -14,11 +14,17 @@
 
 set -euo pipefail
 
-# Configuration
-REPO="codekiln/langstar"
-RULESET_ID="9196293"  # "main" ruleset
-RULESET_NAME="main"
+# Configuration: Accept as command-line arguments, with defaults
+REPO="${1:-codekiln/langstar}"
+RULESET_ID="${2:-9196293}"
+RULESET_NAME="${3:-main}"
 
+# Validate arguments
+if [[ -z "$REPO" || -z "$RULESET_ID" || -z "$RULESET_NAME" ]]; then
+    echo "Usage: $0 [REPO] [RULESET_ID] [RULESET_NAME]"
+    echo "Example: $0 codekiln/langstar 9196293 main"
+    exit 1
+fi
 echo "================================================"
 echo "Enable Strict Status Checks for ${RULESET_NAME} Ruleset"
 echo "================================================"
