@@ -72,7 +72,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
-      # Validate tag matches Cargo.toml version (ripgrep pattern)
+      # Validate tag matches Cargo.toml version
       # Prevents publishing releases with mismatched versions (learned from PR #239)
       - name: Validate tag matches Cargo.toml version
         run: |
