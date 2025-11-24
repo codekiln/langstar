@@ -286,6 +286,9 @@ jobs:
           # Sanitize base image name for use in filenames (replace / and : with -)
           SAFE_IMAGE_NAME=$(echo "${{ matrix.baseImage }}" | sed 's/[\/:]/-/g')
 
+          # Export as step output for use in artifact upload
+          echo "safe_image_name=${SAFE_IMAGE_NAME}" >> $GITHUB_OUTPUT
+
           # Define log file paths
           TEST_LOG="logs/test-${SAFE_IMAGE_NAME}.log"
           SUMMARY_LOG="logs/summary-${SAFE_IMAGE_NAME}.log"
@@ -527,7 +530,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-failure-${{ matrix.baseImage }}
+          name: test-logs-failure-${{ steps.test-features.outputs.safe_image_name }}
           path: |
             logs/*.log
           retention-days: 30
@@ -536,7 +539,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: test-logs-success-${{ matrix.baseImage }}
+          name: test-logs-success-${{ steps.test-features.outputs.safe_image_name }}
           path: |
             logs/*.log
           retention-days: 7
@@ -567,6 +570,6 @@ jobs:
 
           if [ -f "$TEST_LOG" ]; then
             echo ""
-            echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ matrix.baseImage }}"
+            echo "Full test log available in artifacts: test-logs-${{ steps.test-features.outputs.test_status }}-${{ steps.test-features.outputs.safe_image_name }}"
           fi
           echo "::endgroup::"
