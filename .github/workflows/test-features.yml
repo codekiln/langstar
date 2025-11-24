@@ -132,8 +132,8 @@ jobs:
               option_keys=$(jq -r '.options | keys[]' "$metadata_file")
               for option_key in $option_keys; do
                 # Check for required option properties: type, description
-                option_type=$(jq -r ".options.${option_key}.type // empty" "$metadata_file")
-                option_desc=$(jq -r ".options.${option_key}.description // empty" "$metadata_file")
+                option_type=$(jq -r ".options[\"${option_key}\"].type // empty" "$metadata_file")
+                option_desc=$(jq -r ".options[\"${option_key}\"].description // empty" "$metadata_file")
 
                 if [ -z "$option_type" ]; then
                   echo "✗ Option '${option_key}' missing 'type' field"
