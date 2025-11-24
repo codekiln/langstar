@@ -1,0 +1,95 @@
+name: Test DevContainer Features
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.devcontainer/features/**'
+  push:
+    tags:
+      - 'v*'  # Test when binary releases happen
+  pull_request:
+    paths:
+      - '.devcontainer/features/**'
+  workflow_dispatch:  # Allow manual testing
+
+env:
+  # Feature configuration
+  FEATURE_BASE_PATH: '.devcontainer/features'
+
+jobs:
+  test-features:
+    name: Test Features (${{ matrix.baseImage }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        baseImage:
+          - 'mcr.microsoft.com/devcontainers/base:ubuntu-22.04'
+          - 'mcr.microsoft.com/devcontainers/base:ubuntu-24.04'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dev Container CLI
+        run: npm install -g @devcontainers/cli
+
+      - name: Verify Dev Container CLI installation
+        run: |
+          echo "Dev Container CLI version:"
+          devcontainer --version
+
+      - name: List features to test
+        id: list-features
+        run: |
+          echo "Discovering features in ${{ env.FEATURE_BASE_PATH }}..."
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
+          features=$(find ${{ env.FEATURE_BASE_PATH }} -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
+          echo "Features found:"
+          echo "$features"
+          # Note: The 'features' output is not used by subsequent steps in this scaffolding workflow.
+          # Future PRs will reference this output (see #248, #250, #251).
+          echo "features<<EOF" >> $GITHUB_OUTPUT
+          echo "$features" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Test feature installation
+        run: |
+          echo "Testing features on base image: ${{ matrix.baseImage }}"
+          echo "============================================"
+
+          # TODO: Implement feature testing with Dev Container CLI
+          # This is the foundational workflow structure
+          # Subsequent tasks will add:
+          # - Dev Container CLI-based feature installation testing (#248)
+          # - Smoke tests to verify langstar command (#250)
+          # - Feature metadata linting (#251)
+
+          echo "⚠️  Feature testing implementation pending"
+          echo "This workflow establishes the CI structure."
+          echo "Follow-up tasks will implement actual tests."
+          echo ""
+          echo "Next steps (from parent issue #240):"
+          echo "- #248: Implement Dev Container CLI testing"
+          echo "- #249: Add OS distribution matrix testing"
+          echo "- #250: Create automated smoke tests"
+          echo "- #251: Add feature metadata linting"
+
+      - name: Report results
+        if: always()
+        run: |
+          echo "Feature testing completed for base image: ${{ matrix.baseImage }}"
+          echo "Status: ${{ job.status }}"
