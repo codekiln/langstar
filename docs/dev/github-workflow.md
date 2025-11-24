@@ -48,6 +48,64 @@ Implement user authentication using JWT tokens
 - Protected routes require valid JWT token
 ```
 
+### Epic and Sub-Issue Naming Conventions
+
+For complex, multi-phase features, this project uses a hierarchical naming convention for issues. This helps maintain clear relationships between parent and child issues.
+
+**See [Issue #258](https://github.com/codekiln/langstar/issues/258) for complete documentation.**
+
+#### Three-Level Hierarchy
+
+**Level 1: Epic/Milestone Issue**
+- Descriptive title without prefix
+- Example: `devcontainer-feature milestone - Create devcontainer feature for langstar CLI installation` (#201)
+- Create matching GitHub Milestone
+- Attach milestone to issue
+
+**Level 2: Phase Issues** (children of epic)
+- Format: `{epic-num}.{phase-num}-{slug} {description}`
+- Example: `201.3-devcontainer-feature-ci automated CI testing for devcontainer features` (#240)
+- Attach same milestone as epic
+- Reference parent issue in description
+
+**Level 3: Task Issues** (children of phase)
+- Format: `{phase-num}.{task-num}-{slug} {description}`
+- Example: `240.1-devcontainer-feature Create Automated Testing Workflow` (#247)
+- Attach same milestone as epic and phase
+- Reference parent phase in description
+
+#### Key Requirements
+
+1. **ALL issues at ALL levels must have the milestone attached**
+   - Enables accurate progress tracking
+   - Allows filtering all related work in milestone view
+   - Supports project management and burndown charts
+
+2. **Use `gh-sub-issue` skill to establish formal parent-child relationships**
+   ```bash
+   # Link existing issue as sub-issue
+   gh sub-issue add <parent-issue-num> <child-issue-num>
+
+   # Create new sub-issue
+   gh sub-issue create --parent <parent-num> --title "Issue title"
+   ```
+   See `.claude/skills/gh-sub-issue/SKILL.md` for details
+
+#### Complete Example
+
+```
+Epic: #201 (devcontainer-feature milestone)
+├── Milestone: "devcontainer-feature"
+└── Phase: #240 (201.3-devcontainer-feature-ci)
+    ├── Milestone: "devcontainer-feature"
+    └── Tasks:
+        ├── #247: 240.1-devcontainer-feature Create Automated Testing Workflow
+        ├── #248: 240.2-devcontainer-feature Implement Dev Container CLI Testing
+        └── ... (all with milestone: "devcontainer-feature")
+```
+
+**Note**: This convention evolved over the project's lifetime. Earlier issues may not follow this pattern, which is acceptable for historical issues. Use this convention for all new epics going forward.
+
 ---
 
 ## Step 2: Branch Creation
