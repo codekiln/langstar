@@ -513,7 +513,8 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **Fix:**
 1. Update your branch from base:
    ```bash
-   git pull origin main  # Or merge main into your branch
+   git fetch origin
+   git merge origin/main  # Or: git rebase origin/main
    ```
 2. Push updated branch
 3. Wait for CI to complete
