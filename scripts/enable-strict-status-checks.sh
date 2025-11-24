@@ -47,22 +47,26 @@ echo ""
 
 # Fetch current ruleset
 echo "→ Fetching current ruleset..."
-if ! gh api "repos/${REPO}/rulesets/${RULESET_ID}" > /tmp/main-ruleset.json 2>/dev/null; then
+TEMP_RULESET=$(mktemp)
+if ! gh api "repos/${REPO}/rulesets/${RULESET_ID}" > "$TEMP_RULESET" 2>/dev/null; then
     echo "❌ Error: Failed to fetch ruleset"
     echo "   Make sure you have 'Administration' permissions for the repository"
+    rm -f "$TEMP_RULESET"
     exit 1
 fi
 echo "✓ Ruleset fetched"
 echo ""
 
 # Check current strict mode setting
-CURRENT_STRICT=$(cat /tmp/main-ruleset.json | jq -r '
+CURRENT_STRICT=$(cat "$TEMP_RULESET" | jq -r '
   .rules[] | select(.type == "required_status_checks") | .parameters.strict_required_status_checks_policy
 ')
 
 echo "Current strict mode setting: ${CURRENT_STRICT}"
 echo ""
 
+# Clean up temporary file
+rm -f "$TEMP_RULESET"
 if [ "${CURRENT_STRICT}" == "true" ]; then
     echo "✓ Strict mode is already enabled!"
     echo "  No changes needed."
