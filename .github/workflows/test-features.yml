@@ -27,6 +27,10 @@ jobs:
         baseImage:
           - 'mcr.microsoft.com/devcontainers/base:ubuntu-22.04'
           - 'mcr.microsoft.com/devcontainers/base:ubuntu-24.04'
+          - 'mcr.microsoft.com/devcontainers/base:debian-12'
+          - 'mcr.microsoft.com/devcontainers/base:debian-11'
+          - 'mcr.microsoft.com/devcontainers/base:alpine-3.19'
+          - 'mcr.microsoft.com/devcontainers/base:alpine-3.18'
 
     steps:
       - name: Checkout code
