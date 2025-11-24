@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.devcontainer/features/**'
+  push:
     tags:
       - 'v*'  # Test when binary releases happen
   pull_request:
@@ -48,9 +49,19 @@ jobs:
         id: list-features
         run: |
           echo "Discovering features in ${{ env.FEATURE_BASE_PATH }}..."
+          if [ ! -d "${{ env.FEATURE_BASE_PATH }}" ]; then
+            echo "Error: Feature directory not found: ${{ env.FEATURE_BASE_PATH }}"
+            exit 1
+          fi
           features=$(find ${{ env.FEATURE_BASE_PATH }} -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
+          if [ -z "$features" ]; then
+            echo "Warning: No features found in ${{ env.FEATURE_BASE_PATH }}"
+            exit 0
+          fi
           echo "Features found:"
           echo "$features"
+          # Note: The 'features' output is not used by subsequent steps in this scaffolding workflow.
+          # Future PRs will reference this output (see #248, #250, #251).
           echo "features<<EOF" >> $GITHUB_OUTPUT
           echo "$features" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
