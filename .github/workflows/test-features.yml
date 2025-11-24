@@ -142,7 +142,7 @@ jobs:
             if devcontainer exec \
               --workspace-folder "${TEST_DIR}" \
               --log-level trace \
-              bash -c "command -v ${feature} && ${feature} --version" \
+              bash -c "command -v '${feature}' && '${feature}' --version" \
               2>&1 | tee "${TEST_DIR}/exec.log"; then
               echo "✓ ${feature} command verified successfully"
             else
