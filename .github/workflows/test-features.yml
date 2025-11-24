@@ -506,7 +506,7 @@ jobs:
             echo "Failed features: ${failed_feature_names}" | tee -a "$TEST_LOG"
             echo "## Failed Features" >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
-            echo "${failed_feature_names}" | sed 's/, /\n- /g' | sed 's/^/- /' >> "$SUMMARY_LOG"
+            echo "${failed_feature_names%%, }" | tr ',' '\n' | sed 's/^/- /' >> "$SUMMARY_LOG"
             echo "" >> "$SUMMARY_LOG"
             echo "❌ Some tests failed. Check logs for details." >> "$SUMMARY_LOG"
             echo "::endgroup::"
