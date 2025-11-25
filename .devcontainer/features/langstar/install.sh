@@ -26,13 +26,13 @@ else
 fi
 
 # Build installer arguments
-INSTALLER_ARGS="--prefix ${INSTALLER_PREFIX}"
+INSTALLER_ARGS=(--prefix "${INSTALLER_PREFIX}")
 if [ "${VERSION}" != "latest" ]; then
-    INSTALLER_ARGS="${INSTALLER_ARGS} --version ${VERSION}"
+    INSTALLER_ARGS+=(--version "${VERSION}")
 fi
 
-echo "Running installer with: ${INSTALLER_ARGS}"
-curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash -s -- ${INSTALLER_ARGS}
+echo "Running installer with: ${INSTALLER_ARGS[@]}"
+curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash -s -- "${INSTALLER_ARGS[@]}"
 
 # Verify installation
 if command -v langstar &> /dev/null; then
