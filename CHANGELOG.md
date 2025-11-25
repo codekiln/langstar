@@ -5,6 +5,899 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-11-25
+
+### ✨ Features
+
+- ✨ feat(ci): implement automated CI testing for devcontainer features (#278)
+
+* ✨ feat(ci): create automated testing workflow for devcontainer features (#260)
+
+* ✨ feat(ci): create automated testing workflow for devcontainer features
+
+Establishes foundational CI workflow structure for automated devcontainer
+feature testing following production best practices from research (#241).
+
+Changes:
+- Created .github/workflows/test-features.yml
+- Configured triggers:
+  - Push to main (paths: .devcontainer/features/**)
+  - Pull requests (paths: .devcontainer/features/**)
+  - Version tags (v*) when binary releases happen
+  - Manual workflow_dispatch for ad-hoc testing
+- Set up OS matrix testing (Ubuntu 22.04, 24.04)
+- Added Dev Container CLI installation
+- Included feature discovery step
+- Added placeholder for actual test implementation
+
+Implementation Notes:
+This workflow establishes the CI structure and triggers. Subsequent tasks
+from parent issue #240 will implement the actual testing:
+- #248: Dev Container CLI-based feature installation testing
+- #249: OS distribution matrix testing (already scaffolded)
+- #250: Smoke tests to verify langstar command
+- #251: Feature metadata linting
+
+Research Reference:
+Based on devcontainers/features CI patterns documented in:
+reference/research/241-devcontainer-feature-ci-testing/
+devcontainer-feature-ci-testing-best-practices-2025-11-22.md (lines 66-90)
+
+Fixes #247
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): address Copilot PR review comments
+
+- Separate tag trigger from branch trigger to fix path filter issue
+- Add documentation comment explaining unused features output
+- Add error handling for missing/empty features directory
+
+Addresses Copilot review comments in PR #260
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+* ✨ feat(ci): implement Dev Container CLI testing for features (#263)
+
+* ✨ feat(ci): implement Dev Container CLI testing for features
+
+Implements headless, automated testing of devcontainer features using the
+official Dev Container CLI, following production best practices from
+devcontainers/features repository.
+
+Changes:
+- Replace TODO placeholder with full Dev Container CLI test implementation
+- Use 'devcontainer up' to build and start test containers with features
+- Use 'devcontainer exec' to verify feature installation (command presence and version)
+- Create test devcontainer.json for each feature with absolute feature paths
+- Add comprehensive build and execution logging with trace-level output
+- Capture and display logs on failure for debugging
+- Test each feature in isolated temporary directories
+- Clean up test directories after each feature test
+
+Testing approach:
+- For each feature, create temporary test workspace
+- Generate devcontainer.json referencing local feature by absolute path
+- Build container from base image (Ubuntu 22.04 or 24.04) with feature
+- Execute commands inside container to verify installation
+- Verify both command availability and version output
+- Display detailed logs on any failure
+
+This implements Best Practice #1 from research (#241): use official Dev
+Container CLI for reproducible, headless testing without VS Code.
+
+Fixes #248
+
+Parent Issue: #240 (201.3-devcontainer-feature-ci)
+Epic: #201 (devcontainer-feature milestone)
+Milestone: devcontainer-feature
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* ✨ feat(ci): expand OS distribution matrix testing (#266)
+
+Extends the test-features.yml workflow matrix to test devcontainer features
+across multiple Linux distributions beyond Ubuntu:
+
+- Ubuntu 22.04 and 24.04 (existing)
+- Debian 12 and 11 (new)
+- Alpine 3.19 and 3.18 (new)
+
+This ensures broad compatibility across different base images and catches
+OS-specific issues early (e.g., package differences, filesystem layouts,
+shell variations).
+
+Implements Best Practice #2 from CI testing research: test across multiple
+base images to ensure devcontainer features work universally.
+
+Fixes #249
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+* 🧪 test(devcontainer): add smoke tests for langstar feature (#267)
+
+* 🧪 test(devcontainer): add smoke tests for langstar feature
+
+Creates automated smoke test script that verifies:
+- langstar binary is in PATH
+- langstar --version command works
+- langstar --help command works
+- installed version matches requested version (when VERSION is set)
+
+Tests fail fast with clear, actionable error messages to help
+diagnose installation issues.
+
+Fixes #250
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .devcontainer/features/langstar/test.sh
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .devcontainer/features/langstar/test.sh
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* ✨ feat(ci): add feature metadata validation to CI workflow (#270)
+
+* ✨ feat(ci): add feature metadata validation to CI workflow
+
+Add comprehensive validation for devcontainer-feature.json files:
+- Validate JSON syntax using jq
+- Check required fields (id, version, name, description)
+- Verify option definitions have type and description
+- Run Dev Container CLI validate command
+- Fail fast on validation errors before running feature tests
+
+Fixes #251
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update .github/workflows/test-features.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* Fix duplicate failed_features entries in option validation (#271)
+
+* Initial plan
+
+* fix: prevent duplicate entries in failed_features list during option validation
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
+* 🧪 test(ci): add explicit container cleanup for test isolation (#273)
+
+Ensures complete test isolation by explicitly stopping and removing
+Docker containers after each feature test. This prevents:
+- Container accumulation during test runs
+- Resource conflicts between tests
+- Shared state contamination
+
+Changes:
+- Add container cleanup in success path using Docker labels
+- Add container cleanup in both error paths (build and exec failures)
+- Add test isolation guarantees documentation in workflow output
+- Create comprehensive TEST-ISOLATION.md documentation
+
+Container identification uses Dev Container CLI labels:
+- devcontainer.local_folder=${TEST_DIR} (primary)
+- devcontainer.config_file=${TEST_DIR}/.devcontainer.json (fallback)
+
+Aligns with Best Practice #4: "Use fresh, clean containers for each
+CI test, preventing contamination from previous runs"
+
+Fixes #252
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+* 🔧 build(ci): enable strict mode for required status checks (#275)
+
+* 🔧 build(ci): enable strict mode for required status checks
+
+Configures the main branch ruleset to require branches to be up-to-date
+before merging. This ensures all CI tests run on the final code that will
+be merged, preventing integration issues and merge conflicts.
+
+Changes:
+- Updated main ruleset (ID: 9196293) via GitHub API
+- Set strict_required_status_checks_policy to true
+- Added comprehensive documentation in docs/dev/procedures.md
+- Created enable-strict-status-checks.sh script for applying changes
+
+When test-features workflow runs (on .devcontainer/features/** changes),
+it must pass before the PR can be merged. The strict mode ensures branches
+are up-to-date, so tests run on the exact code being merged.
+
+Fixes #253
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update scripts/enable-strict-status-checks.sh
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: Update scripts/enable-strict-status-checks.sh
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* ♻️ refactor: improve enable-strict-status-checks.sh error handling and temp file usage
+
+- Replace /tmp hardcoded paths with mktemp for unique temporary files
+- Capture and display stderr instead of silencing with 2>/dev/null
+- Remove unnecessary use of 'cat' when piping to jq
+- Add proper cleanup of temporary files in all code paths
+
+This addresses PR review feedback about security, debugging, and best practices.
+
+* 📚 docs: fix git command pattern in procedures.md
+
+Replace 'git pull origin main' with more explicit pattern:
+- git fetch origin
+- git merge origin/main (or git rebase origin/main)
+
+This matches the workflow example from the PR description and provides
+clearer guidance on updating branches.
+
+* 📚 docs: fix invalid JSON comment in procedures.md
+
+Move inline comment outside JSON block to maintain valid JSON syntax.
+Comments are not valid in JSON.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* ✨ feat(ci): add comprehensive logging infrastructure to test workflow
+
+Implements detailed logging for CI test runs as specified in issue #254:
+
+## Changes
+
+### Environment Information
+- Added dedicated step to log environment details
+- Includes OS, architecture, Docker version, Node.js, npm, and Dev Container CLI versions
+- Uses GitHub Actions groups for collapsible output
+
+### Test Execution Logging
+- Created structured log files for each test run
+- Logs saved to `logs/test-<image-name>.log` with all test output
+- Individual feature logs saved separately for build and execution phases
+- All output uses `tee` to write to both console and log files
+
+### GitHub Actions Step Summaries
+- Generate markdown summaries for each test run
+- Display test results in GitHub Actions UI
+- Include metrics table with pass/fail counts
+- List failed features with failure reasons
+
+### Error Handling & Tracking
+- Track test failures with counters (total, passed, failed)
+- Continue testing after individual feature failures
+- Collect failed feature names with failure reasons
+- Exit with error only after all tests complete
+
+### Log Artifact Upload
+- Upload logs as artifacts on both success and failure
+- Failure logs retained for 30 days
+- Success logs retained for 7 days
+- Separate artifact names by base image for easy identification
+
+### Structured Output
+- All test phases wrapped in GitHub Actions groups
+- Clear section headers for build, test, and cleanup phases
+- Consistent log formatting across all steps
+- Final report step displays summary and references artifacts
+
+## Testing
+
+This implementation establishes the logging infrastructure needed for
+effective debugging of CI test failures. The structured, searchable output
+reduces debugging time from hours to minutes.
+
+Fixes #254
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ✨ feat(ci): add comprehensive logging infrastructure to test workflow (#276)
+
+* ✨ feat(ci): add comprehensive logging infrastructure to test workflow
+
+Implements detailed logging for CI test runs as specified in issue #254:
+
+## Changes
+
+### Environment Information
+- Added dedicated step to log environment details
+- Includes OS, architecture, Docker version, Node.js, npm, and Dev Container CLI versions
+- Uses GitHub Actions groups for collapsible output
+
+### Test Execution Logging
+- Created structured log files for each test run
+- Logs saved to `logs/test-<image-name>.log` with all test output
+- Individual feature logs saved separately for build and execution phases
+- All output uses `tee` to write to both console and log files
+
+### GitHub Actions Step Summaries
+- Generate markdown summaries for each test run
+- Display test results in GitHub Actions UI
+- Include metrics table with pass/fail counts
+- List failed features with failure reasons
+
+### Error Handling & Tracking
+- Track test failures with counters (total, passed, failed)
+- Continue testing after individual feature failures
+- Collect failed feature names with failure reasons
+- Exit with error only after all tests complete
+
+### Log Artifact Upload
+- Upload logs as artifacts on both success and failure
+- Failure logs retained for 30 days
+- Success logs retained for 7 days
+- Separate artifact names by base image for easy identification
+
+### Structured Output
+- All test phases wrapped in GitHub Actions groups
+- Clear section headers for build, test, and cleanup phases
+- Consistent log formatting across all steps
+- Final report step displays summary and references artifacts
+
+## Testing
+
+This implementation establishes the logging infrastructure needed for
+effective debugging of CI test failures. The structured, searchable output
+reduces debugging time from hours to minutes.
+
+Fixes #254
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): sanitize base image name in artifact names
+
+Fixes artifact upload failures caused by invalid characters in artifact names.
+
+## Changes
+
+- Export SAFE_IMAGE_NAME as step output for use across workflow steps
+- Use sanitized image name in artifact upload step names
+- Update artifact reference in report step to use sanitized name
+
+## Issue
+
+GitHub Actions artifact names cannot contain `/` or `:` characters, but
+matrix.baseImage contains these (e.g., "mcr.microsoft.com/devcontainers/base:ubuntu-22.04").
+This would cause artifact uploads to fail.
+
+## Solution
+
+The SAFE_IMAGE_NAME variable is now:
+1. Computed in bash: `sed 's/[\/:]/-/g'`
+2. Exported as step output: `echo "safe_image_name=${SAFE_IMAGE_NAME}" >> $GITHUB_OUTPUT`
+3. Used in YAML context: `${{ steps.test-features.outputs.safe_image_name }}`
+
+This ensures artifact names like:
+- `test-logs-failure-mcr.microsoft.com-devcontainers-base-ubuntu-22.04`
+- `test-logs-success-mcr.microsoft.com-devcontainers-base-debian-12`
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* refactor: deduplicate tee calls
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* style: small change in formatting
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* style: remove double hyphen
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* 🩹 fix(ci): resolve merge conflict in artifact naming
+
+Resolved conflict between HEAD and remote in test-features.yml.
+Used safe_image_name (sanitized) instead of matrix.baseImage for
+artifact names to avoid invalid characters (/, :) in filenames.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): address Copilot PR review comments
+
+- Combine duplicate push triggers in test-features.yml workflow
+- Support pre-release versions in langstar test.sh version regex
+- Remove unreachable validation code in enable-strict-status-checks.sh
+- Remove outdated comment referencing completed issues
+- Fix string trimming inconsistency in test summary output
+
+All fixes improve code quality and maintainability. Note: workspace
+tests fail due to pre-existing bug on main (cli/src/commands/prompt.rs:183)
+
+* 📚 docs(skill): clarify pre-commit checks require environment sourcing
+
+- Explicitly mention pre-commit checks in critical first step warning
+- Add 'Quick Start for Pre-Commit Checks' one-liner at top
+- Add Mistake #1 specifically about pre-commit checks without sourcing
+- Include exact error symptoms encountered (byte index 8 out of bounds)
+- Update Key Takeaways to emphasize pre-commit checks require sourcing
+- Make it crystal clear that ALL cargo commands may need environment vars
+
+This would have prevented the churn where pre-commit checks failed with
+cryptic panics due to missing LANGSMITH_API_KEY in worktree environment.
+
+* fix: incomplete backtick formatting in md
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* 🩹 fix(tests): handle empty workspace IDs and improve CI error logging
+
+- Fix panic when slicing empty workspace_id/org_id strings in print_scope_info
+- Add length check before slicing to handle IDs shorter than 8 chars
+- Capture and display Dev Container CLI validation errors in CI workflow
+- All 13 prompt_scoping_test tests now pass
+
+Fixes string slice panic: 'byte index 8 is out of bounds of ``'
+Improves CI debugging by showing actual validation errors
+
+* 🩹 fix(ci): disable exit-on-error during validation to capture output
+
+- Add set +e before devcontainer validate command
+- Re-enable set -e after capturing exit code and output
+- Fixes issue where bash -e would exit before error output could be displayed
+- Now validation errors will be properly captured and shown in logs
+
+* 🩹 fix(ci): remove invalid devcontainer validate command
+
+- Remove step 4 'Dev Container CLI validation' entirely
+- 'devcontainer features validate' command does not exist
+- Dev Container CLI only supports: test, package, publish, info, resolve-dependencies, generate-docs
+- Manual JSON validation in steps 1-3 is sufficient for metadata validation
+
+Root cause identified: Unknown arguments: validate, .devcontainer/features/langstar
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+- ✨ feat: import tmux skill for interactive CLI control (#281)
+
+* ✨ feat: import tmux skill for interactive CLI control
+
+Imported tmux skill from mitsuhiko/agent-commands to enable remote control
+of tmux sessions for interactive command-line work.
+
+Changes:
+- Added .claude/skills/tmux/ directory with SKILL.md and tools/
+- Updated Dockerfile to install tmux package
+- Added CLAUDE_TMUX_SOCKET_DIR environment variable to docker-compose.yml
+- Updated skill frontmatter with comprehensive description
+
+The tmux skill enables working with Python REPLs, debuggers, and other
+interactive terminal applications by sending keystrokes and scraping output.
+
+Fixes #280
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(tmux): correct tmux flag usage and quote variables
+
+Fixed inconsistencies in tmux skill documentation and scripts:
+
+- Changed `-L` to `-S` for socket path references (lines 54, 60, 62)
+  The `-L` flag is for socket names, while `-S` is for socket paths
+- Quoted `$grep_flag` variable in wait-for-text.sh to prevent word splitting
+
+These changes ensure consistency with tmux socket path conventions used
+throughout the skill documentation.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat: use langstar devcontainer feature in own devcontainer (#290)
+
+Installs the published langstar devcontainer feature (ghcr.io/codekiln/langstar/langstar:1)
+in Langstar's own devcontainer configuration, demonstrating self-hosting.
+
+The feature handles langstar CLI installation automatically, eliminating the need
+for manual installation steps. This validates the feature works in production.
+
+Fixes #287
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(ci): add workflow_dispatch trigger to release workflow (#289)
+
+* ✨ feat(ci): add workflow_dispatch trigger to release workflow
+
+Add manual trigger capability to the release workflow for recovery,
+testing, and administrative scenarios. This enables:
+
+- Recovery from failed artifact uploads or network issues
+- Testing with alpha/beta tags without full PR flow
+- Manual override for workflow chaining issues
+- Administrative control for edge cases
+
+Changes:
+- Add workflow_dispatch trigger with tag input parameter
+- Update version extraction logic to handle both push and manual triggers
+- Modify checkout step to use correct ref for manual triggers
+- Update all tag_name references to work with both trigger types
+- Add comprehensive documentation in workflows README
+
+The workflow remains idempotent - running multiple times for the same
+tag will update the existing release without errors.
+
+Fixes #283
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .github/workflows/release.yml
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* ♻️ refactor(ci): extract tag_name to step output for DRY
+
+Refactor the release workflow to eliminate duplication of the tag name
+ternary expression. Changes:
+
+- Extract TAG_NAME as a separate output variable in get_version step
+- Quote all variable assignments for shell safety
+- Update all tag_name references to use step/job outputs
+- Simplify prerelease condition by referencing single source of truth
+
+This improves maintainability and follows shell scripting best practices.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix: Prevent orphaned test deployments in CLI integration tests (#277)
+
+* 🩹 fix: prevent orphaned test deployments by fixing JSON parsing
+
+Fixed TestDeployment::find_active_test_deployment() to correctly parse
+the JSON response from 'langstar graph list'. The response has a
+"resources" field containing the deployments array, but the code was
+trying to parse the root JSON as an array, which always failed.
+
+This caused find_active_test_deployment() to always return None,
+leading to a new deployment being created on every test run even
+when existing READY deployments were available.
+
+Changes:
+- Fixed JSON parsing to access json["resources"] instead of json
+- Added comprehensive error logging to replace silent .ok()?failures
+- All error paths now log warnings to aid future debugging
+
+Fixes #208
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🔒 security: sanitize error logs to prevent sensitive data exposure
+
+Replace full JSON/deployment object logging with field keys only to
+prevent potential exposure of sensitive information (API keys, tokens,
+credentials) in CI/CD logs and test output.
+
+Changes:
+- Log JSON keys instead of full JSON response
+- Log deployment field names instead of full deployment objects
+- Reduces risk of credential exposure in error messages
+
+Addresses Copilot PR review comments on #277
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(devcontainer): source cargo env before cargo install in postCreateCommand (#288)
+
+* 🩹 fix(devcontainer): source cargo env before cargo install in postCreateCommand
+
+The postCreateCommand was failing because cargo was not in PATH after
+mise install. This adds '. ~/.cargo/env &&' to source the Rust
+environment before running 'cargo install cargo-release git-cliff'.
+
+Fixes #164
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(devcontainer): extract postCreateCommand to dedicated script
+
+Addresses feedback to:
+1. Check if ~/.cargo/env exists before sourcing it
+2. Use a dedicated script instead of inline command chain
+
+Changes:
+- Created .devcontainer/post-create.sh with proper error handling
+- Script checks for cargo availability and sources ~/.cargo/env if it exists
+- Updated devcontainer.json to call the script
+- Added clear logging with [post-create] prefix
+- Follows same pattern as setup-github-auth.sh
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🔧 build(devcontainer): add gh-sub-issue extension installation
+
+Adds automatic installation of gh-sub-issue extension in postCreateCommand
+to support issue hierarchy management via .claude/skills/gh-sub-issue.
+
+Changes:
+- Added Step 5 to post-create.sh for gh CLI extensions
+- Installs yahsan2/gh-sub-issue with error handling
+- Includes check for gh CLI availability before installation
+- Partially addresses issue #162 (gh-issue-dependency removed as no longer valid)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(cli): use stderr for info messages in JSON mode (#291)
+
+* 🩹 fix(cli): use stderr for info messages in JSON mode
+
+When `--format json` is used, info/success/warning messages now output
+to stderr instead of stdout. This keeps stdout clean for machine-readable
+JSON, following the Unix/CLI convention used by cargo, git, curl, etc.
+
+Previously, `langstar graph list --format json` would output:
+```
+ℹ Fetching deployments (limit: 20, offset: 0)...
+{"resources": [...]}
+```
+
+This caused JSON parsing to fail in `find_active_test_deployment()`,
+leading to orphaned test deployments on every CI run.
+
+Fixes #208
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* Refactor: OutputFormatter to eliminate code duplication with helper methods (#292)
+
+* Initial plan
+
+* ♻️ refactor(cli): extract duplicate code into print_message helper
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* ✨ feat(cli): improve print_message to use Display trait
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* ♻️ refactor(cli): simplify error() by removing print_message_stderr
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 📝 docs: add documentation for error() stderr behavior
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+- 🩹 fix(devcontainer): support non-root user in langstar feature install (#293)
+
+* 🩹 fix(devcontainer): support non-root user in langstar feature install
+
+Fixes GitHub Codespaces regression where feature installation failed during
+Docker build due to hardcoded /usr/local prefix requiring sudo.
+
+Changes:
+- Detect if running as root or have write access to /usr/local/bin
+- Use /usr/local prefix for root/privileged builds (local devcontainers)
+- Use $HOME/.local prefix for non-root builds (GitHub Codespaces)
+- Add logging to show which installation mode is being used
+- Improve error messages when installation fails
+
+This ensures compatibility with both local devcontainers and GitHub Codespaces
+while maintaining the "self-hosting" feature usage.
+
+Fixes #287
+
+🤖 Generated with Claude Code
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update .devcontainer/features/langstar/install.sh
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: array expansion in echo with quotes
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: ensure path is correct
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+### 📚 Documentation
+
+- 📚 docs: complete devcontainer feature documentation (#282)
+
+Completes Phase 4 (final phase) of devcontainer-feature milestone (#201).
+
+## Documentation Added
+
+- Updated README.md with DevContainer feature installation section
+- Created docs/devcontainer-feature.md with comprehensive feature guide:
+  - Feature options and configuration
+  - Compatibility matrix (Ubuntu 22.04/24.04, Debian 11/12, Alpine 3.18/3.19)
+  - Architecture support (x86_64, ARM64)
+  - Installation examples (basic, pinned versions, multi-feature)
+  - Environment-specific configurations (local dev, Codespaces, CI/CD)
+  - Team collaboration patterns
+  - Troubleshooting and security considerations
+- Created docs/examples/devcontainer-feature-examples.md with real-world examples:
+  - Basic usage patterns
+  - Version management strategies (latest vs pinned)
+  - Multi-feature configurations (Rust, Python, Node.js stacks)
+  - CI/CD integration (GitHub Actions, GitLab CI, CircleCI)
+  - Advanced scenarios and best practices
+- Updated CHANGELOG.md with milestone completion announcement
+
+## Coverage
+
+The documentation provides comprehensive coverage of:
+- Installation: 3 methods (feature, install script, build from source)
+- Configuration: Multiple approaches (env vars, secrets, config files)
+- Examples: 20+ real-world scenarios
+- Compatibility: Tested on 6 OS distributions
+- CI/CD: Integration examples for 3 major platforms
+- Troubleshooting: Common issues and solutions
+- Security: Best practices for credential management
+
+## Milestone Complete
+
+This completes all 4 phases of the devcontainer-feature milestone:
+- ✅ Phase 1 (#202): Feature implementation
+- ✅ Phase 2 (#203): Publishing to GHCR
+- ✅ Phase 3 (#240): Comprehensive CI testing (PR #278)
+- ✅ Phase 4 (#204): Documentation and public discovery
+
+The Langstar CLI devcontainer feature is now production-ready, thoroughly
+tested, and comprehensively documented for public discovery and community use.
+
+Feature available at: ghcr.io/codekiln/langstar/langstar:1
+
+Fixes #204
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add note about optional DevContainers index submission (#286)
+
+Adds a note to the README mentioning the planned submission to the official
+DevContainers index (https://containers.dev/features) for increased
+discoverability in VS Code and GitHub Codespaces.
+
+This references the newly created issue #285, which is Phase 5 (optional)
+of the devcontainer-feature milestone (#201).
+
+Benefits of index submission:
+- Shows up in VS Code 'Add Dev Container Features' UI
+- Listed on official containers.dev/features site
+- Discoverable in GitHub Codespaces feature picker
+- Increased visibility and adoption
+
+Related #285
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [Unreleased]
 
 ### 📚 Documentation
