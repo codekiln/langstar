@@ -89,13 +89,6 @@ impl OutputFormatter {
         }
     }
 
-    /// Helper method to print a message always to stderr
-    ///
-    /// Used for error messages which should always go to stderr regardless of format.
-    fn print_message_stderr(&self, icon: impl std::fmt::Display, message: &str) {
-        eprintln!("{} {}", icon, message);
-    }
-
     /// Print a success message
     ///
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
@@ -106,11 +99,9 @@ impl OutputFormatter {
     }
 
     /// Print an error message
-    ///
-    /// Error messages always go to stderr regardless of output format.
     #[allow(dead_code)]
     pub fn error(&self, message: &str) {
-        self.print_message_stderr("✗".red(), message);
+        eprintln!("{} {}", "✗".red(), message);
     }
 
     /// Print a warning message
