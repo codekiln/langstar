@@ -99,6 +99,8 @@ impl OutputFormatter {
     }
 
     /// Print an error message
+    ///
+    /// Error messages always go to stderr regardless of output format.
     #[allow(dead_code)]
     pub fn error(&self, message: &str) {
         eprintln!("{} {}", "✗".red(), message);
