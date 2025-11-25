@@ -50,6 +50,6 @@
   "remoteUser": "node",
 
   // Lifecycle commands
-  "postCreateCommand": "echo 'eval \"$(mise activate zsh)\"' >> ~/.zshrc && mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && cargo install cargo-release git-cliff",
+  "postCreateCommand": "echo 'eval \"$(mise activate zsh)\"' >> ~/.zshrc && mise trust && mise install && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git && . ~/.cargo/env && cargo install cargo-release git-cliff",
   "postStartCommand": "bash .devcontainer/setup-github-auth.sh"
 }
