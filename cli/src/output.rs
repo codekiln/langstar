@@ -77,9 +77,16 @@ impl OutputFormatter {
     }
 
     /// Print a success message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn success(&self, message: &str) {
-        println!("{} {}", "✓".green(), message);
+        if self.format == OutputFormat::Json {
+            eprintln!("{} {}", "✓".green(), message);
+        } else {
+            println!("{} {}", "✓".green(), message);
+        }
     }
 
     /// Print an error message
@@ -89,14 +96,28 @@ impl OutputFormatter {
     }
 
     /// Print a warning message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn warning(&self, message: &str) {
-        println!("{} {}", "⚠".yellow(), message);
+        if self.format == OutputFormat::Json {
+            eprintln!("{} {}", "⚠".yellow(), message);
+        } else {
+            println!("{} {}", "⚠".yellow(), message);
+        }
     }
 
     /// Print an info message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     pub fn info(&self, message: &str) {
-        println!("{} {}", "ℹ".blue(), message);
+        if self.format == OutputFormat::Json {
+            eprintln!("{} {}", "ℹ".blue(), message);
+        } else {
+            println!("{} {}", "ℹ".blue(), message);
+        }
     }
 }
 
