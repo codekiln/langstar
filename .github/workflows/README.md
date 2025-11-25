@@ -31,6 +31,46 @@ The release workflow creates **draft releases** to enable human review before pu
 6. Developer reviews draft and clicks "Publish" ✅
 ```
 
+### Manual Release Trigger
+
+The release workflow supports manual triggering via `workflow_dispatch` for recovery and testing scenarios.
+
+#### When to Use Manual Trigger
+
+**Recovery scenarios:**
+- Artifact upload failed during automated release
+- Network issues interrupted release workflow
+- Need to re-run validation checks
+
+**Testing scenarios:**
+- Test release process with alpha/beta tags
+- Validate workflow changes before merging
+- Debug release issues without contaminating git history
+
+**Administrative scenarios:**
+- Create release for tag that existed before automation was added
+- Recover from workflow chaining issues
+- Manual override when automated flow fails
+
+#### How to Use
+
+**Via GitHub CLI:**
+```bash
+# Manually trigger release for existing tag
+gh workflow run release.yml -f tag=v0.5.1
+
+# Check workflow status
+gh run watch
+```
+
+**Via GitHub UI:**
+1. Navigate to Actions → Release
+2. Click "Run workflow" button
+3. Enter tag name (e.g., `v0.5.1`)
+4. Click "Run workflow"
+
+**Important**: The tag must already exist in the repository. The workflow will checkout the code at that tag and create/update the release.
+
 ### Version Validation (Implemented in Issue #232)
 
 Before creating a release, the workflow validates that the git tag matches `Cargo.toml` version:
