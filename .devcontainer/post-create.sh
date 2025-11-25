@@ -8,6 +8,7 @@
 # - specify-cli: GitHub Spec-Kit tool
 # - cargo-release: Rust release workflow tool
 # - git-cliff: Changelog generator
+# - gh-sub-issue: GitHub CLI extension for issue hierarchy
 # ---------------------------------------------------------------------
 
 set -euo pipefail
@@ -64,5 +65,21 @@ echo "[post-create] cargo version: $(cargo --version)"
 
 # Install cargo tools
 cargo install cargo-release git-cliff
+
+# Step 5: Install gh CLI extensions
+echo "[post-create] Installing gh CLI extensions..."
+
+# Verify gh is available
+if ! command -v gh >/dev/null 2>&1; then
+  echo "[post-create] WARNING: gh CLI not found. Skipping extension installation."
+else
+  # Install gh-sub-issue for issue hierarchy management
+  echo "[post-create] Installing gh-sub-issue extension..."
+  if gh extension install yahsan2/gh-sub-issue; then
+    echo "[post-create] gh-sub-issue installed successfully"
+  else
+    echo "[post-create] WARNING: Failed to install gh-sub-issue extension"
+  fi
+fi
 
 echo "[post-create] Post-create setup completed successfully!"
