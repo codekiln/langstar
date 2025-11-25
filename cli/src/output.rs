@@ -76,17 +76,26 @@ impl OutputFormatter {
         Ok(())
     }
 
+    /// Helper method to print a message with conditional routing based on format
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
+    fn print_message(&self, icon: &str, message: &str) {
+        let formatted = format!("{} {}", icon, message);
+        if self.format == OutputFormat::Json {
+            eprintln!("{}", formatted);
+        } else {
+            println!("{}", formatted);
+        }
+    }
+
     /// Print a success message
     ///
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn success(&self, message: &str) {
-        if self.format == OutputFormat::Json {
-            eprintln!("{} {}", "✓".green(), message);
-        } else {
-            println!("{} {}", "✓".green(), message);
-        }
+        self.print_message(&"✓".green().to_string(), message);
     }
 
     /// Print an error message
@@ -101,11 +110,7 @@ impl OutputFormatter {
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn warning(&self, message: &str) {
-        if self.format == OutputFormat::Json {
-            eprintln!("{} {}", "⚠".yellow(), message);
-        } else {
-            println!("{} {}", "⚠".yellow(), message);
-        }
+        self.print_message(&"⚠".yellow().to_string(), message);
     }
 
     /// Print an info message
@@ -113,11 +118,7 @@ impl OutputFormatter {
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     pub fn info(&self, message: &str) {
-        if self.format == OutputFormat::Json {
-            eprintln!("{} {}", "ℹ".blue(), message);
-        } else {
-            println!("{} {}", "ℹ".blue(), message);
-        }
+        self.print_message(&"ℹ".blue().to_string(), message);
     }
 }
 
