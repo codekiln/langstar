@@ -10,7 +10,10 @@
     // "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-extra/features/mise:1": {},
-    "ghcr.io/devcontainers-extra/features/uv:1": {}
+    "ghcr.io/devcontainers-extra/features/uv:1": {},
+    "ghcr.io/codekiln/langstar/langstar:1": {
+      "version": "latest"
+    }
   },
 
   // VS Code customizations
