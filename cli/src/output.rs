@@ -76,27 +76,51 @@ impl OutputFormatter {
         Ok(())
     }
 
+    /// Helper method to print a message with conditional routing based on format
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
+    fn print_message(&self, icon: impl std::fmt::Display, message: &str) {
+        let formatted = format!("{} {}", icon, message);
+        if self.format == OutputFormat::Json {
+            eprintln!("{}", formatted);
+        } else {
+            println!("{}", formatted);
+        }
+    }
+
     /// Print a success message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn success(&self, message: &str) {
-        println!("{} {}", "✓".green(), message);
+        self.print_message("✓".green(), message);
     }
 
     /// Print an error message
+    ///
+    /// Error messages always go to stderr regardless of output format.
     #[allow(dead_code)]
     pub fn error(&self, message: &str) {
         eprintln!("{} {}", "✗".red(), message);
     }
 
     /// Print a warning message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn warning(&self, message: &str) {
-        println!("{} {}", "⚠".yellow(), message);
+        self.print_message("⚠".yellow(), message);
     }
 
     /// Print an info message
+    ///
+    /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
+    /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     pub fn info(&self, message: &str) {
-        println!("{} {}", "ℹ".blue(), message);
+        self.print_message("ℹ".blue(), message);
     }
 }
 
