@@ -92,6 +92,8 @@ The easiest way to use Langstar in development containers is via our official De
 
 For complete documentation and examples, see [docs/devcontainer-feature.md](./docs/devcontainer-feature.md).
 
+> **Note:** We plan to submit this feature to the official [DevContainers index](https://containers.dev/features) for increased discoverability in VS Code and GitHub Codespaces. Track progress in [#285](https://github.com/codekiln/langstar/issues/285).
+
 ### Configuration Quick Start
 
 > **⚠️ Important**: Langstar commands have different configuration requirements depending on which service you're using.
