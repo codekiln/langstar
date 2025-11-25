@@ -31,7 +31,7 @@ if [ "${VERSION}" != "latest" ]; then
     INSTALLER_ARGS+=(--version "${VERSION}")
 fi
 
-echo "Running installer with: ${INSTALLER_ARGS[@]}"
+echo "Running installer with: \"${INSTALLER_ARGS[@]}\""
 curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash -s -- "${INSTALLER_ARGS[@]}"
 
 # Verify installation
