@@ -80,7 +80,7 @@ impl OutputFormatter {
     ///
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
-    fn print_message(&self, icon: &str, message: &str) {
+    fn print_message(&self, icon: impl std::fmt::Display, message: &str) {
         let formatted = format!("{} {}", icon, message);
         if self.format == OutputFormat::Json {
             eprintln!("{}", formatted);
@@ -89,19 +89,28 @@ impl OutputFormatter {
         }
     }
 
+    /// Helper method to print a message always to stderr
+    ///
+    /// Used for error messages which should always go to stderr regardless of format.
+    fn print_message_stderr(&self, icon: impl std::fmt::Display, message: &str) {
+        eprintln!("{} {}", icon, message);
+    }
+
     /// Print a success message
     ///
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn success(&self, message: &str) {
-        self.print_message(&"✓".green().to_string(), message);
+        self.print_message("✓".green(), message);
     }
 
     /// Print an error message
+    ///
+    /// Error messages always go to stderr regardless of output format.
     #[allow(dead_code)]
     pub fn error(&self, message: &str) {
-        eprintln!("{} {}", "✗".red(), message);
+        self.print_message_stderr("✗".red(), message);
     }
 
     /// Print a warning message
@@ -110,7 +119,7 @@ impl OutputFormatter {
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     #[allow(dead_code)]
     pub fn warning(&self, message: &str) {
-        self.print_message(&"⚠".yellow().to_string(), message);
+        self.print_message("⚠".yellow(), message);
     }
 
     /// Print an info message
@@ -118,7 +127,7 @@ impl OutputFormatter {
     /// In JSON mode, outputs to stderr to keep stdout clean for machine-readable JSON.
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     pub fn info(&self, message: &str) {
-        self.print_message(&"ℹ".blue().to_string(), message);
+        self.print_message("ℹ".blue(), message);
     }
 }
 
