@@ -16,11 +16,11 @@ echo "Installing Langstar CLI ${VERSION}..."
 # Detect if we're running as root or have write access to /usr/local
 # This ensures compatibility with both local devcontainers and GitHub Codespaces
 if [ "$(id -u)" -eq 0 ] || [ -w "/usr/local/bin" ]; then
-    INSTALLER_PREFIX="/usr/local"
-    echo "Installing as root/privileged user to /usr/local..."
+    INSTALLER_PREFIX="/usr/local/bin"
+    echo "Installing as root/privileged user to /usr/local/bin..."
 else
-    INSTALLER_PREFIX="$HOME/.local"
-    echo "Installing as non-root user to $HOME/.local..."
+    INSTALLER_PREFIX="$HOME/.local/bin"
+    echo "Installing as non-root user to $HOME/.local/bin..."
     # Ensure the directory exists
     mkdir -p "$HOME/.local/bin"
 fi
@@ -40,7 +40,7 @@ if command -v langstar &> /dev/null; then
     langstar --version
 else
     echo "✗ Failed to install Langstar CLI"
-    echo "Note: If langstar is not in PATH, you may need to add ${INSTALLER_PREFIX}/bin to your PATH"
+    echo "Note: If langstar is not in PATH, you may need to add ${INSTALLER_PREFIX} to your PATH"
     echo "The installer should have provided instructions for this."
     exit 1
 fi
