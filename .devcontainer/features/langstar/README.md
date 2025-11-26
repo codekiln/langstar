@@ -36,8 +36,9 @@ Specify which version of Langstar CLI to install.
 
 ## What Gets Installed
 
-- **Langstar CLI binary** installed to `/usr/local/bin/langstar`
+- **Langstar CLI binary** installed to `/usr/local/bin/langstar` (or `~/.local/bin/langstar` for non-root users)
 - Supports both **x86_64** and **ARM64** architectures
+- The installer automatically detects your architecture and downloads the appropriate binary
 
 ## After Installation
 
@@ -94,6 +95,23 @@ After installation, you'll need to configure Langstar with your LangSmith API cr
 
 ### Method 1: Environment Variables (Recommended for Devcontainers)
 
+Add to your `devcontainer.json`:
+
+```jsonc
+{
+    "features": {
+        "ghcr.io/codekiln/langstar/langstar:1": {}
+    },
+    "remoteEnv": {
+        "LANGSMITH_API_KEY": "${localEnv:LANGSMITH_API_KEY}",
+        "LANGSMITH_ORGANIZATION_ID": "${localEnv:LANGSMITH_ORGANIZATION_ID}",
+        "LANGSMITH_WORKSPACE_ID": "${localEnv:LANGSMITH_WORKSPACE_ID}"
+    }
+}
+```
+
+Or set in your shell:
+
 ```bash
 export LANGSMITH_API_KEY="your-api-key"
 export LANGSMITH_ORGANIZATION_ID="your-org-id"  # Optional
@@ -119,11 +137,27 @@ Check your configuration with:
 langstar config
 ```
 
+## Architecture Support
+
+This feature supports:
+- **Linux x86_64** (amd64) ✅
+- **Linux ARM64** (aarch64) ✅
+
+The installer automatically detects your architecture and downloads the appropriate binary.
+
+## Compatibility
+
+The feature has been tested and verified on:
+- Ubuntu 22.04, 24.04
+- Debian 11, 12
+- Alpine 3.18, 3.19
+
 ## Documentation
 
 For complete documentation, visit:
 - [Langstar GitHub Repository](https://github.com/codekiln/langstar)
 - [Langstar CLI Documentation](https://github.com/codekiln/langstar/blob/main/README.md)
+- [DevContainer Feature Documentation](https://github.com/codekiln/langstar/blob/main/docs/devcontainer-feature.md)
 
 ## Support
 
@@ -132,15 +166,3 @@ If you encounter issues:
 2. Review the [installation script](https://github.com/codekiln/langstar/blob/main/scripts/install.sh)
 3. Open a new issue with details about your environment
 
-## Architecture Support
-
-This feature currently supports:
-- **Linux x86_64** (amd64) ✅
-- **macOS ARM64** (Apple Silicon) ✅
-
-**Planned but not yet available:**
-- **Linux ARM64** (aarch64) - Planned for future release
-
-The installer automatically detects your architecture and downloads the appropriate binary.
-
-**Note:** There is currently a known issue with release asset uploads (#214) that prevents binary downloads. This is being addressed and will be fixed in an upcoming release.

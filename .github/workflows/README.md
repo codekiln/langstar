@@ -8,6 +8,10 @@ This directory contains GitHub Actions workflows for CI/CD automation.
 - **prepare-release.yml** - Automated release PR generation
 - **auto-tag-release.yml** - Automatic git tag creation on release PR merge
 - **release.yml** - Build and publish release artifacts
+- **test-features.yml** - Test DevContainer features across multiple base images
+- **release-features.yaml** - Publish DevContainer features to GHCR
+
+> **Note**: For detailed information about DevContainer feature testing and publishing, see [`.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md`](../../.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md)
 
 ## Release Workflow: Draft Releases
 
@@ -320,9 +324,28 @@ git push
    - Follow "Option A" procedure above
    - Verify check exists in workflow FIRST
 
+## DevContainer Feature Workflows
+
+The repository includes workflows for testing and publishing DevContainer features:
+
+- **test-features.yml** - Validates feature metadata and tests installation across 6 base images (Ubuntu, Debian, Alpine variants)
+- **release-features.yaml** - Publishes features to GitHub Container Registry (GHCR) and generates documentation
+
+For complete documentation on DevContainer feature testing, publishing procedures, and troubleshooting, see:
+
+**[`.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md`](../../.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md)**
+
+This document covers:
+- Workflow triggers and job details
+- Feature structure and validation requirements
+- Pre-commit and post-commit testing procedures
+- Publishing process and checklists
+- Common issues and troubleshooting
+
 ## References
 
 - Issue #235: All Jobs check not running (lesson learned)
 - Issue #199: Automated release PR generation (parent)
 - Issue #230: CI quality gates implementation
 - PR #233: Added all-jobs gate to ci.yml
+- [DevContainer Feature Testing Guide](../../.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md)
