@@ -1,0 +1,61 @@
+{
+  "properties": {
+    "runs": {
+      "items": {
+        "$ref": "#/components/schemas/RunSchema"
+      },
+      "type": "array",
+      "title": "Runs"
+    },
+    "cursors": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "type": "object",
+      "title": "Cursors"
+    },
+    "search_cursors": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Search Cursors"
+    },
+    "parsed_query": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parsed Query"
+    }
+  },
+  "type": "object",
+  "required": [
+    "runs",
+    "cursors"
+  ],
+  "title": "ListRunsResponse"
+}

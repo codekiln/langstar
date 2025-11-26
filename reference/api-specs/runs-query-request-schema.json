@@ -1,0 +1,307 @@
+{
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Id"
+    },
+    "trace": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace"
+    },
+    "parent_run": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Run"
+    },
+    "run_type": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/RunTypeEnum"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "session": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Session"
+    },
+    "reference_example": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Reference Example"
+    },
+    "execution_order": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "maximum": 1,
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Execution Order"
+    },
+    "start_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Start Time"
+    },
+    "end_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End Time"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error"
+    },
+    "query": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Query"
+    },
+    "filter": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Filter"
+    },
+    "trace_filter": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace Filter"
+    },
+    "tree_filter": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tree Filter"
+    },
+    "is_root": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Is Root"
+    },
+    "data_source_type": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/RunsFilterDataSourceTypeEnum"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "skip_pagination": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Skip Pagination"
+    },
+    "search_filter": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Search Filter"
+    },
+    "use_experimental_search": {
+      "type": "boolean",
+      "title": "Use Experimental Search",
+      "default": false
+    },
+    "cursor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Cursor"
+    },
+    "limit": {
+      "type": "integer",
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Limit",
+      "default": 100
+    },
+    "select": {
+      "items": {
+        "$ref": "#/components/schemas/RunSelect"
+      },
+      "type": "array",
+      "title": "Select",
+      "default": [
+        "id",
+        "name",
+        "run_type",
+        "start_time",
+        "end_time",
+        "status",
+        "error",
+        "extra",
+        "events",
+        "inputs",
+        "outputs",
+        "parent_run_id",
+        "manifest_id",
+        "manifest_s3_id",
+        "manifest",
+        "session_id",
+        "serialized",
+        "reference_example_id",
+        "reference_dataset_id",
+        "total_tokens",
+        "prompt_tokens",
+        "prompt_token_details",
+        "completion_tokens",
+        "completion_token_details",
+        "total_cost",
+        "prompt_cost",
+        "prompt_cost_details",
+        "completion_cost",
+        "completion_cost_details",
+        "price_model_id",
+        "first_token_time",
+        "trace_id",
+        "dotted_order",
+        "last_queued_at",
+        "feedback_stats",
+        "parent_run_ids",
+        "tags",
+        "in_dataset",
+        "app_path",
+        "share_token",
+        "trace_tier",
+        "trace_first_received_at",
+        "ttl_seconds",
+        "trace_upgrade",
+        "thread_id"
+      ]
+    },
+    "order": {
+      "$ref": "#/components/schemas/RunDateOrder",
+      "default": "desc"
+    },
+    "skip_prev_cursor": {
+      "type": "boolean",
+      "title": "Skip Prev Cursor",
+      "default": false
+    }
+  },
+  "type": "object",
+  "title": "BodyParamsForRunsQuerySchema",
+  "description": "Query params for runs query endpoint."
+}

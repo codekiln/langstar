@@ -1,0 +1,52 @@
+{
+  "post": {
+    "tags": [
+      "run"
+    ],
+    "summary": "Query Runs",
+    "operationId": "query_runs_api_v1_runs_query_post",
+    "requestBody": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BodyParamsForRunsQuerySchema"
+          }
+        }
+      },
+      "required": true
+    },
+    "responses": {
+      "200": {
+        "description": "Successful Response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ListRunsResponse"
+            }
+          }
+        }
+      },
+      "422": {
+        "description": "Validation Error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/HTTPValidationError"
+            }
+          }
+        }
+      }
+    },
+    "security": [
+      {
+        "API Key": []
+      },
+      {
+        "Tenant ID": []
+      },
+      {
+        "Bearer Auth": []
+      }
+    ]
+  }
+}
