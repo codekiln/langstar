@@ -361,8 +361,18 @@ impl RunsCommands {
         client: LangchainClient,
         flag_org_id: &Option<String>,
         flag_workspace_id: &Option<String>,
+        formatter: &OutputFormatter,
     ) -> LangchainClient {
         let mut client = client;
+
+        // Warn if both organization and workspace IDs are specified
+        if flag_org_id.is_some() && flag_workspace_id.is_some() {
+            formatter.warning(
+                "Both organization ID and workspace ID are specified. \
+                The workspace ID will be used within the specified organization. \
+                If this is not intended, please specify only one.",
+            );
+        }
 
         // Apply organization ID if provided via flag (overrides config/env)
         if let Some(org_id) = flag_org_id {
@@ -386,17 +396,22 @@ impl RunsCommands {
 
     /// Execute the query subcommand
     async fn execute_query(args: &QueryArgs, config: &Config, _format: OutputFormat) -> Result<()> {
-        let auth = config.to_auth_config();
-        let client = LangchainClient::new(auth)?;
-        let client = Self::apply_scoping(client, &args.organization_id, &args.workspace_id);
-
-        // Create output formatter based on runs-specific format
+        // Create output formatter based on runs-specific format (needed for apply_scoping warnings)
         let formatter = match args.format {
             RunsOutputFormat::Table => OutputFormatter::new(OutputFormat::Table),
             RunsOutputFormat::Json | RunsOutputFormat::JsonPretty => {
                 OutputFormatter::new(OutputFormat::Json)
             }
         };
+
+        let auth = config.to_auth_config();
+        let client = LangchainClient::new(auth)?;
+        let client = Self::apply_scoping(
+            client,
+            &args.organization_id,
+            &args.workspace_id,
+            &formatter,
+        );
 
         // Build filter from convenience flags
         let mut filter_builder = FilterBuilder::new();
@@ -411,8 +426,8 @@ impl RunsCommands {
             if let Some((key, value)) = meta.split_once('=') {
                 filter_builder = filter_builder.metadata(key, value);
             } else {
-                formatter.info(&format!(
-                    "Warning: Invalid metadata format '{}', expected KEY=VALUE",
+                formatter.warning(&format!(
+                    "Invalid metadata format '{}', expected KEY=VALUE",
                     meta
                 ));
             }
@@ -442,10 +457,7 @@ impl RunsCommands {
             .filter_map(|p| match Uuid::parse_str(p) {
                 Ok(uuid) => Some(uuid),
                 Err(_) => {
-                    formatter.warning(&format!(
-                        "Project '{}' is not a valid UUID, ignoring",
-                        p
-                    ));
+                    formatter.warning(&format!("Project '{}' is not a valid UUID, ignoring", p));
                     None
                 }
             })
@@ -512,7 +524,7 @@ impl RunsCommands {
             tree_filter: args.tree_filter.clone(),
             is_root: if args.is_root { Some(true) } else { None },
             run_type: args.run_type.map(|rt| rt.into()),
-            error: if args.errors_only { Some(true) } else { None },
+            // Note: errors_only is handled via filter_builder.errors_only(), not the error field
             start_time,
             end_time,
             select,
@@ -529,7 +541,7 @@ impl RunsCommands {
             match result {
                 Ok(run) => runs.push(run),
                 Err(e) => {
-                    eprintln!("Error fetching runs: {}", e);
+                    formatter.error(&format!("Error fetching runs: {}", e));
                     break;
                 }
             }
@@ -758,7 +770,8 @@ mod tests {
     #[test]
     fn test_run_row_duration_milliseconds() {
         // 500ms duration
-        let run = create_test_run_with_timing("2024-01-01T12:00:00.000Z", "2024-01-01T12:00:00.500Z");
+        let run =
+            create_test_run_with_timing("2024-01-01T12:00:00.000Z", "2024-01-01T12:00:00.500Z");
         let row = RunRow::from(&run);
         assert_eq!(row.duration, "500ms");
     }
