@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.1] - 2025-11-26
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(installer): resolve --version latest to actual version number (#295)
+
+* 🩹 fix(installer): resolve --version latest to actual version number
+
+When using --version latest flag, the installer now correctly resolves
+"latest" to the actual latest version number instead of trying to
+download a non-existent "langstar-latest-*.tar.gz" file.
+
+Before: VERSION=latest resulted in 404 error
+After: VERSION=latest resolves to actual version (e.g., 0.6.0)
+
+Tested scenarios:
+- --version latest: ✅ Works (resolves to 0.6.0)
+- Default (no flag): ✅ Works (defaults to latest)
+- --version 0.5.0: ✅ Works (specific version)
+
+Fixes #200
+
+* 📚 docs: add comprehensive devcontainer feature testing guide
+
+- Added README.md for devcontainer feature usage documentation
+- Added TESTING-GITHUB-ACTIONS.md with detailed testing procedures
+- Updated workflows README with feature workflow references
+- Removed NOTES.md (superseded by new documentation)
+
+New documentation covers:
+- Feature usage examples and configuration
+- GitHub Actions testing workflow details
+- Pre-commit and post-commit testing procedures
+- Publishing process and checklists
+- Troubleshooting common issues
+
+Relates to #200
+
+* 🔧 chore: trigger CI after API key rotation
+
+Re-run integration tests with rotated LangSmith API key.
+
+Refs #296
+
 ## [0.6.0] - 2025-11-25
 
 ### ✨ Features
