@@ -31,6 +31,7 @@ pub mod error;
 pub mod integrations;
 pub mod organization;
 pub mod prompts;
+pub mod runs;
 
 // Re-export commonly used types
 pub use assistants::{
@@ -48,3 +49,4 @@ pub use error::{LangstarError, Result};
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
 pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};
+pub use runs::{Cursors, QueryRunsRequest, QueryRunsResponse, Run, RunDateOrder, RunType};
