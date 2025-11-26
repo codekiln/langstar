@@ -385,7 +385,12 @@ main() {
     info "Detected platform: $platform"
 
     # Get version (latest or specified)
-    local version="${VERSION:-$(get_latest_version)}"
+    local version
+    if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
+        version=$(get_latest_version)
+    else
+        version="$VERSION"
+    fi
     info "Installing version: $version"
 
     # Check for existing installation
