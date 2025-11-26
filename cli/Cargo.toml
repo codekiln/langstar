@@ -19,6 +19,11 @@ clap.workspace = true
 
 # Async runtime
 tokio.workspace = true
+futures-util = "0.3"
+
+# Date/time and UUID
+chrono.workspace = true
+uuid.workspace = true
 
 # Serialization
 serde.workspace = true
