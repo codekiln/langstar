@@ -34,13 +34,24 @@ fi
 echo "Running installer with: \"${INSTALLER_ARGS[@]}\""
 curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | bash -s -- "${INSTALLER_ARGS[@]}"
 
-# Verify installation
-if command -v langstar &> /dev/null; then
-    echo "✓ Langstar CLI installed successfully"
-    langstar --version
+# Verify installation by checking if the binary exists at the expected path
+# Note: During container build, PATH may not be fully configured yet,
+# so we verify by checking the file directly rather than using `command -v`
+BINARY_PATH="${INSTALLER_PREFIX}/langstar"
+if [ -x "${BINARY_PATH}" ]; then
+    echo "✓ Langstar CLI installed successfully to ${BINARY_PATH}"
+    "${BINARY_PATH}" --version
 else
     echo "✗ Failed to install Langstar CLI"
-    echo "Note: If langstar is not in PATH, you may need to add ${INSTALLER_PREFIX} to your PATH"
-    echo "The installer should have provided instructions for this."
+    echo "Expected binary at: ${BINARY_PATH}"
+    echo "Contents of ${INSTALLER_PREFIX}:"
+    ls -la "${INSTALLER_PREFIX}" 2>/dev/null || echo "  (directory does not exist or is not accessible)"
     exit 1
 fi
+
+# Ensure the binary is accessible via PATH at runtime
+# The containerEnv in devcontainer-feature.json adds both potential locations to PATH,
+# but we also explicitly verify the expected location exists
+echo ""
+echo "Installation complete. The langstar command will be available in new shell sessions."
+echo "Binary location: ${BINARY_PATH}"
