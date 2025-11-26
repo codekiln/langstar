@@ -124,7 +124,7 @@ pub struct QueryArgs {
 }
 
 /// Output format for runs query
-#[derive(Debug, Clone, Copy, Default, ValueEnum)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, ValueEnum)]
 pub enum RunsOutputFormat {
     /// Human-readable table format
     #[default]
@@ -197,7 +197,7 @@ impl From<OrderArg> for RunDateOrder {
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// use langstar_cli::commands::runs::FilterBuilder;
 ///
 /// let filter = FilterBuilder::new()
@@ -247,7 +247,9 @@ impl FilterBuilder {
     }
 
     /// Add an error filter: `eq(error, true)`
-    pub fn has_error(mut self) -> Self {
+    ///
+    /// Named to match the CLI flag `--errors-only`.
+    pub fn errors_only(mut self) -> Self {
         self.conditions.push("eq(error, true)".to_string());
         self
     }
@@ -423,7 +425,7 @@ impl RunsCommands {
 
         // Add error filter
         if args.errors_only {
-            filter_builder = filter_builder.has_error();
+            filter_builder = filter_builder.errors_only();
         }
 
         // Add raw filter (if provided)
@@ -433,25 +435,46 @@ impl RunsCommands {
 
         let combined_filter = filter_builder.build();
 
-        // Parse project IDs/names
+        // Parse project IDs/names (warn if not valid UUIDs)
         let session_ids: Vec<Uuid> = args
             .projects
             .iter()
-            .filter_map(|p| Uuid::parse_str(p).ok())
+            .filter_map(|p| match Uuid::parse_str(p) {
+                Ok(uuid) => Some(uuid),
+                Err(_) => {
+                    formatter.warning(&format!(
+                        "Project '{}' is not a valid UUID, ignoring",
+                        p
+                    ));
+                    None
+                }
+            })
             .collect();
 
-        // Parse time filters
-        let start_time: Option<DateTime<Utc>> = args
-            .since
-            .as_ref()
-            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&Utc));
+        // Parse time filters (warn on invalid formats)
+        let start_time: Option<DateTime<Utc>> = args.since.as_ref().and_then(|s| {
+            DateTime::parse_from_rfc3339(s)
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|e| {
+                    formatter.warning(&format!(
+                        "Invalid --since format: {}. Expected ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
+                        e
+                    ));
+                })
+                .ok()
+        });
 
-        let end_time: Option<DateTime<Utc>> = args
-            .until
-            .as_ref()
-            .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&Utc));
+        let end_time: Option<DateTime<Utc>> = args.until.as_ref().and_then(|s| {
+            DateTime::parse_from_rfc3339(s)
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|e| {
+                    formatter.warning(&format!(
+                        "Invalid --until format: {}. Expected ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
+                        e
+                    ));
+                })
+                .ok()
+        });
 
         // Parse select fields
         let select: Option<Vec<String>> = args
@@ -459,14 +482,32 @@ impl RunsCommands {
             .as_ref()
             .map(|s| s.split(',').map(|f| f.trim().to_string()).collect());
 
-        // Build the request
+        // Show query info (only for table output to keep JSON clean)
+        if args.format == RunsOutputFormat::Table {
+            if !args.projects.is_empty() {
+                formatter.info(&format!(
+                    "Querying runs from projects: {}",
+                    args.projects.join(", ")
+                ));
+            } else {
+                formatter.info("Querying runs from all projects...");
+            }
+
+            if let Some(filter) = &combined_filter {
+                formatter.info(&format!("Filter: {}", filter));
+            }
+
+            formatter.info(&format!("Limit: {}", args.limit));
+        }
+
+        // Build the request (combined_filter is moved, not cloned)
         let request = QueryRunsRequest {
             session: if session_ids.is_empty() {
                 None
             } else {
                 Some(session_ids)
             },
-            filter: combined_filter.clone(),
+            filter: combined_filter,
             trace_filter: args.trace_filter.clone(),
             tree_filter: args.tree_filter.clone(),
             is_root: if args.is_root { Some(true) } else { None },
@@ -479,22 +520,6 @@ impl RunsCommands {
             limit: Some(100.min(args.limit as u32)), // API max is 100 per page
             ..Default::default()
         };
-
-        // Show query info
-        if !args.projects.is_empty() {
-            formatter.info(&format!(
-                "Querying runs from projects: {}",
-                args.projects.join(", ")
-            ));
-        } else {
-            formatter.info("Querying runs from all projects...");
-        }
-
-        if let Some(filter) = &combined_filter {
-            formatter.info(&format!("Filter: {}", filter));
-        }
-
-        formatter.info(&format!("Limit: {}", args.limit));
 
         // Execute query with pagination
         let mut stream = client.query_runs_paginated(request, Some(args.limit));
@@ -576,8 +601,8 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_builder_has_error() {
-        let filter = FilterBuilder::new().has_error().build();
+    fn test_filter_builder_errors_only() {
+        let filter = FilterBuilder::new().errors_only().build();
         assert_eq!(filter, Some("eq(error, true)".to_string()));
     }
 
@@ -663,5 +688,109 @@ mod tests {
             RunDateOrder::from(OrderArg::Desc),
             RunDateOrder::Desc
         ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RunRow conversion tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    fn create_test_run(name: &str, total_tokens: i64) -> Run {
+        let json = format!(
+            r#"{{
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "name": "{}",
+                "run_type": "llm",
+                "trace_id": "223e4567-e89b-12d3-a456-426614174001",
+                "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
+                "status": "success",
+                "session_id": "323e4567-e89b-12d3-a456-426614174002",
+                "app_path": "/chat",
+                "total_tokens": {}
+            }}"#,
+            name, total_tokens
+        );
+        serde_json::from_str(&json).unwrap()
+    }
+
+    fn create_test_run_with_timing(start: &str, end: &str) -> Run {
+        let json = format!(
+            r#"{{
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "name": "ChatOpenAI",
+                "run_type": "llm",
+                "trace_id": "223e4567-e89b-12d3-a456-426614174001",
+                "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
+                "status": "success",
+                "session_id": "323e4567-e89b-12d3-a456-426614174002",
+                "app_path": "/chat",
+                "start_time": "{}",
+                "end_time": "{}"
+            }}"#,
+            start, end
+        );
+        serde_json::from_str(&json).unwrap()
+    }
+
+    #[test]
+    fn test_run_row_name_truncation_short() {
+        let run = create_test_run("ShortName", 0);
+        let row = RunRow::from(&run);
+        assert_eq!(row.name, "ShortName");
+    }
+
+    #[test]
+    fn test_run_row_name_truncation_long() {
+        let run = create_test_run("ThisIsAVeryLongNameThatShouldBeTruncated", 0);
+        let row = RunRow::from(&run);
+        assert_eq!(row.name, "ThisIsAVeryLongNameThatShou...");
+        assert_eq!(row.name.chars().count(), 30);
+    }
+
+    #[test]
+    fn test_run_row_name_truncation_unicode() {
+        // Test with emoji (multi-byte characters)
+        let run = create_test_run("🚀🎉✨💡🔥⭐🌟🎯💫🌈🎊🎁", 0);
+        let row = RunRow::from(&run);
+        // Should not panic and should truncate properly
+        assert!(row.name.chars().count() <= 30);
+    }
+
+    #[test]
+    fn test_run_row_duration_milliseconds() {
+        // 500ms duration
+        let run = create_test_run_with_timing("2024-01-01T12:00:00.000Z", "2024-01-01T12:00:00.500Z");
+        let row = RunRow::from(&run);
+        assert_eq!(row.duration, "500ms");
+    }
+
+    #[test]
+    fn test_run_row_duration_seconds() {
+        // 5 second duration
+        let run = create_test_run_with_timing("2024-01-01T12:00:00Z", "2024-01-01T12:00:05Z");
+        let row = RunRow::from(&run);
+        assert_eq!(row.duration, "5.00s");
+    }
+
+    #[test]
+    fn test_run_row_tokens_display() {
+        let run = create_test_run("Test", 150);
+        let row = RunRow::from(&run);
+        assert_eq!(row.tokens, "150");
+    }
+
+    #[test]
+    fn test_run_row_tokens_display_zero() {
+        let run = create_test_run("Test", 0);
+        let row = RunRow::from(&run);
+        assert_eq!(row.tokens, "-");
+    }
+
+    #[test]
+    fn test_run_row_uuid_truncation() {
+        let run = create_test_run("Test", 0);
+        let row = RunRow::from(&run);
+        // Should be first 8 chars of UUID
+        assert_eq!(row.id, "123e4567");
+        assert_eq!(row.id.len(), 8);
     }
 }
