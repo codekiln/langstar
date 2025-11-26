@@ -1,7 +1,10 @@
 use crate::auth::AuthConfig;
 use crate::error::{LangstarError, Result};
+use crate::runs::{QueryRunsRequest, QueryRunsResponse, Run};
+use futures_core::Stream;
 use reqwest::{Client as HttpClient, RequestBuilder};
 use serde::{Deserialize, Serialize};
+use std::pin::Pin;
 use std::time::Duration;
 
 /// Base URLs for LangChain services
@@ -407,6 +410,141 @@ impl LangchainClient {
     /// Get the underlying HTTP client
     pub fn http_client(&self) -> &HttpClient {
         &self.http_client
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Runs API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Query runs from LangSmith with filtering and pagination.
+    ///
+    /// Uses `POST /api/v1/runs/query` endpoint with cursor-based pagination.
+    /// Supports the LangSmith filter query language for complex filtering.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Query parameters including filters, pagination, and field selection
+    ///
+    /// # Returns
+    ///
+    /// A `QueryRunsResponse` containing the matching runs and pagination cursors.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunType};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = QueryRunsRequest {
+    ///     is_root: Some(true),
+    ///     run_type: Some(RunType::Llm),
+    ///     limit: Some(50),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let response = client.query_runs(request).await?;
+    /// println!("Found {} runs", response.runs.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/runs/query`
+    /// - Max limit per request: 100 (per OpenAPI spec)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn query_runs(&self, request: QueryRunsRequest) -> Result<QueryRunsResponse> {
+        let request_builder = self.langsmith_post("/api/v1/runs/query")?.json(&request);
+
+        self.execute(request_builder).await
+    }
+
+    /// Query runs with automatic pagination, returning a stream of runs.
+    ///
+    /// This method handles cursor-based pagination automatically, fetching
+    /// additional pages as needed until the total limit is reached or no
+    /// more results are available.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Base query parameters (cursor field will be managed automatically)
+    /// * `total_limit` - Optional maximum number of runs to return across all pages.
+    ///   If `None`, fetches all matching runs.
+    ///
+    /// # Returns
+    ///
+    /// A `Stream` of `Result<Run>` that yields runs one at a time.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunType};
+    /// # use futures_core::Stream;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// use tokio_stream::StreamExt;
+    ///
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = QueryRunsRequest {
+    ///     is_root: Some(true),
+    ///     run_type: Some(RunType::Llm),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// // Fetch up to 500 runs with automatic pagination
+    /// let mut stream = client.query_runs_paginated(request, Some(500));
+    ///
+    /// while let Some(result) = stream.next().await {
+    ///     match result {
+    ///         Ok(run) => println!("Run: {} ({})", run.name, run.status),
+    ///         Err(e) => eprintln!("Error: {}", e),
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Notes
+    ///
+    /// - Each page fetches up to 100 runs (API maximum)
+    /// - The stream continues until either:
+    ///   - `total_limit` runs have been yielded
+    ///   - No more pages are available (no `next` cursor)
+    ///   - An error occurs
+    /// - Errors are yielded as `Err` items, allowing partial results
+    pub fn query_runs_paginated(
+        &self,
+        request: QueryRunsRequest,
+        total_limit: Option<usize>,
+    ) -> Pin<Box<dyn Stream<Item = Result<Run>> + Send + '_>> {
+        let mut request = request;
+        let limit = total_limit.unwrap_or(usize::MAX);
+
+        Box::pin(async_stream::try_stream! {
+            let mut total_yielded = 0usize;
+
+            loop {
+                let response = self.query_runs(request.clone()).await?;
+
+                for run in response.runs {
+                    if total_yielded >= limit {
+                        return;
+                    }
+                    total_yielded += 1;
+                    yield run;
+                }
+
+                match response.cursors.next {
+                    Some(next) if total_yielded < limit => {
+                        request.cursor = Some(next);
+                    }
+                    _ => break,
+                }
+            }
+        })
     }
 }
 
