@@ -25,6 +25,10 @@ toml = "0.8"
 thiserror = "2.0"
 anyhow = "1.0"
 
+# Date/time and UUID
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["serde", "v4"] }
+
 # CLI
 clap = { version = "4.5", features = ["derive", "env"] }
 tabled = "0.16"
