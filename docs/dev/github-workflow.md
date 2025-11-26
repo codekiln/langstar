@@ -4,9 +4,52 @@
 
 1. Each github pull request should be opened from a feature branch that closes a single github issue.
 2. Github issues use sub-tasks for hierarchy, representing parent child relationships.
-   There may be more than one level to the hierarchy. 
+   There may be more than one level to the hierarchy.
 3. If github issue "#333 implement kingdom" depends on "#666 implement phylum" depends on #999 implement class, then
    user/999-implement-class will PR into user/666-implement-phylum, and user/666-implement-phylum will PR into user/333-implement-kingdom.
+
+### Choosing PR Target: Main vs. Hierarchical Merging
+
+Not all sub-issues require hierarchical merging. Choose your PR target based on the nature of the changes:
+
+#### PR Directly to Main (Preferred for Most Work)
+
+Use direct-to-main PRs for:
+- **Incremental, non-breaking changes** - Research docs, small features, tests
+- **Independent sub-tasks** - Work that doesn't require other sub-tasks to be complete first
+- **Documentation and research** - Reports, specs, and reference materials
+- **Bug fixes** - Isolated fixes that don't affect other in-progress work
+- **Refactoring** - Changes that maintain backward compatibility
+
+**Example**: A research sub-issue (#299) under an epic (#298) can PR directly to main because:
+- The research report is standalone and useful immediately
+- It doesn't break anything or require other code to exist first
+- Other developers benefit from having it merged sooner
+
+#### Hierarchical Merging (For Breaking Changes)
+
+Use hierarchical merging (PR into parent branch) for:
+- **Breaking API changes** - Changes that would break other in-progress branches
+- **Interdependent features** - Sub-tasks that build on each other sequentially
+- **Large refactors** - Structural changes that affect multiple components
+- **Feature flags** - When changes must be released together atomically
+
+**Example**: If implementing a new CLI command (#999) requires a new SDK method (#666), and the SDK method changes existing interfaces:
+- PR #999 into #666's branch (not main)
+- PR #666 into main only when both are complete
+- This prevents main from having incomplete features
+
+#### Decision Flowchart
+
+```
+Is this change breaking to main?
+├── No → PR to main
+└── Yes → Does it require other sub-tasks first?
+    ├── No → PR to main (with feature flag if needed)
+    └── Yes → PR to parent branch (hierarchical)
+```
+
+**Rule of thumb**: When in doubt, prefer PRing to main. Hierarchical merging adds complexity and should only be used when truly necessary.
 
 ## Workflow Overview
 
