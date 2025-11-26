@@ -492,7 +492,7 @@ fn build_filter(args: &RunsQueryArgs) -> Result<Option<String>> {
     } else if parts.len() == 1 {
         Ok(Some(parts.remove(0)))
     } else {
-        Ok(Some(format!("and({})", parts.join(", "))")))
+        Ok(Some(format!("and({})", parts.join(", "))))
     }
 }
 ```
