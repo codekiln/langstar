@@ -65,7 +65,7 @@ pub enum RunType {
 /// # OpenAPI Reference
 ///
 /// See `/workspace/reference/api-specs/run-schema.json`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Run {
     // ═══════════════════════════════════════════════════════════════════════
     // Required fields (per OpenAPI spec)

@@ -4,7 +4,7 @@ mod error;
 mod output;
 
 use clap::{Parser, Subcommand};
-use commands::{AssistantCommands, GraphCommands, PromptCommands};
+use commands::{AssistantCommands, GraphCommands, PromptCommands, RunsCommands};
 use config::Config;
 use error::Result;
 use output::OutputFormat;
@@ -38,6 +38,10 @@ enum Commands {
     /// Manage LangGraph deployments
     #[command(subcommand)]
     Graph(GraphCommands),
+
+    /// Query and manage LangSmith runs/traces
+    #[command(subcommand)]
+    Runs(RunsCommands),
 
     /// Show configuration file location
     Config,
@@ -77,6 +81,9 @@ async fn run() -> Result<()> {
         }
         Commands::Graph(graph_cmd) => {
             graph_cmd.execute(&config, format).await?;
+        }
+        Commands::Runs(runs_cmd) => {
+            runs_cmd.execute(&config, format).await?;
         }
         Commands::Config => {
             let config_path = Config::config_file_path()?;
