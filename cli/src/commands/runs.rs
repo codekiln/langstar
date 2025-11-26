@@ -323,9 +323,9 @@ impl From<&Run> for RunRow {
             .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
             .unwrap_or_else(|| "-".to_string());
 
-        // Truncate name if too long
-        let name = if run.name.len() > 30 {
-            format!("{}...", &run.name[..27])
+        // Truncate name if too long (unicode-safe)
+        let name = if run.name.chars().count() > 30 {
+            format!("{}...", run.name.chars().take(27).collect::<String>())
         } else {
             run.name.clone()
         };
@@ -338,7 +338,7 @@ impl From<&Run> for RunRow {
         };
 
         Self {
-            id: run.id.to_string()[..8].to_string(), // Short UUID
+            id: run.id.to_string().chars().take(8).collect::<String>(), // Short UUID
             name,
             run_type: format!("{:?}", run.run_type).to_lowercase(),
             status: run.status.clone(),
