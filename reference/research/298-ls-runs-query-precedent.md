@@ -462,7 +462,7 @@ pub struct RunsQueryArgs {
 **Filter Building Logic**:
 
 ```rust
-fn build_filter(args: &RunsQueryArgs) -> Option<String> {
+fn build_filter(args: &RunsQueryArgs) -> Result<Option<String>> {
     let mut parts = Vec::new();
 
     // Add convenience flags as filter parts
@@ -488,11 +488,11 @@ fn build_filter(args: &RunsQueryArgs) -> Option<String> {
     }
 
     if parts.is_empty() {
-        None
+        Ok(None)
     } else if parts.len() == 1 {
-        Some(parts.remove(0))
+        Ok(Some(parts.remove(0)))
     } else {
-        Some(format!("and({})", parts.join(", ")))
+        Ok(Some(format!("and({})", parts.join(", "))")))
     }
 }
 ```
