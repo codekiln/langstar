@@ -147,6 +147,47 @@ jobs:
           name: langstar-macos
           path: target/release/langstar
 
+  # Check if devcontainer features need republishing
+  # This job warns but does NOT fail - there may be legitimate reasons to delay publishing
+  # (e.g., waiting for a CLI release first)
+  check-feature-publish-status:
+    name: Check Feature Publish Status
+    runs-on: ubuntu-latest
+    # Only run on PRs to provide visibility during review
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history to compare commits
+
+      - name: Check if features need republishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get last successful release-features.yaml run commit
+          LAST_PUBLISH=$(gh run list --workflow=release-features.yaml --status=success --json headSha --jq '.[0].headSha' 2>/dev/null || echo "")
+
+          if [ -z "$LAST_PUBLISH" ]; then
+            echo "::notice::No previous feature publish found"
+            exit 0
+          fi
+
+          # Check if feature files changed since last publish
+          CHANGED=$(git diff --name-only "$LAST_PUBLISH" HEAD -- .devcontainer/features/ 2>/dev/null || echo "")
+
+          if [ -n "$CHANGED" ]; then
+            echo "::warning title=Devcontainer Features Need Republishing::Feature files have changed since last publish. After merging, run: gh workflow run release-features.yaml"
+            echo ""
+            echo "Changed files since last publish ($LAST_PUBLISH):"
+            echo "$CHANGED"
+            echo ""
+            echo "To republish after merge:"
+            echo "  gh workflow run release-features.yaml"
+          else
+            echo "✓ Devcontainer features are up to date with published version"
+          fi
+
   # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
   # This job aggregates all CI results into a single "All Jobs" check.
   # Branch protection requires this check - removing it will block ALL merges to main.
