@@ -69,8 +69,9 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
 Depending on user requirements, filter the comments:
 
 **Unresolved comments** (no replies yet):
-- Filter where `in_reply_to_id` is null
-- Check if there are any child comments (comments with `in_reply_to_id` matching this comment's `id`)
+- First, filter for comments where `in_reply_to_id` is null (top-level comments)
+- For each top-level comment, check if there are any other comments where `in_reply_to_id` equals this comment's `id`
+- If no such child comments exist, then the top-level comment is unresolved
 
 **Specific comments:**
 - If user provides comment IDs, only process those
@@ -91,6 +92,9 @@ Determine what to reply with:
 For each comment to reply to, spawn a `do-gh-pr-comment-reply` subagent:
 
 **Important:** Use a SINGLE message with MULTIPLE Task tool calls to spawn agents in parallel:
+
+> **Note:** The following is conceptual pseudo-code showing the general pattern.
+> The actual Task tool invocation syntax may differ based on the specific implementation.
 
 ```
 # Example pseudo-code structure
@@ -153,9 +157,10 @@ Summary: Successfully replied to 8 out of 10 comments.
 
 **Workflow:**
 1. Fetch all comments from PR #300
-2. Filter for comments with no replies (in_reply_to_id is null AND no child comments)
-3. For each unresolved comment, spawn subagent to reply with "Fixed"
-4. Report results
+2. Build a map of parent → children relationships by iterating over all comments and recording which comments have their `in_reply_to_id` set to another comment's `id`
+3. Filter for comments where `in_reply_to_id` is null (top-level) and the comment's `id` does not appear as a parent in the map (i.e., no other comment references it as a parent)
+4. For each unresolved comment, spawn subagent to reply with "Fixed"
+5. Report results
 
 ### Scenario 2: Reply to Specific Comments
 
@@ -225,13 +230,19 @@ Summary: Successfully replied to 8 out of 10 comments.
 - Ask for confirmation before proceeding
 
 **Example confirmation:**
+
+> **Display rule:** Show the first 5 comments in detail. If more than 5 total, show "and X more" for the remainder.
+
 ```
 About to reply to 15 unresolved comments on PR #300 with: "Fixed in commit abc123"
 
 Comments to reply to:
   1. Comment 2565891355: "This function doesn't handle null values"
   2. Comment 2565891356: "Missing error handling here"
-  ... (list first 5, then "and 10 more")
+  3. Comment 2565891357: "Consider using a const here"
+  4. Comment 2565891358: "Typo in variable name"
+  5. Comment 2565891359: "This could be simplified"
+  ... and 10 more
 
 Proceed? (yes/no)
 ```
@@ -349,6 +360,8 @@ To find all replies to a comment:
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
   --jq '.[] | select(.in_reply_to_id == COMMENT_ID)'
 ```
+
+> **Note:** Replace `COMMENT_ID` with the actual numeric comment ID.
 
 ## See Also
 

@@ -20,7 +20,7 @@ This subagent is designed to be spawned in parallel to handle individual PR comm
 The prompt should provide:
 - `pr_number`: The PR number (integer)
 - `comment_id`: The review comment ID to reply to (integer)
-- `reply_body`: The text of the reply
+- `body`: The text of the reply
 - `owner` (optional): Repository owner
 - `repo` (optional): Repository name
 
@@ -40,9 +40,9 @@ Task(
   description="Reply to PR comment",
   prompt="""
     Reply to PR review comment with the following details:
-    - PR number: 300
-    - Comment ID: 2565891355
-    - Reply body: "Fixed in commit abc123"
+    - pr_number: 300
+    - comment_id: 2565891355
+    - body: "Fixed in commit abc123"
   """,
   model="haiku"
 )
