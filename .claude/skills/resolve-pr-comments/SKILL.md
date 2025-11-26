@@ -358,10 +358,10 @@ Returns the created comment object.
 To find all replies to a comment:
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  --jq '.[] | select(.in_reply_to_id == {comment_id})'
+  --jq '.[] | select(.in_reply_to_id == COMMENT_ID)'
 ```
 
-> **Note:** Replace `{comment_id}` with the actual numeric comment ID.
+> **Note:** Replace `COMMENT_ID` with the actual numeric comment ID.
 
 ## See Also
 
