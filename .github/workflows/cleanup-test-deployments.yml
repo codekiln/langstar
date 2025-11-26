@@ -52,17 +52,20 @@ jobs:
 
           echo "✓ No CI runs in progress, proceeding with cleanup"
 
-          # Get test deployments as JSON with error handling
-          if ! deployments=$(./target/release/langstar graph list \
+          # Get test deployments as JSON with error handling, excluding cli-test-deployment-* deployments
+          if ! raw_deployments=$(./target/release/langstar graph list \
             --name-contains "test-deployment-" \
             --format json 2>&1); then
             echo "❌ Error: Failed to list deployments"
-            echo "$deployments"
+            echo "$raw_deployments"
             exit 1
           fi
 
+          # Exclude deployments whose names start with "cli-test-deployment-"
+          deployments=$(echo "$raw_deployments" | jq 'if .resources then .resources |= map(select(.name | startswith("cli-test-deployment-") | not)) else . end')
+
           count=$(echo "$deployments" | jq '.resources | length')
-          echo "Found $count test deployment(s)"
+          echo "Found $count test deployment(s) (excluding cli-test-deployment-*)"
 
           if [ "$count" -eq 0 ]; then
             echo "✅ No test deployments to clean up"
@@ -75,9 +78,9 @@ jobs:
           set +e  # Allow individual deletions to fail without stopping entire cleanup
           while IFS='|' read -r id name created_at; do
             # Calculate age in hours
-            # Remove fractional seconds and handle timezone info for GNU date
+            # Remove fractional seconds (known issue for GNU date parsing)
             clean_created_at="${created_at%%.*}"
-            created_epoch=$(date -d "$created_at" +%s 2>/dev/null || date -d "$clean_created_at" +%s 2>/dev/null || echo 0)
+            created_epoch=$(date -d "$clean_created_at" +%s 2>/dev/null || echo 0)
             now_epoch=$(date +%s)
 
             if [ "$created_epoch" -eq 0 ]; then
