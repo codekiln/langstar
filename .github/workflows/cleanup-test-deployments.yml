@@ -1,0 +1,109 @@
+name: Cleanup Stale Test Deployments
+
+on:
+  schedule:
+    # Run every 4 hours to ensure stale deployments are cleaned up promptly
+    # This ensures deployments older than 4 hours are always caught within one cycle
+    - cron: '0 */4 * * *'
+  workflow_dispatch:  # Manual trigger for testing
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read  # Required for gh run list
+      contents: read  # Required for checkout
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build langstar CLI
+        run: cargo build --release
+
+      - name: Cleanup stale test deployments
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          echo "🧹 Starting stale deployment cleanup..."
+
+          # Verify required tools
+          for tool in jq gh; do
+            if ! command -v "$tool" &> /dev/null; then
+              echo "Error: Required tool '$tool' not found"
+              exit 1
+            fi
+          done
+
+          # Safety check: Skip if CI is currently running
+          in_progress=$(gh run list --workflow=ci.yml --status in_progress --json databaseId | jq length)
+          if [ "$in_progress" -gt 0 ]; then
+            echo "⏸️  CI runs in progress ($in_progress), skipping cleanup to avoid disruption"
+            exit 0
+          fi
+
+          echo "✓ No CI runs in progress, proceeding with cleanup"
+
+          # Get test deployments as JSON with error handling, excluding cli-test-deployment-* deployments
+          if ! raw_deployments=$(./target/release/langstar graph list \
+            --name-contains "test-deployment-" \
+            --format json 2>&1); then
+            echo "❌ Error: Failed to list deployments"
+            echo "$raw_deployments"
+            exit 1
+          fi
+
+          # Exclude deployments whose names start with "cli-test-deployment-"
+          deployments=$(echo "$raw_deployments" | jq 'if .resources then .resources |= map(select(.name | startswith("cli-test-deployment-") | not)) else . end')
+
+          count=$(echo "$deployments" | jq '.resources | length')
+          echo "Found $count test deployment(s) (excluding cli-test-deployment-*)"
+
+          if [ "$count" -eq 0 ]; then
+            echo "✅ No test deployments to clean up"
+            exit 0
+          fi
+
+          # Check each deployment
+          # Use process substitution to avoid subshell variable scope issues
+          deleted=0
+          set +e  # Allow individual deletions to fail without stopping entire cleanup
+          while IFS='|' read -r id name created_at; do
+            # Calculate age in hours
+            # Remove fractional seconds (known issue for GNU date parsing)
+            clean_created_at="${created_at%%.*}"
+            created_epoch=$(date -d "$clean_created_at" +%s 2>/dev/null || echo 0)
+            now_epoch=$(date +%s)
+
+            if [ "$created_epoch" -eq 0 ]; then
+              echo "⚠️  Could not parse date for $name, skipping"
+              continue
+            fi
+
+            age_hours=$(( (now_epoch - created_epoch) / 3600 ))
+
+            echo "Checking: $name (age: ${age_hours}h)"
+
+            # Delete if 4 hours or older
+            if [ "$age_hours" -ge 4 ]; then
+              echo "  → Deleting stale deployment (${age_hours}h old)"
+              if ./target/release/langstar graph delete "$id" --yes 2>&1; then
+                deleted=$((deleted + 1))
+              else
+                echo "  ⚠️  Failed to delete $name (ID: $id), continuing..."
+              fi
+            else
+              echo "  → Keeping (${age_hours}h < 4h threshold)"
+            fi
+          done < <(echo "$deployments" | jq -r '.resources[] | "\(.id)|\(.name)|\(.created_at)"')
+          set -e
+
+          echo "✅ Cleanup complete (deleted $deleted deployment(s))"
