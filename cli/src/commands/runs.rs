@@ -806,4 +806,36 @@ mod tests {
         assert_eq!(row.id, "123e4567");
         assert_eq!(row.id.len(), 8);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Pagination limit tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Helper to calculate the per-page limit (mirrors the logic in execute_query)
+    fn calculate_per_page_limit(args_limit: usize) -> u32 {
+        100.min(args_limit as u32)
+    }
+
+    #[test]
+    fn test_per_page_limit_below_max() {
+        // When user requests less than 100, use their limit
+        assert_eq!(calculate_per_page_limit(50), 50);
+        assert_eq!(calculate_per_page_limit(1), 1);
+        assert_eq!(calculate_per_page_limit(99), 99);
+    }
+
+    #[test]
+    fn test_per_page_limit_at_max() {
+        // When user requests exactly 100, use 100
+        assert_eq!(calculate_per_page_limit(100), 100);
+    }
+
+    #[test]
+    fn test_per_page_limit_above_max() {
+        // When user requests more than 100, clamp to API max of 100
+        // The SDK's query_runs_paginated handles fetching additional pages
+        assert_eq!(calculate_per_page_limit(101), 100);
+        assert_eq!(calculate_per_page_limit(500), 100);
+        assert_eq!(calculate_per_page_limit(1000), 100);
+    }
 }
