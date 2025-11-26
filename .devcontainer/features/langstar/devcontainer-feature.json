@@ -12,7 +12,7 @@
         }
     },
     "containerEnv": {
-        "PATH": "/usr/local/bin:${PATH}:${HOME}/.local/bin"
+        "PATH": "${PATH}:${HOME}/.local/bin"
     },
     "installsAfter": [
         "ghcr.io/devcontainers/features/common-utils"
