@@ -1,0 +1,567 @@
+{
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "inputs": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Inputs"
+    },
+    "inputs_preview": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Inputs Preview"
+    },
+    "run_type": {
+      "$ref": "#/components/schemas/RunTypeEnum"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Start Time"
+    },
+    "end_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "End Time"
+    },
+    "extra": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Extra"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error"
+    },
+    "execution_order": {
+      "type": "integer",
+      "minimum": 1,
+      "title": "Execution Order",
+      "default": 1
+    },
+    "serialized": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Serialized"
+    },
+    "outputs": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Outputs"
+    },
+    "outputs_preview": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Outputs Preview"
+    },
+    "parent_run_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Run Id"
+    },
+    "manifest_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Manifest Id"
+    },
+    "manifest_s3_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Manifest S3 Id"
+    },
+    "events": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Events"
+    },
+    "tags": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Tags"
+    },
+    "inputs_s3_urls": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Inputs S3 Urls"
+    },
+    "outputs_s3_urls": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Outputs S3 Urls"
+    },
+    "s3_urls": {
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "S3 Urls"
+    },
+    "trace_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Trace Id"
+    },
+    "dotted_order": {
+      "type": "string",
+      "title": "Dotted Order"
+    },
+    "trace_min_start_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace Min Start Time"
+    },
+    "trace_max_start_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace Max Start Time"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status"
+    },
+    "child_run_ids": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Child Run Ids"
+    },
+    "direct_child_run_ids": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Direct Child Run Ids"
+    },
+    "parent_run_ids": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Parent Run Ids"
+    },
+    "feedback_stats": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "object"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Feedback Stats"
+    },
+    "reference_example_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Reference Example Id"
+    },
+    "total_tokens": {
+      "type": "integer",
+      "title": "Total Tokens",
+      "default": 0
+    },
+    "prompt_tokens": {
+      "type": "integer",
+      "title": "Prompt Tokens",
+      "default": 0
+    },
+    "completion_tokens": {
+      "type": "integer",
+      "title": "Completion Tokens",
+      "default": 0
+    },
+    "prompt_token_details": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Prompt Token Details"
+    },
+    "completion_token_details": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completion Token Details"
+    },
+    "total_cost": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Total Cost"
+    },
+    "prompt_cost": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Prompt Cost"
+    },
+    "completion_cost": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completion Cost"
+    },
+    "prompt_cost_details": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Prompt Cost Details"
+    },
+    "completion_cost_details": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Completion Cost Details"
+    },
+    "price_model_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Price Model Id"
+    },
+    "first_token_time": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "First Token Time"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Session Id"
+    },
+    "app_path": {
+      "type": "string",
+      "title": "App Path"
+    },
+    "last_queued_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Last Queued At"
+    },
+    "in_dataset": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "In Dataset"
+    },
+    "share_token": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Share Token"
+    },
+    "trace_tier": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/TraceTier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "trace_first_received_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Trace First Received At"
+    },
+    "ttl_seconds": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Ttl Seconds"
+    },
+    "trace_upgrade": {
+      "type": "boolean",
+      "title": "Trace Upgrade",
+      "default": false
+    },
+    "reference_dataset_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Reference Dataset Id"
+    },
+    "thread_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Thread Id"
+    }
+  },
+  "type": "object",
+  "required": [
+    "name",
+    "run_type",
+    "trace_id",
+    "dotted_order",
+    "id",
+    "status",
+    "session_id",
+    "app_path"
+  ],
+  "title": "RunSchema",
+  "description": "Run schema."
+}
