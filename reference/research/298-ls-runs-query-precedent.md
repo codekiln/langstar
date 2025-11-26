@@ -360,12 +360,25 @@ pub enum FilterValue {
     Null,
 }
 
+impl FilterValue {
+    /// Format the value for use in a filter expression
+    pub fn format(&self) -> String {
+        match self {
+            FilterValue::String(s) => format!("\"{}\"", s.replace('"', "\\\"")),
+            FilterValue::Number(n) => n.to_string(),
+            FilterValue::Bool(b) => b.to_string(),
+            FilterValue::Null => "null".to_string(),
+        }
+    }
+}
+
 impl FilterOp {
-    pub fn to_string(&self) -> String {
+    /// Convert the filter operation to a filter expression string
+    pub fn to_filter_string(&self) -> String {
         match self {
             FilterOp::Eq(field, val) => format!("eq({}, {})", field, val.format()),
             FilterOp::And(ops) => {
-                let parts: Vec<_> = ops.iter().map(|o| o.to_string()).collect();
+                let parts: Vec<_> = ops.iter().map(|o| o.to_filter_string()).collect();
                 format!("and({})", parts.join(", "))
             }
             // ... other operators
