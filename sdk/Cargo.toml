@@ -21,6 +21,11 @@ url = "2.5"
 base64 = "0.22"
 urlencoding = "2.1"
 
+# Streaming pagination
+async-stream = "0.3"
+futures-core = "0.3"
+
 [dev-dependencies]
 tokio-test = "0.4"
 mockito = "1.5"
+tokio-stream = "0.1"
