@@ -1,7 +1,7 @@
 {
     "id": "langstar",
     "name": "Langstar CLI",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Installs the Langstar CLI, a tool for managing LangGraph Cloud deployments via LangSmith API",
     "documentationURL": "https://github.com/codekiln/langstar",
     "options": {
@@ -10,6 +10,9 @@
             "default": "latest",
             "description": "Version of Langstar CLI to install. Use 'latest' for the most recent release, or specify a version like 'v0.4.0'"
         }
+    },
+    "containerEnv": {
+        "PATH": "${PATH}:${HOME}/.local/bin"
     },
     "installsAfter": [
         "ghcr.io/devcontainers/features/common-utils"
