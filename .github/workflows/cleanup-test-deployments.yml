@@ -89,8 +89,8 @@ jobs:
 
             echo "Checking: $name (age: ${age_hours}h)"
 
-            # Delete if older than 4 hours
-            if [ "$age_hours" -gt 4 ]; then
+            # Delete if 4 hours or older
+            if [ "$age_hours" -ge 4 ]; then
               echo "  → Deleting stale deployment (${age_hours}h old)"
               if ./target/release/langstar graph delete "$id" --yes 2>&1; then
                 deleted=$((deleted + 1))
