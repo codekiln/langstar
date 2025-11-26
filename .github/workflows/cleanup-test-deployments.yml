@@ -1,0 +1,85 @@
+name: Cleanup Stale Test Deployments
+
+on:
+  schedule:
+    # Run at midnight UTC (covers end-of-day for most timezones)
+    - cron: '0 0 * * *'
+    # Run at noon UTC (catches morning-after scenarios)
+    - cron: '0 12 * * *'
+  workflow_dispatch:  # Manual trigger for testing
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build langstar CLI
+        run: cargo build --release
+
+      - name: Cleanup stale test deployments
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          echo "🧹 Starting stale deployment cleanup..."
+
+          # Safety check: Skip if CI is currently running
+          in_progress=$(gh run list --workflow=ci.yml --status in_progress --json databaseId | jq length)
+          if [ "$in_progress" -gt 0 ]; then
+            echo "⏸️  CI runs in progress ($in_progress), skipping cleanup to avoid disruption"
+            exit 0
+          fi
+
+          echo "✓ No CI runs in progress, proceeding with cleanup"
+
+          # Get test deployments as JSON
+          deployments=$(./target/release/langstar graph list \
+            --name-contains "test-deployment-" \
+            --format json)
+
+          count=$(echo "$deployments" | jq '.resources | length')
+          echo "Found $count test deployment(s)"
+
+          if [ "$count" -eq 0 ]; then
+            echo "✅ No test deployments to clean up"
+            exit 0
+          fi
+
+          # Check each deployment
+          deleted=0
+          echo "$deployments" | jq -r '.resources[] | "\(.id)|\(.name)|\(.created_at)"' | \
+          while IFS='|' read -r id name created_at; do
+            # Calculate age in hours
+            created_epoch=$(date -d "$created_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "${created_at%%.*}" +%s 2>/dev/null || echo 0)
+            now_epoch=$(date +%s)
+
+            if [ "$created_epoch" -eq 0 ]; then
+              echo "⚠️  Could not parse date for $name, skipping"
+              continue
+            fi
+
+            age_hours=$(( (now_epoch - created_epoch) / 3600 ))
+
+            echo "Checking: $name (age: ${age_hours}h)"
+
+            # Delete if older than 4 hours
+            if [ "$age_hours" -gt 4 ]; then
+              echo "  → Deleting stale deployment (${age_hours}h old)"
+              ./target/release/langstar graph delete "$id" --yes
+              deleted=$((deleted + 1))
+            else
+              echo "  → Keeping (${age_hours}h < 4h threshold)"
+            fi
+          done
+
+          echo "✅ Cleanup complete"
