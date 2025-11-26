@@ -326,7 +326,7 @@ impl LangchainClient {
         request: &ListRunsRequest,
     ) -> Result<ListRunsResponse> {
         let response = self
-            .langsmith_post("/runs/query")?
+            .langsmith_post("/runs/query")
             .json(request)
             .send()
             .await?;
