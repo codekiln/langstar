@@ -5,6 +5,420 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-11-26
+
+### ✨ Features
+
+- ✨ feat(sdk): add Run types and QueryRunsRequest for runs/query API (#309)
+
+Implements Phase 1 (298.3-sdk-runs-types) of the ls-runs-query milestone:
+
+- Add `Run` struct with all 54 fields from OpenAPI spec
+- Add `RunType` enum (llm, chain, tool, retriever, embedding, prompt, parser)
+- Add `QueryRunsRequest` struct for POST /runs/query endpoint
+- Add `QueryRunsResponse` and `Cursors` structs for pagination
+- Add `RunDateOrder` enum for sort ordering
+- Export all types from sdk/src/lib.rs
+
+Key implementation details:
+- Required fields per OpenAPI: id, name, run_type, trace_id, dotted_order,
+  status, session_id, app_path
+- Token fields use #[serde(default)] for OpenAPI defaults
+- All optional fields properly wrapped in Option<T>
+- 15 unit tests for serde serialization/deserialization
+
+Fixes #305
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat: add PR comment reply system (slash command, subagent, skill) (#310)
+
+Implements a complete system for replying to GitHub PR review comments:
+
+1. Slash Command (.claude/commands/gh-pr-comment-reply.md):
+   - Reply to a single PR comment via GitHub API
+   - Takes pr_number, comment_id, body, optional owner/repo
+   - Uses `gh api` with POST /repos/{owner}/{repo}/pulls/{pr_number}/comments
+
+2. Subagent (.claude/agents/do-gh-pr-comment-reply.md):
+   - Focused agent for single comment replies
+   - Uses Haiku model for efficiency
+   - Executes the gh-pr-comment-reply slash command
+   - Reports success/failure to parent agent
+
+3. Skill (.claude/skills/resolve-pr-comments/SKILL.md):
+   - Orchestrates parallel replies to multiple comments
+   - Fetches PR review comments from GitHub API
+   - Spawns parallel do-gh-pr-comment-reply subagents
+   - Collects and reports results
+
+Additional Changes:
+- Created .claude/agents/ directory for subagent definitions
+- Added permissions to .claude/settings.local.json for gh api access
+  (Note: settings.local.json is gitignored and not committed)
+
+Fixes #302
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): add query_runs client method with pagination (#312)
+
+* ✨ feat(sdk): add query_runs client method with pagination
+
+Implements LangchainClient methods to query LangSmith runs/traces:
+
+- query_runs(): Single-page query to POST /api/v1/runs/query
+- query_runs_paginated(): Auto-paginating stream iterator
+
+Features:
+- Cursor-based pagination (max 100 per page per OpenAPI spec)
+- async-stream for streaming pagination results
+- Full support for QueryRunsRequest filters
+- Comprehensive HTTP-mocked tests using mockito
+
+Fixes #306
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor: address PR #312 review feedback
+
+- Remove variable shadowing in query_runs_paginated by using mut parameter
+- Clarify mockito matching comment explaining LIFO behavior
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(ci): add automated test deployment cleanup workflow (#316)
+
+* ✨ feat(ci): add automated test deployment cleanup workflow
+
+Implements scheduled cleanup of stale test deployments to avoid
+overnight/weekend resource consumption.
+
+Safety features:
+- Checks for in-progress CI runs before deleting
+- Only targets deployments matching `test-deployment-*` pattern
+- Only deletes deployments older than 4 hours
+- Logs all decisions for audit purposes
+
+Runs twice daily at midnight and noon UTC, with manual trigger support.
+
+Fixes #209
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(ci): address Copilot PR review feedback
+
+- Add explicit permissions block (actions: read, contents: read)
+- Change schedule from twice daily to every 4 hours for better coverage
+- Add tool validation for jq and gh CLI
+- Add error handling for langstar graph list command
+- Fix subshell variable scope issue using process substitution
+- Add set +e/set -e around while loop to allow individual deletions to fail
+- Add per-delete error handling with continue on failure
+- Add deletion count to completion message
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): simplify date parsing for GNU date on Ubuntu
+
+- Remove unnecessary BSD date fallback (workflow runs on Ubuntu)
+- Add fallback for clean timestamp without fractional seconds
+- Better handles ISO 8601 timestamps with timezone suffixes
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): use -ge for 4+ hour threshold comparison
+
+Changed from -gt 4 (>4, meaning 5+ hours) to -ge 4 (>=4, meaning 4+ hours)
+to match the intended behavior of deleting deployments 4 hours or older.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): exclude cli-test-deployment-* and simplify date parsing
+
+- Exclude cli-test-deployment-* deployments from cleanup to avoid
+  affecting integration test deployments
+- Simplify date parsing to always use cleaned timestamp (fractional
+  seconds removed) since that's the known issue with GNU date
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(ci): add devcontainer feature publish staleness checks (#319)
+
+Adds CI safeguards to warn when devcontainer feature files have changed
+since the last publish to GHCR, preventing bugs from being fixed in
+source but never republished.
+
+Changes:
+- Add check-feature-publish-status job to ci.yml that warns (not fails)
+  when feature files are stale vs published version
+- Add devcontainer feature status check to prepare-release.yml that
+  adds a conditional checklist item to release PRs when republish needed
+
+The CI check is warning-only because there may be legitimate reasons
+to delay publishing (e.g., waiting for a CLI release first).
+
+Fixes #317
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): add langstar runs query command (#314)
+
+* ✨ feat(cli): add langstar runs query command
+
+Implements the CLI command for querying LangSmith runs/traces with filtering
+and pagination support as per Phase 2 of #298 milestone.
+
+Features:
+- Filter expression builder for convenience flags (--tag, --meta, --status)
+- Pagination support using SDK's query_runs_paginated()
+- Output formats: table (default), json, json-pretty
+- Time filtering with ISO 8601 datetime (--since, --until)
+- Run type filtering (--run-type llm/chain/tool/etc)
+- Organization and workspace scoping (--organization-id, --workspace-id)
+
+Fixes #307
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: use unicode-safe string slicing in runs command
+
+Fixes PR review comments from Copilot PR reviewer:
+- Use char().take() instead of byte indices for name truncation
+- Use char().take() instead of byte indices for UUID shortening
+
+Both operations now handle multi-byte UTF-8 characters correctly.
+
+* 🩹 fix: address PR #314 review feedback
+
+- Add warning when project identifier is not a valid UUID (comment 2566456607)
+- Add warning when --since/--until datetime parsing fails (comment 2566456685)
+- Suppress info messages in JSON output modes for clean JSON output (comment 2566456651)
+- Rename has_error() to errors_only() to match CLI flag name (comment 2566456674)
+- Change doc example to `ignore` since FilterBuilder isn't exported (comment 2566456661)
+- Remove unnecessary clone of combined_filter by reordering code (comment 2566456713)
+- Add RunRow::from tests for truncation, duration, and tokens (comment 2566456706)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address additional PR #314 review feedback
+
+- Add warning when both organization ID and workspace ID are specified (comment 2566510345)
+- Use formatter.warning() instead of formatter.info() for invalid metadata (comment 2566510360)
+- Remove redundant error field from request (handled via filter) (comment 2566510368)
+- Use formatter.error() instead of eprintln! for consistency (comment 2566510379)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🧪 test(runs): add pagination limit tests
+
+Add tests for per-page limit clamping logic:
+- test_per_page_limit_below_max: verify user limits < 100 pass through
+- test_per_page_limit_at_max: verify limit == 100 works
+- test_per_page_limit_above_max: verify limits > 100 clamp to API max
+
+Addresses PR #314 review comment about pagination test coverage.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix: address PR #310 review feedback (#311)
+
+* 🩹 fix: address PR #310 review feedback
+
+Addresses all 12 review comments from PR #310:
+
+**gh-pr-comment-reply.md (5 fixes):**
+- Add parsing rules section to document argument count handling
+- Update step 3 with complete parsing algorithm
+- Add security notes about body parameter handling
+- Fix endpoint naming inconsistency (pull_number → pr_number)
+- Clarify 422 error description
+
+**do-gh-pr-comment-reply.md (2 fixes):**
+- Change reply_body to body for consistency with slash command
+- Update example to use consistent parameter names
+
+**resolve-pr-comments/SKILL.md (5 fixes):**
+- Clarify unresolved comment detection logic (two-step process)
+- Add note that pseudo-code is conceptual
+- Add algorithmic detail to Scenario 1 workflow
+- Specify truncation threshold (first 5, then "and X more")
+- Fix jq placeholder format (COMMENT_ID → {comment_id})
+
+Fixes #302
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: use COMMENT_ID without braces in jq placeholder
+
+The jq expression `{comment_id}` is invalid jq syntax since curly
+braces have special meaning in jq. Using `COMMENT_ID` without braces
+makes it clearer this is a documentation placeholder to be replaced.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(devcontainer-feature): fix PATH configuration for langstar binary (#315)
+
+* 🩹 fix(devcontainer-feature): fix PATH configuration for langstar binary
+
+Fixes #313
+
+## Problem
+The langstar devcontainer feature failed in GitHub Codespaces because
+the `command -v langstar` verification check failed during container build.
+During the Docker build phase, PATH may not be fully configured yet,
+causing the installed binary to be inaccessible even though it was
+successfully installed.
+
+## Solution
+1. **install.sh**: Replaced `command -v langstar` verification with
+   direct file existence check using `[ -x "${BINARY_PATH}" ]`. This
+   ensures verification works regardless of PATH configuration during
+   build.
+
+2. **devcontainer-feature.json**: Added `containerEnv` to explicitly
+   set PATH to include both `/usr/local/bin` and `${HOME}/.local/bin`.
+   This ensures the langstar command is accessible at runtime in all
+   shell sessions.
+
+3. **test.sh**: Updated smoke tests to check multiple known installation
+   locations before falling back to PATH lookup. Added better debug
+   output when binary is not found.
+
+4. **Feature version**: Bumped to 1.0.1 to reflect the fix.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(devcontainer): simplify PATH configuration per review
+
+Remove redundant /usr/local/bin from containerEnv PATH since it's
+already in the default PATH. Only append ${HOME}/.local/bin to
+ensure user-local bin directory is accessible without risking
+shadowing system binaries.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add research report for runs query implementation (#300)
+
+* 📚 docs: add research report for runs query implementation
+
+- Add comprehensive research report analyzing langsmith-sdk precedent
+- Document filter query language syntax and operators
+- Recommend Rust implementation approach for langstar runs query
+- Update github-workflow.md with guidance on PR target selection
+- Clarify when to use hierarchical merging vs direct-to-main PRs
+
+Closes #299
+
+* 📚 docs: fix Rust code examples in research report
+
+- Rename `to_string` to `to_filter_string` to avoid shadowing the
+  standard library's ToString trait method
+- Add missing `format()` method implementation to FilterValue enum
+  for proper value serialization in filter expressions
+
+Addresses PR review comments.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Result/Option type mismatch in build_filter function (#301)
+
+* Initial plan
+
+* 🐛 fix: change build_filter return type to Result<Option<String>>
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🐛 fix: remove extra closing parenthesis in format string
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* fix: Apply suggestion from @Copilot
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs: add OpenAPI validation report and implementation plan for runs query (#304)
+
+Validates #299 research report against official LangSmith OpenAPI spec and creates
+comprehensive implementation plan for milestone #298.
+
+Key findings:
+- Core design confirmed (POST /api/v1/runs/query)
+- 8 additional request parameters discovered
+- 29 additional Run fields beyond research scope
+- Required fields stricter than Python SDK (status, session_id required)
+- Filter query language not in OpenAPI (research report authoritative)
+
+Artifacts added:
+- reference/api-specs/langsmith-openapi.json - Full OpenAPI spec
+- reference/api-specs/run*.json - Extracted schemas
+- reference/research/298-openapi-validation.md - Validation report
+- docs/implementation/298-ls-runs-query-implementation-plan.md - Tech plan
+
+Closes #303
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.6.1] - 2025-11-26
 
 ### 🩹 Bug Fixes
