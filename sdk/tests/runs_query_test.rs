@@ -241,8 +241,10 @@ async fn test_query_runs_paginated_multiple_pages() {
         .create_async()
         .await;
 
-    // Create the "no cursor" mock last so it matches first
-    // Using PartialJson with an empty object matches any request body
+    // Create the "no cursor" mock last so it's checked first (LIFO).
+    // Although PartialJson({}) is less specific than the cursor mock above,
+    // mockito's LIFO ordering means this mock is checked first on the initial request
+    // (which has no cursor), and the more specific cursor mock is checked on subsequent requests.
     let mock1 = server
         .mock("POST", "/api/v1/runs/query")
         .match_body(Matcher::PartialJson(json!({})))

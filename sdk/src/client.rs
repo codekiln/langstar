@@ -517,10 +517,9 @@ impl LangchainClient {
     /// - Errors are yielded as `Err` items, allowing partial results
     pub fn query_runs_paginated(
         &self,
-        request: QueryRunsRequest,
+        mut request: QueryRunsRequest,
         total_limit: Option<usize>,
     ) -> Pin<Box<dyn Stream<Item = Result<Run>> + Send + '_>> {
-        let mut request = request;
         let limit = total_limit.unwrap_or(usize::MAX);
 
         Box::pin(async_stream::try_stream! {
