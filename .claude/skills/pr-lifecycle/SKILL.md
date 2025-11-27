@@ -26,7 +26,7 @@ Run these validations before creating a PR:
 
 ```bash
 # 1. Verify you're in a worktree (not main)
-git worktree list | grep "$(pwd)"
+pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktree"
 
 # 2. Check branch name follows convention
 BRANCH=$(git branch --show-current)
@@ -34,7 +34,7 @@ echo "Current branch: $BRANCH"
 # Should match: <username>/<issue_num>-<issue_slug>
 
 # 3. Extract issue number from branch
-ISSUE_NUM=$(echo "$BRANCH" | grep -oP '\d+' | head -1)
+ISSUE_NUM=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
 echo "Issue number: $ISSUE_NUM"
 
 # 4. Verify issue exists and is open
@@ -85,7 +85,7 @@ fi
 
 **Check issue exists and is open:**
 ```bash
-ISSUE_NUM=$(git branch --show-current | grep -oP '\d+' | head -1)
+ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
 
 # View issue details
 gh issue view "$ISSUE_NUM" --json number,title,state,labels
@@ -154,14 +154,14 @@ Fixes #<issue_number>
 - [ ] <test item 2>
 
 ---
-Generated with [Claude Code](https://claude.ai/code)
+Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ### Create PR Command
 
 **Using gh CLI with proper body:**
 ```bash
-ISSUE_NUM=$(git branch --show-current | grep -oP '\d+' | head -1)
+ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
 
 gh pr create \
   --title "✨ feat: <description>" \
@@ -180,7 +180,7 @@ Fixes #$ISSUE_NUM
 - [ ] <test item>
 
 ---
-Generated with [Claude Code](https://claude.ai/code)
+Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
@@ -207,12 +207,15 @@ Copilot and other automated reviewers may add comments. Monitor and address them
 ```bash
 PR_NUM=$(gh pr view --json number -q '.number')
 
+# Get owner/repo dynamically from current repository
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
 # Check for Copilot comments
-gh api repos/{owner}/{repo}/pulls/$PR_NUM/comments \
+gh api repos/$REPO/pulls/$PR_NUM/comments \
   --jq '.[] | select(.user.login == "copilot") | {id, body, path, line}'
 
 # Check for all review comments
-gh api repos/{owner}/{repo}/pulls/$PR_NUM/comments \
+gh api repos/$REPO/pulls/$PR_NUM/comments \
   --jq '.[] | {id, user: .user.login, body: .body[0:100]}'
 ```
 
@@ -223,8 +226,9 @@ gh api repos/{owner}/{repo}/pulls/$PR_NUM/comments \
 ```bash
 COMMENT_ID=<comment_id>
 COMMIT_SHA=$(git rev-parse --short HEAD)
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
-gh api repos/{owner}/{repo}/pulls/$PR_NUM/comments/$COMMENT_ID/replies \
+gh api repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies \
   -f body="Fixed in commit $COMMIT_SHA: <brief description>"
 ```
 
@@ -329,9 +333,11 @@ git branch -d "$BRANCH"
 # 6. Prune
 git worktree prune --verbose
 
-# 7. Verify cleanup
+# 7. Verify cleanup - should only show main worktree
 git worktree list
-git branch | grep -v "^\*"
+
+# Show only non-main branches (should be empty after cleanup)
+git branch | grep -v "^\*" | grep -v "main\|master"
 ```
 
 ## Quick Reference
@@ -340,10 +346,10 @@ git branch | grep -v "^\*"
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| In worktree | `pwd \| grep wip/` | In wip/ directory |
+| In worktree | `pwd` &#124; `grep wip/` | In wip/ directory |
 | Branch format | `git branch --show-current` | `user/num-slug` |
 | Issue open | `gh issue view N --json state` | `OPEN` |
-| Has "Fixes #" | `git log \| grep -i "fixes #"` | Found keyword |
+| Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |
 
 ### GitHub Closing Keywords
 
@@ -370,6 +376,9 @@ Any of these in PR body will auto-close the linked issue:
 ### Common API Commands
 
 ```bash
+# Get owner/repo for API calls
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
 # View issue
 gh issue view <num> --json number,title,state
 
@@ -377,10 +386,10 @@ gh issue view <num> --json number,title,state
 gh pr view --json number,title,state,closingIssuesReferences
 
 # PR comments (for reviews)
-gh api repos/{owner}/{repo}/pulls/<num>/comments
+gh api repos/$REPO/pulls/<num>/comments
 
 # Reply to comment
-gh api repos/{owner}/{repo}/pulls/<num>/comments/<id>/replies -f body="message"
+gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="message"
 
 # Close issue manually
 gh issue close <num> --comment "Closed via PR #N"
