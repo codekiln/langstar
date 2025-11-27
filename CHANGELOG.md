@@ -5,6 +5,237 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-11-27
+
+### ✨ Features
+
+- ✨ feat(config): add timezone configuration for timestamp display (#330)
+
+* ✨ feat(config): add timezone configuration for timestamp display
+
+Adds user-configurable timezone support for CLI timestamp output.
+
+Changes:
+- Add `timezone` field to Config struct (defaults to "local")
+- Add `LANGSTAR_TIMEZONE` environment variable support
+- Create ConfiguredTimezone utility with IANA timezone parsing
+- Update RunRow to format timestamps in configured timezone
+- Display timezone in `langstar config` output
+
+Supported timezone values:
+- "local" or "system" - use system timezone
+- "UTC" or "GMT" - use UTC
+- IANA names - e.g., "America/New_York", "Europe/London"
+
+Table output respects timezone; JSON output remains UTC for machine readability.
+
+Fixes #329
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor: address PR review feedback for timezone config
+
+- Change doc test from `ignore` to `rust,no_run` in time.rs
+- Remove `From<&Run>` impl that hardcoded UTC timezone
+- Update tests to use explicit `from_run_with_timezone` with UTC
+- Add comment explaining why timezone parsing isn't cached in Config
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🧪 test: add timezone formatting verification test
+
+- Add test verifying different timezones produce different time outputs
+- Tests UTC, America/New_York, and Asia/Tokyo formatting
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(runs): add relative time filters and sensible defaults (#331)
+
+* ✨ feat(runs): add relative time filters and sensible defaults
+
+- Add relative duration parsing (15m, 1h, 7d, 2w) for --since flag
+- Add --preset flag with common time windows (1h, 3h, 6h, 12h, 1d, 2d, 7d, 14d)
+- Change default to last 7 days (matches LangSmith UI)
+- Add --no-time-filter flag to disable default time filtering
+- Implement precedence: --since/--until > --since (relative) > --preset > default
+
+Fixes #327
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(runs): address Copilot review feedback
+
+- Clarify --until is ISO 8601 only (intentional design decision)
+- Fix is_relative_duration() to avoid false positives by exactly matching
+  valid unit strings instead of using ends_with() checks
+- Add comprehensive unit tests for resolve_time_filters():
+  - Default 7-day behavior
+  - --no-time-filter flag
+  - --preset flag
+  - --since with relative duration
+  - --since with ISO 8601
+  - --until with ISO 8601
+  - Precedence: --since over --preset
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(skills): use general-purpose subagent for PR comment replies (#326)
+
+* 🩹 fix(skills): use general-purpose subagent for PR comment replies
+
+Custom agent types defined in .claude/agents/ do not receive tool access
+from YAML frontmatter - the tools: field is documentation only. This caused
+the do-gh-pr-comment-reply subagent to have (Tools: ) - empty tool access.
+
+Changes:
+- Update resolve-pr-comments skill to use general-purpose subagent
+- Remove non-functional .claude/agents/do-gh-pr-comment-reply.md
+- Add documentation explaining why general-purpose is required
+- Add troubleshooting section for subagent tool access issues
+- Update examples with explicit gh api commands
+
+The general-purpose subagent has (Tools: *) full access, enabling it to
+execute the required gh api commands for posting PR comment replies.
+
+Fixes #318
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🎨 style(skills): use consistent placeholder format {owner}/{repo}
+
+Address Copilot review feedback: standardize placeholder format to use
+`{owner}/{repo}` (lowercase with braces) throughout the document for
+consistency with the Command Reference section.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(devcontainer): fix postStartCommand failures in Codespaces (#322)
+
+* 🩹 fix(devcontainer): fix postStartCommand failures in Codespaces
+
+Fixes authentication issues when running setup-github-auth.sh in GitHub Codespaces:
+
+1. Check if gh is already authenticated before attempting re-auth
+   - Codespaces automatically authenticates gh
+   - Exit gracefully if authentication already exists
+
+2. Add GITHUB_TOKEN to environment variable priority
+   - GITHUB_TOKEN (Codespaces auto-auth) is now checked first
+   - Fallback order: GITHUB_TOKEN > GITHUB_PAT > GH_PAT
+
+3. Improve error messages for clarity
+
+This prevents unnecessary re-authentication attempts and ensures the
+postStartCommand completes successfully in Codespaces environments.
+
+Fixes #321
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(devcontainer): export GITHUB_PAT when using GITHUB_TOKEN (#324)
+
+* Initial plan
+
+* 🩹 fix(devcontainer): export GITHUB_PAT for consistency when using GITHUB_TOKEN
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🩹 fix(devcontainer): configure git credentials when gh already authenticated (#328)
+
+* Initial plan
+
+* 🩹 fix(devcontainer): ensure git credentials configured even when gh authenticated
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 📝 docs: fix misleading comment about token extraction
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
+### 🧪 Testing
+
+- 🧪 test(runs): add comprehensive CLI tests for runs query (#325)
+
+* 🧪 test(runs): add comprehensive CLI tests for runs query
+
+- Create cli/tests/runs_command_test.rs with 25 tests covering:
+  - Help text verification
+  - Argument validation and error handling
+  - Filter flag combinations (tags, meta, status, etc.)
+  - Output format options (table, json, json-pretty)
+  - All 7 run types acceptance
+  - Integration tests with LangSmith API
+
+- Fix CLI flag conflicts discovered during testing:
+  - Rename --format to --output (-o) to avoid conflict with global -f/--format
+  - Remove -f short flag from --filter to avoid conflict
+
+- Update README.md with langstar runs query documentation:
+  - Usage examples for all query options
+  - Run types reference
+  - Filter query language documentation
+
+Fixes #308
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: remove unused mod common import
+
+Address Copilot review feedback.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.7.0] - 2025-11-26
 
 ### ✨ Features
