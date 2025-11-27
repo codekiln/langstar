@@ -9,10 +9,10 @@ Enforce project hygiene throughout the pull request lifecycle. This skill provid
 
 ## Overview
 
-**Project Hygiene Invariant:** Each PR must:
+**Project Hygiene Invariant:** Each PR should:
 1. Close exactly one GitHub issue
 2. Include "Fixes #XYZ" (or similar keyword) in PR body
-3. Be created from a proper worktree (not main)
+3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in `/workspace`, which should always be kept up to date with origin main main - instead you should be in `/wip/<feature branch>`)
 4. Follow branch naming convention: `<username>/<issue_num>-<issue_slug>`
 5. Use Conventional Emoji Commits for PR title
 
@@ -157,6 +157,10 @@ Fixes #<issue_number>
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
+### PR Body Template
+
+* If the issue that the PR fixes is part of a milestone, add the PR to that milestone.
+
 ### Create PR Command
 
 **Using gh CLI with proper body:**
@@ -198,7 +202,7 @@ gh pr view "$PR_NUM" --json closingIssuesReferences -q '.closingIssuesReferences
 # Should output the issue number
 ```
 
-## Phase 3: After PR Creation (Optional)
+## Phase 3: After PR Creation
 
 ### Monitor for Automated Reviews
 
@@ -222,6 +226,8 @@ gh api repos/$REPO/pulls/$PR_NUM/comments \
 ### Reply to Review Comments
 
 **After addressing feedback, reply with commit reference:**
+
+* NOTE: do not at-mention copilot in your reply, otherwise copilot will try to implement something.
 
 ```bash
 COMMENT_ID=<comment_id>
@@ -267,6 +273,8 @@ fi
 ### Manual Issue Closure (If Needed)
 
 **If the issue wasn't auto-closed:**
+
+Ask the user first before doing this:
 ```bash
 ISSUE_NUM=<issue_number>
 PR_NUM=<pr_number>
@@ -305,6 +313,12 @@ git branch -d "$BRANCH"
 # Delete remote branch (GitHub usually does this automatically)
 git push origin --delete "$BRANCH" 2>/dev/null || echo "Remote branch already deleted"
 ```
+
+### Cleanup: Ensure /workspace is up to date
+
+* `/workspace` should be kept up to date with origin main
+* after merging, `cd /workspace` then ensure workspace is refreshed from origin main
+  * in the unlikely case that another agent has put WIP in `/workspace` (instead of `workspace/wip/<feature branch>` that would be affected by this action, ask user what to do 
 
 ### Complete Cleanup Workflow
 
