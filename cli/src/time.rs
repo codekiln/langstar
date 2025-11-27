@@ -73,12 +73,17 @@ pub fn parse_relative_duration(s: &str) -> Result<Duration, String> {
     }
 }
 
+/// Valid unit strings for relative durations.
+const VALID_DURATION_UNITS: &[&str] = &[
+    "m", "min", "mins", "minute", "minutes", "h", "hr", "hrs", "hour", "hours", "d", "day", "days",
+    "w", "wk", "wks", "week", "weeks",
+];
+
 /// Check if a string looks like a relative duration (e.g., "15m", "1h").
 ///
 /// This is used to distinguish between ISO 8601 timestamps and relative durations.
 /// A relative duration is a simple format like "15m", "1h", "7d", "2w" - it starts
-/// with digits and ends with a valid unit letter, and does NOT contain characters
-/// that indicate ISO 8601 format (like '-', ':', or 'T').
+/// with digits followed by exactly a valid unit string.
 pub fn is_relative_duration(s: &str) -> bool {
     let s = s.trim();
     if s.is_empty() {
@@ -90,33 +95,22 @@ pub fn is_relative_duration(s: &str) -> bool {
         return false;
     }
 
-    // Relative durations start with digits
-    let starts_with_digit = s.chars().next().is_some_and(|c| c.is_ascii_digit());
-    if !starts_with_digit {
+    // Find the split point between number and unit
+    let split_idx = match s.find(|c: char| !c.is_ascii_digit()) {
+        Some(idx) => idx,
+        None => return false, // No unit found (e.g., "123")
+    };
+
+    // Must start with at least one digit
+    if split_idx == 0 {
         return false;
     }
 
-    // Relative durations end with a valid unit letter (m, h, d, w, or longer variants)
-    // We check for common endings, not just any letter (to avoid false positives like 'Z')
-    let s_lower = s.to_lowercase();
-    s_lower.ends_with('m')
-        || s_lower.ends_with('h')
-        || s_lower.ends_with('d')
-        || s_lower.ends_with('w')
-        || s_lower.ends_with("min")
-        || s_lower.ends_with("mins")
-        || s_lower.ends_with("minute")
-        || s_lower.ends_with("minutes")
-        || s_lower.ends_with("hr")
-        || s_lower.ends_with("hrs")
-        || s_lower.ends_with("hour")
-        || s_lower.ends_with("hours")
-        || s_lower.ends_with("day")
-        || s_lower.ends_with("days")
-        || s_lower.ends_with("wk")
-        || s_lower.ends_with("wks")
-        || s_lower.ends_with("week")
-        || s_lower.ends_with("weeks")
+    let (_num_str, unit) = s.split_at(split_idx);
+    let unit_lower = unit.to_lowercase();
+
+    // Check if unit exactly matches one of the valid units
+    VALID_DURATION_UNITS.contains(&unit_lower.as_str())
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

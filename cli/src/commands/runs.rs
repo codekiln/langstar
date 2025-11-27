@@ -97,7 +97,10 @@ pub struct QueryArgs {
     #[arg(long)]
     pub since: Option<String>,
 
-    /// Filter runs before this time (ISO 8601 format)
+    /// Filter runs before this time (ISO 8601 format only)
+    ///
+    /// Unlike --since, --until only accepts ISO 8601 timestamps.
+    /// This is intentional: "until 1h ago" is semantically confusing.
     ///
     /// Example: --until 2024-01-31T23:59:59Z
     #[arg(long)]
@@ -984,5 +987,135 @@ mod tests {
         assert_eq!(calculate_per_page_limit(101), 100);
         assert_eq!(calculate_per_page_limit(500), 100);
         assert_eq!(calculate_per_page_limit(1000), 100);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // resolve_time_filters tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Helper to create a minimal QueryArgs for testing
+    fn create_test_query_args() -> QueryArgs {
+        QueryArgs {
+            projects: vec![],
+            filter: None,
+            trace_filter: None,
+            tree_filter: None,
+            is_root: false,
+            tags: vec![],
+            metadata: vec![],
+            run_type: None,
+            status: None,
+            errors_only: false,
+            since: None,
+            until: None,
+            preset: None,
+            no_time_filter: false,
+            limit: 100,
+            order: OrderArg::Desc,
+            output: RunsOutputFormat::Table,
+            select: None,
+            organization_id: None,
+            workspace_id: None,
+        }
+    }
+
+    #[test]
+    fn test_resolve_time_filters_default_7_days() {
+        let args = create_test_query_args();
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        assert!(start.is_some(), "Default should have start time");
+        assert!(end.is_none(), "Default should have no end time");
+        assert_eq!(desc, "last 7 days (default)");
+
+        // Verify it's approximately 7 days ago
+        let now = chrono::Utc::now();
+        let diff = now - start.unwrap();
+        assert!(diff.num_days() >= 6 && diff.num_days() <= 7);
+    }
+
+    #[test]
+    fn test_resolve_time_filters_no_time_filter() {
+        let mut args = create_test_query_args();
+        args.no_time_filter = true;
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        assert!(start.is_none(), "--no-time-filter should have no start");
+        assert!(end.is_none(), "--no-time-filter should have no end");
+        assert_eq!(desc, "none (--no-time-filter)");
+    }
+
+    #[test]
+    fn test_resolve_time_filters_preset() {
+        let mut args = create_test_query_args();
+        args.preset = Some(crate::time::TimePreset::ThreeHours);
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        assert!(start.is_some(), "Preset should have start time");
+        assert!(end.is_none(), "Preset should have no end time");
+        assert_eq!(desc, "Last 3 hours (preset)");
+
+        // Verify it's approximately 3 hours ago
+        let now = chrono::Utc::now();
+        let diff = now - start.unwrap();
+        assert!(diff.num_hours() >= 2 && diff.num_hours() <= 3);
+    }
+
+    #[test]
+    fn test_resolve_time_filters_since_relative() {
+        let mut args = create_test_query_args();
+        args.since = Some("2h".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        assert!(start.is_some(), "Relative --since should have start time");
+        assert!(end.is_none(), "Relative --since should have no end time");
+        assert_eq!(desc, "last 2h (relative)");
+
+        // Verify it's approximately 2 hours ago
+        let now = chrono::Utc::now();
+        let diff = now - start.unwrap();
+        assert!(diff.num_hours() >= 1 && diff.num_hours() <= 2);
+    }
+
+    #[test]
+    fn test_resolve_time_filters_since_iso8601() {
+        let mut args = create_test_query_args();
+        args.since = Some("2024-06-15T14:30:00Z".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        assert!(start.is_some(), "ISO 8601 --since should have start time");
+        assert!(end.is_none(), "ISO 8601 --since should have no end time");
+        assert!(desc.contains("ISO 8601"));
+    }
+
+    #[test]
+    fn test_resolve_time_filters_until_iso8601() {
+        let mut args = create_test_query_args();
+        args.until = Some("2024-06-15T14:30:00Z".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        // Default start still applies, but end should be set
+        assert!(start.is_some(), "Should still have default start time");
+        assert!(end.is_some(), "--until should set end time");
+        assert_eq!(desc, "last 7 days (default)");
+    }
+
+    #[test]
+    fn test_resolve_time_filters_precedence_since_over_preset() {
+        let mut args = create_test_query_args();
+        args.since = Some("1h".to_string());
+        args.preset = Some(crate::time::TimePreset::SevenDays);
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let (start, _end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
+
+        // --since should take precedence over --preset
+        assert!(start.is_some());
+        assert_eq!(desc, "last 1h (relative)");
     }
 }
