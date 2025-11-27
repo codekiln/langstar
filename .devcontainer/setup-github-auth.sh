@@ -31,6 +31,8 @@ fi
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then
   TOKEN_SOURCE="GitHub Codespaces (GITHUB_TOKEN)"
   TOKEN_VALUE="$GITHUB_TOKEN"
+  # Set GITHUB_PAT for consistency
+  export GITHUB_PAT="$GITHUB_TOKEN"
 elif [[ -n "${GITHUB_PAT:-}" ]]; then
   TOKEN_SOURCE="Docker Compose environment (GITHUB_PAT)"
   TOKEN_VALUE="$GITHUB_PAT"
