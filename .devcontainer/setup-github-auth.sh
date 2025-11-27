@@ -20,19 +20,36 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0  # not fatal, container may not use gh
 fi
 
+# Check if already authenticated (common in Codespaces)
+SKIP_GH_AUTH=false
+if gh auth status >/dev/null 2>&1; then
+  echo "[setup-github-auth] Already authenticated via gh. Skipping re-authentication."
+  SKIP_GH_AUTH=true
+fi
+
 # Determine which token source is populated
-# Docker Compose loads environment variables from .env file (local) or Codespaces secrets
-if [[ -n "${GITHUB_PAT:-}" ]]; then
+# Priority: GITHUB_TOKEN (Codespaces auto-auth) > GITHUB_PAT (local) > GH_PAT (legacy)
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  TOKEN_SOURCE="GitHub Codespaces (GITHUB_TOKEN)"
+  TOKEN_VALUE="$GITHUB_TOKEN"
+  # Set GITHUB_PAT for consistency
+  export GITHUB_PAT="$GITHUB_TOKEN"
+elif [[ -n "${GITHUB_PAT:-}" ]]; then
   TOKEN_SOURCE="Docker Compose environment (GITHUB_PAT)"
   TOKEN_VALUE="$GITHUB_PAT"
 elif [[ -n "${GH_PAT:-}" ]]; then
-  # Codespaces uses GH_PAT
   TOKEN_SOURCE="Codespaces secrets (GH_PAT)"
   TOKEN_VALUE="$GH_PAT"
   # Set GITHUB_PAT for consistency
   export GITHUB_PAT="$GH_PAT"
 else
-  echo "[setup-github-auth] No GITHUB_PAT or GH_PAT found. Skipping gh auth."
+  # If already authenticated but no token available, skip git credential setup
+  if [[ "$SKIP_GH_AUTH" == "true" ]]; then
+    echo "[setup-github-auth] No token environment variable found, but gh is authenticated."
+    echo "[setup-github-auth] Git credential setup will be skipped."
+    exit 0
+  fi
+  echo "[setup-github-auth] No GITHUB_TOKEN, GITHUB_PAT, or GH_PAT found. Skipping gh auth."
   exit 0
 fi
 
@@ -41,13 +58,17 @@ echo "[setup-github-auth] Using token from $TOKEN_SOURCE."
 # Optional: show masked token length for debugging
 echo "[setup-github-auth] Token length: ${#TOKEN_VALUE}"
 
-# Authenticate gh non-interactively
-if printf "%s" "$TOKEN_VALUE" | gh auth login --with-token >/tmp/gh-auth.log 2>&1; then
-  echo "[setup-github-auth] gh authenticated successfully."
+# Authenticate gh non-interactively (skip if already authenticated)
+if [[ "$SKIP_GH_AUTH" == "false" ]]; then
+  if printf "%s" "$TOKEN_VALUE" | gh auth login --with-token >/tmp/gh-auth.log 2>&1; then
+    echo "[setup-github-auth] gh authenticated successfully."
+  else
+    echo "[setup-github-auth] gh authentication failed; see /tmp/gh-auth.log"
+    cat /tmp/gh-auth.log || true
+    exit 1
+  fi
 else
-  echo "[setup-github-auth] gh authentication failed; see /tmp/gh-auth.log"
-  cat /tmp/gh-auth.log || true
-  exit 1
+  echo "[setup-github-auth] Skipped gh authentication (already authenticated)."
 fi
 
 # Remove any SSH URL rewrite rules and credential helpers that would bypass PAT authentication
