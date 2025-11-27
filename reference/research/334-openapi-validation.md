@@ -33,7 +33,7 @@ Validation of research report #335 against the LangSmith OpenAPI specification a
 | `/annotation-queues/{queue_id}` | PATCH | Update queue | ✅ | Confirmed |
 | `/annotation-queues/{queue_id}` | DELETE | Delete queue | ✅ | Confirmed |
 | `/annotation-queues/{queue_id}/runs` | POST | Add runs | ✅ Body: `array[uuid]` | Confirmed |
-| `/annotation-queues/{queue_id}/runs/{run_id}` | DELETE | Remove run | ✅ (path is `/{queue_run_id}`) | Confirmed |
+| `/annotation-queues/{queue_id}/runs/{queue_run_id}` | DELETE | Remove run | ✅ | Confirmed |
 | `/annotation-queues/{queue_id}/run/{index}` | GET | Get run at index | ✅ | Confirmed |
 
 ### 1.2 Critical Validation: Add Runs Request Body
@@ -257,17 +257,32 @@ pub async fn export_annotation_queue(&self, queue_id: Uuid, ...) -> Result<...>
 Change `queue items` from sequential index fetching to proper pagination:
 
 ```rust
-/// List runs in an annotation queue (uses paginated API)
-Items {
-    queue_id: Uuid,
-    #[arg(long, default_value = "100")]
-    limit: u32,
-    #[arg(long, default_value = "0")]
-    offset: u32,
-    #[arg(long)]
-    archived: bool,
-    #[arg(long)]
-    json: bool,
+// In cli/src/commands/queue.rs - QueueCommand enum variant
+#[derive(Subcommand)]
+pub enum QueueCommand {
+    // ... other variants ...
+
+    /// List runs in an annotation queue (uses paginated API)
+    Items {
+        /// Queue ID
+        queue_id: Uuid,
+
+        /// Maximum items to return
+        #[arg(long, default_value = "100")]
+        limit: u32,
+
+        /// Starting offset for pagination
+        #[arg(long, default_value = "0")]
+        offset: u32,
+
+        /// Show only archived runs
+        #[arg(long)]
+        archived: bool,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
 }
 ```
 
