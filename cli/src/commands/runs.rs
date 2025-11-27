@@ -828,6 +828,34 @@ mod tests {
         assert_eq!(row.id.len(), 8);
     }
 
+    #[test]
+    fn test_run_row_timezone_formatting_produces_different_outputs() {
+        // Create a run with a known start time
+        let run = create_test_run_with_timing("2024-06-15T14:30:00Z", "2024-06-15T14:31:00Z");
+
+        // Format with UTC - should show 14:30
+        let utc_tz = crate::time::ConfiguredTimezone::Utc;
+        let row_utc = RunRow::from_run_with_timezone(&run, &utc_tz);
+
+        // Format with America/New_York - should show 10:30 (EDT in June)
+        let ny_tz = crate::time::ConfiguredTimezone::parse("America/New_York").unwrap();
+        let row_ny = RunRow::from_run_with_timezone(&run, &ny_tz);
+
+        // Format with Asia/Tokyo - should show 23:30 (JST = UTC+9)
+        let tokyo_tz = crate::time::ConfiguredTimezone::parse("Asia/Tokyo").unwrap();
+        let row_tokyo = RunRow::from_run_with_timezone(&run, &tokyo_tz);
+
+        // Verify different timezones produce different time strings
+        assert_ne!(row_utc.time, row_ny.time, "UTC and NY should differ");
+        assert_ne!(row_utc.time, row_tokyo.time, "UTC and Tokyo should differ");
+        assert_ne!(row_ny.time, row_tokyo.time, "NY and Tokyo should differ");
+
+        // Verify the actual times are correct
+        assert!(row_utc.time.contains("14:30"), "UTC should show 14:30");
+        assert!(row_ny.time.contains("10:30"), "NY should show 10:30");
+        assert!(row_tokyo.time.contains("23:30"), "Tokyo should show 23:30");
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Pagination limit tests
     // ═══════════════════════════════════════════════════════════════════════
