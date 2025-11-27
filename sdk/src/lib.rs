@@ -23,6 +23,7 @@
 //! }
 //! ```
 
+pub mod annotation_queues;
 pub mod assistants;
 pub mod auth;
 pub mod client;
@@ -34,6 +35,11 @@ pub mod prompts;
 pub mod runs;
 
 // Re-export commonly used types
+pub use annotation_queues::{
+    AnnotationQueue, AnnotationQueueRubricItem, AnnotationQueueWithDetails,
+    CreateAnnotationQueueRequest, ListAnnotationQueuesParams, QueueType,
+    RunWithAnnotationQueueInfo, UpdateAnnotationQueueRequest,
+};
 pub use assistants::{
     Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
     UpdateAssistantRequest,
