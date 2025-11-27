@@ -1,0 +1,135 @@
+[
+  {
+    "path": "/api/v1/annotation-queues",
+    "methods": [
+      "get",
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/populate",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}",
+    "methods": [
+      "delete",
+      "get",
+      "patch"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/runs",
+    "methods": [
+      "get",
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/export",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/run/{index}",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{run_id}/queues",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/runs/{queue_run_id}",
+    "methods": [
+      "delete",
+      "patch"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/runs/delete",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/total_size",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/total_archived",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/{queue_id}/size",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/status/{annotation_queue_run_id}",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise",
+    "methods": [
+      "get",
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/{queue_id}",
+    "methods": [
+      "get",
+      "patch"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/populate",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/populate",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/entries",
+    "methods": [
+      "get"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/entries/delete",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/status/{queue_entry_id}",
+    "methods": [
+      "post"
+    ]
+  },
+  {
+    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/size",
+    "methods": [
+      "get"
+    ]
+  }
+]
