@@ -19,8 +19,6 @@
 //!
 //! Run with: `cargo test --test runs_command_test`
 
-mod common;
-
 use assert_cmd::Command;
 use escargot::CargoBuild;
 use predicates::prelude::*;
