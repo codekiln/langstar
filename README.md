@@ -264,6 +264,66 @@ langstar graph list --format json
 - `github` - Deploy from a GitHub repository (requires `--repo-url` and `--branch`)
 - `external_docker` - Deploy from an external Docker image
 
+#### LangSmith Runs/Traces
+
+Query and filter LangSmith runs (traces) to analyze LLM application execution.
+
+```bash
+# Query recent runs (root traces only)
+langstar runs query --is-root --limit 10
+
+# Query with JSON output
+langstar runs query --limit 5 --output json
+
+# Filter by run type (llm, chain, tool, retriever, embedding, prompt, parser)
+langstar runs query --run-type llm --limit 10
+
+# Filter by status
+langstar runs query --status error --limit 20
+langstar runs query --errors-only  # Shorthand for error runs
+
+# Filter by tags
+langstar runs query --tag production --tag gpt-4
+
+# Filter by metadata
+langstar runs query --meta environment=production --meta model=gpt-4
+
+# Use raw filter expressions (LangSmith filter query language)
+langstar runs query --filter 'eq(status, "error")'
+langstar runs query --filter 'gt(total_tokens, 1000)'
+langstar runs query --filter 'has(tags, "production")'
+
+# Combine filters
+langstar runs query --tag production --status error --run-type llm
+
+# Time-based filtering
+langstar runs query --since 2024-01-01T00:00:00Z --until 2024-01-31T23:59:59Z
+
+# Sort order (asc or desc)
+langstar runs query --order asc --limit 10
+
+# Pretty-printed JSON output
+langstar runs query --limit 5 --output json-pretty
+```
+
+**Run Types:**
+- `llm` - LLM (Language Model) calls
+- `chain` - Chain executions
+- `tool` - Tool invocations
+- `retriever` - Retriever operations
+- `embedding` - Embedding operations
+- `prompt` - Prompt template executions
+- `parser` - Output parser executions
+
+**Filter Query Language:**
+The `--filter` option accepts LangSmith filter expressions:
+- `eq(field, value)` - Equals
+- `neq(field, value)` - Not equals
+- `gt(field, value)` / `gte(field, value)` - Greater than (or equal)
+- `lt(field, value)` / `lte(field, value)` - Less than (or equal)
+- `has(array_field, value)` - Array contains
+- `and(expr1, expr2)` / `or(expr1, expr2)` - Logical operators
+
 ## Configuration
 
 This section provides detailed configuration options for both LangSmith and LangGraph services.
