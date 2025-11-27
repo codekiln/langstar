@@ -230,6 +230,7 @@ gh api repos/$REPO/pulls/$PR_NUM/comments \
 **Note:** Do not at-mention copilot in your reply, otherwise copilot will try to implement something.
 
 ```bash
+PR_NUM=$(gh pr view --json number -q '.number')
 COMMENT_ID=<comment_id>
 COMMIT_SHA=$(git rev-parse --short HEAD)
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
