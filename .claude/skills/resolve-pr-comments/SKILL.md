@@ -5,7 +5,11 @@ description: Orchestrate replying to multiple GitHub PR review comments in paral
 
 # Resolve PR Comments
 
-Orchestrate replying to multiple GitHub PR review comments in parallel using the `do-gh-pr-comment-reply` subagent.
+Orchestrate replying to multiple GitHub PR review comments in parallel using the `general-purpose` subagent with focused prompts.
+
+> **Note:** This skill uses `general-purpose` subagents (not custom agents) because custom agent types
+> defined in `.claude/agents/` do not receive tool access. The `general-purpose` subagent has full
+> tool access (`Tools: *`) and can execute the required `gh api` commands.
 
 ## Overview
 
@@ -89,7 +93,7 @@ Determine what to reply with:
 
 ### Step 5: Spawn Parallel Subagents
 
-For each comment to reply to, spawn a `do-gh-pr-comment-reply` subagent:
+For each comment to reply to, spawn a `general-purpose` subagent with a focused prompt:
 
 **Important:** Use a SINGLE message with MULTIPLE Task tool calls to spawn agents in parallel:
 
@@ -101,16 +105,32 @@ For each comment to reply to, spawn a `do-gh-pr-comment-reply` subagent:
 # Send ONE message with multiple tool uses:
 
 Task(
-  subagent_type="do-gh-pr-comment-reply",
+  subagent_type="general-purpose",
   description="Reply to comment 2565891355",
-  prompt="Reply to PR #300 comment 2565891355 with: 'Fixed in commit abc123'",
+  prompt="""
+    Execute this EXACT command to reply to a GitHub PR comment:
+
+    gh api repos/{owner}/{repo}/pulls/300/comments \
+      -f body="Fixed in commit abc123" \
+      -F in_reply_to=2565891355
+
+    Report success or failure. Do NOT ask questions or do anything else.
+  """,
   model="haiku"
 )
 
 Task(
-  subagent_type="do-gh-pr-comment-reply",
+  subagent_type="general-purpose",
   description="Reply to comment 2565891356",
-  prompt="Reply to PR #300 comment 2565891356 with: 'Fixed in commit abc123'",
+  prompt="""
+    Execute this EXACT command to reply to a GitHub PR comment:
+
+    gh api repos/{owner}/{repo}/pulls/300/comments \
+      -f body="Fixed in commit abc123" \
+      -F in_reply_to=2565891356
+
+    Report success or failure. Do NOT ask questions or do anything else.
+  """,
   model="haiku"
 )
 
@@ -121,7 +141,8 @@ Task(
 - All Task calls must be in a SINGLE message for parallel execution
 - Each subagent handles one comment reply independently
 - Use Haiku model for cost efficiency and speed
-- Provide clear, complete parameters in each prompt
+- Use `general-purpose` subagent type (has full tool access)
+- Provide the EXACT `gh api` command to execute - be explicit to avoid ambiguity
 
 ### Step 6: Collect Results
 
@@ -258,7 +279,7 @@ This skill heavily uses `gh` CLI:
 
 ### With SlashCommands
 
-This skill orchestrates the `/gh-pr-comment-reply` slash command via subagents.
+The `/gh-pr-comment-reply` slash command is available for single comment replies when not using parallel subagents.
 
 ### With Other Skills
 
@@ -274,6 +295,12 @@ This skill orchestrates the `/gh-pr-comment-reply` slash command via subagents.
 **Cause:** Multiple messages sent instead of one message with multiple Task calls
 
 **Solution:** Ensure all Task tool calls are in a SINGLE response message
+
+### Subagent Has No Tool Access
+
+**Cause:** Using a custom `subagent_type` that doesn't have tools configured
+
+**Solution:** Use `subagent_type="general-purpose"` which has full tool access (`Tools: *`)
 
 ### GitHub API Authentication Errors
 
@@ -365,7 +392,20 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
 
 ## See Also
 
-- **gh-pr-comment-reply** - Slash command for single comment replies
-- **do-gh-pr-comment-reply** - Subagent for single comment replies
+- **gh-pr-comment-reply** - Slash command for single comment replies (`.claude/commands/gh-pr-comment-reply.md`)
 - **GitHub API Documentation** - https://docs.github.com/rest/pulls/comments
 - **gh CLI Documentation** - https://cli.github.com/manual/
+
+## Implementation Notes
+
+### Why `general-purpose` Instead of Custom Subagent?
+
+Custom agent types defined in `.claude/agents/` do **not** receive tool access from YAML frontmatter.
+The `tools:` field in agent markdown files is documentation only, not actual configuration.
+
+When spawning a custom subagent via the Task tool, it appears with `(Tools: )` - empty tool access.
+Without tools, the subagent cannot execute `gh api` commands.
+
+The `general-purpose` subagent type has `(Tools: *)` - full tool access - making it suitable for
+executing GitHub API commands. By using focused prompts that specify exact commands, we get the
+same behavior as a custom subagent but with working tool access.
