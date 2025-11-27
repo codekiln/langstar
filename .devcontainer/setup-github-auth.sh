@@ -20,19 +20,27 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0  # not fatal, container may not use gh
 fi
 
+# Check if already authenticated (common in Codespaces)
+if gh auth status >/dev/null 2>&1; then
+  echo "[setup-github-auth] Already authenticated via gh. Skipping re-authentication."
+  exit 0
+fi
+
 # Determine which token source is populated
-# Docker Compose loads environment variables from .env file (local) or Codespaces secrets
-if [[ -n "${GITHUB_PAT:-}" ]]; then
+# Priority: GITHUB_TOKEN (Codespaces auto-auth) > GITHUB_PAT (local) > GH_PAT (legacy)
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  TOKEN_SOURCE="GitHub Codespaces (GITHUB_TOKEN)"
+  TOKEN_VALUE="$GITHUB_TOKEN"
+elif [[ -n "${GITHUB_PAT:-}" ]]; then
   TOKEN_SOURCE="Docker Compose environment (GITHUB_PAT)"
   TOKEN_VALUE="$GITHUB_PAT"
 elif [[ -n "${GH_PAT:-}" ]]; then
-  # Codespaces uses GH_PAT
   TOKEN_SOURCE="Codespaces secrets (GH_PAT)"
   TOKEN_VALUE="$GH_PAT"
   # Set GITHUB_PAT for consistency
   export GITHUB_PAT="$GH_PAT"
 else
-  echo "[setup-github-auth] No GITHUB_PAT or GH_PAT found. Skipping gh auth."
+  echo "[setup-github-auth] No GITHUB_TOKEN, GITHUB_PAT, or GH_PAT found. Skipping gh auth."
   exit 0
 fi
 
