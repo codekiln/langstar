@@ -37,7 +37,7 @@ pub struct QueryArgs {
     /// Raw filter expression (LangSmith filter query language)
     ///
     /// Example: 'eq(status, "error")' or 'has(tags, "production")'
-    #[arg(short, long)]
+    #[arg(long)]
     pub filter: Option<String>,
 
     /// Filter for root run in trace
@@ -103,9 +103,11 @@ pub struct QueryArgs {
     #[arg(long, default_value = "desc", value_enum)]
     pub order: OrderArg,
 
-    /// Output format
-    #[arg(long, default_value = "table", value_enum)]
-    pub format: RunsOutputFormat,
+    /// Output format for runs query
+    ///
+    /// Note: Uses `--output` to avoid conflict with global `-f/--format` flag
+    #[arg(short = 'o', long = "output", default_value = "table", value_enum)]
+    pub output: RunsOutputFormat,
 
     /// Fields to select (comma-separated)
     ///
@@ -397,7 +399,7 @@ impl RunsCommands {
     /// Execute the query subcommand
     async fn execute_query(args: &QueryArgs, config: &Config, _format: OutputFormat) -> Result<()> {
         // Create output formatter based on runs-specific format (needed for apply_scoping warnings)
-        let formatter = match args.format {
+        let formatter = match args.output {
             RunsOutputFormat::Table => OutputFormatter::new(OutputFormat::Table),
             RunsOutputFormat::Json | RunsOutputFormat::JsonPretty => {
                 OutputFormatter::new(OutputFormat::Json)
@@ -495,7 +497,7 @@ impl RunsCommands {
             .map(|s| s.split(',').map(|f| f.trim().to_string()).collect());
 
         // Show query info (only for table output to keep JSON clean)
-        if args.format == RunsOutputFormat::Table {
+        if args.output == RunsOutputFormat::Table {
             if !args.projects.is_empty() {
                 formatter.info(&format!(
                     "Querying runs from projects: {}",
@@ -548,7 +550,7 @@ impl RunsCommands {
         }
 
         // Output results
-        match args.format {
+        match args.output {
             RunsOutputFormat::Table => {
                 let rows: Vec<RunRow> = runs.iter().map(RunRow::from).collect();
                 formatter.print_table(&rows)?;
