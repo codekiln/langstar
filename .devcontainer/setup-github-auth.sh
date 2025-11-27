@@ -43,7 +43,7 @@ elif [[ -n "${GH_PAT:-}" ]]; then
   # Set GITHUB_PAT for consistency
   export GITHUB_PAT="$GH_PAT"
 else
-  # If already authenticated but no token available, try to extract token from gh
+  # If already authenticated but no token available, skip git credential setup
   if [[ "$SKIP_GH_AUTH" == "true" ]]; then
     echo "[setup-github-auth] No token environment variable found, but gh is authenticated."
     echo "[setup-github-auth] Git credential setup will be skipped."
