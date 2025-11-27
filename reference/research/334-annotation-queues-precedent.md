@@ -541,7 +541,7 @@ pub enum QueueCommand {
     },
 
     /// Add runs to an annotation queue
-    AddRun {
+    AddRuns {
         /// Queue ID
         queue_id: Uuid,
 
@@ -560,6 +560,11 @@ pub enum QueueCommand {
     },
 
     /// List runs in an annotation queue
+    ///
+    /// NOTE: The SDK only provides `get_run_from_annotation_queue(index)`.
+    /// This command would need to fetch runs sequentially by index until
+    /// exhausted, or use an undocumented endpoint if one exists.
+    /// See Open Questions section 8.1.
     Items {
         /// Queue ID
         queue_id: Uuid,
@@ -598,7 +603,7 @@ $ langstar queue list --json
 $ langstar queue get 12345678-1234-1234-1234-123456789012
 
 # Add runs to queue
-$ langstar queue add-run 12345678-... abcdef01-... abcdef02-...
+$ langstar queue add-runs 12345678-... abcdef01-... abcdef02-...
 Added 2 runs to queue CI Review
 
 # Remove run from queue
