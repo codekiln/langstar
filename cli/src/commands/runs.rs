@@ -83,9 +83,17 @@ pub struct QueryArgs {
     #[arg(long)]
     pub errors_only: bool,
 
-    /// Filter runs after this time (ISO 8601 format)
+    /// Filter runs after this time
     ///
-    /// Example: --since 2024-01-01T00:00:00Z
+    /// Accepts either:
+    /// - Relative duration: 15m, 1h, 7d, 2w (minutes, hours, days, weeks)
+    /// - ISO 8601 timestamp: 2024-01-01T00:00:00Z
+    ///
+    /// Examples:
+    ///   --since 15m    # Last 15 minutes
+    ///   --since 1h     # Last 1 hour
+    ///   --since 7d     # Last 7 days
+    ///   --since 2024-01-01T00:00:00Z  # Since specific time
     #[arg(long)]
     pub since: Option<String>,
 
@@ -94,6 +102,22 @@ pub struct QueryArgs {
     /// Example: --until 2024-01-31T23:59:59Z
     #[arg(long)]
     pub until: Option<String>,
+
+    /// Use a preset time window
+    ///
+    /// Common time windows matching the LangSmith UI.
+    /// Overridden by --since/--until if provided.
+    ///
+    /// Available presets: 1h, 3h, 6h, 12h, 1d, 2d, 7d, 14d
+    #[arg(long, value_enum)]
+    pub preset: Option<crate::time::TimePreset>,
+
+    /// Disable the default 7-day time filter
+    ///
+    /// By default, runs query returns runs from the last 7 days.
+    /// Use --no-time-filter to query all runs without a time constraint.
+    #[arg(long)]
+    pub no_time_filter: bool,
 
     /// Maximum number of runs to return (supports pagination)
     #[arg(short, long, default_value = "100")]
@@ -395,6 +419,95 @@ impl RunsCommands {
         client
     }
 
+    /// Resolve time filters with precedence rules.
+    ///
+    /// Precedence (highest to lowest):
+    /// 1. --since/--until with ISO 8601 timestamps
+    /// 2. --since with relative duration (e.g., "15m", "1h", "7d")
+    /// 3. --preset
+    /// 4. Default (7 days) - unless --no-time-filter is set
+    ///
+    /// Returns (start_time, end_time, description).
+    fn resolve_time_filters(
+        args: &QueryArgs,
+        formatter: &OutputFormatter,
+    ) -> (Option<DateTime<Utc>>, Option<DateTime<Utc>>, String) {
+        let now = Utc::now();
+
+        // If --no-time-filter is set, skip all time filtering
+        if args.no_time_filter {
+            return (None, None, "none (--no-time-filter)".to_string());
+        }
+
+        // Parse --until first (it's always ISO 8601 if present)
+        let end_time: Option<DateTime<Utc>> = args.until.as_ref().and_then(|s| {
+            DateTime::parse_from_rfc3339(s)
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|e| {
+                    formatter.warning(&format!(
+                        "Invalid --until format: {}. Expected ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
+                        e
+                    ));
+                })
+                .ok()
+        });
+
+        // Try to parse --since (relative duration or ISO 8601)
+        if let Some(since_str) = &args.since {
+            // Check if it looks like a relative duration
+            if crate::time::is_relative_duration(since_str) {
+                match crate::time::parse_relative_duration(since_str) {
+                    Ok(duration) => {
+                        let start = now - duration;
+                        return (
+                            Some(start),
+                            end_time,
+                            format!("last {} (relative)", since_str),
+                        );
+                    }
+                    Err(e) => {
+                        formatter.warning(&format!("Invalid --since duration: {}", e));
+                        // Fall through to try ISO 8601
+                    }
+                }
+            }
+
+            // Try ISO 8601 format
+            match DateTime::parse_from_rfc3339(since_str) {
+                Ok(dt) => {
+                    return (
+                        Some(dt.with_timezone(&Utc)),
+                        end_time,
+                        format!("since {} (ISO 8601)", since_str),
+                    );
+                }
+                Err(e) => {
+                    formatter.warning(&format!(
+                        "Invalid --since format: {}. Expected relative duration (e.g., 15m, 1h, 7d) or ISO 8601 (e.g., 2024-01-01T00:00:00Z)",
+                        e
+                    ));
+                    // Fall through to preset or default
+                }
+            }
+        }
+
+        // Try --preset
+        if let Some(preset) = args.preset {
+            let duration = preset.to_duration();
+            let start = now - duration;
+            return (
+                Some(start),
+                end_time,
+                format!("{} (preset)", preset.description()),
+            );
+        }
+
+        // Default: last 7 days
+        let default_duration = crate::time::TimePreset::default_preset().to_duration();
+        let start = now - default_duration;
+        (Some(start), end_time, "last 7 days (default)".to_string())
+    }
+
     /// Execute the runs command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
         match self {
@@ -471,30 +584,12 @@ impl RunsCommands {
             })
             .collect();
 
-        // Parse time filters (warn on invalid formats)
-        let start_time: Option<DateTime<Utc>> = args.since.as_ref().and_then(|s| {
-            DateTime::parse_from_rfc3339(s)
-                .map(|dt| dt.with_timezone(&Utc))
-                .map_err(|e| {
-                    formatter.warning(&format!(
-                        "Invalid --since format: {}. Expected ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
-                        e
-                    ));
-                })
-                .ok()
-        });
-
-        let end_time: Option<DateTime<Utc>> = args.until.as_ref().and_then(|s| {
-            DateTime::parse_from_rfc3339(s)
-                .map(|dt| dt.with_timezone(&Utc))
-                .map_err(|e| {
-                    formatter.warning(&format!(
-                        "Invalid --until format: {}. Expected ISO 8601 format (e.g., 2024-01-01T00:00:00Z)",
-                        e
-                    ));
-                })
-                .ok()
-        });
+        // Parse time filters with precedence:
+        // --since/--until (explicit) > --since (relative) > --preset > default (7d)
+        //
+        // If --no-time-filter is set, skip all time filtering.
+        let (start_time, end_time, time_filter_source) =
+            Self::resolve_time_filters(args, &formatter);
 
         // Parse select fields
         let select: Option<Vec<String>> = args
@@ -512,6 +607,9 @@ impl RunsCommands {
             } else {
                 formatter.info("Querying runs from all projects...");
             }
+
+            // Show time filter info
+            formatter.info(&format!("Time filter: {}", time_filter_source));
 
             if let Some(filter) = &combined_filter {
                 formatter.info(&format!("Filter: {}", filter));
