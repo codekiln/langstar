@@ -2,10 +2,16 @@
 # ---------------------------------------------------------------------
 # setup-github-auth.sh
 # Non-interactively authenticate GitHub CLI ("gh") inside a devcontainer
-# using a fine-grained Personal Access Token (PAT).
+# using a Personal Access Token (PAT) or automatic Codespaces token.
 #
-# Reads the PAT from $GITHUB_PAT (in containerEnv or localEnv expansion)
-# and the username from $GITHUB_USER.
+# Token precedence (first non-empty wins):
+#   1. GITHUB_TOKEN - Codespaces sets this automatically with repo scope
+#   2. GH_TOKEN     - Alternative gh CLI environment variable
+#   3. GITHUB_PAT   - Local Docker Compose .env file (fine-grained PAT)
+#   4. GH_PAT       - Alternative Codespaces secret name
+#
+# Username precedence:
+#   GITHUB_USER -> GH_USER -> gh api user lookup -> 'github-user'
 #
 # After running, `gh auth status` and `git push` should both work.
 # ---------------------------------------------------------------------
@@ -21,18 +27,26 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 # Determine which token source is populated
-# Docker Compose loads environment variables from .env file (local) or Codespaces secrets
-if [[ -n "${GITHUB_PAT:-}" ]]; then
+# Check in order of precedence: Codespaces automatic token first, then PATs
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  # Codespaces automatically sets GITHUB_TOKEN with repo scope
+  TOKEN_SOURCE="Codespaces automatic token (GITHUB_TOKEN)"
+  TOKEN_VALUE="$GITHUB_TOKEN"
+elif [[ -n "${GH_TOKEN:-}" ]]; then
+  # gh CLI also respects GH_TOKEN
+  TOKEN_SOURCE="GH_TOKEN environment variable"
+  TOKEN_VALUE="$GH_TOKEN"
+elif [[ -n "${GITHUB_PAT:-}" ]]; then
+  # Local Docker Compose loads from .env file
   TOKEN_SOURCE="Docker Compose environment (GITHUB_PAT)"
   TOKEN_VALUE="$GITHUB_PAT"
 elif [[ -n "${GH_PAT:-}" ]]; then
-  # Codespaces uses GH_PAT
+  # Alternative Codespaces secret name
   TOKEN_SOURCE="Codespaces secrets (GH_PAT)"
   TOKEN_VALUE="$GH_PAT"
-  # Set GITHUB_PAT for consistency
-  export GITHUB_PAT="$GH_PAT"
 else
-  echo "[setup-github-auth] No GITHUB_PAT or GH_PAT found. Skipping gh auth."
+  echo "[setup-github-auth] No token found. Checked: GITHUB_TOKEN, GH_TOKEN, GITHUB_PAT, GH_PAT"
+  echo "[setup-github-auth] Skipping gh auth setup."
   exit 0
 fi
 
