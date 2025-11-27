@@ -33,8 +33,8 @@ impl ConfiguredTimezone {
     ///
     /// # Examples
     ///
-    /// ```ignore
-    /// use langstar::time::ConfiguredTimezone;
+    /// ```rust,no_run
+    /// use langstar_cli::time::ConfiguredTimezone;
     ///
     /// let tz = ConfiguredTimezone::parse("America/New_York").unwrap();
     /// let tz = ConfiguredTimezone::parse("local").unwrap();

@@ -359,15 +359,6 @@ impl RunRow {
     }
 }
 
-impl From<&Run> for RunRow {
-    /// Convert a Run to a RunRow using UTC timezone.
-    ///
-    /// This is primarily used for tests. For CLI output, use `from_run_with_timezone`.
-    fn from(run: &Run) -> Self {
-        Self::from_run_with_timezone(run, &crate::time::ConfiguredTimezone::Utc)
-    }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Command Implementation
 // ═══════════════════════════════════════════════════════════════════════════
@@ -567,7 +558,9 @@ impl RunsCommands {
         // Output results
         match args.output {
             RunsOutputFormat::Table => {
-                // Parse timezone from config (with fallback to UTC on invalid)
+                // Parse timezone from config string on each invocation.
+                // Note: Caching in Config would require a non-serializable field and add complexity.
+                // The parsing overhead is negligible (single string comparison + map lookup).
                 let timezone = match crate::time::ConfiguredTimezone::parse(&config.timezone) {
                     Ok(tz) => tz,
                     Err(e) => {
@@ -774,14 +767,14 @@ mod tests {
     #[test]
     fn test_run_row_name_truncation_short() {
         let run = create_test_run("ShortName", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.name, "ShortName");
     }
 
     #[test]
     fn test_run_row_name_truncation_long() {
         let run = create_test_run("ThisIsAVeryLongNameThatShouldBeTruncated", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.name, "ThisIsAVeryLongNameThatShou...");
         assert_eq!(row.name.chars().count(), 30);
     }
@@ -790,7 +783,7 @@ mod tests {
     fn test_run_row_name_truncation_unicode() {
         // Test with emoji (multi-byte characters)
         let run = create_test_run("🚀🎉✨💡🔥⭐🌟🎯💫🌈🎊🎁", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         // Should not panic and should truncate properly
         assert!(row.name.chars().count() <= 30);
     }
@@ -800,7 +793,7 @@ mod tests {
         // 500ms duration
         let run =
             create_test_run_with_timing("2024-01-01T12:00:00.000Z", "2024-01-01T12:00:00.500Z");
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.duration, "500ms");
     }
 
@@ -808,28 +801,28 @@ mod tests {
     fn test_run_row_duration_seconds() {
         // 5 second duration
         let run = create_test_run_with_timing("2024-01-01T12:00:00Z", "2024-01-01T12:00:05Z");
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.duration, "5.00s");
     }
 
     #[test]
     fn test_run_row_tokens_display() {
         let run = create_test_run("Test", 150);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.tokens, "150");
     }
 
     #[test]
     fn test_run_row_tokens_display_zero() {
         let run = create_test_run("Test", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.tokens, "-");
     }
 
     #[test]
     fn test_run_row_uuid_truncation() {
         let run = create_test_run("Test", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         // Should be first 8 chars of UUID
         assert_eq!(row.id, "123e4567");
         assert_eq!(row.id.len(), 8);
