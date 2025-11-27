@@ -305,8 +305,14 @@ struct RunRow {
     time: String,
 }
 
-impl From<&Run> for RunRow {
-    fn from(run: &Run) -> Self {
+impl RunRow {
+    /// Create a RunRow from a Run, formatting time in the specified timezone.
+    ///
+    /// # Arguments
+    ///
+    /// * `run` - The run to convert
+    /// * `tz` - The timezone to use for formatting the time column
+    fn from_run_with_timezone(run: &Run, tz: &crate::time::ConfiguredTimezone) -> Self {
         // Calculate duration if we have both start and end times
         let duration = match (&run.start_time, &run.end_time) {
             (Some(start), Some(end)) => {
@@ -321,10 +327,10 @@ impl From<&Run> for RunRow {
             _ => "-".to_string(),
         };
 
-        // Format time (use start_time or "-")
+        // Format time in configured timezone (use start_time or "-")
         let time = run
             .start_time
-            .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
+            .map(|t| tz.format_datetime(t, "%Y-%m-%d %H:%M:%S"))
             .unwrap_or_else(|| "-".to_string());
 
         // Truncate name if too long (unicode-safe)
@@ -552,7 +558,20 @@ impl RunsCommands {
         // Output results
         match args.output {
             RunsOutputFormat::Table => {
-                let rows: Vec<RunRow> = runs.iter().map(RunRow::from).collect();
+                // Parse timezone from config string on each invocation.
+                // Note: Caching in Config would require a non-serializable field and add complexity.
+                // The parsing overhead is negligible (single string comparison + map lookup).
+                let timezone = match crate::time::ConfiguredTimezone::parse(&config.timezone) {
+                    Ok(tz) => tz,
+                    Err(e) => {
+                        formatter.warning(&format!("{}. Using UTC.", e));
+                        crate::time::ConfiguredTimezone::Utc
+                    }
+                };
+                let rows: Vec<RunRow> = runs
+                    .iter()
+                    .map(|r| RunRow::from_run_with_timezone(r, &timezone))
+                    .collect();
                 formatter.print_table(&rows)?;
                 println!("\nFound {} runs", runs.len());
             }
@@ -748,14 +767,14 @@ mod tests {
     #[test]
     fn test_run_row_name_truncation_short() {
         let run = create_test_run("ShortName", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.name, "ShortName");
     }
 
     #[test]
     fn test_run_row_name_truncation_long() {
         let run = create_test_run("ThisIsAVeryLongNameThatShouldBeTruncated", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.name, "ThisIsAVeryLongNameThatShou...");
         assert_eq!(row.name.chars().count(), 30);
     }
@@ -764,7 +783,7 @@ mod tests {
     fn test_run_row_name_truncation_unicode() {
         // Test with emoji (multi-byte characters)
         let run = create_test_run("🚀🎉✨💡🔥⭐🌟🎯💫🌈🎊🎁", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         // Should not panic and should truncate properly
         assert!(row.name.chars().count() <= 30);
     }
@@ -774,7 +793,7 @@ mod tests {
         // 500ms duration
         let run =
             create_test_run_with_timing("2024-01-01T12:00:00.000Z", "2024-01-01T12:00:00.500Z");
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.duration, "500ms");
     }
 
@@ -782,31 +801,59 @@ mod tests {
     fn test_run_row_duration_seconds() {
         // 5 second duration
         let run = create_test_run_with_timing("2024-01-01T12:00:00Z", "2024-01-01T12:00:05Z");
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.duration, "5.00s");
     }
 
     #[test]
     fn test_run_row_tokens_display() {
         let run = create_test_run("Test", 150);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.tokens, "150");
     }
 
     #[test]
     fn test_run_row_tokens_display_zero() {
         let run = create_test_run("Test", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         assert_eq!(row.tokens, "-");
     }
 
     #[test]
     fn test_run_row_uuid_truncation() {
         let run = create_test_run("Test", 0);
-        let row = RunRow::from(&run);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
         // Should be first 8 chars of UUID
         assert_eq!(row.id, "123e4567");
         assert_eq!(row.id.len(), 8);
+    }
+
+    #[test]
+    fn test_run_row_timezone_formatting_produces_different_outputs() {
+        // Create a run with a known start time
+        let run = create_test_run_with_timing("2024-06-15T14:30:00Z", "2024-06-15T14:31:00Z");
+
+        // Format with UTC - should show 14:30
+        let utc_tz = crate::time::ConfiguredTimezone::Utc;
+        let row_utc = RunRow::from_run_with_timezone(&run, &utc_tz);
+
+        // Format with America/New_York - should show 10:30 (EDT in June)
+        let ny_tz = crate::time::ConfiguredTimezone::parse("America/New_York").unwrap();
+        let row_ny = RunRow::from_run_with_timezone(&run, &ny_tz);
+
+        // Format with Asia/Tokyo - should show 23:30 (JST = UTC+9)
+        let tokyo_tz = crate::time::ConfiguredTimezone::parse("Asia/Tokyo").unwrap();
+        let row_tokyo = RunRow::from_run_with_timezone(&run, &tokyo_tz);
+
+        // Verify different timezones produce different time strings
+        assert_ne!(row_utc.time, row_ny.time, "UTC and NY should differ");
+        assert_ne!(row_utc.time, row_tokyo.time, "UTC and Tokyo should differ");
+        assert_ne!(row_ny.time, row_tokyo.time, "NY and Tokyo should differ");
+
+        // Verify the actual times are correct
+        assert!(row_utc.time.contains("14:30"), "UTC should show 14:30");
+        assert!(row_ny.time.contains("10:30"), "NY should show 10:30");
+        assert!(row_tokyo.time.contains("23:30"), "Tokyo should show 23:30");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

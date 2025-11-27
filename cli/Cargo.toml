@@ -23,6 +23,7 @@ futures-util = "0.3"
 
 # Date/time and UUID
 chrono.workspace = true
+chrono-tz = "0.10"
 uuid.workspace = true
 
 # Serialization

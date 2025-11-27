@@ -2,6 +2,7 @@ mod commands;
 mod config;
 mod error;
 mod output;
+pub mod time;
 
 use clap::{Parser, Subcommand};
 use commands::{AssistantCommands, GraphCommands, PromptCommands, RunsCommands};
@@ -86,10 +87,19 @@ async fn run() -> Result<()> {
             runs_cmd.execute(&config, format).await?;
         }
         Commands::Config => {
+            use time::ConfiguredTimezone;
+
             let config_path = Config::config_file_path()?;
             println!("Configuration file: {}", config_path.display());
             println!("\nCurrent configuration:");
             println!("  Output format: {}", config.output_format);
+
+            // Parse and display timezone with validation
+            let tz_display = match ConfiguredTimezone::parse(&config.timezone) {
+                Ok(tz) => tz.description(),
+                Err(_) => format!("{} (invalid, using UTC)", config.timezone),
+            };
+            println!("  Timezone: {}", tz_display);
             println!(
                 "  LangSmith API key: {}",
                 if config.langsmith_api_key.is_some() {
@@ -162,6 +172,10 @@ async fn run() -> Result<()> {
             println!(
                 "  LANGSTAR_OUTPUT_FORMAT: {}",
                 std::env::var("LANGSTAR_OUTPUT_FORMAT").unwrap_or_else(|_| "not set".to_string())
+            );
+            println!(
+                "  LANGSTAR_TIMEZONE: {}",
+                std::env::var("LANGSTAR_TIMEZONE").unwrap_or_else(|_| "not set".to_string())
             );
         }
         Commands::Version => {
