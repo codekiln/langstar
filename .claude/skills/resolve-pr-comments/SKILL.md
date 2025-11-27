@@ -110,7 +110,7 @@ Task(
   prompt="""
     Execute this EXACT command to reply to a GitHub PR comment:
 
-    gh api repos/OWNER/REPO/pulls/300/comments \
+    gh api repos/{owner}/{repo}/pulls/300/comments \
       -f body="Fixed in commit abc123" \
       -F in_reply_to=2565891355
 
@@ -125,7 +125,7 @@ Task(
   prompt="""
     Execute this EXACT command to reply to a GitHub PR comment:
 
-    gh api repos/OWNER/REPO/pulls/300/comments \
+    gh api repos/{owner}/{repo}/pulls/300/comments \
       -f body="Fixed in commit abc123" \
       -F in_reply_to=2565891356
 
