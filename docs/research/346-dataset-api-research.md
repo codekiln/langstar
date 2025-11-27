@@ -101,6 +101,10 @@ This document captures research findings on the LangSmith SDK dataset management
 ### 2.1 DataType Enum
 
 ```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum DataType {
     Kv,    // Key-value pairs
     Llm,   // LLM completions
@@ -111,32 +115,68 @@ pub enum DataType {
 ### 2.2 Dataset Schema
 
 ```rust
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+/// Dataset transformation type - represents transformations applied to datasets.
+/// Note: The exact structure of this type requires further research based on
+/// the LangSmith API response format. This is a placeholder definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatasetTransformation {
+    pub path: String,
+    pub transformation_type: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Dataset {
     pub id: Uuid,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data_type: Option<DataType>,
     pub created_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub modified_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub example_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub session_count: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_session_start_time: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs_schema: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs_schema: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub transformations: Option<Vec<DatasetTransformation>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DatasetCreate {
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data_type: Option<DataType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DatasetUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
 ```
@@ -144,35 +184,75 @@ pub struct DatasetUpdate {
 ### 2.3 Example Schema
 
 ```rust
+use std::collections::HashMap;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+/// Represents a value that can be either a single string or a vector of strings.
+/// This is needed because the LangSmith API accepts both formats for the `split` field.
+/// Requires custom serde deserialization to handle both `"train"` and `["train", "test"]` inputs.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrVec {
+    Single(String),
+    Multiple(Vec<String>),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Example {
     pub id: Uuid,
     pub dataset_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub modified_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source_run_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub attachments: Option<HashMap<String, AttachmentInfo>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExampleCreate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<Uuid>,
     pub dataset_id: Uuid,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub split: Option<StringOrVec>,  // Single string or list of strings
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub created_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub source_run_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub use_source_run_io: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub use_source_run_attachments: Option<Vec<String>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ExampleUpdate {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub outputs: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub split: Option<StringOrVec>,
 }
 ```
@@ -391,7 +471,7 @@ Based on the annotation queue implementation, the dataset implementation should:
 1. Use the same HTTP client and authentication pattern
 2. Follow the same module structure (`types.rs`, `client.rs`)
 3. Use consistent error handling with `thiserror`
-4. Use `serde` with `#[serde(rename_all = "snake_case")]`
+4. Use `serde` with `#[serde(rename_all = "camelCase")]`
 5. Support both sync and async operations where needed
 
 ---
