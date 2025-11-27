@@ -22,10 +22,20 @@ pub struct Config {
     /// Default output format (json or table)
     #[serde(default = "default_output_format")]
     pub output_format: String,
+    /// Timezone for displaying timestamps in CLI output
+    ///
+    /// Accepts IANA timezone names (e.g., "America/New_York", "Europe/London")
+    /// or special values: "local" (system timezone), "UTC"
+    #[serde(default = "default_timezone")]
+    pub timezone: String,
 }
 
 fn default_output_format() -> String {
     "table".to_string()
+}
+
+fn default_timezone() -> String {
+    "local".to_string()
 }
 
 impl Default for Config {
@@ -37,6 +47,7 @@ impl Default for Config {
             workspace_id: None,
             github_integration_id: None,
             output_format: default_output_format(),
+            timezone: default_timezone(),
         }
     }
 }
@@ -70,6 +81,9 @@ impl Config {
         }
         if let Ok(format) = std::env::var("LANGSTAR_OUTPUT_FORMAT") {
             config.output_format = format;
+        }
+        if let Ok(tz) = std::env::var("LANGSTAR_TIMEZONE") {
+            config.timezone = tz;
         }
 
         // Log warning if both organization and workspace IDs are set
@@ -144,6 +158,7 @@ mod tests {
     fn test_config_defaults() {
         let config = Config::default();
         assert_eq!(config.output_format, "table");
+        assert_eq!(config.timezone, "local");
         assert!(config.langsmith_api_key.is_none());
         assert!(config.langgraph_api_key.is_none());
     }
@@ -157,6 +172,7 @@ mod tests {
             workspace_id: None,
             github_integration_id: None,
             output_format: "json".to_string(),
+            timezone: "America/New_York".to_string(),
         };
 
         let toml = toml::to_string(&config).unwrap();
@@ -165,6 +181,7 @@ mod tests {
         assert!(toml.contains("organization_id"));
         assert!(toml.contains("test_org_id"));
         assert!(toml.contains("json"));
+        assert!(toml.contains("America/New_York"));
     }
 
     #[test]
@@ -176,6 +193,7 @@ mod tests {
             workspace_id: Some("test_workspace_id".to_string()),
             github_integration_id: None,
             output_format: "table".to_string(),
+            timezone: "local".to_string(),
         };
 
         let auth = config.to_auth_config();
@@ -192,6 +210,7 @@ mod tests {
             workspace_id: Some("workspace_456".to_string()),
             github_integration_id: None,
             output_format: "table".to_string(),
+            timezone: "UTC".to_string(),
         };
 
         let auth = config.to_auth_config();

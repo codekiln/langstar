@@ -305,8 +305,14 @@ struct RunRow {
     time: String,
 }
 
-impl From<&Run> for RunRow {
-    fn from(run: &Run) -> Self {
+impl RunRow {
+    /// Create a RunRow from a Run, formatting time in the specified timezone.
+    ///
+    /// # Arguments
+    ///
+    /// * `run` - The run to convert
+    /// * `tz` - The timezone to use for formatting the time column
+    fn from_run_with_timezone(run: &Run, tz: &crate::time::ConfiguredTimezone) -> Self {
         // Calculate duration if we have both start and end times
         let duration = match (&run.start_time, &run.end_time) {
             (Some(start), Some(end)) => {
@@ -321,10 +327,10 @@ impl From<&Run> for RunRow {
             _ => "-".to_string(),
         };
 
-        // Format time (use start_time or "-")
+        // Format time in configured timezone (use start_time or "-")
         let time = run
             .start_time
-            .map(|t| t.format("%Y-%m-%d %H:%M:%S").to_string())
+            .map(|t| tz.format_datetime(t, "%Y-%m-%d %H:%M:%S"))
             .unwrap_or_else(|| "-".to_string());
 
         // Truncate name if too long (unicode-safe)
@@ -350,6 +356,15 @@ impl From<&Run> for RunRow {
             duration,
             time,
         }
+    }
+}
+
+impl From<&Run> for RunRow {
+    /// Convert a Run to a RunRow using UTC timezone.
+    ///
+    /// This is primarily used for tests. For CLI output, use `from_run_with_timezone`.
+    fn from(run: &Run) -> Self {
+        Self::from_run_with_timezone(run, &crate::time::ConfiguredTimezone::Utc)
     }
 }
 
@@ -552,7 +567,18 @@ impl RunsCommands {
         // Output results
         match args.output {
             RunsOutputFormat::Table => {
-                let rows: Vec<RunRow> = runs.iter().map(RunRow::from).collect();
+                // Parse timezone from config (with fallback to UTC on invalid)
+                let timezone = match crate::time::ConfiguredTimezone::parse(&config.timezone) {
+                    Ok(tz) => tz,
+                    Err(e) => {
+                        formatter.warning(&format!("{}. Using UTC.", e));
+                        crate::time::ConfiguredTimezone::Utc
+                    }
+                };
+                let rows: Vec<RunRow> = runs
+                    .iter()
+                    .map(|r| RunRow::from_run_with_timezone(r, &timezone))
+                    .collect();
                 formatter.print_table(&rows)?;
                 println!("\nFound {} runs", runs.len());
             }
