@@ -552,7 +552,265 @@ Based on the annotation queue implementation, the dataset implementation should:
 
 ---
 
-## 9. References
+## 9. Design Decisions
+
+This section documents the design decisions for the dataset CLI feature, ensuring consistency with existing langstar patterns and optimal developer experience.
+
+### 9.1 DX Consistency
+
+#### Command Structure
+
+Following the established pattern from `langstar runs query`, the dataset commands will use a similar subcommand structure:
+
+```bash
+langstar dataset <subcommand> [args] [options]
+```
+
+**Proposed subcommands** (aligned with existing CLI patterns):
+
+| Command | Description | Pattern Reference |
+|---------|-------------|-------------------|
+| `langstar dataset list` | List datasets with filtering | Like `runs query` list behavior |
+| `langstar dataset get <id\|name>` | Get a single dataset | Like `prompt get` pattern |
+| `langstar dataset create` | Create a new dataset | Like `graph create` pattern |
+| `langstar dataset delete <id\|name>` | Delete a dataset | Standard CRUD pattern |
+| `langstar dataset examples <id\|name>` | List examples in dataset | Nested resource pattern |
+| `langstar dataset export <id\|name>` | Export dataset to file | New operation |
+| `langstar dataset import` | Import dataset from file | New operation |
+
+#### Flag Naming Conventions
+
+Following existing patterns from `cli/src/commands/runs.rs`:
+
+| Flag | Short | Usage | Existing Reference |
+|------|-------|-------|-------------------|
+| `--output` | `-o` | Output format (table, json, json-pretty) | `runs query -o json` |
+| `--limit` | `-l` | Maximum results | `runs query -l 50` |
+| `--filter` | | Raw filter expression | `runs query --filter` |
+| `--name` | `-n` | Filter by name | New, common CLI pattern |
+| `--type` | `-t` | Filter by data type | Dataset-specific |
+| `--organization-id` | | Override org scoping | `runs query --organization-id` |
+| `--workspace-id` | | Override workspace scoping | `runs query --workspace-id` |
+| `--yes` | `-y` | Skip confirmation | Common destructive op pattern |
+
+**Output format values** (matching existing):
+- `table` (default for terminal)
+- `json` (default for piping)
+- `json-pretty` (human-readable JSON)
+
+#### Table Display Format
+
+For `dataset list` table output, following the `RunRow` pattern from `runs.rs:318-333`:
+
+```
+ID        Name              Type    Examples  Created
+123e4567  My Dataset        kv      1,234     2024-01-15 10:30:00
+234f5678  Training Data     chat    5,678     2024-01-14 14:22:00
+```
+
+Fields selected for table view:
+- **ID**: First 8 characters of UUID (like `runs.rs:378`)
+- **Name**: Truncated to 30 chars with "..." (like `runs.rs:364-368`)
+- **Type**: Dataset type (kv, llm, chat)
+- **Examples**: Example count
+- **Created**: Formatted with configured timezone (like `runs.rs:358-361`)
+
+### 9.2 Configuration
+
+#### Environment Variables
+
+**Existing variables (reused)**:
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `LANGSMITH_API_KEY` | API authentication | Yes |
+| `LANGSMITH_ORGANIZATION_ID` | Organization scoping | No |
+| `LANGSMITH_WORKSPACE_ID` | Workspace scoping | No |
+| `LANGSTAR_OUTPUT_FORMAT` | Default output format | No (default: table) |
+| `LANGSTAR_TIMEZONE` | Timestamp display timezone | No (default: local) |
+
+**No new environment variables needed** - dataset operations use the same authentication and scoping as runs and prompts.
+
+#### Configuration Precedence
+
+Following the established pattern from `cli/src/config.rs:56-97`:
+
+1. **CLI flags** (highest priority)
+2. **Environment variables**
+3. **Config file** (`~/.config/langstar/config.toml`)
+4. **Defaults** (lowest priority)
+
+#### Default Values
+
+| Setting | Default | Rationale |
+|---------|---------|-----------|
+| Output format | `table` | Human-readable for interactive use |
+| Limit | `100` | Matches `runs query` default |
+| Data type | None | List all types by default |
+| Timezone | `local` | User's system timezone |
+
+### 9.3 Business Purpose
+
+#### UI Workflow: Dataset Management in LangSmith
+
+In the LangSmith web UI, users manage datasets through the **Datasets & Testing** section:
+
+1. **Create Dataset**: UI → Datasets → Create Dataset
+   - Enter name, description, data type
+   - Optionally upload CSV/JSONL file
+
+2. **View Dataset**: Click on dataset name
+   - See examples in paginated table
+   - Filter by metadata, search by content
+
+3. **Add Examples**: Within dataset view
+   - Manual entry via form
+   - Upload from file
+   - Add from traced runs (very common workflow)
+
+4. **Export Dataset**: Download as CSV/JSONL
+   - For sharing, backup, or external processing
+
+5. **Versioning**: Track changes over time
+   - Point-in-time queries with `as_of`
+   - Tag important versions
+
+#### Key User Scenarios
+
+**Scenario 1: Batch Dataset Creation for Evaluation**
+```bash
+# Create dataset
+langstar dataset create --name "Q4 Eval Set" --type kv --description "Q4 2024 evaluation examples"
+
+# Import examples from prepared JSONL file
+langstar dataset import <dataset-id> --file eval-examples.jsonl
+
+# Verify import
+langstar dataset examples <dataset-id> --limit 5 -o table
+```
+
+**Scenario 2: Export Production Examples for Analysis**
+```bash
+# List datasets to find the right one
+langstar dataset list --name-contains "production" -o table
+
+# Export for external analysis
+langstar dataset export <dataset-id> --format jsonl --out production-data.jsonl
+```
+
+**Scenario 3: CI/CD Integration - Seed Test Datasets**
+```bash
+# In CI pipeline - create ephemeral test dataset
+DATASET_ID=$(langstar dataset create --name "CI-Test-$(date +%s)" --type kv -o json | jq -r '.id')
+
+# Import test fixtures
+langstar dataset import $DATASET_ID --file tests/fixtures/test-examples.jsonl
+
+# Run evaluation against dataset
+# ... evaluation commands ...
+
+# Cleanup
+langstar dataset delete $DATASET_ID --yes
+```
+
+#### CLI Advantages Over UI
+
+| Task | UI | CLI Advantage |
+|------|----|----|
+| Bulk import | Manual upload, wait | Scriptable, can be part of CI/CD |
+| Repeated operations | Click through each time | One command, repeatable |
+| Version control | Not possible | Commit dataset files to git |
+| Automation | Cannot automate | Full scripting support |
+| Large exports | Browser download limits | Stream to file, no size limits |
+| Cross-dataset ops | Manual copy/paste | Pipe JSON between commands |
+
+### 9.4 SDK Type Patterns
+
+Following patterns from `sdk/src/annotation_queues.rs`:
+
+**Serde configuration**:
+```rust
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]  // Match API's camelCase
+pub struct Dataset {
+    pub id: Uuid,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]  // Omit nulls
+    pub description: Option<String>,
+    // ...
+}
+```
+
+**Request/Response separation**:
+- `Dataset` - Read response (Deserialize only)
+- `DatasetCreate` - Create request (Serialize, Default)
+- `DatasetUpdate` - Update request (Serialize, Default)
+- `ListDatasetsParams` - Query parameters (Serialize, Default)
+
+**Error handling**:
+Following `sdk/src/error.rs` pattern with typed errors:
+```rust
+pub enum DatasetError {
+    NotFound { id: String },
+    AlreadyExists { name: String },
+    ValidationError { message: String },
+    // ...
+}
+```
+
+### 9.5 Error Handling and Validation
+
+#### CLI Error Messages
+
+Following the pattern from `runs.rs:553-556` for user-friendly warnings:
+
+```rust
+// Good: Explains what's wrong and how to fix
+formatter.warning(&format!(
+    "Invalid metadata format '{}', expected KEY=VALUE",
+    meta
+));
+
+// Good: Guides user to next step
+formatter.error(&format!(
+    "Dataset '{}' not found. Run 'langstar dataset list' to see available datasets.",
+    name
+));
+```
+
+#### Validation Patterns
+
+| Validation | Behavior | Reference |
+|------------|----------|-----------|
+| Invalid UUID | Warn and skip (if list), error (if single) | `runs.rs:580-587` |
+| Missing required flag | Clap handles with helpful message | Standard clap behavior |
+| Invalid output format | Parse error with valid options | `output.rs` pattern |
+| API error response | Map to typed error, display message | `error.rs` pattern |
+
+### 9.6 Pagination Strategy
+
+Following the `runs.rs:646-657` pagination pattern:
+
+```rust
+// Stream-based pagination for large datasets
+let mut stream = client.list_datasets_paginated(params, Some(args.limit));
+let mut datasets: Vec<Dataset> = Vec::new();
+
+while let Some(result) = stream.next().await {
+    match result {
+        Ok(dataset) => datasets.push(dataset),
+        Err(e) => {
+            formatter.error(&format!("Error fetching datasets: {}", e));
+            break;
+        }
+    }
+}
+```
+
+**Page size**: Capped at 100 per API request (matching LangSmith API limits).
+
+---
+
+## 10. References
 
 - [LangSmith API OpenAPI Spec](https://api.smith.langchain.com/openapi.json)
 - [LangSmith SDK Python Client](https://langsmith-sdk.readthedocs.io/en/latest/)
