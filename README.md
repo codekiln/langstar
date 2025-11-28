@@ -324,6 +324,43 @@ The `--filter` option accepts LangSmith filter expressions:
 - `has(array_field, value)` - Array contains
 - `and(expr1, expr2)` / `or(expr1, expr2)` - Logical operators
 
+#### Annotation Queues
+
+Manage LangSmith annotation queues for human review and labeling workflows.
+
+```bash
+# Create an annotation queue
+langstar queue create --name "Error Review" --description "Review production errors"
+
+# List queues
+langstar queue list
+langstar queue list --name-contains "review"
+
+# Get queue details
+langstar queue get <queue-id>
+
+# Add runs to a queue for review
+langstar queue add-runs <queue-id> <run-id-1> <run-id-2>
+
+# Add runs from a file (one UUID per line)
+langstar queue add-runs <queue-id> --runs-file runs.txt
+
+# List items in a queue
+langstar queue items <queue-id> --limit 50
+
+# Remove a run from queue
+langstar queue remove-run <queue-id> <run-id>
+
+# Delete a queue
+langstar queue delete <queue-id> --force
+```
+
+**Queue Types:**
+- `single` - Review runs individually (default)
+- `pairwise` - Compare two runs side-by-side
+
+For detailed usage and CI/CD examples, see [docs/queues.md](./docs/queues.md).
+
 ## Configuration
 
 This section provides detailed configuration options for both LangSmith and LangGraph services.
