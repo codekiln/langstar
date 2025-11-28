@@ -674,9 +674,10 @@ mod integration {
     ///
     /// Note: This test is currently ignored due to a bug in the CLI where
     /// `dataset update` fails with "error decoding response body".
-    /// TODO: Fix the update command's response handling and re-enable this test.
+    /// See: https://github.com/codekiln/langstar/issues/387
+    /// TODO(#387): Un-ignore this test when the bug is fixed.
     #[test]
-    #[ignore = "CLI bug: update command fails to decode response body"]
+    #[ignore = "CLI bug #387: update command fails to decode response body"]
     fn test_dataset_crud_lifecycle() {
         if !has_api_credentials() {
             println!("Skipping test: LANGSMITH_API_KEY not set");
@@ -756,9 +757,10 @@ mod integration {
     /// Note: This test is currently ignored due to a bug in the CLI where
     /// `dataset export --format jsonl` conflicts with the global `-f, --format`
     /// output format flag.
-    /// TODO: Rename export's --format flag or use a subcommand to avoid conflict.
+    /// See: https://github.com/codekiln/langstar/issues/387
+    /// TODO(#387): Un-ignore this test when the bug is fixed.
     #[test]
-    #[ignore = "CLI bug: export --format conflicts with global output format flag"]
+    #[ignore = "CLI bug #387: export --format conflicts with global output format flag"]
     fn test_dataset_import_export_roundtrip() {
         if !has_api_credentials() {
             println!("Skipping test: LANGSMITH_API_KEY not set");
