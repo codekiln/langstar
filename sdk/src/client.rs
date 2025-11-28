@@ -208,6 +208,60 @@ impl LangchainClient {
         Ok(request)
     }
 
+    /// Create a PATCH request to LangSmith API
+    ///
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// headers can be used together for workspace-scoped requests.
+    pub fn langsmith_patch(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+
+        let mut request = self
+            .http_client
+            .patch(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set (should be present on all requests per docs)
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
+    /// Create a DELETE request to LangSmith API
+    ///
+    /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
+    /// headers can be used together for workspace-scoped requests.
+    pub fn langsmith_delete(&self, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+
+        let mut request = self
+            .http_client
+            .delete(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set (should be present on all requests per docs)
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set (for workspace-scoped requests)
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        Ok(request)
+    }
+
     /// Create a GET request to Control Plane API
     ///
     /// The Control Plane API uses the same authentication as LangSmith:
@@ -676,27 +730,7 @@ impl LangchainClient {
     /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
     pub async fn delete_annotation_queue(&self, queue_id: uuid::Uuid) -> Result<()> {
         let path = format!("/api/v1/annotation-queues/{}", queue_id);
-
-        // Create DELETE request manually since we don't have a langsmith_delete helper
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .delete(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
+        let request = self.langsmith_delete(&path)?;
         self.execute_status_only_request(request).await
     }
 
@@ -782,27 +816,7 @@ impl LangchainClient {
         run_id: uuid::Uuid,
     ) -> Result<()> {
         let path = format!("/api/v1/annotation-queues/{}/runs/{}", queue_id, run_id);
-
-        // Create DELETE request manually
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .delete(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
+        let request = self.langsmith_delete(&path)?;
         self.execute_status_only_request(request).await
     }
 
@@ -979,6 +993,524 @@ impl LangchainClient {
                 }
             }
         })
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Datasets API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Create a new dataset.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Dataset creation parameters including name and optional configuration
+    ///
+    /// # Returns
+    ///
+    /// The created `Dataset` with full details.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, DatasetCreate, DataType};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = DatasetCreate {
+    ///     name: "Evaluation Dataset".to_string(),
+    ///     description: Some("Dataset for model evaluation".to_string()),
+    ///     data_type: Some(DataType::Chat),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let dataset = client.create_dataset(request).await?;
+    /// println!("Created dataset: {} ({})", dataset.name, dataset.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/datasets`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_dataset(
+        &self,
+        request: crate::datasets::DatasetCreate,
+    ) -> Result<crate::datasets::Dataset> {
+        let request_builder = self.langsmith_post("/api/v1/datasets")?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// List datasets with optional filtering and pagination.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters including filters (name, data_type) and pagination
+    ///
+    /// # Returns
+    ///
+    /// A vector of `Dataset` objects matching the query.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ListDatasetsParams, DataType};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let params = ListDatasetsParams {
+    ///     name_contains: Some("eval".to_string()),
+    ///     data_type: Some(DataType::Chat),
+    ///     limit: Some(50),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let datasets = client.list_datasets(params).await?;
+    /// println!("Found {} datasets", datasets.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/datasets`
+    /// - Max limit per request: 100 (per OpenAPI spec)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_datasets(
+        &self,
+        params: crate::datasets::ListDatasetsParams,
+    ) -> Result<Vec<crate::datasets::Dataset>> {
+        let mut request = self.langsmith_get("/api/v1/datasets")?;
+
+        // Add query parameters
+        if let Some(ids) = &params.id {
+            for id in ids {
+                request = request.query(&[("id", id.to_string())]);
+            }
+        }
+        if let Some(data_type) = &params.data_type {
+            request = request.query(&[(
+                "data_type",
+                serde_json::to_string(data_type).unwrap().trim_matches('"'),
+            )]);
+        }
+        if let Some(name) = &params.name {
+            request = request.query(&[("name", name)]);
+        }
+        if let Some(name_contains) = &params.name_contains {
+            request = request.query(&[("name_contains", name_contains)]);
+        }
+        if let Some(metadata) = &params.metadata {
+            request = request.query(&[("metadata", metadata)]);
+        }
+        if let Some(offset) = params.offset {
+            request = request.query(&[("offset", offset)]);
+        }
+        if let Some(limit) = params.limit {
+            request = request.query(&[("limit", limit)]);
+        }
+        if let Some(sort_by) = &params.sort_by {
+            request = request.query(&[(
+                "sort_by",
+                serde_json::to_string(sort_by).unwrap().trim_matches('"'),
+            )]);
+        }
+        if let Some(sort_by_desc) = params.sort_by_desc {
+            request = request.query(&[("sort_by_desc", sort_by_desc)]);
+        }
+        if let Some(tag_value_ids) = &params.tag_value_id {
+            for id in tag_value_ids {
+                request = request.query(&[("tag_value_id", id.to_string())]);
+            }
+        }
+        if let Some(exclude) = params.exclude_corrections_datasets {
+            request = request.query(&[("exclude_corrections_datasets", exclude)]);
+        }
+
+        self.execute(request).await
+    }
+
+    /// Get a dataset by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `dataset_id` - The UUID of the dataset
+    ///
+    /// # Returns
+    ///
+    /// The `Dataset` with full details.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let dataset_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let dataset = client.get_dataset(dataset_id).await?;
+    /// println!("Dataset: {} ({} examples)", dataset.name, dataset.example_count);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/datasets/{dataset_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn get_dataset(&self, dataset_id: uuid::Uuid) -> Result<crate::datasets::Dataset> {
+        let path = format!("/api/v1/datasets/{}", dataset_id);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Update a dataset.
+    ///
+    /// # Arguments
+    ///
+    /// * `dataset_id` - The UUID of the dataset to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Returns
+    ///
+    /// The updated `Dataset`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, DatasetUpdate};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let dataset_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let request = DatasetUpdate {
+    ///     name: Some("Updated Name".to_string()),
+    ///     description: Some("New description".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let dataset = client.update_dataset(dataset_id, request).await?;
+    /// println!("Updated dataset: {}", dataset.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/datasets/{dataset_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn update_dataset(
+        &self,
+        dataset_id: uuid::Uuid,
+        request: crate::datasets::DatasetUpdate,
+    ) -> Result<crate::datasets::Dataset> {
+        let path = format!("/api/v1/datasets/{}", dataset_id);
+        let request_builder = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Delete a dataset.
+    ///
+    /// # Arguments
+    ///
+    /// * `dataset_id` - The UUID of the dataset to delete
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let dataset_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// client.delete_dataset(dataset_id).await?;
+    /// println!("Dataset deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/datasets/{dataset_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_dataset(&self, dataset_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/datasets/{}", dataset_id);
+        let request = self.langsmith_delete(&path)?;
+        self.execute_status_only_request(request).await
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Examples API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Create a new example in a dataset.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Example creation parameters including dataset_id and inputs/outputs
+    ///
+    /// # Returns
+    ///
+    /// The created `Example` with full details.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ExampleCreate};
+    /// # use serde_json::json;
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = ExampleCreate {
+    ///     dataset_id: Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap(),
+    ///     inputs: Some(json!({"question": "What is 2+2?"})),
+    ///     outputs: Some(json!({"answer": "4"})),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let example = client.create_example(request).await?;
+    /// println!("Created example: {}", example.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/examples`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_example(
+        &self,
+        request: crate::datasets::ExampleCreate,
+    ) -> Result<crate::datasets::Example> {
+        let request_builder = self.langsmith_post("/api/v1/examples")?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// List examples with optional filtering and pagination.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters including dataset filter and pagination
+    ///
+    /// # Returns
+    ///
+    /// A vector of `Example` objects matching the query.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ListExamplesParams};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let params = ListExamplesParams {
+    ///     dataset: Some(Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap()),
+    ///     limit: Some(50),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let examples = client.list_examples(params).await?;
+    /// println!("Found {} examples", examples.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/examples`
+    /// - Max limit per request: 100 (per OpenAPI spec)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_examples(
+        &self,
+        params: crate::datasets::ListExamplesParams,
+    ) -> Result<Vec<crate::datasets::Example>> {
+        let mut request = self.langsmith_get("/api/v1/examples")?;
+
+        // Add query parameters
+        if let Some(dataset) = params.dataset {
+            request = request.query(&[("dataset", dataset.to_string())]);
+        }
+        if let Some(ids) = &params.id {
+            for id in ids {
+                request = request.query(&[("id", id.to_string())]);
+            }
+        }
+        if let Some(as_of) = &params.as_of {
+            request = request.query(&[("as_of", as_of)]);
+        }
+        if let Some(metadata) = &params.metadata {
+            request = request.query(&[("metadata", metadata)]);
+        }
+        if let Some(full_text) = &params.full_text_contains {
+            for term in full_text {
+                request = request.query(&[("full_text_contains", term)]);
+            }
+        }
+        if let Some(splits) = &params.splits {
+            for split in splits {
+                request = request.query(&[("splits", split)]);
+            }
+        }
+        if let Some(filter) = &params.filter {
+            request = request.query(&[("filter", filter)]);
+        }
+        if let Some(offset) = params.offset {
+            request = request.query(&[("offset", offset)]);
+        }
+        if let Some(limit) = params.limit {
+            request = request.query(&[("limit", limit)]);
+        }
+        if let Some(order) = &params.order {
+            request = request.query(&[(
+                "order",
+                serde_json::to_string(order).unwrap().trim_matches('"'),
+            )]);
+        }
+        if let Some(descending) = params.descending {
+            request = request.query(&[("descending", descending)]);
+        }
+        if let Some(select) = &params.select {
+            for field in select {
+                request = request.query(&[(
+                    "select",
+                    serde_json::to_string(field).unwrap().trim_matches('"'),
+                )]);
+            }
+        }
+        if let Some(seed) = params.random_seed {
+            request = request.query(&[("random_seed", seed)]);
+        }
+
+        self.execute(request).await
+    }
+
+    /// Get an example by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `example_id` - The UUID of the example
+    ///
+    /// # Returns
+    ///
+    /// The `Example` with full details.
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/examples/{example_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn get_example(&self, example_id: uuid::Uuid) -> Result<crate::datasets::Example> {
+        let path = format!("/api/v1/examples/{}", example_id);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Update an example.
+    ///
+    /// # Arguments
+    ///
+    /// * `example_id` - The UUID of the example to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Returns
+    ///
+    /// The updated `Example`.
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/examples/{example_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn update_example(
+        &self,
+        example_id: uuid::Uuid,
+        request: crate::datasets::ExampleUpdate,
+    ) -> Result<crate::datasets::Example> {
+        let path = format!("/api/v1/examples/{}", example_id);
+        let request_builder = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Delete an example.
+    ///
+    /// # Arguments
+    ///
+    /// * `example_id` - The UUID of the example to delete
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/examples/{example_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_example(&self, example_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/examples/{}", example_id);
+        let request = self.langsmith_delete(&path)?;
+        self.execute_status_only_request(request).await
+    }
+
+    /// Bulk create examples in a dataset.
+    ///
+    /// # Arguments
+    ///
+    /// * `examples` - Vector of example creation requests
+    ///
+    /// # Returns
+    ///
+    /// A vector of created `Example` objects.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ExampleCreate};
+    /// # use serde_json::json;
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let dataset_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let examples = vec![
+    ///     ExampleCreate {
+    ///         dataset_id,
+    ///         inputs: Some(json!({"q": "What is 2+2?"})),
+    ///         outputs: Some(json!({"a": "4"})),
+    ///         ..Default::default()
+    ///     },
+    ///     ExampleCreate {
+    ///         dataset_id,
+    ///         inputs: Some(json!({"q": "What is 3+3?"})),
+    ///         outputs: Some(json!({"a": "6"})),
+    ///         ..Default::default()
+    ///     },
+    /// ];
+    ///
+    /// let created = client.bulk_create_examples(examples).await?;
+    /// println!("Created {} examples", created.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/examples/bulk`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn bulk_create_examples(
+        &self,
+        examples: Vec<crate::datasets::ExampleCreate>,
+    ) -> Result<Vec<crate::datasets::Example>> {
+        let request_builder = self
+            .langsmith_post("/api/v1/examples/bulk")?
+            .json(&examples);
+        self.execute(request_builder).await
     }
 }
 
