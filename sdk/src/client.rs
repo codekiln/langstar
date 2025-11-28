@@ -556,7 +556,7 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// let queue = client.read_annotation_queue(queue_id).await?;
     /// println!("Queue: {} ({})", queue.base.name, queue.base.id);
     /// # Ok(())
@@ -592,7 +592,7 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// let request = UpdateAnnotationQueueRequest {
     ///     name: Some("Updated Queue Name".to_string()),
     ///     description: Some("New description".to_string()),
@@ -649,7 +649,7 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// client.delete_annotation_queue(queue_id).await?;
     /// println!("Queue deleted successfully");
     /// # Ok(())
@@ -716,10 +716,10 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// let run_ids = vec![
-    ///     Uuid::parse_str("abcdef01-1234-1234-1234-123456789012")?,
-    ///     Uuid::parse_str("abcdef02-1234-1234-1234-123456789012")?,
+    ///     Uuid::parse_str("abcdef01-1234-1234-1234-123456789012").unwrap(),
+    ///     Uuid::parse_str("abcdef02-1234-1234-1234-123456789012").unwrap(),
     /// ];
     ///
     /// client.add_runs_to_annotation_queue(queue_id, run_ids).await?;
@@ -778,8 +778,8 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
-    /// let run_id = Uuid::parse_str("abcdef01-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let run_id = Uuid::parse_str("abcdef01-1234-1234-1234-123456789012").unwrap();
     ///
     /// client.delete_run_from_annotation_queue(queue_id, run_id).await?;
     /// println!("Run removed successfully");
@@ -855,7 +855,7 @@ impl LangchainClient {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// let run = client.get_run_from_annotation_queue(queue_id, 0).await?;
     /// println!("Run: {} (added at: {:?})", run.run.name, run.added_at);
     /// # Ok(())

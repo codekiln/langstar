@@ -320,7 +320,7 @@ pub struct ListAnnotationQueuesParams {
 /// # Note
 ///
 /// Uses snake_case field names to match existing Run struct pattern.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunWithAnnotationQueueInfo {
     /// Base run fields
     #[serde(flatten)]
