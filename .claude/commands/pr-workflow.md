@@ -85,6 +85,15 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
    - Dry-run push to check if branch can be pushed
    - If fails, investigate and resolve
 
+7. **Check if PR already exists:**
+   ```bash
+   gh pr list --head $(git branch --show-current) --json number,title,url,state
+   ```
+   - If PR exists and is **OPEN**: Skip to Phase 4 (CI/CD Monitoring Loop)
+   - If PR exists and is **CLOSED**: Warn user and ask whether to create new PR
+   - If PR exists and is **MERGED**: Inform user and stop (branch should be cleaned up)
+   - If no PR exists: Continue to Phase 2
+
 **Validation Summary:**
 - ✅ In worktree
 - ✅ Branch follows convention
@@ -92,6 +101,23 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 - ✅ No uncommitted changes
 - ✅ Branch has commits
 - ✅ Can push to remote
+- ✅ PR existence checked
+
+**If PR already exists:**
+```
+✅ **Found Existing PR**
+
+📍 PR #$PR_NUM: <title>
+🔗 URL: <pr_url>
+📊 State: OPEN
+
+Skipping to monitoring phase. I'll:
+1. Address any unresolved review comments
+2. Check if rebase to main is needed
+3. Monitor CI/CD checks until all pass
+
+Starting autonomous PR management...
+```
 
 If any validation fails, **STOP** and provide clear instructions to fix the issue.
 
@@ -235,9 +261,91 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 
 **This is a LOOP - continue until PR is ready or user intervenes.**
 
+**IMPORTANT - Idempotent Design:**
+- This phase can be run multiple times safely
+- Each run checks current state and only acts on what's needed
+- Safe to restart if interrupted - will pick up where it left off
+- Safe to run in parallel with manual changes - will sync and continue
+
+**Order of operations (priority):**
+1. Review comments FIRST (most important - human feedback)
+2. Rebase check (must be up-to-date before CI is meaningful)
+3. CI/CD checks (verify code quality)
+4. Monitor for 5-7 minutes after all fixes to ensure stability
+
 **Actions in each iteration:**
 
-1. **Check CI/CD status:**
+1. **Check for review comments (HIGHEST PRIORITY):**
+   ```bash
+   # Fetch unresolved review comments using the GitHub Reviews API
+   REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+   gh api repos/$REPO/pulls/$PR_NUM/comments \
+     --jq '.[] | select(.resolved == false) | {id, path, line, user: .user.login, body}'
+   ```
+   - Count unresolved review comments (where `.resolved == false`)
+   - **IMPORTANT:** Include comments from both human reviewers AND Copilot
+   - If unresolved comments exist, handle them automatically:
+     ```
+     💬 **Found Unresolved Review Comments:** 5
+
+     1. Comment 2565891355 in .claude/commands/pr-workflow.md:45 by @copilot
+        "Consider adding error handling here"
+
+     2. Comment 2565891356 in .claude/commands/pr-workflow.md:120 by @reviewer
+        "This logic could be simplified"
+
+     Addressing each comment now...
+     ```
+
+2. **Address each review comment:**
+   - Read the file and surrounding context
+   - Determine if code change is needed or just a reply
+   - **If code change needed:**
+     - Make the fix
+     - Commit with reference to the issue being fixed
+     - Reply to comment: "✅ Fixed in commit {sha}: {brief description}"
+   - **If no code change needed (e.g., clarification, disagreement):**
+     - Reply explaining why no change is needed
+     - Be professional and concise
+   - Use the `resolve-pr-comments` skill for parallel handling if 3+ comments
+   - Example commit message:
+     ```bash
+     git commit -m "$(cat <<EOF
+🩹 fix(pr-workflow): address review feedback on error handling
+
+- Added validation before API calls
+- Improved error messages for user clarity
+
+Addresses review comment: https://github.com/owner/repo/pull/385#discussion_r123456
+EOF
+)"
+     ```
+
+3. **Check if branch needs rebasing:**
+   ```bash
+   # Check if base branch has new commits
+   git fetch origin "$BASE_BRANCH"
+   BEHIND_COUNT=$(git rev-list --count HEAD..origin/"$BASE_BRANCH")
+   ```
+   - If `BEHIND_COUNT > 0`, rebase is needed:
+     ```bash
+     # Attempt automatic rebase
+     git rebase origin/"$BASE_BRANCH"
+
+     # If successful:
+     git push --force-with-lease origin $(git branch --show-current)
+
+     # If conflicts occur: stop and ask user
+     ```
+   - Report rebase status:
+     ```
+     🔄 **Rebased to $BASE_BRANCH**
+
+     Branch was $BEHIND_COUNT commits behind. Successfully rebased and pushed.
+     ⏳ Waiting for CI to run on rebased code...
+     ```
+
+4. **Check CI/CD status:**
    ```bash
    gh pr checks "$PR_NUM"
    ```
@@ -248,10 +356,10 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
      sleep 30
      ```
      Then check again
-   - If checks pass: proceed to review comment check
+   - If checks pass: proceed to stability monitoring
    - If checks fail: proceed to failure handling
 
-2. **If CI/CD checks fail:**
+5. **If CI/CD checks fail:**
    ```bash
    # Get detailed failure information, including run IDs for failed checks
    gh pr checks "$PR_NUM" --json workflowRun,name,state,conclusion \
@@ -277,7 +385,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
      I'll fix these issues now...
      ```
 
-3. **Fix identified issues:**
+6. **Fix identified CI issues:**
    - Read relevant files
    - Apply fixes based on error messages
    - Commit fixes following conventional commit format:
@@ -307,72 +415,30 @@ EOF
      ⏳ Waiting for CI to run again...
      ```
 
-4. **Check if branch needs rebasing:**
-   ```bash
-   # Check if base branch has new commits
-   git fetch origin "$BASE_BRANCH"
-   git log HEAD..origin/"$BASE_BRANCH" --oneline
-   ```
-   - If base has advanced, check if rebase is needed:
-     ```bash
-     # Check if PR is marked as "out of date"
-     gh pr view "$PR_NUM" --json mergeable,mergeStateStatus
+7. **Stability monitoring (after all fixes):**
+   - Once all checks pass, monitor for 5-7 minutes to ensure stability
+   - Check every 60 seconds for any new failures or comments
+   - If new issues appear, loop back to step 1
+   - Report during monitoring:
      ```
-   - If rebase needed, guide user:
-     ```
-     ⚠️ **Branch Out of Date**
+     ✅ **All Checks Passing**
 
-     The base branch has new commits. You'll need to rebase:
-
-     ```bash
-     git fetch origin $BASE_BRANCH
-     git rebase origin/$BASE_BRANCH
-     # Resolve any conflicts if they occur
-     git push --force-with-lease origin $(git branch --show-current)
+     🕐 Monitoring for 5 minutes to ensure stability...
+     ⏳ Time remaining: 4:00
      ```
 
-     Would you like me to attempt this automatically? (requires conflict-free rebase)
-     ```
-
-5. **Check for review comments:**
-   ```bash
-   # Fetch unresolved review comments using the GitHub Reviews API
-   REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-   gh api repos/$REPO/pulls/$PR_NUM/comments \
-     --jq '.[] | select(.resolved == false) | {id, user: .user.login, body: .body[0:100]}'
-   ```
-   - Count unresolved review comments (where `.resolved == false`)
-   - If unresolved comments exist, offer to resolve:
-     ```
-     💬 **Unresolved Review Comments:** 5
-
-     1. Comment 2565891355 by @reviewer: "Missing error handling here"
-     2. Comment 2565891356 by @reviewer: "Consider using const"
-     3. Comment 2565891357 by @copilot: "This function could be simplified"
-     ... and 2 more
-
-     Would you like me to:
-     A) Read all comments and suggest fixes
-     B) Reply to all with "Fixed in commit <sha>"
-     C) Let me handle them individually
-     ```
-
-6. **If user chooses to resolve comments, use resolve-pr-comments skill:**
-   - Fetch comment details
-   - Generate appropriate replies or fixes
-   - Use skill to reply in parallel
-   - Report results
-
-7. **Loop back to step 1** after:
+8. **Loop back to step 1** after:
    - Applying fixes and pushing
    - Resolving review comments
    - Any other changes made to PR
+   - During stability monitoring if new issues detected
 
 **Exit loop when:**
 - ✅ All CI checks passing
 - ✅ No unresolved review comments
 - ✅ Branch up-to-date with base
 - ✅ PR properly linked to issue with milestone
+- ✅ Stability monitoring completed (5 minutes with no new issues)
 
 ### Phase 5: Completion Verification
 
