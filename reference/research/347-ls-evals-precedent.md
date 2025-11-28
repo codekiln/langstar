@@ -23,6 +23,7 @@ Key architectural patterns:
 5. [Key Method Signatures](#5-key-method-signatures)
 6. [Design Patterns for Langstar](#6-design-patterns-for-langstar)
 7. [Online Evaluation (Server-Side Evaluators)](#7-online-evaluation-server-side-evaluators)
+8. [Design Decisions for Langstar CLI](#8-design-decisions-for-langstar-cli)
 
 ---
 
@@ -1033,6 +1034,345 @@ langstar rules trigger <rule-id>
 # View rule logs
 langstar rules logs <rule-id>
 ```
+
+---
+
+## 8. Design Decisions for Langstar CLI
+
+Research conducted for [Issue #368](https://github.com/codekiln/langstar/issues/368).
+
+This section documents DX (developer experience) design decisions for implementing evaluation commands in the langstar CLI, ensuring consistency with existing commands (`runs query`, `dataset`, etc.).
+
+### 8.1 DX Consistency Analysis
+
+#### 8.1.1 Existing CLI Patterns
+
+The langstar CLI follows consistent patterns across commands:
+
+| Pattern | `runs query` | `dataset` | Recommended for `eval` |
+|---------|--------------|-----------|------------------------|
+| **Filter syntax** | `--filter <expr>` | - | `--filter <expr>` |
+| **Convenience filters** | `--tag`, `--meta KEY=VALUE` | `--name`, `--name-contains` | `--evaluator-type`, `--score-key` |
+| **Output format** | `-o/--output table|json|json-pretty` | `--json` flag | `-o/--output` (prefer explicit) |
+| **Limit** | `-l/--limit N` | `-l/--limit N` | `-l/--limit N` |
+| **Resource ID** | `--project UUID` | `<dataset_id>` positional | See 8.3.1 |
+| **Time filters** | `--since`, `--until`, `--preset` | - | `--since`, `--preset` |
+
+#### 8.1.2 Argument Naming Conventions
+
+Following existing patterns:
+- **Long names**: kebab-case (`--evaluator-type`, not `--evaluator_type`)
+- **Short names**: Single letter for frequent options (`-l` for limit, `-o` for output)
+- **Flags**: `--json`, `--yes`/`-y` for confirmation skip
+- **Value enums**: Explicit values via `ValueEnum` trait
+
+### 8.2 Evaluator Configuration Patterns
+
+#### 8.2.1 Evaluator Type Selection
+
+**Recommended pattern:** Use `--evaluator` with type-specific subcommands or options.
+
+```bash
+# Option A: Type as primary argument (Recommended)
+langstar eval run --evaluator exact_match --run-id <id>
+langstar eval run --evaluator llm_judge --run-id <id> --judge-model gpt-4o
+
+# Option B: Separate commands per type
+langstar eval exact-match --run-id <id>
+langstar eval llm-judge --run-id <id> --judge-model gpt-4o
+```
+
+**Recommendation:** Option A with `--evaluator <TYPE>` for consistency with how `runs query` handles `--run-type`. This keeps the command structure flat and discoverable.
+
+#### 8.2.2 Evaluator Type Enum
+
+```rust
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum EvaluatorType {
+    // Heuristic evaluators (zero-cost, deterministic)
+    ExactMatch,
+    Contains,
+    RegexMatch,
+    JsonValid,
+    StringDistance,
+
+    // LLM-as-judge evaluators (API cost, configurable)
+    LlmJudge,
+    Correctness,
+    Helpfulness,
+    Custom,
+}
+```
+
+#### 8.2.3 Heuristic Evaluator Options
+
+| Evaluator | Options | Example |
+|-----------|---------|---------|
+| `exact_match` | `--ignore-case`, `--ignore-whitespace` | `--evaluator exact_match --ignore-case` |
+| `contains` | `--ignore-case`, `--expected <STRING>` | `--evaluator contains --expected "success"` |
+| `regex_match` | `--pattern <REGEX>`, `--flags <FLAGS>` | `--evaluator regex_match --pattern "\\d+" ` |
+| `json_valid` | `--schema-file <PATH>` (optional) | `--evaluator json_valid` |
+| `string_distance` | `--metric <METRIC>`, `--threshold <FLOAT>` | `--evaluator string_distance --metric levenshtein` |
+
+#### 8.2.4 LLM-as-Judge Configuration
+
+```bash
+# Basic usage with defaults
+langstar eval run --evaluator llm_judge --run-id <id>
+
+# Full configuration
+langstar eval run \
+  --evaluator llm_judge \
+  --run-id <id> \
+  --judge-model gpt-4o \
+  --judge-provider openai \
+  --rubric-file criteria.txt \
+  --score-type categorical \
+  --score-choices "pass,fail" \
+  --include-explanation
+```
+
+**LLM Judge Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `--judge-model` | String | `gpt-4o` | Model name for LLM judge |
+| `--judge-provider` | Enum | `openai` | Model provider (openai, anthropic, etc.) |
+| `--rubric` | String | - | Inline rubric text |
+| `--rubric-file` | Path | - | Path to rubric file |
+| `--score-type` | Enum | `categorical` | `categorical` or `continuous` |
+| `--score-choices` | String | `Y,N` | Comma-separated categorical choices |
+| `--score-min` | Float | `0.0` | Minimum for continuous scores |
+| `--score-max` | Float | `1.0` | Maximum for continuous scores |
+| `--include-explanation` | Flag | false | Request chain-of-thought reasoning |
+
+### 8.3 CLI Command Structure
+
+#### 8.3.1 Primary Commands
+
+```bash
+# Evaluate a single run
+langstar eval run <RUN_ID> --evaluator <TYPE> [OPTIONS]
+
+# Evaluate runs from a dataset
+langstar eval dataset <DATASET_ID> --evaluator <TYPE> [OPTIONS]
+
+# List available evaluator types
+langstar eval types
+
+# Create feedback manually
+langstar feedback create --run-id <ID> --key <KEY> --score <SCORE>
+
+# List feedback for a run
+langstar feedback list --run-id <ID>
+```
+
+#### 8.3.2 Resource Identification Patterns
+
+Consistent with existing commands:
+
+```bash
+# Positional for primary resource (like `dataset get <ID>`)
+langstar eval run <RUN_ID> --evaluator exact_match
+
+# Multiple resources via repeated flag (like `runs query --project`)
+langstar eval run --run-id <ID1> --run-id <ID2> --evaluator exact_match
+
+# Reference dataset for comparison
+langstar eval run <RUN_ID> --evaluator exact_match --reference-dataset <DATASET_ID>
+```
+
+#### 8.3.3 Filtering and Batch Operations
+
+```bash
+# Evaluate all runs in a project with filtering
+langstar eval batch \
+  --project <PROJECT_NAME> \
+  --evaluator exact_match \
+  --filter 'eq(status, "success")' \
+  --since 24h \
+  --limit 100
+
+# Evaluate using convenience filters
+langstar eval batch \
+  --project <PROJECT_NAME> \
+  --evaluator llm_judge \
+  --tag production \
+  --meta model=gpt-4o
+```
+
+### 8.4 Output Formats
+
+#### 8.4.1 Single Run Evaluation Output
+
+**Table format (default):**
+```
+Evaluation Results for run 123e4567
+
+Key          Score    Value    Comment
+───────────────────────────────────────────
+exact_match  1.0      -        -
+accuracy     -        pass     Output matches expected
+```
+
+**JSON format (`-o json`):**
+```json
+{
+  "run_id": "123e4567-e89b-12d3-a456-426614174000",
+  "evaluations": [
+    {
+      "key": "exact_match",
+      "score": 1.0,
+      "value": null,
+      "comment": null
+    }
+  ]
+}
+```
+
+#### 8.4.2 LLM Judge Output with Reasoning
+
+**Table format with explanation:**
+```
+Evaluation Results for run 123e4567
+
+Key          Score    Value    Comment
+───────────────────────────────────────────────────────────────
+correctness  0.85     -        The answer is mostly correct but...
+
+Explanation:
+The response correctly identifies the main concept but omits
+a key detail about error handling.
+```
+
+**JSON format:**
+```json
+{
+  "run_id": "123e4567-e89b-12d3-a456-426614174000",
+  "evaluations": [
+    {
+      "key": "correctness",
+      "score": 0.85,
+      "value": null,
+      "comment": "The answer is mostly correct but omits error handling",
+      "explanation": "The response correctly identifies the main concept...",
+      "evaluator_info": {
+        "model": "gpt-4o",
+        "provider": "openai"
+      }
+    }
+  ]
+}
+```
+
+#### 8.4.3 Batch Evaluation Summary
+
+**Table format:**
+```
+Batch Evaluation Summary (100 runs)
+
+Evaluator     Avg Score    Pass Rate    Failed
+────────────────────────────────────────────────
+exact_match   0.72         72%          28
+llm_judge     0.85         85%          15
+
+Detailed results: langstar eval results <EXPERIMENT_ID>
+```
+
+#### 8.4.4 Machine-Readable Batch Output
+
+**JSONL format (`-o jsonl`):**
+```jsonl
+{"run_id":"123e4567...","key":"exact_match","score":1.0}
+{"run_id":"223e4567...","key":"exact_match","score":0.0}
+```
+
+### 8.5 Configuration Integration
+
+#### 8.5.1 Config File Support
+
+Evaluator presets can be defined in `langstar.toml`:
+
+```toml
+[eval]
+default_evaluator = "exact_match"
+default_judge_model = "gpt-4o"
+default_judge_provider = "openai"
+
+[eval.presets.production_check]
+evaluator = "llm_judge"
+judge_model = "claude-3-opus-20240229"
+judge_provider = "anthropic"
+rubric_file = "~/.langstar/rubrics/production.txt"
+include_explanation = true
+
+[eval.presets.quick_check]
+evaluator = "exact_match"
+ignore_case = true
+ignore_whitespace = true
+```
+
+**Usage:**
+```bash
+# Use a preset
+langstar eval run <ID> --preset production_check
+
+# Override preset options
+langstar eval run <ID> --preset production_check --judge-model gpt-4-turbo
+```
+
+#### 8.5.2 Environment Variable Mapping
+
+| Env Var | Config Key | CLI Flag | Precedence |
+|---------|------------|----------|------------|
+| `LANGSTAR_EVAL_MODEL` | `eval.default_judge_model` | `--judge-model` | CLI > Env > Config |
+| `LANGSTAR_EVAL_PROVIDER` | `eval.default_judge_provider` | `--judge-provider` | CLI > Env > Config |
+
+### 8.6 Error Handling and User Feedback
+
+#### 8.6.1 Progress Indicators
+
+For batch operations:
+```
+Evaluating runs... [████████░░░░] 42/100 (llm_judge)
+```
+
+#### 8.6.2 Error Messages
+
+```bash
+# Missing required option
+Error: --evaluator is required
+Hint: Available types: exact_match, contains, regex_match, json_valid, llm_judge
+
+# Invalid evaluator type
+Error: Unknown evaluator type 'foo'
+Available types:
+  Heuristic: exact_match, contains, regex_match, json_valid, string_distance
+  LLM Judge: llm_judge, correctness, helpfulness, custom
+
+# Missing reference data
+Error: Evaluator 'exact_match' requires reference outputs
+Hint: Use --reference-dataset <ID> or ensure the run has associated example data
+```
+
+### 8.7 Design Decision Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Evaluator selection | `--evaluator <TYPE>` | Consistent with `--run-type` in runs query |
+| Judge model config | `--judge-model`, `--judge-provider` | Explicit, matches SDK patterns |
+| Rubric input | `--rubric` or `--rubric-file` | Flexible for inline or file-based |
+| Score type | `--score-type categorical|continuous` | Matches SDK's CategoricalScoreConfig/ContinuousScoreConfig |
+| Output format | `-o/--output table|json|jsonl` | Consistent with runs query |
+| Batch filtering | Reuse runs query filter syntax | DX consistency, zero learning curve |
+| Config presets | `[eval.presets.*]` in config | Reduces repetition for common workflows |
+
+### 8.8 Future Considerations
+
+1. **Online evaluation rules**: CLI support for creating/managing automation rules (Section 7)
+2. **Custom evaluator upload**: Support for uploading Python code evaluators
+3. **Comparative evaluation**: Side-by-side comparison of multiple runs
+4. **Streaming results**: Real-time output for long-running batch evaluations
 
 ---
 
