@@ -14,12 +14,12 @@ All API endpoint information in this document is sourced from the LangSmith Open
 
 | Source | Location | Description |
 |--------|----------|-------------|
-| LangSmith OpenAPI Spec | `reference/api-specs/langsmith-openapi.json` | Local copy of the LangSmith API specification |
+| LangSmith OpenAPI Spec | `reference/openapi/langchain/langsmith/openapi.json` | Local copy of the LangSmith API specification |
 | Remote URL | `https://api.smith.langchain.com/openapi.json` | Official LangSmith OpenAPI endpoint |
 
 **Verification**: All jq queries in this document can be run against the local OpenAPI spec file:
 ```bash
-cd /workspace && jq '<query>' reference/api-specs/langsmith-openapi.json
+cd /workspace && jq '<query>' reference/openapi/langchain/langsmith/openapi.json
 ```
 
 ## 1. API Endpoints

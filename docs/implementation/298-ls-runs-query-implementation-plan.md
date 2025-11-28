@@ -26,10 +26,10 @@ This plan provides the implementation roadmap for `langstar runs query`, enablin
 1. **Research report** (#299): `/workspace/reference/research/298-ls-runs-query-precedent.md`
 2. **OpenAPI validation** (#303): `/workspace/reference/research/298-openapi-validation.md`
 3. **OpenAPI artifacts**:
-   - `/workspace/reference/api-specs/langsmith-openapi.json` - Full spec (635KB)
-   - `/workspace/reference/api-specs/runs-query-request-schema.json` - Request schema
-   - `/workspace/reference/api-specs/runs-query-response-schema.json` - Response schema
-   - `/workspace/reference/api-specs/run-schema.json` - Run object schema (54 fields)
+   - `/workspace/reference/openapi/langchain/langsmith/openapi.json` - Full spec (635KB)
+   - `/workspace/reference/api-specs/langsmith/runs-query-request-schema.json` - Request schema
+   - `/workspace/reference/api-specs/langsmith/runs-query-response-schema.json` - Response schema
+   - `/workspace/reference/api-specs/langsmith/run-schema.json` - Run object schema (54 fields)
 
 ---
 
@@ -69,7 +69,7 @@ pub enum RunType {
 }
 
 /// Run schema based on OpenAPI spec (required fields are non-optional)
-/// Reference: /workspace/reference/api-specs/run-schema.json
+/// Reference: /workspace/reference/api-specs/langsmith/run-schema.json
 #[derive(Debug, Clone, Deserialize)]
 pub struct Run {
     // Required fields (per OpenAPI spec)
@@ -137,7 +137,7 @@ pub struct Run {
 
 ```rust
 /// Request body for POST /api/v1/runs/query
-/// Reference: /workspace/reference/api-specs/runs-query-request-schema.json
+/// Reference: /workspace/reference/api-specs/langsmith/runs-query-request-schema.json
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct QueryRunsRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -190,7 +190,7 @@ pub struct QueryRunsRequest {
 }
 
 /// Response from POST /api/v1/runs/query
-/// Reference: /workspace/reference/api-specs/runs-query-response-schema.json
+/// Reference: /workspace/reference/api-specs/langsmith/runs-query-response-schema.json
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryRunsResponse {
     pub runs: Vec<Run>,

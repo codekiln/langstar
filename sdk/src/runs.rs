@@ -64,7 +64,7 @@ pub enum RunType {
 ///
 /// # OpenAPI Reference
 ///
-/// See `/workspace/reference/api-specs/run-schema.json`
+/// See `/workspace/reference/api-specs/langsmith/run-schema.json`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Run {
     // ═══════════════════════════════════════════════════════════════════════
@@ -294,7 +294,7 @@ pub enum RunDateOrder {
 ///
 /// # OpenAPI Reference
 ///
-/// See `/workspace/reference/api-specs/runs-query-request-schema.json`
+/// See `/workspace/reference/api-specs/langsmith/runs-query-request-schema.json`
 ///
 /// # Example
 ///
@@ -413,7 +413,7 @@ pub struct QueryRunsRequest {
 ///
 /// # OpenAPI Reference
 ///
-/// See `/workspace/reference/api-specs/runs-query-response-schema.json`
+/// See `/workspace/reference/api-specs/langsmith/runs-query-response-schema.json`
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryRunsResponse {
     /// List of runs matching the query

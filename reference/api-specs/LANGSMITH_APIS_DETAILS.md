@@ -6,23 +6,23 @@ This document provides a comprehensive catalog of all LangSmith/LangGraph API sp
 
 | API | File Path | Size | Version | Committed | Base URL (US) | Base URL (EU) | Description |
 |-----|-----------|------|---------|-----------|---------------|---------------|-------------|
-| LangSmith API | `langsmith-openapi.json` | 635K | 0.1.0 | 2025-11-26 | `https://api.smith.langchain.com` | `https://eu.api.smith.langchain.com` | Core LangSmith API - datasets, examples, runs, projects, tracing, org management |
-| LangSmith Deployment Control Plane API | `../openapi/langchain/langsmith-deployment-control-plane-api-openapi.json` | 70K | 0.1.0 | 2025-11-20 | `https://api.host.langchain.com` | `https://eu.api.host.langchain.com` | Deployment management for LangGraph Server |
+| LangSmith API | `../openapi/langchain/langsmith/openapi.json` | 635K | 0.1.0 | 2025-11-26 | `https://api.smith.langchain.com` | `https://eu.api.smith.langchain.com` | Core LangSmith API - datasets, examples, runs, projects, tracing, org management |
+| LangSmith Deployment Control Plane API | `../openapi/langchain/control-plane/openapi.json` | 70K | 0.1.0 | 2025-11-20 | `https://api.host.langchain.com` | `https://eu.api.host.langchain.com` | Deployment management for LangGraph Server |
 | LangSmith Deployment Agent Server API | Per-deployment | N/A | N/A | N/A | Per-deployment | Per-deployment | Runtime API for assistants, threads, runs (OpenAPI at `/docs` on each deployment) |
 | SCIM API | SCIM 2.0 compliant | N/A | SCIM 2.0 | N/A | `https://api.smith.langchain.com/scim/v2` | `https://eu.api.smith.langchain.com/scim/v2` | User provisioning (Enterprise only) |
 
 ## Extracted Schema Files
 
-These are subsets extracted from the main OpenAPI specs for focused reference:
+These are subsets extracted from the main OpenAPI specs for focused reference. See [langsmith/FRAGMENTS.md](./langsmith/FRAGMENTS.md) for jq extraction commands.
 
 | Schema | File Path | Size | Purpose |
 |--------|-----------|------|---------|
-| Annotation Queue Endpoints | `annotation-queue-endpoints.json` | 2.3K | HITL annotation queue API endpoints |
-| Annotation Queue Schemas | `annotation-queue-schemas.json` | 45K | Data types for annotation queues |
-| Run Schema | `run-schema.json` | 9.8K | Run/trace data structures |
-| Runs Query Endpoint | `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint spec |
-| Runs Query Request | `runs-query-request-schema.json` | 5.5K | Request payload for runs query |
-| Runs Query Response | `runs-query-response-schema.json` | 1.1K | Response format for runs query |
+| Annotation Queue Endpoints | `langsmith/annotation-queue-endpoints.json` | 2.3K | HITL annotation queue API endpoints |
+| Annotation Queue Schemas | `langsmith/annotation-queue-schemas.json` | 45K | Data types for annotation queues |
+| Run Schema | `langsmith/run-schema.json` | 9.8K | Run/trace data structures |
+| Runs Query Endpoint | `langsmith/runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint spec |
+| Runs Query Request | `langsmith/runs-query-request-schema.json` | 5.5K | Request payload for runs query |
+| Runs Query Response | `langsmith/runs-query-response-schema.json` | 1.1K | Response format for runs query |
 
 ## Remote Sources
 
@@ -53,13 +53,13 @@ All jq queries in research documents can be run against local spec files:
 
 ```bash
 # List all dataset-related endpoints
-jq '.paths | keys | map(select(contains("dataset")))' langsmith-openapi.json
+jq '.paths | keys | map(select(contains("dataset")))' ../openapi/langchain/langsmith/openapi.json
 
 # Get endpoint summary
-jq '.paths["/api/v1/datasets"].get.summary' langsmith-openapi.json
+jq '.paths["/api/v1/datasets"].get.summary' ../openapi/langchain/langsmith/openapi.json
 
 # List all schema definitions
-jq '.components.schemas | keys' langsmith-openapi.json
+jq '.components.schemas | keys' ../openapi/langchain/langsmith/openapi.json
 ```
 
 ### Updating Specifications
@@ -68,15 +68,15 @@ To refresh local specs from remote sources:
 
 ```bash
 # Update LangSmith API spec
-curl -o langsmith-openapi.json https://api.smith.langchain.com/openapi.json
+curl -o ../openapi/langchain/langsmith/openapi.json https://api.smith.langchain.com/openapi.json
 
 # Update LangGraph Cloud spec
-curl -o ../openapi/langchain/langsmith-deployment-control-plane-api-openapi.json https://api.host.langchain.com/openapi.json
+curl -o ../openapi/langchain/control-plane/openapi.json https://api.host.langchain.com/openapi.json
 ```
 
 ## API Coverage by Domain
 
-### LangSmith Core API (`langsmith-openapi.json`)
+### LangSmith Core API (`../openapi/langchain/langsmith/openapi.json`)
 
 | Domain | Endpoints | Key Operations |
 |--------|-----------|----------------|
@@ -87,7 +87,7 @@ curl -o ../openapi/langchain/langsmith-deployment-control-plane-api-openapi.json
 | Annotation Queues | `/api/v1/annotation-queues/*` | HITL workflow management |
 | Feedback | `/api/v1/feedback/*` | Run feedback, scores |
 
-### LangSmith Deployment Control Plane API (`langsmith-deployment-control-plane-api-openapi.json`)
+### LangSmith Deployment Control Plane API (`../openapi/langchain/control-plane/openapi.json`)
 
 | Domain | Endpoints | Key Operations |
 |--------|-----------|----------------|
