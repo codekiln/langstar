@@ -163,9 +163,9 @@ pub struct ExportArgs {
     /// Dataset ID (UUID) to export
     pub dataset_id: Uuid,
 
-    /// Output format: jsonl or csv
-    #[arg(long, value_name = "FORMAT")]
-    pub format: String,
+    /// Output file format: jsonl or csv
+    #[arg(long = "file-format", value_name = "FORMAT")]
+    pub file_format: String,
 
     /// Output file path (prints to stdout if not specified)
     #[arg(long, short)]
@@ -221,7 +221,10 @@ impl From<&Dataset> for DatasetRow {
                 .unwrap_or_else(|| "kv".to_string()),
             example_count: dataset.example_count,
             description,
-            modified: dataset.modified_at.format("%Y-%m-%d").to_string(),
+            modified: dataset
+                .modified_at
+                .map(|dt| dt.format("%Y-%m-%d").to_string())
+                .unwrap_or_else(|| "-".to_string()),
         }
     }
 }
@@ -364,10 +367,9 @@ impl DatasetCommands {
                     .map(|dt| format!("{:?}", dt).to_lowercase())
                     .unwrap_or_else(|| "kv".to_string())
             );
-            println!(
-                "  Modified: {}",
-                dataset.modified_at.format("%Y-%m-%dT%H:%M:%SZ")
-            );
+            if let Some(modified) = dataset.modified_at {
+                println!("  Modified: {}", modified.format("%Y-%m-%dT%H:%M:%SZ"));
+            }
         }
 
         Ok(())
@@ -436,10 +438,9 @@ impl DatasetCommands {
             if let Some(created) = dataset.created_at {
                 println!("  Created: {}", created.format("%Y-%m-%dT%H:%M:%SZ"));
             }
-            println!(
-                "  Modified: {}",
-                dataset.modified_at.format("%Y-%m-%dT%H:%M:%SZ")
-            );
+            if let Some(modified) = dataset.modified_at {
+                println!("  Modified: {}", modified.format("%Y-%m-%dT%H:%M:%SZ"));
+            }
         }
 
         Ok(())
@@ -654,7 +655,7 @@ impl DatasetCommands {
     }
 
     async fn execute_export(args: &ExportArgs, config: &Config) -> Result<()> {
-        let format = args.format.to_lowercase();
+        let format = args.file_format.to_lowercase();
         if format != "jsonl" && format != "csv" {
             return Err(crate::error::CliError::Config(
                 "Unsupported format. Use 'jsonl' or 'csv'".to_string(),

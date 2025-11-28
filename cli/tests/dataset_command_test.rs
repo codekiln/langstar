@@ -146,7 +146,7 @@ fn test_dataset_export_help() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Export examples to a file"))
-        .stdout(predicate::str::contains("--format"))
+        .stdout(predicate::str::contains("--file-format"))
         .stdout(predicate::str::contains("--out"))
         .stdout(predicate::str::contains("--limit"));
 }
@@ -261,7 +261,7 @@ fn test_dataset_export_requires_format() {
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("--format"));
+        .stderr(predicate::str::contains("--file-format"));
 }
 
 #[test]
@@ -358,7 +358,7 @@ fn test_dataset_export_accepts_formats() {
             "dataset",
             "export",
             "00000000-0000-0000-0000-000000000001",
-            "--format",
+            "--file-format",
             format,
         ]);
 
@@ -367,7 +367,7 @@ fn test_dataset_export_accepts_formats() {
 
         assert!(
             !stderr.contains("invalid value"),
-            "CLI should accept --format {}",
+            "CLI should accept --file-format {}",
             format
         );
     }
@@ -539,7 +539,7 @@ fn test_dataset_export_invalid_format() {
         "dataset",
         "export",
         "00000000-0000-0000-0000-000000000001",
-        "--format",
+        "--file-format",
         "xml",
     ]);
 
@@ -671,13 +671,7 @@ mod integration {
     use uuid::Uuid;
 
     /// Test the full CRUD lifecycle for datasets.
-    ///
-    /// Note: This test is currently ignored due to a bug in the CLI where
-    /// `dataset update` fails with "error decoding response body".
-    /// See: https://github.com/codekiln/langstar/issues/387
-    /// TODO(#387): Un-ignore this test when the bug is fixed.
     #[test]
-    #[ignore = "CLI bug #387: update command fails to decode response body"]
     fn test_dataset_crud_lifecycle() {
         if !has_api_credentials() {
             println!("Skipping test: LANGSMITH_API_KEY not set");
@@ -750,14 +744,7 @@ mod integration {
     }
 
     /// Test import/export roundtrip for datasets.
-    ///
-    /// Note: This test is currently ignored due to a bug in the CLI where
-    /// `dataset export --format jsonl` conflicts with the global `-f, --format`
-    /// output format flag.
-    /// See: https://github.com/codekiln/langstar/issues/387
-    /// TODO(#387): Un-ignore this test when the bug is fixed.
     #[test]
-    #[ignore = "CLI bug #387: export --format conflicts with global output format flag"]
     fn test_dataset_import_export_roundtrip() {
         if !has_api_credentials() {
             println!("Skipping test: LANGSMITH_API_KEY not set");
@@ -813,7 +800,7 @@ mod integration {
             "dataset",
             "export",
             dataset_id,
-            "--format",
+            "--file-format",
             "jsonl",
             "--out",
             export_file.to_str().unwrap(),
@@ -840,7 +827,7 @@ mod integration {
             "dataset",
             "export",
             dataset_id,
-            "--format",
+            "--file-format",
             "csv",
             "--out",
             csv_file.to_str().unwrap(),

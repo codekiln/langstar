@@ -97,12 +97,17 @@ pub struct DatasetTransformation {
 ///
 /// # API Reference
 ///
-/// Maps to `Dataset` in OpenAPI spec.
-/// Returned by `GET /datasets`, `GET /datasets/{id}`, `POST /datasets`
+/// Maps to `Dataset` and `DatasetSchemaForUpdate` in OpenAPI spec.
+/// Returned by `GET /datasets`, `GET /datasets/{id}`, `POST /datasets`, `PATCH /datasets/{id}`
 ///
 /// # Required Fields
 ///
-/// - `id`, `name`, `tenant_id`, `example_count`, `session_count`, `modified_at`
+/// - `id`, `name`, `tenant_id`
+///
+/// # Note
+///
+/// Fields `example_count`, `session_count`, and `modified_at` are optional because
+/// PATCH responses (`DatasetSchemaForUpdate`) do not include these computed fields.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Dataset {
     /// Unique identifier for the dataset
@@ -114,14 +119,17 @@ pub struct Dataset {
     /// Tenant ID (workspace) that owns this dataset
     pub tenant_id: Uuid,
 
-    /// Number of examples in the dataset
+    /// Number of examples in the dataset (not present in PATCH responses)
+    #[serde(default)]
     pub example_count: i64,
 
-    /// Number of sessions (projects) linked to this dataset
+    /// Number of sessions (projects) linked to this dataset (not present in PATCH responses)
+    #[serde(default)]
     pub session_count: i64,
 
-    /// When the dataset was last modified
-    pub modified_at: DateTime<Utc>,
+    /// When the dataset was last modified (not present in PATCH responses)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modified_at: Option<DateTime<Utc>>,
 
     /// Optional description
     #[serde(skip_serializing_if = "Option::is_none")]

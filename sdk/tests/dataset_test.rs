@@ -24,6 +24,17 @@ fn make_dataset_json(id: &str, name: &str, example_count: i64) -> serde_json::Va
     })
 }
 
+/// Helper function to make a minimal Dataset update response (DatasetSchemaForUpdate)
+/// This matches what the PATCH endpoint actually returns - no example_count, session_count, or modified_at
+fn make_dataset_update_json(id: &str, name: &str) -> serde_json::Value {
+    json!({
+        "id": id,
+        "name": name,
+        "tenant_id": "87654321-4321-4321-4321-210987654321",
+        "data_type": "kv"
+    })
+}
+
 /// Helper function to make a minimal valid Example JSON response
 fn make_example_json(id: &str, dataset_id: &str) -> serde_json::Value {
     json!({
@@ -302,7 +313,8 @@ async fn test_update_dataset() {
     let mut server = Server::new_async().await;
 
     let dataset_id = "12345678-1234-1234-1234-123456789012";
-    let mut response = make_dataset_json(dataset_id, "Updated Dataset", 10);
+    // PATCH responses return DatasetSchemaForUpdate, not full Dataset
+    let mut response = make_dataset_update_json(dataset_id, "Updated Dataset");
     response["description"] = json!("New description");
 
     let mock = server
