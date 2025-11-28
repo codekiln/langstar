@@ -787,4 +787,147 @@ mod tests {
         assert!(json.contains("\"type\":\"llm_judge\""));
         assert!(json.contains("\"model\":\"gpt-4o\""));
     }
+
+    // ========================================================================
+    // Deserialization Tests (round-trip verification)
+    // ========================================================================
+
+    #[test]
+    fn test_feedback_type_deserialization() {
+        let continuous: FeedbackType = serde_json::from_str("\"continuous\"").unwrap();
+        assert_eq!(continuous, FeedbackType::Continuous);
+
+        let categorical: FeedbackType = serde_json::from_str("\"categorical\"").unwrap();
+        assert_eq!(categorical, FeedbackType::Categorical);
+
+        let freeform: FeedbackType = serde_json::from_str("\"freeform\"").unwrap();
+        assert_eq!(freeform, FeedbackType::Freeform);
+    }
+
+    #[test]
+    fn test_feedback_source_type_deserialization() {
+        let app: FeedbackSourceType = serde_json::from_str("\"app\"").unwrap();
+        assert_eq!(app, FeedbackSourceType::App);
+
+        let api: FeedbackSourceType = serde_json::from_str("\"api\"").unwrap();
+        assert_eq!(api, FeedbackSourceType::Api);
+
+        let model: FeedbackSourceType = serde_json::from_str("\"model\"").unwrap();
+        assert_eq!(model, FeedbackSourceType::Model);
+
+        let auto_eval: FeedbackSourceType = serde_json::from_str("\"auto_eval\"").unwrap();
+        assert_eq!(auto_eval, FeedbackSourceType::AutoEval);
+    }
+
+    #[test]
+    fn test_heuristic_evaluator_deserialization() {
+        let exact_match: HeuristicEvaluator = serde_json::from_str("\"exact_match\"").unwrap();
+        assert_eq!(exact_match, HeuristicEvaluator::ExactMatch);
+
+        let regex_match: HeuristicEvaluator = serde_json::from_str("\"regex_match\"").unwrap();
+        assert_eq!(regex_match, HeuristicEvaluator::RegexMatch);
+
+        let contains: HeuristicEvaluator = serde_json::from_str("\"contains\"").unwrap();
+        assert_eq!(contains, HeuristicEvaluator::Contains);
+
+        let string_distance: HeuristicEvaluator =
+            serde_json::from_str("\"string_distance\"").unwrap();
+        assert_eq!(string_distance, HeuristicEvaluator::StringDistance);
+
+        let json_valid: HeuristicEvaluator = serde_json::from_str("\"json_valid\"").unwrap();
+        assert_eq!(json_valid, HeuristicEvaluator::JsonValid);
+    }
+
+    #[test]
+    fn test_score_type_deserialization() {
+        let categorical: ScoreType = serde_json::from_str("\"categorical\"").unwrap();
+        assert_eq!(categorical, ScoreType::Categorical);
+
+        let continuous: ScoreType = serde_json::from_str("\"continuous\"").unwrap();
+        assert_eq!(continuous, ScoreType::Continuous);
+    }
+
+    #[test]
+    fn test_code_evaluator_language_deserialization() {
+        let python: CodeEvaluatorLanguage = serde_json::from_str("\"python\"").unwrap();
+        assert_eq!(python, CodeEvaluatorLanguage::Python);
+
+        let js: CodeEvaluatorLanguage = serde_json::from_str("\"javascript\"").unwrap();
+        assert_eq!(js, CodeEvaluatorLanguage::JavaScript);
+    }
+
+    #[test]
+    fn test_feedback_config_deserialization() {
+        let json = r#"{"type":"continuous","min":0.0,"max":1.0}"#;
+        let config: FeedbackConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.feedback_type, FeedbackType::Continuous);
+        assert_eq!(config.min, Some(0.0));
+        assert_eq!(config.max, Some(1.0));
+        assert!(config.categories.is_none());
+    }
+
+    #[test]
+    fn test_feedback_create_deserialization() {
+        let json = r#"{"key":"accuracy","score":0.95,"comment":"Good answer"}"#;
+        let request: FeedbackCreate = serde_json::from_str(json).unwrap();
+        assert_eq!(request.key, "accuracy");
+        assert_eq!(request.score, Some(0.95));
+        assert_eq!(request.comment, Some("Good answer".to_string()));
+    }
+
+    #[test]
+    fn test_evaluation_result_deserialization() {
+        let json = r#"{"key":"exact_match","score":1.0,"comment":"Match found"}"#;
+        let result: EvaluationResult = serde_json::from_str(json).unwrap();
+        assert_eq!(result.key, "exact_match");
+        assert_eq!(result.score, Some(1.0));
+        assert_eq!(result.comment, Some("Match found".to_string()));
+    }
+
+    #[test]
+    fn test_llm_judge_config_deserialization() {
+        let json = r#"{"model":"gpt-4o","provider":"openai","score_type":"categorical","choices":["Y","N"],"include_reasoning":false}"#;
+        let config: LlmJudgeConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.model, "gpt-4o");
+        assert_eq!(config.provider, Some("openai".to_string()));
+        assert_eq!(config.score_type, ScoreType::Categorical);
+        assert_eq!(config.choices, Some(vec!["Y".to_string(), "N".to_string()]));
+        assert!(!config.include_reasoning);
+    }
+
+    #[test]
+    fn test_feedback_round_trip() {
+        // Create a FeedbackCreate, serialize, then deserialize
+        let original = FeedbackCreate {
+            key: "test_metric".to_string(),
+            score: Some(0.75),
+            comment: Some("Test comment".to_string()),
+            ..Default::default()
+        };
+
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: FeedbackCreate = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(original.key, deserialized.key);
+        assert_eq!(original.score, deserialized.score);
+        assert_eq!(original.comment, deserialized.comment);
+    }
+
+    #[test]
+    fn test_evaluation_result_round_trip() {
+        let original = EvaluationResult {
+            key: "round_trip_test".to_string(),
+            score: Some(0.5),
+            value: Some(serde_json::json!("test_value")),
+            comment: Some("Round trip test".to_string()),
+            ..Default::default()
+        };
+
+        let json = serde_json::to_string(&original).unwrap();
+        let deserialized: EvaluationResult = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(original.key, deserialized.key);
+        assert_eq!(original.score, deserialized.score);
+        assert_eq!(original.comment, deserialized.comment);
+    }
 }
