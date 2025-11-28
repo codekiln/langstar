@@ -1,6 +1,6 @@
 # LangSmith Dataset Management
 
-This document provides comprehensive documentation for managing LangSmith datasets using the `langstar dataset` CLI commands.
+This document provides complete documentation for managing LangSmith datasets using the `langstar dataset` CLI commands.
 
 ## Table of Contents
 
@@ -70,10 +70,10 @@ langstar dataset create --name <NAME> [OPTIONS]
 
 **Examples:**
 ```bash
-# Create a basic key-value dataset
+# Create a basic key-value dataset for testing Q&A pairs
 langstar dataset create --name "my-qa-dataset" --data-type kv
 
-# Create a chat dataset with description
+# Create a chat dataset for training a customer support bot
 langstar dataset create --name "customer-support-chats" \
   --data-type chat \
   --description "Training data for customer support bot"
@@ -252,19 +252,15 @@ langstar dataset import <DATASET_ID> --file <FILE_PATH> [OPTIONS]
 
 **Options:**
 - `--file <PATH>` - Path to the file to import (required)
-- `--format <FORMAT>` - File format: `jsonl` or `csv` (auto-detected from extension)
+- `--format <FORMAT>` - File format: `jsonl` or `csv` (optional; inferred from file extension if not specified)
 
 **Examples:**
 ```bash
-# Import from JSONL file (format auto-detected)
+# Import from JSONL file (format inferred from .jsonl extension)
 langstar dataset import 12345678-1234-1234-1234-123456789012 \
   --file examples.jsonl
 
-# Import from CSV with explicit format
-langstar dataset import 12345678-1234-1234-1234-123456789012 \
-  --file data.csv --format csv
-
-# Import from file with non-standard extension
+# Import from file with ambiguous extension (explicit format required)
 langstar dataset import 12345678-1234-1234-1234-123456789012 \
   --file data.txt --format jsonl
 ```
@@ -412,9 +408,9 @@ question,category,answer
 "What is Paris?","geography","Capital of France"
 ```
 
-This auto-maps to:
-- `inputs`: `{"question": "What is 2+2?", "category": "math"}`
-- `outputs`: `{"output": 4}` (if `answer` treated as output)
+When no explicit `inputs` or `outputs` columns are present, all non-reserved columns are mapped to `inputs`:
+- Row 1 → `inputs`: `{"question": "What is 2+2?", "category": "math", "answer": "4"}`
+- Row 2 → `inputs`: `{"question": "What is Paris?", "category": "geography", "answer": "Capital of France"}`
 
 **Best Practices:**
 - Use explicit `inputs` and `outputs` columns with JSON strings for complex data
