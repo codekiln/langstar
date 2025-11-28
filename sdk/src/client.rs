@@ -384,6 +384,35 @@ impl LangchainClient {
             .header("Content-Type", "application/json"))
     }
 
+    /// Execute a request that returns no response body (status-only response).
+    ///
+    /// This helper is used for API endpoints that only return a status code
+    /// without a response body (e.g., DELETE operations, some PATCH/PUT operations).
+    ///
+    /// # Arguments
+    /// * `request` - The configured RequestBuilder to execute
+    ///
+    /// # Returns
+    /// * `Ok(())` if the request succeeds (2xx status)
+    /// * `Err(LangstarError::ApiError)` if the request fails
+    async fn execute_status_only_request(&self, request: RequestBuilder) -> Result<()> {
+        let response = request.send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Execute a request and parse the response
     pub async fn execute<T: for<'de> Deserialize<'de>>(
         &self,
@@ -616,22 +645,7 @@ impl LangchainClient {
     ) -> Result<()> {
         let path = format!("/api/v1/annotation-queues/{}", queue_id);
         let request_builder = self.langsmith_put(&path)?.json(&request);
-
-        let response = request_builder.send().await?;
-        let status = response.status();
-
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
-
-        Ok(())
+        self.execute_status_only_request(request_builder).await
     }
 
     /// Delete an annotation queue.
@@ -683,21 +697,7 @@ impl LangchainClient {
             request = request.header("X-Tenant-Id", ws_id);
         }
 
-        let response = request.send().await?;
-        let status = response.status();
-
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
-
-        Ok(())
+        self.execute_status_only_request(request).await
     }
 
     /// Add runs to an annotation queue.
@@ -744,22 +744,7 @@ impl LangchainClient {
         let run_id_strings: Vec<String> = run_ids.iter().map(|id| id.to_string()).collect();
 
         let request_builder = self.langsmith_post(&path)?.json(&run_id_strings);
-
-        let response = request_builder.send().await?;
-        let status = response.status();
-
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
-
-        Ok(())
+        self.execute_status_only_request(request_builder).await
     }
 
     /// Remove a run from an annotation queue.
@@ -818,21 +803,7 @@ impl LangchainClient {
             request = request.header("X-Tenant-Id", ws_id);
         }
 
-        let response = request.send().await?;
-        let status = response.status();
-
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
-
-        Ok(())
+        self.execute_status_only_request(request).await
     }
 
     /// Get a run from an annotation queue at the specified index.
