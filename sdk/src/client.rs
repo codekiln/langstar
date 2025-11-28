@@ -1737,8 +1737,7 @@ impl LangchainClient {
     pub async fn delete_feedback(&self, feedback_id: uuid::Uuid) -> Result<()> {
         let path = format!("/api/v1/feedback/{}", feedback_id);
         let request = self.langsmith_delete(&path)?;
-        let _response: serde_json::Value = self.execute(request).await?;
-        Ok(())
+        self.execute_status_only_request(request).await
     }
 }
 
