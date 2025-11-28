@@ -375,6 +375,57 @@ Usage:
 
 ---
 
+## Rubrics
+
+Rubrics provide instructions to annotators reviewing runs in a queue. Use the `--rubric` flag when creating or updating a queue:
+
+```bash
+langstar queue create --name "Quality Review" \
+  --rubric "Rate each response on:
+- Accuracy (1-5): Is the information correct?
+- Helpfulness (1-5): Does it address the user's question?
+- Tone (1-5): Is the response professional and appropriate?"
+```
+
+The rubric text is displayed to annotators in the LangSmith UI when they review items in the queue.
+
+### Rubric Best Practices
+
+- **Be specific**: Define clear criteria for each rating dimension
+- **Use consistent scales**: Stick to a consistent rating scale (e.g., 1-5)
+- **Provide examples**: Include examples of good/poor responses when possible
+- **Keep it concise**: Annotators should be able to quickly reference the rubric
+
+### Structured Rubric Items (SDK Only)
+
+The LangSmith API supports structured rubric items with feedback keys and score descriptions. This advanced feature is available through the SDK but not currently exposed in the CLI:
+
+```rust
+use langstar_sdk::annotation_queues::{
+    CreateAnnotationQueueRequest, AnnotationQueueRubricItem
+};
+
+let request = CreateAnnotationQueueRequest {
+    name: "Structured Review".to_string(),
+    rubric_instructions: Some("General guidelines here".to_string()),
+    rubric_items: Some(vec![
+        AnnotationQueueRubricItem {
+            feedback_key: "accuracy".to_string(),
+            description: Some("How accurate is the response?".to_string()),
+            score_descriptions: Some(serde_json::json!({
+                "1": "Completely incorrect",
+                "3": "Partially correct",
+                "5": "Fully accurate"
+            })),
+            value_descriptions: None,
+        },
+    ]),
+    ..Default::default()
+};
+```
+
+---
+
 ## Common Workflows
 
 ### Error Triage Pipeline
