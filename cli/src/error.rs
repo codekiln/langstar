@@ -53,3 +53,9 @@ impl From<serde_json::Error> for CliError {
         CliError::Other(err.into())
     }
 }
+
+impl From<csv::Error> for CliError {
+    fn from(err: csv::Error) -> Self {
+        CliError::Other(err.into())
+    }
+}

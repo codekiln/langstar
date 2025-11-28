@@ -5,7 +5,9 @@ mod output;
 pub mod time;
 
 use clap::{Parser, Subcommand};
-use commands::{AssistantCommands, GraphCommands, PromptCommands, QueueCommands, RunsCommands};
+use commands::{
+    AssistantCommands, DatasetCommands, GraphCommands, PromptCommands, QueueCommands, RunsCommands,
+};
 use config::Config;
 use error::Result;
 use output::OutputFormat;
@@ -47,6 +49,10 @@ enum Commands {
     /// Manage LangSmith annotation queues
     #[command(subcommand)]
     Queue(QueueCommands),
+
+    /// Manage LangSmith datasets
+    #[command(subcommand)]
+    Dataset(DatasetCommands),
 
     /// Show configuration file location
     Config,
@@ -92,6 +98,9 @@ async fn run() -> Result<()> {
         }
         Commands::Queue(queue_cmd) => {
             queue_cmd.execute(&config, format).await?;
+        }
+        Commands::Dataset(dataset_cmd) => {
+            dataset_cmd.execute(&config, format).await?;
         }
         Commands::Config => {
             use time::ConfiguredTimezone;

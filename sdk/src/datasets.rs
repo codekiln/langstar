@@ -103,7 +103,7 @@ pub struct DatasetTransformation {
 /// # Required Fields
 ///
 /// - `id`, `name`, `tenant_id`, `example_count`, `session_count`, `modified_at`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Dataset {
     /// Unique identifier for the dataset
     pub id: Uuid,
@@ -312,7 +312,7 @@ pub struct DatasetDiffInfo {
 /// # Required Fields
 ///
 /// - `id`, `dataset_id`, `inputs`, `name`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Example {
     /// Unique identifier for the example
     pub id: Uuid,
