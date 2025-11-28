@@ -685,7 +685,7 @@ while true; do
   # ... perform CI check or fix attempt ...
   iteration_count=$((iteration_count + 1))
 
-  if [ "$ci_check_failed" = true ]; then
+  if [ "$ci_check_failed" = "true" ]; then
     failed_attempts=$((failed_attempts + 1))
   else
     failed_attempts=0
