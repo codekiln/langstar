@@ -1110,7 +1110,7 @@ pub enum EvaluatorType {
 |-----------|---------|---------|
 | `exact_match` | `--ignore-case`, `--ignore-whitespace` | `--evaluator exact_match --ignore-case` |
 | `contains` | `--ignore-case`, `--expected <STRING>` | `--evaluator contains --expected "success"` |
-| `regex_match` | `--pattern <REGEX>`, `--flags <FLAGS>` | `--evaluator regex_match --pattern "\\d+" ` |
+| `regex_match` | `--pattern <REGEX>`, `--flags <FLAGS>` | `--evaluator regex_match --pattern "\\d+"` |
 | `json_valid` | `--schema-file <PATH>` (optional) | `--evaluator json_valid` |
 | `string_distance` | `--metric <METRIC>`, `--threshold <FLOAT>` | `--evaluator string_distance --metric levenshtein` |
 
