@@ -243,29 +243,38 @@ struct ExampleRow {
 
 impl From<&Example> for ExampleRow {
     fn from(example: &Example) -> Self {
-        let inputs = serde_json::to_string(&example.inputs)
-            .unwrap_or_default()
-            .chars()
-            .take(40)
-            .collect::<String>();
-        let inputs = if serde_json::to_string(&example.inputs).is_ok_and(|s| s.len() > 40) {
-            format!("{}...", inputs)
+        // Serialize inputs once and truncate with "..." if needed
+        let inputs_json = serde_json::to_string(&example.inputs).unwrap_or_default();
+        let inputs_truncated: String = inputs_json.chars().take(40).collect();
+        let inputs = if inputs_json.len() > 40 {
+            format!("{}...", inputs_truncated)
         } else {
-            inputs
+            inputs_truncated
         };
 
-        let outputs = example
+        // Serialize outputs once and truncate with "..." if needed
+        let outputs_json = example
             .outputs
             .as_ref()
             .map(|o| serde_json::to_string(o).unwrap_or_default())
-            .unwrap_or_else(|| "-".to_string())
-            .chars()
-            .take(40)
-            .collect::<String>();
+            .unwrap_or_else(|| "-".to_string());
+        let outputs_truncated: String = outputs_json.chars().take(40).collect();
+        let outputs = if outputs_json.len() > 40 {
+            format!("{}...", outputs_truncated)
+        } else {
+            outputs_truncated
+        };
+
+        // Truncate name with "..." if needed
+        let name = if example.name.len() > 20 {
+            format!("{}...", example.name.chars().take(20).collect::<String>())
+        } else {
+            example.name.clone()
+        };
 
         Self {
             id: example.id.to_string().chars().take(8).collect(),
-            name: example.name.chars().take(20).collect(),
+            name,
             inputs,
             outputs,
             created: example
@@ -293,6 +302,22 @@ struct JsonlRecord {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Helper Functions
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Parse a data type string into a DataType enum.
+fn parse_data_type(s: &str) -> Result<DataType> {
+    match s.to_lowercase().as_str() {
+        "kv" => Ok(DataType::Kv),
+        "llm" => Ok(DataType::Llm),
+        "chat" => Ok(DataType::Chat),
+        _ => Err(crate::error::CliError::Config(
+            "Invalid data type. Use 'kv', 'llm', or 'chat'".to_string(),
+        )),
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Command Implementation
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -312,16 +337,7 @@ impl DatasetCommands {
     }
 
     async fn execute_create(args: &CreateArgs, config: &Config) -> Result<()> {
-        let data_type = match args.data_type.to_lowercase().as_str() {
-            "kv" => DataType::Kv,
-            "llm" => DataType::Llm,
-            "chat" => DataType::Chat,
-            _ => {
-                return Err(crate::error::CliError::Config(
-                    "Invalid data type. Use 'kv', 'llm', or 'chat'".to_string(),
-                ));
-            }
-        };
+        let data_type = parse_data_type(&args.data_type)?;
 
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
@@ -364,20 +380,11 @@ impl DatasetCommands {
             OutputFormatter::new(OutputFormat::Table)
         };
 
-        let data_type = if let Some(dt) = &args.data_type {
-            Some(match dt.to_lowercase().as_str() {
-                "kv" => DataType::Kv,
-                "llm" => DataType::Llm,
-                "chat" => DataType::Chat,
-                _ => {
-                    return Err(crate::error::CliError::Config(
-                        "Invalid data type. Use 'kv', 'llm', or 'chat'".to_string(),
-                    ));
-                }
-            })
-        } else {
-            None
-        };
+        let data_type = args
+            .data_type
+            .as_ref()
+            .map(|dt| parse_data_type(dt))
+            .transpose()?;
 
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
@@ -549,29 +556,48 @@ impl DatasetCommands {
                 match result {
                     Ok(record) => {
                         let record: std::collections::HashMap<String, String> = record;
-                        // Convert CSV row to JSON objects
-                        let inputs: serde_json::Value =
-                            if let Some(inputs_str) = record.get("inputs") {
-                                serde_json::from_str(inputs_str)
-                                    .unwrap_or(serde_json::json!({ "input": inputs_str }))
-                            } else {
-                                // Use all non-outputs columns as inputs
-                                let inputs: std::collections::HashMap<_, _> = record
-                                    .iter()
-                                    .filter(|(k, _)| *k != "outputs" && *k != "metadata")
-                                    .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
-                                    .collect();
-                                serde_json::to_value(inputs).unwrap_or_default()
-                            };
 
+                        // Parse optional id column as UUID
+                        let id = record
+                            .get("id")
+                            .and_then(|s| Uuid::parse_str(s.trim()).ok());
+
+                        // Convert CSV row to JSON objects
+                        let inputs: serde_json::Value = if let Some(inputs_str) =
+                            record.get("inputs")
+                        {
+                            serde_json::from_str(inputs_str)
+                                .unwrap_or(serde_json::json!({ "input": inputs_str }))
+                        } else {
+                            // Use all non-reserved columns as inputs
+                            let inputs: std::collections::HashMap<_, _> = record
+                                .iter()
+                                .filter(|(k, _)| *k != "id" && *k != "outputs" && *k != "metadata")
+                                .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+                                .collect();
+                            serde_json::to_value(inputs).unwrap_or_default()
+                        };
+
+                        // Parse outputs column as JSON
                         let outputs = record.get("outputs").map(|s| {
                             serde_json::from_str(s).unwrap_or(serde_json::json!({ "output": s }))
+                        });
+
+                        // Parse metadata column as JSON
+                        let metadata = record.get("metadata").and_then(|s| {
+                            if s.trim().is_empty() {
+                                None
+                            } else {
+                                serde_json::from_str(s).ok()
+                            }
                         });
 
                         examples.push(ExampleCreate {
                             dataset_id: args.dataset_id,
                             inputs: Some(inputs),
                             outputs,
+                            metadata,
+                            id,
                             ..Default::default()
                         });
                     }
@@ -690,12 +716,8 @@ impl DatasetCommands {
             wtr.flush()?;
         }
 
-        if args.out.is_some() {
-            eprintln!(
-                "Exported {} examples to {:?}",
-                examples.len(),
-                args.out.as_ref().unwrap()
-            );
+        if let Some(path) = &args.out {
+            eprintln!("Exported {} examples to {:?}", examples.len(), path);
         }
 
         Ok(())
