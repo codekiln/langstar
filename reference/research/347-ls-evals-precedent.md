@@ -22,6 +22,7 @@ Key architectural patterns:
 4. [Scoring Schemas](#4-scoring-schemas)
 5. [Key Method Signatures](#5-key-method-signatures)
 6. [Design Patterns for Langstar](#6-design-patterns-for-langstar)
+7. [Online Evaluation (Server-Side Evaluators)](#7-online-evaluation-server-side-evaluators)
 
 ---
 
@@ -662,9 +663,384 @@ langstar feedback list --experiment <name>
 
 ---
 
+## 7. Online Evaluation (Server-Side Evaluators)
+
+Research conducted for [Issue #381](https://github.com/codekiln/langstar/issues/381).
+
+### 7.1 Overview
+
+Online evaluation (also called "automation rules" or "run rules") allows you to automatically evaluate traces as they are ingested into LangSmith. Unlike offline evaluation (which runs evaluators locally via the SDK), online evaluation runs server-side within LangSmith's infrastructure.
+
+**Key differences from offline evaluation:**
+
+| Aspect | Offline Evaluation | Online Evaluation |
+|--------|-------------------|------------------|
+| Execution | Client-side (SDK) | Server-side (LangSmith) |
+| Trigger | Manual via `evaluate()` | Automatic on trace ingestion |
+| Sampling | All dataset examples | Configurable sampling rate |
+| Code Runtime | Your environment | LangSmith sandboxed environment |
+| Languages | Python/TypeScript | Python or JavaScript |
+
+### 7.2 Automation Rules (RunRules)
+
+Automation rules configure how online evaluators are triggered and applied.
+
+#### 7.2.1 API Endpoints
+
+| Operation | Method | Endpoint |
+|-----------|--------|----------|
+| List rules | GET | `/api/v1/runs/rules` |
+| Create rule | POST | `/api/v1/runs/rules` |
+| Update rule | PATCH | `/api/v1/runs/rules/{rule_id}` |
+| Delete rule | DELETE | `/api/v1/runs/rules/{rule_id}` |
+| Get rule logs | GET | `/api/v1/runs/rules/{rule_id}/logs` |
+| Trigger rule manually | POST | `/api/v1/runs/rules/{rule_id}/trigger` |
+| Trigger all rules | POST | `/api/v1/runs/rules/trigger` |
+
+#### 7.2.2 RunRulesCreateSchema
+
+Source: OpenAPI spec `RunRulesCreateSchema`
+
+```typescript
+interface RunRulesCreateSchema {
+  // Required fields
+  display_name: string;           // Human-readable rule name
+  sampling_rate: number;          // 0.0-1.0, fraction of runs to evaluate
+
+  // Targeting
+  session_id?: string;            // Target specific tracing project
+  dataset_id?: string;            // Reference dataset for evaluators
+
+  // Filtering
+  filter?: string;                // Run-level filter expression
+  trace_filter?: string;          // Trace-level filter expression
+  tree_filter?: string;           // Tree structure filter
+
+  // Status
+  is_enabled?: boolean;           // Default: true
+
+  // Actions
+  add_to_annotation_queue_id?: string;  // Send matching runs to queue
+  add_to_dataset_id?: string;           // Add matching runs to dataset
+  add_to_dataset_prefer_correction?: boolean;
+
+  // Evaluators
+  evaluators?: EvaluatorTopLevel[];      // LLM-as-judge evaluators
+  code_evaluators?: CodeEvaluatorTopLevel[];  // Code evaluators
+
+  // Advanced
+  backfill_from?: string;         // ISO datetime to backfill from
+  use_corrections_dataset?: boolean;
+  num_few_shot_examples?: number;
+  evaluator_version?: number;
+  group_by?: "thread_id";         // Group runs by thread
+
+  // Integrations
+  alerts?: RunRulesPagerdutyAlertSchema[];
+  webhooks?: RunRulesWebhookSchema[];
+}
+```
+
+#### 7.2.3 Sampling Configuration
+
+The `sampling_rate` field controls what percentage of matching runs are evaluated:
+- `1.0` = 100% of runs (all matching runs)
+- `0.1` = 10% of runs (random sampling)
+- `0.01` = 1% of runs
+
+**Example:** To evaluate 10% of production traces:
+```json
+{
+  "display_name": "Production Quality Check",
+  "session_id": "<project-uuid>",
+  "sampling_rate": 0.1,
+  "code_evaluators": [...]
+}
+```
+
+#### 7.2.4 Filtering
+
+Three filter types are available for targeting specific runs:
+
+| Filter Type | Description | Example |
+|-------------|-------------|---------|
+| `filter` | Run-level attributes | `eq(status, "error")` |
+| `trace_filter` | Root trace attributes | `has(metadata, "production")` |
+| `tree_filter` | Run tree structure | Run type, depth, etc. |
+
+### 7.3 Code Evaluators
+
+Code evaluators allow you to write custom evaluation logic that runs server-side.
+
+#### 7.3.1 CodeEvaluatorTopLevel Schema
+
+```typescript
+interface CodeEvaluatorTopLevel {
+  code: string;              // Evaluator source code
+  language?: "python" | "javascript";  // Default: "python"
+}
+```
+
+#### 7.3.2 Execution Environment
+
+**Languages supported:**
+- Python (default)
+- JavaScript
+
+**Function signature (Python):**
+```python
+def evaluate(inputs: dict, outputs: dict, reference_outputs: dict | None) -> dict:
+    """
+    Args:
+        inputs: The inputs to the run (example.inputs)
+        outputs: The outputs from the run (run.outputs)
+        reference_outputs: Expected outputs from dataset (example.outputs), if available
+
+    Returns:
+        dict with 'score' (numeric) and/or 'value' (categorical) and optional 'comment'
+    """
+    # Return format:
+    return {
+        "score": 1.0,  # or 0.0-1.0 numeric
+        "value": "pass",  # or categorical value
+        "comment": "Explanation of the score"
+    }
+```
+
+**Function signature (JavaScript):**
+```javascript
+function evaluate({ inputs, outputs, referenceOutputs }) {
+    return {
+        score: 1.0,
+        value: "pass",
+        comment: "Explanation"
+    };
+}
+```
+
+#### 7.3.3 Example Code Evaluators
+
+**Exact Match (Python):**
+```python
+def evaluate(inputs, outputs, reference_outputs):
+    if not reference_outputs:
+        return {"score": None, "comment": "No reference available"}
+
+    actual = outputs.get("output", "")
+    expected = reference_outputs.get("output", "")
+
+    return {
+        "score": 1.0 if actual == expected else 0.0,
+        "comment": f"Expected: {expected[:100]}"
+    }
+```
+
+**Contains Check (Python):**
+```python
+def evaluate(inputs, outputs, reference_outputs):
+    output = outputs.get("output", "").lower()
+    expected_term = reference_outputs.get("must_contain", "").lower()
+
+    return {
+        "score": 1.0 if expected_term in output else 0.0,
+        "value": "pass" if expected_term in output else "fail"
+    }
+```
+
+**JSON Validity (Python):**
+```python
+import json
+
+def evaluate(inputs, outputs, reference_outputs):
+    output = outputs.get("output", "")
+    try:
+        json.loads(output)
+        return {"score": 1.0, "value": "valid_json"}
+    except json.JSONDecodeError as e:
+        return {"score": 0.0, "value": "invalid_json", "comment": str(e)}
+```
+
+**Regex Match (Python):**
+```python
+import re
+
+def evaluate(inputs, outputs, reference_outputs):
+    pattern = reference_outputs.get("pattern", "")
+    output = outputs.get("output", "")
+
+    match = re.search(pattern, output)
+    return {
+        "score": 1.0 if match else 0.0,
+        "comment": f"Pattern: {pattern}"
+    }
+```
+
+#### 7.3.4 Available Libraries
+
+The server-side execution environment provides access to standard library modules. Based on the common evaluator patterns, the following are typically available:
+- `json` - JSON parsing
+- `re` - Regular expressions
+- `math` - Math operations
+
+**Note:** External libraries (numpy, pandas, etc.) are NOT available in the sandboxed environment. Code evaluators should use only standard library functions.
+
+### 7.4 Structured Evaluators (LLM-as-Judge)
+
+Structured evaluators use LLMs to assess outputs, with structured output schemas ensuring consistent results.
+
+#### 7.4.1 EvaluatorStructuredOutput Schema
+
+```typescript
+interface EvaluatorStructuredOutput {
+  // Prompt configuration
+  hub_ref?: string;           // LangChain Hub prompt reference
+  prompt?: [string, string][];  // Array of [role, content] tuples
+  template_format?: string;   // Template format (e.g., "f-string")
+
+  // Output schema
+  schema?: object;            // JSON schema for structured output
+
+  // Variable mapping
+  variable_mapping?: {
+    [variable_name: string]: string;  // Maps template vars to run/example fields
+  };
+
+  // Model configuration
+  model?: {
+    provider?: string;        // e.g., "openai", "anthropic"
+    model?: string;          // e.g., "gpt-4", "claude-3-opus"
+    // Additional model parameters
+  };
+}
+```
+
+#### 7.4.2 Variable Mapping
+
+The `variable_mapping` field maps template variables to data sources:
+
+| Source Path | Description |
+|-------------|-------------|
+| `run.inputs` | Run input data |
+| `run.outputs` | Run output data |
+| `example.inputs` | Dataset example inputs |
+| `example.outputs` | Dataset example expected outputs |
+
+**Example:**
+```json
+{
+  "structured": {
+    "prompt": [
+      ["system", "Evaluate if the answer is factually correct."],
+      ["human", "Question: {question}\nAnswer: {answer}\nExpected: {expected}"]
+    ],
+    "variable_mapping": {
+      "question": "run.inputs.question",
+      "answer": "run.outputs.response",
+      "expected": "example.outputs.correct_answer"
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "reasoning": {"type": "string"}
+      },
+      "required": ["score"]
+    },
+    "model": {
+      "provider": "openai",
+      "model": "gpt-4o"
+    }
+  }
+}
+```
+
+### 7.5 Online vs Offline Evaluation Decision Matrix
+
+| Use Case | Recommended | Rationale |
+|----------|-------------|-----------|
+| Development iteration | Offline | Fast feedback, local debugging |
+| CI/CD testing | Offline | Deterministic, versioned |
+| Production monitoring | Online | Automatic, sampling |
+| Cost optimization | Online | Server-side, sampling |
+| Custom complex logic | Offline | Full library access |
+| Simple checks | Online | Code evaluators |
+| LLM-as-judge at scale | Online | Server handles rate limits |
+| Dataset experiments | Offline | Full control |
+
+### 7.6 API Implementation Notes for Langstar
+
+#### 7.6.1 Rust Types
+
+```rust
+/// Code evaluator for server-side execution
+pub struct CodeEvaluator {
+    pub code: String,
+    pub language: Option<CodeEvaluatorLanguage>,
+}
+
+pub enum CodeEvaluatorLanguage {
+    Python,
+    JavaScript,
+}
+
+/// Structured (LLM-as-judge) evaluator
+pub struct StructuredEvaluator {
+    pub hub_ref: Option<String>,
+    pub prompt: Option<Vec<(String, String)>>,  // [(role, content)]
+    pub template_format: Option<String>,
+    pub schema: Option<serde_json::Value>,
+    pub variable_mapping: Option<HashMap<String, String>>,
+    pub model: Option<ModelConfig>,
+}
+
+/// Automation rule configuration
+pub struct RunRule {
+    pub id: Uuid,
+    pub display_name: String,
+    pub session_id: Option<Uuid>,
+    pub sampling_rate: f64,
+    pub is_enabled: bool,
+    pub filter: Option<String>,
+    pub evaluators: Option<Vec<StructuredEvaluator>>,
+    pub code_evaluators: Option<Vec<CodeEvaluator>>,
+    // ... additional fields
+}
+```
+
+#### 7.6.2 CLI Commands Pattern
+
+```bash
+# List automation rules
+langstar rules list --project <name>
+
+# Create a code evaluator rule
+langstar rules create \
+  --name "Exact Match Check" \
+  --project <name> \
+  --sampling-rate 0.1 \
+  --code-evaluator-file ./evaluator.py
+
+# Create an LLM-as-judge rule
+langstar rules create \
+  --name "Quality Check" \
+  --project <name> \
+  --sampling-rate 0.05 \
+  --hub-ref "langchain/correctness-evaluator"
+
+# Trigger a rule manually
+langstar rules trigger <rule-id>
+
+# View rule logs
+langstar rules logs <rule-id>
+```
+
+---
+
 ## References
 
 - Python SDK source: `/workspace/reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/`
+- OpenAPI spec: `/workspace/reference/openapi/langchain/langsmith/openapi.json`
+- Extracted schemas: `/workspace/reference/api-specs/langsmith/evals-schemas.json`
 - Key files analyzed:
   - `evaluation/evaluator.py` - Core types and interfaces
   - `evaluation/llm_evaluator.py` - LLM-as-judge implementation
