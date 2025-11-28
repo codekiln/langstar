@@ -704,6 +704,7 @@ The following files were saved to `reference/api-specs/langsmith/`:
 - **#347** - Parent epic: ls-evals-basic milestone
 - **#367** - Prerequisite research: langsmith-sdk evals precedent (merged via PR #376)
 - **#369** - This validation issue
+- **#381** - Deep-dive research on online evaluation (created as follow-up)
 
 ---
 
@@ -811,11 +812,12 @@ For the Rust SDK, we should:
 
 ## 10. Next Steps
 
-1. ~~Complete research on Python SDK evaluator implementation (#367)~~ (merged)
-2. Create SDK type definitions based on schemas above
-3. Implement SDK client methods for feedback CRUD
-4. Add CLI commands for creating and listing feedback
-5. Implement feedback config management
-6. Add support for feedback formulas
-7. Implement code evaluator execution (if client-side)
-8. Implement structured evaluator execution (LLM-as-judge)
+1. ~~Complete research on Python SDK evaluator implementation (#367)~~ (merged via PR #376)
+2. **#381** - Deep-dive research on online evaluation (code evaluators, automation rules) - **blocks #370**
+3. **#370** - Create SDK type definitions based on schemas above (blocked by #381)
+4. **#371** - Implement SDK client methods for feedback CRUD
+5. **#372** - Add CLI commands for creating and listing feedback
+6. Implement feedback config management
+7. Add support for feedback formulas
+8. Implement code evaluator execution (if client-side)
+9. Implement structured evaluator execution (LLM-as-judge)
