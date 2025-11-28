@@ -30,6 +30,7 @@ pub mod client;
 pub mod datasets;
 pub mod deployments;
 pub mod error;
+pub mod evaluations;
 pub mod integrations;
 pub mod organization;
 pub mod prompts;
@@ -59,6 +60,12 @@ pub use deployments::{
     Revision, RevisionStatus, RevisionsList,
 };
 pub use error::{LangstarError, Result};
+pub use evaluations::{
+    CodeEvaluator, CodeEvaluatorLanguage, EvaluationResult, EvaluatorType, Feedback,
+    FeedbackCategory, FeedbackConfig, FeedbackCreate, FeedbackSource, FeedbackSourceType,
+    FeedbackType, FeedbackUpdate, HeuristicEvaluator, LlmJudgeConfig, ScoreType,
+    StructuredEvaluator,
+};
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
 pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};
