@@ -6,20 +6,18 @@ on:
     # Skip CI when only documentation or non-code files are modified
     # See: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
     paths-ignore:
-      - '**/*.md'           # Markdown files
+      - '**/*.md'           # Markdown files (all directories)
       - 'docs/**'           # Documentation directory
-      - '*.txt'             # Text files (LICENSE, etc.)
+      - '*.txt'             # Text files (root directory only)
       - '.gitignore'        # Git ignore file
-      - '.github/**/*.md'   # GitHub-specific markdown docs
   pull_request:
     branches: [main]
     # Skip CI when only documentation or non-code files are modified
     paths-ignore:
-      - '**/*.md'           # Markdown files
+      - '**/*.md'           # Markdown files (all directories)
       - 'docs/**'           # Documentation directory
-      - '*.txt'             # Text files (LICENSE, etc.)
+      - '*.txt'             # Text files (root directory only)
       - '.gitignore'        # Git ignore file
-      - '.github/**/*.md'   # GitHub-specific markdown docs
 
 env:
   CARGO_TERM_COLOR: always
