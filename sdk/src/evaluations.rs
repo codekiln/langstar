@@ -201,7 +201,7 @@ pub struct FeedbackSource {
 ///     ..Default::default()
 /// };
 /// ```
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FeedbackCreate {
     /// Metric name or key (required, max 180 chars)
     pub key: String,
@@ -349,7 +349,7 @@ pub struct Feedback {
 /// # API Reference
 ///
 /// Request body for `PATCH /feedback/{id}`
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct FeedbackUpdate {
     /// New score value
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -600,7 +600,7 @@ pub enum CodeEvaluatorLanguage {
     /// Python evaluator
     Python,
     /// JavaScript evaluator
-    Javascript,
+    JavaScript,
 }
 
 /// Structured (LLM-as-judge) evaluator for online evaluation.
@@ -756,7 +756,7 @@ mod tests {
         let json = serde_json::to_string(&python).unwrap();
         assert_eq!(json, "\"python\"");
 
-        let js = CodeEvaluatorLanguage::Javascript;
+        let js = CodeEvaluatorLanguage::JavaScript;
         let json = serde_json::to_string(&js).unwrap();
         assert_eq!(json, "\"javascript\"");
     }
