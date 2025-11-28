@@ -571,11 +571,11 @@ langstar dataset <subcommand> [args] [options]
 | Command | Description | Pattern Reference |
 |---------|-------------|-------------------|
 | `langstar dataset list` | List datasets with filtering | Like `runs query` list behavior |
-| `langstar dataset get <id\|name>` | Get a single dataset | Like `prompt get` pattern |
+| `langstar dataset get <id|name>` | Get a single dataset | Like `prompt get` pattern |
 | `langstar dataset create` | Create a new dataset | Like `graph create` pattern |
-| `langstar dataset delete <id\|name>` | Delete a dataset | Standard CRUD pattern |
-| `langstar dataset examples <id\|name>` | List examples in dataset | Nested resource pattern |
-| `langstar dataset export <id\|name>` | Export dataset to file | New operation |
+| `langstar dataset delete <id|name>` | Delete a dataset | Standard CRUD pattern |
+| `langstar dataset examples <id|name>` | List examples in dataset | Nested resource pattern |
+| `langstar dataset export <id|name>` | Export dataset to file | New operation |
 | `langstar dataset import` | Import dataset from file | New operation |
 
 #### Flag Naming Conventions
@@ -714,8 +714,8 @@ langstar dataset delete $DATASET_ID --yes
 
 #### CLI Advantages Over UI
 
-| Task | UI | CLI Advantage |
-|------|----|----|
+| Task | UI Approach | CLI Approach |
+|------|-------------|--------------|
 | Bulk import | Manual upload, wait | Scriptable, can be part of CI/CD |
 | Repeated operations | Click through each time | One command, repeatable |
 | Version control | Not possible | Commit dataset files to git |
