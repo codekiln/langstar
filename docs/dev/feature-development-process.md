@@ -227,39 +227,87 @@ Add a "Design Decisions" section to your research report:
 
 ## Phase 3: OpenAPI Validation
 
-### 3.1 Fetch OpenAPI Specification
+### 3.1 OpenAPI Spec Management Pattern
+
+Langstar uses a **canonical source + derived fragments** pattern for managing OpenAPI specs, inspired by the `setup-remote-repo-notes-dir` skill:
+
+```
+reference/
+├── openapi/langchain/              # Canonical full specs (source of truth)
+│   ├── langsmith/
+│   │   ├── openapi.json            # Full spec (635K)
+│   │   └── MANIFEST.md             # Provenance metadata
+│   └── control-plane/
+│       ├── openapi.json            # Full spec (70K)
+│       └── MANIFEST.md
+│
+└── api-specs/                      # Extracted fragments + documentation
+    ├── README.md                   # Index and usage guide
+    ├── LANGSMITH_API_OVERVIEW.md   # Quick reference (4 APIs)
+    ├── LANGSMITH_APIS_DETAILS.md   # Detailed catalog
+    ├── langsmith/
+    │   ├── FRAGMENTS.md            # jq extraction queries (reproducible)
+    │   └── *.json                  # Extracted fragments
+    └── control-plane/
+        └── FRAGMENTS.md
+```
+
+**Benefits**:
+- **Separation**: Canonical specs vs AI-friendly fragments
+- **Reproducibility**: jq queries documented in `FRAGMENTS.md`
+- **Provenance**: `MANIFEST.md` tracks when/how specs were fetched
+- **AI-friendly**: Small fragments fit context windows for grounding
+
+### 3.2 Fetch or Update OpenAPI Specification
 
 ```bash
-# LangSmith API
-curl -o reference/api-specs/langsmith-openapi.json \
+# LangSmith API - fetch to canonical location
+curl -o reference/openapi/langchain/langsmith/openapi.json \
   https://api.smith.langchain.com/openapi.json
 
-# LangGraph Cloud API
-curl -o reference/api-specs/langgraph-openapi.json \
-  https://api.smith.langchain.com/langgraph/openapi.json
+# LangGraph Cloud API (Control Plane)
+curl -o reference/openapi/langchain/control-plane/openapi.json \
+  https://api.host.langchain.com/openapi.json
+
+# Update MANIFEST.md with provenance
+echo "| $(date +%Y-%m-%d) | Refresh | $(du -h reference/openapi/langchain/langsmith/openapi.json | cut -f1) | Updated from remote |" \
+  >> reference/openapi/langchain/langsmith/MANIFEST.md
 ```
 
-### 3.2 Extract Relevant Schemas with jq
+### 3.3 Extract Relevant Schemas with jq
+
+Extract fragments to `reference/api-specs/langsmith/` and document in `FRAGMENTS.md`:
 
 ```bash
+# Navigate to canonical spec
+cd reference/openapi/langchain/langsmith
+
 # Extract endpoint definition
-jq '.paths["/api/v1/runs/query"]' reference/api-specs/langsmith-openapi.json \
-  > reference/api-specs/runs-query-endpoint.json
+jq '.paths["/api/v1/runs/query"]' openapi.json \
+  > ../../api-specs/langsmith/runs-query-endpoint.json
 
 # Extract request schema
-jq '.components.schemas.BodyParamsForRunsQuerySchema' reference/api-specs/langsmith-openapi.json \
-  > reference/api-specs/runs-query-request-schema.json
+jq '.components.schemas.BodyParamsForRunsQuerySchema' openapi.json \
+  > ../../api-specs/langsmith/runs-query-request-schema.json
 
 # Extract response schema
-jq '.components.schemas.ListRunsResponse' reference/api-specs/langsmith-openapi.json \
-  > reference/api-specs/runs-query-response-schema.json
+jq '.components.schemas.ListRunsResponse' openapi.json \
+  > ../../api-specs/langsmith/runs-query-response-schema.json
 
 # Extract entity schema (e.g., Run)
-jq '.components.schemas.Run' reference/api-specs/langsmith-openapi.json \
-  > reference/api-specs/run-schema.json
+jq '.components.schemas.Run' openapi.json \
+  > ../../api-specs/langsmith/run-schema.json
 ```
 
-### 3.3 Validate Research Against Spec
+**IMPORTANT**: After extracting, update `reference/api-specs/langsmith/FRAGMENTS.md`:
+
+```markdown
+| File | Size | Purpose | jq Query | Last Updated |
+|------|------|---------|----------|--------------|
+| `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | `.paths["/api/v1/runs/query"]` | YYYY-MM-DD |
+```
+
+### 3.4 Validate Research Against Spec
 
 Create validation report at `reference/research/{issue-num}-openapi-validation.md`:
 
@@ -271,22 +319,20 @@ Create validation report at `reference/research/{issue-num}-openapi-validation.m
 5. Field types are correctly identified
 6. Required vs optional fields
 
-**Example jq queries for validation**:
+**Example jq queries for validation** (run from `reference/openapi/langchain/langsmith/`):
 ```bash
 # Check endpoint method
-jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].post' \
-  reference/api-specs/langsmith-openapi.json
+jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].post' openapi.json
 
 # Check request body schema
 jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].post.requestBody.content["application/json"].schema' \
-  reference/api-specs/langsmith-openapi.json
+  openapi.json
 
 # List all paths for a feature
-jq '.paths | keys | map(select(contains("annotation-queue")))' \
-  reference/api-specs/langsmith-openapi.json
+jq '.paths | keys | map(select(contains("annotation-queue")))' openapi.json
 ```
 
-### 3.4 Document Discrepancies
+### 3.5 Document Discrepancies
 
 Any differences between research and OpenAPI spec MUST be documented:
 - **Corrections** to research findings
@@ -571,7 +617,10 @@ Add new commands to main README:
 ### Documentation Consistency
 
 - [ ] Research reports in `reference/research/`
-- [ ] OpenAPI extracts in `reference/api-specs/`
+- [ ] Canonical OpenAPI specs in `reference/openapi/langchain/{api}/`
+- [ ] MANIFEST.md updated with provenance for spec fetches
+- [ ] Extracted fragments in `reference/api-specs/{api}/`
+- [ ] FRAGMENTS.md updated with jq queries for extractions
 - [ ] Implementation plans in `docs/implementation/`
 - [ ] Same markdown structure
 
