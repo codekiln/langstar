@@ -413,6 +413,470 @@ impl LangchainClient {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Annotation Queues API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// List annotation queues with optional filtering.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters including filters (name, name_contains, ids)
+    ///
+    /// # Returns
+    ///
+    /// A vector of `AnnotationQueue` objects matching the query.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ListAnnotationQueuesParams};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let params = ListAnnotationQueuesParams {
+    ///     name_contains: Some("review".to_string()),
+    ///     limit: Some(50),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let queues = client.list_annotation_queues(params).await?;
+    /// println!("Found {} queues", queues.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/annotation-queues`
+    /// - Max limit per request: 100 (per OpenAPI spec)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_annotation_queues(
+        &self,
+        params: crate::annotation_queues::ListAnnotationQueuesParams,
+    ) -> Result<Vec<crate::annotation_queues::AnnotationQueue>> {
+        let request = self.langsmith_get("/api/v1/annotation-queues")?;
+
+        // Add query parameters
+        let request = if let Some(ids) = params.ids {
+            request.query(&[(
+                "ids",
+                ids.iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            )])
+        } else {
+            request
+        };
+
+        let request = if let Some(name) = params.name {
+            request.query(&[("name", name)])
+        } else {
+            request
+        };
+
+        let request = if let Some(name_contains) = params.name_contains {
+            request.query(&[("name_contains", name_contains)])
+        } else {
+            request
+        };
+
+        let request = if let Some(limit) = params.limit {
+            request.query(&[("limit", limit)])
+        } else {
+            request
+        };
+
+        self.execute(request).await
+    }
+
+    /// Create a new annotation queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Queue creation parameters including name, description, and configuration
+    ///
+    /// # Returns
+    ///
+    /// The created queue with full details including rubric information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, CreateAnnotationQueueRequest, QueueType};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = CreateAnnotationQueueRequest {
+    ///     name: "Production Review".to_string(),
+    ///     description: Some("Review production LLM outputs".to_string()),
+    ///     queue_type: Some(QueueType::Single),
+    ///     rubric_instructions: Some("Rate accuracy and helpfulness".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let queue = client.create_annotation_queue(request).await?;
+    /// println!("Created queue: {}", queue.base.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/annotation-queues`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_annotation_queue(
+        &self,
+        request: crate::annotation_queues::CreateAnnotationQueueRequest,
+    ) -> Result<crate::annotation_queues::AnnotationQueueWithDetails> {
+        let request_builder = self
+            .langsmith_post("/api/v1/annotation-queues")?
+            .json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Get an annotation queue by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue
+    ///
+    /// # Returns
+    ///
+    /// The queue with full details including rubric information.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let queue = client.read_annotation_queue(queue_id).await?;
+    /// println!("Queue: {} ({})", queue.base.name, queue.base.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/annotation-queues/{queue_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn read_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+    ) -> Result<crate::annotation_queues::AnnotationQueueWithDetails> {
+        let path = format!("/api/v1/annotation-queues/{}", queue_id);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Update an annotation queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, UpdateAnnotationQueueRequest};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let request = UpdateAnnotationQueueRequest {
+    ///     name: Some("Updated Queue Name".to_string()),
+    ///     description: Some("New description".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// client.update_annotation_queue(queue_id, request).await?;
+    /// println!("Queue updated successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/annotation-queues/{queue_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn update_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        request: crate::annotation_queues::UpdateAnnotationQueueRequest,
+    ) -> Result<()> {
+        let path = format!("/api/v1/annotation-queues/{}", queue_id);
+        let request_builder = self.langsmith_put(&path)?.json(&request);
+
+        let response = request_builder.send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Delete an annotation queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue to delete
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// client.delete_annotation_queue(queue_id).await?;
+    /// println!("Queue deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/annotation-queues/{queue_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_annotation_queue(&self, queue_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/annotation-queues/{}", queue_id);
+
+        // Create DELETE request manually since we don't have a langsmith_delete helper
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+
+        let mut request = self
+            .http_client
+            .delete(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Add runs to an annotation queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue
+    /// * `run_ids` - Vector of run UUIDs to add to the queue
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let run_ids = vec![
+    ///     Uuid::parse_str("abcdef01-1234-1234-1234-123456789012")?,
+    ///     Uuid::parse_str("abcdef02-1234-1234-1234-123456789012")?,
+    /// ];
+    ///
+    /// client.add_runs_to_annotation_queue(queue_id, run_ids).await?;
+    /// println!("Runs added successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/annotation-queues/{queue_id}/runs`
+    /// - Request body: JSON array of UUID strings
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn add_runs_to_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        run_ids: Vec<uuid::Uuid>,
+    ) -> Result<()> {
+        let path = format!("/api/v1/annotation-queues/{}/runs", queue_id);
+
+        // Convert UUIDs to strings for JSON serialization
+        let run_id_strings: Vec<String> = run_ids.iter().map(|id| id.to_string()).collect();
+
+        let request_builder = self.langsmith_post(&path)?.json(&run_id_strings);
+
+        let response = request_builder.send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Remove a run from an annotation queue.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue
+    /// * `run_id` - The UUID of the run to remove
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let run_id = Uuid::parse_str("abcdef01-1234-1234-1234-123456789012")?;
+    ///
+    /// client.delete_run_from_annotation_queue(queue_id, run_id).await?;
+    /// println!("Run removed successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/annotation-queues/{queue_id}/runs/{run_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_run_from_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        run_id: uuid::Uuid,
+    ) -> Result<()> {
+        let path = format!("/api/v1/annotation-queues/{}/runs/{}", queue_id, run_id);
+
+        // Create DELETE request manually
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+
+        let mut request = self
+            .http_client
+            .delete(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+
+        // Add organization ID header if set
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+
+        // Add workspace ID header if set
+        if let Some(ws_id) = &self.workspace_id {
+            request = request.header("X-Tenant-Id", ws_id);
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+
+        if !status.is_success() {
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(LangstarError::ApiError {
+                status: status.as_u16(),
+                message: error_text,
+            });
+        }
+
+        Ok(())
+    }
+
+    /// Get a run from an annotation queue at the specified index.
+    ///
+    /// # Arguments
+    ///
+    /// * `queue_id` - The UUID of the annotation queue
+    /// * `index` - Zero-based index of the run in the queue
+    ///
+    /// # Returns
+    ///
+    /// A `RunWithAnnotationQueueInfo` containing the run data and queue-specific metadata.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012")?;
+    /// let run = client.get_run_from_annotation_queue(queue_id, 0).await?;
+    /// println!("Run: {} (added at: {:?})", run.run.name, run.added_at);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/annotation-queues/{queue_id}/run/{index}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn get_run_from_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        index: u32,
+    ) -> Result<crate::annotation_queues::RunWithAnnotationQueueInfo> {
+        let path = format!("/api/v1/annotation-queues/{}/run/{}", queue_id, index);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // Runs API Methods
     // ═══════════════════════════════════════════════════════════════════════
 
