@@ -571,11 +571,11 @@ langstar dataset <subcommand> [args] [options]
 | Command | Description | Pattern Reference |
 |---------|-------------|-------------------|
 | `langstar dataset list` | List datasets with filtering | Like `runs query` list behavior |
-| `langstar dataset get <id|name>` | Get a single dataset | Like `prompt get` pattern |
+| `langstar dataset get <id\|name>` | Get a single dataset | Like `prompt get` pattern |
 | `langstar dataset create` | Create a new dataset | Like `graph create` pattern |
-| `langstar dataset delete <id|name>` | Delete a dataset | Standard CRUD pattern |
-| `langstar dataset examples <id|name>` | List examples in dataset | Nested resource pattern |
-| `langstar dataset export <id|name>` | Export dataset to file | New operation |
+| `langstar dataset delete <id\|name>` | Delete a dataset | Standard CRUD pattern |
+| `langstar dataset examples <id\|name>` | List examples in dataset | Nested resource pattern |
+| `langstar dataset export <id\|name>` | Export dataset to file | New operation |
 | `langstar dataset import` | Import dataset from file | New operation |
 
 #### Flag Naming Conventions
@@ -649,6 +649,16 @@ Following the established pattern from `cli/src/config.rs:56-97`:
 | Timezone | `local` | User's system timezone |
 
 ### 9.3 Business Purpose
+
+The business purpose of datasets is to capture runs in a format that can be used with LangSmith Evals.
+They are collections of test inputs and reference outputs, and are used with LangSmith Evaluators to test prompts, AI systems, and agents.
+See [Evaluation Concepts - Docs by LangChain](https://docs.langchain.com/langsmith/evaluation-concepts.md).
+A dataset is a collection of examples used for evaluating an application. An example is a test input, reference output pair.
+Each example consists of:
+
+* **Inputs**: a dictionary of input variables to pass to your application.
+* **Reference outputs** (optional): a dictionary of reference outputs. These do not get passed to your application, they are only used in evaluators.
+* **Metadata** (optional): a dictionary of additional information that can be used to create filtered views of a dataset.
 
 #### UI Workflow: Dataset Management in LangSmith
 
