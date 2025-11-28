@@ -714,7 +714,11 @@ async fn test_list_datasets_live_api() {
         Ok(datasets) => {
             println!("Found {} datasets", datasets.len());
             for ds in datasets.iter().take(3) {
-                println!("  - {} ({} examples)", ds.name, ds.example_count.unwrap_or(0));
+                println!(
+                    "  - {} ({} examples)",
+                    ds.name,
+                    ds.example_count.unwrap_or(0)
+                );
             }
         }
         Err(e) => {
