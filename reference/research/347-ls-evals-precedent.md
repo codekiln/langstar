@@ -1074,12 +1074,12 @@ Following existing patterns:
 
 ```bash
 # Option A: Type as primary argument (Recommended)
-langstar eval run --evaluator exact_match --run-id <id>
-langstar eval run --evaluator llm_judge --run-id <id> --judge-model gpt-4o
+langstar eval run <id> --evaluator exact_match
+langstar eval run <id> --evaluator llm_judge --judge-model gpt-4o
 
 # Option B: Separate commands per type
-langstar eval exact-match --run-id <id>
-langstar eval llm-judge --run-id <id> --judge-model gpt-4o
+langstar eval exact-match <id>
+langstar eval llm-judge <id> --judge-model gpt-4o
 ```
 
 **Recommendation:** Option A with `--evaluator <TYPE>` for consistency with how `runs query` handles `--run-type`. This keeps the command structure flat and discoverable.
@@ -1118,12 +1118,11 @@ pub enum EvaluatorType {
 
 ```bash
 # Basic usage with defaults
-langstar eval run --evaluator llm_judge --run-id <id>
+langstar eval run <id> --evaluator llm_judge
 
 # Full configuration
-langstar eval run \
+langstar eval run <id> \
   --evaluator llm_judge \
-  --run-id <id> \
   --judge-model gpt-4o \
   --judge-provider openai \
   --rubric-file criteria.txt \
