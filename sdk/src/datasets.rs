@@ -750,8 +750,8 @@ mod tests {
 
         let dataset: Dataset = serde_json::from_str(json).unwrap();
         assert_eq!(dataset.name, "Test Dataset");
-        assert_eq!(dataset.example_count, 100);
-        assert_eq!(dataset.session_count, 5);
+        assert_eq!(dataset.example_count, Some(100));
+        assert_eq!(dataset.session_count, Some(5));
         assert_eq!(dataset.data_type, Some(DataType::Chat));
         assert_eq!(dataset.description, Some("A test dataset".to_string()));
     }
