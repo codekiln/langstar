@@ -64,7 +64,7 @@ pub enum RunType {
 ///
 /// # OpenAPI Reference
 ///
-/// See `/workspace/reference/api-specs/langsmith/run-schema.json`
+/// See `reference/api-specs/langsmith/run-schema.json`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Run {
     // ═══════════════════════════════════════════════════════════════════════
