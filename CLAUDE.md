@@ -8,6 +8,7 @@ EXTREMELY IMPORTANT - before you begin any task, check the value of the `CLAUDE_
 - If `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is not set or empty, there is no explicit token limit
 - However, always aim for concise, focused responses regardless of limits
 - Typical values range from 4000-16000 tokens depending on task complexity
+  (4000 tokens may be suitable for very simple or highly concise tasks, but)
 - **Recommended default:** 8000 tokens for most tasks, 16000 for complex analysis
 
 When working on complex tasks:

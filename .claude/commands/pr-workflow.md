@@ -54,7 +54,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
    BRANCH=$(git branch --show-current)
    # Should match: <username>/<issue_num>-<issue_slug>
    ```
-   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)`
+   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | sed -E 's|^[^/]*/([0-9]+)-.*$|\1|')`
    - If no issue number in branch, **STOP** and ask user which issue this PR fixes
 
 3. **Verify issue exists and is open:**
@@ -143,8 +143,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    git log "$BASE_BRANCH"..HEAD --oneline
 
    # View full diff
-   # Use three dots (...) to show only changes introduced by this branch since it diverged from BASE_BRANCH.
-   # This excludes changes that happened in BASE_BRANCH after divergence.
+   # Use three dots (...) to show the diff between the merge-base of BASE_BRANCH and HEAD.
+   # This is the standard approach for PR diffs: it shows only changes introduced by this branch since it diverged from BASE_BRANCH (i.e., changes unique to this branch), and does not include changes made in BASE_BRANCH after divergence.
    git diff "$BASE_BRANCH"...HEAD
    ```
    - **IMPORTANT:** Analyze ALL commits, not just the latest
@@ -221,7 +221,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    # Capture PR URL and extract PR number from it
    PR_URL=$(gh pr create \
      --title "<title>" \
-     --body "$(cat <<'EOF'
+     --body "$(cat <<EOF
    <body>
    EOF
    )" \
@@ -350,17 +350,18 @@ EOF
 
 4. **Check CI/CD status:**
    ```bash
-   gh pr checks "$PR_NUM"
-   ```
-   - Parse output for failed checks
-   - If checks are still running, wait before checking again:
-     ```bash
-     if [ "$checks_running" = "true" ]; then
+   # Check CI/CD status and wait for completion
+   while true; do
+     # Get the status of all checks
+     checks_running=$(gh pr checks "$PR_NUM" --json status,state --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .state == "pending")] | length')
+     if [ "$checks_running" -gt 0 ]; then
        echo "⏳ Checks still running, waiting 30 seconds..."
        sleep 30
+     else
+       break
      fi
-     ```
-     Then check again
+   done
+   # Now parse output for failed checks
    - If checks pass: proceed to stability monitoring
    - If checks fail: proceed to failure handling
 
@@ -369,10 +370,17 @@ EOF
    # Get detailed failure information with run IDs
    # NOTE: Must use --json to get run IDs; plain `gh pr checks` doesn't provide them
    gh pr checks "$PR_NUM" --json workflowRun,name,state,conclusion \
-     --jq '.[] | select(.conclusion == "FAILURE") | {name, runId: .workflowRun.databaseId}'
+     --jq '.[] | select(.conclusion == "FAILURE") | {name, runId: .workflowRun.id}' > failed_checks.json
+
+   # Check if any runId is missing and handle error
+   if jq -e '.runId == null' failed_checks.json >/dev/null; then
+     echo "⚠️ Warning: Could not extract runId for one or more failed checks. Please verify the jq filter and GitHub CLI output schema."
+     # Optionally, print the raw output for debugging
+     cat failed_checks.json
+   fi
 
    # For each failed check, fetch logs using the extracted run IDs
-   # Example: for runId in $(...); do gh run view "$runId" --log-failed; done
+   # Example: for runId in $(jq -r '.runId' failed_checks.json); do gh run view "$runId" --log-failed; done
    ```
    - Parse error messages from logs
    - Identify specific failures (clippy, tests, fmt, etc.)
@@ -408,8 +416,11 @@ EOF
 )"
 
      git push origin $(git branch --show-current)
+     if [ $? -ne 0 ]; then
+       echo "❌ git push failed due to network or permission issues. Please check your connection and access rights."
+       exit 1
+     fi
      ```
-     **Note:** If git push fails due to network or permission issues, handle the error and inform the user
    - Report what was fixed:
      ```
      ✅ **Fixes Applied:**
@@ -572,8 +583,8 @@ Your branch is out of date with $BASE_BRANCH.
 ```
 
 ```bash
-git fetch origin $BASE_BRANCH
-git rebase origin/$BASE_BRANCH
+git fetch origin "$BASE_BRANCH"
+git rebase origin/"$BASE_BRANCH"
 
 # If conflicts occur:
 git status  # See conflicted files
@@ -768,6 +779,7 @@ gh pr view <num> --json state,mergeable,reviewDecision
 gh issue view <num> --json state,title,milestone
 
 # Check for parent issues
+# Requires the custom `gh-sub-issue` extension/skill (see `.claude/skills/gh-sub-issue/SKILL.md`)
 gh sub-issue list <num> --relation parent
 ```
 
@@ -793,8 +805,10 @@ git rebase origin/<base>
 gh api repos/<owner>/<repo>/pulls/<num>/comments
 
 # Reply to comment
-gh api repos/<owner>/<repo>/pulls/<num>/comments \
-  -f body="..." -F in_reply_to=<id>
+# Recommended: use gh pr comment to reply to a review comment
+gh pr comment <pr-number> --reply <comment-id> --body "..."
+# Or, using the API directly:
+gh api repos/<owner>/<repo>/pulls/<num>/comments/<comment-id>/replies -f body="..."
 ```
 
 ## See Also
