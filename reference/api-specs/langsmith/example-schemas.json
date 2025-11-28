@@ -1,0 +1,1361 @@
+{
+  "Body_upload_examples_from_csv_api_v1_examples_upload__dataset_id__post": {
+    "properties": {
+      "file": {
+        "type": "string",
+        "format": "binary",
+        "title": "File"
+      },
+      "input_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Input Keys"
+      },
+      "output_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Output Keys"
+      },
+      "metadata_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Metadata Keys"
+      }
+    },
+    "type": "object",
+    "required": [
+      "file",
+      "input_keys"
+    ],
+    "title": "Body_upload_examples_from_csv_api_v1_examples_upload__dataset_id__post"
+  },
+  "Example": {
+    "properties": {
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "modified_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Modified At"
+      },
+      "attachment_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Attachment Urls"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id",
+      "inputs",
+      "id",
+      "name"
+    ],
+    "title": "Example",
+    "description": "Example schema."
+  },
+  "ExampleGroupWithSessions": {
+    "properties": {
+      "filter": {
+        "type": "string",
+        "title": "Filter"
+      },
+      "count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Count"
+      },
+      "total_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Total Tokens"
+      },
+      "total_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Total Cost"
+      },
+      "min_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Min Start Time"
+      },
+      "max_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Max Start Time"
+      },
+      "latency_p50": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Latency P50"
+      },
+      "latency_p99": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Latency P99"
+      },
+      "feedback_stats": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Stats"
+      },
+      "group_key": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "title": "Group Key"
+      },
+      "sessions": {
+        "items": {
+          "$ref": "#/components/schemas/GroupedRunsSessionStats"
+        },
+        "type": "array",
+        "title": "Sessions"
+      },
+      "examples": {
+        "items": {
+          "$ref": "#/components/schemas/ExampleWithRunsCH"
+        },
+        "type": "array",
+        "title": "Examples"
+      },
+      "example_count": {
+        "type": "integer",
+        "title": "Example Count"
+      },
+      "prompt_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Tokens"
+      },
+      "completion_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Tokens"
+      },
+      "prompt_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Cost"
+      },
+      "completion_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Cost"
+      },
+      "error_rate": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Error Rate"
+      }
+    },
+    "type": "object",
+    "required": [
+      "filter",
+      "group_key",
+      "sessions",
+      "examples",
+      "example_count"
+    ],
+    "title": "ExampleGroupWithSessions",
+    "description": "Group of examples with a specific metadata value across multiple sessions.\n\nExtends RunGroupBase with:\n- group_key: metadata value that defines this group\n- sessions: per-session stats for runs matching this metadata value\n- examples: shared examples across all sessions (intersection logic)\n            with flat array of runs (each run has session_id field for frontend to determine column)\n- example_count: unique example count (pagination-aware, same across all sessions due to intersection)\n\nInherited from RunGroupBase:\n- filter: metadata filter for this group (e.g., \"and(eq(is_root, true), and(eq(metadata_key, 'model'), eq(metadata_value, 'gpt-4')))\")\n- count: total run count across all sessions (includes duplicate runs)\n- total_tokens, total_cost: aggregate across sessions\n- min_start_time, max_start_time: time range across sessions\n- latency_p50, latency_p99: aggregate latency stats across sessions\n- feedback_stats: weighted average feedback across sessions\n\nAdditional aggregate stats (from ExampleWithRunsGroup):\n- prompt_tokens, completion_tokens: separate token counts\n- prompt_cost, completion_cost: separate costs\n- error_rate: average error rate"
+  },
+  "ExampleListOrder": {
+    "type": "string",
+    "enum": [
+      "recent",
+      "random",
+      "recently_created",
+      "id"
+    ],
+    "title": "ExampleListOrder"
+  },
+  "ExampleSelect": {
+    "type": "string",
+    "enum": [
+      "id",
+      "created_at",
+      "modified_at",
+      "name",
+      "dataset_id",
+      "source_run_id",
+      "metadata",
+      "inputs",
+      "outputs",
+      "attachment_urls"
+    ],
+    "title": "ExampleSelect"
+  },
+  "ExampleUpdate": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "attachments_operations": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AttachmentsOperations"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "split": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Split"
+      },
+      "overwrite": {
+        "type": "boolean",
+        "title": "Overwrite",
+        "default": false
+      }
+    },
+    "type": "object",
+    "title": "ExampleUpdate",
+    "description": "Update class for Example."
+  },
+  "ExampleUpdateWithID": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "attachments_operations": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AttachmentsOperations"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "split": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Split"
+      },
+      "overwrite": {
+        "type": "boolean",
+        "title": "Overwrite",
+        "default": false
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "title": "ExampleUpdateWithID",
+    "description": "Bulk update class for Example (includes example id)."
+  },
+  "ExampleValidationResult": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "created_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Created At"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "split": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Split",
+        "default": "base"
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Id"
+      },
+      "use_source_run_io": {
+        "type": "boolean",
+        "title": "Use Source Run Io",
+        "default": false
+      },
+      "overwrite": {
+        "type": "boolean",
+        "title": "Overwrite",
+        "default": false
+      }
+    },
+    "type": "object",
+    "title": "ExampleValidationResult",
+    "description": "Validation result for Example, combining fields from Create/Base/Update schemas."
+  },
+  "ExampleWithRuns": {
+    "properties": {
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "modified_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Modified At"
+      },
+      "attachment_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Attachment Urls"
+      },
+      "runs": {
+        "items": {
+          "$ref": "#/components/schemas/RunSchema"
+        },
+        "type": "array",
+        "title": "Runs"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id",
+      "inputs",
+      "id",
+      "name",
+      "runs"
+    ],
+    "title": "ExampleWithRuns",
+    "description": "Example schema with list of runs."
+  },
+  "ExampleWithRunsCH": {
+    "properties": {
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "modified_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Modified At"
+      },
+      "attachment_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Attachment Urls"
+      },
+      "runs": {
+        "items": {
+          "$ref": "#/components/schemas/RunSchemaComparisonView"
+        },
+        "type": "array",
+        "title": "Runs"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id",
+      "inputs",
+      "id",
+      "name",
+      "runs"
+    ],
+    "title": "ExampleWithRunsCH",
+    "description": "Example schema with list of runs from ClickHouse.\n\nFor non-grouped endpoint (/datasets/{dataset_id}/runs): runs from single session.\nFor grouped endpoint (/datasets/{dataset_id}/group/runs): flat array of runs from\nall sessions, where each run has a session_id field for frontend to determine column placement."
+  },
+  "GenerateSyntheticExamplesBody": {
+    "properties": {
+      "example_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Example Ids"
+      },
+      "num_examples": {
+        "type": "integer",
+        "title": "Num Examples"
+      }
+    },
+    "type": "object",
+    "required": [
+      "num_examples"
+    ],
+    "title": "GenerateSyntheticExamplesBody"
+  },
+  "GroupExampleRunsByField": {
+    "type": "string",
+    "enum": [
+      "run_metadata",
+      "example_metadata"
+    ],
+    "title": "GroupExampleRunsByField"
+  },
+  "GroupedExamplesWithRunsResponse": {
+    "properties": {
+      "groups": {
+        "items": {
+          "$ref": "#/components/schemas/ExampleGroupWithSessions"
+        },
+        "type": "array",
+        "title": "Groups"
+      }
+    },
+    "type": "object",
+    "required": [
+      "groups"
+    ],
+    "title": "GroupedExamplesWithRunsResponse",
+    "description": "Response for grouped comparison view of dataset examples.\n\nReturns dataset examples grouped by a run metadata value (e.g., model='gpt-4').\nOptional filters are applied to all runs before grouping.\n\nShows:\n- Which examples were executed with each metadata value\n- Per-session aggregate statistics for runs on those examples\n- The actual example data with their associated runs\n\nUsed for comparing how different sessions performed on the same set of examples."
+  },
+  "PublicExampleWithRuns": {
+    "properties": {
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "modified_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Modified At"
+      },
+      "attachment_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Attachment Urls"
+      },
+      "runs": {
+        "items": {
+          "$ref": "#/components/schemas/RunPublicDatasetSchema"
+        },
+        "type": "array",
+        "title": "Runs"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id",
+      "inputs",
+      "id",
+      "name",
+      "runs"
+    ],
+    "title": "PublicExampleWithRuns",
+    "description": "Schema for an example in a publicly-shared dataset with list of runs."
+  },
+  "QueryExampleSchemaWithRuns": {
+    "properties": {
+      "session_ids": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "minItems": 1,
+        "title": "Session Ids"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0,
+        "title": "Offset",
+        "default": 0
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "title": "Limit",
+        "default": 10
+      },
+      "preview": {
+        "type": "boolean",
+        "title": "Preview",
+        "default": false
+      },
+      "comparative_experiment_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comparative Experiment Id"
+      },
+      "sort_params": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SortParamsForRunsComparisonView"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "filters": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Filters"
+      }
+    },
+    "type": "object",
+    "required": [
+      "session_ids"
+    ],
+    "title": "QueryExampleSchemaWithRuns"
+  },
+  "QueryGroupedExamplesWithRuns": {
+    "properties": {
+      "session_ids": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "minItems": 1,
+        "title": "Session Ids"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0,
+        "title": "Offset",
+        "default": 0
+      },
+      "limit": {
+        "type": "integer",
+        "minimum": 1,
+        "title": "Limit",
+        "default": 10
+      },
+      "preview": {
+        "type": "boolean",
+        "title": "Preview",
+        "default": false
+      },
+      "group_by": {
+        "$ref": "#/components/schemas/GroupExampleRunsByField"
+      },
+      "metadata_key": {
+        "type": "string",
+        "title": "Metadata Key"
+      },
+      "per_group_limit": {
+        "type": "integer",
+        "maximum": 10,
+        "minimum": 1,
+        "title": "Per Group Limit",
+        "default": 5
+      },
+      "filters": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Filters"
+      }
+    },
+    "type": "object",
+    "required": [
+      "session_ids",
+      "group_by",
+      "metadata_key"
+    ],
+    "title": "QueryGroupedExamplesWithRuns"
+  },
+  "RepoExampleResponse": {
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Start Time"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "session_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Session Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "session_id"
+    ],
+    "title": "RepoExampleResponse",
+    "description": "Response model for example runs"
+  },
+  "SearchedFewShotExample": {
+    "properties": {
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "outputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Outputs"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "debug_info": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Debug Info"
+      }
+    },
+    "type": "object",
+    "required": [
+      "inputs",
+      "outputs",
+      "id"
+    ],
+    "title": "SearchedFewShotExample",
+    "description": "Dataset schema for serving."
+  },
+  "examples.DeleteExamplesRequest": {
+    "type": "object",
+    "required": [
+      "example_ids",
+      "hard_delete"
+    ],
+    "properties": {
+      "example_ids": {
+        "description": "ExampleIDs is a list of UUIDs identifying the examples to delete.",
+        "type": "array",
+        "maxItems": 1000,
+        "minItems": 1,
+        "items": {
+          "type": "string"
+        }
+      },
+      "hard_delete": {
+        "description": "HardDelete indicates whether to perform a hard delete.\nCurrently only True is supported.",
+        "type": "boolean"
+      }
+    }
+  },
+  "examples.ErrorResponse": {
+    "type": "object",
+    "properties": {
+      "details": {
+        "description": "Optional error details as JSON string",
+        "type": "string",
+        "example": "{\"field\":\"dataset_id\",\"reason\":\"required\"}"
+      },
+      "error": {
+        "description": "Error message",
+        "type": "string",
+        "example": "Invalid request: missing required fields"
+      }
+    }
+  },
+  "examples.ExamplesCreatedResponse": {
+    "type": "object",
+    "properties": {
+      "count": {
+        "type": "integer",
+        "example": 1
+      },
+      "example_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "[\"123e4567-e89b-12d3-a456-426614174000\"]"
+        ]
+      }
+    }
+  },
+  "examples.ExamplesDeletedResponse": {
+    "type": "object",
+    "properties": {
+      "count": {
+        "type": "integer",
+        "example": 1
+      },
+      "example_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "[\"123e4567-e89b-12d3-a456-426614174000\"]"
+        ]
+      }
+    }
+  },
+  "examples.ExamplesUpdatedResponse": {
+    "type": "object",
+    "properties": {
+      "count": {
+        "type": "integer",
+        "example": 1
+      },
+      "example_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "[\"123e4567-e89b-12d3-a456-426614174000\"]"
+        ]
+      }
+    }
+  }
+}

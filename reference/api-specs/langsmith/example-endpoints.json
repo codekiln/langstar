@@ -1,0 +1,1195 @@
+{
+  "/api/v1/examples/count": {
+    "get": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Count Examples",
+      "description": "Count all examples by query params",
+      "operationId": "count_examples_api_v1_examples_count_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "default": "latest",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        },
+        {
+          "name": "metadata",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        {
+          "name": "full_text_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Text Contains"
+          }
+        },
+        {
+          "name": "splits",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Splits"
+          }
+        },
+        {
+          "name": "dataset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          }
+        },
+        {
+          "name": "filter",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filter"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "integer",
+                "title": "Response Count Examples Api V1 Examples Count Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/examples/{example_id}": {
+    "get": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Read Example",
+      "description": "Get a specific example.",
+      "operationId": "read_example_api_v1_examples__example_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "example_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Example Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "default": "latest",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Example"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Update Example",
+      "description": "Update a specific example.",
+      "operationId": "update_example_api_v1_examples__example_id__patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "example_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Example Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ExampleUpdate"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Delete Example",
+      "description": "Soft delete an example. Only deletes the example in the 'latest' version of the dataset.",
+      "operationId": "delete_example_api_v1_examples__example_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "example_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Example Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/examples": {
+    "get": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Read Examples",
+      "description": "Get all examples by query params",
+      "operationId": "read_examples_api_v1_examples_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "default": "latest",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        },
+        {
+          "name": "metadata",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        {
+          "name": "full_text_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full Text Contains"
+          }
+        },
+        {
+          "name": "splits",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Splits"
+          }
+        },
+        {
+          "name": "dataset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "order",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/ExampleListOrder",
+            "default": "recent"
+          }
+        },
+        {
+          "name": "random_seed",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Random Seed"
+          }
+        },
+        {
+          "name": "select",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExampleSelect"
+            },
+            "default": [
+              "id",
+              "created_at",
+              "modified_at",
+              "name",
+              "dataset_id",
+              "source_run_id",
+              "metadata",
+              "inputs",
+              "outputs"
+            ],
+            "title": "Select"
+          }
+        },
+        {
+          "name": "descending",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descending"
+          }
+        },
+        {
+          "name": "filter",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filter"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Example"
+                },
+                "title": "Response Read Examples Api V1 Examples Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Create Example",
+      "description": "Create a new example.",
+      "operationId": "create_example_api_v1_examples_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Example"
+              }
+            }
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "description": "Create class for Example.",
+              "properties": {
+                "outputs": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Outputs"
+                },
+                "dataset_id": {
+                  "format": "uuid",
+                  "title": "Dataset Id",
+                  "type": "string"
+                },
+                "source_run_id": {
+                  "anyOf": [
+                    {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Source Run Id"
+                },
+                "metadata": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Metadata"
+                },
+                "inputs": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Inputs"
+                },
+                "split": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": "base",
+                  "title": "Split"
+                },
+                "id": {
+                  "anyOf": [
+                    {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Id"
+                },
+                "use_source_run_io": {
+                  "default": false,
+                  "title": "Use Source Run Io",
+                  "type": "boolean"
+                },
+                "use_source_run_attachments": {
+                  "default": [],
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Use Source Run Attachments",
+                  "type": "array"
+                },
+                "use_legacy_message_format": {
+                  "default": false,
+                  "description": "Use Legacy Message Format for LLM runs",
+                  "title": "Use Legacy Message Format",
+                  "type": "boolean"
+                },
+                "created_at": {
+                  "title": "Created At",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dataset_id"
+              ],
+              "title": "ExampleCreate",
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Delete Examples",
+      "description": "Soft delete examples. Only deletes the examples in the 'latest' version of the dataset.",
+      "operationId": "delete_examples_api_v1_examples_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "example_ids",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "title": "Example Ids"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/examples/bulk": {
+    "post": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Create Examples",
+      "description": "Create bulk examples.",
+      "operationId": "create_examples_api_v1_examples_bulk_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "items": {
+                "properties": {
+                  "outputs": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": true,
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Outputs"
+                  },
+                  "dataset_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "title": "Dataset Id"
+                  },
+                  "source_run_id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Source Run Id"
+                  },
+                  "metadata": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": true,
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Metadata"
+                  },
+                  "inputs": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": true,
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Inputs"
+                  },
+                  "split": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Split",
+                    "default": "base"
+                  },
+                  "id": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Id"
+                  },
+                  "use_source_run_io": {
+                    "type": "boolean",
+                    "title": "Use Source Run Io",
+                    "default": false
+                  },
+                  "use_source_run_attachments": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array",
+                    "title": "Use Source Run Attachments",
+                    "default": []
+                  },
+                  "use_legacy_message_format": {
+                    "type": "boolean",
+                    "title": "Use Legacy Message Format",
+                    "description": "Use Legacy Message Format for LLM runs",
+                    "default": false
+                  },
+                  "created_at": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Created At"
+                  }
+                },
+                "type": "object",
+                "required": [
+                  "dataset_id"
+                ],
+                "title": "ExampleBulkCreate",
+                "description": "Example with optional created_at to prevent duplicate versions in bulk operations."
+              },
+              "type": "array",
+              "description": "Schema for a batch of examples to be created."
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/Example"
+                },
+                "type": "array"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    },
+    "patch": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Legacy Update Examples",
+      "description": "Legacy update examples in bulk. For update involving attachments, use PATCH /v1/platform/datasets/{dataset_id}/examples instead.",
+      "operationId": "legacy_update_examples_api_v1_examples_bulk_patch",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/ExampleUpdateWithID"
+              },
+              "type": "array",
+              "title": "Example Updates"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/examples/upload/{dataset_id}": {
+    "post": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Upload Examples From Csv",
+      "description": "Upload examples from a CSV file.\n\nNote: For non-csv upload, please use\nthe POST /v1/platform/datasets/{dataset_id}/examples endpoint which provides more efficient upload.",
+      "operationId": "upload_examples_from_csv_api_v1_examples_upload__dataset_id__post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/Body_upload_examples_from_csv_api_v1_examples_upload__dataset_id__post"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Example"
+                },
+                "title": "Response Upload Examples From Csv Api V1 Examples Upload  Dataset Id  Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/examples/validate": {
+    "post": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Validate Example",
+      "description": "Validate an example.",
+      "operationId": "validate_example_api_v1_examples_validate_post",
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleValidationResult"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/examples/validate/bulk": {
+    "post": {
+      "tags": [
+        "examples"
+      ],
+      "summary": "Validate Examples",
+      "description": "Validate an example.",
+      "operationId": "validate_examples_api_v1_examples_validate_bulk_post",
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/ExampleValidationResult"
+                },
+                "type": "array",
+                "title": "Response Validate Examples Api V1 Examples Validate Bulk Post"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  }
+}
