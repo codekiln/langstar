@@ -70,7 +70,15 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
    ```
    - If there are uncommitted changes, **STOP** and ask user to commit them first
 
-5. **Verify remote branch exists or can be pushed:**
+5. **Verify branch has commits:**
+   ```bash
+   # Check if branch has commits ahead of base
+   git rev-list --count origin/main..HEAD
+   ```
+   - If count is 0, the PR would be empty and should be prevented
+   - **STOP** and inform user the branch has no new commits
+
+6. **Verify remote branch exists or can be pushed:**
    ```bash
    git push -n origin $(git branch --show-current) 2>&1
    ```
@@ -82,6 +90,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 - ✅ Branch follows convention
 - ✅ Issue exists and is open
 - ✅ No uncommitted changes
+- ✅ Branch has commits
 - ✅ Can push to remote
 
 If any validation fails, **STOP** and provide clear instructions to fix the issue.
@@ -108,6 +117,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    git log "$BASE_BRANCH"..HEAD --oneline
 
    # View full diff
+   # Use three dots (...) to show only changes introduced by this branch since it diverged from BASE_BRANCH.
+   # This excludes changes that happened in BASE_BRANCH after divergence.
    git diff "$BASE_BRANCH"...HEAD
    ```
    - **IMPORTANT:** Analyze ALL commits, not just the latest
@@ -117,7 +128,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    - Follow conventional emoji commit format: `<emoji> <type>[scope]: <description>`
    - Match the primary nature of changes:
      - ✨ `feat` - New features
-     - 🩹 `fix` - Bug fixes
+     - 🩹 `fix` - Bug fixes (standard fix emoji per project conventions)
      - 📚 `docs` - Documentation
      - ♻️ `refactor` - Code refactoring
      - 🧪 `test` - Tests
@@ -181,18 +192,19 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    ISSUE_NUM=<extracted_issue_num>
    BASE_BRANCH=<determined_base_branch>
 
-   gh pr create \
+   PR_URL=$(gh pr create \
      --title "<title>" \
      --body "$(cat <<'EOF'
    <body>
    EOF
    )" \
-     --base "$BASE_BRANCH"
+     --base "$BASE_BRANCH")
+
+   PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
    ```
 
 3. **Add milestone to PR (if issue has milestone):**
    ```bash
-   PR_NUM=$(gh pr view --json number -q '.number')
    MILESTONE=$(gh issue view "$ISSUE_NUM" --json milestone -q '.milestone.title')
 
    if [ -n "$MILESTONE" ]; then
@@ -230,17 +242,23 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    gh pr checks "$PR_NUM"
    ```
    - Parse output for failed checks
-   - If checks are still running: wait 30 seconds and check again
+   - If checks are still running:
+     ```bash
+     echo "⏳ Checks still running, waiting 30 seconds..."
+     sleep 30
+     ```
+     Then check again
    - If checks pass: proceed to review comment check
    - If checks fail: proceed to failure handling
 
 2. **If CI/CD checks fail:**
    ```bash
-   # Get detailed failure information
-   gh pr checks "$PR_NUM" --json name,state,conclusion,detailsUrl
+   # Get detailed failure information, including run IDs for failed checks
+   gh pr checks "$PR_NUM" --json workflowRun,name,state,conclusion \
+     --jq '.[] | select(.conclusion == "FAILURE") | {name, runId: .workflowRun.databaseId}'
 
-   # For each failed check, fetch logs
-   gh run view <run_id> --log-failed
+   # For each failed check, fetch logs using the extracted run IDs
+   # Example: for runId in $(...); do gh run view "$runId" --log-failed; done
    ```
    - Parse error messages from logs
    - Identify specific failures (clippy, tests, fmt, etc.)
@@ -265,13 +283,18 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    - Commit fixes following conventional commit format:
      ```bash
      git add <files>
-     git commit -m "🩹 fix(ci): address <specific issue>
+     # Replace <specific issue> with the actual issue description
+     git commit -m "$(cat <<EOF
+🩹 fix(ci): address <specific issue>
 
-     - Fixed clippy warnings in src/main.rs
-     - Resolved test failures in authentication module"
+- Fixed clippy warnings in src/main.rs
+- Resolved test failures in authentication module
+EOF
+)"
 
      git push origin $(git branch --show-current)
      ```
+     **Note:** If git push fails due to network or permission issues, handle the error and inform the user
    - Report what was fixed:
      ```
      ✅ **Fixes Applied:**
@@ -313,11 +336,12 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 
 5. **Check for review comments:**
    ```bash
+   # Fetch unresolved review comments using the GitHub Reviews API
    REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
    gh api repos/$REPO/pulls/$PR_NUM/comments \
-     --jq '.[] | select(.in_reply_to_id == null) | {id, user: .user.login, body: .body[0:100]}'
+     --jq '.[] | select(.resolved == false) | {id, user: .user.login, body: .body[0:100]}'
    ```
-   - Count unresolved top-level comments
+   - Count unresolved review comments (where `.resolved == false`)
    - If unresolved comments exist, offer to resolve:
      ```
      💬 **Unresolved Review Comments:** 5
@@ -468,8 +492,8 @@ Would you like me to show you the relevant code sections?
 Your branch is out of date with $BASE_BRANCH.
 
 **New commits in $BASE_BRANCH:**
-- <commit 1>
-- <commit 2>
+- a1b2c3d feat: add new authentication method
+- d4e5f6g fix: resolve cache invalidation bug
 
 **Rebase Steps:**
 ```bash
@@ -565,7 +589,40 @@ Reference for users who aren't in a worktree:
 - If same CI check fails 3 times with same fix attempts, ask user
 - If unable to push commits, stop immediately
 
-**Example:**
+**Tracking mechanism example:**
+```bash
+iteration_count=0
+max_iterations=5
+failed_attempts=0
+max_failed_attempts=3
+
+while true; do
+  # ... perform CI check or fix attempt ...
+  iteration_count=$((iteration_count + 1))
+
+  if [ "$ci_check_failed" = true ]; then
+    failed_attempts=$((failed_attempts + 1))
+  else
+    failed_attempts=0
+  fi
+
+  if [ $iteration_count -ge $max_iterations ]; then
+    echo "⚠️ Iteration Limit Reached"
+    # ... handle limit (ask user, stop, etc.) ...
+    break
+  fi
+
+  if [ $failed_attempts -ge $max_failed_attempts ]; then
+    echo "⚠️ CI check failed 3 times with same fix attempts"
+    # ... handle repeated failure ...
+    break
+  fi
+
+  # ... other workflow logic ...
+done
+```
+
+**Example user message:**
 ```
 ⚠️ **Iteration Limit Reached**
 
