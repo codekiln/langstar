@@ -133,9 +133,12 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+// TODO: DatasetTransformation schema requires further research.
+// This is a PRELIMINARY placeholder based on field naming patterns.
+// Actual structure should be verified against live API responses before implementation.
 /// Dataset transformation type - represents transformations applied to datasets.
-/// Note: The exact structure of this type requires further research based on
-/// the LangSmith API response format. This is a placeholder definition.
+/// **WARNING**: This is a placeholder definition. The exact schema must be verified
+/// against actual LangSmith API responses before use in production code.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DatasetTransformation {
@@ -274,11 +277,20 @@ pub struct ExampleUpdate {
 ### 2.4 Version Schema
 
 ```rust
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DatasetVersion {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
     pub as_of: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DatasetDiffInfo {
     pub examples_modified: Vec<Uuid>,
     pub examples_added: Vec<Uuid>,
@@ -289,6 +301,11 @@ pub struct DatasetDiffInfo {
 ### 2.5 Share Schema
 
 ```rust
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DatasetShareSchema {
     pub dataset_id: Uuid,
     pub share_token: Uuid,
@@ -299,14 +316,30 @@ pub struct DatasetShareSchema {
 ### 2.6 Attachment Types
 
 ```rust
+use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AttachmentInfo {
     pub presigned_url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
 }
 
+/// Represents attachment data - either raw bytes or a file path reference.
+#[derive(Debug, Clone)]
+pub enum AttachmentData {
+    /// In-memory binary data
+    Bytes(Vec<u8>),
+    /// Reference to a file on disk
+    File(PathBuf),
+}
+
+#[derive(Debug, Clone)]
 pub struct Attachment {
     pub mime_type: String,
-    pub data: Vec<u8>,  // Or PathBuf for file references
+    pub data: AttachmentData,
 }
 ```
 
@@ -392,7 +425,7 @@ impl LangSmithClient {
         &self,
         dataset_id: Uuid,
         params: ListExamplesParams,
-    ) -> impl Stream<Item = Result<Example>> {
+    ) -> impl Stream<Item = Result<Example, DatasetError>> {
         // Async stream implementation
     }
 }
@@ -451,8 +484,10 @@ pub enum DatasetError {
 6. `create_example(&self, request: ExampleCreate) -> Result<Example>`
 7. `create_examples(&self, requests: Vec<ExampleCreate>) -> Result<Vec<Example>>`
 8. `list_examples(&self, dataset_id: Uuid, params: ListExamplesParams) -> Result<PaginatedResponse<Example>>`
-9. `update_example(&self, id: Uuid, request: ExampleUpdate) -> Result<()>`
-10. `delete_example(&self, id: Uuid) -> Result<()>`
+9. `update_example(&self, id: Uuid, request: ExampleUpdate) -> Result<Example>`
+10. `update_examples(&self, updates: Vec<(Uuid, ExampleUpdate)>) -> Result<Vec<Example>>`
+11. `delete_example(&self, id: Uuid) -> Result<()>`
+12. `delete_examples(&self, ids: Vec<Uuid>) -> Result<()>`
 
 ### 6.2 CLI Layer (langstar CLI)
 
