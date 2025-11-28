@@ -5,6 +5,1156 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2025-11-28
+
+### ✨ Features
+
+- ✨ feat(sdk): add annotation queue types (#344)
+
+Implements comprehensive Rust type definitions for LangSmith annotation queues API.
+
+## Types Implemented
+
+- QueueType - Enum for single vs pairwise queues
+- AnnotationQueue - Base queue schema
+- AnnotationQueueWithDetails - Queue with rubric details
+- AnnotationQueueRubricItem - Rubric evaluation criteria
+- CreateAnnotationQueueRequest - Queue creation payload
+- UpdateAnnotationQueueRequest - Queue update payload
+- ListAnnotationQueuesParams - Query parameters for listing
+- RunWithAnnotationQueueInfo - Run with queue metadata
+
+## Implementation Details
+
+- All types derive Debug, Clone, Serialize, Deserialize
+- camelCase serialization for JSON API compatibility
+- Comprehensive doc comments with API references
+- 10 unit tests for serde roundtrip validation
+- Module exported in sdk/src/lib.rs with re-exports
+
+Follows patterns from sdk/src/runs.rs and matches OpenAPI schemas.
+
+Fixes #337
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): implement annotation queue client methods (#356)
+
+Implements 8 client methods for LangSmith annotation queues API:
+- list_annotation_queues: List queues with filtering
+- create_annotation_queue: Create new queue
+- read_annotation_queue: Get queue by ID
+- update_annotation_queue: Update queue metadata
+- delete_annotation_queue: Delete queue
+- add_runs_to_annotation_queue: Add runs to queue
+- delete_run_from_annotation_queue: Remove run from queue
+- get_run_from_annotation_queue: Get run at index
+
+All methods follow existing SDK patterns with comprehensive
+documentation, proper error handling, and support for
+organization/workspace scoping headers.
+
+Fixes #338
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): add annotation queue CLI commands (#360)
+
+Implement `langstar queue` subcommand group for managing LangSmith
+annotation queues with the following subcommands:
+
+- list: List annotation queues with filtering
+- create: Create a new annotation queue
+- get: Get details of a specific queue
+- update: Update queue name/description/rubric
+- delete: Delete a queue (with --force flag)
+- add-runs: Add runs to queue (supports --runs-file)
+- remove-run: Remove a run from queue
+- items: List runs in a queue
+
+Also adds Serialize trait to RunWithAnnotationQueueInfo for JSON output.
+
+Fixes #339
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): add Dataset and Example types for LangSmith datasets API (#365)
+
+Implements SDK types for the LangSmith datasets API per validation report
+Section 6.2 from #350. Types follow OpenAPI spec with corrected field names
+(inputs_schema_definition, path as Vec<String>) and required/optional fields.
+
+Types implemented:
+- DataType enum (kv, llm, chat)
+- Dataset, DatasetCreate, DatasetUpdate (response/request types)
+- DatasetTransformation, DatasetTransformationType
+- DatasetVersion, DatasetDiffInfo
+- Example, ExampleCreate, ExampleUpdate
+- ExampleSplit, AttachmentsOperations, ExampleBulkUpdate
+
+Fixes #351
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): add dataset and example client methods (#375)
+
+Implements SDK client methods for LangSmith datasets and examples API:
+
+Dataset methods:
+- create_dataset, list_datasets (with pagination), get_dataset
+- update_dataset, delete_dataset
+
+Example methods:
+- create_example, list_examples (with pagination/filtering)
+- get_example, update_example, delete_example, bulk_create_examples
+
+Also adds langsmith_patch and langsmith_delete helper methods,
+refactoring existing delete methods to use the new helpers.
+
+Fixes #352
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): add dataset management commands (#380)
+
+* ✨ feat(cli): add dataset management commands
+
+Implements langstar dataset CLI commands for managing LangSmith datasets:
+
+- `langstar dataset create` - Create new datasets with name, type, description
+- `langstar dataset list` - List datasets with filtering by name/type
+- `langstar dataset get` - Get dataset details by ID
+- `langstar dataset update` - Update dataset name/description
+- `langstar dataset delete` - Delete datasets with confirmation
+- `langstar dataset import` - Import examples from JSONL/CSV files
+- `langstar dataset list-examples` - List examples in a dataset
+- `langstar dataset export` - Export examples to JSONL/CSV files
+
+Also adds Serialize derive to Dataset and Example SDK types for JSON output,
+and csv crate dependency for import/export functionality.
+
+Fixes #353
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(dataset): address PR review comments
+
+- Fix ExampleRow::from double serialization - serialize once and reuse
+- Add "..." suffix for truncated outputs and names for consistency
+- Extract parse_data_type() helper to reduce code duplication
+- Use if let instead of unwrap in export function
+- Handle id column in CSV import (parse as UUID)
+- Handle metadata column in CSV import (parse as JSON)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): add evaluation types (#388)
+
+* ✨ feat(sdk): add evaluation types
+
+Implements comprehensive evaluation types for LangSmith SDK:
+- Feedback types (FeedbackConfig, FeedbackCreate, Feedback)
+- Evaluator types (Heuristic, LLM Judge, Code Evaluator)
+- Evaluation result types (EvaluationResult, EvaluatorType)
+- Online evaluation types (StructuredEvaluator, CodeEvaluator)
+
+Fixes #370
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(sdk): address Copilot review feedback
+
+- Add Deserialize trait to FeedbackCreate and FeedbackUpdate
+- Fix capitalization: Javascript -> JavaScript
+- Update test to use correct enum variant name
+
+Addresses Copilot review comments on PR #388
+
+* 🧪 test(sdk): add deserialization tests for evaluation types
+
+Address Copilot review feedback by adding comprehensive deserialization
+tests for round-trip verification:
+
+- Add tests for FeedbackType, FeedbackSourceType enum deserialization
+- Add tests for HeuristicEvaluator, ScoreType, CodeEvaluatorLanguage
+- Add tests for complex types: FeedbackConfig, FeedbackCreate,
+  EvaluationResult, LlmJudgeConfig
+- Add round-trip tests for FeedbackCreate and EvaluationResult
+
+These tests ensure types can correctly deserialize from JSON API responses
+and maintain consistency with the serialization tests.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(slash-command): create /pr-workflow command for guided PR creation and management (#385)
+
+* ✨ feat(slash-command): create /pr-workflow command for guided PR creation and management
+
+Implements a comprehensive slash command that guides Claude agents through the
+complete pull request lifecycle from pre-PR validation through to successful merge.
+
+Changes:
+- Created .claude/commands/pr-workflow.md with autonomous PR workflow
+  - Phase 1: Pre-PR validation (worktree, branch naming, issue linking)
+  - Phase 2: PR creation preparation (commit analysis, draft generation)
+  - Phase 3: PR creation (with proper formatting and milestone)
+  - Phase 4: CI/CD monitoring loop (iterative fixes until ready)
+  - Phase 5: Completion verification
+- Added integration with pr-lifecycle and resolve-pr-comments skills
+- Added CLAUDE_CODE_MAX_OUTPUT_TOKENS documentation to CLAUDE.md
+
+Fixes #377
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-workflow): address all Copilot review feedback
+
+Substantive improvements:
+- Fixed PR number capture by extracting from gh pr create output
+- Added explicit sleep command in CI monitoring loop
+- Fixed run ID extraction with proper JSON query
+- Updated to use .resolved field for unresolved comment detection
+- Added iteration tracking mechanism with example code
+- Added validation to prevent empty PRs (check commit count)
+
+Documentation/formatting improvements:
+- Added clarifying comment for three-dot diff usage
+- Added concrete commit examples (not placeholders)
+- Clarified template placeholder replacement
+- Added bash language identifiers to all code fences
+- Added 🩹 emoji to type list with project convention note
+- Enhanced token budget documentation with defaults and limits
+- Added error handling guidance for git operations
+
+Fixes review comments from @Copilot in PR #385
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-workflow): add PR existence check and prioritize review comments
+
+**Changes:**
+- Added step 7 to Phase 1: Check if PR already exists before attempting creation
+- If PR exists and is OPEN, skip directly to Phase 4 monitoring
+- Restructured Phase 4 to prioritize review comments FIRST (before CI checks)
+- Added automatic rebase handling with conflict detection
+- Added 5-7 minute stability monitoring after all fixes
+- Made command fully idempotent - safe to run multiple times
+- Removed interactive prompts for review comments - now fully autonomous
+
+**Phase 4 new order:**
+1. Review comments (highest priority - human feedback)
+2. Rebase check (ensure up-to-date with base)
+3. CI/CD checks (code quality)
+4. Stability monitoring (5-7 minutes)
+
+**Goal:** Run `/pr-workflow`, walk away, come back to ready PR with:
+- All review comments addressed and replied to
+- Branch rebased to main (no conflicts)
+- All CI checks passing
+- No manual intervention needed
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-workflow): address all Copilot review feedback
+
+Critical fixes:
+- Fixed review comment detection: use .resolved == null (not false)
+- Fixed PR number extraction from gh pr create output
+- Added explicit sleep command in CI check loop
+- Fixed gh pr checks to document run ID extraction with --json
+
+Documentation improvements:
+- Clarified git diff three-dot usage with explanatory comment
+- Clarified commit message template with interpolation note
+- Fixed bash code block formatting in cleanup sections
+- Enhanced CLAUDE_CODE_MAX_OUTPUT_TOKENS guidance with defaults
+
+All 30 review comments addressed (15 Copilot + 15 user acknowledgments)
+
+Fixes #377
+
+* fix: Apply suggestions from code review
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* fix: check true - Update .claude/commands/pr-workflow.md
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- ✨ feat(sdk): add feedback CRUD methods for evaluations (#389)
+
+* ✨ feat(sdk): add feedback CRUD methods for evaluations
+
+Implements evaluation client methods in the SDK per issue #371.
+Added complete CRUD operations for LangSmith feedback API:
+
+- create_feedback() - Create evaluation feedback for runs
+- list_feedback() - List feedback with optional run_id filter
+- get_feedback() - Retrieve specific feedback by ID
+- update_feedback() - Update existing feedback entries
+- delete_feedback() - Delete feedback entries
+
+These methods provide the foundation for recording evaluation results
+from both heuristic and LLM-as-judge evaluators. All methods include
+comprehensive documentation with examples and API references.
+
+Fixes #371
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(sdk): use execute_status_only_request for delete_feedback
+
+- Changed delete_feedback to use execute_status_only_request instead of execute
+- Follows the pattern used by other delete methods (delete_dataset, delete_annotation_queue)
+- DELETE endpoints return no body, so status-only execution is appropriate
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/389#discussion_r2572329947
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(dataset): fix CLI export flag conflict and update response decoding (#391)
+
+* 🩹 fix(dataset): fix CLI export flag conflict and update response decoding
+
+Bug 1: Export format flag conflict
+- Renamed `--format` to `--file-format` in dataset export command
+- Resolves conflict with global output format flag (-f, --format)
+- Updated all tests to use new `--file-format` flag
+
+Bug 2: Update response decoding failure
+- Made `example_count`, `session_count`, and `modified_at` fields optional in Dataset struct
+- API PATCH endpoint returns DatasetSchemaForUpdate which omits these computed fields
+- Added proper Option handling in CLI display code
+- Updated SDK test mocks to match actual API response format
+
+Tests:
+- Un-ignored integration tests: test_dataset_crud_lifecycle and test_dataset_import_export_roundtrip
+- All workspace tests passing
+
+Fixes #387
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(dataset): use Option<i64> for example_count and session_count
+
+Address Copilot review feedback to properly distinguish between
+"field not present" and "actually 0" for computed fields.
+
+Changes:
+- Changed example_count and session_count from i64 with #[serde(default)]
+  to Option<i64> with #[serde(skip_serializing_if = "Option::is_none")]
+- Updated all usage sites in CLI to handle Option with .unwrap_or(0)
+- Updated SDK test assertions to expect Some(value)
+
+This provides better clarity: None means field was not in API response,
+Some(0) means the dataset actually has 0 examples/sessions.
+
+Addresses review comments: #391 (comment 2572502483, comment 2572502490)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(test): update SDK doc test assertions for Option fields
+
+Fixed missed assertions in SDK unit tests that were checking
+example_count and session_count as integers instead of Option<i64>.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🎨 style: run cargo fmt
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### ♻️ Refactoring
+
+- ♻️ refactor(sdk): extract duplicated error handling into helper method (#366)
+
+Extract duplicated error handling logic from four annotation queue methods
+into a reusable execute_status_only_request() helper method.
+
+Changes:
+- Add execute_status_only_request() helper method (client.rs:387-414)
+- Refactor update_annotation_queue to use helper (reduced 18→3 lines)
+- Refactor delete_annotation_queue to use helper (reduced 35→27 lines)
+- Refactor add_runs_to_annotation_queue to use helper (reduced 23→13 lines)
+- Refactor delete_run_from_annotation_queue to use helper (reduced 35→27 lines)
+
+Impact:
+- Eliminated ~48 lines of duplicated code
+- Improved maintainability - error handling logic now in one place
+- No functional changes - refactor only
+
+Tests: All 173 tests pass
+- cargo fmt ✓
+- cargo check ✓
+- cargo clippy ✓
+- cargo test ✓
+
+Fixes #358
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add annotation queues SDK research report (#336)
+
+* 📚 docs: add annotation queues SDK research report
+
+Analyzes LangSmith Python SDK annotation queue implementation to
+establish recommendations for implementing langstar queue commands.
+
+Key findings:
+- Documented all 8 annotation queue API endpoints
+- Analyzed data structures (AnnotationQueue, RunWithAnnotationQueueInfo)
+- Provided concrete Rust implementation recommendations
+- Identified differences from original issue spec
+
+Fixes #335
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: address PR feedback on annotation queues research
+
+- Rename AddRun to AddRuns for consistency with SDK method
+- Fix CLI example: add-run → add-runs (plural)
+- Add note to Items command about SDK limitation (no list endpoint)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add pr-lifecycle skill for project hygiene (#333)
+
+* 📚 docs: add pr-lifecycle skill for project hygiene
+
+Fixes #225
+
+Create a Claude Code skill that enforces project hygiene throughout
+the PR lifecycle:
+
+- Pre-PR validation: worktree check, branch naming, issue verification
+- PR creation: "Fixes #XYZ" keyword templates, conventional commit titles
+- Post-merge cleanup: issue closure verification, worktree/branch cleanup
+
+Includes API command examples for common operations like monitoring
+automated reviews (Copilot) and replying with commit references.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address Copilot review feedback
+
+- Use POSIX-compliant [0-9]+ instead of \d+ for grep portability
+- Fix Claude Code URL consistency (claude.com/claude-code)
+- Add dynamic REPO variable for API commands instead of {owner}/{repo}
+- Simplify worktree check to use pwd | grep wip/
+- Improve cleanup verification to filter main/master branches
+- Escape pipe characters in markdown table using HTML entities
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* docs: Revise PR hygiene guidelines and add template
+
+Updated the PR hygiene guidelines to clarify requirements and added a PR body template section.
+
+* 🩹 fix: address second round of Copilot review feedback
+
+- Fix duplicate "main" in "origin main main" (line 15)
+- Rename duplicate "PR Body Template" to "Adding PR to Milestone" (line 160)
+- Add missing closing parenthesis (line 321)
+- Fix inconsistent path reference workspace/wip/ -> wip/ (line 321)
+- Change "* NOTE:" to "**Note:**" for consistent formatting (line 230)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: add missing PR_NUM definition in reply snippet
+
+Address Copilot feedback: PR_NUM variable was undefined in the
+"Reply to Review Comments" code snippet.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add OpenAPI validation report for annotation queues (#342)
+
+* 📚 docs: add OpenAPI validation report for annotation queues
+
+Validates research report #335 against LangSmith OpenAPI specification.
+
+Key findings:
+- Confirmed all 8 documented endpoints with correct HTTP methods
+- Confirmed add_runs body is JSON array (not object)
+- CORRECTION: GET /runs endpoint EXISTS for listing runs in queue
+- CORRECTION: List queues returns total_runs count
+- Discovered 13 additional endpoints not in Python SDK
+- Discovered 10+ additional schema fields
+
+Includes:
+- reference/research/334-openapi-validation.md - Full validation report
+- reference/api-specs/annotation-queue-endpoints.json - All 21 endpoints
+- reference/api-specs/annotation-queue-schemas.json - All 22 schemas
+
+Fixes #341
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address PR review comments
+
+- Fix path parameter name: run_id → queue_run_id (line 36)
+- Add proper context to Rust enum variant example (line 271)
+
+Note: Endpoint counts (21 endpoints, 13 additional) are correct.
+Copilot reviewer miscounted - JSON file has 21 entries, not 20.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add standard feature development process guide (#345)
+
+Fixes #343
+
+Adds comprehensive documentation for implementing new LangSmith/LangGraph API
+features as CLI commands, covering the 7-phase development process:
+- Phase 0: Epic setup with milestone and sub-issues
+- Phase 1: Research SDK precedent
+- Phase 2: OpenAPI validation
+- Phase 3: SDK types implementation
+- Phase 4: SDK client methods
+- Phase 5: CLI commands
+- Phase 6: Testing (unit + integration)
+- Phase 7: Documentation
+
+Also updates docs/dev/README.md to include link to the new guide.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add dataset API research report (#357)
+
+* 📚 docs: add dataset API research report
+
+Research findings on LangSmith SDK dataset management to inform
+langstar's Rust-based dataset CLI implementation.
+
+Key findings:
+- Comprehensive API for dataset CRUD and example management
+- Point-in-time versioning with timestamp-based snapshots
+- Native JSONL/CSV export endpoints
+- Bulk operations supported for examples
+- Pagination via offset/limit
+
+Fixes #348
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: address PR review feedback on dataset research
+
+- Add serde attributes (#[derive], #[serde(rename_all)]) to DataType enum
+- Define DatasetTransformation type with documentation
+- Add serde attributes to all structs with skip_serializing_if for optional fields
+- Add std::collections::HashMap import to Example schema
+- Define StringOrVec enum with #[serde(untagged)] for split field flexibility
+- Fix snake_case to camelCase in implementation recommendations
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: add data sources and jq citations to research report
+
+- Add Data Sources section referencing local OpenAPI spec file
+- Add Citation (jq query) column to all API endpoint tables
+- Queries verify against reference/api-specs/langsmith-openapi.json
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: address PR review feedback - add API catalog and code fixes
+
+New files:
+- reference/LANGSMITH_APIS.md: Catalog of all LangSmith/LangGraph OpenAPI specs
+
+Code fixes in research document:
+- Add prominent TODO/WARNING to DatasetTransformation placeholder
+- Add serde attributes to DatasetVersion, DatasetDiffInfo, DatasetShareSchema, AttachmentInfo
+- Define AttachmentData enum with Bytes/File variants
+- Fix Stream return type to include error type: Result<Example, DatasetError>
+- Change update_example return type from Result<()> to Result<Example>
+- Add bulk methods: update_examples, delete_examples
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: reorganize LangSmith API documentation structure
+
+Restructure API specification documentation for clarity:
+- Move LANGSMITH_APIS.md → api-specs/LANGSMITH_APIS_DETAILS.md (expanded)
+- Create api-specs/LANGSMITH_API_OVERVIEW.md (quick reference table)
+- Simplify AGENTS.md to reference new overview document
+
+The new structure provides:
+1. Quick reference: LANGSMITH_API_OVERVIEW.md for fast lookup of base URLs
+2. Detailed catalog: LANGSMITH_APIS_DETAILS.md for comprehensive info
+3. Cleaner project overview: AGENTS.md now concise with pointer to API docs
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor: reorganize OpenAPI specs with canonical/fragment separation
+
+Implement the "canonical source + derived fragments" pattern inspired by
+setup-remote-repo-notes-dir skill:
+
+## New Structure
+
+```
+reference/
+├── openapi/langchain/           # Canonical full specs (source of truth)
+│   ├── langsmith/
+│   │   ├── openapi.json         # Full spec (635K)
+│   │   └── MANIFEST.md          # Provenance metadata
+│   └── control-plane/
+│       ├── openapi.json         # Full spec (70K)
+│       └── MANIFEST.md          # Provenance metadata
+│
+└── api-specs/                   # Extracted fragments + docs (AI-friendly)
+    ├── README.md                # Index and usage guide
+    ├── LANGSMITH_API_OVERVIEW.md
+    ├── LANGSMITH_APIS_DETAILS.md
+    ├── langsmith/
+    │   ├── FRAGMENTS.md         # jq extraction queries
+    │   ├── annotation-queue-*.json
+    │   ├── run-schema.json
+    │   └── runs-query-*.json
+    └── control-plane/
+        └── FRAGMENTS.md
+```
+
+## Benefits
+
+- Clear separation: canonical specs vs derived fragments
+- Reproducible: jq queries documented in FRAGMENTS.md
+- Traceable: MANIFEST.md tracks provenance
+- AI-friendly: small fragments for context grounding
+- Consistent with setup-remote-repo-notes-dir pattern
+
+## Updated References
+
+- sdk/src/runs.rs - doc comments
+- docs/implementation/298-ls-runs-query-implementation-plan.md
+- docs/research/346-dataset-api-research.md
+- reference/api-specs/LANGSMITH_APIS_DETAILS.md
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: add OpenAPI spec management pattern to feature dev process
+
+Update feature-development-process.md Phase 3 with:
+- Canonical source + derived fragments pattern structure
+- MANIFEST.md for spec provenance tracking
+- FRAGMENTS.md for reproducible jq extractions
+- Updated file paths reflecting new reference/ structure
+- Updated Documentation Consistency checklist
+
+This pattern is inspired by setup-remote-repo-notes-dir and provides:
+- Clear separation of canonical specs vs AI-friendly fragments
+- Reproducible extraction via documented jq queries
+- Provenance tracking for when/how specs were fetched
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* fix: Update sdk/src/runs.rs
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs(dataset): add design decisions for #349 (#359)
+
+* 📚 docs(dataset): add design decisions section for #349
+
+Add Phase 2 Design Decisions to the dataset API research report:
+
+- DX Consistency: CLI command structure, flag naming conventions,
+  table display format aligned with existing runs.rs patterns
+- Configuration: Reuse existing env vars, no new config needed,
+  follows established precedence rules
+- Business Purpose: UI workflow mapping, key user scenarios for
+  evaluation, export, and CI/CD integration
+- SDK Type Patterns: Serde configuration, request/response separation
+- Error Handling: User-friendly messages with guidance
+- Pagination Strategy: Stream-based pagination matching runs pattern
+
+Fixes #349
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address PR review comments
+
+- Remove unnecessary pipe escaping in markdown tables
+- Improve table column headers for CLI/UI comparison clarity
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* docs: Revise dataset command descriptions and purpose
+
+Updated command descriptions and added business purpose section for datasets.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(dataset): validate design against OpenAPI spec for #350 (#362)
+
+Validates dataset research findings from #348/#349 against live LangSmith
+OpenAPI specification. Key findings:
+
+- Confirmed all CRUD endpoints and DataType enum values
+- Discovered schema field corrections needed (inputs_schema → inputs_schema_definition)
+- Found new endpoints (validation, semantic search, splits management)
+- Extracted dataset/example schema fragments for AI context grounding
+
+Fixes #350
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add LangSmith reference repos to notes setup (#363)
+
+Fixes #361
+
+## Summary
+
+Added two LangSmith reference repositories to our notes setup:
+- langsmith-cookbook: Usage patterns and real-world examples
+- langsmith-mcp-server: Production reference implementation
+
+## Structure
+
+**Worktree-aware setup:**
+- Code (shared): /workspace/reference/repo/langchain-ai/*/code/
+- Notes (local): reference/repo/langchain-ai/*/notes/
+
+## Documentation Added
+
+1. **00-milestone-overview.md** - Maps milestones to relevant resources
+   - ls-runs-query (Milestone 3)
+   - ls-annotation-queues (Milestone 4)
+   - ls-datasets (Milestone 5)
+
+2. **langsmith-cookbook/notes/README.md** - Usage patterns guide
+   - How to use cookbook examples for SDK development
+   - Key examples by milestone
+   - Common workflow patterns
+
+3. **langsmith-mcp-server/notes/README.md** - Implementation reference
+   - How to translate Python patterns to Rust
+   - Architecture patterns to adopt
+   - Key files by milestone
+
+## Benefits
+
+- Beginner-friendly cross-references for each milestone
+- Clear separation: cookbook = "how to use", MCP = "how to implement"
+- Shared code clones save disk space across worktrees
+- Notes local to worktree can be committed with branch work
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(queue): add annotation queue documentation (#364)
+
+* 📚 docs(queue): add annotation queue documentation
+
+Fixes #340
+
+- Add docs/queues.md with comprehensive queue command documentation
+- Include quickstart guide, command reference, and CI/CD examples
+- Add GitHub Actions example for automated error triage
+- Include Rust SDK usage examples
+- Update README.md with annotation queue section and examples
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(queue): add rubrics documentation section
+
+- Add dedicated Rubrics section explaining --rubric flag usage
+- Include rubric best practices
+- Document structured rubric items (SDK-only feature)
+- Clarify CLI vs SDK rubric capabilities
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(evals): research langsmith-sdk evaluation patterns (#376)
+
+Document Python SDK evaluation implementation including:
+- Heuristic evaluators (exact_match, regex_match, string_distance)
+- LLM-as-judge evaluators (LLMEvaluator, CategoricalScoreConfig, ContinuousScoreConfig)
+- FeedbackConfig types (continuous, categorical, freeform)
+- Key method signatures (create_feedback, evaluate)
+- Design patterns and recommendations for Rust SDK implementation
+
+Fixes #367
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(research): validate evals design against OpenAPI spec (#378)
+
+* 📚 docs(research): validate evals design against OpenAPI spec
+
+- Discovered LangSmith uses "Feedback" terminology for evaluations
+- Extracted 11 feedback/evaluation endpoints to evals-endpoints.json
+- Extracted 36 related schemas to evals-schemas.json
+- Created comprehensive validation report with findings
+
+Key Discoveries:
+- Two evaluator types: Structured (LLM-as-judge) and Code (heuristic)
+- Three feedback types: continuous, categorical, freeform
+- Four feedback sources: app, api, model, auto_eval
+- Feedback formulas enable composite metrics
+- Updated FRAGMENTS.md catalog with extraction commands
+
+Fixes #369
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): correct FeedbackFormula schema documentation
+
+Copilot review identified several schema errors in the validation report:
+
+- FeedbackFormula uses feedback_key/aggregation_type/formula_parts (not name/expression/variables)
+- aggregation_type is enum ["sum", "avg"] not arbitrary expression string
+- FeedbackFormulaWeightedVariable uses part_type/key/weight (all required)
+- Formula example updated to show actual JSON structure
+- Removed incorrect claim about normalization capabilities
+- Fixed Rust type definitions to match actual schema
+- Fixed update_feedback_config method signature (no config_id parameter)
+- Fixed CLI command design to use feedback_key/aggregation_type/parts
+
+Co-Authored-By: Copilot <noreply@github.com>
+
+* 📚 docs(evals): add online vs offline evaluation section
+
+- Clarify distinction between client-side (offline) and server-side (online) evaluation
+- Document CodeEvaluatorTopLevel for custom code evaluators
+- Document EvaluatorStructuredOutput for LLM-as-judge
+- Explain automation rules and the auto_eval feedback source
+- Update #367 status to merged
+- Add implications for Langstar implementation
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(evals): link new online evaluation research issue #381
+
+- Add #381 to next steps as blocking #370 (SDK types)
+- Update related issues section
+- #381 created as follow-up for deep-dive on code evaluators and automation rules
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <noreply@github.com>
+- 📚 docs(evals): deep-dive online evaluation research (#382)
+
+Adds comprehensive Section 7 on Online Evaluation (Server-Side Evaluators):
+- Documents automation rules (RunRules) API endpoints and schemas
+- Details code evaluator execution environment (Python/JavaScript)
+- Provides example code evaluators (exact_match, contains, json_valid, regex)
+- Documents structured evaluator (LLM-as-judge) configuration
+- Explains variable mapping for template variables
+- Provides online vs offline evaluation decision matrix
+- Suggests Rust types and CLI patterns for Langstar implementation
+
+Research conducted for Issue #381.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(evals): design DX consistency and configuration integration (#383)
+
+* 📚 docs(evals): design DX consistency and configuration integration
+
+Fixes #368
+
+Adds Section 8 to the evals precedent research report covering:
+- DX consistency analysis with existing langstar commands (runs, datasets)
+- Evaluator configuration patterns for heuristic and LLM-as-judge evaluators
+- CLI flag conventions following existing patterns (kebab-case, ValueEnum)
+- Output format specifications for single run, LLM judge, and batch results
+- Configuration integration with langstar.toml presets
+- Error handling and user feedback patterns
+
+Key design decisions:
+- Use `--evaluator <TYPE>` pattern consistent with `--run-type`
+- LLM judge config via `--judge-model`, `--judge-provider`
+- Rubric input via `--rubric` (inline) or `--rubric-file`
+- Output formats: table (default), json, jsonl
+- Reuse runs query filter syntax for batch operations
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(evals): fix run ID pattern consistency
+
+Use positional <id> for single-run examples to match the design
+in section 8.3.1 (`langstar eval run <RUN_ID>`). The `--run-id`
+flag form is reserved for multi-run scenarios per section 8.3.2.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(evals): remove trailing whitespace in regex_match example
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(datasets): add comprehensive dataset feature documentation (#390)
+
+* 📚 docs(datasets): add comprehensive dataset feature documentation
+
+- Created docs/datasets.md with complete CLI reference
+- Added dataset types (kv, llm, chat) documentation
+- Documented all 8 CLI commands with examples
+- Added JSONL/CSV format specifications
+- Included common workflows (backup, restore, migration)
+- Added SDK API reference for Rust integration
+- Included best practices for security and performance
+- Updated README.md with dataset management section
+
+Fixes #355
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address review feedback on dataset documentation
+
+- Replaced "comprehensive" with "complete" per style guide
+- Fixed CSV auto-mapping example to correctly show all columns map to inputs
+- Clarified --format parameter is optional (inferred from extension)
+- Removed redundant CSV format example with explicit format on standard extension
+- Added use case context to create command examples
+
+Addresses review comments from PR #390
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🎨 style(docs): use Rust field initialization shorthand
+
+- Changed `dataset_id: dataset_id` to `dataset_id` for idiomatic Rust
+- Applies to ExampleCreate struct initialization in code examples
+
+Addresses Copilot review comments
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🧪 Testing
+
+- 🧪 test(datasets): add comprehensive tests for dataset operations (#386)
+
+* 🧪 test(datasets): add comprehensive tests for dataset operations
+
+Add tests for dataset CRUD operations and CLI commands:
+
+**CLI Tests (cli/tests/dataset_command_test.rs)**:
+- Help text tests for all 8 dataset subcommands
+- Argument validation tests (required args, invalid UUIDs)
+- Valid argument combination tests
+- Error handling tests (missing API key, invalid formats)
+- Import/export format detection tests
+- Integration tests (feature-gated, 2 ignored due to known bugs)
+
+**SDK Tests (sdk/tests/dataset_test.rs)**:
+- Mocked HTTP tests for dataset CRUD (create, list, get, update, delete)
+- Mocked HTTP tests for example CRUD (create, list, get, update, delete)
+- Bulk create examples test
+- Error handling tests (401, 404, 500 responses)
+- Live API integration tests (ignored by default)
+
+**Test Results**:
+- 33 CLI tests pass + 2 ignored (integration with known CLI bugs)
+- 18 SDK tests pass + 2 ignored (live API tests)
+- Existing 12 serialization tests in datasets.rs continue to pass
+
+**Bugs Discovered**:
+- CLI: `dataset export --format` conflicts with global `-f, --format` flag
+- CLI: `dataset update` fails to decode response body
+
+These bugs are documented with #[ignore] annotations for future fixes.
+
+Closes #354
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🧪 test(datasets): reference issue #387 in ignored integration tests
+
+Update ignore annotations to reference the follow-up issue tracking
+the CLI bugs discovered during testing:
+- Bug 1: export --format conflicts with global output format flag
+- Bug 2: update command fails to decode response body
+
+TODO(#387): Un-ignore these tests when the bugs are fixed.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🎨 style(tests): fix clippy redundant to_string in format args
+
+Remove unnecessary .to_string() calls inside format! macros
+where the slice &str already implements Display.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🔧 Build System
+
+- 🔧 build(ci): skip test workflows when only docs/non-code files are modified (#384)
+
+* 🔧 build(ci): skip test workflows when only docs/non-code files are modified
+
+Add paths-ignore filters to CI workflow to prevent running full test suite
+when only documentation or non-code files are modified. This reduces
+CI resource usage and speeds up feedback for docs-only changes.
+
+Files ignored:
+- Markdown files (**/*.md, .github/**/*.md)
+- Documentation directory (docs/**)
+- Text files (*.txt)
+- .gitignore
+
+Fixes #379
+
+* 🔧 build(ci): address Copilot review feedback
+
+- Remove redundant .github/**/*.md pattern (already covered by **/*.md)
+- Clarify *.txt comment (only matches root directory text files)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.8.0] - 2025-11-27
 
 ### ✨ Features
