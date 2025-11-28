@@ -24,6 +24,17 @@ fn make_dataset_json(id: &str, name: &str, example_count: i64) -> serde_json::Va
     })
 }
 
+/// Helper function to make a minimal Dataset update response (DatasetSchemaForUpdate)
+/// This matches what the PATCH endpoint actually returns - no example_count, session_count, or modified_at
+fn make_dataset_update_json(id: &str, name: &str) -> serde_json::Value {
+    json!({
+        "id": id,
+        "name": name,
+        "tenant_id": "87654321-4321-4321-4321-210987654321",
+        "data_type": "kv"
+    })
+}
+
 /// Helper function to make a minimal valid Example JSON response
 fn make_example_json(id: &str, dataset_id: &str) -> serde_json::Value {
     json!({
@@ -91,7 +102,7 @@ async fn test_create_dataset() {
         .expect("create_dataset failed");
 
     assert_eq!(dataset.name, "Test Dataset");
-    assert_eq!(dataset.example_count, 0);
+    assert_eq!(dataset.example_count, Some(0));
     assert_eq!(dataset.data_type, Some(DataType::Kv));
 
     mock.assert_async().await;
@@ -170,7 +181,7 @@ async fn test_list_datasets() {
 
     assert_eq!(datasets.len(), 3);
     assert_eq!(datasets[0].name, "Dataset 1");
-    assert_eq!(datasets[0].example_count, 10);
+    assert_eq!(datasets[0].example_count, Some(10));
     assert_eq!(datasets[1].name, "Dataset 2");
     assert_eq!(datasets[2].name, "Dataset 3");
 
@@ -266,7 +277,7 @@ async fn test_get_dataset() {
     let dataset = client.get_dataset(uuid).await.expect("get_dataset failed");
 
     assert_eq!(dataset.name, "My Dataset");
-    assert_eq!(dataset.example_count, 42);
+    assert_eq!(dataset.example_count, Some(42));
     assert_eq!(dataset.id.to_string(), dataset_id);
 
     mock.assert_async().await;
@@ -302,7 +313,8 @@ async fn test_update_dataset() {
     let mut server = Server::new_async().await;
 
     let dataset_id = "12345678-1234-1234-1234-123456789012";
-    let mut response = make_dataset_json(dataset_id, "Updated Dataset", 10);
+    // PATCH responses return DatasetSchemaForUpdate, not full Dataset
+    let mut response = make_dataset_update_json(dataset_id, "Updated Dataset");
     response["description"] = json!("New description");
 
     let mock = server
@@ -702,7 +714,11 @@ async fn test_list_datasets_live_api() {
         Ok(datasets) => {
             println!("Found {} datasets", datasets.len());
             for ds in datasets.iter().take(3) {
-                println!("  - {} ({} examples)", ds.name, ds.example_count);
+                println!(
+                    "  - {} ({} examples)",
+                    ds.name,
+                    ds.example_count.unwrap_or(0)
+                );
             }
         }
         Err(e) => {
