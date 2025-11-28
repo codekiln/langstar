@@ -685,10 +685,7 @@ mod integration {
         }
 
         // 1. Create dataset
-        let unique_name = format!(
-            "test-dataset-{}",
-            Uuid::new_v4().to_string()[..8].to_string()
-        );
+        let unique_name = format!("test-dataset-{}", &Uuid::new_v4().to_string()[..8]);
         let mut cmd = langstar_cmd();
         cmd.args([
             "dataset",
@@ -768,10 +765,7 @@ mod integration {
         }
 
         let temp_dir = TempDir::new().unwrap();
-        let unique_name = format!(
-            "roundtrip-test-{}",
-            Uuid::new_v4().to_string()[..8].to_string()
-        );
+        let unique_name = format!("roundtrip-test-{}", &Uuid::new_v4().to_string()[..8]);
 
         // 1. Create dataset
         let mut cmd = langstar_cmd();

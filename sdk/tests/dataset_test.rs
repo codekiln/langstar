@@ -721,10 +721,7 @@ async fn test_dataset_crud_live_api() {
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
     // 1. Create dataset
-    let unique_name = format!(
-        "test-dataset-{}",
-        Uuid::new_v4().to_string()[..8].to_string()
-    );
+    let unique_name = format!("test-dataset-{}", &Uuid::new_v4().to_string()[..8]);
     let request = DatasetCreate {
         name: unique_name.clone(),
         description: Some("Integration test dataset".to_string()),
