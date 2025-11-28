@@ -580,7 +580,7 @@ use serde_json::json;
 
 // Create single example
 let example = ExampleCreate {
-    dataset_id: dataset_id,
+    dataset_id,
     inputs: Some(json!({"question": "What is 2+2?"})),
     outputs: Some(json!({"answer": "4"})),
     ..Default::default()
@@ -590,7 +590,7 @@ let created = client.create_example(example).await?;
 // Bulk create examples
 let examples = vec![
     ExampleCreate {
-        dataset_id: dataset_id,
+        dataset_id,
         inputs: Some(json!({"question": "Q1"})),
         outputs: Some(json!({"answer": "A1"})),
         ..Default::default()
