@@ -120,12 +120,12 @@ pub struct Dataset {
     pub tenant_id: Uuid,
 
     /// Number of examples in the dataset (not present in PATCH responses)
-    #[serde(default)]
-    pub example_count: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub example_count: Option<i64>,
 
     /// Number of sessions (projects) linked to this dataset (not present in PATCH responses)
-    #[serde(default)]
-    pub session_count: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_count: Option<i64>,
 
     /// When the dataset was last modified (not present in PATCH responses)
     #[serde(skip_serializing_if = "Option::is_none")]

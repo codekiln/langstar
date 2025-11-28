@@ -219,7 +219,7 @@ impl From<&Dataset> for DatasetRow {
                 .data_type
                 .map(|dt| format!("{:?}", dt).to_lowercase())
                 .unwrap_or_else(|| "kv".to_string()),
-            example_count: dataset.example_count,
+            example_count: dataset.example_count.unwrap_or(0),
             description,
             modified: dataset
                 .modified_at
@@ -433,8 +433,8 @@ impl DatasetCommands {
             if let Some(desc) = &dataset.description {
                 println!("  Description: {}", desc);
             }
-            println!("  Examples: {}", dataset.example_count);
-            println!("  Sessions: {}", dataset.session_count);
+            println!("  Examples: {}", dataset.example_count.unwrap_or(0));
+            println!("  Sessions: {}", dataset.session_count.unwrap_or(0));
             if let Some(created) = dataset.created_at {
                 println!("  Created: {}", created.format("%Y-%m-%dT%H:%M:%SZ"));
             }
