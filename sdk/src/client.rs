@@ -1512,6 +1512,233 @@ impl LangchainClient {
             .json(&examples);
         self.execute(request_builder).await
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Feedback (Evaluation) Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Create feedback for a run (evaluation result).
+    ///
+    /// Feedback represents evaluation results, either from heuristic evaluators
+    /// or LLM-as-judge evaluators. This is the primary way to record evaluation
+    /// scores and assessments in LangSmith.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Feedback creation parameters including the run_id, key (metric name),
+    ///   score (numeric), value (categorical), and optional configuration
+    ///
+    /// # Returns
+    ///
+    /// The created `Feedback` with full details including server-assigned ID.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, FeedbackCreate, FeedbackConfig, FeedbackType};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let run_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let request = FeedbackCreate {
+    ///     key: "accuracy".to_string(),
+    ///     run_id: Some(run_id),
+    ///     score: Some(0.95),
+    ///     comment: Some("Output matches expected result".to_string()),
+    ///     feedback_config: Some(FeedbackConfig {
+    ///         feedback_type: FeedbackType::Continuous,
+    ///         min: Some(0.0),
+    ///         max: Some(1.0),
+    ///         categories: None,
+    ///     }),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let feedback = client.create_feedback(request).await?;
+    /// println!("Created feedback: {} = {}", feedback.key, feedback.score.unwrap());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/feedback`
+    /// - Feedback types: `continuous` (numeric score), `categorical` (enum value), `freeform` (text)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_feedback(
+        &self,
+        request: crate::evaluations::FeedbackCreate,
+    ) -> Result<crate::evaluations::Feedback> {
+        let request_builder = self.langsmith_post("/api/v1/feedback")?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// List feedback entries with optional filtering.
+    ///
+    /// # Arguments
+    ///
+    /// * `run_id` - Optional run ID to filter feedback for a specific run
+    ///
+    /// # Returns
+    ///
+    /// A vector of `Feedback` entries matching the query.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// // List all feedback for a specific run
+    /// let run_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let feedback_list = client.list_feedback(Some(run_id)).await?;
+    /// println!("Found {} feedback entries", feedback_list.len());
+    ///
+    /// // List all feedback (no filter)
+    /// let all_feedback = client.list_feedback(None).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/feedback`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_feedback(
+        &self,
+        run_id: Option<uuid::Uuid>,
+    ) -> Result<Vec<crate::evaluations::Feedback>> {
+        let mut request = self.langsmith_get("/api/v1/feedback")?;
+
+        if let Some(id) = run_id {
+            request = request.query(&[("run", id.to_string())]);
+        }
+
+        self.execute(request).await
+    }
+
+    /// Get a specific feedback entry by ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `feedback_id` - The UUID of the feedback entry
+    ///
+    /// # Returns
+    ///
+    /// The `Feedback` with full details.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let feedback_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let feedback = client.get_feedback(feedback_id).await?;
+    /// println!("Feedback: {} = {:?}", feedback.key, feedback.score);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/feedback/{feedback_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn get_feedback(
+        &self,
+        feedback_id: uuid::Uuid,
+    ) -> Result<crate::evaluations::Feedback> {
+        let path = format!("/api/v1/feedback/{}", feedback_id);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Update an existing feedback entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `feedback_id` - The UUID of the feedback to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Returns
+    ///
+    /// The updated `Feedback`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, FeedbackUpdate};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let feedback_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let request = FeedbackUpdate {
+    ///     score: Some(0.98),
+    ///     comment: Some("Revised: excellent match".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let feedback = client.update_feedback(feedback_id, request).await?;
+    /// println!("Updated feedback score: {:?}", feedback.score);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/feedback/{feedback_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn update_feedback(
+        &self,
+        feedback_id: uuid::Uuid,
+        request: crate::evaluations::FeedbackUpdate,
+    ) -> Result<crate::evaluations::Feedback> {
+        let path = format!("/api/v1/feedback/{}", feedback_id);
+        let request_builder = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Delete a feedback entry.
+    ///
+    /// # Arguments
+    ///
+    /// * `feedback_id` - The UUID of the feedback to delete
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let feedback_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// client.delete_feedback(feedback_id).await?;
+    /// println!("Feedback deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/feedback/{feedback_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_feedback(&self, feedback_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/feedback/{}", feedback_id);
+        let request = self.langsmith_delete(&path)?;
+        self.execute_status_only_request(request).await
+    }
 }
 
 /// Generic response wrapper for paginated API responses
