@@ -208,14 +208,19 @@ Four types of feedback sources (discriminated union):
 
 ### 2.5 Feedback Formulas
 
-**FeedbackFormula** - Composite metrics from multiple feedbacks:
+**FeedbackFormula** - Composite metrics using weighted aggregation:
 ```json
 {
-  "required": ["name", "expression"],
+  "required": ["feedback_key", "aggregation_type", "formula_parts", "id", "created_at", "modified_at"],
   "properties": {
-    "name": {"type": "string"},
-    "expression": {"type": "string"},
-    "variables": {"type": "array", "items": "FeedbackFormulaWeightedVariable"}
+    "id": {"type": "string", "format": "uuid"},
+    "dataset_id": {"type": "string", "format": "uuid", "nullable": true},
+    "session_id": {"type": "string", "format": "uuid", "nullable": true},
+    "feedback_key": {"type": "string"},
+    "aggregation_type": {"type": "string", "enum": ["sum", "avg"]},
+    "formula_parts": {"type": "array", "items": "FeedbackFormulaWeightedVariable", "minItems": 1, "maxItems": 50},
+    "created_at": {"type": "string", "format": "date-time"},
+    "modified_at": {"type": "string", "format": "date-time"}
   }
 }
 ```
@@ -223,19 +228,27 @@ Four types of feedback sources (discriminated union):
 **FeedbackFormulaWeightedVariable**:
 ```json
 {
-  "required": ["name", "feedback_key"],
+  "required": ["part_type", "key", "weight"],
   "properties": {
-    "name": {"type": "string"},
-    "feedback_key": {"type": "string"},
-    "weight": {"type": "number", "default": 1.0}
+    "part_type": {"type": "string", "const": "weighted_key"},
+    "key": {"type": "string", "minLength": 1},
+    "weight": {"type": "number"}
   }
 }
 ```
 
 **Example Use Case:**
-Combine "correctness", "helpfulness", and "toxicity" scores into an overall quality metric:
-```
-quality = (0.5 * correctness) + (0.3 * helpfulness) - (0.2 * toxicity)
+Combine "correctness", "helpfulness", and "toxicity" scores using weighted sum:
+```json
+{
+  "feedback_key": "quality",
+  "aggregation_type": "sum",
+  "formula_parts": [
+    {"part_type": "weighted_key", "key": "correctness", "weight": 0.5},
+    {"part_type": "weighted_key", "key": "helpfulness", "weight": 0.3},
+    {"part_type": "weighted_key", "key": "toxicity", "weight": -0.2}
+  ]
+}
 ```
 
 ---
@@ -268,9 +281,9 @@ This allows both simple pass/fail (boolean) and nuanced Likert-scale (0-5) evalu
 ### 3.4 Feedback Formulas for Composite Metrics
 
 Formulas enable:
-- Weighted combinations of multiple evaluations
-- Normalization across different score ranges
-- Custom aggregate metrics
+- Weighted combinations of multiple evaluations (sum or average)
+- Simple aggregation types: "sum" (weighted sum) or "avg" (weighted average)
+- Each formula can combine 1-50 feedback keys with specific weights
 
 ### 3.5 Four Feedback Sources
 
@@ -427,16 +440,28 @@ pub enum EvaluatorLanguage {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FeedbackFormula {
-    pub name: String,
-    pub expression: String,
-    pub variables: Vec<FeedbackFormulaVariable>,
+    pub id: Uuid,
+    pub dataset_id: Option<Uuid>,
+    pub session_id: Option<Uuid>,
+    pub feedback_key: String,
+    pub aggregation_type: AggregationType,
+    pub formula_parts: Vec<FeedbackFormulaPart>,
+    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FeedbackFormulaVariable {
-    pub name: String,
-    pub feedback_key: String,
-    pub weight: Option<f64>,  // Default: 1.0
+#[serde(rename_all = "lowercase")]
+pub enum AggregationType {
+    Sum,
+    Avg,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FeedbackFormulaPart {
+    pub part_type: String,  // Always "weighted_key"
+    pub key: String,
+    pub weight: f64,
 }
 ```
 
@@ -460,7 +485,7 @@ impl LangSmithClient {
     // Feedback configs (evaluator definitions)
     pub async fn list_feedback_configs(&self, keys: Option<Vec<String>>) -> Result<Vec<FeedbackConfigSchema>>;
     pub async fn create_feedback_config(&self, config: CreateFeedbackConfig) -> Result<FeedbackConfigSchema>;
-    pub async fn update_feedback_config(&self, config_id: Uuid, update: UpdateFeedbackConfig) -> Result<FeedbackConfigSchema>;
+    pub async fn update_feedback_config(&self, update: UpdateFeedbackConfig) -> Result<FeedbackConfigSchema>;
 
     // Feedback formulas
     pub async fn list_feedback_formulas(&self) -> Result<Vec<FeedbackFormula>>;
@@ -576,17 +601,17 @@ pub enum FormulaCommand {
 
     /// Create formula
     Create {
-        /// Formula name
+        /// Feedback key for the formula result
         #[arg(long)]
-        name: String,
+        feedback_key: String,
 
-        /// Expression (e.g., "0.5*correctness + 0.5*helpfulness")
+        /// Aggregation type: sum or avg
         #[arg(long)]
-        expression: String,
+        aggregation_type: String,
 
-        /// Variables (format: name=feedback_key=weight)
+        /// Formula parts (format: key=weight, e.g., "correctness=0.5")
         #[arg(long)]
-        variables: Vec<String>,
+        parts: Vec<String>,
 
         #[arg(long)]
         json: bool,
