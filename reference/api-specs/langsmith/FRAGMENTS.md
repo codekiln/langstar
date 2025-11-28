@@ -22,6 +22,10 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | See below | 2025-11-26 |
 | `runs-query-request-schema.json` | 5.5K | Runs query request payload | See below | 2025-11-26 |
 | `runs-query-response-schema.json` | 1.1K | Runs query response format | See below | 2025-11-26 |
+| `dataset-endpoints.json` | 61K | Dataset API endpoints | See below | 2025-11-28 |
+| `dataset-schemas.json` | 43K | Dataset data types | See below | 2025-11-28 |
+| `example-endpoints.json` | 30K | Example API endpoints | See below | 2025-11-28 |
+| `example-schemas.json` | 29K | Example data types | See below | 2025-11-28 |
 
 ## Extraction Commands
 
@@ -51,6 +55,22 @@ jq '.components.schemas.RunQueryRequest // .components.schemas.FilterQueryReques
 # Runs query response schema
 jq '.components.schemas.RunQueryResponse // .components.schemas.FilterQueryResponse' \
   openapi.json > ../../api-specs/langsmith/runs-query-response-schema.json
+
+# Dataset endpoints (all /api/v1/datasets paths)
+jq '.paths | with_entries(select(.key | test("^/api/v1/datasets")))' \
+  openapi.json > ../../api-specs/langsmith/dataset-endpoints.json
+
+# Dataset schemas (all schemas containing "dataset" in name)
+jq '.components.schemas | with_entries(select(.key | test("[Dd]ataset"; "i")))' \
+  openapi.json > ../../api-specs/langsmith/dataset-schemas.json
+
+# Example endpoints (all /api/v1/examples paths)
+jq '.paths | with_entries(select(.key | test("^/api/v1/examples")))' \
+  openapi.json > ../../api-specs/langsmith/example-endpoints.json
+
+# Example schemas (all schemas containing "example" in name)
+jq '.components.schemas | with_entries(select(.key | test("[Ee]xample"; "i")))' \
+  openapi.json > ../../api-specs/langsmith/example-schemas.json
 ```
 
 ## Verification

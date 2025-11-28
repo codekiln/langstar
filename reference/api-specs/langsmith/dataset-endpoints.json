@@ -1,0 +1,2626 @@
+{
+  "/api/v1/datasets/{dataset_id}": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Dataset",
+      "description": "Get a specific dataset.",
+      "operationId": "read_dataset_api_v1_datasets__dataset_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Dataset"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Delete Dataset",
+      "description": "Delete a specific dataset.",
+      "operationId": "delete_dataset_api_v1_datasets__dataset_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Update Dataset",
+      "description": "Update a specific dataset.",
+      "operationId": "update_dataset_api_v1_datasets__dataset_id__patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DatasetUpdate"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Dataset updated successfully",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetSchemaForUpdate"
+              }
+            }
+          },
+          "headers": {
+            "X-Updated-Examples-Count": {
+              "description": "Number of examples updated",
+              "schema": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Datasets",
+      "description": "Get all datasets by query params and owner.",
+      "operationId": "read_datasets_api_v1_datasets_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          }
+        },
+        {
+          "name": "data_type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DataType"
+                }
+              },
+              {
+                "$ref": "#/components/schemas/DataType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Type"
+          }
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        {
+          "name": "name_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Contains"
+          }
+        },
+        {
+          "name": "metadata",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "sort_by",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortByDatasetColumn",
+            "default": "last_session_start_time"
+          }
+        },
+        {
+          "name": "sort_by_desc",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": true,
+            "title": "Sort By Desc"
+          }
+        },
+        {
+          "name": "tag_value_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Value Id"
+          }
+        },
+        {
+          "name": "exclude_corrections_datasets",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Exclude Corrections Datasets"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Dataset"
+                },
+                "title": "Response Read Datasets Api V1 Datasets Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Create Dataset",
+      "description": "Create a new dataset.",
+      "operationId": "create_dataset_api_v1_datasets_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DatasetCreate"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Dataset"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/upload": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Upload Csv Dataset",
+      "description": "Create a new dataset from a CSV file.",
+      "operationId": "upload_csv_dataset_api_v1_datasets_upload_post",
+      "requestBody": {
+        "content": {
+          "multipart/form-data": {
+            "schema": {
+              "$ref": "#/components/schemas/Body_upload_csv_dataset_api_v1_datasets_upload_post"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Dataset"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/upload-experiment": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Upload Experiment",
+      "description": "Upload an experiment that has already been run.",
+      "operationId": "upload_experiment_api_v1_datasets_upload_experiment_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ExperimentResultsUpload"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentResultsUploadResult"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/versions": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Get Dataset Versions",
+      "description": "Get dataset versions.",
+      "operationId": "get_dataset_versions_api_v1_datasets__dataset_id__versions_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "search",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search"
+          }
+        },
+        {
+          "name": "example",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DatasetVersion"
+                },
+                "title": "Response Get Dataset Versions Api V1 Datasets  Dataset Id  Versions Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/versions/diff": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Diff Dataset Versions",
+      "description": "Get diff between two dataset versions.",
+      "operationId": "diff_dataset_versions_api_v1_datasets__dataset_id__versions_diff_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "from_version",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "From Version"
+          }
+        },
+        {
+          "name": "to_version",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "To Version"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetDiffInfo"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/version": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Get Dataset Version",
+      "description": "Get dataset version by as_of or exact tag.",
+      "operationId": "get_dataset_version_api_v1_datasets__dataset_id__version_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          }
+        },
+        {
+          "name": "tag",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetVersion"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/tags": {
+    "put": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Update Dataset Version",
+      "description": "Set a tag on a dataset version.",
+      "operationId": "update_dataset_version_api_v1_datasets__dataset_id__tags_put",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PutDatasetVersionsSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetVersion"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/openai": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Download Dataset Openai",
+      "description": "Download a dataset as OpenAI Evals Jsonl format.",
+      "operationId": "download_dataset_openai_api_v1_datasets__dataset_id__openai_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/openai_ft": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Download Dataset Openai Ft",
+      "description": "Download a dataset as OpenAI Jsonl format.",
+      "operationId": "download_dataset_openai_ft_api_v1_datasets__dataset_id__openai_ft_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/csv": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Download Dataset Csv",
+      "description": "Download a dataset as CSV format.",
+      "operationId": "download_dataset_csv_api_v1_datasets__dataset_id__csv_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/jsonl": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Download Dataset Jsonl",
+      "description": "Download a dataset as CSV format.",
+      "operationId": "download_dataset_jsonl_api_v1_datasets__dataset_id__jsonl_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/runs": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Examples With Runs",
+      "description": "Fetch examples for a dataset, and fetch the runs for each example if they are associated with the given session_ids.",
+      "operationId": "read_examples_with_runs_api_v1_datasets__dataset_id__runs_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "format",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Response format, e.g., 'csv'",
+            "title": "Format"
+          },
+          "description": "Response format, e.g., 'csv'"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QueryExampleSchemaWithRuns"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExampleWithRuns"
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExampleWithRunsCH"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Response Read Examples With Runs Api V1 Datasets  Dataset Id  Runs Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/group/runs": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Examples With Runs Grouped",
+      "description": "Fetch examples for a dataset, and fetch the runs for each example if they are associated with the given session_ids.",
+      "operationId": "read_examples_with_runs_grouped_api_v1_datasets__dataset_id__group_runs_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QueryGroupedExamplesWithRuns"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupedExamplesWithRunsResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/runs/delta": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Delta",
+      "description": "Fetch the number of regressions/improvements for each example in a dataset, between sessions[0] and sessions[1].",
+      "operationId": "read_delta_api_v1_datasets__dataset_id__runs_delta_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/QueryFeedbackDelta"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionFeedbackDelta"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/experiments/grouped": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Grouped Experiments",
+      "description": "Stream grouped and aggregated experiments.",
+      "operationId": "read_grouped_experiments_api_v1_datasets__dataset_id__experiments_grouped_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/GroupedExperimentsRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/share": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Dataset Share State",
+      "description": "Get the state of sharing a dataset",
+      "operationId": "read_dataset_share_state_api_v1_datasets__dataset_id__share_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DatasetShareSchema"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Response Read Dataset Share State Api V1 Datasets  Dataset Id  Share Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "put": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Share Dataset",
+      "description": "Share a dataset.",
+      "operationId": "share_dataset_api_v1_datasets__dataset_id__share_put",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "share_projects",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Share Projects"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetShareSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Unshare Dataset",
+      "description": "Unshare a dataset.",
+      "operationId": "unshare_dataset_api_v1_datasets__dataset_id__share_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/comparative": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Read Comparative Experiments",
+      "description": "Get all comparative experiments for a given dataset.",
+      "operationId": "read_comparative_experiments_api_v1_datasets__dataset_id__comparative_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        {
+          "name": "name_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Contains"
+          }
+        },
+        {
+          "name": "id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "sort_by",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "$ref": "#/components/schemas/SortByComparativeExperimentColumn",
+            "default": "created_at"
+          }
+        },
+        {
+          "name": "sort_by_desc",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": true,
+            "title": "Sort By Desc"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ComparativeExperiment"
+                },
+                "title": "Response Read Comparative Experiments Api V1 Datasets  Dataset Id  Comparative Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/comparative": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Create Comparative Experiment",
+      "description": "Create a comparative experiment.",
+      "operationId": "create_comparative_experiment_api_v1_datasets_comparative_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ComparativeExperimentCreate"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComparativeExperimentBase"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/comparative/{comparative_experiment_id}": {
+    "delete": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Delete Comparative Experiment",
+      "description": "Delete a specific comparative experiment.",
+      "operationId": "delete_comparative_experiment_api_v1_datasets_comparative__comparative_experiment_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "comparative_experiment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Comparative Experiment Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/clone": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Clone Dataset",
+      "description": "Clone a dataset.",
+      "operationId": "clone_dataset_api_v1_datasets_clone_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Body_clone_dataset_api_v1_datasets_clone_post"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array",
+                "title": "Response Clone Dataset Api V1 Datasets Clone Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/splits": {
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Get Dataset Splits",
+      "operationId": "get_dataset_splits_api_v1_datasets__dataset_id__splits_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "as_of",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used.",
+            "default": "latest",
+            "title": "As Of"
+          },
+          "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "title": "Response Get Dataset Splits Api V1 Datasets  Dataset Id  Splits Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "put": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Update Dataset Splits",
+      "operationId": "update_dataset_splits_api_v1_datasets__dataset_id__splits_put",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Body_update_dataset_splits_api_v1_datasets__dataset_id__splits_put"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "title": "Response Update Dataset Splits Api V1 Datasets  Dataset Id  Splits Put"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/index": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Index",
+      "description": "Index a dataset.",
+      "operationId": "index_api_v1_datasets__dataset_id__index_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DatasetIndexRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Remove Index",
+      "description": "Remove an index for a dataset.",
+      "operationId": "remove_index_api_v1_datasets__dataset_id__index_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Get Index Info",
+      "description": "Get index info.",
+      "operationId": "get_index_info_api_v1_datasets__dataset_id__index_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DatasetIndexInfo"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/index/sync": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Sync Index",
+      "description": "Sync an index for a dataset.",
+      "operationId": "sync_index_api_v1_datasets__dataset_id__index_sync_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/search": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Search",
+      "description": "Search a dataset.",
+      "operationId": "search_api_v1_datasets__dataset_id__search_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SearchDatasetRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchDatasetResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/{dataset_id}/generate": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Generate",
+      "description": "Generate synthetic examples for a dataset.",
+      "operationId": "generate_api_v1_datasets__dataset_id__generate_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Dataset Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/GenerateSyntheticExamplesBody"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/datasets/playground_experiment/batch": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Dataset Handler",
+      "operationId": "dataset_handler_api_v1_datasets_playground_experiment_batch_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PlaygroundRunOverDatasetBatchRequestSchema"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Response Dataset Handler Api V1 Datasets Playground Experiment Batch Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/playground_experiment/stream": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Stream Dataset Handler",
+      "operationId": "stream_dataset_handler_api_v1_datasets_playground_experiment_stream_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PlaygroundRunOverDatasetRequestSchema"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/datasets/studio_experiment": {
+    "post": {
+      "tags": [
+        "datasets"
+      ],
+      "summary": "Studio Experiment",
+      "operationId": "studio_experiment_api_v1_datasets_studio_experiment_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StudioRunOverDatasetRequestSchema"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "Response Studio Experiment Api V1 Datasets Studio Experiment Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  }
+}

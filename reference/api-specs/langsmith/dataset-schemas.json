@@ -1,0 +1,2117 @@
+{
+  "Body_clone_dataset_api_v1_datasets_clone_post": {
+    "properties": {
+      "target_dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Target Dataset Id"
+      },
+      "source_dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Source Dataset Id"
+      },
+      "as_of": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "As Of"
+      },
+      "examples": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Examples",
+        "default": []
+      }
+    },
+    "type": "object",
+    "required": [
+      "target_dataset_id",
+      "source_dataset_id"
+    ],
+    "title": "Body_clone_dataset_api_v1_datasets_clone_post"
+  },
+  "Body_update_dataset_splits_api_v1_datasets__dataset_id__splits_put": {
+    "properties": {
+      "split_name": {
+        "type": "string",
+        "title": "Split Name"
+      },
+      "examples": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Examples"
+      },
+      "remove": {
+        "type": "boolean",
+        "title": "Remove",
+        "default": false
+      }
+    },
+    "type": "object",
+    "required": [
+      "split_name",
+      "examples"
+    ],
+    "title": "Body_update_dataset_splits_api_v1_datasets__dataset_id__splits_put"
+  },
+  "Body_upload_csv_dataset_api_v1_datasets_upload_post": {
+    "properties": {
+      "file": {
+        "type": "string",
+        "format": "binary",
+        "title": "File"
+      },
+      "input_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Input Keys"
+      },
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Name"
+      },
+      "data_type": {
+        "$ref": "#/components/schemas/DataType",
+        "default": "kv"
+      },
+      "output_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Output Keys",
+        "default": []
+      },
+      "metadata_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Metadata Keys",
+        "default": []
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition"
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition"
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations"
+      },
+      "input_key_mappings": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Input Key Mappings"
+      },
+      "output_key_mappings": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Output Key Mappings"
+      },
+      "metadata_key_mappings": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata Key Mappings"
+      }
+    },
+    "type": "object",
+    "required": [
+      "file",
+      "input_keys"
+    ],
+    "title": "Body_upload_csv_dataset_api_v1_datasets_upload_post"
+  },
+  "Body_upload_examples_from_csv_api_v1_examples_upload__dataset_id__post": {
+    "properties": {
+      "file": {
+        "type": "string",
+        "format": "binary",
+        "title": "File"
+      },
+      "input_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Input Keys"
+      },
+      "output_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Output Keys"
+      },
+      "metadata_keys": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Metadata Keys"
+      }
+    },
+    "type": "object",
+    "required": [
+      "file",
+      "input_keys"
+    ],
+    "title": "Body_upload_examples_from_csv_api_v1_examples_upload__dataset_id__post"
+  },
+  "Dataset": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition"
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition"
+      },
+      "externally_managed": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Externally Managed",
+        "default": false
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/DatasetTransformation"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations"
+      },
+      "data_type": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DataType"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": "kv"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "tenant_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Tenant Id"
+      },
+      "example_count": {
+        "type": "integer",
+        "title": "Example Count"
+      },
+      "session_count": {
+        "type": "integer",
+        "title": "Session Count"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      },
+      "last_session_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Session Start Time"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "id",
+      "tenant_id",
+      "example_count",
+      "session_count",
+      "modified_at"
+    ],
+    "title": "Dataset",
+    "description": "Dataset schema."
+  },
+  "DatasetCreate": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition"
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition"
+      },
+      "externally_managed": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Externally Managed",
+        "default": false
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/DatasetTransformation"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations"
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Id"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "data_type": {
+        "$ref": "#/components/schemas/DataType",
+        "default": "kv"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name"
+    ],
+    "title": "DatasetCreate",
+    "description": "Create class for Dataset."
+  },
+  "DatasetDiffInfo": {
+    "properties": {
+      "examples_modified": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Examples Modified"
+      },
+      "examples_added": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Examples Added"
+      },
+      "examples_removed": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Examples Removed"
+      }
+    },
+    "type": "object",
+    "required": [
+      "examples_modified",
+      "examples_added",
+      "examples_removed"
+    ],
+    "title": "DatasetDiffInfo",
+    "description": "Dataset diff schema."
+  },
+  "DatasetIndexInfo": {
+    "properties": {
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "tag": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tag",
+        "default": "latest"
+      },
+      "last_updated_version": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Updated Version"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id"
+    ],
+    "title": "DatasetIndexInfo",
+    "description": "Dataset schema for serving."
+  },
+  "DatasetIndexRequest": {
+    "properties": {
+      "tag": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tag",
+        "default": "latest"
+      }
+    },
+    "type": "object",
+    "title": "DatasetIndexRequest",
+    "description": "Dataset schema for serving."
+  },
+  "DatasetPublicSchema": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition"
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition"
+      },
+      "externally_managed": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Externally Managed",
+        "default": false
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/DatasetTransformation"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations"
+      },
+      "data_type": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DataType"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": "kv"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "example_count": {
+        "type": "integer",
+        "title": "Example Count"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "id",
+      "example_count"
+    ],
+    "title": "DatasetPublicSchema",
+    "description": "Public schema for datasets.\n\nDoesn't currently include session counts/stats\nsince public test project sharing is not yet shipped"
+  },
+  "DatasetSchemaForUpdate": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition"
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition"
+      },
+      "externally_managed": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Externally Managed",
+        "default": false
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/DatasetTransformation"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations"
+      },
+      "data_type": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/DataType"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": "kv"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "tenant_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Tenant Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "id",
+      "tenant_id"
+    ],
+    "title": "DatasetSchemaForUpdate"
+  },
+  "DatasetShareSchema": {
+    "properties": {
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "share_token": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Share Token"
+      }
+    },
+    "type": "object",
+    "required": [
+      "dataset_id",
+      "share_token"
+    ],
+    "title": "DatasetShareSchema"
+  },
+  "DatasetTransformation": {
+    "properties": {
+      "path": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Path"
+      },
+      "transformation_type": {
+        "$ref": "#/components/schemas/DatasetTransformationType"
+      }
+    },
+    "type": "object",
+    "required": [
+      "path",
+      "transformation_type"
+    ],
+    "title": "DatasetTransformation"
+  },
+  "DatasetTransformationType": {
+    "type": "string",
+    "enum": [
+      "convert_to_openai_message",
+      "convert_to_openai_tool",
+      "remove_system_messages",
+      "remove_extra_fields",
+      "extract_tools_from_run"
+    ],
+    "title": "DatasetTransformationType",
+    "description": "Enum for dataset transformation types.\nOrdering determines the order in which transformations are applied if there are multiple transformations on the same path."
+  },
+  "DatasetUpdate": {
+    "properties": {
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Name",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "inputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Schema Definition",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "outputs_schema_definition": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Schema Definition",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "patch_examples": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ExampleUpdate"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Patch Examples"
+      },
+      "transformations": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/DatasetTransformation"
+            },
+            "type": "array"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Transformations",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      }
+    },
+    "type": "object",
+    "title": "DatasetUpdate",
+    "description": "Update class for Dataset."
+  },
+  "DatasetVersion": {
+    "properties": {
+      "tags": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tags"
+      },
+      "as_of": {
+        "type": "string",
+        "format": "date-time",
+        "title": "As Of"
+      }
+    },
+    "type": "object",
+    "required": [
+      "as_of"
+    ],
+    "title": "DatasetVersion",
+    "description": "Dataset version schema."
+  },
+  "ListPublicDatasetRunsResponse": {
+    "properties": {
+      "runs": {
+        "items": {
+          "$ref": "#/components/schemas/RunPublicDatasetSchema"
+        },
+        "type": "array",
+        "title": "Runs"
+      },
+      "cursors": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "type": "object",
+        "title": "Cursors"
+      },
+      "parsed_query": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parsed Query"
+      }
+    },
+    "type": "object",
+    "required": [
+      "runs",
+      "cursors"
+    ],
+    "title": "ListPublicDatasetRunsResponse"
+  },
+  "PlaygroundRunOverDatasetBatchRequestSchema": {
+    "properties": {
+      "manifest": {
+        "title": "Manifest"
+      },
+      "secrets": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object",
+        "title": "Secrets"
+      },
+      "run_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      },
+      "repo_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Repo Id"
+      },
+      "tools": {
+        "anyOf": [
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tools"
+      },
+      "tool_choice": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tool Choice"
+      },
+      "parallel_tool_calls": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parallel Tool Calls"
+      },
+      "options": {
+        "$ref": "#/components/schemas/RunnableConfig"
+      },
+      "project_name": {
+        "type": "string",
+        "title": "Project Name"
+      },
+      "repo_handle": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Repo Handle"
+      },
+      "owner": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Owner"
+      },
+      "commit": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Commit"
+      },
+      "evaluator_rules": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Evaluator Rules"
+      },
+      "requests_per_second": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Requests Per Second"
+      },
+      "use_or_fallback_to_workspace_secrets": {
+        "type": "boolean",
+        "title": "Use Or Fallback To Workspace Secrets",
+        "default": false
+      },
+      "runner_context": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RunnerContextEnum"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": "langsmith_ui"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "dataset_splits": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Splits"
+      },
+      "repetitions": {
+        "type": "integer",
+        "maximum": 30,
+        "minimum": 1,
+        "title": "Repetitions",
+        "default": 1
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "batch_size": {
+        "anyOf": [
+          {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Batch Size"
+      }
+    },
+    "type": "object",
+    "required": [
+      "manifest",
+      "secrets",
+      "options",
+      "project_name",
+      "dataset_id"
+    ],
+    "title": "PlaygroundRunOverDatasetBatchRequestSchema"
+  },
+  "PlaygroundRunOverDatasetRequestSchema": {
+    "properties": {
+      "manifest": {
+        "title": "Manifest"
+      },
+      "secrets": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object",
+        "title": "Secrets"
+      },
+      "run_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      },
+      "repo_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Repo Id"
+      },
+      "tools": {
+        "anyOf": [
+          {
+            "items": {},
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tools"
+      },
+      "tool_choice": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tool Choice"
+      },
+      "parallel_tool_calls": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parallel Tool Calls"
+      },
+      "options": {
+        "$ref": "#/components/schemas/RunnableConfig"
+      },
+      "project_name": {
+        "type": "string",
+        "title": "Project Name"
+      },
+      "repo_handle": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Repo Handle"
+      },
+      "owner": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Owner"
+      },
+      "commit": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Commit"
+      },
+      "evaluator_rules": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Evaluator Rules"
+      },
+      "requests_per_second": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Requests Per Second"
+      },
+      "use_or_fallback_to_workspace_secrets": {
+        "type": "boolean",
+        "title": "Use Or Fallback To Workspace Secrets",
+        "default": false
+      },
+      "runner_context": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/RunnerContextEnum"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": "langsmith_ui"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "dataset_splits": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Splits"
+      },
+      "repetitions": {
+        "type": "integer",
+        "maximum": 30,
+        "minimum": 1,
+        "title": "Repetitions",
+        "default": 1
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "required": [
+      "manifest",
+      "secrets",
+      "options",
+      "project_name",
+      "dataset_id"
+    ],
+    "title": "PlaygroundRunOverDatasetRequestSchema"
+  },
+  "PutDatasetVersionsSchema": {
+    "properties": {
+      "as_of": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "As Of",
+        "description": "Only modifications made on or before this time are included. If None, the latest version of the dataset is used."
+      },
+      "tag": {
+        "type": "string",
+        "title": "Tag"
+      }
+    },
+    "type": "object",
+    "required": [
+      "as_of",
+      "tag"
+    ],
+    "title": "PutDatasetVersionsSchema"
+  },
+  "RunPublicDatasetSchema": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "inputs_preview": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs Preview"
+      },
+      "run_type": {
+        "$ref": "#/components/schemas/RunTypeEnum"
+      },
+      "start_time": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Start Time"
+      },
+      "end_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "End Time"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Error"
+      },
+      "execution_order": {
+        "type": "integer",
+        "minimum": 1,
+        "title": "Execution Order",
+        "default": 1
+      },
+      "serialized": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Serialized"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "outputs_preview": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs Preview"
+      },
+      "parent_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parent Run Id"
+      },
+      "manifest_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Manifest Id"
+      },
+      "manifest_s3_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Manifest S3 Id"
+      },
+      "events": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Events"
+      },
+      "tags": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Tags"
+      },
+      "inputs_s3_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs S3 Urls"
+      },
+      "outputs_s3_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs S3 Urls"
+      },
+      "s3_urls": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "S3 Urls"
+      },
+      "trace_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Trace Id"
+      },
+      "dotted_order": {
+        "type": "string",
+        "title": "Dotted Order"
+      },
+      "trace_min_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Trace Min Start Time"
+      },
+      "trace_max_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Trace Max Start Time"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "status": {
+        "type": "string",
+        "title": "Status"
+      },
+      "child_run_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Child Run Ids"
+      },
+      "direct_child_run_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Direct Child Run Ids"
+      },
+      "parent_run_ids": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parent Run Ids"
+      },
+      "feedback_stats": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Stats"
+      },
+      "reference_example_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Reference Example Id"
+      },
+      "total_tokens": {
+        "type": "integer",
+        "title": "Total Tokens",
+        "default": 0
+      },
+      "prompt_tokens": {
+        "type": "integer",
+        "title": "Prompt Tokens",
+        "default": 0
+      },
+      "completion_tokens": {
+        "type": "integer",
+        "title": "Completion Tokens",
+        "default": 0
+      },
+      "prompt_token_details": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Token Details"
+      },
+      "completion_token_details": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Token Details"
+      },
+      "total_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Total Cost"
+      },
+      "prompt_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Cost"
+      },
+      "completion_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Cost"
+      },
+      "prompt_cost_details": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Cost Details"
+      },
+      "completion_cost_details": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Cost Details"
+      },
+      "price_model_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Price Model Id"
+      },
+      "first_token_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "First Token Time"
+      },
+      "session_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Session Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "run_type",
+      "trace_id",
+      "dotted_order",
+      "id",
+      "status",
+      "session_id"
+    ],
+    "title": "RunPublicDatasetSchema",
+    "description": "Schema for a run in a publicly-shared dataset."
+  },
+  "SearchDatasetRequest": {
+    "properties": {
+      "inputs": {
+        "additionalProperties": true,
+        "type": "object",
+        "title": "Inputs"
+      },
+      "limit": {
+        "type": "integer",
+        "maximum": 100,
+        "minimum": 1,
+        "title": "Limit",
+        "default": 5
+      },
+      "debug": {
+        "type": "boolean",
+        "title": "Debug",
+        "default": false
+      },
+      "filter": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Filter"
+      }
+    },
+    "type": "object",
+    "required": [
+      "inputs"
+    ],
+    "title": "SearchDatasetRequest",
+    "description": "Dataset schema for serving."
+  },
+  "SearchDatasetResponse": {
+    "properties": {
+      "examples": {
+        "items": {
+          "$ref": "#/components/schemas/SearchedFewShotExample"
+        },
+        "type": "array",
+        "title": "Examples"
+      }
+    },
+    "type": "object",
+    "required": [
+      "examples"
+    ],
+    "title": "SearchDatasetResponse",
+    "description": "Dataset schema for serving."
+  },
+  "SortByDatasetColumn": {
+    "type": "string",
+    "enum": [
+      "name",
+      "created_at",
+      "last_session_start_time",
+      "example_count",
+      "session_count",
+      "modified_at"
+    ],
+    "title": "SortByDatasetColumn",
+    "description": "Enum for available dataset columns to sort by."
+  },
+  "StudioRunOverDatasetRequestSchema": {
+    "properties": {
+      "project_name": {
+        "type": "string",
+        "title": "Project Name"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "evaluator_rules": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Evaluator Rules"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "required": [
+      "project_name",
+      "dataset_id"
+    ],
+    "title": "StudioRunOverDatasetRequestSchema"
+  },
+  "TenantShareDatasetToken": {
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "dataset",
+        "title": "Type"
+      },
+      "share_token": {
+        "type": "string",
+        "title": "Share Token"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "dataset_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Dataset Id"
+      },
+      "dataset_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Name"
+      }
+    },
+    "type": "object",
+    "required": [
+      "type",
+      "share_token",
+      "created_at",
+      "dataset_id"
+    ],
+    "title": "TenantShareDatasetToken"
+  }
+}
