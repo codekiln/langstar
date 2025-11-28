@@ -8,17 +8,31 @@
 
 This document captures research findings on the LangSmith SDK dataset management capabilities to inform the design of langstar's Rust-based dataset CLI. The research covers API endpoints, SDK types, and implementation patterns from the official Python SDK.
 
+## Data Sources
+
+All API endpoint information in this document is sourced from the LangSmith OpenAPI specification:
+
+| Source | Location | Description |
+|--------|----------|-------------|
+| LangSmith OpenAPI Spec | `reference/api-specs/langsmith-openapi.json` | Local copy of the LangSmith API specification |
+| Remote URL | `https://api.smith.langchain.com/openapi.json` | Official LangSmith OpenAPI endpoint |
+
+**Verification**: All jq queries in this document can be run against the local OpenAPI spec file:
+```bash
+cd /workspace && jq '<query>' reference/api-specs/langsmith-openapi.json
+```
+
 ## 1. API Endpoints
 
 ### 1.1 Dataset CRUD Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/datasets` | List datasets with filtering |
-| POST | `/api/v1/datasets` | Create a new dataset |
-| GET | `/api/v1/datasets/{dataset_id}` | Get dataset by ID |
-| PATCH | `/api/v1/datasets/{dataset_id}` | Update dataset |
-| DELETE | `/api/v1/datasets/{dataset_id}` | Delete dataset |
+| Method | Endpoint | Description | Citation (jq query) |
+|--------|----------|-------------|---------------------|
+| GET | `/api/v1/datasets` | List datasets with filtering | `.paths["/api/v1/datasets"].get.summary` |
+| POST | `/api/v1/datasets` | Create a new dataset | `.paths["/api/v1/datasets"].post.summary` |
+| GET | `/api/v1/datasets/{dataset_id}` | Get dataset by ID | `.paths["/api/v1/datasets/{dataset_id}"].get.summary` |
+| PATCH | `/api/v1/datasets/{dataset_id}` | Update dataset | `.paths["/api/v1/datasets/{dataset_id}"].patch.summary` |
+| DELETE | `/api/v1/datasets/{dataset_id}` | Delete dataset | `.paths["/api/v1/datasets/{dataset_id}"].delete.summary` |
 
 #### List Datasets Query Parameters
 
@@ -37,17 +51,17 @@ This document captures research findings on the LangSmith SDK dataset management
 
 ### 1.2 Example CRUD Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/examples` | List examples with filtering |
-| POST | `/api/v1/examples` | Create single example |
-| POST | `/api/v1/examples/bulk` | Create multiple examples |
-| GET | `/api/v1/examples/{example_id}` | Get example by ID |
-| PATCH | `/api/v1/examples/{example_id}` | Update example |
-| DELETE | `/api/v1/examples/{example_id}` | Delete single example |
-| DELETE | `/api/v1/examples` | Bulk delete examples |
-| PATCH | `/api/v1/examples/bulk` | Bulk update examples |
-| GET | `/api/v1/examples/count` | Count examples |
+| Method | Endpoint | Description | Citation (jq query) |
+|--------|----------|-------------|---------------------|
+| GET | `/api/v1/examples` | List examples with filtering | `.paths["/api/v1/examples"].get.summary` |
+| POST | `/api/v1/examples` | Create single example | `.paths["/api/v1/examples"].post.summary` |
+| POST | `/api/v1/examples/bulk` | Create multiple examples | `.paths["/api/v1/examples/bulk"].post.summary` |
+| GET | `/api/v1/examples/{example_id}` | Get example by ID | `.paths["/api/v1/examples/{example_id}"].get.summary` |
+| PATCH | `/api/v1/examples/{example_id}` | Update example | `.paths["/api/v1/examples/{example_id}"].patch.summary` |
+| DELETE | `/api/v1/examples/{example_id}` | Delete single example | `.paths["/api/v1/examples/{example_id}"].delete.summary` |
+| DELETE | `/api/v1/examples` | Bulk delete examples | `.paths["/api/v1/examples"].delete.summary` |
+| PATCH | `/api/v1/examples/bulk` | Bulk update examples | `.paths["/api/v1/examples/bulk"].patch.summary` |
+| GET | `/api/v1/examples/count` | Count examples | `.paths["/api/v1/examples/count"].get.summary` |
 
 #### List Examples Query Parameters
 
@@ -69,30 +83,30 @@ This document captures research findings on the LangSmith SDK dataset management
 
 ### 1.3 Import/Export Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/datasets/upload` | Upload CSV to create dataset |
-| POST | `/api/v1/examples/upload/{dataset_id}` | Upload CSV to existing dataset |
-| GET | `/api/v1/datasets/{dataset_id}/csv` | Export as CSV |
-| GET | `/api/v1/datasets/{dataset_id}/jsonl` | Export as JSONL |
-| GET | `/api/v1/datasets/{dataset_id}/openai` | Export for OpenAI Evals |
-| GET | `/api/v1/datasets/{dataset_id}/openai_ft` | Export for OpenAI fine-tuning |
+| Method | Endpoint | Description | Citation (jq query) |
+|--------|----------|-------------|---------------------|
+| POST | `/api/v1/datasets/upload` | Upload CSV to create dataset | `.paths["/api/v1/datasets/upload"].post.summary` |
+| POST | `/api/v1/examples/upload/{dataset_id}` | Upload CSV to existing dataset | `.paths["/api/v1/examples/upload/{dataset_id}"].post.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/csv` | Export as CSV | `.paths["/api/v1/datasets/{dataset_id}/csv"].get.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/jsonl` | Export as JSONL | `.paths["/api/v1/datasets/{dataset_id}/jsonl"].get.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/openai` | Export for OpenAI Evals | `.paths["/api/v1/datasets/{dataset_id}/openai"].get.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/openai_ft` | Export for OpenAI fine-tuning | `.paths["/api/v1/datasets/{dataset_id}/openai_ft"].get.summary` |
 
 ### 1.4 Versioning Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/datasets/{dataset_id}/versions` | List versions |
-| GET | `/api/v1/datasets/{dataset_id}/version` | Get specific version |
-| GET | `/api/v1/datasets/{dataset_id}/versions/diff` | Compare versions |
-| PUT | `/api/v1/datasets/{dataset_id}/tags` | Tag a version |
+| Method | Endpoint | Description | Citation (jq query) |
+|--------|----------|-------------|---------------------|
+| GET | `/api/v1/datasets/{dataset_id}/versions` | List versions | `.paths["/api/v1/datasets/{dataset_id}/versions"].get.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/version` | Get specific version | `.paths["/api/v1/datasets/{dataset_id}/version"].get.summary` |
+| GET | `/api/v1/datasets/{dataset_id}/versions/diff` | Compare versions | `.paths["/api/v1/datasets/{dataset_id}/versions/diff"].get.summary` |
+| PUT | `/api/v1/datasets/{dataset_id}/tags` | Tag a version | `.paths["/api/v1/datasets/{dataset_id}/tags"].put.summary` |
 
 ### 1.5 Sharing Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/datasets/{dataset_id}/share` | Get share info |
-| PUT | `/api/v1/datasets/{dataset_id}/share` | Create/update share |
+| Method | Endpoint | Description | Citation (jq query) |
+|--------|----------|-------------|---------------------|
+| GET | `/api/v1/datasets/{dataset_id}/share` | Get share info | `.paths["/api/v1/datasets/{dataset_id}/share"].get.summary` |
+| PUT | `/api/v1/datasets/{dataset_id}/share` | Create/update share | `.paths["/api/v1/datasets/{dataset_id}/share"].put.summary` |
 
 ---
 
