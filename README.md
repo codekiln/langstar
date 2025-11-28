@@ -361,6 +361,53 @@ langstar queue delete <queue-id> --force
 
 For detailed usage and CI/CD examples, see [docs/queues.md](./docs/queues.md).
 
+#### Dataset Management
+
+Manage LangSmith datasets and examples for testing, evaluation, and fine-tuning workflows.
+
+```bash
+# Create a new dataset
+langstar dataset create --name "my-qa-dataset" --data-type kv
+
+# List all datasets
+langstar dataset list
+langstar dataset list --name-contains "test" --data-type chat
+
+# Get dataset details
+langstar dataset get <dataset-id>
+
+# Update dataset metadata
+langstar dataset update <dataset-id> --name "updated-name" --description "New description"
+
+# Delete a dataset
+langstar dataset delete <dataset-id> --yes
+
+# Import examples from JSONL or CSV
+langstar dataset import <dataset-id> --file examples.jsonl
+langstar dataset import <dataset-id> --file data.csv --format csv
+
+# List examples in a dataset
+langstar dataset list-examples <dataset-id> --limit 50
+
+# Export examples to file
+langstar dataset export <dataset-id> --format jsonl --out backup.jsonl
+langstar dataset export <dataset-id> --format csv --out data.csv
+
+# JSON output
+langstar dataset list --json
+```
+
+**Dataset Types:**
+- `kv` - Key-value pairs (default) - generic input/output mapping
+- `llm` - LLM completion format - prompt/completion pairs
+- `chat` - Chat format - message-based conversations
+
+**Import/Export Formats:**
+- `jsonl` - JSON Lines format (recommended for programmatic access)
+- `csv` - CSV format (convenient for spreadsheet tools)
+
+For complete documentation including format specifications, SDK API reference, and common workflows, see [docs/datasets.md](./docs/datasets.md).
+
 ## Configuration
 
 This section provides detailed configuration options for both LangSmith and LangGraph services.
