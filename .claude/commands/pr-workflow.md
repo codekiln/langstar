@@ -218,6 +218,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    ISSUE_NUM=<extracted_issue_num>
    BASE_BRANCH=<determined_base_branch>
 
+   # Capture PR URL and extract PR number from it
    PR_URL=$(gh pr create \
      --title "<title>" \
      --body "$(cat <<'EOF'
@@ -226,6 +227,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    )" \
      --base "$BASE_BRANCH")
 
+   # Extract PR number from the URL (e.g., https://github.com/owner/repo/pull/123 -> 123)
    PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
    ```
 
@@ -278,11 +280,12 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 1. **Check for review comments (HIGHEST PRIORITY):**
    ```bash
    # Fetch unresolved review comments using the GitHub Reviews API
+   # NOTE: GitHub API returns `null` for unresolved comments, not `false`
    REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
    gh api repos/$REPO/pulls/$PR_NUM/comments \
-     --jq '.[] | select(.resolved == false) | {id, path, line, user: .user.login, body}'
+     --jq '.[] | select(.resolved == null) | {id, path, line, user: .user.login, body}'
    ```
-   - Count unresolved review comments (where `.resolved == false`)
+   - Count unresolved review comments (where `.resolved == null`)
    - **IMPORTANT:** Include comments from both human reviewers AND Copilot
    - If unresolved comments exist, handle them automatically:
      ```
@@ -350,10 +353,12 @@ EOF
    gh pr checks "$PR_NUM"
    ```
    - Parse output for failed checks
-   - If checks are still running:
+   - If checks are still running, wait before checking again:
      ```bash
-     echo "⏳ Checks still running, waiting 30 seconds..."
-     sleep 30
+     if [ "$checks_running" = "true" ]; then
+       echo "⏳ Checks still running, waiting 30 seconds..."
+       sleep 30
+     fi
      ```
      Then check again
    - If checks pass: proceed to stability monitoring
@@ -361,7 +366,8 @@ EOF
 
 5. **If CI/CD checks fail:**
    ```bash
-   # Get detailed failure information, including run IDs for failed checks
+   # Get detailed failure information with run IDs
+   # NOTE: Must use --json to get run IDs; plain `gh pr checks` doesn't provide them
    gh pr checks "$PR_NUM" --json workflowRun,name,state,conclusion \
      --jq '.[] | select(.conclusion == "FAILURE") | {name, runId: .workflowRun.databaseId}'
 
@@ -391,7 +397,8 @@ EOF
    - Commit fixes following conventional commit format:
      ```bash
      git add <files>
-     # Replace <specific issue> with the actual issue description
+     # Replace <specific issue> with actual description (e.g., "clippy warnings")
+     # This is a template - interpolate real values when executing
      git commit -m "$(cat <<EOF
 🩹 fix(ci): address <specific issue>
 
@@ -473,7 +480,8 @@ EOF
 3. **Remind about post-merge cleanup:**
    ```
    📝 **Don't forget after merge:**
-   After the PR is merged, remember to clean up:
+   After the PR is merged, remember to clean up with these commands:
+   ```
 
    ```bash
    cd /workspace
@@ -485,7 +493,6 @@ EOF
    ```
 
    Or use the `pr-lifecycle` skill's cleanup workflow.
-   ```
 
 ## Special Cases and Handling
 
@@ -562,6 +569,8 @@ Your branch is out of date with $BASE_BRANCH.
 - d4e5f6g fix: resolve cache invalidation bug
 
 **Rebase Steps:**
+```
+
 ```bash
 git fetch origin $BASE_BRANCH
 git rebase origin/$BASE_BRANCH
@@ -576,7 +585,6 @@ git push --force-with-lease origin $(git branch --show-current)
 ```
 
 I cannot automatically rebase if conflicts occur. Let me know when you've completed the rebase.
-```
 
 ### Case 5: Review Comments Need Code Changes
 
