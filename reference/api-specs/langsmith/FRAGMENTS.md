@@ -26,6 +26,8 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `dataset-schemas.json` | 43K | Dataset data types | See below | 2025-11-28 |
 | `example-endpoints.json` | 30K | Example API endpoints | See below | 2025-11-28 |
 | `example-schemas.json` | 29K | Example data types | See below | 2025-11-28 |
+| `evals-endpoints.json` | 45K | Evaluation/feedback API endpoints | See below | 2025-11-28 |
+| `evals-schemas.json` | 38K | Evaluation/feedback data types | See below | 2025-11-28 |
 
 ## Extraction Commands
 
@@ -71,6 +73,14 @@ jq '.paths | with_entries(select(.key | test("^/api/v1/examples")))' \
 # Example schemas (all schemas containing "example" in name)
 jq '.components.schemas | with_entries(select(.key | test("[Ee]xample"; "i")))' \
   openapi.json > ../../api-specs/langsmith/example-schemas.json
+
+# Evaluation/feedback endpoints (all feedback/evaluator paths)
+jq '.paths | with_entries(select(.key | test("feedback|evaluator"; "i")))' \
+  openapi.json > ../../api-specs/langsmith/evals-endpoints.json
+
+# Evaluation/feedback schemas (all schemas containing "feedback", "evaluator", or "eval")
+jq '.components.schemas | with_entries(select(.key | test("feedback|evaluator|eval"; "i")))' \
+  openapi.json > ../../api-specs/langsmith/evals-schemas.json
 ```
 
 ## Verification
@@ -94,4 +104,7 @@ jq '.paths | keys | map(select(contains("annotation-queue"))) | length' \
 
 - **Full spec**: `../../openapi/langchain/langsmith/openapi.json`
 - **Spec manifest**: `../../openapi/langchain/langsmith/MANIFEST.md`
-- **Research using these**: `../../research/334-annotation-queues-precedent.md`
+- **Validation reports**:
+  - `../../research/298-openapi-validation.md` - Runs query validation
+  - `../../research/334-openapi-validation.md` - Annotation queues validation
+  - `../../research/347-openapi-validation.md` - Evaluations/feedback validation

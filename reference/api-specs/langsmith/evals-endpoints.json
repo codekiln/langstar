@@ -1,0 +1,1914 @@
+{
+  "/api/v1/feedback/formulas": {
+    "post": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Create Feedback Formula Ep",
+      "operationId": "create_feedback_formula_ep_api_v1_feedback_formulas_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackFormulaCreate"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackFormula"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "List Feedback Formula Ep",
+      "operationId": "list_feedback_formula_ep_api_v1_feedback_formulas_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "dataset_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "session_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 20,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "default": 0,
+            "title": "Offset"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackFormula"
+                },
+                "title": "Response List Feedback Formula Ep Api V1 Feedback Formulas Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback/formulas/{feedback_formula_id}": {
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Get Feedback Formula Ep",
+      "operationId": "get_feedback_formula_ep_api_v1_feedback_formulas__feedback_formula_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_formula_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Formula Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackFormula"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "put": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Update Feedback Formula Ep",
+      "operationId": "update_feedback_formula_ep_api_v1_feedback_formulas__feedback_formula_id__put",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_formula_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Formula Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackFormulaUpdate"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackFormula"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Delete Feedback Formula Endpoint",
+      "operationId": "delete_feedback_formula_endpoint_api_v1_feedback_formulas__feedback_formula_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_formula_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Formula Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback/{feedback_id}": {
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Read Feedback",
+      "description": "Get a specific feedback.",
+      "operationId": "read_feedback_api_v1_feedback__feedback_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Id"
+          }
+        },
+        {
+          "name": "include_user_names",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include User Names"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Update Feedback",
+      "description": "Replace an existing feedback entry with a new, modified entry.",
+      "operationId": "update_feedback_api_v1_feedback__feedback_id__patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackUpdateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Delete Feedback",
+      "description": "Delete a feedback.",
+      "operationId": "delete_feedback_api_v1_feedback__feedback_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "feedback_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Feedback Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback": {
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Read Feedbacks",
+      "description": "List all Feedback by query params.",
+      "operationId": "read_feedbacks_api_v1_feedback_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "run",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run"
+          }
+        },
+        {
+          "name": "key",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          }
+        },
+        {
+          "name": "session",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SourceType"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "user",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User"
+          }
+        },
+        {
+          "name": "has_comment",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Comment"
+          }
+        },
+        {
+          "name": "has_score",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Score"
+          }
+        },
+        {
+          "name": "level",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          }
+        },
+        {
+          "name": "max_created_at",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Created At"
+          }
+        },
+        {
+          "name": "min_created_at",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Created At"
+          }
+        },
+        {
+          "name": "include_user_names",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include User Names"
+          }
+        },
+        {
+          "name": "comparative_experiment_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comparative Experiment Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackSchema"
+                },
+                "title": "Response Read Feedbacks Api V1 Feedback Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Create Feedback",
+      "description": "Create a new feedback.",
+      "operationId": "create_feedback_api_v1_feedback_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackCreateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback/eager": {
+    "post": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Eagerly Create Feedback",
+      "description": "Create a new feedback.\n\nThis method is invoked under the assumption that the run\nis already visible in the app, thus already present in DB",
+      "operationId": "eagerly_create_feedback_api_v1_feedback_eager_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackCreateSchema"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ]
+    }
+  },
+  "/api/v1/feedback/tokens": {
+    "post": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Create Feedback Ingest Token",
+      "description": "Create a new feedback ingest token.",
+      "operationId": "create_feedback_ingest_token_api_v1_feedback_tokens_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FeedbackIngestTokenCreateSchema"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FeedbackIngestTokenCreateSchema"
+                  }
+                }
+              ],
+              "title": "Feedback Ingest Token"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/FeedbackIngestTokenSchema"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/FeedbackIngestTokenSchema"
+                    }
+                  }
+                ],
+                "title": "Response Create Feedback Ingest Token Api V1 Feedback Tokens Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "List Feedback Ingest Tokens",
+      "description": "List all feedback ingest tokens for a run.",
+      "operationId": "list_feedback_ingest_tokens_api_v1_feedback_tokens_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "run_id",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackIngestTokenSchema"
+                },
+                "title": "Response List Feedback Ingest Tokens Api V1 Feedback Tokens Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback/tokens/{token}": {
+    "get": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Create Feedback With Token Get",
+      "description": "Create a new feedback with a token.",
+      "operationId": "create_feedback_with_token_get_api_v1_feedback_tokens__token__get",
+      "parameters": [
+        {
+          "name": "token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Token"
+          }
+        },
+        {
+          "name": "score",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          }
+        },
+        {
+          "name": "value",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        {
+          "name": "comment",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          }
+        },
+        {
+          "name": "correction",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Correction"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Create Feedback With Token Post",
+      "description": "Create a new feedback with a token.",
+      "operationId": "create_feedback_with_token_post_api_v1_feedback_tokens__token__post",
+      "parameters": [
+        {
+          "name": "token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Token"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FeedbackCreateWithTokenExtendedSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/public/{share_token}/feedbacks": {
+    "get": {
+      "tags": [
+        "public"
+      ],
+      "summary": "Read Shared Feedbacks",
+      "operationId": "read_shared_feedbacks_api_v1_public__share_token__feedbacks_get",
+      "parameters": [
+        {
+          "name": "share_token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Share Token"
+          }
+        },
+        {
+          "name": "run",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run"
+          }
+        },
+        {
+          "name": "key",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          }
+        },
+        {
+          "name": "session",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SourceType"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "user",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User"
+          }
+        },
+        {
+          "name": "has_comment",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Comment"
+          }
+        },
+        {
+          "name": "has_score",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Score"
+          }
+        },
+        {
+          "name": "level",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackSchema"
+                },
+                "title": "Response Read Shared Feedbacks Api V1 Public  Share Token  Feedbacks Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/public/{share_token}/datasets/feedback": {
+    "get": {
+      "tags": [
+        "public"
+      ],
+      "summary": "Read Shared Dataset Feedback",
+      "description": "Get feedback for runs in projects run over a dataset that has been shared.",
+      "operationId": "read_shared_dataset_feedback_api_v1_public__share_token__datasets_feedback_get",
+      "parameters": [
+        {
+          "name": "share_token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Share Token"
+          }
+        },
+        {
+          "name": "run",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run"
+          }
+        },
+        {
+          "name": "key",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          }
+        },
+        {
+          "name": "session",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SourceType"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "user",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User"
+          }
+        },
+        {
+          "name": "has_comment",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Comment"
+          }
+        },
+        {
+          "name": "has_score",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Score"
+          }
+        },
+        {
+          "name": "level",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackSchema"
+                },
+                "title": "Response Read Shared Dataset Feedback Api V1 Public  Share Token  Datasets Feedback Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/feedback-configs": {
+    "get": {
+      "tags": [
+        "feedback-configs"
+      ],
+      "summary": "List Feedback Configs Endpoint",
+      "operationId": "list_feedback_configs_endpoint_api_v1_feedback_configs_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "key",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          }
+        },
+        {
+          "name": "read_after_write",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Read After Write"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FeedbackConfigSchema"
+                },
+                "title": "Response List Feedback Configs Endpoint Api V1 Feedback Configs Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "feedback-configs"
+      ],
+      "summary": "Create Feedback Config Endpoint",
+      "operationId": "create_feedback_config_endpoint_api_v1_feedback_configs_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateFeedbackConfigSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackConfigSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "feedback-configs"
+      ],
+      "summary": "Update Feedback Config Endpoint",
+      "operationId": "update_feedback_config_endpoint_api_v1_feedback_configs_patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateFeedbackConfigSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackConfigSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/feedback/batch": {
+    "post": {
+      "description": "Ingests a batch of feedback objects in a single JSON array payload.",
+      "consumes": [
+        "application/json"
+      ],
+      "produces": [
+        "application/json"
+      ],
+      "tags": [
+        "feedback"
+      ],
+      "summary": "Ingest Feedback (Batch JSON)",
+      "parameters": [],
+      "responses": {
+        "202": {
+          "description": "Feedback batch ingested",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "allOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/runs.ErrorResponse"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/runs.ErrorResponse"
+              }
+            }
+          }
+        },
+        "409": {
+          "description": "Conflict",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/runs.ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/runs.ErrorResponse"
+              }
+            }
+          }
+        },
+        "429": {
+          "description": "Too Many Requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/runs.ErrorResponse"
+              }
+            }
+          }
+        }
+      },
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/feedback.FeedbackCreateSchema"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1876 @@
+{
+  "APIFeedbackSource": {
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "api",
+        "title": "Type",
+        "default": "api"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "title": "APIFeedbackSource",
+    "description": "API feedback source."
+  },
+  "AppFeedbackSource": {
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "app",
+        "title": "Type",
+        "default": "app"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "title": "AppFeedbackSource",
+    "description": "Feedback from the LangChainPlus App."
+  },
+  "AutoEvalFeedbackSource": {
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "auto_eval",
+        "title": "Type",
+        "default": "auto_eval"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "title": "AutoEvalFeedbackSource",
+    "description": "Auto eval feedback source."
+  },
+  "CodeEvaluatorTopLevel": {
+    "properties": {
+      "code": {
+        "type": "string",
+        "title": "Code"
+      },
+      "language": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Language",
+        "default": "python"
+      }
+    },
+    "type": "object",
+    "required": [
+      "code"
+    ],
+    "title": "CodeEvaluatorTopLevel"
+  },
+  "CreateFeedbackConfigSchema": {
+    "properties": {
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "feedback_config": {
+        "$ref": "#/components/schemas/FeedbackConfig"
+      },
+      "is_lower_score_better": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Is Lower Score Better",
+        "default": false
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key",
+      "feedback_config"
+    ],
+    "title": "CreateFeedbackConfigSchema"
+  },
+  "EvaluatorStructuredOutput": {
+    "properties": {
+      "hub_ref": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Hub Ref"
+      },
+      "prompt": {
+        "anyOf": [
+          {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt"
+      },
+      "template_format": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Template Format"
+      },
+      "schema": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Schema"
+      },
+      "variable_mapping": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Variable Mapping"
+      },
+      "model": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Model"
+      }
+    },
+    "type": "object",
+    "title": "EvaluatorStructuredOutput",
+    "description": "Evaluator structured output schema."
+  },
+  "EvaluatorTopLevel": {
+    "properties": {
+      "structured": {
+        "$ref": "#/components/schemas/EvaluatorStructuredOutput"
+      }
+    },
+    "type": "object",
+    "required": [
+      "structured"
+    ],
+    "title": "EvaluatorTopLevel"
+  },
+  "ExampleValidationResult": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "inputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Inputs"
+      },
+      "outputs": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Outputs"
+      },
+      "created_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Created At"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "source_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Run Id"
+      },
+      "split": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Split",
+        "default": "base"
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Id"
+      },
+      "use_source_run_io": {
+        "type": "boolean",
+        "title": "Use Source Run Io",
+        "default": false
+      },
+      "overwrite": {
+        "type": "boolean",
+        "title": "Overwrite",
+        "default": false
+      }
+    },
+    "type": "object",
+    "title": "ExampleValidationResult",
+    "description": "Validation result for Example, combining fields from Create/Base/Update schemas."
+  },
+  "FeedbackCategory": {
+    "properties": {
+      "value": {
+        "type": "number",
+        "title": "Value"
+      },
+      "label": {
+        "anyOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Label"
+      }
+    },
+    "type": "object",
+    "required": [
+      "value"
+    ],
+    "title": "FeedbackCategory",
+    "description": "Specific value and label pair for feedback"
+  },
+  "FeedbackConfig": {
+    "properties": {
+      "type": {
+        "$ref": "#/components/schemas/FeedbackType"
+      },
+      "min": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Min"
+      },
+      "max": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Max"
+      },
+      "categories": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackCategory"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Categories"
+      }
+    },
+    "type": "object",
+    "required": [
+      "type"
+    ],
+    "title": "FeedbackConfig"
+  },
+  "FeedbackConfigSchema": {
+    "properties": {
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "feedback_config": {
+        "$ref": "#/components/schemas/FeedbackConfig"
+      },
+      "tenant_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Tenant Id"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      },
+      "is_lower_score_better": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Is Lower Score Better"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key",
+      "feedback_config",
+      "tenant_id",
+      "modified_at"
+    ],
+    "title": "FeedbackConfigSchema"
+  },
+  "FeedbackCreateCoreSchema": {
+    "properties": {
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      },
+      "key": {
+        "type": "string",
+        "maxLength": 180,
+        "title": "Key"
+      },
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Score"
+      },
+      "value": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Value"
+      },
+      "comment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comment"
+      },
+      "correction": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Correction"
+      },
+      "feedback_group_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Group Id"
+      },
+      "comparative_experiment_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comparative Experiment Id"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "feedback_source": {
+        "anyOf": [
+          {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AppFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/APIFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/ModelFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/AutoEvalFeedbackSource"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "api": "#/components/schemas/APIFeedbackSource",
+                "app": "#/components/schemas/AppFeedbackSource",
+                "auto_eval": "#/components/schemas/AutoEvalFeedbackSource",
+                "model": "#/components/schemas/ModelFeedbackSource"
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Source"
+      },
+      "feedback_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackConfig"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      }
+    },
+    "type": "object",
+    "required": [
+      "key"
+    ],
+    "title": "FeedbackCreateCoreSchema",
+    "description": "Schema used for creating feedback without run id or session id."
+  },
+  "FeedbackCreateSchema": {
+    "properties": {
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      },
+      "key": {
+        "type": "string",
+        "maxLength": 180,
+        "title": "Key"
+      },
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Score"
+      },
+      "value": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Value"
+      },
+      "comment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comment"
+      },
+      "correction": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Correction"
+      },
+      "feedback_group_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Group Id"
+      },
+      "comparative_experiment_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comparative Experiment Id"
+      },
+      "run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      },
+      "session_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Id"
+      },
+      "trace_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Trace Id"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "feedback_source": {
+        "anyOf": [
+          {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AppFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/APIFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/ModelFeedbackSource"
+              },
+              {
+                "$ref": "#/components/schemas/AutoEvalFeedbackSource"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "type",
+              "mapping": {
+                "api": "#/components/schemas/APIFeedbackSource",
+                "app": "#/components/schemas/AppFeedbackSource",
+                "auto_eval": "#/components/schemas/AutoEvalFeedbackSource",
+                "model": "#/components/schemas/ModelFeedbackSource"
+              }
+            }
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Source"
+      },
+      "feedback_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackConfig"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "error": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Error"
+      }
+    },
+    "type": "object",
+    "required": [
+      "key"
+    ],
+    "title": "FeedbackCreateSchema",
+    "description": "Schema used for creating feedback."
+  },
+  "FeedbackCreateWithTokenExtendedSchema": {
+    "properties": {
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Score"
+      },
+      "value": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Value"
+      },
+      "comment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comment"
+      },
+      "correction": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Correction"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "title": "FeedbackCreateWithTokenExtendedSchema",
+    "description": "Feedback create schema with token."
+  },
+  "FeedbackDelta": {
+    "properties": {
+      "improved_examples": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Improved Examples"
+      },
+      "regressed_examples": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Regressed Examples"
+      }
+    },
+    "type": "object",
+    "required": [
+      "improved_examples",
+      "regressed_examples"
+    ],
+    "title": "FeedbackDelta",
+    "description": "Feedback key with number of improvements and regressions."
+  },
+  "FeedbackFormula": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "session_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Id"
+      },
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "aggregation_type": {
+        "type": "string",
+        "enum": [
+          "sum",
+          "avg"
+        ],
+        "title": "Aggregation Type"
+      },
+      "formula_parts": {
+        "items": {
+          "$ref": "#/components/schemas/FeedbackFormulaWeightedVariable"
+        },
+        "type": "array",
+        "maxItems": 50,
+        "minItems": 1,
+        "title": "Formula Parts"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key",
+      "aggregation_type",
+      "formula_parts",
+      "id",
+      "created_at",
+      "modified_at"
+    ],
+    "title": "FeedbackFormula"
+  },
+  "FeedbackFormulaCreate": {
+    "properties": {
+      "dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Dataset Id"
+      },
+      "session_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Id"
+      },
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "aggregation_type": {
+        "type": "string",
+        "enum": [
+          "sum",
+          "avg"
+        ],
+        "title": "Aggregation Type"
+      },
+      "formula_parts": {
+        "items": {
+          "$ref": "#/components/schemas/FeedbackFormulaWeightedVariable"
+        },
+        "type": "array",
+        "maxItems": 50,
+        "minItems": 1,
+        "title": "Formula Parts"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key",
+      "aggregation_type",
+      "formula_parts"
+    ],
+    "title": "FeedbackFormulaCreate"
+  },
+  "FeedbackFormulaUpdate": {
+    "properties": {
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "aggregation_type": {
+        "type": "string",
+        "enum": [
+          "sum",
+          "avg"
+        ],
+        "title": "Aggregation Type"
+      },
+      "formula_parts": {
+        "items": {
+          "$ref": "#/components/schemas/FeedbackFormulaWeightedVariable"
+        },
+        "type": "array",
+        "maxItems": 50,
+        "minItems": 1,
+        "title": "Formula Parts"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key",
+      "aggregation_type",
+      "formula_parts"
+    ],
+    "title": "FeedbackFormulaUpdate"
+  },
+  "FeedbackFormulaWeightedVariable": {
+    "properties": {
+      "part_type": {
+        "type": "string",
+        "const": "weighted_key",
+        "title": "Part Type"
+      },
+      "weight": {
+        "type": "number",
+        "title": "Weight"
+      },
+      "key": {
+        "type": "string",
+        "minLength": 1,
+        "title": "Key"
+      }
+    },
+    "type": "object",
+    "required": [
+      "part_type",
+      "weight",
+      "key"
+    ],
+    "title": "FeedbackFormulaWeightedVariable"
+  },
+  "FeedbackIngestTokenCreateSchema": {
+    "properties": {
+      "expires_in": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TimedeltaInput"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "expires_at": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Expires At"
+      },
+      "run_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Run Id"
+      },
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "feedback_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackConfig"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "type": "object",
+    "required": [
+      "run_id",
+      "feedback_key"
+    ],
+    "title": "FeedbackIngestTokenCreateSchema",
+    "description": "Feedback ingest token create schema."
+  },
+  "FeedbackIngestTokenSchema": {
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "url": {
+        "type": "string",
+        "title": "Url"
+      },
+      "expires_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Expires At"
+      },
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "url",
+      "expires_at",
+      "feedback_key"
+    ],
+    "title": "FeedbackIngestTokenSchema",
+    "description": "Feedback ingest token schema."
+  },
+  "FeedbackLevel": {
+    "type": "string",
+    "enum": [
+      "run",
+      "session"
+    ],
+    "title": "FeedbackLevel",
+    "description": "Enum for feedback levels."
+  },
+  "FeedbackSchema": {
+    "properties": {
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At"
+      },
+      "modified_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Modified At"
+      },
+      "key": {
+        "type": "string",
+        "title": "Key"
+      },
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Score"
+      },
+      "value": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Value"
+      },
+      "comment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comment"
+      },
+      "correction": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Correction"
+      },
+      "feedback_group_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Group Id"
+      },
+      "comparative_experiment_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comparative Experiment Id"
+      },
+      "run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Id"
+      },
+      "session_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Id"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "trace_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Trace Id"
+      },
+      "start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Start Time"
+      },
+      "feedback_source": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackSource"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "feedback_thread_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Thread Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "key",
+      "id"
+    ],
+    "title": "FeedbackSchema",
+    "description": "Schema for getting feedback."
+  },
+  "FeedbackSource": {
+    "properties": {
+      "type": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Type"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      },
+      "user_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "User Id"
+      },
+      "ls_user_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Ls User Id"
+      },
+      "user_name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "User Name"
+      }
+    },
+    "type": "object",
+    "title": "FeedbackSource",
+    "description": "The feedback source loaded from the database."
+  },
+  "FeedbackType": {
+    "type": "string",
+    "enum": [
+      "continuous",
+      "categorical",
+      "freeform"
+    ],
+    "title": "FeedbackType",
+    "description": "Enum for feedback types."
+  },
+  "FeedbackUpdateSchema": {
+    "properties": {
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Score"
+      },
+      "value": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Value"
+      },
+      "comment": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comment"
+      },
+      "correction": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Correction"
+      },
+      "feedback_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackConfig"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "type": "object",
+    "title": "FeedbackUpdateSchema",
+    "description": "Schema used for updating feedback"
+  },
+  "ModelFeedbackSource": {
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "model",
+        "title": "Type",
+        "default": "model"
+      },
+      "metadata": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Metadata"
+      }
+    },
+    "type": "object",
+    "title": "ModelFeedbackSource",
+    "description": "Model feedback source."
+  },
+  "QueryFeedbackDelta": {
+    "properties": {
+      "baseline_session_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Baseline Session Id"
+      },
+      "comparison_session_ids": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Comparison Session Ids"
+      },
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "filters": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Filters"
+      },
+      "offset": {
+        "type": "integer",
+        "minimum": 0,
+        "title": "Offset",
+        "default": 0
+      },
+      "limit": {
+        "type": "integer",
+        "maximum": 100,
+        "minimum": 1,
+        "title": "Limit",
+        "default": 100
+      },
+      "comparative_experiment_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Comparative Experiment Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "baseline_session_id",
+      "comparison_session_ids",
+      "feedback_key"
+    ],
+    "title": "QueryFeedbackDelta"
+  },
+  "RunsGenerateQueryFeedbackKeys": {
+    "type": "string",
+    "enum": [
+      "user_score",
+      "user_edited",
+      "user_removed",
+      "user_opened_run",
+      "user_selected_run",
+      "results_size",
+      "valid_filter"
+    ],
+    "title": "RunsGenerateQueryFeedbackKeys"
+  },
+  "SessionFeedbackDelta": {
+    "properties": {
+      "feedback_deltas": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FeedbackDelta"
+        },
+        "propertyNames": {
+          "format": "uuid"
+        },
+        "type": "object",
+        "title": "Feedback Deltas"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_deltas"
+    ],
+    "title": "SessionFeedbackDelta",
+    "description": "List of feedback keys with number of improvements and regressions for each."
+  },
+  "UpdateFeedbackConfigSchema": {
+    "properties": {
+      "feedback_key": {
+        "type": "string",
+        "title": "Feedback Key"
+      },
+      "feedback_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/FeedbackConfig"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "is_lower_score_better": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Is Lower Score Better"
+      }
+    },
+    "type": "object",
+    "required": [
+      "feedback_key"
+    ],
+    "title": "UpdateFeedbackConfigSchema"
+  },
+  "feedback.FeedbackCreateSchema": {
+    "type": "object",
+    "properties": {
+      "comment": {
+        "type": "string"
+      },
+      "comparative_experiment_id": {
+        "type": "string"
+      },
+      "correction": {},
+      "created_at": {
+        "type": "string"
+      },
+      "error": {
+        "type": "boolean"
+      },
+      "feedback_config": {
+        "$ref": "#/components/schemas/types.FeedbackConfig"
+      },
+      "feedback_group_id": {
+        "type": "string"
+      },
+      "feedback_source": {
+        "$ref": "#/components/schemas/feedback.FeedbackSource"
+      },
+      "id": {
+        "type": "string"
+      },
+      "key": {
+        "type": "string"
+      },
+      "modified_at": {
+        "type": "string"
+      },
+      "run_id": {
+        "type": "string"
+      },
+      "score": {},
+      "session_id": {
+        "type": "string"
+      },
+      "trace_id": {
+        "type": "string"
+      },
+      "value": {}
+    }
+  },
+  "feedback.FeedbackSource": {
+    "type": "object",
+    "properties": {
+      "metadata": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "type": {
+        "type": "string"
+      }
+    }
+  },
+  "types.FeedbackCategory": {
+    "type": "object",
+    "properties": {
+      "label": {
+        "type": "string",
+        "minLength": 1
+      },
+      "value": {
+        "type": "number"
+      }
+    }
+  },
+  "types.FeedbackConfig": {
+    "type": "object",
+    "properties": {
+      "categories": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/types.FeedbackCategory"
+        }
+      },
+      "max": {
+        "type": "number"
+      },
+      "min": {
+        "type": "number"
+      },
+      "type": {
+        "$ref": "#/components/schemas/types.FeedbackType"
+      }
+    }
+  },
+  "types.FeedbackType": {
+    "type": "string",
+    "enum": [
+      "continuous",
+      "categorical",
+      "freeform"
+    ],
+    "x-enum-varnames": [
+      "FeedbackTypeContinuous",
+      "FeedbackTypeCategorical",
+      "FeedbackTypeFreeform"
+    ]
+  }
+}
