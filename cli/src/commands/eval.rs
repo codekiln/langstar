@@ -202,7 +202,7 @@ pub struct ListArgs {
 
     /// Maximum number of evaluations to return
     #[arg(short, long, default_value = "100")]
-    pub limit: i64,
+    pub limit: usize,
 
     /// Output as JSON
     #[arg(long)]
@@ -530,8 +530,6 @@ mod tests {
 
     #[test]
     fn test_evaluator_type_to_heuristic() {
-        use std::convert::TryFrom;
-
         let exact_match = HeuristicEvaluator::try_from(EvaluatorType::ExactMatch).unwrap();
         assert_eq!(exact_match, HeuristicEvaluator::ExactMatch);
 
@@ -544,8 +542,6 @@ mod tests {
 
     #[test]
     fn test_llm_judge_cannot_convert_to_heuristic() {
-        use std::convert::TryFrom;
-
         let result = HeuristicEvaluator::try_from(EvaluatorType::LlmJudge);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "LlmJudge is not a heuristic evaluator");
