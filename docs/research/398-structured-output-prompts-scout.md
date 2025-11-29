@@ -401,5 +401,315 @@ prompt = client.pull_prompt("test-structured-398-v2", include_model=False)
 
 1. ~~Run experiment scripts to capture actual manifest formats~~ ✅
 2. ~~Update this report with findings~~ ✅
-3. Create parent epic for structured output prompt implementation
-4. Break down into sub-issues per phase
+3. ~~Create parent epic for structured output prompt implementation~~ ✅ (Issue #402)
+4. ~~Break down into sub-issues per phase~~ ✅ (Issues #403-#409)
+
+## 11. Design Decisions
+
+**Issue**: [#403](https://github.com/codekiln/langstar/issues/403) - Design DX consistency and configuration integration
+**Date**: 2025-11-29
+
+This section documents the design decisions for integrating structured output prompts into the Langstar CLI, ensuring consistency with existing commands and patterns.
+
+### 11.1 DX Consistency Analysis
+
+#### Existing `prompt push` Command Pattern
+
+The current `prompt push` command uses this flag pattern:
+
+```rust
+/// Push/create a prompt in PromptHub
+Push {
+    #[arg(short, long)]      owner: String,           // -o/--owner
+    #[arg(short, long)]      repo: String,            // -r/--repo
+    #[arg(short, long)]      template: String,        // -t/--template
+    #[arg(short, long)]      input_variables: Option<String>,  // -i/--input-variables
+    #[arg(long)]             template_format: String, // --template-format (default: f-string)
+    #[arg(long)]             organization_id: Option<String>,  // --organization-id
+    #[arg(long)]             workspace_id: Option<String>,     // --workspace-id
+}
+```
+
+**Observations**:
+- Short flags (`-o`, `-r`, `-t`, `-i`) for frequently used options
+- Long-only flags for less common options (`--template-format`, `--organization-id`)
+- Defaults provided where sensible (`template_format = "f-string"`)
+
+#### File Input Pattern from `dataset import`
+
+The `dataset import` command establishes the file input pattern:
+
+```rust
+/// Path to the file to import (JSONL or CSV)
+#[arg(long)]
+pub file: PathBuf,
+
+/// File format: jsonl or csv (auto-detected from extension if not specified)
+#[arg(long)]
+pub format: Option<String>,
+```
+
+**Observations**:
+- Uses `--file <path>` (long flag only) for file paths
+- Auto-detects format from extension with optional `--format` override
+- Uses `PathBuf` type for proper path handling
+
+#### Recommended CLI Interface Design
+
+**For `prompt push` with structured output support:**
+
+```rust
+/// Push/create a prompt in PromptHub
+Push {
+    // Existing flags (unchanged)
+    #[arg(short, long)]
+    owner: String,
+
+    #[arg(short, long)]
+    repo: String,
+
+    #[arg(short, long)]
+    template: String,
+
+    #[arg(short, long)]
+    input_variables: Option<String>,
+
+    #[arg(long, default_value = "f-string")]
+    template_format: String,
+
+    // NEW: Schema support
+    /// Path to JSON Schema file for structured output
+    #[arg(long, value_name = "FILE")]
+    schema: Option<PathBuf>,
+
+    /// Structured output method: json_schema or function_calling
+    #[arg(long, default_value = "json_schema")]
+    schema_method: String,
+
+    // Existing scoping (unchanged)
+    #[arg(long)]
+    organization_id: Option<String>,
+
+    #[arg(long)]
+    workspace_id: Option<String>,
+}
+```
+
+**Design Rationale**:
+
+| Decision | Rationale |
+|----------|-----------|
+| `--schema <FILE>` (long only) | Matches `--file` pattern from dataset commands; not used frequently enough for short flag |
+| `--schema-method` (not `--method`) | Explicit naming avoids ambiguity; clearly indicates it relates to schema handling |
+| Default `json_schema` | Most common method; matches Python SDK defaults |
+| `PathBuf` type | Proper path handling, consistent with dataset import |
+| Optional schema | Backward compatible; existing prompts don't require schema |
+
+**Usage Examples**:
+
+```bash
+# Push regular prompt (existing behavior)
+langstar prompt push -o owner -r repo -t "Hello {name}"
+
+# Push structured prompt with schema
+langstar prompt push -o owner -r repo -t "Analyze {topic}" \
+  --schema ./schemas/analysis.json
+
+# Push structured prompt with function_calling method
+langstar prompt push -o owner -r repo -t "Extract {data}" \
+  --schema ./schemas/extraction.json \
+  --schema-method function_calling
+```
+
+#### Intentional Deviations from Existing Patterns
+
+| Deviation | Rationale |
+|-----------|-----------|
+| No `-s` short flag for `--schema` | `-s` conflicts with potential future `--search` or `--sort` flags |
+| `--schema-method` instead of `--schema-format` | "method" matches LangSmith terminology exactly (`json_schema` vs `function_calling` are methods, not formats) |
+
+### 11.2 Configuration Integration
+
+#### Environment Variables (Existing)
+
+The structured output feature uses **only existing environment variables**:
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `LANGSMITH_API_KEY` | API authentication | Yes |
+| `LANGSMITH_WORKSPACE_ID` | Workspace scoping | No |
+| `LANGSMITH_ORGANIZATION_ID` | Organization scoping | No |
+
+**No new environment variables required.** The schema file path is provided via CLI flag, not environment configuration.
+
+#### Configuration Precedence
+
+Following the established pattern in `prompt.rs`:
+
+```
+CLI flags → Environment variables → Config file → Defaults
+```
+
+**Specific to structured outputs**:
+- `--schema`: CLI only (no env var - file paths shouldn't be in env)
+- `--schema-method`: CLI flag value is used if provided; otherwise, the default `json_schema` is used (follows precedence: CLI flag > default)
+
+#### Error Handling for Missing Configuration
+
+Following existing patterns, error messages should guide users:
+
+```
+Error: Schema file not found: ./schemas/analysis.json
+
+Hint: Ensure the file exists and path is correct:
+  langstar prompt push --schema ./schemas/analysis.json ...
+```
+
+```
+Error: Invalid schema method 'invalid'. Valid methods: json_schema, function_calling
+
+Hint: Use --schema-method to specify the structured output method:
+  langstar prompt push --schema-method json_schema ...
+```
+
+### 11.3 Business Purpose and User Scenarios
+
+#### What Structured Output Prompts Enable
+
+Structured output prompts solve a critical problem: **ensuring LLM outputs conform to a predictable, typed format**. This enables:
+
+1. **Reliable data extraction** - Parse LLM responses as typed objects
+2. **API integration** - LLM outputs match expected response schemas
+3. **Validation** - Reject invalid outputs before downstream processing
+4. **Consistency** - Same prompt produces same output structure every time
+
+#### UI Workflow Correspondence
+
+In the LangSmith UI, creating a structured output prompt involves:
+
+1. Navigate to Prompt Hub
+2. Create/edit a prompt
+3. Add messages (system, human, etc.)
+4. Enable "Structured Output" toggle
+5. Define JSON Schema (manual JSON entry or Pydantic class)
+6. Select method (json_schema or function_calling)
+7. Save/commit the prompt
+
+**CLI Equivalent**:
+
+```bash
+# Equivalent to UI workflow
+langstar prompt push \
+  -o my-org -r my-prompt \
+  -t "You are a data extractor. Extract: {input}" \
+  -i "input" \
+  --schema ./schemas/extraction.json \
+  --schema-method json_schema
+```
+
+#### Key User Scenarios
+
+**Scenario 1: Data Extraction Pipeline**
+
+```bash
+# User has a Pydantic model defining their output format
+# 1. Export schema from Pydantic (user's Python code)
+python -c "from mymodels import Invoice; print(Invoice.model_json_schema())" > invoice.json
+
+# 2. Push structured prompt
+langstar prompt push -o team -r invoice-extractor \
+  -t "Extract invoice data from: {document}" \
+  --schema invoice.json
+```
+
+**Scenario 2: API Response Formatting**
+
+```bash
+# Ensure API responses match OpenAPI schema
+langstar prompt push -o team -r api-formatter \
+  -t "Format the following data as an API response: {data}" \
+  --schema ./api/response-schema.json \
+  --schema-method json_schema
+```
+
+**Scenario 3: Structured Analysis**
+
+```bash
+# Sentiment analysis with structured output
+langstar prompt push -o team -r sentiment-analyzer \
+  -t "Analyze sentiment: {text}" \
+  --schema ./schemas/sentiment.json
+```
+
+#### Getting Structured Prompts
+
+```bash
+# Get and view structured prompt
+langstar prompt get owner/prompt-name
+
+# Output shows schema information
+# Manifest:
+# {
+#   "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+#   "kwargs": {
+#     "schema_": { ... },
+#     "structured_output_kwargs": { "method": "json_schema" }
+#   }
+# }
+```
+
+### 11.4 CLI Advantage Over UI
+
+| Aspect | UI | CLI |
+|--------|----|----|
+| **Automation** | Manual clicks each time | Script once, run anywhere |
+| **Version Control** | UI-based versioning | Schema files in git |
+| **CI/CD Integration** | Not possible | `langstar prompt push` in pipeline |
+| **Batch Operations** | One at a time | Loop over multiple schemas |
+| **Schema Reuse** | Copy-paste | Reference same file |
+| **Diff/Review** | UI comparison | `git diff schema.json` |
+
+**Key CLI advantages for structured outputs specifically**:
+
+1. **Schema file management** - Keep JSON schemas in version control alongside code
+2. **Reproducibility** - Same command produces same prompt every time
+3. **Pipeline integration** - Update prompts as part of deployment
+4. **Testing** - Validate schemas locally before pushing
+
+### 11.5 Implementation Summary
+
+#### SDK Changes Required
+
+1. **New type**: `StructuredPrompt` in `sdk/src/prompts.rs`
+2. **LC-JSON serialization**: Generate proper manifest format
+3. **Schema validation**: Validate JSON schema before push
+
+#### CLI Changes Required
+
+1. **New flags**: `--schema`, `--schema-method` on `prompt push`
+2. **File reading**: Load and validate schema from file
+3. **Output display**: Show schema info when getting structured prompts
+
+#### Validation Strategy
+
+**Before push**:
+1. Validate schema is valid JSON
+2. Validate schema is valid JSON Schema (using `jsonschema` crate)
+3. Validate method is `json_schema` or `function_calling`
+
+**Error messages**:
+- Invalid JSON: `Schema file contains invalid JSON: <parse error>`
+- Invalid schema: `Schema file is not a valid JSON Schema: <validation error>`
+- Invalid method: `Invalid schema method. Valid options: json_schema, function_calling`
+
+### 11.6 Design Decisions Summary Table
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Schema input | `--schema <FILE>` | Matches dataset import pattern, file paths via flag |
+| Method selection | `--schema-method` with default | Explicit naming, sensible default |
+| Default method | `json_schema` | Most common, matches Python SDK |
+| New env vars | None | Schema paths shouldn't be in environment |
+| Validation | Client-side before push | Fail fast, better error messages |
+| Short flags | None for schema options | Avoid conflicts, these are less frequent |
+| Backward compatibility | Schema is optional | Existing prompts work unchanged |
