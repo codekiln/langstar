@@ -524,9 +524,9 @@ fn validate_llm_judge_args(args: &CreateArgs) -> Result<()> {
                 }
             }
             ScoreTypeArg::Continuous => {
-                if args.score_min.is_none() && args.score_max.is_none() {
+                if args.score_min.is_none() || args.score_max.is_none() {
                     eprintln!(
-                        "Warning: No --score-min or --score-max specified for continuous scoring. Using defaults [0.0, 1.0]."
+                        "Warning: --score-min and --score-max should both be specified for continuous scoring. Using defaults [0.0, 1.0] where not provided."
                     );
                 }
             }
