@@ -1,4 +1,5 @@
 use crate::error::Result;
+use clap::ValueEnum;
 use colored::Colorize;
 use serde::Serialize;
 use tabled::{
@@ -27,6 +28,15 @@ impl OutputFormat {
             ))),
         }
     }
+}
+
+/// Export format for evaluation results and dataset examples
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ExportFormat {
+    /// CSV format
+    Csv,
+    /// JSON Lines format
+    Jsonl,
 }
 
 /// Output formatter for CLI results

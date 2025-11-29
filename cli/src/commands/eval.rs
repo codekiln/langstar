@@ -5,7 +5,7 @@
 
 use crate::config::Config;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
+use crate::output::{ExportFormat, OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand, ValueEnum};
 use langstar_sdk::{
     LangchainClient,
@@ -249,15 +249,6 @@ pub struct ExportArgs {
     /// Include reasoning/comments in export
     #[arg(long)]
     pub include_comments: bool,
-}
-
-/// Export format for evaluation results
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum ExportFormat {
-    /// CSV format
-    Csv,
-    /// JSON Lines format
-    Jsonl,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -5,8 +5,8 @@
 
 use crate::config::Config;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
-use clap::{Args, Subcommand, ValueEnum};
+use crate::output::{ExportFormat, OutputFormat, OutputFormatter};
+use clap::{Args, Subcommand};
 use langstar_sdk::{
     DataType, Dataset, DatasetCreate, DatasetUpdate, Example, ExampleCreate, LangchainClient,
     ListDatasetsParams, ListExamplesParams,
@@ -155,15 +155,6 @@ pub struct ListExamplesArgs {
     /// Output as JSON
     #[arg(long)]
     pub json: bool,
-}
-
-/// Export format for dataset examples
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum ExportFormat {
-    /// CSV format
-    Csv,
-    /// JSON Lines format
-    Jsonl,
 }
 
 /// Arguments for the `dataset export` command
