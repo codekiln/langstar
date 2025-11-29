@@ -68,5 +68,8 @@ pub use evaluations::{
 };
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
-pub use prompts::{CommitRequest, CommitResponse, Prompt, PromptClient, Visibility};
+pub use prompts::{
+    CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs, Prompt, PromptClient,
+    PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt, Visibility,
+};
 pub use runs::{Cursors, QueryRunsRequest, QueryRunsResponse, Run, RunDateOrder, RunType};
