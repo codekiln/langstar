@@ -1,6 +1,7 @@
 use crate::client::LangchainClient;
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// Visibility filter for prompts
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -12,6 +13,165 @@ pub enum Visibility {
     /// All prompts (public and private)
     Any,
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// LC-JSON Serialization Types
+// ═══════════════════════════════════════════════════════════════════════
+
+/// LC-JSON wrapper for LangChain object serialization.
+///
+/// LangChain uses a custom JSON format ("LC-JSON") to serialize objects.
+/// This format includes metadata about the object's class and module path.
+///
+/// # Format
+///
+/// ```json
+/// {
+///   "lc": 1,
+///   "type": "constructor",
+///   "id": ["module", "path", "ClassName"],
+///   "kwargs": { ... },
+///   "name": "ClassName"
+/// }
+/// ```
+///
+/// # Reference
+///
+/// See `docs/research/398-structured-output-prompts-scout.md` Section 9.2
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct LcJson<T> {
+    /// LangChain serialization version (always 1)
+    pub lc: u8,
+    /// Serialization type (always "constructor" for class instances)
+    #[serde(rename = "type")]
+    pub type_: String,
+    /// Module path to the class (e.g., ["langchain_core", "prompts", "structured", "StructuredPrompt"])
+    pub id: Vec<String>,
+    /// Constructor arguments
+    pub kwargs: T,
+    /// Class name (redundant with id[-1], present for clarity)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+impl<T> LcJson<T> {
+    /// Create a new LC-JSON wrapper
+    pub fn new(id: Vec<String>, kwargs: T) -> Self {
+        let name = id.last().cloned();
+        Self {
+            lc: 1,
+            type_: "constructor".to_string(),
+            id,
+            kwargs,
+            name,
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Structured Prompt Types
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Structured output prompt with JSON schema constraints.
+///
+/// Combines a prompt template with a JSON schema to constrain LLM outputs.
+/// When used with an LLM, the schema ensures the output matches the defined structure.
+///
+/// # Format
+///
+/// Serializes to LC-JSON format matching Python's `StructuredPrompt` class.
+///
+/// # Example
+///
+/// ```rust
+/// use langstar_sdk::prompts::{StructuredPrompt, StructuredOutputKwargs};
+/// use serde_json::json;
+///
+/// let schema = json!({
+///     "type": "object",
+///     "properties": {
+///         "title": {"type": "string"},
+///         "rating": {"type": "integer", "minimum": 1, "maximum": 10}
+///     },
+///     "required": ["title", "rating"]
+/// });
+///
+/// let prompt = StructuredPrompt {
+///     input_variables: Some(vec!["movie_name".to_string()]),
+///     messages: vec![/* message templates */],
+///     schema_: schema,
+///     structured_output_kwargs: StructuredOutputKwargs {
+///         method: "json_schema".to_string(),
+///     },
+/// };
+/// ```
+///
+/// # Reference
+///
+/// - Research: `docs/research/398-structured-output-prompts-scout.md`
+/// - Python class: `langchain_core.prompts.structured.StructuredPrompt`
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StructuredPrompt {
+    /// Input variables extracted from template placeholders
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_variables: Option<Vec<String>>,
+    /// Message templates (system, human, etc.)
+    pub messages: Vec<LcJson<MessagePromptTemplateKwargs>>,
+    /// JSON Schema defining the output structure
+    pub schema_: Value,
+    /// Structured output configuration (method selection)
+    pub structured_output_kwargs: StructuredOutputKwargs,
+}
+
+impl StructuredPrompt {
+    /// Wrap this StructuredPrompt in LC-JSON format for API submission
+    pub fn to_lc_json(self) -> LcJson<Self> {
+        LcJson::new(
+            vec![
+                "langchain_core".to_string(),
+                "prompts".to_string(),
+                "structured".to_string(),
+                "StructuredPrompt".to_string(),
+            ],
+            self,
+        )
+    }
+}
+
+/// Structured output configuration.
+///
+/// Specifies how the JSON schema should be applied to the LLM output.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct StructuredOutputKwargs {
+    /// Method for applying schema ("json_schema" or "function_calling")
+    pub method: String,
+}
+
+/// Kwargs for message prompt templates.
+///
+/// Contains the inner prompt template for a message (system, human, etc.).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct MessagePromptTemplateKwargs {
+    /// The prompt template
+    pub prompt: LcJson<PromptTemplateKwargs>,
+}
+
+/// Kwargs for the base PromptTemplate.
+///
+/// Contains the template string and configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PromptTemplateKwargs {
+    /// Input variables (placeholders in the template)
+    pub input_variables: Vec<String>,
+    /// Template string (e.g., "Review the movie: {movie_name}")
+    pub template: String,
+    /// Template format (e.g., "f-string")
+    pub template_format: String,
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Prompt Repository Types
+// ═══════════════════════════════════════════════════════════════════════
 
 /// A prompt from the LangSmith Prompt Hub
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -286,6 +446,7 @@ impl LangchainClient {
 mod tests {
     use super::*;
     use crate::auth::AuthConfig;
+    use serde_json::json;
 
     #[test]
     fn test_prompt_client_creation() {
@@ -311,5 +472,408 @@ mod tests {
         let json = serde_json::to_string(&prompt).unwrap();
         assert!(json.contains("test-id"));
         assert!(json.contains("owner/prompt"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LC-JSON and StructuredPrompt Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_lc_json_basic_serialization() {
+        let kwargs = json!({"key": "value"});
+        let lc_json: LcJson<Value> =
+            LcJson::new(vec!["langchain".to_string(), "test".to_string()], kwargs);
+
+        let serialized = serde_json::to_value(&lc_json).unwrap();
+
+        assert_eq!(serialized["lc"], 1);
+        assert_eq!(serialized["type"], "constructor");
+        assert_eq!(serialized["id"], json!(["langchain", "test"]));
+        assert_eq!(serialized["kwargs"], json!({"key": "value"}));
+        assert_eq!(serialized["name"], "test");
+    }
+
+    #[test]
+    fn test_lc_json_round_trip() {
+        let original: LcJson<Value> = LcJson::new(
+            vec!["module".to_string(), "Class".to_string()],
+            json!({"param": "value"}),
+        );
+
+        let json_str = serde_json::to_string(&original).unwrap();
+        let deserialized: LcJson<Value> = serde_json::from_str(&json_str).unwrap();
+
+        assert_eq!(original, deserialized);
+    }
+
+    #[test]
+    fn test_prompt_template_kwargs_serialization() {
+        let kwargs = PromptTemplateKwargs {
+            input_variables: vec!["movie_name".to_string()],
+            template: "Review the movie: {movie_name}".to_string(),
+            template_format: "f-string".to_string(),
+        };
+
+        let serialized = serde_json::to_value(&kwargs).unwrap();
+
+        assert_eq!(serialized["input_variables"], json!(["movie_name"]));
+        assert_eq!(serialized["template"], "Review the movie: {movie_name}");
+        assert_eq!(serialized["template_format"], "f-string");
+    }
+
+    #[test]
+    fn test_structured_prompt_minimal() {
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "answer": {"type": "string"}
+            },
+            "required": ["answer"]
+        });
+
+        let system_prompt = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "You are a helpful assistant.".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let system_message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: system_prompt,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![system_message],
+            schema_: schema.clone(),
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        let serialized = serde_json::to_value(&structured_prompt).unwrap();
+
+        assert_eq!(serialized["schema_"], schema);
+        assert_eq!(
+            serialized["structured_output_kwargs"]["method"],
+            "json_schema"
+        );
+        assert!(serialized["messages"].is_array());
+    }
+
+    #[test]
+    fn test_structured_prompt_with_lc_json_wrapper() {
+        let schema = json!({
+            "type": "object",
+            "title": "MovieReview",
+            "properties": {
+                "title": {"type": "string"},
+                "rating": {"type": "integer", "minimum": 1, "maximum": 10}
+            },
+            "required": ["title", "rating"]
+        });
+
+        let human_prompt_kwargs = PromptTemplateKwargs {
+            input_variables: vec!["movie_name".to_string()],
+            template: "Review: {movie_name}".to_string(),
+            template_format: "f-string".to_string(),
+        };
+
+        let human_prompt = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            human_prompt_kwargs,
+        );
+
+        let human_message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "HumanMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: human_prompt,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: Some(vec!["movie_name".to_string()]),
+            messages: vec![human_message],
+            schema_: schema.clone(),
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        let wrapped = structured_prompt.to_lc_json();
+
+        let serialized = serde_json::to_value(&wrapped).unwrap();
+
+        assert_eq!(serialized["lc"], 1);
+        assert_eq!(serialized["type"], "constructor");
+        assert_eq!(
+            serialized["id"],
+            json!([
+                "langchain_core",
+                "prompts",
+                "structured",
+                "StructuredPrompt"
+            ])
+        );
+        assert_eq!(serialized["name"], "StructuredPrompt");
+        assert_eq!(serialized["kwargs"]["schema_"], schema);
+    }
+
+    #[test]
+    fn test_structured_prompt_full_round_trip() {
+        // Create a complete structured prompt matching the format from the research report
+        let schema = json!({
+            "description": "A structured movie review.",
+            "properties": {
+                "title": {
+                    "description": "The movie title",
+                    "title": "Title",
+                    "type": "string"
+                },
+                "rating": {
+                    "description": "Rating from 1-10",
+                    "maximum": 10,
+                    "minimum": 1,
+                    "title": "Rating",
+                    "type": "integer"
+                },
+                "summary": {
+                    "description": "Brief summary",
+                    "title": "Summary",
+                    "type": "string"
+                }
+            },
+            "required": ["title", "rating", "summary"],
+            "title": "MovieReview",
+            "type": "object"
+        });
+
+        // System message
+        let system_prompt_kwargs = PromptTemplateKwargs {
+            input_variables: vec![],
+            template: "You are a movie critic. Provide a structured review.".to_string(),
+            template_format: "f-string".to_string(),
+        };
+
+        let system_prompt = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            system_prompt_kwargs,
+        );
+
+        let system_message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: system_prompt,
+            },
+        );
+
+        // Human message
+        let human_prompt_kwargs = PromptTemplateKwargs {
+            input_variables: vec!["movie_name".to_string()],
+            template: "Review the movie: {movie_name}".to_string(),
+            template_format: "f-string".to_string(),
+        };
+
+        let human_prompt = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            human_prompt_kwargs,
+        );
+
+        let human_message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "HumanMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: human_prompt,
+            },
+        );
+
+        // Structured prompt
+        let structured_prompt = StructuredPrompt {
+            input_variables: Some(vec!["movie_name".to_string()]),
+            messages: vec![system_message, human_message],
+            schema_: schema.clone(),
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        let wrapped = structured_prompt.to_lc_json();
+
+        // Serialize to JSON
+        let json_str = serde_json::to_string_pretty(&wrapped).unwrap();
+
+        // Deserialize back
+        let deserialized: LcJson<StructuredPrompt> = serde_json::from_str(&json_str).unwrap();
+
+        // Verify round-trip integrity
+        assert_eq!(wrapped, deserialized);
+        assert_eq!(deserialized.kwargs.schema_, schema);
+        assert_eq!(
+            deserialized.kwargs.structured_output_kwargs.method,
+            "json_schema"
+        );
+        assert_eq!(deserialized.kwargs.messages.len(), 2);
+    }
+
+    #[test]
+    fn test_structured_prompt_matches_python_format() {
+        // This test verifies the serialized format matches the Python SDK output
+        // from docs/research/398-structured-output-prompts-scout.md Section 9.2
+        let schema = json!({
+            "type": "object",
+            "title": "Response",
+            "properties": {
+                "answer": {"type": "string"},
+                "confidence": {"type": "number"}
+            },
+            "required": ["answer", "confidence"]
+        });
+
+        let system_prompt = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "You are a helpful assistant.".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let system_message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: system_prompt,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![system_message],
+            schema_: schema.clone(),
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        let wrapped = structured_prompt.to_lc_json();
+        let serialized = serde_json::to_value(&wrapped).unwrap();
+
+        // Verify top-level structure
+        assert_eq!(serialized["lc"], 1);
+        assert_eq!(serialized["type"], "constructor");
+        assert!(serialized["id"].is_array());
+        assert!(serialized["kwargs"].is_object());
+
+        // Verify kwargs structure
+        let kwargs = &serialized["kwargs"];
+        assert!(kwargs["messages"].is_array());
+        assert_eq!(kwargs["schema_"], schema);
+        assert_eq!(kwargs["structured_output_kwargs"]["method"], "json_schema");
+
+        // Verify message structure
+        let first_message = &kwargs["messages"][0];
+        assert_eq!(first_message["lc"], 1);
+        assert_eq!(first_message["type"], "constructor");
+        assert!(first_message["kwargs"]["prompt"].is_object());
+    }
+
+    #[test]
+    fn test_function_calling_method() {
+        // Test "function_calling" method (alternative to "json_schema")
+        let schema = json!({"type": "object"});
+
+        let prompt_template = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "Test".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: prompt_template,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![message],
+            schema_: schema,
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "function_calling".to_string(),
+            },
+        };
+
+        let serialized = serde_json::to_value(&structured_prompt).unwrap();
+        assert_eq!(
+            serialized["structured_output_kwargs"]["method"],
+            "function_calling"
+        );
     }
 }
