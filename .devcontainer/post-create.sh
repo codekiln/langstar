@@ -15,7 +15,26 @@ set -euo pipefail
 
 echo "[post-create] Starting post-create setup..."
 
-# Step 1: Configure mise activation in zshrc
+# Step 1: Clear git credential helpers before mise install
+# mise may need to download packages from git repositories, and if a
+# credential helper is configured but the binary doesn't exist, it fails.
+# This typically happens when host machine's gitconfig is copied into the
+# container with references to credential helpers that don't exist in the
+# container environment (e.g., docker-credential-desktop).
+echo "[post-create] Clearing git credential helpers..."
+git config --global --unset-all credential.helper 2>/dev/null || true
+git config --unset-all credential.helper 2>/dev/null || true
+git config --global --unset-all credential.https://github.com.helper 2>/dev/null || true
+git config --unset-all credential.https://github.com.helper 2>/dev/null || true
+git config --global --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
+git config --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
+
+# Reset credential helper chain by setting empty string
+# This ensures no credential helpers are active during mise install
+git config --global --replace-all credential.helper "" ".*" 2>/dev/null || true
+echo "[post-create] Git credential helpers cleared."
+
+# Step 2: Configure mise activation in zshrc
 echo "[post-create] Configuring mise activation for zsh..."
 if ! grep -q 'mise activate zsh' ~/.zshrc 2>/dev/null; then
   echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
@@ -24,14 +43,14 @@ else
   echo "[post-create] mise already configured in ~/.zshrc"
 fi
 
-# Step 2: Trust and install mise tools
+# Step 3: Trust and install mise tools
 echo "[post-create] Trusting mise configuration..."
 mise trust
 
 echo "[post-create] Installing mise tools (Rust, Python, etc.)..."
 mise install
 
-# Step 3: Install specify-cli via uv
+# Step 4: Install specify-cli via uv
 echo "[post-create] Installing specify-cli..."
 if ! command -v uv >/dev/null 2>&1; then
   echo "[post-create] ERROR: uv not found. Cannot install specify-cli."
@@ -40,7 +59,7 @@ fi
 
 uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
 
-# Step 4: Install cargo tools
+# Step 5: Install cargo tools
 # After mise install, cargo should be available via ~/.cargo/env
 echo "[post-create] Installing cargo tools (cargo-release, git-cliff)..."
 
@@ -66,7 +85,7 @@ echo "[post-create] cargo version: $(cargo --version)"
 # Install cargo tools
 cargo install cargo-release git-cliff
 
-# Step 5: Install gh CLI extensions
+# Step 6: Install gh CLI extensions
 echo "[post-create] Installing gh CLI extensions..."
 
 # Verify gh is available
