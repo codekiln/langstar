@@ -2,6 +2,14 @@
 #
 # Cleanup worktrees tied to closed GitHub issues
 #
+# Usage:
+#   ./cleanup-closed-issue-worktrees.sh
+#
+# Requirements:
+#   - GitHub CLI (gh) must be installed and authenticated
+#   - Branch names should follow format: username/issue_num-description
+#   - Example: alice/123-add-feature
+#
 # This script:
 # 1. Lists all worktrees
 # 2. Extracts issue numbers from branch names
@@ -16,62 +24,104 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Validate GitHub CLI is installed and authenticated
+if ! command -v gh &> /dev/null; then
+  echo "❌ Error: GitHub CLI (gh) is not installed. Please install it first."
+  exit 1
+fi
+
+if ! gh auth status &> /dev/null; then
+  echo "❌ Error: Not authenticated with GitHub CLI. Run 'gh auth login' first."
+  exit 1
+fi
+
+# Get repository root and name
+repo_root=$(git rev-parse --show-toplevel)
+repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+
 echo "🔍 Checking worktrees for closed issues..."
 echo ""
 
-# Get list of worktrees (skip the main workspace line)
-worktrees=$(git worktree list --porcelain | grep -E '^worktree|^branch' | paste -d ' ' - - | grep -v "^worktree /workspace branch")
+# Parse worktrees and check issue status using robust parsing
+current_path=""
+current_branch=""
+found_worktree=false
+processed_any=false
 
-if [ -z "$worktrees" ]; then
-  echo "✓ No additional worktrees found"
-  exit 0
-fi
+while IFS= read -r line; do
+  if [[ $line =~ ^worktree\ (.+)$ ]]; then
+    current_path="${BASH_REMATCH[1]}"
+    found_worktree=true
+  elif [[ $line =~ ^branch\ refs/heads/(.+)$ ]]; then
+    current_branch="${BASH_REMATCH[1]}"
+  fi
 
-# Parse worktrees and check issue status
-while read -r line; do
-  # Extract path and branch
-  path=$(echo "$line" | awk '{print $2}')
-  branch=$(echo "$line" | awk '{print $4}' | sed 's|refs/heads/||')
+  # When both path and branch are set, process
+  if $found_worktree && [ -n "$current_branch" ]; then
+    # Skip main workspace (repo root)
+    if [ "$current_path" = "$repo_root" ]; then
+      # Reset for next worktree
+      current_path=""
+      current_branch=""
+      found_worktree=false
+      continue
+    fi
 
-  # Extract issue number from branch name (format: username/issue_num-description)
-  if [[ $branch =~ /([0-9]+)- ]]; then
-    issue_num="${BASH_REMATCH[1]}"
+    branch="$current_branch"
+    path="$current_path"
+    processed_any=true
 
-    echo -n "Checking worktree: ${path##*/} (issue #${issue_num})... "
+    # Extract issue number from branch name (format: username/issue_num-description)
+    # Handles both "123-" and "123 -" formats
+    if [[ $branch =~ /([0-9]+)-? ]]; then
+      issue_num="${BASH_REMATCH[1]}"
 
-    # Check issue state
-    if issue_state=$(gh issue view "$issue_num" --json state --jq '.state' 2>/dev/null); then
-      if [ "$issue_state" = "CLOSED" ]; then
-        echo -e "${RED}CLOSED${NC}"
-        echo "  → Removing worktree: $path"
+      echo -n "Checking worktree: ${path##*/} (issue #${issue_num})... "
 
-        # Ensure we're not in the worktree being removed
-        if [[ "$PWD" == "$path"* ]]; then
-          echo -e "  ${YELLOW}⚠ Currently in this worktree, switching to main workspace${NC}"
-          cd /workspace
-        fi
+      # Check issue state with explicit repository context
+      if issue_state=$(gh issue view "$issue_num" --repo "$repo" --json state --jq '.state' 2>/dev/null); then
+        if [ "$issue_state" = "CLOSED" ]; then
+          echo -e "${RED}CLOSED${NC}"
+          echo "  → Removing worktree: $path"
 
-        # Remove the worktree
-        if git worktree remove "$path" 2>/dev/null; then
-          echo -e "  ${GREEN}✓ Removed successfully${NC}"
+          # Ensure we're not in the worktree being removed
+          # Check for exact match or if PWD is a subdirectory
+          if [[ "$PWD" == "$path" ]] || [[ "$PWD" == "$path/"* ]]; then
+            echo -e "  ${YELLOW}⚠ Currently in this worktree, switching to repository root${NC}"
+            cd "$repo_root"
+          fi
 
-          # Optionally delete the branch (commented out by default)
-          # git branch -D "$branch" 2>/dev/null && echo "  ✓ Deleted branch: $branch"
+          # Remove the worktree
+          if git worktree remove "$path" 2>/dev/null; then
+            echo -e "  ${GREEN}✓ Removed successfully${NC}"
+
+            # Optionally delete the branch (commented out by default)
+            # git branch -D "$branch" 2>/dev/null && echo "  ✓ Deleted branch: $branch"
+          else
+            echo -e "  ${YELLOW}⚠ Failed to remove (may have uncommitted changes)${NC}"
+            echo "  Run: git worktree remove --force $path"
+          fi
         else
-          echo -e "  ${YELLOW}⚠ Failed to remove (may have uncommitted changes)${NC}"
-          echo "  Run: git worktree remove --force $path"
+          echo -e "${GREEN}OPEN${NC}"
         fi
       else
-        echo -e "${GREEN}OPEN${NC}"
+        echo -e "${YELLOW}UNKNOWN (could not query GitHub)${NC}"
       fi
     else
-      echo -e "${YELLOW}UNKNOWN (could not query GitHub)${NC}"
+      echo "Skipping: ${path##*/} (could not extract issue number from branch: $branch)"
     fi
-  else
-    echo "Skipping: ${path##*/} (could not extract issue number from branch: $branch)"
+    echo ""
+
+    # Reset for next worktree
+    current_path=""
+    current_branch=""
+    found_worktree=false
   fi
-  echo ""
-done <<< "$worktrees"
+done < <(git worktree list --porcelain)
+
+if [ "$processed_any" = false ]; then
+  echo "✓ No additional worktrees found"
+fi
 
 # Prune stale worktree references
 echo "🧹 Pruning stale worktree references..."
