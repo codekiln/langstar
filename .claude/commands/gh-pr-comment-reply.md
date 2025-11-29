@@ -6,6 +6,52 @@ description: Reply to a single GitHub PR review comment using the GitHub API
 
 Reply to a single PR review comment using the GitHub API.
 
+## Critical Constraints - Session Statelessness
+
+**IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
+
+**You CANNOT:**
+- Track issues across sessions
+- Remember to do something later
+- Follow up on tasks in the future
+- Promise to handle something "in a follow-up"
+
+**You MUST NOT say things like:**
+- "I'll track this in a follow-up issue"
+- "I'll remember to fix this later"
+- "I'll handle this in a subsequent PR"
+
+**Instead, choose ONE of these response patterns:**
+
+### Option 1: Implement Now (Preferred)
+When the change is small-ish and worth doing:
+1. Implement the fix immediately
+2. Commit the change
+3. Reply to the comment with: "Fixed in commit {sha}: {brief description}"
+
+### Option 2: Defer with Issue (Expensive - use sparingly)
+When the change is large AND worth doing AND not critical to PR:
+1. Create a GitHub issue NOW using `gh issue create`
+2. Add it to the same milestone as the PR's issue (if applicable)
+3. Add it as a sub-issue of the parent ticket using `gh sub-issue add`
+4. Reply with: "Created #XYZ to track this. Not addressing in this PR because {reason}."
+5. Optionally add a `// TODO(#XYZ): description` code comment
+
+**Only choose this option if:**
+- The change is large enough to justify a separate PR
+- It's not critical to the current PR's functionality
+- The PR is mature (many comments already resolved)
+
+### Option 3: Disagree / Won't Fix
+When the suggestion is nitpicky, negligible, or you disagree:
+1. Reply explaining why this won't be addressed
+2. Be professional and concise
+
+**NEVER use this for:**
+- Test failures or errors (these MUST be fixed)
+- Security concerns
+- Critical functionality issues
+
 ## Arguments
 
 Arguments are passed via `$ARGUMENTS` in the format:

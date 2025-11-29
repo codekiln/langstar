@@ -11,6 +11,45 @@ Orchestrate replying to multiple GitHub PR review comments in parallel using the
 > defined in `.claude/agents/` do not receive tool access. The `general-purpose` subagent has full
 > tool access (`Tools: *`) and can execute the required `gh api` commands.
 
+## Critical Constraints - Session Statelessness
+
+**IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
+
+**You CANNOT:**
+- Track issues across sessions
+- Remember to do something later
+- Follow up on tasks in the future
+- Promise to handle something "in a follow-up"
+
+**You MUST NOT say things like:**
+- "I'll track this in a follow-up issue"
+- "I'll remember to fix this later"
+- "I'll handle this in a subsequent PR"
+
+## PR Comment Response Decision Framework
+
+When replying to comments, each response MUST use ONE of these options:
+
+### Option 1: Implement Now (Preferred)
+**When:** The change is small-ish and worth doing.
+**Action steps:**
+1. Implement the fix immediately
+2. Commit the change
+3. Reply to the comment with: "Fixed in commit {sha}: {brief description}"
+
+### Option 2: Defer with Issue (Expensive)
+**When:** Change is large AND worth doing AND not critical to PR.
+**Action BEFORE replying:**
+1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
+2. Add to same milestone as PR's issue
+3. Add as sub-issue of parent ticket
+**Reply format:** "Created #XYZ to track this. Not addressing in this PR because {reason}."
+
+### Option 3: Disagree / Won't Fix
+**When:** Suggestion is nitpicky, negligible, or you disagree.
+**Reply format:** Professional explanation of why not addressing.
+**NEVER use for:** Test failures, errors, security concerns.
+
 ## Overview
 
 This skill automates the process of replying to multiple PR review comments by:
