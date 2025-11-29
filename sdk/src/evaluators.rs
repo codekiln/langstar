@@ -436,7 +436,7 @@ mod tests {
     #[test]
     fn test_string_distance_different() {
         let score = string_distance("abc", "xyz");
-        assert!(score == 0.0);
+        assert_eq!(score, 0.0);
     }
 
     // ========================================================================

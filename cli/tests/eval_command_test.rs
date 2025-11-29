@@ -622,7 +622,7 @@ fn test_eval_run_json_output() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-fn test_evaluator_types_are_case_insensitive() {
+fn test_evaluator_types_accept_kebab_case() {
     // Test that evaluator types accept kebab-case (as shown in help)
     let evaluators = vec![
         ("exact-match", true),
@@ -652,9 +652,9 @@ fn test_evaluator_types_are_case_insensitive() {
                 .failure()
                 .stderr(predicate::str::contains("LANGSMITH_API_KEY"));
         } else {
-            cmd.assert().failure().stderr(predicate::str::contains(
-                "invalid value".to_string() + evaluator,
-            ));
+            cmd.assert()
+                .failure()
+                .stderr(predicate::str::contains("invalid value"));
         }
     }
 }
