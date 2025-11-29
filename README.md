@@ -408,6 +408,87 @@ langstar dataset list --json
 
 For complete documentation including format specifications, SDK API reference, and common workflows, see [docs/datasets.md](./docs/datasets.md).
 
+#### Evaluations
+
+Run evaluations on datasets using heuristic or LLM-as-judge evaluators.
+
+```bash
+# Create evaluation with heuristic evaluator
+langstar eval create \
+  --name "exact-match-validation" \
+  --dataset "my-test-dataset" \
+  --evaluator exact-match
+
+# Create evaluation with LLM judge (categorical scoring)
+langstar eval create \
+  --name "response-quality-judge" \
+  --dataset "customer-support-dataset" \
+  --evaluator llm-judge \
+  --judge-model "claude-3-5-sonnet-20241022" \
+  --judge-provider "anthropic" \
+  --judge-prompt-file "./rubrics/quality.txt" \
+  --score-type categorical \
+  --score-choices "Poor,Fair,Good,Excellent" \
+  --include-reasoning
+
+# Create evaluation with LLM judge (continuous scoring)
+langstar eval create \
+  --name "relevance-score" \
+  --dataset "qa-dataset" \
+  --evaluator llm-judge \
+  --judge-model "gpt-4" \
+  --judge-provider "openai" \
+  --judge-prompt-file "./rubrics/relevance.txt" \
+  --score-type continuous \
+  --score-min 0.0 \
+  --score-max 1.0
+
+# Run an evaluation
+langstar eval run <eval-id>
+
+# Preview evaluation (first 10 examples)
+langstar eval run <eval-id> --preview 10
+
+# Dry run (validate configuration only)
+langstar eval run <eval-id> --dry-run
+
+# List evaluations
+langstar eval list
+langstar eval list --name "quality"
+langstar eval list --dataset <dataset-id>
+
+# Get evaluation details
+langstar eval get <eval-id>
+
+# Export results
+langstar eval export <eval-id> --format csv --output results.csv
+langstar eval export <eval-id> --format jsonl --output results.jsonl
+langstar eval export <eval-id> --format json --output results.json --include-metadata
+```
+
+**Evaluator Types:**
+
+*Heuristic Evaluators (zero-cost, deterministic):*
+- `exact-match` - Exact string equality check
+- `contains` - Substring presence check
+- `regex-match` - Regular expression pattern matching
+- `json-valid` - JSON syntax validation
+- `string-distance` - Levenshtein distance (fuzzy matching)
+
+*LLM-as-Judge Evaluators (requires API calls):*
+- `llm-judge` - Use an LLM to score outputs based on a rubric
+
+**Environment Variables:**
+- `LANGSMITH_API_KEY` - Required for all eval commands
+- `ANTHROPIC_API_KEY` - Required for Anthropic judge models
+- `OPENAI_API_KEY` - Required for OpenAI judge models
+
+**Score Types for LLM Judge:**
+- `categorical` - Predefined choices (e.g., Pass/Fail, Poor/Fair/Good/Excellent)
+- `continuous` - Numeric range (e.g., 0.0-1.0, 1-10)
+
+For detailed documentation including evaluator reference, judge prompt examples, and workflow patterns, see [docs/evals-implementation-plan.md](./docs/evals-implementation-plan.md).
+
 ## Configuration
 
 This section provides detailed configuration options for both LangSmith and LangGraph services.
