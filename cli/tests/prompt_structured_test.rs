@@ -4,8 +4,8 @@
 ///
 /// Prerequisites:
 /// - LANGSMITH_API_KEY environment variable
-/// - LANGSMITH_WORKSPACE_ID environment variable
-/// - Test repository: codekiln/langstar-structured-test
+/// - LANGSMITH_WORKSPACE_ID environment variable (required per CLI test pattern)
+/// - Test repository: codekiln/langstar-structured-test (auto-created if needed)
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;

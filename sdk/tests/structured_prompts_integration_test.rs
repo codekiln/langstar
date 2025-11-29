@@ -3,7 +3,7 @@
 /// These tests require:
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable (or auto-discovery)
-/// - Test repository to exist: codekiln/langstar-structured-test
+/// - Test repository: codekiln/langstar-structured-test (auto-created if it does not exist)
 ///
 /// Run with: cargo test --test structured_prompts_integration_test -- --ignored --nocapture
 use langstar_sdk::prompts::{
