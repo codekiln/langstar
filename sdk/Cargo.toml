@@ -25,6 +25,9 @@ urlencoding = "2.1"
 async-stream = "0.3"
 futures-core = "0.3"
 
+# JSON Schema validation for structured prompts
+jsonschema = "0.18"
+
 [dev-dependencies]
 tokio-test = "0.4"
 mockito = "1.5"
