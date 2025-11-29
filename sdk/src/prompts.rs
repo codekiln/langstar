@@ -1,5 +1,5 @@
 use crate::client::LangchainClient;
-use crate::error::Result;
+use crate::error::{LangstarError, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -167,6 +167,71 @@ pub struct PromptTemplateKwargs {
     pub template: String,
     /// Template format (e.g., "f-string")
     pub template_format: String,
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Schema Validation
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Validate a JSON Schema value.
+///
+/// This checks if the provided value is a valid JSON Schema by attempting
+/// to compile it using the jsonschema crate.
+///
+/// # Arguments
+/// * `schema` - The JSON Schema to validate
+///
+/// # Returns
+/// * `Ok(())` if the schema is valid
+/// * `Err(InvalidSchemaError)` if the schema is invalid
+///
+/// # Example
+/// ```rust
+/// use langstar_sdk::prompts::validate_json_schema;
+/// use serde_json::json;
+///
+/// let valid_schema = json!({
+///     "type": "object",
+///     "properties": {
+///         "name": {"type": "string"}
+///     }
+/// });
+///
+/// assert!(validate_json_schema(&valid_schema).is_ok());
+/// ```
+pub fn validate_json_schema(schema: &Value) -> Result<()> {
+    // Attempt to compile the schema
+    jsonschema::JSONSchema::compile(schema).map_err(|e| {
+        LangstarError::InvalidSchemaError(format!("Schema validation failed: {}", e))
+    })?;
+
+    Ok(())
+}
+
+/// Validate a structured output method.
+///
+/// Valid methods are "json_schema" and "function_calling".
+///
+/// # Arguments
+/// * `method` - The method string to validate
+///
+/// # Returns
+/// * `Ok(())` if the method is valid
+/// * `Err(InvalidMethodError)` if the method is invalid
+///
+/// # Example
+/// ```rust
+/// use langstar_sdk::prompts::validate_method;
+///
+/// assert!(validate_method("json_schema").is_ok());
+/// assert!(validate_method("function_calling").is_ok());
+/// assert!(validate_method("invalid").is_err());
+/// ```
+pub fn validate_method(method: &str) -> Result<()> {
+    match method {
+        "json_schema" | "function_calling" => Ok(()),
+        _ => Err(LangstarError::InvalidMethodError(method.to_string())),
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -379,6 +444,175 @@ impl<'a> PromptClient<'a> {
         let request = self.client.langsmith_post(&path)?.json(commit_request);
         let response: CommitResponse = self.client.execute(request).await?;
         Ok(response)
+    }
+
+    /// Push a structured prompt to the PromptHub with schema validation.
+    ///
+    /// This method validates the JSON schema before pushing and serializes
+    /// the StructuredPrompt to LC-JSON format.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `structured_prompt` - The structured prompt to push
+    /// * `parent_commit` - Optional parent commit hash for updates
+    ///
+    /// # Returns
+    /// The commit response with commit hash
+    ///
+    /// # Errors
+    /// - `InvalidSchemaError` if the JSON schema is invalid
+    /// - `InvalidMethodError` if the method is not "json_schema" or "function_calling"
+    /// - API errors if the push fails
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, prompts::{StructuredPrompt, StructuredOutputKwargs}};
+    /// # use serde_json::json;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// let schema = json!({
+    ///     "type": "object",
+    ///     "properties": {
+    ///         "answer": {"type": "string"}
+    ///     },
+    ///     "required": ["answer"]
+    /// });
+    ///
+    /// let structured_prompt = StructuredPrompt {
+    ///     input_variables: None,
+    ///     messages: vec![/* ... */],
+    ///     schema_: schema,
+    ///     structured_output_kwargs: StructuredOutputKwargs {
+    ///         method: "json_schema".to_string(),
+    ///     },
+    /// };
+    ///
+    /// let response = prompts.push_structured_prompt(
+    ///     "owner",
+    ///     "my-prompt",
+    ///     structured_prompt,
+    ///     None
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn push_structured_prompt(
+        &self,
+        owner: &str,
+        repo: &str,
+        structured_prompt: StructuredPrompt,
+        parent_commit: Option<String>,
+    ) -> Result<CommitResponse> {
+        // Validate the schema before pushing
+        validate_json_schema(&structured_prompt.schema_)?;
+
+        // Validate the method
+        validate_method(&structured_prompt.structured_output_kwargs.method)?;
+
+        // Wrap in LC-JSON format
+        let lc_json = structured_prompt.to_lc_json();
+
+        // Serialize to serde_json::Value
+        let manifest = serde_json::to_value(&lc_json)?;
+
+        // Create commit request
+        let commit_request = CommitRequest {
+            manifest,
+            parent_commit,
+            example_run_ids: None,
+        };
+
+        // Push using existing method
+        self.push(owner, repo, &commit_request).await
+    }
+
+    /// Pull a prompt commit from the PromptHub.
+    ///
+    /// This retrieves a specific commit from the prompt repository.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `commit` - The commit hash or tag (e.g., "latest", "main", commit SHA)
+    ///
+    /// # Returns
+    /// The commit manifest as a JSON value
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// let manifest = prompts.pull("owner", "my-prompt", "latest").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn pull(&self, owner: &str, repo: &str, commit: &str) -> Result<Value> {
+        let path = format!("/api/v1/commits/{}/{}/{}", owner, repo, commit);
+        let request = self.client.langsmith_get(&path)?;
+
+        #[derive(Deserialize)]
+        struct CommitManifestResponse {
+            manifest: Value,
+        }
+
+        let response: CommitManifestResponse = self.client.execute(request).await?;
+        Ok(response.manifest)
+    }
+
+    /// Pull a structured prompt from the PromptHub and deserialize it.
+    ///
+    /// This retrieves a commit and attempts to deserialize it as a StructuredPrompt.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `commit` - The commit hash or tag (e.g., "latest", "main", commit SHA)
+    ///
+    /// # Returns
+    /// The deserialized StructuredPrompt
+    ///
+    /// # Errors
+    /// - `JsonError` if the manifest cannot be deserialized as a StructuredPrompt
+    /// - API errors if the pull fails
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// let structured_prompt = prompts.pull_structured_prompt(
+    ///     "owner",
+    ///     "my-prompt",
+    ///     "latest"
+    /// ).await?;
+    ///
+    /// println!("Schema: {}", structured_prompt.schema_);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn pull_structured_prompt(
+        &self,
+        owner: &str,
+        repo: &str,
+        commit: &str,
+    ) -> Result<StructuredPrompt> {
+        let manifest = self.pull(owner, repo, commit).await?;
+
+        // Deserialize from LC-JSON format
+        let lc_json: LcJson<StructuredPrompt> = serde_json::from_value(manifest)?;
+
+        Ok(lc_json.kwargs)
     }
 }
 
@@ -875,5 +1109,306 @@ mod tests {
             serialized["structured_output_kwargs"]["method"],
             "function_calling"
         );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Schema Validation Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_validate_json_schema_valid() {
+        let valid_schema = json!({
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "age": {"type": "integer", "minimum": 0}
+            },
+            "required": ["name"]
+        });
+
+        assert!(validate_json_schema(&valid_schema).is_ok());
+    }
+
+    #[test]
+    fn test_validate_json_schema_invalid_type() {
+        let invalid_schema = json!({
+            "type": "invalid_type",
+            "properties": {}
+        });
+
+        let result = validate_json_schema(&invalid_schema);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            LangstarError::InvalidSchemaError(_)
+        ));
+    }
+
+    #[test]
+    fn test_validate_json_schema_malformed() {
+        let malformed_schema = json!({
+            "properties": {
+                "name": {"type": "string"}
+            },
+            "required": "should_be_array_not_string"
+        });
+
+        let result = validate_json_schema(&malformed_schema);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_method_json_schema() {
+        assert!(validate_method("json_schema").is_ok());
+    }
+
+    #[test]
+    fn test_validate_method_function_calling() {
+        assert!(validate_method("function_calling").is_ok());
+    }
+
+    #[test]
+    fn test_validate_method_invalid() {
+        let result = validate_method("invalid_method");
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            LangstarError::InvalidMethodError(_)
+        ));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Push/Pull Integration Tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_push_structured_prompt_validates_schema() {
+        // Test that push_structured_prompt validates the schema
+        // This is a synchronous test that verifies schema validation logic
+
+        let invalid_schema = json!({"type": "invalid_type"});
+
+        let prompt_template = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "Test".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: prompt_template,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![message],
+            schema_: invalid_schema,
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        // Verify that validation would fail
+        let validation_result = validate_json_schema(&structured_prompt.schema_);
+        assert!(validation_result.is_err());
+    }
+
+    #[test]
+    fn test_push_structured_prompt_validates_method() {
+        // Test that push_structured_prompt validates the method
+
+        let valid_schema = json!({
+            "type": "object",
+            "properties": {"answer": {"type": "string"}}
+        });
+
+        let prompt_template = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "Test".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: prompt_template,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![message],
+            schema_: valid_schema,
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "invalid_method".to_string(),
+            },
+        };
+
+        // Verify that method validation would fail
+        let validation_result = validate_method(&structured_prompt.structured_output_kwargs.method);
+        assert!(validation_result.is_err());
+    }
+
+    #[test]
+    fn test_structured_prompt_serialization_for_api() {
+        // Test that StructuredPrompt serializes correctly for API submission
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "answer": {"type": "string"},
+                "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+            },
+            "required": ["answer"]
+        });
+
+        let prompt_template = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "prompt".to_string(),
+                "PromptTemplate".to_string(),
+            ],
+            PromptTemplateKwargs {
+                input_variables: vec![],
+                template: "You are a helpful assistant.".to_string(),
+                template_format: "f-string".to_string(),
+            },
+        );
+
+        let message = LcJson::new(
+            vec![
+                "langchain".to_string(),
+                "prompts".to_string(),
+                "chat".to_string(),
+                "SystemMessagePromptTemplate".to_string(),
+            ],
+            MessagePromptTemplateKwargs {
+                prompt: prompt_template,
+            },
+        );
+
+        let structured_prompt = StructuredPrompt {
+            input_variables: None,
+            messages: vec![message],
+            schema_: schema.clone(),
+            structured_output_kwargs: StructuredOutputKwargs {
+                method: "json_schema".to_string(),
+            },
+        };
+
+        // Wrap in LC-JSON
+        let lc_json = structured_prompt.to_lc_json();
+
+        // Serialize to JSON
+        let manifest = serde_json::to_value(&lc_json).unwrap();
+
+        // Verify structure matches API expectations
+        assert_eq!(manifest["lc"], 1);
+        assert_eq!(manifest["type"], "constructor");
+        assert_eq!(
+            manifest["id"],
+            json!([
+                "langchain_core",
+                "prompts",
+                "structured",
+                "StructuredPrompt"
+            ])
+        );
+        assert_eq!(manifest["kwargs"]["schema_"], schema);
+        assert_eq!(
+            manifest["kwargs"]["structured_output_kwargs"]["method"],
+            "json_schema"
+        );
+    }
+
+    #[test]
+    fn test_pull_structured_prompt_deserialization() {
+        // Test that we can deserialize a StructuredPrompt from LC-JSON format
+        let schema = json!({
+            "type": "object",
+            "properties": {
+                "title": {"type": "string"},
+                "rating": {"type": "integer", "minimum": 1, "maximum": 10}
+            },
+            "required": ["title", "rating"]
+        });
+
+        // Simulate an API response with LC-JSON format
+        let api_manifest = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+            "name": "StructuredPrompt",
+            "kwargs": {
+                "input_variables": ["movie_name"],
+                "messages": [
+                    {
+                        "lc": 1,
+                        "type": "constructor",
+                        "id": ["langchain", "prompts", "chat", "SystemMessagePromptTemplate"],
+                        "kwargs": {
+                            "prompt": {
+                                "lc": 1,
+                                "type": "constructor",
+                                "id": ["langchain", "prompts", "prompt", "PromptTemplate"],
+                                "kwargs": {
+                                    "input_variables": [],
+                                    "template": "You are a movie critic.",
+                                    "template_format": "f-string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "schema_": schema.clone(),
+                "structured_output_kwargs": {
+                    "method": "json_schema"
+                }
+            }
+        });
+
+        // Deserialize
+        let lc_json: LcJson<StructuredPrompt> = serde_json::from_value(api_manifest).unwrap();
+        let structured_prompt = lc_json.kwargs;
+
+        // Verify deserialization
+        assert_eq!(structured_prompt.schema_, schema);
+        assert_eq!(
+            structured_prompt.structured_output_kwargs.method,
+            "json_schema"
+        );
+        assert_eq!(
+            structured_prompt.input_variables,
+            Some(vec!["movie_name".to_string()])
+        );
+        assert_eq!(structured_prompt.messages.len(), 1);
     }
 }

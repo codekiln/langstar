@@ -30,6 +30,14 @@ pub enum LangstarError {
     #[error("Invalid URL: {0}")]
     UrlError(#[from] url::ParseError),
 
+    /// Invalid schema format
+    #[error("Invalid JSON Schema: {0}")]
+    InvalidSchemaError(String),
+
+    /// Invalid structured output method
+    #[error("Invalid structured output method: {0}. Valid methods: json_schema, function_calling")]
+    InvalidMethodError(String),
+
     /// Other errors
     #[error("Error: {0}")]
     Other(String),
