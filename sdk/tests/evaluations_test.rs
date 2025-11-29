@@ -251,10 +251,7 @@ async fn test_list_feedback_by_run() {
 
     let mock = server
         .mock("GET", "/api/v1/feedback")
-        .match_query(Matcher::UrlEncoded(
-            "run".to_string(),
-            run_id.to_string(),
-        ))
+        .match_query(Matcher::UrlEncoded("run".to_string(), run_id.to_string()))
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(response_body.to_string())
