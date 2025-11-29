@@ -578,7 +578,6 @@ mod tests {
     #[test]
     fn test_validate_llm_judge_with_nonexistent_file() {
         use std::path::PathBuf;
-        use uuid::Uuid;
 
         // Use a UUID to generate a path that's guaranteed not to exist
         let nonexistent_path = PathBuf::from(format!("/tmp/nonexistent-{}.txt", Uuid::new_v4()));
