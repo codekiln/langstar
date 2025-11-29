@@ -31,12 +31,21 @@ impl OutputFormat {
 }
 
 /// Export format for evaluation results and dataset examples
-#[derive(Debug, Clone, Copy, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
 pub enum ExportFormat {
     /// CSV format
     Csv,
     /// JSON Lines format
     Jsonl,
+}
+
+impl std::fmt::Display for ExportFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExportFormat::Csv => write!(f, "csv"),
+            ExportFormat::Jsonl => write!(f, "jsonl"),
+        }
+    }
 }
 
 /// Output formatter for CLI results
