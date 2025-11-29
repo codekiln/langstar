@@ -52,9 +52,8 @@ Key decisions:
 ### OpenAPI Validation
 
 **Issue**: [#404](https://github.com/codekiln/langstar/issues/404)
-**Document**: [402-structured-prompts-openapi-validation.md](../research/402-structured-prompts-openapi-validation.md)
 
-Validated against LangSmith OpenAPI spec to ensure API compatibility.
+Validated against LangSmith OpenAPI spec to ensure API compatibility per issue #404.
 
 ## Implementation Phases
 
@@ -268,7 +267,7 @@ cargo run -- prompt pull test/structured-test
 **Implementation**: Uses `jsonschema` crate
 ```toml
 [dependencies]
-jsonschema = "0.21"
+jsonschema = "0.18"
 ```
 
 ### Why PathBuf for Schema Argument?
@@ -307,7 +306,7 @@ jsonschema = "0.21"
 | File | Description |
 |------|-------------|
 | `sdk/src/prompts.rs` | Unit tests for types and validation |
-| `sdk/tests/prompts_integration.rs` | Integration tests with LangSmith API |
+| `sdk/tests/integration_test.rs` | Integration tests with LangSmith API |
 
 ## Future Enhancements
 
@@ -378,7 +377,7 @@ jsonschema = "0.21"
 
 - Research: [398-structured-output-prompts-scout.md](../research/398-structured-output-prompts-scout.md)
 - Usage guide: [structured-output-prompts.md](../examples/structured-output-prompts.md)
-- OpenAPI validation: [402-structured-prompts-openapi-validation.md](../research/402-structured-prompts-openapi-validation.md)
+- OpenAPI validation: Completed per issue [#404](https://github.com/codekiln/langstar/issues/404)
 
 ## Summary
 
