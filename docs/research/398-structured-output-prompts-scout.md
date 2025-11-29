@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This document captures research findings on structured output prompts in LangSmith to inform the design of langstar's Rust-based structured output prompt support. Structured output prompts allow defining a JSON schema that constrains LLM output format, enabling reliable extraction of typed data.
+This document captures research findings on structured output prompts in LangSmith to inform the design of Langstar's Rust-based structured output prompt support. Structured output prompts allow defining a JSON schema that constrains LLM output format, enabling reliable extraction of typed data.
 
 ### Key Findings
 
@@ -105,7 +105,7 @@ The `ls_structured_output_format` kwarg is used internally to pass the structure
 
 ### 2.3 Manifest Structure
 
-The `manifest` field in a prompt commit is a flexible JSON object using LangChain's serialization format ("lc-json"). For a `StructuredPrompt`:
+The `manifest` field in a prompt commit is a flexible JSON object using LangChain's serialization format ("LC-JSON"). For a `StructuredPrompt`:
 
 ```json
 {
@@ -176,6 +176,8 @@ The `manifest` field in a prompt commit is a flexible JSON object using LangChai
 | GET | `/api/v1/commits/{owner}/{repo}/` | List commits |
 | POST | `/api/v1/commits/{owner}/{repo}/` | Create commit |
 | GET | `/api/v1/commits/{owner}/{repo}/{commit}` | Get commit |
+
+**Note**: When using the default owner ("-"), the path simplifies to `/api/v1/commits/{repo}/`. The experiment scripts use this simplified form.
 
 ### 3.3 Prompt Pull/Push (SDK Convenience)
 

@@ -23,7 +23,7 @@ Understand how structured output prompts work in LangSmith by:
 ## Prerequisites
 
 - `LANGSMITH_API_KEY` environment variable set
-- Python 3.10+ with langsmith and langchain-core installed
+- Python 3.10+ with langsmith, langchain-core, and requests installed
 - Optional: `ANTHROPIC_API_KEY` for testing with Claude
 
 ## Files
@@ -42,7 +42,7 @@ Understand how structured output prompts work in LangSmith by:
 
 # Or run specific tests
 ./run_test.sh create    # Create and push a structured output prompt
-./run_test.sh pull      # Pull an existing prompt and examine manifest
+./run_test.sh pull --name my-test-prompt  # Pull an existing prompt and examine manifest
 ./run_test.sh raw       # Test raw API call (no SDK transforms)
 ```
 

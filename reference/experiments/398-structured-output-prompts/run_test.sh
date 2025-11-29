@@ -7,7 +7,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Source environment variables from devcontainer .env
 if [ -f /workspace/.devcontainer/.env ]; then
-    export $(grep -v '^#' /workspace/.devcontainer/.env | xargs)
+    set -a
+    source /workspace/.devcontainer/.env
+    set +a
 else
     echo "ERROR: /workspace/.devcontainer/.env not found"
     exit 1

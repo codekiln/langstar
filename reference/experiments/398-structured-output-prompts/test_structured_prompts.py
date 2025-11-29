@@ -13,7 +13,7 @@ import argparse
 import json
 import os
 import sys
-from typing import Any
+from urllib.parse import quote
 
 # Check for required dependencies
 try:
@@ -239,7 +239,7 @@ def cmd_raw_api_create(args):
 
         # Create a commit with the manifest
         response = requests.post(
-            f"{api_url}/commits/{prompt_name}/",
+            f"{api_url}/commits/{quote(prompt_name, safe='')}/",
             headers=headers,
             json={
                 "manifest": manifest,
