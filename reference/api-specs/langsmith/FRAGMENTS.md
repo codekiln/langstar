@@ -28,6 +28,8 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `example-schemas.json` | 29K | Example data types | See below | 2025-11-28 |
 | `evals-endpoints.json` | 45K | Evaluation/feedback API endpoints | See below | 2025-11-28 |
 | `evals-schemas.json` | 38K | Evaluation/feedback data types | See below | 2025-11-28 |
+| `prompt-endpoints.json` | 45K | Prompt repository/commit API endpoints | See below | 2025-11-29 |
+| `prompt-schemas.json` | 37K | Prompt/commit/manifest data types | See below | 2025-11-29 |
 
 ## Extraction Commands
 
@@ -81,6 +83,14 @@ jq '.paths | with_entries(select(.key | test("feedback|evaluator"; "i")))' \
 # Evaluation/feedback schemas (all schemas containing "feedback", "evaluator", or "eval")
 jq '.components.schemas | with_entries(select(.key | test("feedback|evaluator|eval"; "i")))' \
   openapi.json > ../../api-specs/langsmith/evals-schemas.json
+
+# Prompt repository and commit endpoints (all /api/v1/repos and /api/v1/commits paths)
+jq '.paths | with_entries(select(.key | test("^/api/v1/(repos|commits)")))' \
+  openapi.json > ../../api-specs/langsmith/prompt-endpoints.json
+
+# Prompt/commit/manifest schemas (all schemas containing "repo", "commit", "prompt", or "manifest")
+jq '.components.schemas | with_entries(select(.key | test("[Rr]epo|[Cc]ommit|[Pp]rompt|[Mm]anifest"; "i")))' \
+  openapi.json > ../../api-specs/langsmith/prompt-schemas.json
 ```
 
 ## Verification
@@ -108,3 +118,4 @@ jq '.paths | keys | map(select(contains("annotation-queue"))) | length' \
   - `../../research/298-openapi-validation.md` - Runs query validation
   - `../../research/334-openapi-validation.md` - Annotation queues validation
   - `../../research/347-openapi-validation.md` - Evaluations/feedback validation
+  - `../../research/402-structured-prompts-openapi-validation.md` - Structured output prompts validation
