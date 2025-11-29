@@ -7,7 +7,10 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand, ValueEnum};
-use langstar_sdk::{evaluations::{HeuristicEvaluator, ScoreType}, LangchainClient};
+use langstar_sdk::{
+    LangchainClient,
+    evaluations::{HeuristicEvaluator, ScoreType},
+};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tabled::Tabled;
@@ -47,6 +50,8 @@ pub enum EvaluatorType {
     RegexMatch,
     /// JSON validity check (heuristic, zero-cost)
     JsonValid,
+    /// String distance metrics (Levenshtein, etc.) (heuristic, zero-cost)
+    StringDistance,
     /// LLM-as-judge evaluator (requires API calls)
     LlmJudge,
 }
@@ -58,21 +63,23 @@ impl std::fmt::Display for EvaluatorType {
             EvaluatorType::Contains => write!(f, "contains"),
             EvaluatorType::RegexMatch => write!(f, "regex_match"),
             EvaluatorType::JsonValid => write!(f, "json_valid"),
+            EvaluatorType::StringDistance => write!(f, "string_distance"),
             EvaluatorType::LlmJudge => write!(f, "llm_judge"),
         }
     }
 }
 
-impl From<EvaluatorType> for HeuristicEvaluator {
-    fn from(eval_type: EvaluatorType) -> Self {
+impl TryFrom<EvaluatorType> for HeuristicEvaluator {
+    type Error = &'static str;
+
+    fn try_from(eval_type: EvaluatorType) -> std::result::Result<Self, Self::Error> {
         match eval_type {
-            EvaluatorType::ExactMatch => HeuristicEvaluator::ExactMatch,
-            EvaluatorType::Contains => HeuristicEvaluator::Contains,
-            EvaluatorType::RegexMatch => HeuristicEvaluator::RegexMatch,
-            EvaluatorType::JsonValid => HeuristicEvaluator::JsonValid,
-            EvaluatorType::LlmJudge => {
-                panic!("LlmJudge is not a heuristic evaluator")
-            }
+            EvaluatorType::ExactMatch => Ok(HeuristicEvaluator::ExactMatch),
+            EvaluatorType::Contains => Ok(HeuristicEvaluator::Contains),
+            EvaluatorType::RegexMatch => Ok(HeuristicEvaluator::RegexMatch),
+            EvaluatorType::JsonValid => Ok(HeuristicEvaluator::JsonValid),
+            EvaluatorType::StringDistance => Ok(HeuristicEvaluator::StringDistance),
+            EvaluatorType::LlmJudge => Err("LlmJudge is not a heuristic evaluator"),
         }
     }
 }
@@ -295,7 +302,7 @@ fn display_option_f64(opt: &Option<f64>) -> String {
 
 #[allow(dead_code)]
 fn display_option_string(opt: &Option<String>) -> String {
-    opt.clone().unwrap_or_else(|| "-".to_string())
+    opt.as_deref().unwrap_or("-").to_string()
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -517,22 +524,31 @@ mod tests {
     #[test]
     fn test_evaluator_type_display() {
         assert_eq!(EvaluatorType::ExactMatch.to_string(), "exact_match");
+        assert_eq!(EvaluatorType::StringDistance.to_string(), "string_distance");
         assert_eq!(EvaluatorType::LlmJudge.to_string(), "llm_judge");
     }
 
     #[test]
     fn test_evaluator_type_to_heuristic() {
-        let exact_match: HeuristicEvaluator = EvaluatorType::ExactMatch.into();
+        use std::convert::TryFrom;
+
+        let exact_match = HeuristicEvaluator::try_from(EvaluatorType::ExactMatch).unwrap();
         assert_eq!(exact_match, HeuristicEvaluator::ExactMatch);
 
-        let contains: HeuristicEvaluator = EvaluatorType::Contains.into();
+        let contains = HeuristicEvaluator::try_from(EvaluatorType::Contains).unwrap();
         assert_eq!(contains, HeuristicEvaluator::Contains);
+
+        let string_distance = HeuristicEvaluator::try_from(EvaluatorType::StringDistance).unwrap();
+        assert_eq!(string_distance, HeuristicEvaluator::StringDistance);
     }
 
     #[test]
-    #[should_panic(expected = "LlmJudge is not a heuristic evaluator")]
     fn test_llm_judge_cannot_convert_to_heuristic() {
-        let _: HeuristicEvaluator = EvaluatorType::LlmJudge.into();
+        use std::convert::TryFrom;
+
+        let result = HeuristicEvaluator::try_from(EvaluatorType::LlmJudge);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "LlmJudge is not a heuristic evaluator");
     }
 
     #[test]
