@@ -9,14 +9,24 @@
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
+use escargot::CargoBuild;
 use predicates::prelude::*;
 use serde_json::json;
-use std::fs;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
 const TEST_REPO: &str = "langstar-structured-test";
+
+/// Helper to build and get the langstar binary path
+fn get_langstar_bin() -> std::path::PathBuf {
+    CargoBuild::new()
+        .bin("langstar")
+        .run()
+        .expect("Failed to build langstar binary")
+        .path()
+        .to_owned()
+}
 
 /// Helper to check if required environment variables are set
 fn check_env_vars() -> bool {
@@ -75,7 +85,8 @@ fn test_cli_push_structured_prompt() {
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -115,7 +126,8 @@ fn test_cli_push_invalid_schema_file() {
     let invalid_schema_file = create_temp_invalid_schema_file();
     let schema_path = invalid_schema_file.path().to_str().unwrap();
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -143,7 +155,8 @@ fn test_cli_push_missing_schema_file() {
         return;
     }
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -174,7 +187,8 @@ fn test_cli_push_invalid_method() {
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -207,7 +221,8 @@ fn test_cli_push_function_calling_method() {
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -240,7 +255,8 @@ fn test_cli_pull_structured_prompt() {
 
     let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args(["prompt", "pull", &handle]);
 
     cmd.assert()
@@ -264,7 +280,8 @@ fn test_cli_structured_prompt_round_trip() {
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
-    let mut push_cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut push_cmd = Command::new(&bin);
     push_cmd.args([
         "prompt",
         "push",
@@ -300,7 +317,8 @@ fn test_cli_structured_prompt_round_trip() {
     // Step 2: Pull it back
     let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
 
-    let mut pull_cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut pull_cmd = Command::new(&bin);
     pull_cmd.args(["prompt", "pull", &handle, "--commit", commit_hash]);
 
     pull_cmd
@@ -324,7 +342,8 @@ fn test_cli_push_structured_prompt_json_output() {
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args([
         "prompt",
         "push",
@@ -368,7 +387,8 @@ fn test_cli_pull_structured_prompt_json_output() {
 
     let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
 
-    let mut cmd = Command::cargo_bin("langstar").unwrap();
+    let bin = get_langstar_bin();
+    let mut cmd = Command::new(&bin);
     cmd.args(["prompt", "pull", &handle, "--format", "json"]);
 
     let output = cmd.assert().success();
