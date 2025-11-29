@@ -72,8 +72,7 @@ while IFS= read -r line; do
     processed_any=true
 
     # Extract issue number from branch name (format: username/issue_num-description)
-    # Handles both "123-" and "123 -" formats
-    if [[ $branch =~ /([0-9]+)-? ]]; then
+    if [[ $branch =~ /([0-9]+)- ]]; then
       issue_num="${BASH_REMATCH[1]}"
 
       echo -n "Checking worktree: ${path##*/} (issue #${issue_num})... "
@@ -86,7 +85,7 @@ while IFS= read -r line; do
 
           # Ensure we're not in the worktree being removed
           # Check for exact match or if PWD is a subdirectory
-          if [[ "$PWD" == "$path" ]] || [[ "$PWD" == "$path/"* ]]; then
+          if [[ "$PWD" == "$path" ]] || [[ "$PWD/" == "$path/"* ]]; then
             echo -e "  ${YELLOW}⚠ Currently in this worktree, switching to repository root${NC}"
             cd "$repo_root"
           fi
@@ -97,9 +96,11 @@ while IFS= read -r line; do
 
             # Optionally delete the branch (commented out by default)
             # git branch -D "$branch" 2>/dev/null && echo "  ✓ Deleted branch: $branch"
+          elif git worktree remove --force "$path" 2>/dev/null; then
+            echo -e "  ${YELLOW}✓ Force removed (had uncommitted changes)${NC}"
           else
-            echo -e "  ${YELLOW}⚠ Failed to remove (may have uncommitted changes)${NC}"
-            echo "  Run: git worktree remove --force $path"
+            echo -e "  ${RED}✗ Failed to remove${NC}"
+            echo "  Try manually: git worktree remove --force $path"
           fi
         else
           echo -e "${GREEN}OPEN${NC}"
