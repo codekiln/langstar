@@ -479,7 +479,7 @@ impl PromptCommands {
                     // Validate method
                     validate_method(schema_method).map_err(crate::error::CliError::Sdk)?;
 
-                    println!("✓ Schema valid");
+                    formatter.info("✓ Schema valid");
 
                     formatter.info(&format!(
                         "Pushing structured prompt to {}/{} (method: {})...",
@@ -623,14 +623,14 @@ impl PromptCommands {
                                 let structured = lc_json.kwargs;
 
                                 // Show input variables
-                                if let Some(vars) = &structured.input_variables
-                                    && !vars.is_empty()
-                                {
-                                    println!("Input Variables:");
-                                    for var in vars {
-                                        println!("  - {}", var);
+                                if let Some(vars) = &structured.input_variables {
+                                    if !vars.is_empty() {
+                                        println!("Input Variables:");
+                                        for var in vars {
+                                            println!("  - {}", var);
+                                        }
+                                        println!();
                                     }
-                                    println!();
                                 }
 
                                 // Show schema
@@ -651,8 +651,9 @@ impl PromptCommands {
                                     println!("  {}", msg.kwargs.prompt.kwargs.template);
                                 }
                             }
-                            Err(_) => {
+                            Err(e) => {
                                 // Fallback to raw JSON if parsing fails
+                                eprintln!("⚠ Warning: Could not parse as StructuredPrompt: {}", e);
                                 println!("Raw Manifest:");
                                 let manifest_pretty = serde_json::to_string_pretty(&manifest)?;
                                 for line in manifest_pretty.lines() {
