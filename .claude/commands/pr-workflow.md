@@ -47,7 +47,7 @@ When addressing review comments, choose ONE of these options:
 - PR is mature (many comments already resolved, not early review phase)
 
 ### Option 3: Disagree / Won't Fix
-**When:** Suggestion is nit-picky, negligible, or you disagree with premise.
+**When:** Suggestion is nitpicky, negligible, or you disagree with premise.
 **Action:** Reply explaining why this won't be addressed. Be professional and concise.
 
 **NEVER use for:**

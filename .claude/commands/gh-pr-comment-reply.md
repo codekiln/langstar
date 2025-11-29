@@ -23,13 +23,13 @@ Reply to a single PR review comment using the GitHub API.
 
 **Instead, choose ONE of these response patterns:**
 
-### Response Pattern 1: Implement Now (Preferred)
+### Option 1: Implement Now (Preferred)
 When the change is small-ish and worth doing:
 1. Implement the fix immediately
 2. Commit the change
 3. Reply to the comment with: "Fixed in commit {sha}: {brief description}"
 
-### Response Pattern 2: Defer with Issue (Expensive - use sparingly)
+### Option 2: Defer with Issue (Expensive - use sparingly)
 When the change is large AND worth doing AND not critical to PR:
 1. Create a GitHub issue NOW using `gh issue create`
 2. Add it to the same milestone as the PR's issue (if applicable)
@@ -42,8 +42,8 @@ When the change is large AND worth doing AND not critical to PR:
 - It's not critical to the current PR's functionality
 - The PR is mature (many comments already resolved)
 
-### Response Pattern 3: Disagree / Won't Fix
-When the suggestion is nit-picky, negligible, or you disagree:
+### Option 3: Disagree / Won't Fix
+When the suggestion is nitpicky, negligible, or you disagree:
 1. Reply explaining why this won't be addressed
 2. Be professional and concise
 

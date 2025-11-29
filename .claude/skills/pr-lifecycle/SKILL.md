@@ -39,7 +39,7 @@ When addressing review comments, choose ONE of these options:
 4. Reply: "Created #XYZ to track this. Not addressing in this PR because {reason}."
 
 ### Option 3: Disagree / Won't Fix
-**When:** Suggestion is nit-picky, negligible, or you disagree.
+**When:** Suggestion is nitpicky, negligible, or you disagree.
 **Action:** Reply explaining why not addressing. Be professional.
 **NEVER use for:** Test failures, errors, security concerns.
 

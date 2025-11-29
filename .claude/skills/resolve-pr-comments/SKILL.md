@@ -21,13 +21,21 @@ Orchestrate replying to multiple GitHub PR review comments in parallel using the
 - Follow up on tasks in the future
 - Promise to handle something "in a follow-up"
 
+**You MUST NOT say things like:**
+- "I'll track this in a follow-up issue"
+- "I'll remember to fix this later"
+- "I'll handle this in a subsequent PR"
+
 ## PR Comment Response Decision Framework
 
 When replying to comments, each response MUST use ONE of these options:
 
 ### Option 1: Implement Now (Preferred)
 **When:** The change is small-ish and worth doing.
-**Reply format:** "Fixed in commit {sha}: {brief description}"
+**Action steps:**
+1. Implement the fix immediately
+2. Commit the change
+3. Reply to the comment with: "Fixed in commit {sha}: {brief description}"
 
 ### Option 2: Defer with Issue (Expensive)
 **When:** Change is large AND worth doing AND not critical to PR.
@@ -38,7 +46,7 @@ When replying to comments, each response MUST use ONE of these options:
 **Reply format:** "Created #XYZ to track this. Not addressing in this PR because {reason}."
 
 ### Option 3: Disagree / Won't Fix
-**When:** Suggestion is nit-picky, negligible, or you disagree.
+**When:** Suggestion is nitpicky, negligible, or you disagree.
 **Reply format:** Professional explanation of why not addressing.
 **NEVER use for:** Test failures, errors, security concerns.
 
