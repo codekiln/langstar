@@ -578,6 +578,10 @@ mod tests {
     #[test]
     fn test_validate_llm_judge_with_nonexistent_file() {
         use std::path::PathBuf;
+        use uuid::Uuid;
+        
+        // Use a UUID to generate a path that's guaranteed not to exist
+        let nonexistent_path = PathBuf::from(format!("/tmp/nonexistent-{}.txt", Uuid::new_v4()));
         
         let args = CreateArgs {
             name: "test".to_string(),
@@ -585,7 +589,7 @@ mod tests {
             evaluator: EvaluatorType::LlmJudge,
             judge_model: Some("gpt-4".to_string()),
             judge_provider: None,
-            judge_prompt_file: Some(PathBuf::from("/nonexistent/file.txt")),
+            judge_prompt_file: Some(nonexistent_path),
             score_type: None,
             score_choices: None,
             score_min: None,
