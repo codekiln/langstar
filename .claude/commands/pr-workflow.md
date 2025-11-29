@@ -802,13 +802,19 @@ git rebase origin/<base>
 **Review Comments:**
 ```bash
 # Fetch comments
-gh api repos/<owner>/<repo>/pulls/<num>/comments
+gh api repos/<owner>/<repo>/pulls/<pr_number>/comments
 
-# Reply to comment
-# Recommended: use gh pr comment to reply to a review comment
-gh pr comment <pr-number> --reply <comment-id> --body "..."
-# Or, using the API directly:
-gh api repos/<owner>/<repo>/pulls/<num>/comments/<comment-id>/replies -f body="..."
+# Reply to a review comment using GitHub API
+# Method 1: POST to the comments endpoint with in_reply_to parameter (recommended)
+gh api repos/<owner>/<repo>/pulls/<pr_number>/comments \
+  -f body="Your reply text here" \
+  -F in_reply_to=<comment_id>
+
+# Method 2: POST to the comment-specific replies endpoint
+gh api repos/<owner>/<repo>/pulls/<pr_number>/comments/<comment_id>/replies \
+  -f body="Your reply text here"
+
+# Note: gh pr comment does NOT support a --reply flag for inline comment replies
 ```
 
 ## See Also
