@@ -31,6 +31,7 @@ pub mod datasets;
 pub mod deployments;
 pub mod error;
 pub mod evaluations;
+pub mod evaluators;
 pub mod integrations;
 pub mod organization;
 pub mod prompts;

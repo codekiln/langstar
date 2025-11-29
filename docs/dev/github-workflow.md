@@ -318,6 +318,23 @@ Follow the same conventional commit format:
 - **Screenshots**: If UI changes are involved
 - **Breaking Changes**: If applicable
 
+**IMPORTANT: Always Add Milestone**
+If the related issue has a milestone attached, **you MUST add the same milestone to the PR**:
+- Use GitHub web UI: Settings → Milestone
+- Use GitHub CLI: `gh pr edit <pr-num> --milestone "<milestone-name>"`
+
+**Why milestones matter:**
+- Enables progress tracking across the epic
+- Allows filtering all PRs related to a milestone
+- Supports project management and burndown charts
+- Maintains consistency with issue hierarchy
+
+**Example:**
+```bash
+# After creating PR #421 for issue #373
+gh pr edit 421 --milestone "ls-evals-basic"
+```
+
 ### Linking PRs to Issues
 
 Use GitHub keywords in your PR description to automatically close issues when the PR is merged:

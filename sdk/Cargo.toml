@@ -20,6 +20,7 @@ uuid.workspace = true
 url = "2.5"
 base64 = "0.22"
 urlencoding = "2.1"
+regex = "1.11"
 
 # Streaming pagination
 async-stream = "0.3"
