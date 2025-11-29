@@ -174,7 +174,51 @@ langstar prompt search "rag" --workspace-id "<your-workspace-id>"
 
 # Output as JSON for scripting
 langstar prompt list --format json
+
+# Push a prompt with structured output (constrained schema)
+langstar prompt push \
+  -o owner -r my-prompt \
+  -t "Extract data from: {input}" \
+  --schema ./schemas/extraction.json
+
+# Push with specific structured output method
+langstar prompt push \
+  -o owner -r my-prompt \
+  -t "Analyze: {text}" \
+  --schema ./schemas/analysis.json \
+  --schema-method function_calling
+
+# Pull a prompt (shows schema if structured)
+langstar prompt pull owner/my-prompt
 ```
+
+**Structured Output Prompts:**
+
+Langstar supports creating prompts with JSON Schema constraints that ensure LLM outputs match a predefined structure. This enables reliable data extraction, API response formatting, and typed output handling.
+
+```bash
+# Create a JSON schema file
+cat > invoice-schema.json << 'EOF'
+{
+  "type": "object",
+  "properties": {
+    "invoice_number": {"type": "string"},
+    "date": {"type": "string", "format": "date"},
+    "amount": {"type": "number"},
+    "vendor": {"type": "string"}
+  },
+  "required": ["invoice_number", "amount"]
+}
+EOF
+
+# Push structured prompt
+langstar prompt push \
+  -o team -r invoice-extractor \
+  -t "Extract invoice data from: {document}" \
+  --schema invoice-schema.json
+```
+
+For detailed examples and workflows, see [docs/examples/structured-output-prompts.md](./docs/examples/structured-output-prompts.md).
 
 #### LangGraph Assistants (Deployment-Level)
 
