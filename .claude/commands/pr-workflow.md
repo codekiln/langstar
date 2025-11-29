@@ -324,6 +324,36 @@ EOF
 )"
      ```
 
+   **CRITICAL: Never Promise Future Work**
+
+   **DO NOT** reply with "I'll track this in a follow-up issue" or "I'll create a ticket for this" unless you IMMEDIATELY:
+   1. Create the GitHub issue RIGHT NOW
+   2. Add it to the correct milestone
+   3. Link it as a sub-issue if applicable
+   4. Reference the issue number in your comment reply
+   5. Add a TODO comment in the code with the issue reference
+
+   **Why:** Each GitHub issue gets a fresh Claude Code context. You will NOT remember to create that issue later, and the promise becomes technical debt.
+
+   **Decision Tree for Review Comments:**
+   - **Small change (< 20 lines)?** → Fix it NOW in this PR
+   - **Medium change (20-100 lines)?** → Fix it NOW in this PR (prefer this)
+   - **Large/breaking change?** → ONLY defer if you create the issue+milestone+sub-issue immediately
+
+   **Cost of deferring:**
+   - Create GitHub issue → Link to milestone → Schedule → Create PR → Review → Wait for CI = ~30+ minutes overhead
+   - vs. fixing small issues now = ~2-5 minutes
+
+   **Example GOOD response:**
+   ```
+   Good point about consistency. Fixed in commit abc123: Updated dataset.rs to match this pattern.
+   ```
+
+   **Example BAD response (never do this):**
+   ```
+   Good point. I'll track updating dataset.rs in a follow-up issue for consistency.
+   ```
+
 3. **Check if branch needs rebasing:**
    ```bash
    # Check if base branch has new commits
