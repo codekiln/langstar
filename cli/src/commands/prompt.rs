@@ -2,8 +2,13 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
+use langstar_sdk::prompts::{
+    LcJson, MessagePromptTemplateKwargs, PromptTemplateKwargs, StructuredOutputKwargs,
+    StructuredPrompt, validate_json_schema, validate_method,
+};
 use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
 use serde_json::json;
+use std::fs;
 use tabled::Tabled;
 
 /// Commands for interacting with LangSmith Prompts
@@ -89,6 +94,32 @@ pub enum PromptCommands {
         /// Template format (default: f-string)
         #[arg(long, default_value = "f-string")]
         template_format: String,
+
+        /// Path to JSON Schema file for structured output
+        #[arg(long, value_name = "FILE")]
+        schema: Option<std::path::PathBuf>,
+
+        /// Structured output method: json_schema or function_calling
+        #[arg(long, default_value = "json_schema")]
+        schema_method: String,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+
+        /// Workspace ID for narrower scoping (overrides config/env)
+        #[arg(long)]
+        workspace_id: Option<String>,
+    },
+
+    /// Pull a prompt from the PromptHub
+    Pull {
+        /// Prompt handle (e.g., "owner/prompt-name")
+        handle: String,
+
+        /// Commit hash or tag (default: "latest")
+        #[arg(long, default_value = "latest")]
+        commit: String,
 
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
@@ -357,6 +388,8 @@ impl PromptCommands {
                 template,
                 input_variables,
                 template_format,
+                schema,
+                schema_method,
                 organization_id,
                 workspace_id,
             } => {
@@ -419,8 +452,6 @@ impl PromptCommands {
                     }
                 }
 
-                formatter.info(&format!("Pushing prompt to {}/{}...", owner, repo));
-
                 // Parse input variables
                 let vars: Vec<String> = if let Some(vars_str) = input_variables {
                     vars_str.split(',').map(|s| s.trim().to_string()).collect()
@@ -428,34 +459,215 @@ impl PromptCommands {
                     vec![]
                 };
 
-                // Create commit request
-                let commit_request = CommitRequest {
-                    manifest: json!({
-                        "type": "prompt",
-                        "template": template,
-                        "input_variables": vars,
-                        "template_format": template_format
-                    }),
-                    parent_commit: None,
-                    example_run_ids: None,
+                // Check if schema is provided - use structured prompt if so
+                let response = if let Some(schema_path) = schema {
+                    formatter.info("Loading schema file...");
+
+                    // Read and parse schema file
+                    let schema_content = fs::read_to_string(schema_path).map_err(|e| {
+                        crate::error::CliError::Sdk(langstar_sdk::error::LangstarError::Other(
+                            format!("Failed to read schema file: {}", e),
+                        ))
+                    })?;
+
+                    let schema_value: serde_json::Value = serde_json::from_str(&schema_content)?;
+
+                    // Validate schema before proceeding
+                    formatter.info("Validating schema...");
+                    validate_json_schema(&schema_value).map_err(crate::error::CliError::Sdk)?;
+
+                    // Validate method
+                    validate_method(schema_method).map_err(crate::error::CliError::Sdk)?;
+
+                    formatter.info("✓ Schema valid");
+
+                    formatter.info(&format!(
+                        "Pushing structured prompt to {}/{} (method: {})...",
+                        owner, repo, schema_method
+                    ));
+
+                    // Build StructuredPrompt
+                    let prompt_template_kwargs = PromptTemplateKwargs {
+                        input_variables: vars.clone(),
+                        template: template.clone(),
+                        template_format: template_format.clone(),
+                    };
+
+                    let prompt_template_lc = LcJson::new(
+                        vec![
+                            "langchain_core".to_string(),
+                            "prompts".to_string(),
+                            "prompt".to_string(),
+                            "PromptTemplate".to_string(),
+                        ],
+                        prompt_template_kwargs,
+                    );
+
+                    let message_kwargs = MessagePromptTemplateKwargs {
+                        prompt: prompt_template_lc,
+                    };
+
+                    let message_lc = LcJson::new(
+                        vec![
+                            "langchain_core".to_string(),
+                            "prompts".to_string(),
+                            "chat".to_string(),
+                            "HumanMessagePromptTemplate".to_string(),
+                        ],
+                        message_kwargs,
+                    );
+
+                    let structured_prompt = StructuredPrompt {
+                        input_variables: if vars.is_empty() { None } else { Some(vars) },
+                        messages: vec![message_lc],
+                        schema_: schema_value,
+                        structured_output_kwargs: StructuredOutputKwargs {
+                            method: schema_method.clone(),
+                        },
+                    };
+
+                    // Push structured prompt
+                    client
+                        .prompts()
+                        .push_structured_prompt(owner, repo, structured_prompt, None)
+                        .await
+                        .map_err(crate::error::CliError::Sdk)?
+                } else {
+                    // Regular prompt push (no schema)
+                    formatter.info(&format!("Pushing prompt to {}/{}...", owner, repo));
+
+                    let commit_request = CommitRequest {
+                        manifest: json!({
+                            "type": "prompt",
+                            "template": template,
+                            "input_variables": vars,
+                            "template_format": template_format
+                        }),
+                        parent_commit: None,
+                        example_run_ids: None,
+                    };
+
+                    client
+                        .prompts()
+                        .push(owner, repo, &commit_request)
+                        .await
+                        .map_err(crate::error::CliError::Sdk)?
                 };
 
-                // Push the commit
-                match client.prompts().push(owner, repo, &commit_request).await {
-                    Ok(response) => {
-                        if format == OutputFormat::Json {
-                            formatter.print(&response)?;
-                        } else {
-                            println!("\n✓ Prompt commit pushed successfully!");
-                            println!("  Repository: {}/{}", owner, repo);
-                            println!("  Commit hash: {}", response.commit.commit_hash);
-                            if let Some(url) = &response.commit.url {
-                                println!("  URL: {}", url);
+                // Display success message
+                if format == OutputFormat::Json {
+                    formatter.print(&response)?;
+                } else {
+                    println!("\n✓ Prompt commit pushed successfully!");
+                    println!("  Repository: {}/{}", owner, repo);
+                    println!("  Commit hash: {}", response.commit.commit_hash);
+                    if let Some(url) = &response.commit.url {
+                        println!("  URL: {}", url);
+                    }
+                    if schema.is_some() {
+                        println!("  Type: Structured prompt with JSON schema");
+                    }
+                }
+            }
+
+            PromptCommands::Pull {
+                handle,
+                commit,
+                organization_id,
+                workspace_id,
+            } => {
+                let client = Self::apply_scoping(client, organization_id, workspace_id);
+
+                // Parse handle into owner/repo
+                let parts: Vec<&str> = handle.split('/').collect();
+                if parts.len() != 2 {
+                    return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                        "Invalid handle format. Expected: owner/repo-name"
+                    )));
+                }
+                let (owner, repo) = (parts[0], parts[1]);
+
+                formatter.info(&format!(
+                    "Pulling prompt '{}' (commit: {})...",
+                    handle, commit
+                ));
+
+                let manifest = client.prompts().pull(owner, repo, commit).await?;
+
+                if format == OutputFormat::Json {
+                    formatter.print(&manifest)?;
+                } else {
+                    // Try to detect if it's a structured prompt
+                    let is_structured = manifest
+                        .get("id")
+                        .and_then(|id| id.as_array())
+                        .map(|arr| {
+                            arr.last()
+                                .and_then(|v| v.as_str())
+                                .map(|s| s == "StructuredPrompt")
+                                .unwrap_or(false)
+                        })
+                        .unwrap_or(false);
+
+                    println!("\n{}", "Prompt Manifest".to_uppercase());
+                    println!("─────────────────────────────────────────");
+                    println!("Handle:  {}", handle);
+                    println!("Commit:  {}", commit);
+
+                    if is_structured {
+                        println!("Type:    Structured prompt with JSON schema\n");
+
+                        // Try to parse as structured prompt and display schema
+                        match serde_json::from_value::<LcJson<StructuredPrompt>>(manifest.clone()) {
+                            Ok(lc_json) => {
+                                let structured = lc_json.kwargs;
+
+                                // Show input variables
+                                if let Some(vars) = &structured.input_variables
+                                    && !vars.is_empty()
+                                {
+                                    println!("Input Variables:");
+                                    for var in vars {
+                                        println!("  - {}", var);
+                                    }
+                                    println!();
+                                }
+
+                                // Show schema
+                                println!("JSON Schema:");
+                                let schema_pretty =
+                                    serde_json::to_string_pretty(&structured.schema_)?;
+                                for line in schema_pretty.lines() {
+                                    println!("  {}", line);
+                                }
+                                println!();
+
+                                // Show method
+                                println!("Method: {}", structured.structured_output_kwargs.method);
+
+                                // Show template from first message
+                                if let Some(msg) = structured.messages.first() {
+                                    println!("\nTemplate:");
+                                    println!("  {}", msg.kwargs.prompt.kwargs.template);
+                                }
+                            }
+                            Err(e) => {
+                                // Fallback to raw JSON if parsing fails
+                                eprintln!("⚠ Warning: Could not parse as StructuredPrompt: {}", e);
+                                println!("Raw Manifest:");
+                                let manifest_pretty = serde_json::to_string_pretty(&manifest)?;
+                                for line in manifest_pretty.lines() {
+                                    println!("  {}", line);
+                                }
                             }
                         }
-                    }
-                    Err(e) => {
-                        return Err(crate::error::CliError::Sdk(e));
+                    } else {
+                        println!("Type:    Regular prompt\n");
+                        println!("Raw Manifest:");
+                        let manifest_pretty = serde_json::to_string_pretty(&manifest)?;
+                        for line in manifest_pretty.lines() {
+                            println!("  {}", line);
+                        }
                     }
                 }
             }
