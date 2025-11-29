@@ -166,7 +166,7 @@ impl From<ScoreTypeArg> for ScoreType {
 #[derive(Debug, Args)]
 pub struct RunArgs {
     /// Evaluation ID to run
-    pub eval_id: String,
+    pub eval_id: Uuid,
 
     /// Preview mode: only run on first N examples
     #[arg(long)]
@@ -217,7 +217,7 @@ pub struct ListArgs {
 #[derive(Debug, Args)]
 pub struct GetArgs {
     /// Evaluation ID
-    pub eval_id: String,
+    pub eval_id: Uuid,
 
     /// Output as JSON
     #[arg(long)]
@@ -232,15 +232,15 @@ pub struct GetArgs {
 #[derive(Debug, Args)]
 pub struct ExportArgs {
     /// Evaluation ID to export
-    pub eval_id: String,
+    pub eval_id: Uuid,
 
     /// Output format (csv or jsonl)
-    #[arg(long, value_enum, default_value = "csv")]
-    pub format: ExportFormat,
+    #[arg(long = "file-format", value_enum, default_value = "csv")]
+    pub file_format: ExportFormat,
 
     /// Output file path (stdout if not specified)
-    #[arg(short, long)]
-    pub output: Option<PathBuf>,
+    #[arg(short, long = "out")]
+    pub out: Option<PathBuf>,
 
     /// Include reasoning/comments in export
     #[arg(long)]
@@ -276,6 +276,7 @@ pub struct EvaluationDisplay {
 }
 
 /// Evaluation result display
+// Note: This type is part of placeholder implementation for future export functionality
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize, Tabled)]
 pub struct EvaluationResultDisplay {
@@ -294,6 +295,8 @@ pub struct EvaluationResultDisplay {
     pub comment: Option<String>,
 }
 
+// Note: These display functions are used by tabled's display_with attribute
+// but are flagged as unused until EvaluationResultDisplay is actually instantiated
 #[allow(dead_code)]
 fn display_option_f64(opt: &Option<f64>) -> String {
     opt.map(|v| format!("{:.2}", v))
@@ -464,13 +467,13 @@ async fn execute_export(args: ExportArgs, config: &Config, _format: OutputFormat
     // 2. Format as CSV or JSONL
     // 3. Write to file or stdout
 
-    let format_str = match args.format {
+    let format_str = match args.file_format {
         ExportFormat::Csv => "CSV",
         ExportFormat::Jsonl => "JSONL",
     };
 
     let output_target = args
-        .output
+        .out
         .as_ref()
         .map(|p| p.display().to_string())
         .unwrap_or_else(|| "stdout".to_string());
@@ -494,6 +497,22 @@ fn validate_llm_judge_args(args: &CreateArgs) -> Result<()> {
         eprintln!("Warning: No --judge-model specified. Using default model.");
     }
 
+    // Validate judge prompt file if provided
+    if let Some(ref prompt_file) = args.judge_prompt_file {
+        if !prompt_file.exists() {
+            return Err(crate::error::CliError::Config(format!(
+                "Judge prompt file does not exist: {}",
+                prompt_file.display()
+            )));
+        }
+        if !prompt_file.is_file() {
+            return Err(crate::error::CliError::Config(format!(
+                "Judge prompt path is not a file: {}",
+                prompt_file.display()
+            )));
+        }
+    }
+
     // Validate score type configuration
     if let Some(score_type) = args.score_type {
         match score_type {
@@ -507,7 +526,7 @@ fn validate_llm_judge_args(args: &CreateArgs) -> Result<()> {
             ScoreTypeArg::Continuous => {
                 if args.score_min.is_none() || args.score_max.is_none() {
                     eprintln!(
-                        "Warning: No --score-min or --score-max specified for continuous scoring. Using defaults [0.0, 1.0]."
+                        "Warning: --score-min and --score-max should both be specified for continuous scoring. Using defaults [0.0, 1.0] where not provided."
                     );
                 }
             }
@@ -554,5 +573,32 @@ mod tests {
 
         let continuous: ScoreType = ScoreTypeArg::Continuous.into();
         assert_eq!(continuous, ScoreType::Continuous);
+    }
+
+    #[test]
+    fn test_validate_llm_judge_with_nonexistent_file() {
+        use std::path::PathBuf;
+
+        // Use a UUID to generate a path that's guaranteed not to exist
+        let nonexistent_path = PathBuf::from(format!("/tmp/nonexistent-{}.txt", Uuid::new_v4()));
+
+        let args = CreateArgs {
+            name: "test".to_string(),
+            dataset: "ds-123".to_string(),
+            evaluator: EvaluatorType::LlmJudge,
+            judge_model: Some("gpt-4".to_string()),
+            judge_provider: None,
+            judge_prompt_file: Some(nonexistent_path),
+            score_type: None,
+            score_choices: None,
+            score_min: None,
+            score_max: None,
+            include_reasoning: false,
+            json: false,
+        };
+
+        let result = validate_llm_judge_args(&args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("does not exist"));
     }
 }
