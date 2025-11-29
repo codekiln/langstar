@@ -38,8 +38,14 @@ echo "[post-create] Git credential helpers cleared."
 # Step 2: Configure mise activation in zshrc
 echo "[post-create] Configuring mise activation for zsh..."
 if ! grep -q 'mise activate zsh' ~/.zshrc 2>/dev/null; then
-  echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
-  echo "[post-create] Added mise activation to ~/.zshrc"
+  # Wrap mise activation in interactive check to prevent zle errors in non-interactive mode
+  cat >> ~/.zshrc << 'EOF'
+# Only activate mise in interactive shells to avoid zle errors
+if [[ -o interactive ]]; then
+  eval "$(mise activate zsh)"
+fi
+EOF
+  echo "[post-create] Added mise activation to ~/.zshrc (with interactive guard)"
 else
   echo "[post-create] mise already configured in ~/.zshrc"
 fi
