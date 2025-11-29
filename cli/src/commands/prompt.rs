@@ -623,14 +623,14 @@ impl PromptCommands {
                                 let structured = lc_json.kwargs;
 
                                 // Show input variables
-                                if let Some(vars) = &structured.input_variables {
-                                    if !vars.is_empty() {
-                                        println!("Input Variables:");
-                                        for var in vars {
-                                            println!("  - {}", var);
-                                        }
-                                        println!();
+                                if let Some(vars) = &structured.input_variables
+                                    && !vars.is_empty()
+                                {
+                                    println!("Input Variables:");
+                                    for var in vars {
+                                        println!("  - {}", var);
                                     }
+                                    println!();
                                 }
 
                                 // Show schema
