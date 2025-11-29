@@ -14,6 +14,7 @@ This document captures research findings on structured output prompts in LangSmi
 2. The Python SDK applies **transform logic** when pushing/pulling prompts to handle the StructuredPrompt ↔ RunnableSequence conversion
 3. The API stores prompts as **serialized LangChain objects** (LC-JSON format) in the `manifest` field
 4. Langstar currently has **no support** for structured output prompts - this is greenfield work
+5. **CRITICAL**: Pydantic classes cannot be serialized - use JSON schema dicts instead (see Section 9)
 
 ## Data Sources
 
@@ -213,8 +214,8 @@ Current capabilities:
 
 - [x] Document Python SDK behavior
 - [x] Create experiment scripts
-- [ ] Run experiments to capture actual manifest formats
-- [ ] Document edge cases
+- [x] Run experiments to capture actual manifest formats
+- [x] Document edge cases (Pydantic serialization issue)
 
 ### 5.2 Phase 2: SDK Types
 
@@ -235,12 +236,19 @@ Decide whether to:
 - **Option B**: Store/retrieve raw manifests only (simpler, partial compatibility)
 - **Option C**: Shell out to Python SDK for transforms (pragmatic, full compatibility)
 
-## 6. Open Questions
+## 6. Open Questions (Answered)
 
-1. **Schema format**: Should we accept Pydantic models (requires Python), JSON Schema files, or both?
-2. **Transform parity**: How important is it to match Python SDK transforms exactly?
-3. **Model binding**: Do we need `include_model` support, or just raw prompt storage?
-4. **Validation**: Should we validate schemas client-side before pushing?
+1. **Schema format**: ~~Should we accept Pydantic models (requires Python), JSON Schema files, or both?~~
+   - **Answer**: JSON Schema files only. Pydantic classes cannot be serialized to LC-JSON format - they become `null`. Users should run `pydantic_model.model_json_schema()` locally and pass the resulting dict/file.
+
+2. **Transform parity**: ~~How important is it to match Python SDK transforms exactly?~~
+   - **Answer**: For basic structured prompt push/pull, we don't need full transform parity. The manifest format is straightforward. Transform logic is mainly needed for `with_structured_output()` model binding scenarios.
+
+3. **Model binding**: ~~Do we need `include_model` support, or just raw prompt storage?~~
+   - **Answer**: Start with raw prompt storage only. Model binding is a separate concern that would require implementing the full chain serialization.
+
+4. **Validation**: ~~Should we validate schemas client-side before pushing?~~
+   - **Answer**: Yes, basic JSON Schema validation would prevent invalid schemas from being stored. Use a JSON Schema validation crate.
 
 ## 7. References
 
@@ -261,9 +269,135 @@ Decide whether to:
 - `reference/experiments/398-structured-output-prompts/run_test.sh`
 - `reference/experiments/398-structured-output-prompts/test_structured_prompts.py`
 
-## 8. Next Steps
+## 9. Experimental Findings
 
-1. Run experiment scripts to capture actual manifest formats
-2. Update this report with findings
+Experiments were run using `reference/experiments/398-structured-output-prompts/` to validate assumptions.
+
+### 9.1 Schema Serialization Discovery
+
+**Critical Finding**: Pydantic classes **cannot be serialized** to LC-JSON format.
+
+When passing a Pydantic class to `StructuredPrompt.schema_`:
+```python
+class MovieReview(BaseModel):
+    title: str
+    rating: int
+
+prompt = StructuredPrompt(messages=[...], schema_=MovieReview, method="json_schema")
+```
+
+The serialized manifest contains:
+```json
+"schema_": {"lc": 1, "type": "not_implemented", "id": ["__main__", "MovieReview"], "repr": "<class '__main__.MovieReview'>"}
+```
+
+When stored in LangSmith, `"not_implemented"` becomes `null`, losing the schema entirely.
+
+**Solution**: Pass a JSON schema dict instead of Pydantic class:
+```python
+json_schema = MovieReview.model_json_schema()  # Get dict from Pydantic
+prompt = StructuredPrompt(messages=[...], schema_=json_schema, method="json_schema")
+```
+
+This serializes correctly and round-trips through LangSmith.
+
+### 9.2 Validated Manifest Structure
+
+Actual manifest structure captured from LangSmith (with proper JSON schema):
+
+```json
+{
+  "lc": 1,
+  "type": "constructor",
+  "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+  "kwargs": {
+    "input_variables": ["movie_name"],
+    "messages": [
+      {
+        "lc": 1,
+        "type": "constructor",
+        "id": ["langchain", "prompts", "chat", "SystemMessagePromptTemplate"],
+        "kwargs": {
+          "prompt": {
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "prompts", "prompt", "PromptTemplate"],
+            "kwargs": {
+              "input_variables": [],
+              "template": "You are a movie critic. Provide a structured review.",
+              "template_format": "f-string"
+            },
+            "name": "PromptTemplate"
+          }
+        }
+      },
+      {
+        "lc": 1,
+        "type": "constructor",
+        "id": ["langchain", "prompts", "chat", "HumanMessagePromptTemplate"],
+        "kwargs": {
+          "prompt": {
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "prompts", "prompt", "PromptTemplate"],
+            "kwargs": {
+              "input_variables": ["movie_name"],
+              "template": "Review the movie: {movie_name}",
+              "template_format": "f-string"
+            },
+            "name": "PromptTemplate"
+          }
+        }
+      }
+    ],
+    "schema_": {
+      "description": "A structured movie review.",
+      "properties": {
+        "title": {"description": "The movie title", "title": "Title", "type": "string"},
+        "rating": {"description": "Rating from 1-10", "maximum": 10, "minimum": 1, "title": "Rating", "type": "integer"},
+        "summary": {"description": "Brief summary", "title": "Summary", "type": "string"}
+      },
+      "required": ["title", "rating", "summary"],
+      "title": "MovieReview",
+      "type": "object"
+    },
+    "structured_output_kwargs": {
+      "method": "json_schema"
+    }
+  },
+  "name": "StructuredPrompt"
+}
+```
+
+### 9.3 Key Observations
+
+| Observation | Detail |
+|-------------|--------|
+| Module path uses underscore | `langchain_core` not `langchain-core` |
+| Schema stored in `schema_` | Underscore suffix matches Python kwarg |
+| Method stored separately | In `structured_output_kwargs.method` |
+| Valid methods | `"json_schema"` or `"function_calling"` |
+| `name` field | Redundant with `id[-1]`, present for clarity |
+| `input_variables` | Extracted from template placeholders |
+
+### 9.4 Deserialization Works
+
+Prompts created with JSON schema dicts deserialize correctly:
+```python
+prompt = client.pull_prompt("test-structured-398-v2", include_model=False)
+# Returns: StructuredPrompt with schema_ as dict
+```
+
+### 9.5 Implications for Langstar
+
+1. **Accept JSON Schema files** - Don't try to support Pydantic classes
+2. **Use `serde_json::Value`** - Flexible JSON handling for schema_
+3. **Parse `structured_output_kwargs`** - Extract method from nested object
+4. **Generate LC-JSON format** - Match the exact structure above
+
+## 10. Next Steps
+
+1. ~~Run experiment scripts to capture actual manifest formats~~ ✅
+2. ~~Update this report with findings~~ ✅
 3. Create parent epic for structured output prompt implementation
 4. Break down into sub-issues per phase

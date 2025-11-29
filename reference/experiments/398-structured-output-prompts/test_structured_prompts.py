@@ -104,48 +104,44 @@ def cmd_pull_and_examine(args):
     print(f"Pulling prompt: {prompt_name}")
 
     try:
-        # Pull without model binding to see raw structure
-        prompt = client.pull_prompt(prompt_name, include_model=False)
-
-        print(f"\n=== Prompt Type ===")
-        print(f"Type: {type(prompt).__name__}")
-        print(f"Module: {type(prompt).__module__}")
-
-        # Try to get the underlying structure
-        if hasattr(prompt, "to_json"):
-            manifest = prompt.to_json()
-            print(f"\n=== Manifest (to_json) ===")
-            print(json.dumps(manifest, indent=2, default=str))
-
-        if hasattr(prompt, "dict"):
-            prompt_dict = prompt.dict()
-            print(f"\n=== Prompt Dict ===")
-            print(json.dumps(prompt_dict, indent=2, default=str))
-
-        # Check for structured output specific attributes
-        print(f"\n=== Structured Output Attributes ===")
-        for attr in ["schema_", "schema", "method", "ls_structured_output_format"]:
-            if hasattr(prompt, attr):
-                val = getattr(prompt, attr)
-                print(f"{attr}: {val}")
-
-        # Get raw commit data via API
+        # First, get raw commit data via API (before deserialization which may fail)
         print(f"\n=== Raw Commit Data (API) ===")
-        prompts_list = list(client.list_prompts(prompt_identifier=prompt_name))
-        if prompts_list:
-            prompt_info = prompts_list[0]
-            print(f"Prompt ID: {prompt_info.id}")
 
-            # Get the latest commit
-            commits = list(client.list_commits(prompt_identifier=prompt_name, limit=1))
-            if commits:
-                commit = commits[0]
-                print(f"\nCommit Hash: {commit.commit_hash}")
-                print(f"\nManifest (raw):")
-                print(json.dumps(commit.manifest, indent=2, default=str))
+        # Get the latest commit using the correct API
+        commits = list(client.list_prompt_commits(prompt_name, limit=1))
+        if commits:
+            commit = commits[0]
+            print(f"Commit Hash: {commit.commit_hash}")
+            print(f"\nManifest (raw):")
+            print(json.dumps(commit.manifest, indent=2, default=str))
+        else:
+            print("No commits found")
+
+        # Now try to pull and deserialize
+        print(f"\n=== Attempting to deserialize prompt ===")
+        try:
+            prompt = client.pull_prompt(prompt_name, include_model=False)
+            print(f"Type: {type(prompt).__name__}")
+            print(f"Module: {type(prompt).__module__}")
+
+            # Try to get the underlying structure
+            if hasattr(prompt, "to_json"):
+                manifest = prompt.to_json()
+                print(f"\n=== Manifest (to_json) ===")
+                print(json.dumps(manifest, indent=2, default=str))
+
+            # Check for structured output specific attributes
+            print(f"\n=== Structured Output Attributes ===")
+            for attr in ["schema_", "schema", "method", "ls_structured_output_format"]:
+                if hasattr(prompt, attr):
+                    val = getattr(prompt, attr)
+                    print(f"{attr}: {val}")
+        except Exception as deser_e:
+            print(f"Deserialization failed: {deser_e}")
+            print("(This is expected for StructuredPrompt due to schema_/schema field name mismatch)")
 
     except Exception as e:
-        print(f"\n✗ Failed to pull: {e}")
+        print(f"\n✗ Failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

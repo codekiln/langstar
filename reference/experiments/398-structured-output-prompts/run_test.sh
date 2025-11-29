@@ -3,6 +3,8 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Source environment variables from devcontainer .env
 if [ -f /workspace/.devcontainer/.env ]; then
     export $(grep -v '^#' /workspace/.devcontainer/.env | xargs)
@@ -11,11 +13,18 @@ else
     exit 1
 fi
 
+# Use virtual environment if it exists, otherwise use system python
+if [ -f "$SCRIPT_DIR/.venv/bin/python3" ]; then
+    PYTHON="$SCRIPT_DIR/.venv/bin/python3"
+else
+    PYTHON="python3"
+fi
+
 # Run the script with arguments
 # If no arguments provided, default to list available commands
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 if [ $# -eq 0 ]; then
-    python3 test_structured_prompts.py --help
+    $PYTHON test_structured_prompts.py --help
 else
-    python3 test_structured_prompts.py "$@"
+    $PYTHON test_structured_prompts.py "$@"
 fi

@@ -50,15 +50,44 @@ Understand how structured output prompts work in LangSmith by:
 
 ### Manifest Structure
 
-*To be filled in after running experiments*
+The manifest uses LC-JSON format with this structure for StructuredPrompt:
+
+```json
+{
+  "lc": 1,
+  "type": "constructor",
+  "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+  "kwargs": {
+    "input_variables": ["movie_name"],
+    "messages": [...],
+    "schema_": { /* JSON Schema object */ },
+    "structured_output_kwargs": {"method": "json_schema"}
+  },
+  "name": "StructuredPrompt"
+}
+```
+
+### Critical Discovery: Pydantic Serialization
+
+**Pydantic classes CANNOT be serialized properly!**
+
+When passing a Pydantic class to `schema_`:
+- Serializes as `{"lc": 1, "type": "not_implemented", ...}`
+- Stored as `null` in LangSmith
+
+**Solution**: Use `model.model_json_schema()` to get a dict, then pass the dict to `schema_`.
 
 ### API Request/Response
 
-*To be filled in after running experiments*
+- `push_prompt()` accepts StructuredPrompt objects directly
+- `pull_prompt_commit()` returns raw manifest without deserialization issues
+- `pull_prompt()` may fail on prompts with null schema_ due to deserialization bug
 
 ### Transform Logic Observations
 
-*To be filled in after running experiments*
+- Method is stored in `structured_output_kwargs.method` (not `kwargs.method`)
+- Valid methods: `"json_schema"` and `"function_calling"`
+- Transform logic in SDK handles RunnableSequence ↔ StructuredPrompt conversion
 
 ## References
 
