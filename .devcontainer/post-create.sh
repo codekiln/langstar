@@ -30,6 +30,7 @@ git config --global --unset-all credential.https://gist.github.com.helper 2>/dev
 git config --unset-all credential.https://gist.github.com.helper 2>/dev/null || true
 
 # Reset credential helper chain by setting empty string
+# The empty string resets the helper list (overriding system config)
 # This ensures no credential helpers are active during mise install
 git config --global --replace-all credential.helper "" ".*" 2>/dev/null || true
 echo "[post-create] Git credential helpers cleared."
