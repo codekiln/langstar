@@ -34,6 +34,7 @@ The core LangSmith API provides endpoints for:
 |------|--------|------|-------|
 | 2025-11-26 | Initial fetch | 635K | v0.1.0 |
 | 2025-11-28 | Refresh for #350 | 639K | Dataset API validation |
+| 2025-11-29 | Refresh for #404 | 638K | Structured output prompt validation |
 
 ## Refresh Command
 
