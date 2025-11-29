@@ -6,6 +6,55 @@ description: Guide Claude agents through the complete pull request lifecycle, fr
 
 Guide Claude agents through creating and managing a pull request from start to finish, with autonomous monitoring and iterative fixes until the PR is ready to merge.
 
+## Critical Constraints - Session Statelessness
+
+**IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated. Every GitHub issue gets a fresh Claude Code context.
+
+**You CANNOT:**
+- Track issues across sessions
+- Remember to do something later
+- Follow up on tasks in the future
+- Promise to handle something "in a follow-up"
+
+**You MUST NOT say things like:**
+- "I'll track this in a follow-up issue"
+- "I'll remember to fix this later"
+- "I'll handle this in a subsequent PR"
+
+## PR Comment Response Decision Framework
+
+When addressing review comments, choose ONE of these options:
+
+### Option 1: Implement Now (Preferred)
+**When:** The change is small-ish and worth doing.
+**Action:**
+1. Implement the fix immediately
+2. Commit with reference: `🩹 fix: address review feedback - {description}`
+3. Reply: "Fixed in commit {sha}: {brief description}"
+
+### Option 2: Defer with Issue (Expensive - use sparingly)
+**When:** Change is large AND worth doing AND not critical to current PR.
+**Action:**
+1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
+2. Add to same milestone: `gh issue edit <num> --milestone "<milestone>"`
+3. Add as sub-issue: `gh sub-issue add <parent> <new-issue>`
+4. Reply: "Created #XYZ to track this. Not addressing in this PR because {reason}."
+5. Optionally add `// TODO(#XYZ): description` code comment
+
+**Only if:**
+- Change is large enough to justify separate PR overhead
+- Not critical to current PR's functionality
+- PR is mature (many comments already resolved, not early review phase)
+
+### Option 3: Disagree / Won't Fix
+**When:** Suggestion is nit-picky, negligible, or you disagree with premise.
+**Action:** Reply explaining why this won't be addressed. Be professional and concise.
+
+**NEVER use for:**
+- Test failures or errors (MUST be fixed)
+- Security concerns
+- Critical functionality issues
+
 ## Arguments
 
 Arguments are passed via `$ARGUMENTS` in the format:
@@ -300,20 +349,21 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
      Addressing each comment now...
      ```
 
-2. **Address each review comment:**
-   - Read the file and surrounding context
-   - Determine if code change is needed or just a reply
-   - **If code change needed:**
-     - Make the fix
-     - Commit with reference to the issue being fixed
-     - Reply to comment: "✅ Fixed in commit {sha}: {brief description}"
-   - **If no code change needed (e.g., clarification, disagreement):**
-     - Reply explaining why no change is needed
-     - Be professional and concise
-   - Use the `resolve-pr-comments` skill for parallel handling if 3+ comments
-   - Example commit message:
-     ```bash
-     git commit -m "$(cat <<EOF
+2. **Address each review comment using the Decision Framework:**
+
+   **For each comment, apply the PR Comment Response Decision Framework (see above):**
+
+   - **Option 1 (Implement Now):** Read file, make fix, commit, reply with commit SHA
+   - **Option 2 (Defer with Issue):** Create issue NOW, add to milestone, link as sub-issue, reply with issue number
+   - **Option 3 (Disagree):** Reply explaining why not addressing (NEVER for test failures/errors)
+
+   **CRITICAL:** Do NOT promise to "track this later" or "handle in a follow-up" - you cannot!
+
+   Use the `resolve-pr-comments` skill for parallel handling if 3+ comments.
+
+   **Example commit for Option 1:**
+   ```bash
+   git commit -m "$(cat <<EOF
 🩹 fix(pr-workflow): address review feedback on error handling
 
 - Added validation before API calls
@@ -322,7 +372,25 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 Addresses review comment: https://github.com/owner/repo/pull/385#discussion_r123456
 EOF
 )"
-     ```
+   ```
+
+   **Example for Option 2 (Defer):**
+   ```bash
+   # Create issue
+   ISSUE_URL=$(gh issue create --title "Refactor: improve error handling patterns" \
+     --body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
+   NEW_ISSUE=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+
+   # Add to milestone (if PR has one)
+   gh issue edit "$NEW_ISSUE" --milestone "current-milestone"
+
+   # Link as sub-issue of parent
+   gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
+
+   # Reply to comment
+   # Use /gh-pr-comment-reply or gh api to reply with:
+   # "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
+   ```
 
 3. **Check if branch needs rebasing:**
    ```bash

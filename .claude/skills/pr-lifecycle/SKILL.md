@@ -7,6 +7,42 @@ description: Enforce project hygiene throughout the PR lifecycle. Use before cre
 
 Enforce project hygiene throughout the pull request lifecycle. This skill provides checklists, validation commands, and templates to ensure PRs properly close issues and follow project conventions.
 
+## Critical Constraints - Session Statelessness
+
+**IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
+
+**You CANNOT:**
+- Track issues across sessions
+- Remember to do something later
+- Follow up on tasks in the future
+- Promise to handle something "in a follow-up"
+
+**You MUST NOT say things like:**
+- "I'll track this in a follow-up issue"
+- "I'll remember to fix this later"
+- "I'll handle this in a subsequent PR"
+
+## PR Comment Response Decision Framework
+
+When addressing review comments, choose ONE of these options:
+
+### Option 1: Implement Now (Preferred)
+**When:** Change is small-ish and worth doing.
+**Action:** Implement fix, commit, reply with: "Fixed in commit {sha}: {description}"
+
+### Option 2: Defer with Issue (Expensive - use sparingly)
+**When:** Change is large AND worth doing AND not critical to PR.
+**Action:**
+1. Create GitHub issue NOW using `gh issue create`
+2. Add to same milestone as PR's issue
+3. Add as sub-issue using `gh sub-issue add`
+4. Reply: "Created #XYZ to track this. Not addressing in this PR because {reason}."
+
+### Option 3: Disagree / Won't Fix
+**When:** Suggestion is nit-picky, negligible, or you disagree.
+**Action:** Reply explaining why not addressing. Be professional.
+**NEVER use for:** Test failures, errors, security concerns.
+
 ## Overview
 
 **Project Hygiene Invariant:** Each PR should:
