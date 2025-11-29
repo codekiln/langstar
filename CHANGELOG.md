@@ -5,6 +5,844 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2025-11-29
+
+### ✨ Features
+
+- ✨ feat: add vscode-docker extension and rust feature to devcontainer (#396)
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+- ✨ feat(sdk): add StructuredPrompt types and LC-JSON serialization (#415)
+
+* ✨ feat(sdk): add StructuredPrompt types and LC-JSON serialization
+
+Implements StructuredPrompt types and LC-JSON serialization in SDK to support
+structured output prompts matching the LC-JSON format validated in #404.
+
+Key deliverables:
+- LcJson<T> generic wrapper for LangChain object serialization
+- StructuredPrompt struct with messages, schema_, and structured_output_kwargs
+- Message template types (MessagePromptTemplateKwargs, PromptTemplateKwargs)
+- StructuredOutputKwargs for method selection (json_schema/function_calling)
+- Comprehensive unit tests for round-trip serialization
+- Verified types match LC-JSON format from research report
+
+Tests added:
+- test_lc_json_basic_serialization
+- test_lc_json_round_trip
+- test_prompt_template_kwargs_serialization
+- test_structured_prompt_minimal
+- test_structured_prompt_with_lc_json_wrapper
+- test_structured_prompt_full_round_trip
+- test_structured_prompt_matches_python_format
+- test_function_calling_method
+
+All tests pass. Ready for client methods in #406.
+
+Fixes #405
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(sdk): export StructuredPrompt types from lib.rs
+
+- Added LcJson<T> to public exports
+- Added StructuredPrompt to public exports
+- Added StructuredOutputKwargs to public exports
+- Added MessagePromptTemplateKwargs to public exports
+- Added PromptTemplateKwargs to public exports
+
+Makes new types accessible to SDK users.
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/415#discussion_r2573007663
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): implement eval CLI commands (#397)
+
+* ✨ feat(cli): implement eval CLI commands
+
+Implements langstar eval command group for managing LangSmith evaluations.
+
+## Commands
+
+- `eval create` - Create evaluation configurations
+  - Support for heuristic evaluators (exact_match, contains, regex_match, json_valid)
+  - Support for LLM-as-judge evaluators with configurable models and rubrics
+  - Flags: --evaluator, --judge-model, --judge-prompt-file, --score-type, etc.
+
+- `eval run` - Execute evaluations on datasets
+  - --preview flag for testing on limited examples
+  - --dry-run flag for validation
+
+- `eval list` - List evaluation configurations
+  - Filters: --name, --dataset, --evaluator-type
+
+- `eval get` - Get specific evaluation details
+
+- `eval export` - Export evaluation results
+  - Formats: CSV, JSONL
+  - --include-comments flag for detailed output
+
+## Implementation Notes
+
+- Commands follow existing CLI patterns (dataset, queue commands)
+- All commands use proper authentication via config.to_auth_config()
+- Output formatting supports both JSON and table formats
+- Placeholder implementations with TODO markers for future work
+- Evaluation types aligned with SDK types from #370 and #371
+
+Fixes #372
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(cli): address Copilot review feedback on eval commands
+
+- Added StringDistance variant to EvaluatorType for feature completeness
+- Replaced From trait with TryFrom for HeuristicEvaluator conversion
+  - Eliminates panic! in favor of proper error handling
+  - Returns Err for LlmJudge instead of panicking
+- Optimized display_option_string to avoid unnecessary clone
+  - Uses as_deref() for more efficient string conversion
+- Updated all tests to use TryFrom pattern
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/397#discussion_r2572951929
+- https://github.com/codekiln/langstar/pull/397#discussion_r2572951934
+- https://github.com/codekiln/langstar/pull/397#discussion_r2572951937
+
+* 🩹 fix(cli): use usize for limit param, remove redundant imports (#410)
+
+* Initial plan
+
+* 🩹 fix(cli): address PR review feedback on eval commands
+
+- Change limit parameter type from i64 to usize for consistency
+- Remove redundant TryFrom imports in test functions
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* fix: [WIP] Implement eval CLI commands for LangSmith evaluations (#414)
+
+* Initial plan
+
+* 🩹 fix(cli): address review feedback - UUID types, flag naming, validation
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🩹 fix(cli): revert score validation logic to use OR (correct behavior)
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🩹 fix(cli): improve test robustness with UUID-based temp path
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🎨 style: apply cargo fmt
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🩹 fix(cli): remove redundant UUID import in test
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* 🩹 fix: standardize export format handling with ValueEnum
+
+- Add ExportFormat enum to dataset export command for type-safe format selection
+- Update dataset export to use ValueEnum with default value (csv) for consistency with eval export
+- Remove obsolete test_dataset_export_requires_format test (format now has sensible default)
+- Add clarifying comment to eval.rs TryFrom implementation explaining future usage
+
+Addresses review feedback on PR #397:
+- Copilot comment 2573007414: Standardize file-format handling across export commands
+- Copilot comment 2573007417: Document TryFrom implementation usage
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+- ✨ feat(sdk): implement structured prompt push/pull with schema validation (#420)
+
+* ✨ feat(sdk): implement structured prompt push/pull with schema validation
+
+This commit implements client methods in the SDK to push and pull
+structured prompts with JSON schema validation, completing the SDK
+layer of the structured output prompts feature.
+
+## Changes
+
+### SDK Error Types (sdk/src/error.rs)
+- Add SchemaValidationError for schema validation failures
+- Add InvalidSchemaError for malformed JSON schemas
+- Add InvalidMethodError for invalid structured output methods
+
+### SDK Dependencies (sdk/Cargo.toml)
+- Add jsonschema v0.18 for JSON Schema validation
+
+### SDK Prompt Client Methods (sdk/src/prompts.rs)
+- Add push_structured_prompt() - Validates and pushes StructuredPrompt
+- Add pull() - Retrieves prompt commit manifest
+- Add pull_structured_prompt() - Pulls and deserializes StructuredPrompt
+- Add validate_json_schema() - Validates JSON Schema before push
+- Add validate_method() - Validates structured output method
+
+### Comprehensive Unit Tests
+- Schema validation tests (valid/invalid/malformed schemas)
+- Method validation tests (json_schema/function_calling/invalid)
+- Serialization tests for API compatibility
+- Deserialization tests for pull operations
+
+## Implementation Details
+
+- Schema validation uses jsonschema crate for compile-time validation
+- Methods validated: "json_schema" and "function_calling"
+- StructuredPrompt serialized to LC-JSON format matching Python SDK
+- Client-side validation prevents invalid schemas from reaching API
+- Error messages provide clear guidance for validation failures
+
+## Testing
+
+- ✅ cargo fmt - Passed
+- ✅ cargo check --workspace --all-features - Passed
+- ✅ cargo clippy --workspace --all-features -- -D warnings - Passed
+- ✅ Unit tests added for all new functionality
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+Fixes #406
+
+* 🩹 fix(sdk): remove unused SchemaValidationError variant
+
+The SchemaValidationError variant was defined but never used in the
+codebase. InvalidSchemaError is used instead and is more descriptive
+for the actual use case.
+
+Addresses Copilot review feedback.
+- ✨ feat(cli): add structured prompt support with --schema flag (#431)
+
+* ✨ feat(cli): add structured prompt support with --schema flag
+
+Implements CLI commands for structured output prompts with JSON schema support:
+
+- Add --schema and --schema-method flags to `prompt push`
+  - Validates JSON Schema files before pushing
+  - Supports json_schema and function_calling methods
+  - Automatically detects regular vs structured prompts
+
+- Add new `prompt pull` command
+  - Downloads prompt manifests from PromptHub
+  - Detects and displays structured prompt schemas
+  - Shows input variables, method, and template
+
+- Validation and error handling
+  - Schema file validation using jsonschema crate
+  - Clear error messages for invalid schemas
+  - Method validation (json_schema/function_calling)
+
+Design follows DX consistency analysis from issue #403:
+- Uses --schema FILE pattern (matches dataset import)
+- Defaults to json_schema method
+- Backward compatible with existing prompt push
+
+Fixes #407
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-workflow): address Copilot review feedback
+
+- Use formatter.info() instead of println! for consistency
+- Refactor if-let chain to nested pattern for compatibility
+- Log parsing errors for better debugging visibility
+
+Addresses review comments:
+- Comment 2573067236 (formatter consistency)
+- Comment 2573067239 (edition compatibility)
+- Comment 2573067241 (error logging)
+
+* 🩹 fix(ci): use collapsed if-let pattern for clippy
+
+The workspace uses edition 2024, so the if-let && pattern is supported.
+Revert to collapsed pattern to satisfy clippy::collapsible-if lint.
+
+Note: Copilot's comment about edition compatibility was incorrect for this codebase.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(scripts): add automated worktree cleanup for closed issues (#428)
+
+* ✨ feat(scripts): add automated worktree cleanup for closed issues
+
+Adds cleanup-closed-issue-worktrees.sh script that:
+- Detects worktrees tied to closed GitHub issues
+- Safely removes worktrees with proper checks
+- Handles edge cases (uncommitted changes, locked worktrees)
+- Prunes stale references
+- Provides colored output for clarity
+
+Tested with 5 worktrees: successfully removed 4 for closed issues,
+kept 2 for open issues.
+
+Fixes #426
+
+* 🩹 fix(scripts): address Copilot review feedback on worktree cleanup script
+
+Improvements for robustness and portability:
+
+- Added usage documentation with branch format requirements
+- Implemented robust parsing using regex instead of awk/paste
+  (handles paths with spaces correctly)
+- Fixed path comparison to prevent false positive matches
+- Added explicit --repo parameter to gh commands for correct context
+- Replaced hardcoded /workspace with git rev-parse --show-toplevel
+- Added validation for gh CLI installation and authentication
+- Fixed regex to handle both "123-" and "123 -" branch formats
+- Improved worktree filtering to use repository root
+- Added processed_any flag to handle empty worktrees gracefully
+
+Addresses review comments: #2573063509, #2573063510, #2573063511,
+#2573063512, #2573063513, #2573063514, #2573063515, #2573063516, #2573063517
+
+Tested successfully with existing worktrees.
+
+* 🩹 fix(scripts): address additional Copilot review feedback
+
+- Fixed regex to require dash: /([0-9]+)- for accurate extraction
+- Fixed path comparison logic: PWD/ == path/* for proper subdirectory detection
+- Added automatic --force retry for worktrees with uncommitted changes
+- Removed misleading comment about handling "123 -" format
+
+Addresses review comments: #2573067595, #2573067597, #2573067592, #2573067601
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(pr-workflow): correct GitHub API for replying to PR review comments (#412)
+
+Fixes #400
+
+## Changes
+
+- Fixed GitHub API endpoint documentation in pr-workflow.md
+- Removed incorrect `gh pr comment --reply` flag (does not exist)
+- Added correct Method 1: POST with in_reply_to parameter (recommended)
+- Added correct Method 2: POST to /comments/{id}/replies endpoint
+- Clarified that <pr_number> must be included in the API path
+- Added note explaining gh pr comment limitation
+
+## Root Cause
+
+The documented approaches had two issues:
+1. `gh pr comment --reply` flag does not exist in gh CLI
+2. API endpoint was missing PR number in path structure
+
+## Verified Correct Approaches
+
+Both methods are now documented and match GitHub REST API docs:
+- Method 1: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments` with `in_reply_to` parameter
+- Method 2: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies` with `body`
+
+Other files already correct:
+- `.claude/commands/gh-pr-comment-reply.md` uses Method 1 ✓
+- `.claude/skills/resolve-pr-comments/SKILL.md` uses Method 1 ✓
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(pr-workflow): add session statelessness constraints and decision framework (#422)
+
+* 🩹 fix(pr-workflow): add session statelessness constraints and decision framework
+
+Address issue where Claude Code makes inappropriate promises like
+"I'll track this in a follow-up issue" when Claude cannot actually
+track anything across sessions.
+
+Changes:
+- Add "Critical Constraints - Session Statelessness" section to all 4 files
+- Add "PR Comment Response Decision Framework" with 3 clear options:
+  1. Implement Now (preferred) - fix and reply with commit SHA
+  2. Defer with Issue (expensive) - create issue NOW, not later
+  3. Disagree/Won't Fix - professional explanation (never for errors)
+- Update Phase 4 in pr-workflow to reference decision framework
+- Make explicit what Claude CANNOT do (track issues, remember later)
+- Make explicit what Claude MUST NOT say ("I'll handle this later")
+
+Fixes #417
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-workflow): address Copilot review feedback
+
+- Add missing "You MUST NOT say" section to resolve-pr-comments/SKILL.md
+- Fix inconsistent terminology: "Response Pattern" → "Option" in gh-pr-comment-reply.md
+- Add missing action steps to Option 1 in resolve-pr-comments/SKILL.md
+- Fix spelling: "nit-picky" → "nitpicky" in 4 files (standard dictionary spelling)
+
+Addresses Copilot review comments on PR #422
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(devcontainer): clear git credential helpers before mise install (#429)
+
+* 🩹 fix(devcontainer): clear git credential helpers before mise install
+
+Fixes #423
+
+## Problem
+mise install was failing when trying to install Python 3.11 because it
+encountered a configured git credential helper that didn't exist in the
+container environment. This happened because VS Code copies the host
+machine's gitconfig into the container, which may reference credential
+helpers like docker-credential-desktop that aren't available.
+
+## Solution
+Clear all git credential helpers at the start of post-create.sh, before
+running mise install. This ensures mise can download packages from git
+repositories without encountering credential helper errors.
+
+## Changes
+- Added Step 1 to clear git credential helpers (global and local)
+- Moved existing steps to Step 2-6 for proper numbering
+- Added detailed comments explaining why this is necessary
+- Uses same credential helper clearing approach as setup-github-auth.sh
+
+## Testing
+The fix prevents the error:
+"Failed to obtain credentials: An IO error occurred while communicating
+to the credentials helper: No such file or directory (os error 2)"
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: enhance credential helper comment for clarity
+
+Added clarifying line explaining that empty string overrides system
+config, matching the comment style in setup-github-auth.sh.
+
+Addresses Copilot review feedback
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(devcontainer): prevent zsh zle error in non-interactive mode (#432)
+
+Wrap mise activation in ~/.zshrc with interactive shell check to prevent
+"can't change option: zle" error when VS Code's userEnvProbe runs zsh in
+non-interactive mode.
+
+The zle (Zsh Line Editor) option is only available in interactive shells.
+When the devcontainer's userEnvProbe evaluates .zshrc in non-interactive
+mode, any attempt to enable zle causes an error.
+
+Solution: Guard mise activation with [[ -o interactive ]] check.
+
+Fixes #424
+- 🩹 fix(devcontainer): remove duplicate Rust installation from mise (#433)
+
+Removes rust = "latest" from mise.toml to prevent duplicate Rust installations.
+Rust is already installed by the devcontainer feature
+(ghcr.io/devcontainers/features/rust:1) during container build.
+
+This change:
+- Eliminates wasted build time from installing Rust twice
+- Reduces unnecessary disk usage
+- Prevents potential version conflicts
+- Improves devcontainer rebuild performance
+
+Fixes #425
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### ♻️ Refactoring
+
+- ♻️ refactor(cli): extract ExportFormat to shared output module (#430)
+
+* ♻️ refactor(cli): extract ExportFormat to shared output module
+
+Eliminates duplication by extracting ExportFormat enum from both
+eval.rs and dataset.rs to cli/src/output.rs as a shared type.
+
+Benefits:
+- Single source of truth for export format types
+- Easier to maintain consistency across commands
+- Future export commands automatically have same format options
+
+Fixes #418
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(output): add Display, PartialEq, Eq traits to ExportFormat
+
+- Added PartialEq and Eq for comparisons and testing
+- Added Display trait for logging and error messages
+- Improves consistency with other CLI enum types like EvaluatorType
+
+Addresses Copilot review feedback: https://github.com/codekiln/langstar/pull/430#discussion_r2573064665
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add structured output prompts research report (#399)
+
+* 📚 docs: add structured output prompts research report
+
+Fixes #398
+
+- Add research report documenting LangSmith SDK structured output implementation
+- Create Python experiment scripts for testing structured output prompts
+- Update langsmith-sdk knowledge base notes with transform logic analysis
+- Document manifest structure and key SDK classes
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: add experimental findings to structured output research
+
+- Update research report with Section 9: Experimental Findings
+- Document critical Pydantic serialization issue (classes become null)
+- Add validated manifest structure from actual LangSmith API
+- Answer open questions based on experimental evidence
+- Update experiment README with findings
+- Fix experiment scripts for proper API usage
+
+Key finding: Use JSON schema dicts, not Pydantic classes, for schema_
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address PR review feedback
+
+- Add requests to prerequisites in README
+- Fix pull command example with required --name argument
+- Standardize LC-JSON capitalization throughout documentation
+- Fix Langstar capitalization consistency
+- Use safer env sourcing in run_test.sh (set -a/source instead of xargs)
+- Remove unused 'Any' import
+- Add URL encoding for prompt_name in API paths
+- Clarify API endpoint path documentation for default owner
+
+Addresses review comments from Copilot on PR #399
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add design decisions for structured output prompts CLI (#411)
+
+* 📚 docs: add design decisions for structured output prompts CLI
+
+Fixes #403
+
+Add Section 11 to the research report documenting DX consistency
+analysis and configuration integration for structured output prompts:
+
+- Analyze existing prompt push and dataset import patterns
+- Design --schema and --schema-method CLI flags
+- Document configuration requirements (no new env vars needed)
+- Document business purpose and key user scenarios
+- Compare CLI vs UI workflow advantages
+- Summarize implementation requirements for SDK and CLI
+
+This completes Phase 2 (Design) of the ls-prompt-structured-outputs
+milestone.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address Copilot review comments
+
+- Clarify "not frequent enough" to "not used frequently enough"
+- Change "Pulling" to "Getting" to match actual CLI command
+- Update `prompt pull` to `prompt get` (correct command)
+- Update implementation summary to use "getting" terminology
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(prompts): validate structured output prompt design against OpenAPI spec (#413)
+
+- Fetch latest LangSmith OpenAPI spec (638K)
+- Extract prompt/commit endpoints and schemas to api-specs/
+- Validate research findings from #398 against OpenAPI spec
+- Document validation results in detailed report
+- Update MANIFEST.md with provenance metadata
+- Update FRAGMENTS.md with new extraction queries
+
+All research findings confirmed. No blocking issues for SDK implementation.
+
+Fixes #404
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(eval): add comprehensive documentation for evals feature (#427)
+
+This commit adds complete documentation for the langstar eval commands:
+
+- Added eval commands section to main README with usage examples
+- Created evals-implementation-plan.md with architecture and implementation details
+- Created evaluations.md with comprehensive guide including:
+  - Environment variable configuration
+  - All evaluator types (heuristic and LLM-as-judge)
+  - Complete workflow examples
+  - Judge prompt/rubric templates and best practices
+  - Troubleshooting guide
+
+Fixes #374
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: add comprehensive structured output prompt documentation (#434)
+
+* 📚 docs: add comprehensive structured output prompt documentation
+
+- Add README section with quick examples and usage
+- Create detailed usage guide with examples and patterns
+- Document implementation with architecture decisions
+- Include JSON Schema tips and troubleshooting
+
+Fixes #409
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): correct file references and version numbers
+
+- Fix jsonschema version: 0.18 (not 0.21)
+- Remove references to non-existent 402-structured-prompts-openapi-validation.md
+- Fix test file reference: integration_test.rs (not prompts_integration.rs)
+
+Addresses Copilot review comments in PR #434
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🧪 Testing
+
+- 🧪 test(evals): add comprehensive tests for evaluations feature (#421)
+
+* 🧪 test(evals): add comprehensive tests for evaluations feature
+
+Implements comprehensive test coverage for the evals feature as specified in
+issue #373, including evaluator implementations, SDK tests, and CLI tests.
+
+## Changes
+
+### SDK Evaluator Implementations (sdk/src/evaluators.rs)
+- Add heuristic evaluator functions:
+  - exact_match: String equality evaluation
+  - contains: Substring presence check
+  - regex_match: Pattern matching evaluation
+  - json_valid: JSON validation
+  - levenshtein_distance: Edit distance calculation
+  - string_distance: Normalized string similarity
+- Add LLM-as-judge utilities:
+  - format_judge_prompt: Prompt formatting for LLM judges
+  - to_evaluation_result: Result conversion helper
+- Include 19 comprehensive unit tests covering all evaluators
+
+### SDK Evaluation Tests (sdk/tests/evaluations_test.rs)
+- Add 11 mocked HTTP tests for feedback CRUD operations:
+  - Create feedback (continuous and categorical)
+  - Get feedback by ID
+  - Update feedback
+  - Delete feedback
+  - List feedback (all and filtered by run)
+  - Error handling tests (404, 422 validation errors)
+  - Evaluation result creation as feedback
+
+### CLI Integration Tests (cli/tests/eval_command_test.rs)
+- Add 40+ comprehensive CLI tests covering:
+  - Help text validation for all subcommands
+  - Required argument validation
+  - Invalid argument handling
+  - Evaluator type parsing (exact-match, contains, regex-match, etc.)
+  - UUID validation for eval IDs
+  - Export format validation (csv, jsonl)
+  - LLM judge configuration validation:
+    - Prompt file existence checks
+    - Score type validation (categorical, continuous)
+    - Score choices and ranges
+  - JSON output format tests
+  - Edge cases and error handling
+
+### Dependencies
+- Add regex = "1.11" to sdk/Cargo.toml for regex_match evaluator
+
+## Test Results
+- SDK evaluator tests: 19 passed ✓
+- SDK evaluation tests: 11 passed ✓
+- All tests compile cleanly
+- Passes cargo fmt and cargo clippy
+
+## Related Issues
+Fixes #373
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(workflow): add milestone requirement to PR workflow
+
+Documents the requirement to add milestones to PRs when the related issue
+has a milestone. This ensures consistency with the issue hierarchy and
+enables proper progress tracking.
+
+## Changes
+- Added "IMPORTANT: Always Add Milestone" section to PR Best Practices
+- Explains why milestones matter for project management
+- Provides GitHub CLI example for adding milestone to PR
+- Uses this PR (#421) as a concrete example
+
+## Context
+Milestones must be attached to PRs (not just issues) for:
+- Progress tracking across epics
+- Filtering all work related to a milestone
+- Project management and burndown charts
+- Maintaining consistency with issue hierarchy
+
+This mirrors the existing requirement that "ALL issues at ALL levels must
+have the milestone attached" (from Issue #258).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(tests): address Copilot review feedback
+
+- Simplified string concatenation in test assertion
+- Use assert_eq! instead of assert! for floating-point comparison
+- Renamed test function for accuracy
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/421#discussion_r2573041900
+- https://github.com/codekiln/langstar/pull/421#discussion_r2573041902
+- https://github.com/codekiln/langstar/pull/421#discussion_r2573041905
+
+* 🩹 fix(ci): resolve formatting issue in evaluations_test.rs
+
+Addresses cargo fmt check failure in CI by formatting .match_query() call to single line.
+
+Fixes formatting detected in CI run 19785321638.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🧪 test: add comprehensive tests for structured output prompt support (#435)
+
+* 🧪 test: add comprehensive tests for structured output prompt support
+
+Implements tests for structured prompt push/pull functionality:
+
+SDK Mocked Tests (sdk/tests/structured_prompts_test.rs):
+- Test push_structured_prompt with mocked HTTP responses
+- Test pull_structured_prompt deserialization
+- Test schema validation (valid and invalid schemas)
+- Test method validation (json_schema, function_calling, invalid)
+- Test round-trip data integrity with mocks
+- 7 test cases using mockito for HTTP mocking
+
+SDK Integration Tests (sdk/tests/structured_prompts_integration_test.rs):
+- Test push/pull against real LangSmith API
+- Test round-trip with real API (push then pull)
+- Test both json_schema and function_calling methods
+- Test repository creation if not exists
+- 4 test cases (marked with #[ignore] for opt-in execution)
+
+CLI Integration Tests (cli/tests/prompt_structured_test.rs):
+- Test CLI commands with --schema flag
+- Test invalid schema file handling
+- Test missing schema file error
+- Test invalid method validation
+- Test both table and JSON output formats
+- Test round-trip via CLI (push then pull)
+- 9 test cases using assert_cmd and tempfile
+
+All tests follow project conventions:
+- SDK integration tests use #[ignore] attribute
+- CLI tests use #[cfg_attr(not(feature = "integration-tests"), ignore)]
+- Tests verify both json_schema and function_calling methods
+- Comprehensive error handling coverage
+
+Fixes #408
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: address review feedback on test prerequisites
+
+- Updated SDK integration test docs to clarify repository auto-creation
+- Clarified WORKSPACE_ID requirement follows CLI test pattern
+- Added auto-creation note to CLI test docs for consistency
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/435#discussion_r2573078296
+- https://github.com/codekiln/langstar/pull/435#discussion_r2573078297
+
+* 🩹 fix(ci): replace deprecated cargo_bin with CargoBuild
+
+- Replace Command::cargo_bin() with escargot::CargoBuild pattern
+- Add get_langstar_bin() helper function following project conventions
+- Remove unused std::fs import
+- Fixes clippy deprecation warnings
+
+Addresses CI failure in clippy check.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.9.0] - 2025-11-28
 
 ### ✨ Features
