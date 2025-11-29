@@ -1,7 +1,6 @@
 # Docker Compose configuration for Langstar devcontainer
 # Compose file format: https://docs.docker.com/compose/compose-file/
 # Environment variables: https://docs.docker.com/compose/how-tos/environment-variables/
-version: '3.8'
 
 services:
   langstar-dev:
