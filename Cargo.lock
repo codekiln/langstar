@@ -958,6 +958,7 @@ dependencies = [
  "futures-core",
  "jsonschema",
  "mockito",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
