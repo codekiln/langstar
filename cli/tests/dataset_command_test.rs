@@ -255,16 +255,6 @@ fn test_dataset_import_requires_file() {
 }
 
 #[test]
-fn test_dataset_export_requires_format() {
-    let mut cmd = langstar_cmd();
-    cmd.args(["dataset", "export", "00000000-0000-0000-0000-000000000001"]);
-
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("--file-format"));
-}
-
-#[test]
 fn test_dataset_list_examples_requires_uuid() {
     let mut cmd = langstar_cmd();
     cmd.args(["dataset", "list-examples"]);

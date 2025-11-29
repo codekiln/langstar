@@ -69,6 +69,10 @@ impl std::fmt::Display for EvaluatorType {
     }
 }
 
+// Conversion from CLI EvaluatorType to SDK HeuristicEvaluator.
+// This will be used in execute_create when converting CLI arguments to SDK types
+// for creating evaluation configurations. Returns Err for LlmJudge since it's
+// not a heuristic evaluator and requires separate handling.
 impl TryFrom<EvaluatorType> for HeuristicEvaluator {
     type Error = &'static str;
 

@@ -6,7 +6,7 @@
 use crate::config::Config;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
-use clap::{Args, Subcommand};
+use clap::{Args, Subcommand, ValueEnum};
 use langstar_sdk::{
     DataType, Dataset, DatasetCreate, DatasetUpdate, Example, ExampleCreate, LangchainClient,
     ListDatasetsParams, ListExamplesParams,
@@ -157,6 +157,15 @@ pub struct ListExamplesArgs {
     pub json: bool,
 }
 
+/// Export format for dataset examples
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ExportFormat {
+    /// CSV format
+    Csv,
+    /// JSON Lines format
+    Jsonl,
+}
+
 /// Arguments for the `dataset export` command
 #[derive(Debug, Args)]
 pub struct ExportArgs {
@@ -164,8 +173,8 @@ pub struct ExportArgs {
     pub dataset_id: Uuid,
 
     /// Output file format: jsonl or csv
-    #[arg(long = "file-format", value_name = "FORMAT")]
-    pub file_format: String,
+    #[arg(long = "file-format", value_enum, default_value = "csv")]
+    pub file_format: ExportFormat,
 
     /// Output file path (prints to stdout if not specified)
     #[arg(long, short)]
@@ -655,13 +664,6 @@ impl DatasetCommands {
     }
 
     async fn execute_export(args: &ExportArgs, config: &Config) -> Result<()> {
-        let format = args.file_format.to_lowercase();
-        if format != "jsonl" && format != "csv" {
-            return Err(crate::error::CliError::Config(
-                "Unsupported format. Use 'jsonl' or 'csv'".to_string(),
-            ));
-        }
-
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
@@ -682,39 +684,42 @@ impl DatasetCommands {
             Box::new(std::io::stdout())
         };
 
-        if format == "jsonl" {
-            for example in &examples {
-                let record = JsonlRecord {
-                    id: Some(example.id),
-                    inputs: example.inputs.clone(),
-                    outputs: example.outputs.clone(),
-                    metadata: example.metadata.clone(),
-                };
-                writeln!(output, "{}", serde_json::to_string(&record)?)?;
+        match args.file_format {
+            ExportFormat::Jsonl => {
+                for example in &examples {
+                    let record = JsonlRecord {
+                        id: Some(example.id),
+                        inputs: example.inputs.clone(),
+                        outputs: example.outputs.clone(),
+                        metadata: example.metadata.clone(),
+                    };
+                    writeln!(output, "{}", serde_json::to_string(&record)?)?;
+                }
             }
-        } else {
-            // CSV format
-            let mut wtr = csv::Writer::from_writer(output);
-            wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-            for example in &examples {
-                wtr.write_record([
-                    example.id.to_string(),
-                    serde_json::to_string(&example.inputs)?,
-                    example
-                        .outputs
-                        .as_ref()
-                        .map(serde_json::to_string)
-                        .transpose()?
-                        .unwrap_or_default(),
-                    example
-                        .metadata
-                        .as_ref()
-                        .map(serde_json::to_string)
-                        .transpose()?
-                        .unwrap_or_default(),
-                ])?;
+            ExportFormat::Csv => {
+                // CSV format
+                let mut wtr = csv::Writer::from_writer(output);
+                wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
+                for example in &examples {
+                    wtr.write_record([
+                        example.id.to_string(),
+                        serde_json::to_string(&example.inputs)?,
+                        example
+                            .outputs
+                            .as_ref()
+                            .map(serde_json::to_string)
+                            .transpose()?
+                            .unwrap_or_default(),
+                        example
+                            .metadata
+                            .as_ref()
+                            .map(serde_json::to_string)
+                            .transpose()?
+                            .unwrap_or_default(),
+                    ])?;
+                }
+                wtr.flush()?;
             }
-            wtr.flush()?;
         }
 
         if let Some(path) = &args.out {
