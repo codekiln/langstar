@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Docker Compose Override Template
 #
 # This file is for LOCAL DEVELOPMENT ONLY and should NOT be committed to git.
