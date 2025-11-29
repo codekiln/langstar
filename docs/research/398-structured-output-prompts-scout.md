@@ -499,7 +499,7 @@ Push {
 
 | Decision | Rationale |
 |----------|-----------|
-| `--schema <FILE>` (long only) | Matches `--file` pattern from dataset commands; not frequent enough for short flag |
+| `--schema <FILE>` (long only) | Matches `--file` pattern from dataset commands; not used frequently enough for short flag |
 | `--schema-method` (not `--method`) | Explicit naming avoids ambiguity; clearly indicates it relates to schema handling |
 | Default `json_schema` | Most common method; matches Python SDK defaults |
 | `PathBuf` type | Proper path handling, consistent with dataset import |
@@ -641,11 +641,11 @@ langstar prompt push -o team -r sentiment-analyzer \
   --schema ./schemas/sentiment.json
 ```
 
-#### Pulling Structured Prompts
+#### Getting Structured Prompts
 
 ```bash
-# Pull and view structured prompt
-langstar prompt pull owner/prompt-name
+# Get and view structured prompt
+langstar prompt get owner/prompt-name
 
 # Output shows schema information
 # Manifest:
@@ -688,7 +688,7 @@ langstar prompt pull owner/prompt-name
 
 1. **New flags**: `--schema`, `--schema-method` on `prompt push`
 2. **File reading**: Load and validate schema from file
-3. **Output display**: Show schema info when pulling structured prompts
+3. **Output display**: Show schema info when getting structured prompts
 
 #### Validation Strategy
 
