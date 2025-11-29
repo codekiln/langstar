@@ -30,10 +30,6 @@ pub enum LangstarError {
     #[error("Invalid URL: {0}")]
     UrlError(#[from] url::ParseError),
 
-    /// Schema validation error
-    #[error("Schema validation error: {0}")]
-    SchemaValidationError(String),
-
     /// Invalid schema format
     #[error("Invalid JSON Schema: {0}")]
     InvalidSchemaError(String),
