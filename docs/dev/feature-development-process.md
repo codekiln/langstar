@@ -688,7 +688,7 @@ Add new commands to main README:
 
 ## Phase 9: Milestone Release
 
-When the milestone's features ship in a GitHub release, use the `/gh-milestones/release` slash command to automate milestone cleanup.
+When the milestone's features ship in a GitHub release, use the `/gh-milestones:release` slash command to automate milestone cleanup.
 
 ### 9.1 Prerequisites
 
@@ -703,21 +703,21 @@ Before running milestone release:
 ### 9.2 Release Command
 
 ```bash
-/gh-milestones/release <milestone> <version>
+/gh-milestones:release <milestone> <version>
 ```
 
 **Examples**:
 ```bash
 # Using milestone name
-/gh-milestones/release ls-prompt-structured-outputs v0.10.0
+/gh-milestones:release ls-prompt-structured-outputs v0.10.0
 
 # Using milestone URL
-/gh-milestones/release https://github.com/codekiln/langstar/milestone/7 v0.10.0
+/gh-milestones:release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 ```
 
 ### 9.3 What Gets Automated
 
-The `/gh-milestones/release` command performs the following actions:
+The `/gh-milestones:release` command performs the following actions:
 
 1. **Validates Release Exists**: Confirms GitHub release is published
 2. **Checks Sub-Issue Completion**: Warns if any sub-issues are still open (requires `gh-sub-issue` extension)
@@ -748,7 +748,7 @@ The `/gh-milestones/release` command performs the following actions:
 If sub-issues are intentionally still open, force the release:
 
 ```bash
-FORCE_RELEASE=true /gh-milestones/release <milestone> <version>
+FORCE_RELEASE=true /gh-milestones:release <milestone> <version>
 ```
 
 **Note**: Not recommended. Best practice is to close all sub-issues before releasing.
@@ -764,7 +764,7 @@ gh pr merge 385 --squash
 gh release create v0.10.0 --generate-notes
 
 # 3. Mark milestone as released
-/gh-milestones/release "ls-prompt-structured-outputs" v0.10.0
+/gh-milestones:release "ls-prompt-structured-outputs" v0.10.0
 ```
 
 ### 9.6 Benefits
@@ -779,8 +779,8 @@ gh release create v0.10.0 --generate-notes
 
 ### 9.7 References
 
-- **PR #442**: `/gh-milestones/release` command implementation
-- **Command Documentation**: `.claude/commands/gh-milestones/release.md`
+- **PR #442**: `/gh-milestones:release` command implementation
+- **Command Documentation**: `.claude/commands/gh-milestones:release.md`
 - **Example**: Milestone #7 (ls-prompt-structured-outputs) released in v0.10.0
 
 ---
@@ -907,7 +907,7 @@ Is this a new API feature with unclear complexity?
    - Sub-issues closed as PRs merge
 
 4. **Released** (Phase 9): Milestone closed, linked to GitHub release
-   - `/gh-milestones/release` automates cleanup
+   - `/gh-milestones:release` automates cleanup
    - Parent issue closed with release comment
    - Milestone description shows release link
    - Audit trail: issue → milestone → release
@@ -920,7 +920,7 @@ Is this a new API feature with unclear complexity?
 - ❌ `Structured Output Prompts Feature` (spaces, verbose)
 
 **Benefits**:
-- Easy to reference in commands: `/gh-milestones/release ls-evals-basic v0.10.0`
+- Easy to reference in commands: `/gh-milestones:release ls-evals-basic v0.10.0`
 - Grep-able in code and documentation
 - Works well with GitHub API and CLI tools
 
@@ -956,5 +956,5 @@ A feature is complete when:
 6. Integration tests passing
 7. Documentation updated
 8. GitHub release published
-9. **Milestone closed via `/gh-milestones/release` (Phase 9)**
+9. **Milestone closed via `/gh-milestones:release` (Phase 9)**
 10. **Parent issue closed with release link**
