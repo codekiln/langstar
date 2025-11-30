@@ -1,0 +1,355 @@
+[
+    {
+        "id": "00000000-0000-0000-0000-000000000001",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "anthropic",
+                "ChatAnthropic"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model": "claude-3-5-sonnet-20241022",
+                "top_k": -1,
+                "top_p": 1,
+                "max_tokens": 8192,
+                "temperature": 0.7,
+                "anthropic_api_key": {
+                    "id": [
+                        "ANTHROPIC_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                }
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Claude-3-5-sonnet-v2",
+        "created_at": "2024-01-01T00:00:00.000000",
+        "updated_at": "2024-01-01T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000002",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "openai",
+                "ChatOpenAI"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model": "gpt-4o",
+                "top_p": 1,
+                "base_url": "https://api.example.com/v1/",
+                "max_tokens": null,
+                "temperature": 1,
+                "openai_api_key": {
+                    "id": [
+                        "OPENAI_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "presence_penalty": 0,
+                "frequency_penalty": 0
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "OpenAI Custom Endpoint",
+        "created_at": "2024-01-02T00:00:00.000000",
+        "updated_at": "2024-01-02T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000003",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "azure_openai",
+                "AzureChatOpenAI"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "top_p": 1,
+                "temperature": 1,
+                "extra_headers": {},
+                "azure_endpoint": "https://your-resource-name.openai.azure.com/",
+                "openai_api_key": {
+                    "id": [
+                        "AZURE_OPENAI_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "deployment_name": "gpt-4o-mini",
+                "presence_penalty": 0,
+                "frequency_penalty": 0,
+                "openai_api_version": "2024-09-01-preview"
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Azure OpenAI gpt-4o-mini",
+        "created_at": "2024-01-03T00:00:00.000000",
+        "updated_at": "2024-01-03T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000004",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "azure_openai",
+                "AzureChatOpenAI"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "top_p": 1,
+                "temperature": 1,
+                "extra_headers": {},
+                "azure_endpoint": "https://your-resource-name.openai.azure.com/",
+                "openai_api_key": {
+                    "id": [
+                        "AZURE_OPENAI_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "deployment_name": "gpt-4o",
+                "presence_penalty": 0,
+                "frequency_penalty": 0,
+                "openai_api_version": "2024-09-01-preview"
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Azure OpenAI gpt-4o",
+        "created_at": "2024-01-04T00:00:00.000000",
+        "updated_at": "2024-01-04T00:00:00.000000",
+        "description": "AzureOpenAI with gpt-4o"
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000005",
+        "settings": {
+            "id": [
+                "langchain_aws",
+                "chat_models",
+                "ChatBedrockConverse"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model_id": "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+                "region_name": "us-east-1",
+                "temperature": 1,
+                "aws_access_key_id": {
+                    "id": [
+                        "AWS_ACCESS_KEY_ID"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_session_token": {
+                    "id": [
+                        "AWS_SESSION_TOKEN"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_secret_access_key": {
+                    "id": [
+                        "AWS_SECRET_ACCESS_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                }
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Amazon Bedrock Sonnet 3.5 v2",
+        "created_at": "2024-01-05T00:00:00.000000",
+        "updated_at": "2024-01-05T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000006",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "bedrock",
+                "ChatBedrock"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model_id": "anthropic.claude-sonnet-4-20250514-v1:0",
+                "region_name": "us-east-1",
+                "aws_access_key_id": {
+                    "id": [
+                        "AWS_ACCESS_KEY_ID"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_session_token": {
+                    "id": [
+                        "AWS_SESSION_TOKEN"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_secret_access_key": {
+                    "id": [
+                        "AWS_SECRET_ACCESS_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                }
+            }
+        },
+        "options": {
+            "requests_per_second": 25
+        },
+        "name": "Bedrock Chat Invoke",
+        "created_at": "2024-01-06T00:00:00.000000",
+        "updated_at": "2024-01-06T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000007",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "azure_openai",
+                "AzureChatOpenAI"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "top_p": 1,
+                "temperature": 1,
+                "extra_headers": {},
+                "azure_endpoint": "https://your-resource-name.openai.azure.com/",
+                "openai_api_key": {
+                    "id": [
+                        "AZURE_OPENAI_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "deployment_name": "o4-mini",
+                "presence_penalty": 0,
+                "frequency_penalty": 0,
+                "openai_api_version": "2025-02-01-preview"
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Azure OpenAI o4-mini",
+        "created_at": "2024-01-07T00:00:00.000000",
+        "updated_at": "2024-01-07T00:00:00.000000",
+        "description": "Azure OpenAI deployment configuration"
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000008",
+        "settings": {
+            "id": [
+                "langchain_aws",
+                "chat_models",
+                "ChatBedrockConverse"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model_id": "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "region_name": "us-east-1",
+                "temperature": 1,
+                "aws_access_key_id": {
+                    "id": [
+                        "AWS_ACCESS_KEY_ID"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_session_token": {
+                    "id": [
+                        "AWS_SESSION_TOKEN"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "aws_secret_access_key": {
+                    "id": [
+                        "AWS_SECRET_ACCESS_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                }
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "Sonnet 4.5 Bedrock",
+        "created_at": "2024-01-08T00:00:00.000000",
+        "updated_at": "2024-01-08T00:00:00.000000",
+        "description": ""
+    },
+    {
+        "id": "00000000-0000-0000-0000-000000000009",
+        "settings": {
+            "id": [
+                "langchain",
+                "chat_models",
+                "azure_openai",
+                "AzureChatOpenAI"
+            ],
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "top_p": 1,
+                "temperature": 1,
+                "extra_headers": {},
+                "azure_endpoint": "https://your-resource-name.openai.azure.com/",
+                "openai_api_key": {
+                    "id": [
+                        "AZURE_OPENAI_API_KEY"
+                    ],
+                    "lc": 1,
+                    "type": "secret"
+                },
+                "deployment_name": "gpt-5-mini",
+                "presence_penalty": 0,
+                "frequency_penalty": 0,
+                "openai_api_version": "2025-03-01-preview"
+            }
+        },
+        "options": {
+            "requests_per_second": null
+        },
+        "name": "AzureOpenAI gpt-5-mini",
+        "created_at": "2024-01-09T00:00:00.000000",
+        "updated_at": "2024-01-09T00:00:00.000000",
+        "description": "Azure OpenAI deployment with gpt-5-mini model"
+    }
+]
