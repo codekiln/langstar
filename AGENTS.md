@@ -33,3 +33,20 @@ All coding conventions and development guidelines can be found in @docs/dev/READ
 For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 
 ### Basic principles - see @docs/dev/code-style-principles.md
+
+## Repository Structure
+
+### `docs/` - Project Documentation
+- `dev/` - Development guidelines, workflow docs, ADRs (see @docs/dev/README.md)
+- `examples/` - Example code and usage patterns
+- `implementation/` - Implementation plans and specifications
+- `research/` - Research reports and findings
+- `templates/` - Document templates
+- `usage/` - Usage documentation and guides
+
+### `reference/` - External Resources & Experiments
+- `api-specs/` - API specifications (LangSmith, control-plane)
+- `experiments/` - Python experiments for API interaction
+- `openapi/langchain/` - OpenAPI JSON specifications
+- `repo/` - Remote repository notes (see .claude/skills/setup-remote-repo-notes-dir knowledge management pattern)
+- `research/` - Research reports on external codebases
