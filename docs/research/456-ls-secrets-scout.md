@@ -252,48 +252,61 @@ These should be answered before full implementation (Phase 2-3):
 5. ✅ Security model is sound (values never exposed)
 6. ✅ Can be implemented incrementally
 
-### Proposed 8-Phase Milestone
+### Proceed to Phase 0?
 
-Following the standard feature development process (`docs/dev/feature-development-process.md`):
+**YES - Recommend creating milestone and parent issue.**
 
-| Phase | Description | Deliverables |
-|-------|-------------|--------------|
-| **0** | Epic setup | Epic issue, milestone, sub-issues |
-| **1** | SDK: List secrets | `SecretKey` struct, `list_secrets()` method |
-| **2** | SDK: Upsert secrets | `SecretUpsert` struct, `upsert_secrets()` method |
-| **3** | SDK: Integration tests | Test list, create, update, delete (if supported) |
-| **4** | CLI: List command | `langstar secrets list` |
-| **5** | CLI: Set command | `langstar secrets set KEY VALUE` (upsert) |
-| **6** | CLI: Delete command | `langstar secrets delete KEY` (if supported) |
-| **7** | CLI: Integration tests | End-to-end CLI testing |
-| **8** | Documentation | Usage guide, examples |
+**Supporting factors**:
+1. ✅ Simple, well-documented API (2 endpoints)
+2. ✅ Low-Medium complexity (manageable)
+3. ✅ No blocking technical dependencies
+4. ✅ Clear business value (enables model provider configs #453)
+5. ✅ Sound security model (values never exposed)
+6. ✅ Can be implemented incrementally
 
-### Optional Phase Extensions
+**Risk factors** (mitigable):
+1. ⚠️ No Python SDK precedent (mitigated by complete OpenAPI spec)
+2. ⚠️ Delete behavior unclear (mitigated by pre-implementation experiments)
+3. ⚠️ Validation rules unknown (mitigated by following common patterns)
 
-These could be added later as separate issues:
+### Considerations for Phase 0 (If Proceeding)
 
-- **Interactive mode**: `langstar secrets set KEY` prompts for value (hides input)
-- **Bulk import**: `langstar secrets import -f secrets.env`
-- **Bulk export**: `langstar secrets export` (keys only, no values)
-- **Validation**: Warn if key doesn't follow conventions (e.g., not uppercase)
+When creating the parent issue and milestone, consider:
 
-### Out of Scope
+**Core Scope**:
+- SDK types: `SecretKey`, `SecretUpsert`
+- SDK methods: `list_secrets()`, `upsert_secrets()`
+- CLI commands: `langstar secrets list`, `langstar secrets set KEY VALUE`
+- Delete command (pending experimental validation of `value: null` behavior)
 
-1. **Encrypted endpoint**: `/api/v1/workspaces/current/secrets/encrypted` is for internal services only
-2. **Secret rotation**: Automated rotation/expiration (if API supports it)
-3. **Secret templates**: Pre-configured secret sets for common providers
-4. **Model provider integration**: That's a separate milestone (already scouted in #453)
+**Optional Enhancements** (separate issues after core):
+- Interactive mode: `langstar secrets set KEY` prompts for value (hides input)
+- Bulk operations: Import from `.env` file, export keys to file
+- Validation: Warn if key doesn't follow conventions (e.g., not uppercase)
+
+**Out of Scope** (different milestones):
+1. **Encrypted endpoint**: `/api/v1/workspaces/current/secrets/encrypted` (internal use only)
+2. **Secret rotation**: Automated rotation/expiration
+3. **Secret templates**: Pre-configured sets for common providers
+4. **Model provider integration**: Separate milestone (already scouted #453)
+
+**Pre-Implementation Experiments Recommended**:
+- Test `value: null` for deletion
+- Test key naming validation (uppercase, underscores)
+- Test conflict handling (update existing key)
 
 ## 7. Success Criteria
 
-This scout issue is complete when:
+**This Phase 0.0 scout issue is complete when:**
 
 - [x] Research report documents API endpoints and schemas
-- [x] Complexity assessed (Low-Medium)
-- [x] Technical blockers identified (None)
-- [x] Go/No-Go recommendation provided (Go)
+- [x] Complexity assessed and rated (Low-Medium)
+- [x] Technical blockers identified (None found)
+- [x] Feasibility recommendation provided (Go - proceed to Phase 0)
 - [x] Experiments documented (spec analysis in `reference/experiments/456-ls-secrets/`)
-- [x] PR merged to main
+- [x] PR merged directly to main (no milestone attached)
+
+**Next step**: If stakeholders agree, create milestone and parent issue (Phase 0) following `docs/dev/feature-development-process.md`
 
 ## References
 
