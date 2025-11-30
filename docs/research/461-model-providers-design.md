@@ -40,9 +40,8 @@ Analysis of `langstar prompt`, `langstar graph`, and `langstar eval` commands re
 **Rationale:**
 1. API uses `/api/v1/playground-settings`, but "playground-settings" is too UI-centric
 2. Data structure is called `PlaygroundSettingsResponse` but represents model configuration
-3. Precedent: `eval` command uses `--model-config` flag (cli/src/commands/eval.rs)
-4. CLI commands should be more semantic than API endpoint names
-5. "Config" is shorter and more CLI-friendly than "configuration"
+3. CLI commands should be more semantic than API endpoint names
+4. "Config" is shorter and more CLI-friendly than "configuration"
 
 **Rejected alternatives:**
 - `playground-settings` - Too tied to UI terminology
@@ -272,7 +271,7 @@ Found 2 model configurations
 - **Format rate limit**: Show as "N/s" or "None" for readability
 - **Date only**: Use YYYY-MM-DD format (not full timestamp) for table width
 
-**Precedent**: See prompt.rs:134-148 (PromptRow), graph.rs:94-109 (DeploymentRow)
+**Precedent**: See prompt.rs:134-147 (PromptRow), graph.rs:94-109 (DeploymentRow)
 
 ### 3.3 Detailed View (Get Operation)
 
@@ -301,7 +300,7 @@ Timestamps:
   Updated:        2025-11-30 12:00:00 UTC
 ```
 
-**Precedent**: See prompt.rs:322-340 (Get command output)
+**Precedent**: See prompt.rs:322 and following (Get command output)
 
 ## 4. Error Handling and User Feedback
 
@@ -340,15 +339,14 @@ if let Some(settings_path) = &settings {
 
 // SDK layer: validate provider-specific structure
 client.model_config().create(...)
-    .await
-    .map_err(|e| CliError::Sdk(e))?;
+    .await?;
 ```
 
 **Precedent**: See prompt.rs:467-477 (schema file reading and validation)
 
 ### 4.2 User Feedback Patterns
 
-Using `OutputFormatter` methods (output.rs:52-144):
+Using `OutputFormatter` methods (output.rs:112-143):
 
 | Method | Use Case | Output Destination |
 |--------|----------|-------------------|
@@ -713,7 +711,7 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
    - **Recommendation**: JSON only initially. YAML adds complexity for limited benefit.
 
 4. **Table truncation**: How to handle very long model names or descriptions?
-   - **Recommendation**: Truncate to 30 chars with "..." (see prompt.rs:160-166)
+   - **Recommendation**: Truncate to 50 chars with "..." (show first 47 chars plus "...", see prompt.rs:160-166)
 
 5. **Default rate limit**: Should we recommend a default in help text?
    - **Recommendation**: No default, user opt-in. Rate limits depend on quota and use case.
