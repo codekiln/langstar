@@ -77,6 +77,20 @@ pub enum ModelConfigCommands {
         config_id: String,
     },
 
+    /// Search for model configurations
+    Search {
+        /// Search query (searches name, description, and model fields)
+        query: String,
+
+        /// Maximum number of results
+        #[arg(short, long, default_value = "20")]
+        limit: u32,
+
+        /// Filter by provider
+        #[arg(long)]
+        provider: Option<String>,
+    },
+
     /// Create a new model configuration
     Create {
         /// Configuration name
@@ -546,7 +560,22 @@ langstar model-config get d1e1dfff-39bf
 langstar model-config get d1e1dfff-39bf -f json > prod-claude-config.json
 ```
 
-**Use Case 3: Create standardized configurations** (CI/CD)
+**Use Case 3: Search for specific configurations**
+```bash
+# Search for Claude-related configurations
+langstar model-config search "claude"
+
+# Search for configurations with specific provider
+langstar model-config search "production" --provider anthropic
+
+# Find configurations by model version
+langstar model-config search "sonnet"
+
+# Limit results and export to JSON
+langstar model-config search "gpt" --limit 5 -f json > openai-configs.json
+```
+
+**Use Case 4: Create standardized configurations** (CI/CD)
 ```bash
 # Create production Claude config from template
 cat > claude-prod-settings.json <<EOF
@@ -571,7 +600,7 @@ langstar model-config create \
   --rate-limit 10
 ```
 
-**Use Case 4: Update configurations** (version upgrades)
+**Use Case 5: Update configurations** (version upgrades)
 ```bash
 # Update model version for existing config
 cat > new-settings.json <<EOF
@@ -592,7 +621,7 @@ langstar model-config update d1e1dfff-39bf \
   --settings new-settings.json
 ```
 
-**Use Case 5: Clean up unused configurations**
+**Use Case 6: Clean up unused configurations**
 ```bash
 # Delete test configuration
 langstar model-config delete a2b3c4d5-67ef --yes
@@ -671,6 +700,11 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 ### Phase 3: SDK - List model configurations
 **Deliverable**: `sdk/src/model_config.rs` with `list()` method
 **API**: `GET /api/v1/playground-settings`
+**Additional task**: Review OpenAPI spec for provider-related enums or metadata
+- Check if spec defines provider values as enum
+- Look for provider-specific schema documentation
+- Document any additional provider information discovered
+- Update provider values table in design doc if new providers found
 
 ### Phase 4: SDK - Get model configuration by ID
 **Deliverable**: Add `get()` method to `sdk/src/model_config.rs`
@@ -691,9 +725,17 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 **Deliverable**: Add `delete()` method
 **API**: `DELETE /api/v1/playground-settings/{id}`
 
-### Phase 8: CLI - `langstar model-config list`
-**Deliverable**: `cli/src/commands/model_config.rs` with List variant
-**Features**: Pagination, provider filter, table/JSON output
+### Phase 7.5: SDK - Search model configurations
+**Deliverable**: Add `search()` method
+**API**: Check OpenAPI spec for search endpoint (may be `/api/v1/playground-settings?query=...`)
+**Note**: If no dedicated search endpoint exists, implement client-side filtering of `list()` results
+**Search fields**: name, description, model identifier
+
+### Phase 8: CLI - `langstar model-config list` and `search`
+**Deliverable**: `cli/src/commands/model_config.rs` with List and Search variants
+**Features**:
+- List: Pagination, provider filter, table/JSON output
+- Search: Query-based search, provider filter, limit
 
 ### Phase 9: CLI - `langstar model-config create/get/update/delete`
 **Deliverable**: Complete ModelConfigCommands implementation
