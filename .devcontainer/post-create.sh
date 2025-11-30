@@ -32,7 +32,18 @@ git config --unset-all credential.https://gist.github.com.helper 2>/dev/null || 
 # The empty string resets the helper list (overriding system config)
 # This ensures no credential helpers are active during mise install
 git config --global --replace-all credential.helper "" ".*" 2>/dev/null || true
-echo "[post-create] Git credential helpers cleared."
+
+# Remove SSH URL rewrite rules that would force SSH protocol instead of HTTPS
+# VS Code Dev Containers may copy host machine's ~/.gitconfig which can contain:
+#   [url "git@github.com:"]
+#       insteadof = https://github.com/
+# This would cause mise to try SSH authentication (requiring SSH keys) instead of
+# HTTPS authentication (which works without credentials for public repos).
+# We remove these rules here to ensure mise install uses HTTPS protocol.
+git config --global --unset url.git@github.com:.insteadof 2>/dev/null || true
+git config --unset url.git@github.com:.insteadof 2>/dev/null || true
+
+echo "[post-create] Git credential helpers and SSH URL rewrites cleared."
 
 # Step 2: Configure mise activation in zshrc
 echo "[post-create] Configuring mise activation for zsh..."
