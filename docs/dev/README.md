@@ -7,7 +7,6 @@ This directory contains instructions and conventions for developing the Langstar
 - [GitHub Workflow](./github-workflow.md) - Complete guide to the GitHub issue-driven development workflow
 - [GitHub Projects](./github-projects.md) - GitHub Projects V2 configuration, fields, and API usage
 - [Git SCM Conventions](./git-scm-conventions.md) - Guidelines for commit messages and version control practices
-- [Spec-Kit Integration](./spec-kit.md) - Spec-driven development with GitHub Spec-Kit
 - [Feature Development Process](./feature-development-process.md) - **Standard 8-phase process** for API → CLI features (includes OpenAPI spec management pattern)
 - [Procedures & Troubleshooting](./procedures.md) - Detailed step-by-step procedures and operational guides
 

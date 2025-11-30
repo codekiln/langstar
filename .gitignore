@@ -19,10 +19,6 @@ wip/
 .devcontainer/docker-compose.override.yml
 .devcontainer/.env
 
-# Spec-Kit agent folder (may contain credentials)
-.specify/.agent/
-.specify/**/.cache/
-
 # Rust
 /target
 Cargo.lock
@@ -39,10 +35,6 @@ Cargo.lock
 tools/specs/
 sdk/src/generated/langsmith/
 sdk/src/generated/langgraph/
-
-# Temporary specification working files
-.specify/**/*-draft.md
-.specify/**/*-wip.md
 
 # Reference repository code directories (gitignored, notes are tracked)
 reference/**/code/

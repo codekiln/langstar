@@ -5,7 +5,6 @@
 #
 # Installs development tools and dependencies:
 # - mise: version manager (installs Rust, Python, etc.)
-# - specify-cli: GitHub Spec-Kit tool
 # - cargo-release: Rust release workflow tool
 # - git-cliff: Changelog generator
 # - gh-sub-issue: GitHub CLI extension for issue hierarchy
@@ -57,16 +56,7 @@ mise trust
 echo "[post-create] Installing mise tools (Rust, Python, etc.)..."
 mise install
 
-# Step 4: Install specify-cli via uv
-echo "[post-create] Installing specify-cli..."
-if ! command -v uv >/dev/null 2>&1; then
-  echo "[post-create] ERROR: uv not found. Cannot install specify-cli."
-  exit 1
-fi
-
-uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
-
-# Step 5: Install cargo tools
+# Step 4: Install cargo tools
 # After mise install, cargo should be available via ~/.cargo/env
 echo "[post-create] Installing cargo tools (cargo-release, git-cliff)..."
 
