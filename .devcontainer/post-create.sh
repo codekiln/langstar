@@ -109,4 +109,90 @@ else
   fi
 fi
 
+# Step 7: Setup tmux configuration
+echo "[post-create] Setting up tmux configuration..."
+
+# Helper function to get canonical path (handles both symlinks and regular files)
+# Uses realpath if available, falls back to readlink -f for older systems.
+# This ensures compatibility across different Linux distributions and environments.
+get_canonical_path() {
+  local path="$1"
+  local result=""
+  
+  # Try realpath first (more reliable and consistent)
+  result=$(realpath "$path" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    echo "$result"
+    return 0
+  fi
+  
+  # Fallback to readlink -f (for systems without realpath)
+  result=$(readlink -f "$path" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    echo "$result"
+    return 0
+  fi
+  
+  # Both commands failed
+  echo "[post-create] ERROR: Failed to resolve canonical path for: $path" >&2
+  return 1
+}
+
+# Path to the tmux config in the repository
+# Use script location to find the config file (more robust than PWD)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TMUX_CONF_SOURCE="${SCRIPT_DIR}/.tmux.conf"
+TMUX_CONF_TARGET="${HOME}/.tmux.conf"
+
+# Verify source file exists before proceeding
+if [[ ! -f "${TMUX_CONF_SOURCE}" ]]; then
+  echo "[post-create] ERROR: tmux config source not found at ${TMUX_CONF_SOURCE}"
+  exit 1
+fi
+
+# Check if target already exists
+if [[ -L "${TMUX_CONF_TARGET}" ]]; then
+  # It's a symlink - check if it points to the right place
+  if ! CURRENT_TARGET=$(get_canonical_path "${TMUX_CONF_TARGET}"); then
+    echo "[post-create] ERROR: Failed to resolve current symlink target"
+    exit 1
+  fi
+  
+  if ! EXPECTED_TARGET=$(get_canonical_path "${TMUX_CONF_SOURCE}"); then
+    echo "[post-create] ERROR: Failed to resolve expected source path"
+    exit 1
+  fi
+  
+  if [[ "${CURRENT_TARGET}" = "${EXPECTED_TARGET}" ]]; then
+    echo "[post-create] tmux config symlink already exists and points to correct location"
+  else
+    echo "[post-create] WARNING: ~/.tmux.conf symlink exists but points to: ${CURRENT_TARGET}"
+    echo "[post-create] Removing old symlink and creating new one..."
+    rm "${TMUX_CONF_TARGET}"
+    if ! ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"; then
+      echo "[post-create] ERROR: Failed to create tmux config symlink"
+      exit 1
+    fi
+    echo "[post-create] tmux config symlink updated"
+  fi
+elif [[ -e "${TMUX_CONF_TARGET}" ]]; then
+  # It's a regular file or directory
+  BACKUP_FILE="${TMUX_CONF_TARGET}.backup.$(date +%s)"
+  echo "[post-create] WARNING: ~/.tmux.conf exists as a regular file"
+  echo "[post-create] Backing up to ${BACKUP_FILE}"
+  mv "${TMUX_CONF_TARGET}" "${BACKUP_FILE}"
+  if ! ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"; then
+    echo "[post-create] ERROR: Failed to create tmux config symlink"
+    exit 1
+  fi
+  echo "[post-create] tmux config symlink created (original backed up)"
+else
+  # Nothing exists, create the symlink
+  if ! ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"; then
+    echo "[post-create] ERROR: Failed to create tmux config symlink"
+    exit 1
+  fi
+  echo "[post-create] tmux config symlink created"
+fi
+
 echo "[post-create] Post-create setup completed successfully!"
