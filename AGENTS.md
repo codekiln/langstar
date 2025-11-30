@@ -34,14 +34,14 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 
 ### Basic principles - see @docs/dev/code-style-principles.md
 
-## Repository Structure
+## Supporting Repository Structures
 
 ### `docs/` - Project Documentation
 - `dev/` - Development guidelines, workflow docs, ADRs (see @docs/dev/README.md)
 - `examples/` - Example code and usage patterns
 - `implementation/` - Implementation plans and specifications
-- `research/` - Research reports and findings
-- `templates/` - Document templates
+- `research/` - Research reports and findings for specific internal issues
+- `templates/` - templates for milestone tickets and checklists 
 - `usage/` - Usage documentation and guides
 
 ### `reference/` - External Resources & Experiments
@@ -50,3 +50,11 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 - `openapi/langchain/` - OpenAPI JSON specifications
 - `repo/` - Remote repository notes (see .claude/skills/setup-remote-repo-notes-dir knowledge management pattern)
 - `research/` - Research reports on external codebases
+
+### `tests/` - root-level fixtures for integration tests
+- see `tests/fixtures/test-graph-deployment/README.md` info about langsmith test deployment for integration tests
+
+### `wip/` - work in progress
+- gitignored
+- includes git worktrees for active in dev issues. `scripts/cleanup-closed-issue-worktrees.sh` and .claude/skills/git-worktrees creates and cleans up.
+- some txt files with debugging for active issues
