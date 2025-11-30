@@ -187,48 +187,61 @@ Same pattern as existing Langstar SDK implementations.
 ### Experiment Execution
 
 **Date**: 2025-11-30
-**Script**: Python script testing complete CRUD lifecycle
+**Script**: Python script (`test_secrets_api.py`) testing complete CRUD lifecycle
 **Test Secret Key**: `LANGSTAR_TEST_SECRET_456`
 
-### Critical Finding: Permission Requirements
+### Critical Finding #1: Permission Requirements
 
 **Discovery**: Secret management operations require `workspaces:manage` permission.
 
-| Operation | Endpoint | Permission | Result |
-|-----------|----------|------------|--------|
-| List secrets | `GET /api/v1/workspaces/current/secrets` | Standard API key | ✅ 200 OK |
-| Create secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
-| Update secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
-| Delete secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
+| Operation | Endpoint | Standard Key | Elevated Key |
+|-----------|----------|--------------|--------------|
+| List secrets (GET) | `/api/v1/workspaces/current/secrets` | ✅ 200 OK | ✅ 200 OK |
+| Create secret (POST) | `/api/v1/workspaces/current/secrets` | ❌ 403 Forbidden | ✅ 200 OK |
+| Update secret (POST) | `/api/v1/workspaces/current/secrets` | ❌ 403 Forbidden | ✅ 200 OK |
+| Delete secret (POST) | `/api/v1/workspaces/current/secrets` | ❌ 403 Forbidden | ✅ 200 OK |
 
-**Error Response** (403):
+**Error Response** (403 with standard key):
 ```json
 {
   "detail": "Permission denied, you do not have the required permission workspaces:manage"
 }
 ```
 
-**Implication**: Standard API keys used for tracing/monitoring cannot manage secrets. CLI must handle 403 gracefully with clear guidance on required permissions.
+**Implication**: CLI must handle 403 gracefully with clear guidance on creating elevated API keys.
 
-### Confirmed Behaviors
+### Critical Finding #2: Complete CRUD Validation
 
-1. ✅ **GET endpoint works**: Successfully lists secret keys (returned `[]` for empty workspace)
-2. ✅ **Security confirmed**: API returns only keys in responses, never values
-3. ✅ **Clear error messages**: Permission errors are explicit about required permissions
-4. ✅ **Permission model**: Separate read vs write permissions (good security practice)
+✅ **ALL OPERATIONS WORK** with proper permissions!
 
-### Open Questions (Require Elevated Permissions to Test)
+**Tested and Confirmed**:
+1. **Create**: POST with `{"key": "...", "value": "..."}` → 200 OK, `null` response
+2. **Read**: GET returns `[{"key": "..."}]` → values never included (security ✅)
+3. **Update**: POST with existing key → 200 OK, same as create (true upsert)
+4. **Delete**: POST with `{"key": "...", "value": null}` → 200 OK, secret removed
 
-These need testing with an API key that has `workspaces:manage` permission:
+**Key Behaviors**:
+- ✅ **Upsert pattern confirmed**: No distinction between create/update in API
+- ✅ **Deletion works**: `value: null` successfully removes secrets
+- ✅ **Immediate consistency**: Changes visible immediately in GET
+- ✅ **Idempotent**: POSTing same key multiple times succeeds
+- ✅ **Security**: Values never returned, only keys
+- ✅ **Response format**: POST returns `null`, GET returns key array
 
-1. **Delete behavior**: Does POST with `value: null` delete a secret?
-2. **Key validation**: What characters are allowed in secret keys?
-3. **Conflict handling**: How does API handle updating existing key?
-4. **Batch operations**: How does API handle multiple secrets in one POST?
-5. **List pagination**: Does pagination occur with many secrets?
-6. **Idempotency**: Is POST idempotent for updates?
+### Remaining Open Questions
 
-**Status**: Deferred to Phase 3 (SDK Integration Tests) where elevated API key can be configured.
+Minor edge cases (not critical for initial implementation):
+
+1. **Key validation**: What characters are allowed?
+   - Tested: `LANGSTAR_TEST_SECRET_456` ✅ Works
+   - Untested: lowercase, hyphens, dots, spaces
+   - Recommend: Follow env var conventions (UPPERCASE_WITH_UNDERSCORES)
+
+2. **Batch operations**: Array input behavior with multiple secrets
+3. **Pagination**: Unlikely (secrets are metadata), but untested
+4. **Error cases**: Empty keys, very long keys, invalid characters
+
+**Status**: Defer to Phase 3 (SDK Integration Tests) for comprehensive validation.
 
 ## 5. Complexity Assessment
 
