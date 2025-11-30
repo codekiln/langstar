@@ -38,13 +38,13 @@ Arguments are passed via `$ARGUMENTS` in the format:
 **Examples:**
 ```bash
 # Using milestone URL
-/ls-release-milestone https://github.com/codekiln/langstar/milestone/5 v0.4.1
+/gh-milestones/release https://github.com/codekiln/langstar/milestone/5 v0.4.1
 
 # Using milestone name
-/ls-release-milestone "devcontainer-feature" v0.4.1
+/gh-milestones/release "devcontainer-feature" v0.4.1
 
 # With single-word milestone name (no quotes needed)
-/ls-release-milestone ls-evals-basic v0.10.0
+/gh-milestones/release ls-evals-basic v0.10.0
 ```
 
 ## User Input
@@ -208,7 +208,7 @@ else
       echo "It's recommended to close all sub-issues before releasing the milestone."
       echo ""
       echo "To continue despite open sub-issues, set FORCE_RELEASE=true and rerun:"
-      echo "  FORCE_RELEASE=true /ls-release-milestone ..."
+      echo "  FORCE_RELEASE=true /gh-milestones/release ..."
       echo ""
 
       # Check if user explicitly set FORCE_RELEASE to override
@@ -396,7 +396,7 @@ https://github.com/$OWNER/$REPO/issues/$PARENT_ISSUE
 
 ```bash
 # Command
-/ls-release-milestone https://github.com/codekiln/langstar/milestone/5 v0.4.1
+/gh-milestones/release https://github.com/codekiln/langstar/milestone/5 v0.4.1
 
 # Output
 📍 Milestone: devcontainer-feature (#5)
@@ -436,7 +436,7 @@ https://github.com/$OWNER/$REPO/issues/$PARENT_ISSUE
 
 ```bash
 # Command
-/ls-release-milestone ls-evals-basic v0.10.0
+/gh-milestones/release ls-evals-basic v0.10.0
 
 # Output
 📍 Milestone: ls-evals-basic (#8)
@@ -481,7 +481,7 @@ gh pr merge 385 --squash
 gh release create v0.4.1 --generate-notes
 
 # 3. Mark milestone as released
-/ls-release-milestone "milestone-name" v0.4.1
+/gh-milestones/release "milestone-name" v0.4.1
 ```
 
 ## See Also

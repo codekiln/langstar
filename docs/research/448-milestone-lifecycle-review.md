@@ -11,7 +11,7 @@
 This report analyzes recent milestone implementations in the Langstar project to extract lessons learned and codify best practices for milestone lifecycle management. Two critical patterns have emerged that warrant formalization:
 
 1. **Pre-Epic Scouting (Phase 0.0)**: Experimental issues created *before* the parent milestone issue to validate feasibility and inform scope
-2. **Milestone Release (Phase 9)**: Automated milestone cleanup via `/ls-release-milestone` slash command when features ship
+2. **Milestone Release (Phase 9)**: Automated milestone cleanup via `/gh-milestones/release` slash command when features ship
 
 **Key Recommendations:**
 - Add **Phase 0.0 (Pre-Epic Scouting)** to feature-development-process.md
@@ -186,23 +186,23 @@ Scout issues should produce:
 - Validate all sub-issues are closed
 - Create clear audit trail from milestone → release
 
-### 3.2 The `/ls-release-milestone` Command
+### 3.2 The `/gh-milestones/release` Command
 
 **Introduced**: PR #442 (merged 2025-11-30)
-**Location**: `.claude/commands/ls-release-milestone.md`
+**Location**: `.claude/commands/gh-milestones/release.md`
 
 **Command Syntax**:
 ```bash
-/ls-release-milestone <milestone> <version>
+/gh-milestones/release <milestone> <version>
 ```
 
 **Examples**:
 ```bash
 # Using milestone URL
-/ls-release-milestone https://github.com/codekiln/langstar/milestone/7 v0.10.0
+/gh-milestones/release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 
 # Using milestone name
-/ls-release-milestone "ls-prompt-structured-outputs" v0.10.0
+/gh-milestones/release "ls-prompt-structured-outputs" v0.10.0
 ```
 
 ### 3.3 What the Command Does
@@ -248,7 +248,7 @@ gh pr merge 385 --squash
 gh release create v0.10.0 --generate-notes
 
 # 3. Mark milestone as released
-/ls-release-milestone "ls-prompt-structured-outputs" v0.10.0
+/gh-milestones/release "ls-prompt-structured-outputs" v0.10.0
 ```
 
 **Key Integration Points**:
@@ -290,13 +290,13 @@ gh release create v0.10.0 --generate-notes
 - ❌ `Structured Output Prompts Feature` (spaces, verbose)
 
 **Benefits**:
-- Easy to reference in commands: `/ls-release-milestone ls-evals-basic v0.10.0`
+- Easy to reference in commands: `/gh-milestones/release ls-evals-basic v0.10.0`
 - Grep-able in code and documentation
 - Works well with GitHub API and CLI tools
 
 ### 4.2 Parent Issue Numbering Heuristic
 
-**Observation**: The `/ls-release-milestone` command uses a heuristic:
+**Observation**: The `/gh-milestones/release` command uses a heuristic:
 > "The parent issue is usually the lowest-numbered issue with this milestone attached"
 
 **Why this works**:
@@ -390,7 +390,7 @@ Append after "Phase 8: Documentation":
 ```markdown
 ## Phase 9: Milestone Release
 
-When the milestone's features ship in a GitHub release, use the `/ls-release-milestone` slash command to automate milestone cleanup.
+When the milestone's features ship in a GitHub release, use the `/gh-milestones/release` slash command to automate milestone cleanup.
 
 ### Prerequisites
 1. All milestone PRs merged to main
@@ -399,11 +399,11 @@ When the milestone's features ship in a GitHub release, use the `/ls-release-mil
 
 ### Release Command
 ```bash
-/ls-release-milestone <milestone> <version>
+/gh-milestones/release <milestone> <version>
 
 # Examples:
-/ls-release-milestone ls-prompt-structured-outputs v0.10.0
-/ls-release-milestone https://github.com/codekiln/langstar/milestone/7 v0.10.0
+/gh-milestones/release ls-prompt-structured-outputs v0.10.0
+/gh-milestones/release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 ```
 
 ### What Gets Automated
@@ -417,12 +417,12 @@ When the milestone's features ship in a GitHub release, use the `/ls-release-mil
 ### Manual Override
 If sub-issues are intentionally still open:
 ```bash
-FORCE_RELEASE=true /ls-release-milestone <milestone> <version>
+FORCE_RELEASE=true /gh-milestones/release <milestone> <version>
 ```
 
 **Note**: Requires `gh-sub-issue` extension for sub-issue validation (warns if missing).
 
-See [PR #442](https://github.com/codekiln/langstar/pull/442) and `.claude/commands/ls-release-milestone.md` for details.
+See [PR #442](https://github.com/codekiln/langstar/pull/442) and `.claude/commands/gh-milestones/release.md` for details.
 ```
 
 ### 5.2 Add Milestone Lifecycle Section
@@ -480,7 +480,7 @@ Add "Milestone Management Best Practices" section:
 ### At Release Time
 - ✅ Verify all sub-issues are closed before release
 - ✅ Create GitHub release with release notes
-- ✅ Run `/ls-release-milestone` to automate cleanup
+- ✅ Run `/gh-milestones/release` to automate cleanup
 - ✅ Verify milestone description updated with release link
 
 ### Anti-Patterns to Avoid
@@ -577,7 +577,7 @@ This is a **Phase 0.0** issue, created BEFORE the parent milestone issue. Output
 
 - [ ] Run milestone release command:
   ```bash
-  /ls-release-milestone "{milestone-name}" v{X.Y.Z}
+  /gh-milestones/release "{milestone-name}" v{X.Y.Z}
   ```
 - [ ] Verify milestone closed: https://github.com/{owner}/{repo}/milestone/{milestone-num}
 - [ ] Verify parent issue closed: https://github.com/{owner}/{repo}/issues/{parent-issue-num}
@@ -614,8 +614,8 @@ These patterns should be formalized in `docs/dev/feature-development-process.md`
 
 - Issue #398: Scout issue for structured output prompts
 - Issue #402: Parent issue for ls-prompt-structured-outputs milestone
-- PR #442: `/ls-release-milestone` command implementation
+- PR #442: `/gh-milestones/release` command implementation
 - Milestone #7: ls-prompt-structured-outputs (released in v0.10.0)
-- `.claude/commands/ls-release-milestone.md`: Command documentation
+- `.claude/commands/gh-milestones/release.md`: Command documentation
 - `docs/dev/github-workflow.md`: GitHub issue-driven workflow
 - `docs/dev/feature-development-process.md`: Current 8-phase process
