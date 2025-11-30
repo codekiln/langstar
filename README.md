@@ -637,29 +637,26 @@ For more troubleshooting help, see the [Troubleshooting Guide](./docs/troublesho
 
 ## Architecture
 
-Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-specs/LANGSMITH_API_OVERVIEW.md) and the [langsmith python SDKs](reference/repo/langchain-ai/langsmith-sdk/notes/README.md) as input, and uses them to implement a a thin wrapper over multiple LangSmith services.
+Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-specs/LANGSMITH_API_OVERVIEW.md) and the [langsmith python SDKs](reference/repo/langchain-ai/langsmith-sdk/notes/README.md) as references, and uses them to implement a thin wrapper over multiple LangSmith services.
 
 ```
 langstar-rs/
-├── sdk/                    # Rust SDK (generated + ergonomic wrappers)
+├── sdk/                    # Rust SDK (LLM-assisted implementation)
 │   ├── src/
 │   │   ├── auth.rs        # Authentication helpers
 │   │   ├── client.rs      # HTTP client configuration
 │   │   ├── error.rs       # Error types
 │   │   ├── prompts.rs     # LangSmith Prompts API (org/workspace scoped)
 │   │   ├── assistants.rs  # LangGraph Assistants API (deployment-level)
-│   │   ├── generated/     # OpenAPI-generated code
 │   │   └── lib.rs
 │   └── Cargo.toml
-├── cli/                    # User-facing CLI binary
-│   ├── src/
-│   │   ├── commands/      # Subcommand implementations
-│   │   ├── config.rs      # Configuration management
-│   │   ├── output.rs      # Output formatting
-│   │   └── main.rs
-│   └── Cargo.toml
-└── tools/
-    └── generate_sdk.sh    # OpenAPI code generation
+└── cli/                    # User-facing CLI binary
+    ├── src/
+    │   ├── commands/      # Subcommand implementations
+    │   ├── config.rs      # Configuration management
+    │   ├── output.rs      # Output formatting
+    │   └── main.rs
+    └── Cargo.toml
 ```
 
 ### Resource Scoping Models
@@ -724,18 +721,7 @@ cargo fmt
 
 - **`sdk/`** - Rust SDK with authentication, client wrappers, and API bindings
 - **`cli/`** - Command-line interface built with clap
-- **`tools/`** - Development tools (OpenAPI code generation, etc.)
 - **`.github/workflows/`** - CI/CD pipelines
-
-### OpenAPI Code Generation
-
-Generate Rust clients from OpenAPI specifications:
-
-```bash
-./tools/generate_sdk.sh
-```
-
-See [tools/README.md](tools/README.md) for details on the generation process.
 
 ### Running the CLI Locally
 
@@ -786,7 +772,6 @@ This project uses [Conventional Emoji Commits](https://conventional-emoji-commit
 - ✅ Basic LangSmith Prompts API (`list`, `get`, `search`)
 - ✅ JSON and table output formats
 - ✅ CI/CD pipeline
-- ✅ OpenAPI generation tooling
 
 ### Next Steps
 
@@ -798,16 +783,12 @@ This project uses [Conventional Emoji Commits](https://conventional-emoji-commit
    - Deployments, Assistants, Threads
    - Streaming and real-time updates
 
-3. **OpenAPI Integration**
-   - Automated SDK generation from specs
-   - CI/CD automation for spec updates
-
-4. **Enhanced CLI Features**
+3. **Enhanced CLI Features**
    - Shell completion
    - Interactive prompts
    - Progress bars for long operations
 
-5. **Advanced Features**
+4. **Advanced Features**
    - Retry logic and rate limiting
    - Caching and offline mode
    - Plugin system
