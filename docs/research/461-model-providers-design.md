@@ -288,7 +288,7 @@ Found 2 model configurations
 - **Truncate IDs**: Show first 8 chars (UUIDs are 36 chars, too wide for tables)
 - **Extract provider**: Parse from `settings.id` array (last element before provider class name)
 - **Extract model**: Parse from `settings.kwargs.model`
-- **Format rate limit**: Show as "N/s" or "None" for readability
+- **Format rate limit**: Show as "{N}/s" (where N = requests per second) or "None" for readability
 - **Date only**: Use YYYY-MM-DD format (not full timestamp) for table width
 
 **Precedent**: See prompt.rs:134-147 (PromptRow), graph.rs:94-109 (DeploymentRow)
@@ -331,11 +331,11 @@ Following existing `CliError` patterns (cli/src/error.rs):
 | Error Type | When | Example Message |
 |------------|------|-----------------|
 | `Sdk(LangstarError)` | SDK operation fails | `Failed to fetch model configurations: API returned 401 Unauthorized` |
-| `Config(String)` | Invalid configuration | `Invalid provider: foo. Valid providers: anthropic, openai, azure_openai, bedrock` |
+| `Config(String)` | Invalid configuration | `Invalid config file path: /not/found/settings.json` |
 | `Other(anyhow::Error)` | Unexpected errors | `Failed to read settings file: No such file or directory` |
 
 **Validation strategy:**
-- **Minimal CLI validation**: Validate only file existence and JSON parsing
+- **Minimal CLI validation**: Validate only file existence and JSON parsing. The CLI does **not** validate provider names or model IDs; this is delegated to the SDK/API boundary.
 - **Delegate to SDK**: Provider names, model IDs, settings structure validated by SDK
 - **User-friendly errors**: Catch SDK errors and re-present with helpful context
 
@@ -495,7 +495,7 @@ impl ModelConfigCommands {
 ```
 
 **Behavior**:
-- No scoping: Operate at tenant level (personal workspace)
+- No scoping: Operate at tenant-level (personal workspace)
 - `--organization-id`: Operate within organization
 - `--workspace-id`: Operate within specific workspace
 - Both flags: Workspace takes precedence (narrower scope)
@@ -602,10 +602,10 @@ langstar model-config create \
 
 **Use Case 5: Update configurations** (version upgrades)
 ```bash
-# Update model version for existing config
+# Update model version for existing config (hypothetical example)
 cat > new-settings.json <<EOF
 {
-  "model": "claude-3-opus-20250201",
+  "model": "claude-3-opus-20240229",
   "temperature": 0.7,
   "max_tokens": 8192,
   "anthropic_api_key": {
@@ -696,6 +696,13 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 ## 8. Implementation Phases
 
 Based on scout phase recommendations (docs/research/453-ls-langsmith-model-providers-scout.md:179-191):
+
+**Note on phase numbering**: Phases 0-2 have already been completed:
+- **Phase 0**: Scout phase (feasibility research, API exploration - see docs/research/453-ls-langsmith-model-providers-scout.md)
+- **Phase 1**: Requirements gathering and analysis
+- **Phase 2**: Design decisions and DX consistency (this document)
+
+The following phases describe implementation steps:
 
 ### Phase 3: SDK - List model configurations
 **Deliverable**: `sdk/src/model_config.rs` with `list()` method
