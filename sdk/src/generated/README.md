@@ -4,11 +4,11 @@ This directory is a placeholder from an earlier architectural approach that expl
 
 ## Current Status
 
-**The SDK is manually implemented** in the parent `sdk/src/` directory. OpenAPI code generation has been abandoned in favor of hand-crafted Rust implementations.
+**The SDK is LLM-assisted** in the parent `sdk/src/` directory. OpenAPI code generation has been abandoned in favor of LLM-assisted Rust implementations.
 
-## Why Manual Implementation?
+## Why LLM-Assisted Implementation?
 
-The project switched to manual implementation for:
+The project switched to LLM-assisted implementation for:
 - **Better ergonomics** - APIs designed specifically for Rust idioms
 - **Flexibility** - Easier to adapt to API changes and quirks
 - **Maintainability** - Clearer code that's easier to understand and modify

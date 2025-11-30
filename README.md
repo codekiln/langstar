@@ -641,7 +641,7 @@ Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-
 
 ```
 langstar-rs/
-├── sdk/                    # Rust SDK (manually implemented)
+├── sdk/                    # Rust SDK (LLM-assisted implementation)
 │   ├── src/
 │   │   ├── auth.rs        # Authentication helpers
 │   │   ├── client.rs      # HTTP client configuration
@@ -650,14 +650,13 @@ langstar-rs/
 │   │   ├── assistants.rs  # LangGraph Assistants API (deployment-level)
 │   │   └── lib.rs
 │   └── Cargo.toml
-├── cli/                    # User-facing CLI binary
-│   ├── src/
-│   │   ├── commands/      # Subcommand implementations
-│   │   ├── config.rs      # Configuration management
-│   │   ├── output.rs      # Output formatting
-│   │   └── main.rs
-│   └── Cargo.toml
-└── tools/                  # Development utilities
+└── cli/                    # User-facing CLI binary
+    ├── src/
+    │   ├── commands/      # Subcommand implementations
+    │   ├── config.rs      # Configuration management
+    │   ├── output.rs      # Output formatting
+    │   └── main.rs
+    └── Cargo.toml
 ```
 
 ### Resource Scoping Models
@@ -722,7 +721,6 @@ cargo fmt
 
 - **`sdk/`** - Rust SDK with authentication, client wrappers, and API bindings
 - **`cli/`** - Command-line interface built with clap
-- **`tools/`** - Development utilities
 - **`.github/workflows/`** - CI/CD pipelines
 
 ### Running the CLI Locally
