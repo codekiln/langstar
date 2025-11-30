@@ -1,22 +1,35 @@
-# Generated OpenAPI Code
+# Generated OpenAPI Code (Deprecated)
 
-This directory will contain OpenAPI-generated Rust client code for LangChain services.
+This directory is a placeholder from an earlier architectural approach that explored OpenAPI code generation.
 
-## Generation
+## Current Status
 
-Run the following command to generate the code:
+**The SDK is manually implemented** in the parent `sdk/src/` directory. OpenAPI code generation has been abandoned in favor of hand-crafted Rust implementations.
 
-```bash
-./tools/generate_sdk.sh
-```
+## Why Manual Implementation?
 
-This will:
-1. Fetch the OpenAPI specifications from LangSmith and LangGraph APIs
-2. Generate Rust client code using an appropriate OpenAPI generator
-3. Place the generated code in this directory
+The project switched to manual implementation for:
+- **Better ergonomics** - APIs designed specifically for Rust idioms
+- **Flexibility** - Easier to adapt to API changes and quirks
+- **Maintainability** - Clearer code that's easier to understand and modify
+- **Control** - Full control over error handling, types, and API design
 
-## Note
+## Where is the SDK?
 
-For the initial prototype, we are implementing manual client wrappers in the parent
-modules. The OpenAPI generation will be integrated in a future iteration to ensure
-100% API coverage and automatic updates when the APIs change.
+The Rust SDK modules are in `sdk/src/`:
+- `client.rs` - HTTP client with authentication
+- `prompts.rs` - LangSmith Prompts API
+- `assistants.rs` - LangGraph Assistants API
+- `deployments.rs` - LangGraph Deployments API
+- `runs.rs` - LangSmith Runs/Traces API
+- `datasets.rs` - LangSmith Datasets API
+- `evaluations.rs` - LangSmith Evaluations API
+- And other service-specific modules
+
+## Historical Context
+
+This directory remains as a historical marker. The decision to abandon code generation is documented in:
+- [#114](https://github.com/codekiln/langstar/issues/114) - Architecture planning (closed, wontfix)
+- [#115](https://github.com/codekiln/langstar/issues/115) - Research & Design (closed)
+- [#116](https://github.com/codekiln/langstar/issues/116) - Implementation (closed)
+- [#117](https://github.com/codekiln/langstar/issues/117) - Automation (closed)

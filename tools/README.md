@@ -1,114 +1,44 @@
 # Langstar Tooling
 
-This directory contains development tools for the Langstar project.
+This directory contains development utilities for the Langstar project.
 
-## OpenAPI SDK Generation
+## Historical Note: OpenAPI SDK Generation
 
-### Overview
+The project previously explored automated OpenAPI code generation but has since adopted a manual SDK implementation approach. The decision to abandon automated generation is documented in these issues:
 
-The `generate_sdk.sh` script automates the process of generating Rust client code from OpenAPI specifications provided by LangChain services (LangSmith, LangGraph Cloud).
+- [#114](https://github.com/codekiln/langstar/issues/114) - Architecture planning (closed, wontfix)
+- [#115](https://github.com/codekiln/langstar/issues/115) - Research & Design (closed)
+- [#116](https://github.com/codekiln/langstar/issues/116) - Implementation with Version Tracking (closed)
+- [#117](https://github.com/codekiln/langstar/issues/117) - Automate API Drift Detection (closed)
 
-### Usage
+### Why Manual Implementation?
 
-```bash
-./tools/generate_sdk.sh
-```
+The manual approach was chosen for:
+- **Better ergonomics** - Hand-crafted APIs tailored to Rust idioms
+- **Flexibility** - Easier to handle API quirks and evolution
+- **Maintainability** - Simpler to understand and modify
+- **Control** - Full control over error handling and type design
 
-### What It Does
+### Current SDK Structure
 
-1. **Fetches OpenAPI Specifications**
-   - LangSmith API: `https://api.smith.langchain.com/openapi.json`
-   - LangGraph Cloud API: `https://api.langgraph.cloud/openapi.json`
-   - Saves specs to `tools/specs/` directory
+The Rust SDK is manually implemented in `sdk/src/`:
+- `client.rs` - HTTP client wrapper with authentication
+- `prompts.rs` - LangSmith Prompts API
+- `assistants.rs` - LangGraph Assistants API
+- `deployments.rs` - LangGraph Deployments API
+- `runs.rs` - LangSmith Runs/Traces API
+- `datasets.rs` - LangSmith Datasets API
+- `evaluations.rs` - LangSmith Evaluations API
+- And other service-specific modules
 
-2. **Generates Rust Client Code**
-   - Uses OpenAPI Generator to create Rust client libraries
-   - Outputs to `sdk/src/generated/` directory
-   - Creates separate clients for LangSmith and LangGraph
+The OpenAPI specifications are still referenced for accuracy but not used for code generation.
 
-3. **Integration**
-   - Generated code is wrapped by ergonomic APIs in `sdk/src/`
-   - Authentication, error handling, and convenience methods are added
+### Legacy Files
 
-### Prerequisites
-
-You need one of the following OpenAPI generators:
-
-#### Option 1: OpenAPI Generator CLI (Node.js)
-
-```bash
-npm install -g @openapitools/openapi-generator-cli
-```
-
-#### Option 2: Docker
-
-The script can use Docker to run the OpenAPI generator without local installation:
-
-```bash
-# Install Docker: https://docs.docker.com/get-docker/
-docker pull openapitools/openapi-generator-cli
-```
-
-#### Option 3: Alternative Rust Generators (Future)
-
-We're evaluating Rust-native OpenAPI generators:
-- [progenitor](https://github.com/oxidecomputer/progenitor)
-- [openapi-generator-rust](https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator/src/main/resources/rust)
-
-### Current Implementation Status
-
-**Prototype Phase**: The initial prototype uses manual client implementations in:
-- `sdk/src/client.rs` - HTTP client wrapper
-- `sdk/src/prompts.rs` - LangSmith Prompts API
-
-**Future**: Full OpenAPI code generation will be integrated to ensure:
-- 100% API coverage
-- Automatic updates when APIs change
-- Type-safe client code
-
-### Generated Code Structure
-
-After running the script:
-
-```
-sdk/src/generated/
-├── langsmith/
-│   ├── Cargo.toml
-│   ├── src/
-│   │   ├── lib.rs
-│   │   ├── models/
-│   │   └── apis/
-│   └── README.md
-├── langgraph/
-│   ├── Cargo.toml
-│   ├── src/
-│   │   ├── lib.rs
-│   │   ├── models/
-│   │   └── apis/
-│   └── README.md
-└── README.md
-```
-
-### Integration with Workspace
-
-To use the generated code:
-
-1. **Update `sdk/Cargo.toml`** to include generated crates as dependencies
-2. **Update `sdk/src/lib.rs`** to re-export generated types and APIs
-3. **Wrap with ergonomic APIs** in `sdk/src/` modules
-
-### Automation
-
-Future CI/CD integration:
-- Automatically regenerate SDK on API spec changes
-- Validate generated code compiles
-- Run integration tests against live APIs
-
-See `.github/workflows/codegen.yml` (to be implemented)
+The following files remain for historical reference but are not actively used:
+- `generate_sdk.sh` - Original generation script
+- `sdk/src/generated/` - Placeholder directory
 
 ## Other Tools
 
-Additional tools will be added here as the project grows:
-- Testing utilities
-- Deployment scripts
-- Documentation generators
+Additional development utilities may be added here as the project grows.
