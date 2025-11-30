@@ -113,14 +113,22 @@ fi
 echo "[post-create] Setting up tmux configuration..."
 
 # Path to the tmux config in the repository
-TMUX_CONF_SOURCE="${PWD}/.devcontainer/.tmux.conf"
+# Use script location to find the config file (more robust than PWD)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TMUX_CONF_SOURCE="${SCRIPT_DIR}/.tmux.conf"
 TMUX_CONF_TARGET="${HOME}/.tmux.conf"
+
+# Verify source file exists before proceeding
+if [ ! -f "${TMUX_CONF_SOURCE}" ]; then
+  echo "[post-create] ERROR: tmux config source not found at ${TMUX_CONF_SOURCE}"
+  exit 1
+fi
 
 # Check if target already exists
 if [ -L "${TMUX_CONF_TARGET}" ]; then
   # It's a symlink - check if it points to the right place
-  CURRENT_TARGET=$(readlink -f "${TMUX_CONF_TARGET}")
-  EXPECTED_TARGET=$(readlink -f "${TMUX_CONF_SOURCE}")
+  CURRENT_TARGET=$(readlink -f "${TMUX_CONF_TARGET}" 2>/dev/null || readlink "${TMUX_CONF_TARGET}")
+  EXPECTED_TARGET=$(readlink -f "${TMUX_CONF_SOURCE}" 2>/dev/null || echo "${TMUX_CONF_SOURCE}")
   
   if [ "${CURRENT_TARGET}" = "${EXPECTED_TARGET}" ]; then
     echo "[post-create] tmux config symlink already exists and points to correct location"
