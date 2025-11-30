@@ -637,7 +637,7 @@ For more troubleshooting help, see the [Troubleshooting Guide](./docs/troublesho
 
 ## Architecture
 
-Langstar follows a **spec-driven, thin-wrapper architecture** and implements a **multi-service SDK** that cleanly separates LangSmith and LangGraph concerns.
+Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-specs/LANGSMITH_API_OVERVIEW.md) and the [langsmith python SDKs](reference/repo/langchain-ai/langsmith-sdk/notes/README.md) as input, and uses them to implement a a thin wrapper over multiple LangSmith services.
 
 ```
 langstar-rs/
@@ -661,14 +661,6 @@ langstar-rs/
 └── tools/
     └── generate_sdk.sh    # OpenAPI code generation
 ```
-
-### Design Principles
-
-1. **Spec-Driven Development** - Design goal to generate code from OpenAPI specs (tracked in [#114](https://github.com/codekiln/langstar/issues/114))
-2. **Thin Wrapper Pattern** - Add only lightweight ergonomic helpers, no business logic duplication
-3. **Automation-First** - Design for both human and AI agent usage
-4. **Zero Surprises** - Type-safe, predictable behavior with clear error messages
-5. **Service Separation** - Clean boundaries between LangSmith and LangGraph APIs
 
 ### Resource Scoping Models
 
