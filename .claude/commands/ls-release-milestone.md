@@ -1,5 +1,6 @@
 ---
 description: Mark milestone as done and update parent issue with release information
+args: <milestone> <version>
 ---
 
 # Mark Milestone as Released
