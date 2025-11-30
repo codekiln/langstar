@@ -8,7 +8,7 @@
 
 **Feasibility**: Go
 
-The LangSmith API provides workspace secrets management via `/api/v1/workspaces/current/secrets` endpoints. The API uses an upsert pattern (POST for both create and update) and only returns secret keys (not values) for security. Implementation complexity is **Low-Medium** with no blocking dependencies.
+The LangSmith API provides workspace secrets management via `/api/v1/workspaces/current/secrets` endpoints. The API uses an upsert pattern (POST for both create and update) and only returns secret keys (not values) for security. Implementation complexity is **Medium** (upgraded from Low-Medium due to LLM agent security requirements) with no blocking dependencies.
 
 ## 1. Existing Langstar Code
 
@@ -330,7 +330,7 @@ langstar secrets set ANTHROPIC_API_KEY sk-ant-abc123...
 
 **Mandatory Security Review**:
 
-This issue requires a **dedicated security review ticket** in Phase 0:
+This issue requires a **dedicated security review ticket** in Phase 1.5 (before Phase 2 Design):
 - Review CLI interface for secret exposure vectors
 - Design secure input methods (--from-file, --interactive)
 - Establish guidelines for LLM-safe command outputs
@@ -343,7 +343,7 @@ This issue requires a **dedicated security review ticket** in Phase 0:
 - Security testing and validation
 - Documentation for skill developers
 
-**Blocker Status**: Not a blocker, but **must be addressed in Phase 2 (Design)** before CLI implementation.
+**Blocker Status**: Not a blocker, but **must be addressed in Phase 1.5 (before Phase 2 Design)** before CLI implementation.
 
 **Decision**: Go
 
@@ -422,7 +422,7 @@ Create a **dedicated Phase 1.5 security review sub-issue** BEFORE Phase 2 (Desig
 **This Phase 0.0 scout issue is complete when:**
 
 - [x] Research report documents API endpoints and schemas
-- [x] Complexity assessed and rated (Low-Medium)
+- [x] Complexity assessed and rated (Medium)
 - [x] Technical blockers identified (None found)
 - [x] Feasibility recommendation provided (Go - proceed to Phase 0)
 - [x] Experiments documented (spec analysis in `reference/experiments/456-ls-secrets/`)
