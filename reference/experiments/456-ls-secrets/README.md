@@ -77,16 +77,22 @@ This experiment includes **live API testing** to validate OpenAPI spec findings:
 
 **Execution Date**: 2025-11-30
 **Script**: `test_secrets_api.py`
-**Output Log**: `experiment_output.log`
+**Test Secret**: `LANGSTAR_TEST_SECRET_456`
+**Output Log**: Available locally (not committed)
 
-### Test Results Summary
+### Complete CRUD Test Results
 
-| Test | Status | Finding |
-|------|--------|---------|
-| List secrets (GET) | ✅ PASS | Returns 200, empty array `[]` |
-| Create secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
-| Update secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
-| Delete secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
+✅ **ALL OPERATIONS SUCCESSFUL** with `workspaces:manage` permission!
+
+| Test | Status | API Response | Behavior |
+|------|--------|--------------|----------|
+| List secrets (GET) | ✅ PASS | 200 OK, `[]` | Returns empty array initially |
+| Create secret (POST) | ✅ PASS | 200 OK, `null` | Secret created successfully |
+| Verify creation (GET) | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret appears in list |
+| Update secret (POST) | ✅ PASS | 200 OK, `null` | Same endpoint as create (upsert) |
+| Verify update (GET) | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret still in list |
+| Delete secret (POST) | ✅ PASS | 200 OK, `null` | POST with `value: null` |
+| Verify deletion (GET) | ✅ PASS | 200 OK, `[]` | Secret removed from list |
 
 ### Critical Finding: Permission Requirements
 
@@ -94,46 +100,63 @@ This experiment includes **live API testing** to validate OpenAPI spec findings:
 - `GET /api/v1/workspaces/current/secrets` - Works with standard API key (read access)
 - `POST /api/v1/workspaces/current/secrets` - Requires `workspaces:manage` permission
 
-**Error Response** (403 Forbidden):
+**Initial Test** (standard API key):
 ```json
 {
   "detail": "Permission denied, you do not have the required permission workspaces:manage"
 }
 ```
 
-**Implication**: Secret management operations require elevated permissions. Standard API keys used for tracing/monitoring may not have write access to secrets.
+**Second Test** (elevated API key): All operations succeeded ✅
 
 ### Confirmed Behaviors
 
-1. **GET endpoint works**: Successfully lists secrets (returned empty array in test)
-2. **Security confirmed**: API returns only keys in responses, never values
-3. **Clear error messages**: Permission errors are explicit and helpful
-4. **Permission model**: Separate read vs write permissions for secrets
+1. ✅ **GET endpoint works**: Returns array of `{"key": "..."}` objects (values never included)
+2. ✅ **POST upsert pattern**: Same endpoint for create and update (idempotent)
+3. ✅ **Deletion works**: POST with `value: null` successfully removes secret
+4. ✅ **Security confirmed**: API never returns secret values in any response
+5. ✅ **Response format**: POST returns `null` on success, GET returns key array
+6. ✅ **Clear error messages**: Permission errors are explicit about required scopes
+7. ✅ **Immediate consistency**: Changes visible immediately in subsequent GET requests
 
-## Open Questions (Require `workspaces:manage` Permission to Test)
+## Answered Questions
 
-1. **Delete behavior**: Does POST with `value: null` delete a secret, or are secrets permanent?
-   - Status: ⚠️ Untested - requires elevated permissions
-   - API spec suggests `value: null` is valid, but behavior unconfirmed
+1. ✅ **Delete behavior**: POST with `value: null` successfully deletes secrets
+   - Confirmed: Secret disappears from GET list after deletion
+   - Response: 200 OK with `null` body
 
-2. **Validation**: Does the API validate secret key naming (e.g., uppercase only, no spaces)?
-   - Status: ⚠️ Untested - requires elevated permissions
-   - Need to test: `TEST_KEY`, `test-key`, `test.key`, `test key`, etc.
+2. ✅ **Update vs create**: Same endpoint and response for both (true upsert)
+   - No way to distinguish create from update in response
+   - Both return 200 OK with `null` body
+   - Idempotent: POSTing same key multiple times works without error
 
-3. **List limits**: Is there pagination for listing secrets if a workspace has many?
-   - Status: ⚠️ Untested - workspace had 0 secrets, pagination not observed
+3. ✅ **Immediate consistency**: Changes are immediately visible
+   - Created secrets appear in GET immediately
+   - Updated secrets persist immediately
+   - Deleted secrets disappear from GET immediately
+
+## Remaining Open Questions
+
+1. **Key validation**: What characters are allowed in secret keys?
+   - Tested: `LANGSTAR_TEST_SECRET_456` (uppercase, underscores, numbers) ✅ Works
+   - Untested: lowercase, hyphens, dots, spaces, special chars
+   - Recommended: Follow env var conventions (UPPERCASE_WITH_UNDERSCORES)
+
+2. **Batch operations**: How does the API handle multiple secrets in one POST?
+   - OpenAPI spec shows array input `[{key, value}, {key, value}]`
+   - Untested: Does it validate all before applying, or apply partially?
+   - Untested: What happens if one key is invalid in a batch?
+
+3. **List pagination**: Is there pagination for many secrets?
    - OpenAPI spec doesn't show pagination parameters
+   - Tested workspace had 0-1 secrets, couldn't observe pagination
+   - Likely no pagination (secrets are metadata, not large datasets)
 
-4. **Update detection**: How does the API handle updating an existing secret vs creating new?
-   - Status: ⚠️ Untested - requires elevated permissions
-   - Does it return different response codes or messages?
-
-5. **Batch operations**: How does the API handle multiple secrets in one POST?
-   - Status: ⚠️ Untested - requires elevated permissions
-   - Does it validate all before applying, or apply partially?
-
-6. **Error handling**: What errors occur for invalid keys, duplicate keys, etc.?
-   - Status: ⚠️ Untested - requires elevated permissions
+4. **Error handling edge cases**:
+   - Untested: Empty key string `""`
+   - Untested: Very long key names (>255 chars?)
+   - Untested: Duplicate keys in same POST request
+   - Untested: Invalid characters in key names
 
 ## Recommendations for Future Experiments
 
