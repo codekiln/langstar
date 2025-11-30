@@ -54,19 +54,23 @@ $ARGUMENTS
 
 ## Implementation
 
-### Step 1: Parse Arguments
+### Step 1: Get Current Repository
+
+First, detect the current repository owner and name (needed for subsequent API calls):
+
+```bash
+REPO_INFO=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}')
+OWNER=$(echo "$REPO_INFO" | jq -r '.owner')
+REPO=$(echo "$REPO_INFO" | jq -r '.name')
+```
+
+### Step 2: Parse Arguments
 
 Extract milestone identifier and version from `$ARGUMENTS`:
 
 ```bash
-# Read arguments
-ARGS="$ARGUMENTS"
-
-# Parse first argument (milestone)
-MILESTONE_ARG=$(echo "$ARGS" | awk '{print $1}')
-
-# Parse second argument (version)
-VERSION=$(echo "$ARGS" | awk '{print $2}')
+# Read arguments (using read to properly handle quoted milestone names with spaces)
+read -r MILESTONE_ARG VERSION <<< "$ARGUMENTS"
 
 # Validate version format (should start with 'v')
 if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -84,33 +88,23 @@ if [[ "$MILESTONE_ARG" =~ ^https://github\.com/ ]]; then
     exit 1
   fi
 else
-  # Treat as milestone name - will resolve later
+  # Treat as milestone name - will resolve using $OWNER/$REPO
   MILESTONE_NAME="$MILESTONE_ARG"
 fi
 ```
 
-**Important:** If milestone is provided as a name, you'll need to look it up:
+**Important:** If milestone is provided as a name, look it up using the repository info:
 
 ```bash
 if [ -n "$MILESTONE_NAME" ]; then
   # List milestones and find matching name
-  MILESTONE_NUM=$(gh api repos/{owner}/{repo}/milestones --jq ".[] | select(.title == \"$MILESTONE_NAME\") | .number")
+  MILESTONE_NUM=$(gh api "repos/$OWNER/$REPO/milestones" --jq ".[] | select(.title == \"$MILESTONE_NAME\") | .number")
 
   if [ -z "$MILESTONE_NUM" ]; then
     echo "❌ Error: Milestone '$MILESTONE_NAME' not found"
     exit 1
   fi
 fi
-```
-
-### Step 2: Get Current Repository
-
-Detect the current repository owner and name:
-
-```bash
-REPO_INFO=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}')
-OWNER=$(echo "$REPO_INFO" | jq -r '.owner')
-REPO=$(echo "$REPO_INFO" | jq -r '.name')
 ```
 
 ### Step 3: Validate Release Exists
@@ -160,12 +154,9 @@ echo "   State: $MILESTONE_STATE"
 Find the issue associated with this milestone (typically the epic/parent issue):
 
 ```bash
-# List all issues with this milestone
-MILESTONE_ISSUES=$(gh issue list --milestone "$MILESTONE_TITLE" --json number,title,state --jq '.[]')
-
-# Heuristic: Find the issue that matches the milestone name or is marked as epic
-# Usually the parent issue has the same name as the milestone or is the lowest-numbered issue
-PARENT_ISSUE=$(echo "$MILESTONE_ISSUES" | jq -s 'sort_by(.number) | .[0].number')
+# List all issues with this milestone and get the lowest-numbered one
+# Heuristic: The parent issue is usually the lowest-numbered issue with this milestone
+PARENT_ISSUE=$(gh issue list --milestone "$MILESTONE_TITLE" --json number,title,state --jq 'sort_by(.number) | .[0].number')
 
 if [ -z "$PARENT_ISSUE" ]; then
   echo "❌ Error: Could not find parent issue for milestone '$MILESTONE_TITLE'"
@@ -173,7 +164,7 @@ if [ -z "$PARENT_ISSUE" ]; then
   exit 1
 fi
 
-PARENT_TITLE=$(echo "$MILESTONE_ISSUES" | jq -s "sort_by(.number) | .[0].title" -r)
+PARENT_TITLE=$(gh issue list --milestone "$MILESTONE_TITLE" --json number,title,state --jq 'sort_by(.number) | .[0].title')
 
 echo "🔗 Parent Issue: #$PARENT_ISSUE - $PARENT_TITLE"
 ```
@@ -190,7 +181,7 @@ echo "🔍 Validating sub-issue completion..."
 if ! gh extension list | grep -q "gh-sub-issue"; then
   echo "⚠️  Warning: gh-sub-issue extension not installed"
   echo "   Skipping sub-issue validation"
-  echo "   Install with: gh extension install https://github.com/owner/gh-sub-issue"
+  echo "   Install with: gh extension install https://github.com/cli/gh-sub-issue"
   SKIP_SUBISSUE_CHECK=true
 else
   # List all sub-issues of the parent
@@ -214,14 +205,17 @@ else
       echo "$SUB_ISSUES" | jq -r '.[] | select(.state == "OPEN") | "   - #\(.number): \(.title)"'
       echo ""
       echo "It's recommended to close all sub-issues before releasing the milestone."
+      echo ""
+      echo "To continue despite open sub-issues, set FORCE_RELEASE=true and rerun:"
+      echo "  FORCE_RELEASE=true /ls-release-milestone ..."
+      echo ""
 
-      # Ask for confirmation using AskUserQuestion tool
-      # (In actual implementation, this would be handled by the LLM)
-      read -p "Continue anyway? (y/n): " CONFIRM
-      if [ "$CONFIRM" != "y" ]; then
-        echo "❌ Aborted by user"
+      # Check if user explicitly set FORCE_RELEASE to override
+      if [ "$FORCE_RELEASE" != "true" ]; then
+        echo "❌ Aborted: Open sub-issues detected"
         exit 1
       fi
+      echo "⚠️  FORCE_RELEASE=true detected, continuing despite open sub-issues..."
     else
       echo "✅ All sub-issues are closed"
     fi
@@ -240,7 +234,7 @@ echo ""
 echo "📝 Updating milestone description..."
 
 # Construct new description (prepend release info)
-NEW_DESC="Shipped in [release $VERSION]($RELEASE_URL) - [GitHub Release Page]($RELEASE_URL)
+NEW_DESC="Shipped in [release $VERSION]($RELEASE_URL)
 
 $MILESTONE_DESC"
 
@@ -268,7 +262,7 @@ echo ""
 echo "📝 Updating parent issue #$PARENT_ISSUE..."
 
 # Create comment body
-COMMENT_BODY="Shipped in [release $VERSION]($RELEASE_URL) - [GitHub Release Page]($RELEASE_URL)"
+COMMENT_BODY="Shipped in [release $VERSION]($RELEASE_URL)"
 
 # Add comment to issue
 gh issue comment "$PARENT_ISSUE" --body "$COMMENT_BODY"
@@ -337,7 +331,7 @@ https://github.com/$OWNER/$REPO/issues/$PARENT_ISSUE
 ❌ Error: Milestone 'milestone-name' not found
 ```
 - Check milestone name spelling
-- Verify milestone exists: `gh api repos/{owner}/{repo}/milestones`
+- Verify milestone exists: `gh api repos/$OWNER/$REPO/milestones` (e.g., `gh api repos/octocat/Hello-World/milestones`)
 - If using URL, ensure URL is correct format
 
 **Release not found:**
