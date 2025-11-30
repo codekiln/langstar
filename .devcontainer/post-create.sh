@@ -112,6 +112,11 @@ fi
 # Step 7: Setup tmux configuration
 echo "[post-create] Setting up tmux configuration..."
 
+# Helper function to get canonical path (handles both symlinks and regular files)
+get_canonical_path() {
+  realpath "$1" 2>/dev/null || readlink -f "$1"
+}
+
 # Path to the tmux config in the repository
 # Use script location to find the config file (more robust than PWD)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -127,9 +132,8 @@ fi
 # Check if target already exists
 if [ -L "${TMUX_CONF_TARGET}" ]; then
   # It's a symlink - check if it points to the right place
-  # Use realpath which works consistently for both symlinks and regular files
-  CURRENT_TARGET=$(realpath "${TMUX_CONF_TARGET}" 2>/dev/null || readlink -f "${TMUX_CONF_TARGET}")
-  EXPECTED_TARGET=$(realpath "${TMUX_CONF_SOURCE}" 2>/dev/null || readlink -f "${TMUX_CONF_SOURCE}")
+  CURRENT_TARGET=$(get_canonical_path "${TMUX_CONF_TARGET}")
+  EXPECTED_TARGET=$(get_canonical_path "${TMUX_CONF_SOURCE}")
   
   if [ "${CURRENT_TARGET}" = "${EXPECTED_TARGET}" ]; then
     echo "[post-create] tmux config symlink already exists and points to correct location"
