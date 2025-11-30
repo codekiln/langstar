@@ -172,7 +172,7 @@ pub enum ModelConfigCommands {
 
 ### 2.3 Provider Values
 
-Supported provider values (based on scout research):
+**Known provider values** (based on scout research):
 
 | Provider | Value | Notes |
 |----------|-------|-------|
@@ -182,7 +182,13 @@ Supported provider values (based on scout research):
 | AWS Bedrock | `bedrock` | AWS Bedrock Converse API |
 | AWS Bedrock (legacy) | `bedrock_legacy` | Legacy Bedrock API |
 
-**Note**: Provider validation happens at SDK level, not CLI level. CLI passes through user input.
+**Important**:
+- **CLI accepts any string value** for `--provider` - not restricted to this list
+- **First-class support**: Providers listed above have verified API structures and will be used in documentation/examples
+- **Extensibility**: If LangSmith adds new providers or the user has custom provider configurations, the CLI will pass through any value without validation
+- **Validation**: Provider names and settings structure are validated by the SDK/API, not the CLI
+
+**Design principle**: The CLI is a thin layer that passes user intent to the API. Provider-specific validation belongs at the API boundary, not in the CLI tool.
 
 ## 3. Output Format Options
 
