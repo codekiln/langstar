@@ -1,6 +1,6 @@
 # Milestone Release Checklist (Phase 9)
 
-Reference checklist for releasing a milestone. Most steps are automated via `/ls-release-milestone`.
+Reference checklist for releasing a milestone. Most steps are automated via `/gh-milestones:release`.
 
 ## Milestone Info
 
@@ -43,7 +43,7 @@ gh release create v{X.Y.Z} --generate-notes
 ## Milestone Cleanup (Automated)
 
 ```bash
-/ls-release-milestone "{milestone-name}" v{X.Y.Z}
+/gh-milestones:release "{milestone-name}" v{X.Y.Z}
 ```
 
 This command:
@@ -52,7 +52,7 @@ This command:
 - Closes milestone with release link
 - Closes parent issue with release comment
 
-Override for open sub-issues: `FORCE_RELEASE=true /ls-release-milestone ...`
+Override for open sub-issues: `FORCE_RELEASE=true /gh-milestones:release ...`
 
 ## Verification
 
@@ -85,6 +85,6 @@ git branch -d {branch}
 
 ## References
 
-- Command: `.claude/commands/ls-release-milestone.md`
+- Command: `.claude/commands/gh-milestones:release.md`
 - Workflow: `docs/dev/github-workflow.md`
 - CI: `.github/workflows/ci.yml`
