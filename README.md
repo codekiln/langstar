@@ -837,7 +837,6 @@ For coding conventions, best practices, and development guidelines, see the [Dev
 Key documentation:
 - [GitHub Workflow](./docs/dev/github-workflow.md) - Issue-driven development process
 - [Git SCM Conventions](./docs/dev/git-scm-conventions.md) - Commit message standards
-- [Spec-Kit Integration](./docs/dev/spec-kit.md) - Spec-driven development with GitHub Spec-Kit
 
 ## Setup
 

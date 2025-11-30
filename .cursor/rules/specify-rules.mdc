@@ -19,11 +19,6 @@ Key points:
 - Follow Conventional Emoji Commits for commit messages
 - Link PRs to issues using `Fixes #N` or `Closes #N`
 
-### Spec-Driven Development (Optional)
-
-Langstar integrates [GitHub Spec-Kit](https://github.com/github/spec-kit) for spec-driven development workflows. For complete Spec-Kit documentation, see:
-@docs/dev/spec-kit.md
-
 ## Coding Conventions
 
 All coding conventions and development guidelines can be found in:
@@ -60,11 +55,6 @@ Key points:
 - Use branch naming convention: `<username>/<issue_num>-<issue_slug>`
 - Follow Conventional Emoji Commits for commit messages
 - Link PRs to issues using `Fixes #N` or `Closes #N`
-
-### Spec-Driven Development (Optional)
-
-Langstar integrates [GitHub Spec-Kit](https://github.com/github/spec-kit) for spec-driven development workflows. For complete Spec-Kit documentation, see:
-@docs/dev/spec-kit.md
 
 ## Coding Conventions
 

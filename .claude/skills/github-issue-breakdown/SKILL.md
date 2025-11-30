@@ -1,6 +1,6 @@
 ---
 name: github-issue-breakdown
-description: Break down GitHub issues into official GitHub sub-issues by parsing task lists from parent issue descriptions. Use this skill when a user wants to convert a parent issue with tasks into linked sub-issues, when managing complex features that need hierarchical breakdown, or when converting Spec-Kit task lists into GitHub sub-issues. Accepts issue number as parameter or prompts user if not provided.
+description: Break down GitHub issues into official GitHub sub-issues by parsing task lists from parent issue descriptions. Use this skill when a user wants to convert a parent issue with tasks into linked sub-issues, when managing complex features that need hierarchical breakdown. Accepts issue number as parameter or prompts user if not provided.
 ---
 
 # GitHub Issue Breakdown
@@ -20,7 +20,6 @@ Use this skill when:
 - User requests breaking down an issue into sub-tasks (e.g., "break down issue #47 into sub-issues")
 - User mentions converting a task list into sub-issues
 - User is working with complex features that need hierarchical task management
-- User wants to convert Spec-Kit generated task lists into GitHub sub-issues
 - User needs to create multiple related child issues from a parent issue
 
 **Invocation patterns:**
@@ -167,31 +166,6 @@ When user wants to see what would be created without actually creating:
    - Display what sub-issues would be created
    - Show inherited metadata (labels, assignees)
    - Exit without creating anything
-
-### Task 4: Integration with Spec-Kit
-
-When user has generated tasks using Spec-Kit:
-
-1. **Spec-Kit generates task list:**
-   ```
-   User: "Run /speckit.tasks to generate task list"
-   ```
-
-2. **Create issue from task list:**
-   Copy tasks from `.specify/tasks/` into new GitHub issue
-
-3. **Break down the issue:**
-   ```bash
-   python scripts/create_subissues.py --issue <new_issue_number>
-   ```
-
-4. **Workflow integration:**
-   - `/speckit.specify` → Define requirements
-   - `/speckit.plan` → Create technical plan
-   - `/speckit.tasks` → Generate task list
-   - **Create parent issue with tasks**
-   - **Use this skill to create sub-issues**
-   - `/speckit.implement` → Work on sub-issues
 
 ## Script Details
 
@@ -417,7 +391,6 @@ The skill supports multiple task list formats. For detailed documentation, load 
 - Markdown checked boxes: `- [x] Task name` (skipped by default)
 - Numbered lists: `1. Task name`
 - Bullet points: `* Task name` or `- Task name`
-- Spec-Kit format: Custom task delimiters
 
 ## Common Use Cases
 
@@ -432,18 +405,7 @@ python scripts/create_subissues.py --issue 42
 
 Result: Creates sub-issues for each task in the parent issue description.
 
-### Use Case 2: Spec-Kit Workflow Integration
-
-User says: "I ran /speckit.tasks and created issue #50 with the task list. Create sub-issues from it."
-
-Execute:
-```bash
-python scripts/create_subissues.py --issue 50
-```
-
-Result: Converts Spec-Kit task list into linked sub-issues.
-
-### Use Case 3: Preview Before Creating
+### Use Case 2: Preview Before Creating
 
 User says: "Show me what sub-issues would be created from issue #47"
 
@@ -454,7 +416,7 @@ python scripts/create_subissues.py --issue 47 --dry-run
 
 Result: Shows preview without creating anything.
 
-### Use Case 4: Cross-Repository Sub-Issues
+### Use Case 3: Cross-Repository Sub-Issues
 
 User says: "Create sub-issues from issue #10 in my other-repo"
 
@@ -474,7 +436,7 @@ Result: Creates sub-issues in specified repository.
 5. **Repository auto-detection** - Works automatically in any git repository
 6. **Confirmation required** - Script always asks before creating
 7. **Review created sub-issues** - Check URLs in output to verify
-8. **Integration with workflows** - Complements Spec-Kit and GitHub Projects
+8. **Integration with workflows** - Complements GitHub Projects
 
 ## Integration with Existing Workflow
 
@@ -487,14 +449,6 @@ This skill enhances the project's GitHub issue-driven development workflow:
 4. Development (existing)
 5. Create PR (existing)
 6. Review & Merge (existing)
-
-**Spec-Kit Integration:**
-- Run `/speckit.specify` → Create detailed spec
-- Run `/speckit.plan` → Plan implementation
-- Run `/speckit.tasks` → Generate task list
-- Create parent issue with tasks
-- **Use this skill to create sub-issues**
-- Run `/speckit.implement` on individual sub-issues
 
 ## References
 

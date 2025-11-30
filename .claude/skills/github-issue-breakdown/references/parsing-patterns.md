@@ -188,37 +188,6 @@ To avoid this, ensure code blocks don't contain task-like patterns.
 ```
 Result: "Add **authentication** with `JWT` tokens"
 
-## Spec-Kit Integration
-
-When using with Spec-Kit generated task lists:
-
-### Spec-Kit Task Format
-
-Spec-Kit may generate task lists like:
-```markdown
-## Tasks
-
-1. Task 1: Description
-   - Subtask details
-   - Implementation notes
-
-2. Task 2: Description
-   - More details
-```
-
-**Parsing behavior:**
-- Only numbered items at the start of lines are parsed as tasks
-- Indented subtasks and details are ignored
-- Consider editing the parent issue to clean up or simplify before creating sub-issues
-
-### Recommended Workflow
-
-1. Run `/speckit.tasks` to generate detailed task breakdown
-2. Review the generated tasks in `.specify/tasks/`
-3. Create a parent GitHub issue with simplified task list
-4. Use this skill to convert to sub-issues
-5. Add detailed task information to individual sub-issues as needed
-
 ## Customization
 
 ### Parsing Checked Items
