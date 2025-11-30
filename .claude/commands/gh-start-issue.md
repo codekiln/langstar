@@ -1,10 +1,12 @@
 ---
 description: Create a git worktree from main for a GitHub issue branch and get started on the work
+argument-hint: <issue_number>
+allowed-tools: [Bash, Read, Write, Glob, Grep]
 ---
 
 # gh-start-issue - Automated Issue Workflow
 
-Automates the workflow for starting work on a GitHub issue by creating a worktree, updating the tmux pane name, and setting up context.
+Automates the workflow for starting work on a GitHub issue by creating a worktree, updating the tmux window name, and setting up context.
 
 ## Arguments
 
@@ -87,6 +89,9 @@ git fetch origin "$TARGET_BRANCH"
 ```bash
 !# Create slug from title (lowercase, replace spaces/special chars with hyphens)
 ISSUE_SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 -]//g' | tr -s ' ' '-' | sed 's/^-//;s/-$//' | cut -c1-50)
+if [ -z "$ISSUE_SLUG" ]; then
+  ISSUE_SLUG="issue"
+fi
 
 # Use 'claude' as username for Claude Code
 USERNAME="claude"
@@ -114,7 +119,9 @@ fi
 # Check if branch already exists locally or remotely
 if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME" || git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
   echo "❌ Error: Branch $BRANCH_NAME already exists"
-  echo "Delete it first with: git branch -D $BRANCH_NAME"
+  echo "To delete it:"
+  echo "  Local:  git branch -D $BRANCH_NAME"
+  echo "  Remote: git push origin --delete $BRANCH_NAME"
   exit 1
 fi
 
@@ -149,7 +156,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Display issue body
-echo "$ISSUE_DATA" | jq -r .body
+echo "$ISSUE_DATA" | jq -r '.body // "(No description provided)"'
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
