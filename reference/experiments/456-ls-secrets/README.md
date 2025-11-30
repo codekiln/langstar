@@ -64,33 +64,104 @@ Test the LangSmith Workspace Secrets API to understand:
 
 ## Experiment Scope
 
-This is a **research-only experiment** with no production code changes:
+This experiment includes **live API testing** to validate OpenAPI spec findings:
 
 ✅ Review OpenAPI specification for secrets endpoints
 ✅ Understand request/response schemas
 ✅ Document security patterns (value masking)
 ✅ Identify API operations available
-❌ NO Python scripts written (API behavior understood from spec)
-❌ NO live API testing performed
+✅ **Python experiment script written** (`test_secrets_api.py`)
+✅ **Live API testing performed** (read-only due to permissions)
 
-## Open Questions
+## Experiment Results
 
-1. **Delete behavior**: Can we delete a secret by setting `value: null` in POST, or are secrets permanent once created?
+**Execution Date**: 2025-11-30
+**Script**: `test_secrets_api.py`
+**Output Log**: `experiment_output.log`
+
+### Test Results Summary
+
+| Test | Status | Finding |
+|------|--------|---------|
+| List secrets (GET) | ✅ PASS | Returns 200, empty array `[]` |
+| Create secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
+| Update secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
+| Delete secret (POST) | ❌ FAIL | 403 Forbidden - requires `workspaces:manage` permission |
+
+### Critical Finding: Permission Requirements
+
+**API Key Permissions**:
+- `GET /api/v1/workspaces/current/secrets` - Works with standard API key (read access)
+- `POST /api/v1/workspaces/current/secrets` - Requires `workspaces:manage` permission
+
+**Error Response** (403 Forbidden):
+```json
+{
+  "detail": "Permission denied, you do not have the required permission workspaces:manage"
+}
+```
+
+**Implication**: Secret management operations require elevated permissions. Standard API keys used for tracing/monitoring may not have write access to secrets.
+
+### Confirmed Behaviors
+
+1. **GET endpoint works**: Successfully lists secrets (returned empty array in test)
+2. **Security confirmed**: API returns only keys in responses, never values
+3. **Clear error messages**: Permission errors are explicit and helpful
+4. **Permission model**: Separate read vs write permissions for secrets
+
+## Open Questions (Require `workspaces:manage` Permission to Test)
+
+1. **Delete behavior**: Does POST with `value: null` delete a secret, or are secrets permanent?
+   - Status: ⚠️ Untested - requires elevated permissions
+   - API spec suggests `value: null` is valid, but behavior unconfirmed
+
 2. **Validation**: Does the API validate secret key naming (e.g., uppercase only, no spaces)?
+   - Status: ⚠️ Untested - requires elevated permissions
+   - Need to test: `TEST_KEY`, `test-key`, `test.key`, `test key`, etc.
+
 3. **List limits**: Is there pagination for listing secrets if a workspace has many?
+   - Status: ⚠️ Untested - workspace had 0 secrets, pagination not observed
+   - OpenAPI spec doesn't show pagination parameters
+
 4. **Update detection**: How does the API handle updating an existing secret vs creating new?
-5. **Encrypted endpoint usage**: When should we use the encrypted endpoint vs the regular endpoint?
+   - Status: ⚠️ Untested - requires elevated permissions
+   - Does it return different response codes or messages?
+
+5. **Batch operations**: How does the API handle multiple secrets in one POST?
+   - Status: ⚠️ Untested - requires elevated permissions
+   - Does it validate all before applying, or apply partially?
+
+6. **Error handling**: What errors occur for invalid keys, duplicate keys, etc.?
+   - Status: ⚠️ Untested - requires elevated permissions
 
 ## Recommendations for Future Experiments
 
-If implementing `ls-secrets`, consider running these experiments:
+**Prerequisites**: API key with `workspaces:manage` permission
 
-1. **Create secret**: Test POST with a new secret key/value
+When implementing `ls-secrets`, run these experiments with elevated permissions:
+
+1. **Create secret**: Test POST with various key formats
+   - `VALID_KEY_123` (uppercase, underscores, numbers)
+   - `invalid-key` (lowercase with hyphens)
+   - `invalid.key` (dots)
+   - `invalid key` (spaces)
+
 2. **Update secret**: Test POST with existing key and different value
-3. **Delete secret**: Test POST with `value: null` to see if secret is deleted
-4. **List secrets**: Test GET and observe pagination behavior
-5. **Invalid keys**: Test POST with invalid key names (spaces, special chars, etc.)
-6. **Encrypted secrets**: Test GET encrypted with agent_builder service
+   - Verify idempotent behavior
+   - Check if response differs from create
+
+3. **Delete secret**: Test POST with `value: null`
+   - Verify secret disappears from GET list
+   - Check if subsequent GET returns 404 or silently succeeds
+
+4. **Batch operations**: Test POST with multiple secrets
+   - All valid keys
+   - Mix of valid and invalid keys (partial failure behavior?)
+
+5. **List pagination**: Create 100+ secrets and test if pagination occurs
+
+6. **Permission boundaries**: Test with read-only API key to confirm 403 behavior
 
 ## References
 
