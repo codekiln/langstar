@@ -27,66 +27,34 @@ Use this checklist when releasing a milestone to ensure all steps are completed 
 - [ ] All PRs merged to main
   ```bash
   # Verify:
-  gh pr list --search "milestone:{milestone-name} is:open"
+  gh pr list --search "milestone:{milestone-name}" is:open
   # Should return: no PRs
   ```
 
-### Code Quality
+### CI/CD Status
 
-- [ ] CI/CD passing on main branch
+- [ ] All CI checks passing on main branch
   ```bash
-  # Verify:
-  gh run list --branch main --limit 1
+  # Verify latest workflow run passed:
+  gh run list --branch main --limit 1 --json conclusion --jq '.[0].conclusion'
+  # Should output: success
   ```
 
-- [ ] Local build successful
-  ```bash
-  cargo build --workspace --all-features
-  ```
-
-- [ ] All tests passing
-  ```bash
-  cargo test --workspace --all-features
-  ```
-
-- [ ] No clippy warnings
-  ```bash
-  cargo clippy --workspace --all-features -- -D warnings
-  ```
-
-- [ ] Code formatted
-  ```bash
-  cargo fmt --check
-  ```
+**Note**: CI automatically runs cargo fmt, check, clippy, and tests. No need to run these locally unless debugging failures.
 
 ### Documentation
 
-- [ ] CHANGELOG.md updated (if manual versioning)
-- [ ] README.md updated with new features
-- [ ] Implementation docs committed to `docs/implementation/`
-- [ ] Research reports committed to `docs/research/` or `reference/research/`
+- [ ] README.md updated with new features (if applicable)
+- [ ] Implementation docs committed to `docs/implementation/` (if applicable)
+- [ ] Research reports committed to `docs/research/` or `reference/research/` (if applicable)
 
 ---
 
 ## Phase 2: Create GitHub Release
 
-### Version Bump (if manual)
+**Note**: Version bumping and tagging is automated via the `prepare-release` GitHub Actions workflow. Manual version bumps should only be done in exceptional circumstances (see `docs/dev/README.md` - Manual Version Bumps section).
 
-- [ ] Version updated in `Cargo.toml` files
-  ```bash
-  # Update version in all workspace members
-  # Verify:
-  grep -r "version = \"" --include="Cargo.toml"
-  ```
-
-- [ ] Git tag created
-  ```bash
-  git checkout main && git pull
-  git tag -a v{X.Y.Z} -m "Release v{X.Y.Z}"
-  git push origin v{X.Y.Z}
-  ```
-
-### GitHub Release
+### Automated Release (Recommended)
 
 - [ ] Release created
   ```bash
@@ -273,16 +241,18 @@ FORCE_RELEASE=true /ls-release-milestone "{milestone-name}" v{X.Y.Z}
 
 ---
 
-## Template Usage
+## How to Use This Template
 
-**To use this template**:
-1. Copy this file to your workspace
-2. Replace all `{placeholders}` with actual values
-3. Work through checklist sections in order
-4. Check off items as completed
-5. Archive or delete when release is complete
+This is a **reference checklist** for the milestone release process (Phase 9). It documents the steps automated by `/ls-release-milestone` and provides verification commands.
+
+**Usage**:
+1. Keep this file as a reference when releasing milestones
+2. Mentally substitute `{placeholders}` with your actual values
+3. Run verification commands to confirm each phase completed successfully
+4. No need to copy/edit this file - it's documentation, not a working document
 
 **Typical timeline**:
-- Phases 1-2: 30-60 minutes (manual steps)
-- Phase 3: <10 seconds (automated)
-- Phases 4-5: 10-15 minutes (verification and cleanup)
+- Phase 1: <5 minutes (verification only - CI already ran)
+- Phase 2: Automated by `prepare-release` workflow
+- Phase 3: <10 seconds (automated by `/ls-release-milestone`)
+- Phases 4-5: 5-10 minutes (verification and cleanup)
