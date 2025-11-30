@@ -176,33 +176,59 @@ Same pattern as existing Langstar SDK implementations.
 
 ## 4. Experiments
 
-**Location**: `reference/experiments/456-ls-secrets/README.md`
+**Location**: `reference/experiments/456-ls-secrets/`
+**Files**:
+- `README.md` - Experiment documentation and results
+- `test_secrets_api.py` - Python script for live API testing
+- `experiment_output.log` - Full execution log
 
-**Approach**: Spec-based analysis (no live API testing)
+**Approach**: Live API testing + OpenAPI spec analysis
 
-### Key Findings from Spec Analysis
+### Experiment Execution
 
-1. **Upsert pattern confirmed**: POST handles both create and update
-2. **Batch operations**: POST accepts array of secrets
-3. **No get-by-id**: Cannot fetch a single secret by key
-4. **Delete unclear**: `value: null` in schema suggests deletion, but needs validation
-5. **No pagination**: List endpoint doesn't show pagination in spec
+**Date**: 2025-11-30
+**Script**: Python script testing complete CRUD lifecycle
+**Test Secret Key**: `LANGSTAR_TEST_SECRET_456`
 
-### Open Questions
+### Critical Finding: Permission Requirements
 
-These should be answered before full implementation (Phase 2-3):
+**Discovery**: Secret management operations require `workspaces:manage` permission.
+
+| Operation | Endpoint | Permission | Result |
+|-----------|----------|------------|--------|
+| List secrets | `GET /api/v1/workspaces/current/secrets` | Standard API key | ✅ 200 OK |
+| Create secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
+| Update secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
+| Delete secret | `POST /api/v1/workspaces/current/secrets` | `workspaces:manage` | ❌ 403 Forbidden |
+
+**Error Response** (403):
+```json
+{
+  "detail": "Permission denied, you do not have the required permission workspaces:manage"
+}
+```
+
+**Implication**: Standard API keys used for tracing/monitoring cannot manage secrets. CLI must handle 403 gracefully with clear guidance on required permissions.
+
+### Confirmed Behaviors
+
+1. ✅ **GET endpoint works**: Successfully lists secret keys (returned `[]` for empty workspace)
+2. ✅ **Security confirmed**: API returns only keys in responses, never values
+3. ✅ **Clear error messages**: Permission errors are explicit about required permissions
+4. ✅ **Permission model**: Separate read vs write permissions (good security practice)
+
+### Open Questions (Require Elevated Permissions to Test)
+
+These need testing with an API key that has `workspaces:manage` permission:
 
 1. **Delete behavior**: Does POST with `value: null` delete a secret?
-2. **Key validation**: What characters are allowed in secret keys? (Likely uppercase + underscores)
-3. **Conflict handling**: What happens if you POST an existing key? (Overwrites value)
-4. **List limits**: Are there limits on number of secrets per workspace?
-5. **Idempotency**: Is POST idempotent for updates?
+2. **Key validation**: What characters are allowed in secret keys?
+3. **Conflict handling**: How does API handle updating existing key?
+4. **Batch operations**: How does API handle multiple secrets in one POST?
+5. **List pagination**: Does pagination occur with many secrets?
+6. **Idempotency**: Is POST idempotent for updates?
 
-**Recommended pre-implementation experiments**:
-- Test create: `[{"key": "TEST_SECRET", "value": "test123"}]`
-- Test update: Same key, different value
-- Test delete: `[{"key": "TEST_SECRET", "value": null}]`
-- Test list: Verify created/updated/deleted secrets appear correctly
+**Status**: Deferred to Phase 3 (SDK Integration Tests) where elevated API key can be configured.
 
 ## 5. Complexity Assessment
 
