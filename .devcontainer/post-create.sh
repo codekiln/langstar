@@ -117,13 +117,25 @@ echo "[post-create] Setting up tmux configuration..."
 # This ensures compatibility across different Linux distributions and environments.
 get_canonical_path() {
   local path="$1"
-  local result
-  result=$(realpath "$path" 2>/dev/null) || result=$(readlink -f "$path" 2>/dev/null)
-  if [[ -z "$result" ]]; then
-    echo "[post-create] ERROR: Failed to resolve canonical path for: $path" >&2
-    return 1
+  local result=""
+  
+  # Try realpath first (more reliable and consistent)
+  result=$(realpath "$path" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    echo "$result"
+    return 0
   fi
-  echo "$result"
+  
+  # Fallback to readlink -f (for systems without realpath)
+  result=$(readlink -f "$path" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    echo "$result"
+    return 0
+  fi
+  
+  # Both commands failed
+  echo "[post-create] ERROR: Failed to resolve canonical path for: $path" >&2
+  return 1
 }
 
 # Path to the tmux config in the repository
@@ -141,12 +153,13 @@ fi
 # Check if target already exists
 if [[ -L "${TMUX_CONF_TARGET}" ]]; then
   # It's a symlink - check if it points to the right place
-  CURRENT_TARGET=$(get_canonical_path "${TMUX_CONF_TARGET}")
-  EXPECTED_TARGET=$(get_canonical_path "${TMUX_CONF_SOURCE}")
+  if ! CURRENT_TARGET=$(get_canonical_path "${TMUX_CONF_TARGET}"); then
+    echo "[post-create] ERROR: Failed to resolve current symlink target"
+    exit 1
+  fi
   
-  # Verify paths were resolved successfully
-  if [[ -z "${CURRENT_TARGET}" ]] || [[ -z "${EXPECTED_TARGET}" ]]; then
-    echo "[post-create] ERROR: Failed to resolve canonical paths"
+  if ! EXPECTED_TARGET=$(get_canonical_path "${TMUX_CONF_SOURCE}"); then
+    echo "[post-create] ERROR: Failed to resolve expected source path"
     exit 1
   fi
   
