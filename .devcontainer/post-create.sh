@@ -127,8 +127,9 @@ fi
 # Check if target already exists
 if [ -L "${TMUX_CONF_TARGET}" ]; then
   # It's a symlink - check if it points to the right place
+  # Use consistent fallback: try readlink -f first, then plain readlink
   CURRENT_TARGET=$(readlink -f "${TMUX_CONF_TARGET}" 2>/dev/null || readlink "${TMUX_CONF_TARGET}")
-  EXPECTED_TARGET=$(readlink -f "${TMUX_CONF_SOURCE}" 2>/dev/null || echo "${TMUX_CONF_SOURCE}")
+  EXPECTED_TARGET=$(readlink -f "${TMUX_CONF_SOURCE}" 2>/dev/null || readlink "${TMUX_CONF_SOURCE}")
   
   if [ "${CURRENT_TARGET}" = "${EXPECTED_TARGET}" ]; then
     echo "[post-create] tmux config symlink already exists and points to correct location"
