@@ -109,4 +109,39 @@ else
   fi
 fi
 
+# Step 7: Setup tmux configuration
+echo "[post-create] Setting up tmux configuration..."
+
+# Path to the tmux config in the repository
+TMUX_CONF_SOURCE="${PWD}/.devcontainer/.tmux.conf"
+TMUX_CONF_TARGET="${HOME}/.tmux.conf"
+
+# Check if target already exists
+if [ -L "${TMUX_CONF_TARGET}" ]; then
+  # It's a symlink - check if it points to the right place
+  CURRENT_TARGET=$(readlink -f "${TMUX_CONF_TARGET}")
+  EXPECTED_TARGET=$(readlink -f "${TMUX_CONF_SOURCE}")
+  
+  if [ "${CURRENT_TARGET}" = "${EXPECTED_TARGET}" ]; then
+    echo "[post-create] tmux config symlink already exists and points to correct location"
+  else
+    echo "[post-create] WARNING: ~/.tmux.conf symlink exists but points to: ${CURRENT_TARGET}"
+    echo "[post-create] Removing old symlink and creating new one..."
+    rm "${TMUX_CONF_TARGET}"
+    ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"
+    echo "[post-create] tmux config symlink updated"
+  fi
+elif [ -e "${TMUX_CONF_TARGET}" ]; then
+  # It's a regular file or directory
+  echo "[post-create] WARNING: ~/.tmux.conf exists as a regular file"
+  echo "[post-create] Backing up to ~/.tmux.conf.backup"
+  mv "${TMUX_CONF_TARGET}" "${TMUX_CONF_TARGET}.backup"
+  ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"
+  echo "[post-create] tmux config symlink created (original backed up)"
+else
+  # Nothing exists, create the symlink
+  ln -s "${TMUX_CONF_SOURCE}" "${TMUX_CONF_TARGET}"
+  echo "[post-create] tmux config symlink created"
+fi
+
 echo "[post-create] Post-create setup completed successfully!"
