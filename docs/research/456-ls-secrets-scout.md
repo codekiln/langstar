@@ -206,7 +206,7 @@ These should be answered before full implementation (Phase 2-3):
 
 ## 5. Complexity Assessment
 
-**Overall Complexity**: Low-Medium
+**Overall Complexity**: Medium (upgraded from Low-Medium due to LLM agent security requirements)
 
 ### Straightforward Aspects (Low Complexity)
 
@@ -217,8 +217,11 @@ These should be answered before full implementation (Phase 2-3):
 - **Clear security model**: Values never returned in responses
 - **Well-documented**: OpenAPI spec is complete
 
-### Moderate Complexity Aspects
+### Moderate-High Complexity Aspects
 
+- **LLM Agent Security**: Must prevent secret exposure to LLMs (see dedicated section below)
+- **Multiple Input Methods**: Need --from-file, --interactive, stdin, --from-env patterns
+- **Output Sanitization**: All outputs must be LLM-safe (no secret values)
 - **Upsert logic**: Single endpoint for create/update requires conditional logic
 - **Batch operations**: POST accepts arrays, need to handle multiple secrets
 - **Delete ambiguity**: No explicit DELETE, must test null value behavior
@@ -240,17 +243,78 @@ These should be answered before full implementation (Phase 2-3):
 2. **No Python SDK precedent**: Mitigated by well-documented OpenAPI spec
 3. **Validation rules unclear**: Mitigated by following common patterns (uppercase, underscores)
 
-## 6. Recommendation
+### CRITICAL: LLM Agent Security Considerations
+
+**Context**: Langstar CLI is expected to be wrapped in Claude Code skills and called by automated agents.
+
+**Security Requirement**: Secret values must NEVER be exposed to LLMs in:
+- Command-line arguments (visible in process lists, logs, shell history)
+- Tool outputs or responses
+- Error messages or debug logs
+- Any text that could be read by the LLM
+
+**Insecure Pattern** ❌:
+```bash
+# NEVER DO THIS - exposes secret to LLM
+langstar secrets set ANTHROPIC_API_KEY sk-ant-abc123...
+```
+
+**Secure Patterns Required** ✅:
+
+1. **File Input** (Recommended):
+   ```bash
+   # Secret value read from file, not exposed to LLM
+   langstar secrets set ANTHROPIC_API_KEY --from-file ~/.secrets/anthropic.key
+
+   # Or stdin redirect
+   langstar secrets set ANTHROPIC_API_KEY < ~/.secrets/anthropic.key
+   ```
+
+2. **Interactive Prompt** (Manual Use):
+   ```bash
+   # Prompts for value with hidden input (like sudo)
+   langstar secrets set ANTHROPIC_API_KEY --interactive
+   # User types value (hidden), LLM never sees it
+   ```
+
+3. **Environment Variable** (Less Secure):
+   ```bash
+   # Reads from env var, slightly better than CLI arg
+   ANTHROPIC_API_KEY=sk-ant-... langstar secrets set ANTHROPIC_API_KEY --from-env
+   ```
+
+**Output Requirements**:
+- `set` command must NOT echo the secret value
+- Error messages must NOT include secret values
+- Success message: "✅ Secret ANTHROPIC_API_KEY updated" (no value)
+- List command already safe (API returns keys only, not values)
+
+**Mandatory Security Review**:
+
+This issue requires a **dedicated security review ticket** in Phase 0:
+- Review CLI interface for secret exposure vectors
+- Design secure input methods (--from-file, --interactive)
+- Establish guidelines for LLM-safe command outputs
+- Document secure patterns in skills/commands that wrap langstar
+- Test with Claude Code skill wrapper to verify no leakage
+
+**Complexity Impact**: Raises CLI complexity from Low-Medium to **Medium** due to:
+- Need for multiple input methods (flags, files, stdin, interactive)
+- Output sanitization requirements
+- Security testing and validation
+- Documentation for skill developers
+
+**Blocker Status**: Not a blocker, but **must be addressed in Phase 2 (Design)** before CLI implementation.
 
 **Decision**: Go
 
 **Rationale**:
 1. ✅ Simple, well-documented API with only 2 primary endpoints
-2. ✅ Low-medium complexity is manageable
+2. ✅ Medium complexity is manageable (increased due to LLM security requirements)
 3. ✅ No blocking dependencies
 4. ✅ Clear business value: Required for model provider configurations (#453)
-5. ✅ Security model is sound (values never exposed)
-6. ✅ Can be implemented incrementally
+5. ✅ Sound API security model (values never exposed in responses)
+6. ✅ Can be implemented incrementally with security-first approach
 
 ### Proceed to Phase 0?
 
@@ -258,30 +322,49 @@ These should be answered before full implementation (Phase 2-3):
 
 **Supporting factors**:
 1. ✅ Simple, well-documented API (2 endpoints)
-2. ✅ Low-Medium complexity (manageable)
+2. ✅ Medium complexity is manageable (upgraded due to LLM agent security)
 3. ✅ No blocking technical dependencies
 4. ✅ Clear business value (enables model provider configs #453)
-5. ✅ Sound security model (values never exposed)
+5. ✅ Sound API security model (values never exposed in responses)
 6. ✅ Can be implemented incrementally
 
 **Risk factors** (mitigable):
 1. ⚠️ No Python SDK precedent (mitigated by complete OpenAPI spec)
 2. ⚠️ Delete behavior unclear (mitigated by pre-implementation experiments)
 3. ⚠️ Validation rules unknown (mitigated by following common patterns)
+4. ⚠️ **LLM security critical** (mitigated by dedicated Phase 1.5 security review)
 
 ### Considerations for Phase 0 (If Proceeding)
 
 When creating the parent issue and milestone, consider:
 
-**Core Scope**:
+**MANDATORY: Security Review Sub-Issue**:
+
+Create a **dedicated Phase 1.5 security review sub-issue** BEFORE Phase 2 (Design):
+- **Title**: `{parent}.1.5-security Security review for LLM agent safety`
+- **Scope**:
+  - Review CLI interface for secret exposure vectors
+  - Design secure input methods (--from-file, --interactive, stdin)
+  - Establish output sanitization requirements
+  - Create guidelines for Claude Code skills that wrap langstar
+  - Threat modeling: LLM reads command history, logs, process lists
+  - Test plan: Verify no secret leakage to LLM in any scenario
+- **Deliverable**: Security design document in `docs/implementation/`
+- **Blocks**: Phase 2 (Design) and all subsequent CLI phases
+
+**Core Scope** (Phases 3-8):
 - SDK types: `SecretKey`, `SecretUpsert`
 - SDK methods: `list_secrets()`, `upsert_secrets()`
-- CLI commands: `langstar secrets list`, `langstar secrets set KEY VALUE`
-- Delete command (pending experimental validation of `value: null` behavior)
+- CLI commands with secure input:
+  - `langstar secrets list` (already safe - API returns keys only)
+  - `langstar secrets set KEY --from-file <path>` (secure)
+  - `langstar secrets set KEY --interactive` (secure for manual use)
+  - `langstar secrets set KEY < <(echo $VALUE)` (stdin support)
+  - `langstar secrets delete KEY` (pending `value: null` validation)
 
 **Optional Enhancements** (separate issues after core):
-- Interactive mode: `langstar secrets set KEY` prompts for value (hides input)
-- Bulk operations: Import from `.env` file, export keys to file
+- Bulk operations: `langstar secrets import --from-env-file .env`
+- Bulk export: `langstar secrets export > keys.txt` (keys only, no values)
 - Validation: Warn if key doesn't follow conventions (e.g., not uppercase)
 
 **Out of Scope** (different milestones):
@@ -290,7 +373,7 @@ When creating the parent issue and milestone, consider:
 3. **Secret templates**: Pre-configured sets for common providers
 4. **Model provider integration**: Separate milestone (already scouted #453)
 
-**Pre-Implementation Experiments Recommended**:
+**Pre-Implementation Experiments Recommended** (Phase 3):
 - Test `value: null` for deletion
 - Test key naming validation (uppercase, underscores)
 - Test conflict handling (update existing key)
