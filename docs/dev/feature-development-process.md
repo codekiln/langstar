@@ -2,6 +2,7 @@
 
 This document codifies the best practices and standard phases for implementing new LangSmith or LangGraph API features as CLI commands in Langstar. These patterns have been established through successful implementations including:
 
+- **#402 ls-prompt-structured-outputs** - Structured output prompts (with scout phase)
 - **#298 ls-runs-query** - Runs query and filtering
 - **#334 ls-annotation-queues** - Annotation queue management
 - **#201 devcontainer-feature** - Infrastructure milestone (different pattern)
@@ -10,10 +11,11 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Overview
 
-Each API → CLI feature follows an **8-phase process**:
+Each API → CLI feature follows a **10-phase process**:
 
 | Phase | Name | Goal | Deliverable |
 |-------|------|------|-------------|
+| **0.0** | **Pre-Epic Scouting (Optional)** | **Validate feasibility before milestone** | **Scout research report** |
 | 0 | Epic Setup | Establish tracking structure | Parent issue, milestone, sub-issues |
 | 1 | Research | Understand SDK precedent | Research report in `reference/research/` |
 | 2 | Design | Ensure DX consistency and integration | Design decisions documented in research report |
@@ -23,6 +25,99 @@ Each API → CLI feature follows an **8-phase process**:
 | 6 | CLI Commands | Implement CLI commands | `cli/src/commands/{feature}.rs` |
 | 7 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
 | 8 | Documentation | Document usage | README updates, implementation docs |
+| **9** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
+
+**Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 9 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis.
+
+---
+
+## Phase 0.0: Pre-Epic Scouting (Optional)
+
+### When to Use Pre-Epic Scouting
+
+For new API features with **unclear complexity or feasibility**, create a scout issue to validate viability *before* committing to a full 8-phase milestone.
+
+**Use scout issues when**:
+- ✅ Adding support for a new LangSmith/LangGraph API feature
+- ✅ Implementing functionality with unclear API complexity
+- ✅ Uncertain if existing langstar code already partially covers the feature
+- ✅ Need to validate feasibility before committing to full 8-phase process
+
+**Skip scout issues when**:
+- ❌ Fixing a bug in existing functionality (scope is already known)
+- ❌ Small enhancements to existing commands (low risk)
+- ❌ Infrastructure changes (devcontainer, CI/CD)
+- ❌ Documentation-only changes
+
+### Scout Issue Template
+
+Create an exploratory research issue using this pattern:
+
+**Title Format**: `[Scout] Research {feature-name} feasibility and API patterns`
+
+**Required Sections**:
+- **Purpose**: Why scouting before full milestone
+- **Scope**: What to research (NOT implementation)
+- **Deliverables**: Research report, SDK notes, optional experiments
+- **Success Criteria**: Feasibility assessment (go/no-go/conditional)
+
+**Example**: [Issue #398](https://github.com/codekiln/langstar/issues/398) - Scout for structured output prompts
+
+### Scout Issue Scope
+
+**Do NOT propose an implementation.** Focus on:
+1. Scout existing langstar code in `./cli` and `./sdk` for partial implementations
+2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
+3. Identify relevant API endpoints and request/response shapes
+4. Document complexity and technical blockers
+5. Assess feasibility (go/no-go recommendation)
+
+### Scout Issue Deliverables
+
+1. **Research Report** at `docs/research/{issue-num}-{slug}-scout.md`:
+   - Existing langstar implementation analysis
+   - API endpoint identification
+   - SDK precedent analysis (Python SDK)
+   - Manifest/schema structure documentation
+   - Feasibility assessment
+   - Open questions for implementation
+
+2. **Updated Reference Notes**:
+   - `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
+   - Document key SDK findings
+
+3. **Optional: Experiment Scripts**:
+   - `reference/experiments/{issue-num}-{slug}/`
+   - Python scripts to test API behavior
+   - Validate assumptions about API functionality
+
+### Relationship to Milestone
+
+**Key**: Scout issues exist *before* the milestone is created.
+
+**Workflow**:
+1. Create scout issue (no milestone yet)
+2. Complete scout research → PR directly to main
+3. Review findings
+4. **If feasible**: Create milestone and parent issue (Phase 0)
+5. **Optional**: Retroactively attach scout issue to milestone for historical tracking
+
+### Benefits of Pre-Epic Scouting
+
+**Risk Reduction**:
+- Avoids committing to 8-phase milestone before understanding complexity
+- Identifies technical blockers before resource allocation
+- Surfaces API limitations or missing features early
+
+**Better Planning**:
+- Parent issue scope is informed by actual research, not assumptions
+- Sub-issue breakdown is more accurate
+- Effort estimates are more realistic
+
+**Knowledge Building**:
+- Creates reusable research artifacts
+- Documents API patterns and SDK precedents
+- Establishes foundation for implementation phases
 
 ---
 
@@ -591,6 +686,105 @@ Add new commands to main README:
 
 ---
 
+## Phase 9: Milestone Release
+
+When the milestone's features ship in a GitHub release, use the `/ls-release-milestone` slash command to automate milestone cleanup.
+
+### 9.1 Prerequisites
+
+Before running milestone release:
+
+- [ ] All milestone PRs merged to main
+- [ ] GitHub release created and published
+- [ ] All sub-issues closed (or explicitly force release with `FORCE_RELEASE=true`)
+- [ ] CI/CD passing on main branch
+- [ ] CHANGELOG.md updated (if manual versioning)
+
+### 9.2 Release Command
+
+```bash
+/ls-release-milestone <milestone> <version>
+```
+
+**Examples**:
+```bash
+# Using milestone name
+/ls-release-milestone ls-prompt-structured-outputs v0.10.0
+
+# Using milestone URL
+/ls-release-milestone https://github.com/codekiln/langstar/milestone/7 v0.10.0
+```
+
+### 9.3 What Gets Automated
+
+The `/ls-release-milestone` command performs the following actions:
+
+1. **Validates Release Exists**: Confirms GitHub release is published
+2. **Checks Sub-Issue Completion**: Warns if any sub-issues are still open (requires `gh-sub-issue` extension)
+3. **Updates Milestone Description**: Prepends release link to milestone description
+4. **Closes Milestone**: Marks milestone as closed
+5. **Adds Release Comment**: Comments on parent issue with release link
+6. **Closes Parent Issue**: Marks parent issue as closed
+
+**Example Output**:
+```
+✅ **Milestone Release Tracking Complete**
+
+📍 Milestone: ls-prompt-structured-outputs (#7)
+🔗 Parent Issue: #402 - Add structured output prompt support
+📦 Release: v0.10.0
+🔗 Release URL: https://github.com/codekiln/langstar/releases/tag/v0.10.0
+
+**Actions Completed:**
+✅ Verified release v0.10.0 exists
+✅ Validated sub-issue completion
+✅ Milestone marked as closed
+✅ Milestone description updated with release information
+✅ Parent issue #402 closed with release comment
+```
+
+### 9.4 Manual Override
+
+If sub-issues are intentionally still open, force the release:
+
+```bash
+FORCE_RELEASE=true /ls-release-milestone <milestone> <version>
+```
+
+**Note**: Not recommended. Best practice is to close all sub-issues before releasing.
+
+### 9.5 Integration with Release Workflow
+
+**Typical release workflow**:
+```bash
+# 1. Merge final PR for milestone
+gh pr merge 385 --squash
+
+# 2. Create GitHub release (or automated via CI)
+gh release create v0.10.0 --generate-notes
+
+# 3. Mark milestone as released
+/ls-release-milestone "ls-prompt-structured-outputs" v0.10.0
+```
+
+### 9.6 Benefits
+
+**Consistency**: Every milestone follows same release tracking pattern
+
+**Efficiency**: Manual milestone updates take 5-10 minutes, automation completes in <10 seconds
+
+**Traceability**: Clear link from milestone → release → parent issue
+
+**Validation**: Enforces sub-issue completion, validates release exists
+
+### 9.7 References
+
+- **PR #442**: `/ls-release-milestone` command implementation
+- **Command Documentation**: `.claude/commands/ls-release-milestone.md`
+- **Example**: Milestone #7 (ls-prompt-structured-outputs) released in v0.10.0
+
+---
+
 ## Consistency Checklist
 
 ### Configuration Consistency
@@ -669,6 +863,79 @@ Validation report at `reference/research/{num}-openapi-validation.md`
 
 ---
 
+## Milestone Lifecycle: From Conception to Release
+
+### Full Lifecycle Overview
+
+The complete milestone lifecycle spans from initial feasibility exploration through GitHub release:
+
+| Phase | Name | When | Typical Duration |
+|-------|------|------|------------------|
+| 0.0 | Pre-Epic Scouting | Before milestone (optional) | 1-3 days |
+| 0 | Epic Setup | Start of milestone | 1 day |
+| 1-8 | Standard Development | Implementation | 1-4 weeks |
+| 9 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
+
+### Decision Tree: When to Scout
+
+```
+Is this a new API feature with unclear complexity?
+├── No → Skip to Phase 0 (Epic Setup)
+└── Yes → Start with Phase 0.0 (Scout)
+        ↓
+    Scout reveals feasibility?
+    ├── Go → Proceed to Phase 0
+    ├── No-Go → Cancel/defer milestone
+    └── Conditional → Address blockers, then Phase 0
+```
+
+### Milestone States Over Time
+
+1. **Pre-Milestone** (Phase 0.0): Scout issue exists, no milestone yet
+   - Research is exploratory
+   - No commitment to full implementation
+   - Scout PR merges directly to main
+
+2. **Milestone Created** (Phase 0): Parent issue + milestone + sub-issues created
+   - Milestone attached to ALL issues
+   - Sub-issues link to parent via `gh-sub-issue`
+   - Development waves may be parallelized
+
+3. **Active Development** (Phases 1-8): Sub-issues progress through standard phases
+   - PRs typically merge directly to main (not hierarchical)
+   - Milestone description updated with progress
+   - Sub-issues closed as PRs merge
+
+4. **Released** (Phase 9): Milestone closed, linked to GitHub release
+   - `/ls-release-milestone` automates cleanup
+   - Parent issue closed with release comment
+   - Milestone description shows release link
+   - Audit trail: issue → milestone → release
+
+### Milestone Naming Best Practices
+
+**Pattern**: Use short, hyphenated names for milestone titles
+- ✅ `ls-prompt-structured-outputs` (clear, grep-able)
+- ✅ `ls-evals-basic` (scoped)
+- ❌ `Structured Output Prompts Feature` (spaces, verbose)
+
+**Benefits**:
+- Easy to reference in commands: `/ls-release-milestone ls-evals-basic v0.10.0`
+- Grep-able in code and documentation
+- Works well with GitHub API and CLI tools
+
+### Milestone Management Anti-Patterns
+
+**Avoid**:
+- ❌ Creating milestone without parent issue
+- ❌ Attaching milestone only to parent (not sub-issues)
+- ❌ Manually closing milestone without release link
+- ❌ Leaving parent issue open after release ships
+- ❌ Skipping Phase 0.0 scout for unclear API features
+- ❌ Closing milestone before all sub-issues are done
+
+---
+
 ## Related Documentation
 
 - [GitHub Workflow](./github-workflow.md) - Issue-driven development
@@ -688,4 +955,6 @@ A feature is complete when:
 5. Unit tests passing (100% of new code)
 6. Integration tests passing
 7. Documentation updated
-8. Milestone closed
+8. GitHub release published
+9. **Milestone closed via `/ls-release-milestone` (Phase 9)**
+10. **Parent issue closed with release link**
