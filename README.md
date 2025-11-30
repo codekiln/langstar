@@ -637,7 +637,7 @@ For more troubleshooting help, see the [Troubleshooting Guide](./docs/troublesho
 
 ## Architecture
 
-Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-specs/LANGSMITH_API_OVERVIEW.md) and the [langsmith python SDKs](reference/repo/langchain-ai/langsmith-sdk/notes/README.md) as reference, and uses them to implement a thin wrapper over multiple LangSmith services.
+Langstar takes the [OpenAPI specs for the various LangSmith APIs](reference/api-specs/LANGSMITH_API_OVERVIEW.md) and the [langsmith python SDKs](reference/repo/langchain-ai/langsmith-sdk/notes/README.md) as references, and uses them to implement a thin wrapper over multiple LangSmith services.
 
 ```
 langstar-rs/
