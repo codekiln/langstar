@@ -1,0 +1,17 @@
+{
+  "properties": {
+    "requests_per_second": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Requests Per Second"
+    }
+  },
+  "type": "object",
+  "title": "PlaygroundSavedOptions"
+}

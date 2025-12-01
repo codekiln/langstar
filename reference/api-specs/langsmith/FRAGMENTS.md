@@ -30,6 +30,11 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `evals-schemas.json` | 38K | Evaluation/feedback data types | See below | 2025-11-28 |
 | `prompt-endpoints.json` | 45K | Prompt repository/commit API endpoints | See below | 2025-11-29 |
 | `prompt-schemas.json` | 37K | Prompt/commit/manifest data types | See below | 2025-11-29 |
+| `playground-settings-endpoints.json` | 4.9K | Playground settings CRUD API endpoints | See below | 2025-12-01 |
+| `playground-settings-response.json` | 1.1K | PlaygroundSettingsResponse schema | See below | 2025-12-01 |
+| `playground-settings-create-request.json` | 0.8K | PlaygroundSettingsCreateRequest schema | See below | 2025-12-01 |
+| `playground-settings-update-request.json` | 0.8K | PlaygroundSettingsUpdateRequest schema | See below | 2025-12-01 |
+| `playground-saved-options.json` | 0.3K | PlaygroundSavedOptions schema | See below | 2025-12-01 |
 
 ## Extraction Commands
 
@@ -91,6 +96,26 @@ jq '.paths | with_entries(select(.key | test("^/api/v1/(repos|commits)")))' \
 # Prompt/commit/manifest schemas (all schemas containing "repo", "commit", "prompt", or "manifest")
 jq '.components.schemas | with_entries(select(.key | test("[Rr]epo|[Cc]ommit|[Pp]rompt|[Mm]anifest"; "i")))' \
   openapi.json > ../../api-specs/langsmith/prompt-schemas.json
+
+# Playground settings endpoints (all /api/v1/playground-settings paths)
+jq '.paths | with_entries(select(.key | test("^/api/v1/playground-settings")))' \
+  openapi.json > ../../api-specs/langsmith/playground-settings-endpoints.json
+
+# PlaygroundSettingsResponse schema
+jq '.components.schemas.PlaygroundSettingsResponse' \
+  openapi.json > ../../api-specs/langsmith/playground-settings-response.json
+
+# PlaygroundSettingsCreateRequest schema
+jq '.components.schemas.PlaygroundSettingsCreateRequest' \
+  openapi.json > ../../api-specs/langsmith/playground-settings-create-request.json
+
+# PlaygroundSettingsUpdateRequest schema
+jq '.components.schemas.PlaygroundSettingsUpdateRequest' \
+  openapi.json > ../../api-specs/langsmith/playground-settings-update-request.json
+
+# PlaygroundSavedOptions schema
+jq '.components.schemas.PlaygroundSavedOptions' \
+  openapi.json > ../../api-specs/langsmith/playground-saved-options.json
 ```
 
 ## Verification
@@ -119,3 +144,4 @@ jq '.paths | keys | map(select(contains("annotation-queue"))) | length' \
   - `../../research/334-openapi-validation.md` - Annotation queues validation
   - `../../research/347-openapi-validation.md` - Evaluations/feedback validation
   - `../../research/402-structured-prompts-openapi-validation.md` - Structured output prompts validation
+  - `../../research/461-openapi-validation.md` - Playground settings (model providers) validation
