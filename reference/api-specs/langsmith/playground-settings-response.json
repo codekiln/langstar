@@ -1,0 +1,64 @@
+{
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+    },
+    "settings": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Settings"
+    },
+    "options": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/PlaygroundSavedOptions"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "name": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Name"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Description"
+    }
+  },
+  "type": "object",
+  "required": [
+    "id",
+    "settings",
+    "created_at",
+    "updated_at"
+  ],
+  "title": "PlaygroundSettingsResponse"
+}
