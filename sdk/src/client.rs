@@ -1739,6 +1739,215 @@ impl LangchainClient {
         let request = self.langsmith_delete(&path)?;
         self.execute_status_only_request(request).await
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Playground Settings API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// List playground settings (model configurations).
+    ///
+    /// Retrieves all saved model configurations for the current workspace.
+    /// These settings store model provider configurations including API keys,
+    /// model parameters, and rate limits used in the Prompt Hub playground.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Optional pagination parameters (limit, offset)
+    ///
+    /// # Returns
+    ///
+    /// A vector of `PlaygroundSettingsResponse` objects.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, ListPlaygroundSettingsParams};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// // List all playground settings
+    /// let settings = client.list_playground_settings(Default::default()).await?;
+    /// for setting in settings {
+    ///     println!("{}: {:?}", setting.id, setting.name);
+    /// }
+    ///
+    /// // With pagination
+    /// let params = ListPlaygroundSettingsParams {
+    ///     limit: Some(10),
+    ///     offset: Some(0),
+    /// };
+    /// let settings = client.list_playground_settings(params).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/playground-settings`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_playground_settings(
+        &self,
+        params: crate::playground_settings::ListPlaygroundSettingsParams,
+    ) -> Result<Vec<crate::playground_settings::PlaygroundSettingsResponse>> {
+        let mut request = self.langsmith_get("/api/v1/playground-settings")?;
+
+        // Add query parameters
+        if let Some(limit) = params.limit {
+            request = request.query(&[("limit", limit)]);
+        }
+        if let Some(offset) = params.offset {
+            request = request.query(&[("offset", offset)]);
+        }
+
+        self.execute(request).await
+    }
+
+    /// Create new playground settings (model configuration).
+    ///
+    /// Creates a new saved model configuration in the current workspace.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The playground settings to create, including model configuration
+    ///
+    /// # Returns
+    ///
+    /// The created `PlaygroundSettingsResponse` with assigned ID and timestamps.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, PlaygroundSettingsCreateRequest, PlaygroundSavedOptions};
+    /// # use serde_json::json;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = PlaygroundSettingsCreateRequest {
+    ///     name: Some("Claude 3.5 Sonnet".to_string()),
+    ///     description: Some("Production Claude configuration".to_string()),
+    ///     settings: json!({
+    ///         "lc": 1,
+    ///         "type": "constructor",
+    ///         "id": ["langchain", "chat_models", "anthropic", "ChatAnthropic"],
+    ///         "kwargs": {
+    ///             "model": "claude-3-5-sonnet-20241022",
+    ///             "temperature": 0.0
+    ///         }
+    ///     }),
+    ///     options: PlaygroundSavedOptions {
+    ///         requests_per_second: Some(10),
+    ///     },
+    /// };
+    ///
+    /// let created = client.create_playground_settings(request).await?;
+    /// println!("Created settings with ID: {}", created.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/playground-settings`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_playground_settings(
+        &self,
+        request: crate::playground_settings::PlaygroundSettingsCreateRequest,
+    ) -> Result<crate::playground_settings::PlaygroundSettingsResponse> {
+        let request_builder = self
+            .langsmith_post("/api/v1/playground-settings")?
+            .json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Update existing playground settings (model configuration).
+    ///
+    /// Updates an existing saved model configuration. All fields are optional;
+    /// only provided fields will be updated.
+    ///
+    /// # Arguments
+    ///
+    /// * `settings_id` - The UUID of the playground settings to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Returns
+    ///
+    /// The updated `PlaygroundSettingsResponse`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, PlaygroundSettingsUpdateRequest, PlaygroundSavedOptions};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let settings_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    ///
+    /// // Update only specific fields
+    /// let request = PlaygroundSettingsUpdateRequest {
+    ///     name: Some("Updated Name".to_string()),
+    ///     options: Some(PlaygroundSavedOptions {
+    ///         requests_per_second: Some(20),
+    ///     }),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let updated = client.update_playground_settings(settings_id, request).await?;
+    /// println!("Updated settings: {:?}", updated.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/playground-settings/{id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn update_playground_settings(
+        &self,
+        settings_id: uuid::Uuid,
+        request: crate::playground_settings::PlaygroundSettingsUpdateRequest,
+    ) -> Result<crate::playground_settings::PlaygroundSettingsResponse> {
+        let path = format!("/api/v1/playground-settings/{}", settings_id);
+        let request_builder = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Delete playground settings (model configuration).
+    ///
+    /// Permanently removes a saved model configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `settings_id` - The UUID of the playground settings to delete
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let settings_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// client.delete_playground_settings(settings_id).await?;
+    /// println!("Playground settings deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/playground-settings/{id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_playground_settings(&self, settings_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/playground-settings/{}", settings_id);
+        let request = self.langsmith_delete(&path)?;
+        self.execute_status_only_request(request).await
+    }
 }
 
 /// Generic response wrapper for paginated API responses
