@@ -192,12 +192,16 @@ Before full implementation, consider running these experiments:
 ### Out of Scope (Separate Milestones)
 
 1. **Secrets management**: CRUD for workspace secrets (separate milestone `ls-secrets`)
+   - See scout issue #456 for secrets API validation
+   - Model configs reference secrets by name (e.g., `{"type": "secret", "id": ["ANTHROPIC_API_KEY"]}`)
+   - Actual secret values stored via `/api/v1/workspaces/current/secrets` (separate API)
 2. **Prompt-model linking**: Associating prompts with specific model configs
 3. **Provider validation**: Type-safe provider-specific configuration builders
 
 ## References
 
 - Scout Issue: #453
+- Related Scout: #456 (secrets management feasibility)
 - Sample Data: `reference/research/453-ls-langsmith-model-providers-playground-settings.json`
 - OpenAPI Spec: `reference/openapi/langchain/langsmith/openapi.json`
 - LangSmith Docs: [Configure prompt settings](https://docs.langchain.com/langsmith/managing-model-configurations)
