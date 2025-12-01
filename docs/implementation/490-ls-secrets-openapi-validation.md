@@ -384,7 +384,7 @@ When writing SDK integration tests, validate:
 
 ## Validation Sign-Off
 
-**Validated By**: Claude Code
+**Validation Method**: AI-assisted validation (Claude Code)
 **Date**: 2025-12-01
 **Result**: ✅ OpenAPI spec is accurate - No corrections needed
 **Confidence**: High
