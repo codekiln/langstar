@@ -34,6 +34,7 @@ pub mod evaluations;
 pub mod evaluators;
 pub mod integrations;
 pub mod organization;
+pub mod playground_settings;
 pub mod prompts;
 pub mod runs;
 
@@ -69,6 +70,10 @@ pub use evaluations::{
 };
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
+pub use playground_settings::{
+    ListPlaygroundSettingsParams, PlaygroundSavedOptions, PlaygroundSettingsCreateRequest,
+    PlaygroundSettingsResponse, PlaygroundSettingsUpdateRequest,
+};
 pub use prompts::{
     CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs, Prompt, PromptClient,
     PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt, Visibility,
