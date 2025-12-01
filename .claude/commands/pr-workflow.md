@@ -361,7 +361,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Update tmux status to "PR maintenance" (using PR number):**
 ```bash
 !# After PR is created, switch from issue number to PR number
-update_tmux_status "🔧" "pr" "$PR_NUM"
+!update_tmux_status "🔧" "pr" "$PR_NUM"
 ```
 
 **Order of operations (priority):**
