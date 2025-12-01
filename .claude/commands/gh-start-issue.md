@@ -139,8 +139,12 @@ echo "✅ Worktree created successfully"
 
 ```bash
 !# Update tmux window name if in tmux session
+# Format: <emoji><issue_num> where emoji indicates phase:
+# 💻 = coding (initial phase when starting issue)
+# See pr-lifecycle skill for all phase emojis
 if [ -n "$TMUX" ]; then
-  tmux rename-window "$BRANCH_NAME" 2>/dev/null && echo "✅ Tmux window renamed to: $BRANCH_NAME" || echo "ℹ️  Could not rename tmux window"
+  TMUX_NAME="💻${ISSUE_NUM}"
+  tmux rename-window "$TMUX_NAME" 2>/dev/null && echo "✅ Tmux window renamed to: $TMUX_NAME" || echo "ℹ️  Could not rename tmux window"
 else
   echo "ℹ️  Not in tmux session - skipping window rename"
 fi

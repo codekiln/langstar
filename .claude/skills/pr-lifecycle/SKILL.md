@@ -54,6 +54,35 @@ When addressing review comments, choose ONE of these options:
 
 **Why This Matters:** PRs #221 and #222 didn't include "Fixes #XYZ" keywords, causing issues to remain open after merge. This skill prevents such "orphan PRs."
 
+## Tmux Window Naming Convention
+
+When working in a tmux session, window names reflect the current PR lifecycle phase for quick visual reference.
+
+**Format:** `<emoji><issue_num>` (e.g., `💻483`, `⏳483`, `🚀483`)
+
+**Phase Emojis:**
+
+| Phase | Emoji | When Used | Command |
+|-------|-------|-----------|---------|
+| 1. Gathering information | 🔍 | Research/discovery phase | Manual |
+| 2. Coding | 💻 | Active development | `/gh-start-issue` |
+| 3. Waiting for tests | ⏳ | CI/CD checks running | `/pr-workflow` |
+| 4. Waiting for user | ❓ | Needs user input/clarification | Manual |
+| 5. Submitting PR | 🚀 | Creating/pushing PR | `/pr-workflow` |
+| 6. PR maintenance | 🔧 | Addressing feedback/fixes | `/pr-workflow` |
+| 7. Cleanup | 🧹 | Post-merge cleanup | Manual |
+
+**Automatic Updates:**
+- `/gh-start-issue` sets tmux to `💻<issue_num>` (coding phase)
+- `/pr-workflow` updates tmux through phases: `🚀` → `🔧` → `⏳` as workflow progresses
+
+**Manual Updates:**
+```bash
+# Update tmux window name manually
+ISSUE_NUM=<your_issue_number>
+tmux rename-window "🔍${ISSUE_NUM}"  # or any other phase emoji
+```
+
 ## Phase 1: Before Creating PR
 
 ### Pre-PR Checklist
