@@ -34,6 +34,21 @@ def print_section(title):
     print(f"  {title}")
     print(f"{'='*60}\n")
 
+def sanitize_secrets(data):
+    """Sanitize secret values in data for logging (replaces values with [REDACTED])"""
+    if not data:
+        return data
+    
+    if isinstance(data, list):
+        return [
+            {k: "[REDACTED]" if k == "value" and v is not None else v for k, v in item.items()}
+            if isinstance(item, dict) else item
+            for item in data
+        ]
+    elif isinstance(data, dict):
+        return {k: "[REDACTED]" if k == "value" and v is not None else v for k, v in data.items()}
+    return data
+
 def make_request(method, endpoint, data=None):
     """Make an authenticated request to the LangSmith API"""
     url = f"{BASE_URL}{endpoint}"
@@ -44,7 +59,9 @@ def make_request(method, endpoint, data=None):
 
     print(f"→ {method} {endpoint}")
     if data:
-        print(f"  Request body: {json.dumps(data, indent=2)}")
+        # Sanitize secret values before printing
+        sanitized_data = sanitize_secrets(data)
+        print(f"  Request body: {json.dumps(sanitized_data, indent=2)}")
 
     try:
         if method == "GET":
@@ -60,7 +77,7 @@ def make_request(method, endpoint, data=None):
         try:
             response_data = response.json()
             print(f"  Response: {json.dumps(response_data, indent=2)}")
-        except:
+        except (json.JSONDecodeError, ValueError):
             print(f"  Response (text): {response.text[:200]}")
 
         response.raise_for_status()
@@ -68,7 +85,7 @@ def make_request(method, endpoint, data=None):
 
     except requests.exceptions.RequestException as e:
         print(f"✗ Request failed: {e}")
-        if hasattr(e.response, 'text'):
+        if e.response is not None and hasattr(e.response, 'text'):
             print(f"  Error response: {e.response.text}")
         return None
 
@@ -155,7 +172,6 @@ def main():
     if secrets and verify_secret_exists(secrets, TEST_SECRET_KEY):
         print(f"\n⚠️  Test secret '{TEST_SECRET_KEY}' already exists. Cleaning up first...")
         delete_secret(TEST_SECRET_KEY)
-        secrets = list_secrets()
 
     # Test 2: Create a test secret
     results["create"] = create_secret(TEST_SECRET_KEY, "test-value-12345")
