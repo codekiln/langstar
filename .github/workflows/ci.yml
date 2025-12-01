@@ -80,9 +80,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run integration tests
-        # Run all CLI tests with integration-tests feature enabled
+        # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
-        # New test files are automatically discovered - no need to add them here
         run: cargo test -p langstar --features integration-tests -- --test-threads=1 --nocapture
         timeout-minutes: 15
         env:
