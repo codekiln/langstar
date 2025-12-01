@@ -79,3 +79,24 @@ The `manifest` field in prompt commits is a flexible JSON object. For structured
 3. CLI UX for defining structured output schema?
 
 See: `reference/experiments/398-structured-output-prompts/` for experiments.
+
+## Playground Settings (Issue #471 Research)
+
+### Overview
+
+Research for implementing the `/api/v1/playground-settings` API in Langstar SDK.
+
+**Key findings:**
+- Python SDK has NO implementation for playground settings
+- Langstar will be first SDK to implement this API
+- Should follow existing Langstar patterns from datasets/prompts
+- Settings field uses LangChain serialization format (similar to prompts)
+
+### Patterns
+
+See: `playground-settings-patterns.md` for complete SDK implementation patterns including:
+- Method signatures for CRUD operations
+- Type definitions
+- Pagination strategy
+- Error handling approach
+- Comparison with Python SDK patterns
