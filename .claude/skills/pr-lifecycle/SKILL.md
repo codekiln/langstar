@@ -54,6 +54,57 @@ When addressing review comments, choose ONE of these options:
 
 **Why This Matters:** PRs #221 and #222 didn't include "Fixes #XYZ" keywords, causing issues to remain open after merge. This skill prevents such "orphan PRs."
 
+## Tmux Window Naming Convention
+
+When working in a tmux session, window names reflect the current PR lifecycle phase for quick visual reference.
+
+**Format:** `<emoji><prefix><number>`
+
+**Prefix Conventions:**
+- `i` = Issue number (e.g., `💻i483` = coding on issue #483)
+- `pr` = Pull request number (e.g., `🔧pr485` = maintaining PR #485)
+
+**Examples:**
+- `💻i483` - Coding on issue #483
+- `🚀i483` - Submitting PR for issue #483
+- `🔧pr485` - Maintaining PR #485
+- `⏳pr485` - Waiting for tests on PR #485
+
+**Phase Emojis:**
+
+| Phase | Emoji | When Used | Format Example | Command |
+|-------|-------|-----------|----------------|---------|
+| 1. Gathering information | 🔍 | Research/discovery | `🔍i483` | Manual |
+| 2. Coding | 💻 | Active development | `💻i483` | `/gh-start-issue` |
+| 3. Waiting for tests | ⏳ | CI/CD checks running | `⏳pr485` | `/pr-workflow` |
+| 4. Waiting for user | ❓ | Needs input/clarification | `❓i483` or `❓pr485` | Manual |
+| 5. Submitting PR | 🚀 | Creating/pushing PR | `🚀i483` | `/pr-workflow` |
+| 6. PR maintenance | 🔧 | Addressing feedback/fixes | `🔧pr485` | `/pr-workflow` |
+| 7. Cleanup | 🧹 | Post-merge cleanup | `🧹pr485` | Manual |
+
+**Automatic Updates:**
+- `/gh-start-issue` sets tmux to `💻i<issue_num>` (coding phase on issue)
+- `/pr-workflow` updates tmux through phases:
+  - `🚀i<issue_num>` → (PR created) → `🔧pr<pr_num>` → `⏳pr<pr_num>` → `🔧pr<pr_num>`
+  - Note: Transitions from issue number to PR number after PR is created
+
+**Manual Updates:**
+```bash
+# Update tmux window name manually for issue work
+ISSUE_NUM=<your_issue_number>
+tmux rename-window "🔍i${ISSUE_NUM}"  # Research phase on issue
+
+# Update tmux window name manually for PR work
+PR_NUM=<your_pr_number>
+tmux rename-window "🔧pr${PR_NUM}"  # PR maintenance
+```
+
+**Why This Convention:**
+- **Information density**: Maximizes useful info in limited tmux window title space (5-7 chars vs 50+)
+- **Clear distinction**: Instantly know if you're working on issue or PR
+- **Visual status**: Emoji provides at-a-glance phase indication
+- **WCAG compliance**: Window title colors meet AAA accessibility standards (see `.devcontainer/.tmux.conf`)
+
 ## Phase 1: Before Creating PR
 
 ### Pre-PR Checklist
