@@ -236,17 +236,19 @@ pub struct PlaygroundSettingsUpdateRequest {
 /// use langstar_sdk::playground_settings::ListPlaygroundSettingsParams;
 ///
 /// let params = ListPlaygroundSettingsParams {
-///     limit: Some(50),
-///     offset: Some(0),
+///     limit: Some(50i64),
+///     offset: Some(0i64),
 /// };
 /// ```
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize)]
 pub struct ListPlaygroundSettingsParams {
     /// Maximum number of items to return (default: 20)
-    pub limit: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i64>,
 
     /// Number of items to skip (default: 0)
-    pub offset: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub offset: Option<i64>,
 }
 
 // ============================================================================
@@ -511,8 +513,8 @@ mod tests {
             limit: Some(50),
             offset: Some(100),
         };
-        assert_eq!(params.limit, Some(50));
-        assert_eq!(params.offset, Some(100));
+        assert_eq!(params.limit, Some(50i64));
+        assert_eq!(params.offset, Some(100i64));
     }
 
     // ========================================================================
