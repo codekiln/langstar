@@ -513,8 +513,8 @@ mod tests {
             limit: Some(50),
             offset: Some(100),
         };
-        assert_eq!(params.limit, Some(50i64));
-        assert_eq!(params.offset, Some(100i64));
+        assert_eq!(params.limit, Some(50));
+        assert_eq!(params.offset, Some(100));
     }
 
     // ========================================================================
