@@ -79,13 +79,17 @@ Throughout the workflow, update tmux window name to reflect current phase.
 
 ```bash
 !# Helper function to update tmux status
-# Usage: update_tmux_status <emoji> <issue_num>
+# Usage: update_tmux_status <emoji> <prefix> <number>
+# Examples:
+#   update_tmux_status "💻" "i" "483"  -> 💻i483 (coding on issue #483)
+#   update_tmux_status "🔧" "pr" "485" -> 🔧pr485 (maintaining PR #485)
 update_tmux_status() {
   local EMOJI="$1"
-  local ISSUE_NUM="$2"
+  local PREFIX="$2"
+  local NUMBER="$3"
 
   if [ -n "$TMUX" ]; then
-    TMUX_NAME="${EMOJI}${ISSUE_NUM}"
+    TMUX_NAME="${EMOJI}${PREFIX}${NUMBER}"
     tmux rename-window "$TMUX_NAME" 2>/dev/null
   fi
 }
@@ -98,6 +102,10 @@ update_tmux_status() {
 # 🚀 = submitting pr
 # 🔧 = pr maintenance
 # 🧹 = cleanup
+
+# Prefix conventions:
+# i = issue number (e.g., i483 for issue #483)
+# pr = pull request number (e.g., pr485 for PR #485)
 ```
 
 ## Overview
@@ -286,7 +294,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Actions:**
 1. **Update tmux status to "submitting PR":**
    ```bash
-   !update_tmux_status "🚀" "$ISSUE_NUM"
+   !update_tmux_status "🚀" "i" "$ISSUE_NUM"
    ```
 
 2. **Push branch to remote (if not already pushed):**
@@ -350,9 +358,10 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 - Safe to restart if interrupted - will pick up where it left off
 - Safe to run in parallel with manual changes - will sync and continue
 
-**Update tmux status to "PR maintenance":**
+**Update tmux status to "PR maintenance" (using PR number):**
 ```bash
-!update_tmux_status "🔧" "$ISSUE_NUM"
+!# After PR is created, switch from issue number to PR number
+update_tmux_status "🔧" "pr" "$PR_NUM"
 ```
 
 **Order of operations (priority):**
@@ -456,7 +465,7 @@ EOF
 4. **Check CI/CD status:**
    ```bash
    # Update tmux status to "waiting for tests"
-   !update_tmux_status "⏳" "$ISSUE_NUM"
+   !update_tmux_status "⏳" "pr" "$PR_NUM"
 
    # Check CI/CD status and wait for completion
    while true; do
@@ -471,7 +480,7 @@ EOF
    done
 
    # Return to PR maintenance status
-   !update_tmux_status "🔧" "$ISSUE_NUM"
+   !update_tmux_status "🔧" "pr" "$PR_NUM"
    # Now parse output for failed checks
    - If checks pass: proceed to stability monitoring
    - If checks fail: proceed to failure handling
