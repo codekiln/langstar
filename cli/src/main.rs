@@ -6,8 +6,8 @@ pub mod time;
 
 use clap::{Parser, Subcommand};
 use commands::{
-    AssistantCommands, DatasetCommands, EvalCommands, GraphCommands, PromptCommands, QueueCommands,
-    RunsCommands,
+    AssistantCommands, DatasetCommands, EvalCommands, GraphCommands, ModelConfigCommands,
+    PromptCommands, QueueCommands, RunsCommands,
 };
 use config::Config;
 use error::Result;
@@ -59,6 +59,10 @@ enum Commands {
     #[command(subcommand)]
     Eval(EvalCommands),
 
+    /// Manage LangSmith model configurations
+    #[command(name = "model-config", subcommand)]
+    ModelConfig(ModelConfigCommands),
+
     /// Show configuration file location
     Config,
 
@@ -109,6 +113,9 @@ async fn run() -> Result<()> {
         }
         Commands::Eval(eval_cmd) => {
             eval_cmd.execute(&config, format).await?;
+        }
+        Commands::ModelConfig(model_config_cmd) => {
+            model_config_cmd.execute(&config, format).await?;
         }
         Commands::Config => {
             use time::ConfiguredTimezone;
