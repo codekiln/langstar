@@ -152,23 +152,37 @@ impl ModelConfigCommands {
             }
 
             ModelConfigCommands::Get { id } => {
-                // Get a specific config by listing and filtering
+                // Get a specific config by listing and filtering, with pagination
                 // TODO: Add dedicated get_playground_settings method to SDK
-                let params = ListPlaygroundSettingsParams {
-                    limit: Some(100),
-                    offset: Some(0),
-                };
-                let configs = client.list_playground_settings(params).await?;
+                let mut offset = 0;
+                let limit = 100;
+                let mut found_config: Option<PlaygroundSettingsResponse> = None;
 
-                let config = configs
-                    .into_iter()
-                    .find(|c| c.id == *id)
-                    .ok_or_else(|| {
-                        crate::error::CliError::Other(anyhow::anyhow!(
-                            "Model configuration with ID {} not found",
-                            id
-                        ))
-                    })?;
+                loop {
+                    let params = ListPlaygroundSettingsParams {
+                        limit: Some(limit),
+                        offset: Some(offset),
+                    };
+                    let configs = client.list_playground_settings(params).await?;
+
+                    if configs.is_empty() {
+                        break;
+                    }
+
+                    if let Some(config) = configs.into_iter().find(|c| c.id == *id) {
+                        found_config = Some(config);
+                        break;
+                    }
+
+                    offset += limit;
+                }
+
+                let config = found_config.ok_or_else(|| {
+                    crate::error::CliError::Other(anyhow::anyhow!(
+                        "Model configuration with ID {} not found",
+                        id
+                    ))
+                })?;
 
                 match format {
                     OutputFormat::Json => {
@@ -209,6 +223,13 @@ impl ModelConfigCommands {
                 name,
                 description,
             } => {
+                // Validate at least one update field is provided
+                if file.is_none() && name.is_none() && description.is_none() {
+                    return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                        "At least one of --file, --name, or --description must be provided"
+                    )));
+                }
+
                 let request = if let Some(file_path) = file {
                     // Load full update from file
                     let content = fs::read_to_string(file_path)?;
@@ -242,8 +263,9 @@ impl ModelConfigCommands {
             ModelConfigCommands::Delete { id, yes } => {
                 if !yes {
                     // Prompt for confirmation
+                    use std::io::{self, BufRead, Write};
                     eprint!("Delete model configuration {}? [y/N]: ", id);
-                    use std::io::{self, BufRead};
+                    io::stderr().flush()?; // Ensure prompt is displayed immediately
                     let stdin = io::stdin();
                     let mut line = String::new();
                     stdin.lock().read_line(&mut line)?;
@@ -260,5 +282,117 @@ impl ModelConfigCommands {
                 Ok(())
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_extract_provider_and_model_valid_anthropic() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "chat_models", "anthropic", "ChatAnthropic"],
+            "kwargs": {
+                "model": "claude-3-5-sonnet-20241022",
+                "temperature": 0.0
+            }
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "anthropic");
+        assert_eq!(model, "claude-3-5-sonnet-20241022");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_valid_openai() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "chat_models", "openai", "ChatOpenAI"],
+            "kwargs": {
+                "model": "gpt-4-turbo"
+            }
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "openai");
+        assert_eq!(model, "gpt-4-turbo");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_missing_id() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "kwargs": {
+                "model": "some-model"
+            }
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "-");
+        assert_eq!(model, "some-model");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_missing_model() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "chat_models", "anthropic", "ChatAnthropic"],
+            "kwargs": {}
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "anthropic");
+        assert_eq!(model, "-");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_empty_id_array() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": [],
+            "kwargs": {
+                "model": "test-model"
+            }
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "-");
+        assert_eq!(model, "test-model");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_short_id_array() {
+        let settings = json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "chat_models"],
+            "kwargs": {
+                "model": "test-model"
+            }
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "-");
+        assert_eq!(model, "test-model");
+    }
+
+    #[test]
+    fn test_extract_provider_and_model_malformed_structure() {
+        let settings = json!({
+            "some": "other",
+            "structure": true
+        });
+
+        let (provider, model) = extract_provider_and_model(&settings);
+        assert_eq!(provider, "-");
+        assert_eq!(model, "-");
     }
 }
