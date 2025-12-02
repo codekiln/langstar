@@ -34,9 +34,34 @@
 //! ```
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
+
+// ============================================================================
+// Custom Deserializers
+// ============================================================================
+
+/// Custom deserializer for DateTime<Utc> that handles timestamps with or without Z suffix.
+///
+/// LangSmith API returns timestamps without timezone suffix (e.g., "2025-12-02T16:28:50.113929"),
+/// but chrono's default deserializer requires the Z suffix for UTC timestamps.
+///
+/// This deserializer tries to parse the timestamp as-is first, and if that fails due to
+/// "premature end of input", appends "Z" and tries again.
+fn deserialize_flexible_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    DateTime::parse_from_rfc3339(&s)
+        .map(|dt| dt.with_timezone(&Utc))
+        .or_else(|_| {
+            // If parsing fails, try appending Z for UTC
+            DateTime::parse_from_rfc3339(&format!("{}Z", s)).map(|dt| dt.with_timezone(&Utc))
+        })
+        .map_err(serde::de::Error::custom)
+}
 
 // ============================================================================
 // Response Types
@@ -103,9 +128,11 @@ pub struct PlaygroundSettingsResponse {
     pub description: Option<String>,
 
     /// When the settings were created
+    #[serde(deserialize_with = "deserialize_flexible_datetime")]
     pub created_at: DateTime<Utc>,
 
     /// When the settings were last updated
+    #[serde(deserialize_with = "deserialize_flexible_datetime")]
     pub updated_at: DateTime<Utc>,
 }
 
@@ -624,5 +651,92 @@ mod tests {
         assert_eq!(settings.name, Some("Bedrock Claude".to_string()));
         assert_eq!(settings.settings["id"][0], "langchain_aws");
         assert_eq!(settings.settings["kwargs"]["region_name"], "us-east-1");
+    }
+
+    // ========================================================================
+    // Timestamp Format Tests (Issue #509)
+    // ========================================================================
+
+    #[test]
+    fn test_timestamp_with_z_suffix() {
+        // Test that timestamps WITH Z suffix still work (backward compatibility)
+        let json_data = json!({
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "settings": {"key": "value"},
+            "created_at": "2025-12-02T16:28:50.113929Z",
+            "updated_at": "2025-12-02T16:28:50.113929Z"
+        });
+
+        let result: Result<PlaygroundSettingsResponse, _> = serde_json::from_value(json_data);
+        assert!(
+            result.is_ok(),
+            "Timestamp with Z suffix should parse successfully"
+        );
+
+        let settings = result.unwrap();
+        assert_eq!(
+            settings.created_at.to_rfc3339(),
+            "2025-12-02T16:28:50.113929+00:00"
+        );
+    }
+
+    #[test]
+    fn test_timestamp_without_z_suffix() {
+        // Test that timestamps WITHOUT Z suffix work (Issue #509 fix)
+        // LangSmith API returns timestamps in this format
+        let json_data = json!({
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "settings": {"key": "value"},
+            "created_at": "2025-12-02T16:28:50.113929",
+            "updated_at": "2025-12-02T16:28:50.113929"
+        });
+
+        let result: Result<PlaygroundSettingsResponse, _> = serde_json::from_value(json_data);
+        assert!(
+            result.is_ok(),
+            "Timestamp without Z suffix should parse successfully (Issue #509)"
+        );
+
+        let settings = result.unwrap();
+        assert_eq!(
+            settings.created_at.to_rfc3339(),
+            "2025-12-02T16:28:50.113929+00:00"
+        );
+        assert_eq!(
+            settings.updated_at.to_rfc3339(),
+            "2025-12-02T16:28:50.113929+00:00"
+        );
+    }
+
+    #[test]
+    fn test_timestamp_formats_produce_same_result() {
+        // Verify both formats parse to the same DateTime value
+        let with_z = json!({
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "settings": {"key": "value"},
+            "created_at": "2025-12-02T16:28:50.113929Z",
+            "updated_at": "2025-12-02T16:28:50.113929Z"
+        });
+
+        let without_z = json!({
+            "id": "550e8400-e29b-41d4-a716-446655440000",
+            "settings": {"key": "value"},
+            "created_at": "2025-12-02T16:28:50.113929",
+            "updated_at": "2025-12-02T16:28:50.113929"
+        });
+
+        let settings_with_z: PlaygroundSettingsResponse =
+            serde_json::from_value(with_z).unwrap();
+        let settings_without_z: PlaygroundSettingsResponse =
+            serde_json::from_value(without_z).unwrap();
+
+        assert_eq!(
+            settings_with_z.created_at, settings_without_z.created_at,
+            "Both timestamp formats should parse to the same DateTime"
+        );
+        assert_eq!(
+            settings_with_z.updated_at, settings_without_z.updated_at,
+            "Both timestamp formats should parse to the same DateTime"
+        );
     }
 }
