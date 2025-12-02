@@ -197,12 +197,12 @@ pub struct CreateAnnotationQueueRequest {
 
     /// When the queue was created (usually auto-set by server)
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the queue was last updated (usually auto-set by server)
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub updated_at: Option<DateTime<Utc>>,
 
     /// Number of reviewers per item (default: 1)
@@ -336,15 +336,15 @@ pub struct RunWithAnnotationQueueInfo {
     pub queue_run_id: Uuid,
 
     /// When the run was last reviewed
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub last_reviewed_time: Option<DateTime<Utc>>,
 
     /// When the run was added to the queue
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub added_at: Option<DateTime<Utc>>,
 
     /// Effective added time (for sorting/display)
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub effective_added_at: Option<DateTime<Utc>>,
 }
 
