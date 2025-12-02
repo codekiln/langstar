@@ -210,7 +210,8 @@ fn test_model_config_list_with_pagination() {
         "5",
         "--offset",
         "0",
-        "--format", "json",
+        "--format",
+        "json",
     ]);
 
     cmd.assert()
@@ -290,9 +291,11 @@ fn test_model_config_get_nonexistent() {
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "get", fake_id]);
 
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")).or(predicate::str::contains("error")));
+    cmd.assert().failure().stderr(
+        predicate::str::contains("not found")
+            .or(predicate::str::contains("404"))
+            .or(predicate::str::contains("error")),
+    );
 }
 
 #[test]
@@ -303,9 +306,11 @@ fn test_model_config_delete_nonexistent() {
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "delete", fake_id, "--yes"]);
 
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")).or(predicate::str::contains("error")));
+    cmd.assert().failure().stderr(
+        predicate::str::contains("not found")
+            .or(predicate::str::contains("404"))
+            .or(predicate::str::contains("error")),
+    );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
