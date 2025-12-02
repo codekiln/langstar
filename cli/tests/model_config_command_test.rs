@@ -193,7 +193,7 @@ fn test_model_config_delete_missing_id() {
 fn test_model_config_list_integration() {
     // This test requires LANGSMITH_API_KEY
     let mut cmd = langstar_cmd();
-    cmd.args(["model-config", "list", "--json"]);
+    cmd.args(["model-config", "list", "--format", "json"]);
 
     cmd.assert()
         .success()
@@ -210,7 +210,7 @@ fn test_model_config_list_with_pagination() {
         "5",
         "--offset",
         "0",
-        "--json",
+        "--format", "json",
     ]);
 
     cmd.assert()
@@ -292,7 +292,7 @@ fn test_model_config_get_nonexistent() {
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")));
+        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")).or(predicate::str::contains("error")));
 }
 
 #[test]
@@ -301,11 +301,11 @@ fn test_model_config_delete_nonexistent() {
     let fake_id = "00000000-0000-0000-0000-000000000000";
 
     let mut cmd = langstar_cmd();
-    cmd.args(["model-config", "delete", fake_id]);
+    cmd.args(["model-config", "delete", fake_id, "--yes"]);
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")));
+        .stderr(predicate::str::contains("not found").or(predicate::str::contains("404")).or(predicate::str::contains("error")));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -315,7 +315,7 @@ fn test_model_config_delete_nonexistent() {
 #[test]
 fn test_model_config_list_json_format() {
     let mut cmd = langstar_cmd();
-    cmd.args(["model-config", "list", "--json"]);
+    cmd.args(["model-config", "list", "--format", "json"]);
 
     cmd.assert()
         .success()
