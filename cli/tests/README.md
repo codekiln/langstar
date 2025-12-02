@@ -57,13 +57,52 @@ cargo test --workspace --lib
 
 **Integration tests** (requires API access, creates real deployments):
 ```bash
-cargo test --features integration-tests --test assistant_command_test --test graph_command_test -- --test-threads=1 --nocapture
+cargo test --features integration-tests --test assistant_command_test --test graph_command_test -- --nocapture
 ```
 
 **Specific test**:
 ```bash
 cargo test --features integration-tests --test assistant_command_test test_assistant_create_basic -- --nocapture
 ```
+
+### Test Parallelization
+
+Integration tests support **selective parallelization** using the `serial_test` crate:
+
+- **Most tests run in parallel** by default, improving CI performance
+- **Tests with shared resources** are marked with `#[serial]` and run sequentially
+- No need for `--test-threads=1` - the `#[serial]` attribute handles serialization automatically
+
+**Which tests are marked `#[serial]`?**
+
+Tests in `assistant_command_test.rs` that use the shared `TEST_DEPLOYMENT` via `OnceLock`:
+- `test_assistant_create_basic`
+- `test_assistant_lifecycle`
+- `test_assistant_output_formats`
+- `test_deployment_discovery_workflow`
+- `test_error_handling_nonexistent_deployment`
+- `test_assistant_list`
+- `test_assistant_search`
+
+**Why these tests need to be serial:**
+- They share a single `TestDeployment` via `OnceLock<TestDeployment>`
+- Parallel execution could cause resource conflicts on the shared deployment
+- The `#[serial]` attribute ensures only one of these tests runs at a time
+
+**Unique naming for parallel safety:**
+
+Test resources use microsecond timestamps + UUID suffix for uniqueness:
+```rust
+fn generate_test_name(prefix: &str) -> String {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .as_micros();
+    let uuid_suffix = &Uuid::new_v4().to_string()[..8];
+    format!("{}-{}-{}", prefix, timestamp, uuid_suffix)
+}
+```
+
+This prevents name collisions even when tests run concurrently.
 
 ### Running in CI
 
@@ -111,7 +150,7 @@ Tests for LangSmith prompt scoping (org/workspace):
 Tests create and clean up their own resources. No manual setup required.
 
 ### 2. Isolation
-Tests use unique deployment names (timestamp-based) to avoid collisions.
+Tests use unique deployment names (microsecond timestamp + UUID) to avoid collisions.
 
 ### 3. Idempotency
 Tests can be run multiple times without side effects.
@@ -125,6 +164,12 @@ All test deployments are automatically deleted:
 - Unit tests run without API calls (fast feedback)
 - Integration tests run in CI only on PRs/main (avoid excessive API usage)
 - Shared deployments reduce API calls and test time
+- Most tests run in parallel for faster CI execution
+
+### 6. Selective Serialization
+- Tests with shared resources use `#[serial]` attribute
+- Parallel-safe tests run concurrently by default
+- No global `--test-threads=1` required
 
 ## Troubleshooting
 
@@ -166,7 +211,8 @@ export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 **Cause**: Deployments take 1-3 minutes to reach READY status
 
 **Solution**:
-- Use `--test-threads=1` to run tests sequentially (required for assistant tests)
+- Tests with shared resources are marked `#[serial]` and run sequentially automatically
+- Most tests run in parallel, improving overall execution time
 - Consider running only specific tests during development
 - Integration tests are optimized for CI, not local iteration
 
@@ -176,10 +222,12 @@ When adding new integration tests:
 
 1. **Use test fixtures** for deployment management
 2. **Clean up resources** - always delete test deployments
-3. **Use unique names** - include timestamp or random ID
+3. **Use unique names** - use `generate_test_name()` with microsecond + UUID suffix
 4. **Document prerequisites** - list required env vars
 5. **Handle missing credentials** - skip tests gracefully if env vars not set
 6. **Add to CI** - ensure new tests run in GitHub Actions
+7. **Mark shared resource tests** - use `#[serial]` for tests using `OnceLock` or shared state
+8. **Prefer parallelization** - only use `#[serial]` when truly necessary
 
 ## Related Documentation
 

@@ -3,8 +3,10 @@ mod common;
 use assert_cmd::Command;
 use common::fixtures::TestDeployment;
 use escargot::CargoBuild;
+use serial_test::serial;
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 /// Shared test deployment for all assistant tests
 static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
@@ -32,7 +34,10 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 /// - List command blocked by #127 (405 Method Not Allowed)
 /// - Search command blocked by #128 (JSON decode error)
 ///
-/// Run with: cargo test --test assistant_command_test -- --nocapture --test-threads=1
+/// Run with: cargo test --features integration-tests --test assistant_command_test -- --nocapture
+///
+/// Note: Tests using the shared TEST_DEPLOYMENT are marked with #[serial] and run
+/// sequentially to avoid resource conflicts. Other tests can run in parallel.
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
@@ -44,13 +49,18 @@ fn langstar_cmd() -> Command {
     Command::new(bin)
 }
 
-/// Helper to generate unique test names
+/// Helper to generate unique test names using microsecond timestamp + UUID suffix.
+///
+/// This provides high uniqueness for parallel test execution:
+/// - Microsecond precision reduces collision risk during parallel tests
+/// - UUID suffix ensures uniqueness even if timestamps collide
 fn generate_test_name(prefix: &str) -> String {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs();
-    format!("{}-{}", prefix, timestamp)
+        .as_micros();
+    let uuid_suffix = &Uuid::new_v4().to_string()[..8];
+    format!("{}-{}-{}", prefix, timestamp, uuid_suffix)
 }
 
 /// Get or create the shared test deployment
@@ -82,6 +92,7 @@ fn get_test_deployment() -> Option<(String, String)> {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked - GitHub deployments don't have custom_url in source_config (URL only in v1 API)
 fn test_assistant_create_basic() {
     println!("==================================================");
@@ -137,6 +148,7 @@ fn test_assistant_create_basic() {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked by #131 - Delete command has clap flag conflict
 fn test_assistant_lifecycle() {
     println!("==================================================");
@@ -302,6 +314,7 @@ fn test_assistant_lifecycle() {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked by #131 - Delete command needed for cleanup
 fn test_assistant_output_formats() {
     println!("==================================================");
@@ -412,6 +425,7 @@ fn test_assistant_output_formats() {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 fn test_deployment_discovery_workflow() {
     println!("==================================================");
     println!("Test: Deployment Discovery Workflow");
@@ -499,6 +513,7 @@ fn test_error_handling_missing_deployment() {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 fn test_error_handling_nonexistent_deployment() {
     println!("==================================================");
     println!("Test: Error Handling - Nonexistent Deployment");
@@ -554,6 +569,7 @@ fn test_error_handling_nonexistent_deployment() {
 // ==================================================
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked by #127 - List endpoint returns 405
 fn test_assistant_list() {
     println!("==================================================");
@@ -586,6 +602,7 @@ fn test_assistant_list() {
 }
 
 #[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked by #128 - Search endpoint JSON decode error
 fn test_assistant_search() {
     println!("==================================================");
