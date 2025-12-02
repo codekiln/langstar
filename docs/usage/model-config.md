@@ -69,7 +69,7 @@ Model configurations follow the LangChain serialization format (LC-JSON):
 - `settings` (required) - LangChain-serialized model configuration
   - `lc` - LangChain format version (always 1)
   - `type` - Constructor type (always "constructor")
-  - `id` - Array identifying the LangChain class: `[package, module, provider, class]`
+  - `id` - Array identifying the LangChain class: `[package, module, provider, class]` (Note: AWS Bedrock uses a 3-element array: `[package, module, class]`)
   - `kwargs` - Model-specific parameters
 - `options` (optional) - Additional options
   - `requests_per_second` - Rate limit for batch operations
