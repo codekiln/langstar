@@ -4,7 +4,7 @@
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable (or auto-discovery)
 ///
-/// Run with: cargo test --test playground_settings_integration_test -- --ignored --nocapture
+/// Run with: cargo test --test playground_settings_integration_test
 use langstar_sdk::playground_settings::{
     ListPlaygroundSettingsParams, PlaygroundSavedOptions, PlaygroundSettingsCreateRequest,
     PlaygroundSettingsUpdateRequest,
@@ -43,7 +43,6 @@ async fn create_integration_test_client() -> LangchainClient {
 // List Integration Tests
 // ============================================================================
 
-#[ignore]
 #[tokio::test]
 async fn test_list_playground_settings_integration() {
     let client = create_integration_test_client().await;
@@ -79,7 +78,6 @@ async fn test_list_playground_settings_integration() {
     }
 }
 
-#[ignore]
 #[tokio::test]
 async fn test_list_playground_settings_pagination() {
     let client = create_integration_test_client().await;
@@ -127,7 +125,6 @@ async fn test_list_playground_settings_pagination() {
 // Create/Update/Delete Integration Tests
 // ============================================================================
 
-#[ignore]
 #[tokio::test]
 async fn test_create_update_delete_cycle() {
     let client = create_integration_test_client().await;
@@ -226,7 +223,6 @@ async fn test_create_update_delete_cycle() {
 // Error Handling Integration Tests
 // ============================================================================
 
-#[ignore]
 #[tokio::test]
 async fn test_update_nonexistent_setting() {
     let client = create_integration_test_client().await;
@@ -247,7 +243,6 @@ async fn test_update_nonexistent_setting() {
     println!("✓ Update of nonexistent setting failed as expected");
 }
 
-#[ignore]
 #[tokio::test]
 async fn test_delete_nonexistent_setting() {
     let client = create_integration_test_client().await;
@@ -265,7 +260,6 @@ async fn test_delete_nonexistent_setting() {
 // Validation Tests
 // ============================================================================
 
-#[ignore]
 #[tokio::test]
 async fn test_create_with_various_providers() {
     let client = create_integration_test_client().await;
@@ -344,7 +338,6 @@ async fn test_create_with_various_providers() {
 // Partial Update Tests
 // ============================================================================
 
-#[ignore]
 #[tokio::test]
 async fn test_partial_update_name_only() {
     let client = create_integration_test_client().await;

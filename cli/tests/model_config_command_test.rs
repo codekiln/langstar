@@ -190,9 +190,8 @@ fn test_model_config_delete_missing_id() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore]
 fn test_model_config_list_integration() {
-    // This test requires LANGSMITH_API_KEY and will be run with --ignored flag
+    // This test requires LANGSMITH_API_KEY
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "list", "--json"]);
 
@@ -202,7 +201,6 @@ fn test_model_config_list_integration() {
 }
 
 #[test]
-#[ignore]
 fn test_model_config_list_with_pagination() {
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -221,7 +219,6 @@ fn test_model_config_list_with_pagination() {
 }
 
 #[test]
-#[ignore]
 fn test_model_config_create_update_delete_cycle() {
     use std::io::Write;
     use tempfile::NamedTempFile;
@@ -286,7 +283,6 @@ fn test_model_config_create_update_delete_cycle() {
 }
 
 #[test]
-#[ignore]
 fn test_model_config_get_nonexistent() {
     // Try to get a non-existent config (random UUID)
     let fake_id = "00000000-0000-0000-0000-000000000000";
@@ -300,7 +296,6 @@ fn test_model_config_get_nonexistent() {
 }
 
 #[test]
-#[ignore]
 fn test_model_config_delete_nonexistent() {
     // Try to delete a non-existent config (random UUID)
     let fake_id = "00000000-0000-0000-0000-000000000000";
@@ -318,7 +313,6 @@ fn test_model_config_delete_nonexistent() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
-#[ignore]
 fn test_model_config_list_json_format() {
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "list", "--json"]);
@@ -329,7 +323,6 @@ fn test_model_config_list_json_format() {
 }
 
 #[test]
-#[ignore]
 fn test_model_config_list_table_format() {
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "list"]);
