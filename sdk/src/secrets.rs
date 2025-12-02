@@ -179,12 +179,10 @@ pub struct SecretUpsert {
     /// The secret value, or None to delete
     ///
     /// - `Some(value)`: Creates or updates the secret with the given value
-    /// - `None`: Deletes the secret (serializes as `null` in JSON)
+    /// - `None`: Deletes the secret (serializes as explicit `null` in JSON)
     ///
-    /// The `skip_serializing_if` attribute ensures that when `value` is `None`,
-    /// it's serialized as `{"key": "...", "value": null}` rather than omitting
-    /// the field entirely.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// When `value` is `None`, it serializes as `{"key": "...", "value": null}`.
+    /// The API requires explicit `null` to delete secrets (not an omitted field).
     pub value: Option<String>,
 }
 
@@ -305,8 +303,8 @@ mod tests {
         let json = serde_json::to_value(&secret).unwrap();
 
         assert_eq!(json["key"], "OLD_API_KEY");
-        // When value is None, skip_serializing_if should omit the field
-        assert!(!json.as_object().unwrap().contains_key("value"));
+        // When value is None, it must serialize as explicit null (API requirement)
+        assert_eq!(json["value"], serde_json::Value::Null);
     }
 
     #[test]
@@ -350,7 +348,7 @@ mod tests {
         assert_eq!(array[1]["key"], "API_KEY_2");
         assert_eq!(array[1]["value"], "value2");
         assert_eq!(array[2]["key"], "OLD_KEY");
-        assert!(!array[2].as_object().unwrap().contains_key("value"));
+        assert_eq!(array[2]["value"], serde_json::Value::Null);
     }
 
     #[test]
