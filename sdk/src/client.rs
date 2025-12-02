@@ -486,6 +486,72 @@ impl LangchainClient {
             });
         }
 
+        // DEBUG: Log response details before parsing (for #509 investigation)
+        // Check for LANGSTAR_DEBUG_HTTP environment variable
+        if std::env::var("LANGSTAR_DEBUG_HTTP").is_ok() {
+            eprintln!("=== LANGSTAR HTTP DEBUG ===");
+            eprintln!("Status: {}", status);
+
+            // Log headers
+            eprintln!("Headers:");
+            for (name, value) in response.headers() {
+                eprintln!("  {}: {:?}", name, value);
+            }
+
+            // Get response body as text first to inspect it
+            // NOTE: This consumes the response, so we parse from the captured text below
+            // and return early (line 546) to avoid trying to use the consumed response
+            let body_text = response.text().await?;
+            eprintln!("Body length: {} bytes", body_text.len());
+
+            // Write full response to file for detailed analysis
+            // Use environment variable override or platform temp dir for cross-platform support
+            let debug_path = std::env::var("LANGSTAR_DEBUG_FILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::env::temp_dir().join("langstar_debug_response.json"));
+            if let Ok(mut file) = std::fs::File::create(&debug_path) {
+                use std::io::Write;
+                let _ = file.write_all(body_text.as_bytes());
+                eprintln!("Full response written to: {}", debug_path.display());
+            }
+
+            eprintln!(
+                "Body preview (first 500 chars): {}",
+                if body_text.len() > 500 {
+                    &body_text[..500]
+                } else {
+                    &body_text
+                }
+            );
+            eprintln!(
+                "Body preview (last 100 chars): {}",
+                if body_text.len() > 100 {
+                    &body_text[body_text.len() - 100..]
+                } else {
+                    &body_text
+                }
+            );
+            eprintln!("===========================");
+
+            // Parse the body we already retrieved
+            let data: T = serde_json::from_str(&body_text).map_err(|e| {
+                eprintln!("!!! JSON PARSE ERROR !!!");
+                eprintln!("Error: {}", e);
+                eprintln!("Line: {}, Column: {}", e.line(), e.column());
+                if let Some(pos) = body_text.char_indices().nth(e.column().saturating_sub(1)) {
+                    let context_start = pos.0.saturating_sub(50);
+                    let context_end = (pos.0 + 50).min(body_text.len());
+                    eprintln!(
+                        "Context around error: ...{}...",
+                        &body_text[context_start..context_end]
+                    );
+                }
+                eprintln!("!!! END ERROR !!!");
+                e
+            })?;
+            return Ok(data);
+        }
+
         let data = response.json::<T>().await?;
         Ok(data)
     }
