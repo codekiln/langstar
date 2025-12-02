@@ -839,7 +839,14 @@ mod tests {
                 "status": "success",
                 "session_id": "323e4567-e89b-12d3-a456-426614174002",
                 "app_path": "/chat",
-                "total_tokens": {}
+                "total_tokens": {},
+                "start_time": null,
+                "end_time": null,
+                "first_token_time": null,
+                "last_queued_at": null,
+                "trace_first_received_at": null,
+                "trace_min_start_time": null,
+                "trace_max_start_time": null
             }}"#,
             name, total_tokens
         );
@@ -858,7 +865,12 @@ mod tests {
                 "session_id": "323e4567-e89b-12d3-a456-426614174002",
                 "app_path": "/chat",
                 "start_time": "{}",
-                "end_time": "{}"
+                "end_time": "{}",
+                "first_token_time": null,
+                "last_queued_at": null,
+                "trace_first_received_at": null,
+                "trace_min_start_time": null,
+                "trace_max_start_time": null
             }}"#,
             start, end
         );

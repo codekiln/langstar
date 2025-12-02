@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::serde_utils::deserialize_flexible_datetime_opt;
+
 /// Run type enum matching OpenAPI spec `RunTypeEnum`.
 ///
 /// Represents the type of operation a run performed.
@@ -98,15 +100,19 @@ pub struct Run {
     // Timing fields (optional)
     // ═══════════════════════════════════════════════════════════════════════
     /// When the run started
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub start_time: Option<DateTime<Utc>>,
 
     /// When the run ended
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub end_time: Option<DateTime<Utc>>,
 
     /// When the first token was received (for streaming LLM calls)
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub first_token_time: Option<DateTime<Utc>>,
 
     /// When the run was last queued
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub last_queued_at: Option<DateTime<Utc>>,
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -232,12 +238,15 @@ pub struct Run {
     pub trace_upgrade: bool,
 
     /// When the trace was first received
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub trace_first_received_at: Option<DateTime<Utc>>,
 
     /// Minimum start time in the trace
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub trace_min_start_time: Option<DateTime<Utc>>,
 
     /// Maximum start time in the trace
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub trace_max_start_time: Option<DateTime<Utc>>,
 
     /// Thread ID for conversation tracking
@@ -339,11 +348,19 @@ pub struct QueryRunsRequest {
     pub execution_order: Option<i32>,
 
     /// Filter runs starting after this time
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub start_time: Option<DateTime<Utc>>,
 
     /// Filter runs ending before this time
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub end_time: Option<DateTime<Utc>>,
 
     /// Filter by error status

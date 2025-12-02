@@ -34,34 +34,11 @@
 //! ```
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-// ============================================================================
-// Custom Deserializers
-// ============================================================================
-
-/// Custom deserializer for DateTime<Utc> that handles timestamps with or without Z suffix.
-///
-/// LangSmith API returns timestamps without timezone suffix (e.g., "2025-12-02T16:28:50.113929"),
-/// but chrono's default deserializer requires the Z suffix for UTC timestamps.
-///
-/// This deserializer tries to parse the timestamp as-is first, and if that fails due to
-/// "premature end of input", appends "Z" and tries again.
-fn deserialize_flexible_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    DateTime::parse_from_rfc3339(&s)
-        .map(|dt| dt.with_timezone(&Utc))
-        .or_else(|_| {
-            // If parsing fails, try appending Z for UTC
-            DateTime::parse_from_rfc3339(&format!("{}Z", s)).map(|dt| dt.with_timezone(&Utc))
-        })
-        .map_err(serde::de::Error::custom)
-}
+use crate::serde_utils::deserialize_flexible_datetime;
 
 // ============================================================================
 // Response Types

@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::serde_utils::deserialize_flexible_datetime_opt;
+
 // ============================================================================
 // Feedback Types
 // ============================================================================
@@ -255,11 +257,19 @@ pub struct FeedbackCreate {
     pub comparative_experiment_id: Option<Uuid>,
 
     /// Custom creation timestamp
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// Custom modification timestamp
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Whether this feedback represents an error
@@ -312,15 +322,27 @@ pub struct Feedback {
     pub trace_id: Option<Uuid>,
 
     /// When the feedback was created
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the feedback was last modified
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Run start time (for queries)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub start_time: Option<DateTime<Utc>>,
 
     /// Feedback source information

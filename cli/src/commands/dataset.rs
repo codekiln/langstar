@@ -734,6 +734,8 @@ mod tests {
             "example_count": 100,
             "session_count": 5,
             "modified_at": "2024-01-01T12:00:00Z",
+            "created_at": "2024-01-01T10:00:00Z",
+            "last_session_start_time": null,
             "description": "A very long description that should be truncated for display purposes"
         }"#;
 

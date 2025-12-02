@@ -27,6 +27,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::serde_utils::{deserialize_flexible_datetime, deserialize_flexible_datetime_opt};
+
 /// Queue type enum for annotation queues.
 ///
 /// # API Reference
@@ -95,9 +97,11 @@ pub struct AnnotationQueue {
     pub description: Option<String>,
 
     /// When the queue was created
+    #[serde(deserialize_with = "deserialize_flexible_datetime")]
     pub created_at: DateTime<Utc>,
 
     /// When the queue was last updated
+    #[serde(deserialize_with = "deserialize_flexible_datetime")]
     pub updated_at: DateTime<Utc>,
 
     /// Number of reviewers required per item (default: 1)
@@ -192,11 +196,19 @@ pub struct CreateAnnotationQueueRequest {
     pub queue_type: Option<QueueType>,
 
     /// When the queue was created (usually auto-set by server)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the queue was last updated (usually auto-set by server)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub updated_at: Option<DateTime<Utc>>,
 
     /// Number of reviewers per item (default: 1)
@@ -330,12 +342,15 @@ pub struct RunWithAnnotationQueueInfo {
     pub queue_run_id: Uuid,
 
     /// When the run was last reviewed
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub last_reviewed_time: Option<DateTime<Utc>>,
 
     /// When the run was added to the queue
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub added_at: Option<DateTime<Utc>>,
 
     /// Effective added time (for sorting/display)
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub effective_added_at: Option<DateTime<Utc>>,
 }
 
