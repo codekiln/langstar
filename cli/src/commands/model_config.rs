@@ -35,7 +35,7 @@ pub enum ModelConfigCommands {
     /// Create a new model configuration
     Create {
         /// Path to JSON file containing configuration
-        #[arg(short, long)]
+        #[arg(long)]
         file: std::path::PathBuf,
     },
 
@@ -45,7 +45,7 @@ pub enum ModelConfigCommands {
         id: Uuid,
 
         /// Path to JSON file containing updates
-        #[arg(short, long, conflicts_with_all = ["name", "description"])]
+        #[arg(long, conflicts_with_all = ["name", "description"])]
         file: Option<std::path::PathBuf>,
 
         /// Update only the name
