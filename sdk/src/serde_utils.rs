@@ -59,6 +59,7 @@ mod tests {
     struct TestStructOpt {
         #[serde(
             skip_serializing_if = "Option::is_none",
+            default,
             deserialize_with = "deserialize_flexible_datetime_opt"
         )]
         timestamp: Option<DateTime<Utc>>,
