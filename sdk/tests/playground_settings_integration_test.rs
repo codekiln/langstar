@@ -326,6 +326,12 @@ async fn test_create_with_various_providers() {
         }
     }
 
+    // Ensure at least one configuration was created successfully
+    assert!(
+        !created_ids.is_empty(),
+        "At least one provider configuration should be created successfully"
+    );
+
     // Cleanup: delete all created configs
     for id in created_ids {
         if let Err(e) = client.delete_playground_settings(id).await {

@@ -143,7 +143,7 @@ fn test_model_config_get_invalid_uuid() {
 
     cmd.assert()
         .failure()
-        .stderr(predicate::str::contains("invalid").or(predicate::str::contains("uuid")));
+        .stderr(predicate::str::contains("invalid value 'not-a-uuid'"));
 }
 
 #[test]
@@ -274,7 +274,15 @@ fn test_model_config_create_update_delete_cycle() {
         "CLI Test Config - Updated",
     ]);
 
-    update_cmd.assert().success();
+    // Verify the update was successful and name changed
+    let update_output = update_cmd.assert().success().get_output().stdout.clone();
+    let update_json: serde_json::Value =
+        serde_json::from_slice(&update_output).expect("Failed to parse update output as JSON");
+    assert_eq!(
+        update_json["name"].as_str(),
+        Some("CLI Test Config - Updated"),
+        "Update should change the name"
+    );
 
     // Delete the configuration
     let mut delete_cmd = langstar_cmd();
