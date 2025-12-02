@@ -725,8 +725,7 @@ mod tests {
             "updated_at": "2025-12-02T16:28:50.113929"
         });
 
-        let settings_with_z: PlaygroundSettingsResponse =
-            serde_json::from_value(with_z).unwrap();
+        let settings_with_z: PlaygroundSettingsResponse = serde_json::from_value(with_z).unwrap();
         let settings_without_z: PlaygroundSettingsResponse =
             serde_json::from_value(without_z).unwrap();
 

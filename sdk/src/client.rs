@@ -509,26 +509,40 @@ impl LangchainClient {
                 eprintln!("Full response written to: /tmp/langstar_debug_response.json");
             }
 
-            eprintln!("Body preview (first 500 chars): {}",
-                if body_text.len() > 500 { &body_text[..500] } else { &body_text });
-            eprintln!("Body preview (last 100 chars): {}",
-                if body_text.len() > 100 { &body_text[body_text.len()-100..] } else { &body_text });
+            eprintln!(
+                "Body preview (first 500 chars): {}",
+                if body_text.len() > 500 {
+                    &body_text[..500]
+                } else {
+                    &body_text
+                }
+            );
+            eprintln!(
+                "Body preview (last 100 chars): {}",
+                if body_text.len() > 100 {
+                    &body_text[body_text.len() - 100..]
+                } else {
+                    &body_text
+                }
+            );
             eprintln!("===========================");
 
             // Parse the body we already retrieved
-            let data: T = serde_json::from_str(&body_text)
-                .map_err(|e| {
-                    eprintln!("!!! JSON PARSE ERROR !!!");
-                    eprintln!("Error: {}", e);
-                    eprintln!("Line: {}, Column: {}", e.line(), e.column());
-                    if let Some(pos) = body_text.char_indices().nth(e.column().saturating_sub(1)) {
-                        let context_start = pos.0.saturating_sub(50);
-                        let context_end = (pos.0 + 50).min(body_text.len());
-                        eprintln!("Context around error: ...{}...", &body_text[context_start..context_end]);
-                    }
-                    eprintln!("!!! END ERROR !!!");
-                    e
-                })?;
+            let data: T = serde_json::from_str(&body_text).map_err(|e| {
+                eprintln!("!!! JSON PARSE ERROR !!!");
+                eprintln!("Error: {}", e);
+                eprintln!("Line: {}, Column: {}", e.line(), e.column());
+                if let Some(pos) = body_text.char_indices().nth(e.column().saturating_sub(1)) {
+                    let context_start = pos.0.saturating_sub(50);
+                    let context_end = (pos.0 + 50).min(body_text.len());
+                    eprintln!(
+                        "Context around error: ...{}...",
+                        &body_text[context_start..context_end]
+                    );
+                }
+                eprintln!("!!! END ERROR !!!");
+                e
+            })?;
             return Ok(data);
         }
 
