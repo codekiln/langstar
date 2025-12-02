@@ -499,14 +499,20 @@ impl LangchainClient {
             }
 
             // Get response body as text first to inspect it
+            // NOTE: This consumes the response, so we parse from the captured text below
+            // and return early (line 546) to avoid trying to use the consumed response
             let body_text = response.text().await?;
             eprintln!("Body length: {} bytes", body_text.len());
 
             // Write full response to file for detailed analysis
-            if let Ok(mut file) = std::fs::File::create("/tmp/langstar_debug_response.json") {
+            // Use environment variable override or platform temp dir for cross-platform support
+            let debug_path = std::env::var("LANGSTAR_DEBUG_FILE")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_else(|_| std::env::temp_dir().join("langstar_debug_response.json"));
+            if let Ok(mut file) = std::fs::File::create(&debug_path) {
                 use std::io::Write;
                 let _ = file.write_all(body_text.as_bytes());
-                eprintln!("Full response written to: /tmp/langstar_debug_response.json");
+                eprintln!("Full response written to: {}", debug_path.display());
             }
 
             eprintln!(
