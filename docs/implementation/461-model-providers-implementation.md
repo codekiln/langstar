@@ -446,6 +446,7 @@ Potential improvements for future milestones:
 1. **Dynamic settings**: LC-JSON is provider-specific; used `serde_json::Value` for flexibility
 2. **No GET endpoint**: Had to implement list+pagination for single-config lookup
 3. **Provider extraction**: Parsing provider/model from LC-JSON for table display required careful handling of edge cases
+4. **Integration test automation**: Challenges with CI test execution in prior milestones. See related issues: #477 (Testing phase), #503 (CI test fixes), #505 (Test isolation improvements)
 
 ### Best Practices Applied
 

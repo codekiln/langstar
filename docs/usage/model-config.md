@@ -330,6 +330,8 @@ langstar model-config create --file bedrock-config.json
 
 ## Example Workflows
 
+> **Note:** These workflows demonstrate how to use the implemented `model-config` commands. All commands shown here are fully implemented and functional.
+
 ### Workflow 1: Set Up Model Configs for Evaluation
 
 Create multiple model configurations to compare performance:
@@ -481,26 +483,6 @@ Secrets must exist before being referenced in configs:
 1. Create the secret in workspace secrets first
 2. Then reference it in the model config
 3. Secret names in configs must match exactly
-
-### Provider-Specific Issues
-
-**Anthropic:**
-- Ensure `ANTHROPIC_API_KEY` secret exists
-- Verify model name matches current model IDs
-
-**OpenAI:**
-- Ensure `OPENAI_API_KEY` secret exists
-- Check model availability in your OpenAI account
-
-**Azure OpenAI:**
-- Replace `<resource-name>` with actual resource
-- Verify deployment name matches Azure portal
-- Check API version is supported
-
-**Bedrock:**
-- AWS credentials via IAM, not LangSmith secrets
-- Ensure model access is enabled in Bedrock console
-- Verify region has model availability
 
 ## API Reference
 
