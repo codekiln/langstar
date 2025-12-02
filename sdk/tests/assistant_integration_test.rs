@@ -1,14 +1,20 @@
 use langstar_sdk::{AuthConfig, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
-/// Helper function to generate unique test names using timestamp
+/// Helper function to generate unique test names using microsecond timestamp + UUID suffix.
+///
+/// This provides high uniqueness for parallel test execution:
+/// - Microsecond precision reduces collision risk during parallel tests
+/// - UUID suffix ensures uniqueness even if timestamps collide
 fn generate_test_name(prefix: &str) -> String {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs();
-    format!("{}-{}", prefix, timestamp)
+        .as_micros();
+    let uuid_suffix = &Uuid::new_v4().to_string()[..8];
+    format!("{}-{}-{}", prefix, timestamp, uuid_suffix)
 }
 
 /// Helper function to discover the test deployment and get its custom URL

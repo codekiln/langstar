@@ -82,7 +82,9 @@ jobs:
       - name: Run integration tests
         # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
-        run: cargo test -p langstar --features integration-tests -- --test-threads=1 --nocapture
+        # Tests with shared resources use #[serial] attribute from serial_test crate
+        # Most tests run in parallel; only #[serial] tests run sequentially
+        run: cargo test -p langstar --features integration-tests -- --nocapture
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
