@@ -2014,6 +2014,124 @@ impl LangchainClient {
         let request = self.langsmith_delete(&path)?;
         self.execute_status_only_request(request).await
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Workspace Secrets API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// List all workspace secret keys.
+    ///
+    /// Returns the names of all secrets configured for the current workspace.
+    ///
+    /// # Security
+    ///
+    /// Returns ONLY keys, never values. Secret values are never exposed through
+    /// the API.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let keys = client.list_workspace_secrets().await?;
+    /// for key in keys {
+    ///     println!("Secret: {}", key.key);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/workspaces/current/secrets`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn list_workspace_secrets(&self) -> Result<Vec<crate::secrets::SecretKey>> {
+        let request = self.langsmith_get("/api/v1/workspaces/current/secrets")?;
+        self.execute(request).await
+    }
+
+    /// Create or update workspace secrets (upsert operation).
+    ///
+    /// This endpoint handles both creating new secrets and updating existing ones.
+    /// If a secret key already exists, its value is updated. Otherwise, a new
+    /// secret is created.
+    ///
+    /// # Permissions
+    ///
+    /// Requires API key with `workspaces:manage` permission.
+    ///
+    /// # Security
+    ///
+    /// - Secret values are encrypted at rest
+    /// - Values are never returned by any API endpoint
+    /// - Use `SecretUpsert::set()` to create/update secrets
+    /// - Use `SecretUpsert::delete()` (value: null) to delete secrets
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use langstar_sdk::secrets::SecretUpsert;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let secrets = vec![
+    ///     SecretUpsert::set("ANTHROPIC_API_KEY", "sk-ant-..."),
+    ///     SecretUpsert::set("OPENAI_API_KEY", "sk-..."),
+    /// ];
+    /// client.upsert_workspace_secrets(secrets).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/workspaces/current/secrets`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn upsert_workspace_secrets(
+        &self,
+        secrets: Vec<crate::secrets::SecretUpsert>,
+    ) -> Result<()> {
+        let request_builder = self
+            .langsmith_post("/api/v1/workspaces/current/secrets")?
+            .json(&secrets);
+        self.execute_status_only_request(request_builder).await
+    }
+
+    /// Delete a workspace secret.
+    ///
+    /// Convenience method that calls `upsert_workspace_secrets` with a null value
+    /// to delete the specified secret.
+    ///
+    /// # Permissions
+    ///
+    /// Requires API key with `workspaces:manage` permission.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// client.delete_workspace_secret("OLD_API_KEY").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/workspaces/current/secrets` (with value: null)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_workspace_secret(&self, key: impl Into<String>) -> Result<()> {
+        let secrets = vec![crate::secrets::SecretUpsert::delete(key)];
+        self.upsert_workspace_secrets(secrets).await
+    }
 }
 
 /// Generic response wrapper for paginated API responses
