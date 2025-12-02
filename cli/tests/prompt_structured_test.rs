@@ -2,10 +2,17 @@
 ///
 /// These tests verify the `langstar prompt push/pull` commands with --schema flag.
 ///
-/// Prerequisites:
+/// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
-/// - LANGSMITH_WORKSPACE_ID environment variable (required per CLI test pattern)
+/// - LANGSMITH_ORGANIZATION_ID environment variable
+/// - LANGSMITH_WORKSPACE_ID must NOT be set (workspace scoping uses different repo handle format)
 /// - Test repository: codekiln/langstar-structured-test (auto-created if needed)
+///
+/// **Why workspace scoping is incompatible:**
+/// These tests use the `owner/repo` format (e.g., `codekiln/langstar-structured-test`) for
+/// repository handles. When LANGSMITH_WORKSPACE_ID is set, the API expects repo handles
+/// without the owner prefix (just `langstar-structured-test`), as the owner is implicit
+/// from the workspace context. The `/` character becomes invalid in workspace scope.
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
@@ -28,9 +35,42 @@ fn get_langstar_bin() -> std::path::PathBuf {
         .to_owned()
 }
 
-/// Helper to check if required environment variables are set
+/// Helper to check if required environment variables are set for workspace-scoped tests.
+///
+/// These tests require organization-only scoping (not workspace scoping) because
+/// they use the `owner/repo` format for repository handles. When LANGSMITH_WORKSPACE_ID
+/// is set, the API expects repo handles without the owner prefix, which breaks these tests.
+///
+/// Returns true only if:
+/// - LANGSMITH_API_KEY is set
+/// - LANGSMITH_ORGANIZATION_ID is set
+/// - LANGSMITH_WORKSPACE_ID is NOT set (workspace scope uses different repo handle format)
 fn check_env_vars() -> bool {
-    std::env::var("LANGSMITH_API_KEY").is_ok() && std::env::var("LANGSMITH_WORKSPACE_ID").is_ok()
+    let has_api_key = std::env::var("LANGSMITH_API_KEY").is_ok();
+    let has_org_id = std::env::var("LANGSMITH_ORGANIZATION_ID").is_ok();
+    let has_workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").is_ok();
+
+    if !has_api_key {
+        return false;
+    }
+
+    // These tests use owner/repo format which is incompatible with workspace scoping
+    // When workspace_id is set, repo creation expects just the repo name without owner prefix
+    if has_workspace_id {
+        println!("⚠️  Skipping test: LANGSMITH_WORKSPACE_ID is set");
+        println!(
+            "   These tests use owner/repo format which is incompatible with workspace scoping"
+        );
+        println!("   Either unset LANGSMITH_WORKSPACE_ID or use organization-only scoping");
+        return false;
+    }
+
+    if !has_org_id {
+        println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
+        return false;
+    }
+
+    true
 }
 
 /// Helper to create a temporary valid JSON schema file
