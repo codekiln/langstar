@@ -270,8 +270,8 @@ Create a configuration for Azure OpenAI service:
       "model": "gpt-4",
       "temperature": 0.5,
       "azure_endpoint": "https://<resource-name>.openai.azure.com/",
-      "api_version": "2024-02-15-preview",
-      "azure_ad_token": {
+      "openai_api_version": "2024-02-15-preview",
+      "openai_api_key": {
         "lc": 1,
         "type": "secret",
         "id": ["AZURE_OPENAI_API_KEY"]
@@ -303,9 +303,9 @@ Create a configuration for AWS Bedrock models:
   "settings": {
     "lc": 1,
     "type": "constructor",
-    "id": ["langchain_aws", "chat_models", "bedrock_converse", "ChatBedrockConverse"],
+    "id": ["langchain_aws", "chat_models", "ChatBedrockConverse"],
     "kwargs": {
-      "model": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0",
       "region_name": "us-east-1",
       "temperature": 0.0,
       "max_tokens": 4096
