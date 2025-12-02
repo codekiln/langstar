@@ -80,7 +80,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run integration tests
-        run: cargo test --features integration-tests --test assistant_command_test --test graph_command_test -- --test-threads=1 --nocapture
+        # Runs ALL CLI integration tests in the langstar package
+        # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
+        run: cargo test -p langstar --features integration-tests -- --test-threads=1 --nocapture
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
