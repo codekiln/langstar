@@ -130,8 +130,11 @@ pub struct Dataset {
     pub session_count: Option<i64>,
 
     /// When the dataset was last modified (not present in PATCH responses)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Optional description
@@ -139,8 +142,11 @@ pub struct Dataset {
     pub description: Option<String>,
 
     /// When the dataset was created
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// Data type (kv, llm, chat)
@@ -164,8 +170,11 @@ pub struct Dataset {
     pub transformations: Option<Vec<DatasetTransformation>>,
 
     /// When the last session started
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub last_session_start_time: Option<DateTime<Utc>>,
 
     /// Additional metadata (arbitrary JSON)
@@ -225,8 +234,11 @@ pub struct DatasetCreate {
     pub transformations: Option<Vec<DatasetTransformation>>,
 
     /// When the dataset was created (usually auto-set by server)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// Additional metadata
@@ -354,13 +366,19 @@ pub struct Example {
     pub metadata: Option<Value>,
 
     /// When the example was created
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the example was last modified
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Attachment URLs (presigned URLs for binary data)
@@ -430,8 +448,11 @@ pub struct ExampleCreate {
     pub use_legacy_message_format: Option<bool>,
 
     /// Custom creation timestamp
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt"
+    )]
     pub created_at: Option<DateTime<Utc>>,
 }
 
