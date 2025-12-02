@@ -368,6 +368,44 @@ The `--filter` option accepts LangSmith filter expressions:
 - `has(array_field, value)` - Array contains
 - `and(expr1, expr2)` / `or(expr1, expr2)` - Logical operators
 
+#### Model Configurations (Playground Settings)
+
+Manage LangSmith model provider configurations for use in the Prompt Hub playground.
+
+```bash
+# List all model configurations
+langstar model-config list
+langstar model-config list --limit 50
+
+# Get details of a specific configuration
+langstar model-config get <config-id>
+
+# Create a new model configuration from JSON file
+langstar model-config create --file config.json
+
+# Update an existing configuration
+langstar model-config update <config-id> --file updates.json
+
+# Update just the name or description
+langstar model-config update <config-id> --name "New Name"
+langstar model-config update <config-id> --description "Updated description"
+
+# Delete a configuration
+langstar model-config delete <config-id>
+langstar model-config delete <config-id> --yes  # Skip confirmation
+
+# JSON output
+langstar model-config list --format json
+```
+
+**Supported Providers:**
+- `anthropic` - Anthropic Claude models
+- `openai` - OpenAI models
+- `azure_openai` - Azure OpenAI service
+- `bedrock` - AWS Bedrock models
+
+For detailed examples and JSON format reference, see [docs/usage/model-config.md](./docs/usage/model-config.md).
+
 #### Annotation Queues
 
 Manage LangSmith annotation queues for human review and labeling workflows.
