@@ -196,13 +196,11 @@ pub struct CreateAnnotationQueueRequest {
     pub queue_type: Option<QueueType>,
 
     /// When the queue was created (usually auto-set by server)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(skip_serializing_if = "Option::is_none", default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the queue was last updated (usually auto-set by server)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    #[serde(skip_serializing_if = "Option::is_none", default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub updated_at: Option<DateTime<Utc>>,
 
     /// Number of reviewers per item (default: 1)

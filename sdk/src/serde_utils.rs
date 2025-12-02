@@ -122,6 +122,17 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_datetime_opt_missing_field() {
+        let json = r#"{}"#;
+        let result: Result<TestStructOpt, _> = serde_json::from_str(json);
+        assert!(
+            result.is_ok(),
+            "Should handle missing optional timestamp field"
+        );
+        assert!(result.unwrap().timestamp.is_none());
+    }
+
+    #[test]
     fn test_datetime_values_match() {
         // Verify that timestamps with and without timezone parse to the same value
         let json_with_tz = r#"{"timestamp": "2025-09-15T18:00:09.568206+00:00"}"#;
