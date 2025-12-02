@@ -55,7 +55,7 @@ jobs:
           # Get test deployments as JSON with error handling, excluding cli-test-deployment-* deployments
           if ! raw_deployments=$(./target/release/langstar graph list \
             --name-contains "test-deployment-" \
-            --format json 2>&1); then
+            --format json); then
             echo "❌ Error: Failed to list deployments"
             echo "$raw_deployments"
             exit 1
