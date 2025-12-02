@@ -37,6 +37,7 @@ pub mod organization;
 pub mod playground_settings;
 pub mod prompts;
 pub mod runs;
+pub mod secrets;
 
 // Re-export commonly used types
 pub use annotation_queues::{
@@ -79,3 +80,4 @@ pub use prompts::{
     PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt, Visibility,
 };
 pub use runs::{Cursors, QueryRunsRequest, QueryRunsResponse, Run, RunDateOrder, RunType};
+pub use secrets::{SecretKey, SecretUpsert};
