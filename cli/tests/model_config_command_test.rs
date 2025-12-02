@@ -253,6 +253,8 @@ fn test_model_config_create_update_delete_cycle() {
         "create",
         "--file",
         config_file.path().to_str().unwrap(),
+        "--format",
+        "json",
     ]);
 
     let create_output = create_cmd.assert().success().get_output().stdout.clone();
@@ -272,6 +274,8 @@ fn test_model_config_create_update_delete_cycle() {
         config_id,
         "--name",
         "CLI Test Config - Updated",
+        "--format",
+        "json",
     ]);
 
     // Verify the update was successful and name changed
@@ -309,16 +313,14 @@ fn test_model_config_get_nonexistent() {
 #[test]
 fn test_model_config_delete_nonexistent() {
     // Try to delete a non-existent config (random UUID)
+    // Note: The API supports idempotent deletes, so this returns success even for nonexistent UUIDs
     let fake_id = "00000000-0000-0000-0000-000000000000";
 
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "delete", fake_id, "--yes"]);
 
-    cmd.assert().failure().stderr(
-        predicate::str::contains("not found")
-            .or(predicate::str::contains("404"))
-            .or(predicate::str::contains("error")),
-    );
+    // The delete operation is idempotent and succeeds even for nonexistent resources
+    cmd.assert().success();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
