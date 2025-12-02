@@ -38,6 +38,7 @@ pub mod playground_settings;
 pub mod prompts;
 pub mod runs;
 pub mod secrets;
+pub mod serde_utils;
 
 // Re-export commonly used types
 pub use annotation_queues::{

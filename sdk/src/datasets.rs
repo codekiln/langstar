@@ -29,6 +29,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::serde_utils::{deserialize_flexible_datetime, deserialize_flexible_datetime_opt};
+
 // ============================================================================
 // Dataset Types
 // ============================================================================
@@ -129,6 +131,7 @@ pub struct Dataset {
 
     /// When the dataset was last modified (not present in PATCH responses)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Optional description
@@ -137,6 +140,7 @@ pub struct Dataset {
 
     /// When the dataset was created
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 
     /// Data type (kv, llm, chat)
@@ -161,6 +165,7 @@ pub struct Dataset {
 
     /// When the last session started
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub last_session_start_time: Option<DateTime<Utc>>,
 
     /// Additional metadata (arbitrary JSON)
@@ -221,6 +226,7 @@ pub struct DatasetCreate {
 
     /// When the dataset was created (usually auto-set by server)
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 
     /// Additional metadata
@@ -282,6 +288,7 @@ pub struct DatasetVersion {
     pub tags: Option<Vec<String>>,
 
     /// Point in time for this version
+    #[serde(deserialize_with = "deserialize_flexible_datetime")]
     pub as_of: DateTime<Utc>,
 }
 
@@ -348,10 +355,12 @@ pub struct Example {
 
     /// When the example was created
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 
     /// When the example was last modified
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub modified_at: Option<DateTime<Utc>>,
 
     /// Attachment URLs (presigned URLs for binary data)
@@ -422,6 +431,7 @@ pub struct ExampleCreate {
 
     /// Custom creation timestamp
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(deserialize_with = "deserialize_flexible_datetime_opt")]
     pub created_at: Option<DateTime<Utc>>,
 }
 

@@ -38,6 +38,8 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::serde_utils::deserialize_flexible_datetime;
+
 // ============================================================================
 // Custom Deserializers
 // ============================================================================
