@@ -156,9 +156,15 @@ impl ModelConfigCommands {
                 // TODO: Add dedicated get_playground_settings method to SDK
                 let mut offset = 0;
                 let limit = 100;
+                let max_pages = 50; // Search up to 5000 configs to prevent infinite loops
+                let mut pages_checked = 0;
                 let mut found_config: Option<PlaygroundSettingsResponse> = None;
 
                 loop {
+                    if pages_checked >= max_pages {
+                        break; // Prevent infinite loops in large workspaces
+                    }
+
                     let params = ListPlaygroundSettingsParams {
                         limit: Some(limit),
                         offset: Some(offset),
@@ -175,6 +181,7 @@ impl ModelConfigCommands {
                     }
 
                     offset += limit;
+                    pages_checked += 1;
                 }
 
                 let config = found_config.ok_or_else(|| {
