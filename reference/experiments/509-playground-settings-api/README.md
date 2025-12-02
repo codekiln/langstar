@@ -38,26 +38,39 @@ Created Python experiment (following pattern from `456-ls-secrets`) to:
 
 #### Evidence from OpenAPI Specification
 
+**Source**: `/reference/api-specs/langsmith/playground-settings-endpoints.json`
+**Extracted**: 2025-12-01 using jq from canonical OpenAPI spec
+**Extraction command**: See `/reference/api-specs/langsmith/FRAGMENTS.md`
+
 ```bash
-$ python3 -c "..." # Check OpenAPI spec
+# From reference/api-specs/langsmith/playground-settings-endpoints.json
+$ jq 'keys' reference/api-specs/langsmith/playground-settings-endpoints.json
+[
+  "/api/v1/playground-settings",
+  "/api/v1/playground-settings/{playground_settings_id}"
+]
 
-Path: /api/v1/playground-settings
-Methods: ['get', 'post']
-  GET: List Playground Settings
-  POST: Create Playground Settings
+$ jq '."/api/v1/playground-settings" | keys' reference/api-specs/langsmith/playground-settings-endpoints.json
+[
+  "get",
+  "post"
+]
 
-Path: /api/v1/playground-settings/{playground_settings_id}
-Methods: ['patch', 'delete']
-  PATCH: Update Playground Settings
-  DELETE: Delete Playground Settings
+$ jq '."/api/v1/playground-settings/{playground_settings_id}" | keys' reference/api-specs/langsmith/playground-settings-endpoints.json
+[
+  "delete",
+  "patch"
+]
 ```
 
 **Supported operations:**
 - ✅ `GET /api/v1/playground-settings` - List all settings
 - ✅ `POST /api/v1/playground-settings` - Create new setting
-- ✅ `PATCH /api/v1/playground-settings/{id}` - Update existing setting
-- ✅ `DELETE /api/v1/playground-settings/{id}` - Delete setting
-- ❌ `GET /api/v1/playground-settings/{id}` - **NOT SUPPORTED**
+- ✅ `PATCH /api/v1/playground-settings/{playground_settings_id}` - Update existing setting
+- ✅ `DELETE /api/v1/playground-settings/{playground_settings_id}` - Delete setting
+- ❌ `GET /api/v1/playground-settings/{playground_settings_id}` - **NOT SUPPORTED**
+
+**Verification**: This matches the extracted OpenAPI spec fragment committed in [reference/api-specs/langsmith/playground-settings-endpoints.json](/reference/api-specs/langsmith/playground-settings-endpoints.json)
 
 #### Evidence from Python API Test
 
