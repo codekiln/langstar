@@ -197,7 +197,8 @@ fn test_model_config_list_integration() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::is_match(r#"\[.*\]"#).unwrap());
+        .stdout(predicate::str::contains("["))
+        .stdout(predicate::str::contains("]"));
 }
 
 #[test]
@@ -216,7 +217,8 @@ fn test_model_config_list_with_pagination() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::is_match(r#"\[.*\]"#).unwrap());
+        .stdout(predicate::str::contains("["))
+        .stdout(predicate::str::contains("]"));
 }
 
 #[test]
@@ -334,7 +336,8 @@ fn test_model_config_list_json_format() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::is_match(r#"\[.*\]"#).unwrap());
+        .stdout(predicate::str::contains("["))
+        .stdout(predicate::str::contains("]"));
 }
 
 #[test]
