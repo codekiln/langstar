@@ -843,7 +843,10 @@ mod tests {
                 "start_time": null,
                 "end_time": null,
                 "first_token_time": null,
-                "last_queued_at": null
+                "last_queued_at": null,
+                "trace_first_received_at": null,
+                "trace_min_start_time": null,
+                "trace_max_start_time": null
             }}"#,
             name, total_tokens
         );
@@ -864,7 +867,10 @@ mod tests {
                 "start_time": "{}",
                 "end_time": "{}",
                 "first_token_time": null,
-                "last_queued_at": null
+                "last_queued_at": null,
+                "trace_first_received_at": null,
+                "trace_min_start_time": null,
+                "trace_max_start_time": null
             }}"#,
             start, end
         );
