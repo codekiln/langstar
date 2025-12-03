@@ -6,7 +6,7 @@ This directory contains integration tests that make real API calls to LangSmith 
 
 ### Deployment vs Revision Status
 
-LangGraph Cloud has two distinct status types - see [langgraph-deployments-and-revisions.md](../docs/langgraph-deployments-and-revisions.md) for details:
+LangGraph Cloud has two distinct status types - see [langgraph-deployments-and-revisions.md](../../docs/langgraph-deployments-and-revisions.md) for details:
 
 - **DeploymentStatus** (e.g., `Ready`) - Overall deployment state
 - **RevisionStatus** (e.g., `Deployed`) - Build/deploy state of a specific revision
@@ -17,8 +17,9 @@ Test fixtures wait for `RevisionStatus::Deployed`, not `DeploymentStatus::Ready`
 
 Integration tests use shared deployments to reduce API quota and speed up tests:
 
-- **`pr-integration-test`** - Constant name, reused across PR/development test runs
-- **`release-integration-test-{timestamp}`** - Unique name for release lifecycle tests
+- **`pr-integration-test`** - Used by `test_utils` module (shared by SDK and CLI tests)
+- **`langstar-integration-test`** - Used by `integration_deployment_workflow.rs` tests
+- **`release-integration-test-{timestamp}`** - For release lifecycle tests (creates fresh deployment)
 
 ## Running Integration Tests
 
@@ -97,33 +98,20 @@ Creates a new commit for a prompt in the LangSmith PromptHub.
 
 ## CI/CD Integration
 
-Integration tests are **not** run in CI by default since they require API keys and make real API calls.
+Integration tests run automatically in CI for PRs and main branch pushes. See `.github/workflows/ci.yml` for the current configuration.
 
-To run integration tests in CI:
+**Required GitHub Secrets:**
+- `LANGSMITH_API_KEY`
+- `LANGSMITH_WORKSPACE_ID`
+- `LANGGRAPH_GITHUB_INTEGRATION_ID`
 
-1. Add `LANGSMITH_API_KEY` to GitHub Actions secrets
-2. Update `.github/workflows/ci.yml` to include integration test job:
-
-```yaml
-integration-test:
-  name: Integration Tests
-  runs-on: ubuntu-latest
-  if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: Swatinem/rust-cache@v2
-    - name: Run integration tests
-      env:
-        LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-      run: cargo test --test integration_test -- --ignored
-```
+The CI uses `cargo nextest` with the `integration` profile and `integration-tests` feature flag.
 
 ## Best Practices
 
 1. **Idempotency**: Integration tests should be safe to run multiple times
 2. **Cleanup**: Tests should clean up any resources they create (when possible)
-3. **Test Data**: Use clearly named test resources (e.g., `langstar-integration-test`)
+3. **Test Data**: Use clearly named test resources (e.g., `pr-integration-test`)
 4. **Timeouts**: Integration tests may be slower due to network calls
 5. **Error Messages**: Provide helpful error messages for common failure modes
 
