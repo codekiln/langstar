@@ -6,6 +6,7 @@ pub mod model_config;
 pub mod prompt;
 pub mod queue;
 pub mod runs;
+pub mod secrets;
 
 pub use assistant::AssistantCommands;
 pub use dataset::DatasetCommands;
@@ -15,3 +16,4 @@ pub use model_config::ModelConfigCommands;
 pub use prompt::PromptCommands;
 pub use queue::QueueCommands;
 pub use runs::RunsCommands;
+pub use secrets::SecretsCommands;
