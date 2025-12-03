@@ -148,10 +148,10 @@ langstar graph list 47599969-47ab-49d5-878e-cc6dbcbed059
 
 ### Option A: Extend Assistants Client (Recommended)
 
-Add graph-related methods to existing `AssistantsClient`:
+Add graph-related methods to existing `AssistantClient`:
 
 ```rust
-impl AssistantsClient {
+impl AssistantClient {
     /// Get graph structure for an assistant or graph ID
     pub async fn get_graph(&self, id: &str, xray: bool) -> Result<GraphStructure>;
 
@@ -179,7 +179,7 @@ Create dedicated `GraphClient` for graph operations.
 
 ### Recommendation
 
-**Option A** - Extend `AssistantsClient`. The graph endpoints live under `/assistants/`, so it's semantically appropriate. This avoids code duplication and leverages existing request handling.
+**Option A** - Extend `AssistantClient`. The graph endpoints live under `/assistants/`, so it's semantically appropriate. This avoids code duplication and leverages existing request handling.
 
 ## Data Types
 
@@ -261,7 +261,7 @@ This research completes **Phase 1** of the `ls-graph-deployments-separation` mil
 | 2 | Design | 🔲 Needed | DX consistency, configuration |
 | 3 | OpenAPI Validation | ⚠️ Special | Agent Server API is per-deployment |
 | 4 | SDK Types | 🔲 Needed | Graph structure types |
-| 5 | SDK Client | 🔲 Needed | Extend AssistantsClient |
+| 5 | SDK Client | 🔲 Needed | Extend AssistantClient |
 | 6 | CLI Commands | 🔲 Needed | `graph list`, `graph get` |
 | 7 | Testing | 🔲 Needed | Unit + integration tests |
 | 8 | Documentation | 🔲 Needed | README, usage docs |
@@ -302,14 +302,14 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 
 **Reference:** Data types section in this report
 
-#### 527.5-sdk-client: Add graph methods to AssistantsClient
+#### 527.5-sdk-client: Add graph methods to AssistantClient
 
 **Scope:**
 - `get_graph(id: &str, xray: bool) -> Result<GraphStructure>`
 - `list_graphs() -> Result<Vec<GraphInfo>>` (aggregates from assistants)
 - Handle per-deployment API URL resolution
 
-**Decision:** Extend `AssistantsClient` rather than creating new client (endpoints are `/assistants/{id}/graph`)
+**Decision:** Extend `AssistantClient` rather than creating new client (endpoints are `/assistants/{id}/graph`)
 
 #### 527.6-cli-graph: Implement graph list and get CLI commands
 
