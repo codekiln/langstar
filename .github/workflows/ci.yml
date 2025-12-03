@@ -79,14 +79,16 @@ jobs:
       - name: List test artifacts
         if: always()
         run: |
-          echo "=== Nextest output directory ==="
-          find target/nextest -type f 2>/dev/null || echo "No nextest output found"
+          echo "=== JUnit XML files ==="
+          ls -la junit*.xml 2>/dev/null || echo "No JUnit XML files found in workspace root"
+          echo "=== Nextest directory ==="
+          find target/nextest -type f 2>/dev/null | head -20 || echo "No nextest output found"
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: target/nextest/ci/junit.xml
+          files: junit-ci.xml
           check_name: "Unit Test Results"
           comment_title: "Unit Test Results"
           time_unit: seconds
@@ -99,7 +101,7 @@ jobs:
         if: always()
         with:
           name: unit-test-results-${{ github.run_number }}
-          path: target/nextest/ci/junit.xml
+          path: junit-ci.xml
           retention-days: 90
           if-no-files-found: warn
 
@@ -139,14 +141,14 @@ jobs:
       - name: List test artifacts
         if: always()
         run: |
-          echo "=== Nextest output directory ==="
-          find target/nextest -type f 2>/dev/null || echo "No nextest output found"
+          echo "=== JUnit XML files ==="
+          ls -la junit*.xml 2>/dev/null || echo "No JUnit XML files found in workspace root"
 
       - name: Publish Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: target/nextest/integration/junit.xml
+          files: junit-integration.xml
           check_name: "Integration Test Results"
           comment_title: "Integration Test Results"
           time_unit: seconds
@@ -158,7 +160,7 @@ jobs:
         if: always()
         with:
           name: integration-test-results-${{ github.run_number }}
-          path: target/nextest/integration/junit.xml
+          path: junit-integration.xml
           retention-days: 90
           if-no-files-found: warn
 

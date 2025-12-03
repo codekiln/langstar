@@ -433,8 +433,8 @@ Configured in `.config/nextest.toml`:
 | Profile | Use Case | Timeout | Output |
 |---------|----------|---------|--------|
 | `default` | Local development | 60s | Failed tests only |
-| `ci` | CI unit tests | 60s | JUnit XML at `target/nextest/ci/junit.xml` |
-| `integration` | Integration tests | 180s | JUnit XML at `target/nextest/integration/junit.xml` |
+| `ci` | CI unit tests | 60s | JUnit XML at `junit-ci.xml` |
+| `integration` | Integration tests | 180s | JUnit XML at `junit-integration.xml` |
 
 ### Test Result Visibility
 
