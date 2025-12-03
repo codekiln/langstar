@@ -443,3 +443,60 @@ cargo build --release
 ---
 
 **Status:** Ready for PR creation and CI verification
+
+---
+
+## Addendum: Test Fixture Clarification (2025-12-03)
+
+**See full analysis:** [docs/research/i512-integration-test-get-or-create-status-v0.11.0.md](../docs/research/i512-integration-test-get-or-create-status-v0.11.0.md)
+
+### Clarification on Root Cause Analysis
+
+The original progress report stated:
+
+> Recent commit #519 introduced test parallelization
+> Tests switched from creating individual deployments to sharing via `OnceLock`
+
+**Correction:** PR #519 did NOT change how deployments are created or shared. The `OnceLock` pattern for shared deployments existed before #519. PR #519 only:
+1. Added `#[serial]` attributes to tests using shared deployments
+2. Changed test name generation to use microseconds + UUID
+3. Removed `--test-threads=1` from CI workflow
+
+### Actual Root Cause
+
+The integration test failures in fresh environments were caused by:
+- The test fixture **always** relied on CLI's internal auto-discovery for GitHub integration ID
+- Auto-discovery requires existing deployments to query for `integration_id` in `source_config`
+- In fresh environments with no deployments, auto-discovery fails
+- The fix adds explicit API query in the fixture itself (`query_github_integration_id()`)
+
+### How the Fixture "Get or Create" Pattern Works
+
+1. **Find existing:** Query for `test-deployment-*` with READY status
+2. **Reuse if found:** Return existing deployment (no creation needed)
+3. **Create if not found:** Generate unique name and create new deployment
+4. **Integration ID discovery (3-tier):**
+   - Environment variable `LANGGRAPH_GITHUB_INTEGRATION_ID`
+   - API query fallback (new in PR #522)
+   - Panic with helpful message
+
+### Key Difference: v0.10.0 vs v0.11.0 (with PR #522)
+
+| Aspect | v0.10.0 | v0.11.0 + PR #522 |
+|--------|---------|-------------------|
+| Integration ID from env var | Yes | Yes |
+| Integration ID from fixture API query | No | **Yes** |
+| Explicit `--integration-id` flag | Only if env var set | **Always** |
+| Works in fresh environment | No | **Yes** (with env var or existing deployments) |
+
+The fix makes the test fixture self-sufficient for integration ID discovery, rather than relying on the CLI's internal auto-discovery mechanism.
+
+### Related: PR #503 CI Auto-Discovery (Issue #499)
+
+PR #503 changed CI from hard-coded test files to auto-discovery:
+```yaml
+# Before: cargo test --features integration-tests --test assistant_command_test --test graph_command_test
+# After:  cargo test -p langstar --features integration-tests
+```
+
+This change ensures local and CI tests run the same way. It also added `LANGGRAPH_GITHUB_INTEGRATION_ID` to CI secrets, providing a reliable fallback for the fixture
