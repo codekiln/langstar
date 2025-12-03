@@ -104,7 +104,7 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 **Example output:**
 ```
 ╭──────────────┬─────────────────────┬────────────┬─────────────────────╮
-│ Graph ID     │ Assistants          │ # Assists  │ Nodes               │
+│ Graph ID     │ Assistants          │ Assistant Count │ Nodes               │
 ├──────────────┼─────────────────────┼────────────┼─────────────────────┤
 │ agent        │ default, custom-v1  │ 2          │ Responder, Feedback │
 │ rag_pipeline │ rag-assistant       │ 1          │ Retriever, Generate │
