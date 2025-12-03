@@ -135,6 +135,39 @@ impl Deployment {
             .and_then(|v| v.as_str())
             .map(String::from)
     }
+
+    /// Create a sanitized copy of the deployment with secrets redacted
+    ///
+    /// This method returns a clone of the deployment where all secret values
+    /// are replaced with "<redacted>" to prevent accidental exposure of
+    /// sensitive information in logs, terminal output, or API responses.
+    ///
+    /// # Security
+    /// Secret values should never be displayed in plaintext in CLI output as:
+    /// - Terminal output may be logged, shared, or captured in screenshots
+    /// - LLMs processing terminal output may inadvertently read secrets
+    /// - Shared output could expose credentials to unauthorized parties
+    ///
+    /// # Returns
+    /// A new `Deployment` instance with all secret values redacted
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::deployments::Deployment;
+    /// # let deployment = Deployment::default();
+    /// let safe_deployment = deployment.sanitize_secrets();
+    /// // safe_deployment can now be safely logged or displayed
+    /// println!("{:?}", safe_deployment);
+    /// ```
+    pub fn sanitize_secrets(&self) -> Self {
+        let mut sanitized = self.clone();
+        if let Some(secrets) = &mut sanitized.secrets {
+            for secret in secrets.iter_mut() {
+                secret.value = "<redacted>".to_string();
+            }
+        }
+        sanitized
+    }
 }
 
 /// Response from listing deployments
@@ -530,5 +563,104 @@ mod tests {
 
         let deployment: Deployment = serde_json::from_str(json_without_url).unwrap();
         assert_eq!(deployment.custom_url(), None);
+    }
+
+    #[test]
+    fn test_sanitize_secrets() {
+        // Test deployment with secrets
+        let json_with_secrets = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "secrets": [
+                {
+                    "name": "API_KEY",
+                    "value": "super-secret-api-key-12345"
+                },
+                {
+                    "name": "DATABASE_PASSWORD",
+                    "value": "my-database-password"
+                }
+            ],
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_with_secrets).unwrap();
+
+        // Verify original deployment has plaintext secrets
+        assert!(deployment.secrets.is_some());
+        let original_secrets = deployment.secrets.as_ref().unwrap();
+        assert_eq!(original_secrets.len(), 2);
+        assert_eq!(original_secrets[0].name, "API_KEY");
+        assert_eq!(original_secrets[0].value, "super-secret-api-key-12345");
+        assert_eq!(original_secrets[1].name, "DATABASE_PASSWORD");
+        assert_eq!(original_secrets[1].value, "my-database-password");
+
+        // Sanitize secrets
+        let sanitized = deployment.sanitize_secrets();
+
+        // Verify sanitized deployment has redacted secrets
+        assert!(sanitized.secrets.is_some());
+        let sanitized_secrets = sanitized.secrets.as_ref().unwrap();
+        assert_eq!(sanitized_secrets.len(), 2);
+
+        // Secret names should be preserved
+        assert_eq!(sanitized_secrets[0].name, "API_KEY");
+        assert_eq!(sanitized_secrets[1].name, "DATABASE_PASSWORD");
+
+        // Secret values should be redacted
+        assert_eq!(sanitized_secrets[0].value, "<redacted>");
+        assert_eq!(sanitized_secrets[1].value, "<redacted>");
+
+        // Verify original deployment is unchanged
+        let original_secrets_after = deployment.secrets.as_ref().unwrap();
+        assert_eq!(
+            original_secrets_after[0].value,
+            "super-secret-api-key-12345"
+        );
+        assert_eq!(original_secrets_after[1].value, "my-database-password");
+    }
+
+    #[test]
+    fn test_sanitize_secrets_with_no_secrets() {
+        // Test deployment without secrets field
+        let json_no_secrets = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_no_secrets).unwrap();
+        assert!(deployment.secrets.is_none());
+
+        let sanitized = deployment.sanitize_secrets();
+        assert!(sanitized.secrets.is_none());
+    }
+
+    #[test]
+    fn test_sanitize_secrets_with_empty_secrets() {
+        // Test deployment with empty secrets array
+        let json_empty_secrets = r#"{
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "my-deployment",
+            "source": "github",
+            "secrets": [],
+            "created_at": "2024-01-01T00:00:00Z",
+            "updated_at": "2024-01-02T00:00:00Z",
+            "status": "READY"
+        }"#;
+
+        let deployment: Deployment = serde_json::from_str(json_empty_secrets).unwrap();
+        assert!(deployment.secrets.is_some());
+        assert_eq!(deployment.secrets.as_ref().unwrap().len(), 0);
+
+        let sanitized = deployment.sanitize_secrets();
+        assert!(sanitized.secrets.is_some());
+        assert_eq!(sanitized.secrets.as_ref().unwrap().len(), 0);
     }
 }
