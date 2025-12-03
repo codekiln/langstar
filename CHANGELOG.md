@@ -5,6 +5,456 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2025-12-03
+
+### ✨ Features
+
+- ✨ feat(cli): implement workspace secrets CLI commands (#523)
+
+* ✨ feat(cli): implement workspace secrets CLI commands
+
+Implements three CLI commands for secure workspace secrets management:
+- langstar secrets list: Lists secret keys (values never displayed)
+- langstar secrets set: Creates/updates secrets with secure input methods
+- langstar secrets delete: Deletes secrets
+
+Security features (per Phase 1.5 requirements):
+- Multiple secure input methods: --from-file, --from-env, --interactive, stdin
+- NO --value flag (security violation per #488)
+- Never outputs secret values in any command output
+- Interactive mode uses masked password input (rpassword)
+
+Fixes #493
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address Copilot review feedback on secrets commands
+
+- Add mutual exclusivity enforcement for input method flags using
+  `conflicts_with_all` attributes. This prevents user confusion when
+  multiple flags are provided.
+- Add comprehensive CLI test coverage in secrets_command_test.rs:
+  * Help text verification for all subcommands
+  * Argument parsing validation
+  * Security feature validation (no --value flag)
+  * Mutual exclusivity tests for input flags
+  * Output format option tests
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/523#discussion_r2584345745
+- https://github.com/codekiln/langstar/pull/523#discussion_r2584345766
+
+* 🩹 fix(test): format secrets_command_test.rs
+
+* 🩹 fix(test): remove .failure() assertions from format flag tests
+
+The three format flag tests were asserting `.failure()` expecting the
+commands to fail due to missing API credentials. However, in the
+integration test environment where LANGSMITH_API_KEY is present, these
+commands succeed and return valid results.
+
+Changed assertions to only verify that `--format` flag parsing works
+correctly, without caring about command success/failure. This makes
+tests work in both unit and integration environments.
+
+Fixes:
+- test_secrets_list_accepts_format_flag
+- test_secrets_set_accepts_format_flag
+- test_secrets_delete_accepts_format_flag
+
+* 🩹 fix(deps): update rpassword version to match Cargo.lock
+
+Updated Cargo.toml to specify rpassword 7.4 to match the resolved
+version in Cargo.lock (7.4.0). This eliminates the version mismatch.
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/523/files#r2584418901
+
+* 🔧 build: update Cargo.lock after rpassword version bump
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### ♻️ Refactoring
+
+- ♻️ refactor(tests): consolidate CLI test fixtures to use SDK directly (#526)
+
+* ♻️ refactor(tests): consolidate CLI test fixtures to use SDK directly
+
+Fixes #524
+
+This refactoring eliminates code duplication between CLI and SDK test
+fixtures by creating shared test utilities in the SDK that both can use.
+
+Key changes:
+
+1. **Created `sdk/src/test_utils.rs`** - Shared test infrastructure:
+   - `TestDeploymentConfig` - Configuration for test deployments
+   - `DeploymentGuard` - RAII pattern for cleanup on failure
+   - `wait_for_deployment()` - Polls revision status until READY
+   - `get_or_create_deployment()` - Finds existing or creates new
+
+2. **Added `test-utils` feature to SDK** - Enables test utilities:
+   - Available via `langstar-sdk = { features = ["test-utils"] }`
+   - Guarded by `#[cfg(any(test, feature = "test-utils"))]`
+
+3. **Refactored CLI fixtures** to use SDK utilities:
+   - Removed CLI shelling (Command::new("langstar")) - uses SDK directly
+   - Removed `--status READY` filter bug - now filters by name
+   - Removed `LANGGRAPH_GITHUB_INTEGRATION_ID` workaround
+   - Uses `find_integration_for_repo()` API for integration discovery
+
+4. **Net reduction of ~120 lines** by eliminating duplicated logic
+
+Benefits:
+- Single source of truth for test fixture logic
+- Proper handling of in-progress deployments (fixes race conditions)
+- Consistent behavior between SDK and CLI tests
+- Easier maintenance - changes only need to be made in one place
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): add #[allow(dead_code)] to unused fixture method
+
+Addresses Clippy warning: `create_with_timestamp` is never used but is
+intentionally provided as part of the fixtures API for tests that need
+unique timestamp-based deployment names.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): use DEPLOYED terminology consistently
+
+Addresses Copilot review comments - terminology should match
+`RevisionStatus::Deployed` enum variant, not "READY".
+
+Changes:
+- sdk/src/test_utils.rs: Updated doc comments and log messages
+- cli/tests/common/fixtures.rs: Updated doc comment
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(tests): use constant deployment name for proper reuse
+
+The get-or-create pattern requires a constant deployment name to
+find and reuse existing deployments. Using std::process::id() in
+the name caused every test run to create a new deployment since
+each process has a unique PID.
+
+Changed from "test-deployment-cli-{pid}" to "test-deployment-cli"
+to enable the same behavior as the SDK's "langstar-integration-test".
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor(tests): unify deployment naming for SDK/CLI tests
+
+Implement consistent naming convention for test deployments:
+- `pr-integration-test`: Constant name for PR/development testing (reused)
+- `release-integration-test-{timestamp}`: Unique name for release lifecycle tests
+
+Changes:
+- SDK: Default config uses "pr-integration-test" for deployment reuse
+- SDK: Add TestDeploymentConfig::for_release_tests() for lifecycle testing
+- CLI: Use SDK default config instead of custom naming
+- Cleanup workflow: Target release-* and legacy test-deployment-* patterns
+  while preserving pr-integration-test for reuse
+
+This ensures both SDK and CLI tests share the same deployment, reducing
+API quota usage and speeding up test execution.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: add canonical deployment vs revision status documentation
+
+Create single source of truth for LangGraph Cloud status terminology:
+- DeploymentStatus (terminal: Ready) - overall deployment state
+- RevisionStatus (terminal: Deployed) - build/deploy state of a revision
+
+Files:
+- docs/langgraph-deployments-and-revisions.md: canonical reference
+- sdk/tests/README.md: add key concepts section with link
+- sdk/src/test_utils.rs: update module and function docs
+- cli/tests/common/fixtures.rs: update module and function docs
+
+All status references now use precise terminology and link to the
+canonical documentation.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): correct factual inaccuracies in sdk/tests/README.md
+
+- Fix link path: ../docs/ → ../../docs/ (relative to sdk/tests/)
+- Clarify deployment naming: document both pr-integration-test and
+  langstar-integration-test are used by different test files
+- Update CI/CD section: tests DO run in CI (was incorrectly stated as not)
+- Update best practices example to use pr-integration-test
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr): address review feedback
+
+Cleanup workflow:
+- Simplify to use --name-contains "integration-test" for all patterns
+- Remove legacy test-deployment-* section (already cleaned up)
+- Fix comments to clarify pr-integration-test IS cleaned up when stale
+
+Documentation:
+- Remove "single source of truth" phrasing (Rust files are canonical)
+- Remove "Test Fixtures Behavior" section from user-facing docs
+
+SDK test_utils:
+- Clarify disarm() doc: "suppress warning" not "prevent cleanup"
+- Fix Drop message prefix for consistency
+
+CLI fixtures:
+- Rename test_fixture_lifecycle → test_fixture_creation (accurate name)
+- Remove unused create_for_release() function (dead code)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): remove obsolete LANGGRAPH_GITHUB_INTEGRATION_ID from required secrets
+
+The integration ID is now discovered via find_integration_for_repo() API,
+so the env var workaround is no longer required.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: documentation for workspace secrets (#525)
+
+* 📚 docs: add comprehensive workspace secrets documentation
+
+Closes #495
+
+## Summary
+
+Comprehensive user documentation for workspace secrets management, covering:
+- CLI commands with secure input methods (interactive, file, env, stdin)
+- SDK usage with code examples
+- Security best practices and anti-patterns
+- Use cases (model providers, CI/CD, secret rotation)
+- API reference and troubleshooting guide
+
+## Deliverables
+
+- ✅ User guide at docs/usage/workspace-secrets.md
+- ✅ Security guidelines and best practices
+- ✅ CLI examples for all commands (list, set, delete)
+- ✅ SDK examples (list, upsert, delete)
+- ✅ Example workflows (CI/CD, multi-environment, rotation)
+- ✅ LLM agent safety guidelines
+
+## Key Sections
+
+1. **Overview**: Security model, key features
+2. **CLI Commands**: List, set (4 secure input methods), delete
+3. **SDK Usage**: Setup, CRUD operations, error handling
+4. **Security Best Practices**: Safe vs unsafe patterns, LLM agent safety
+5. **Use Cases**: Model providers, CI/CD, multi-environment, rotation
+6. **API Reference**: Endpoints, types, client methods
+7. **Troubleshooting**: Common issues and solutions
+
+## Notes
+
+- SDK rustdoc comments already comprehensive (PR #506, #515)
+- CLI help text validated and complete (PR #523)
+- Documentation follows model-config.md structure
+- Emphasizes security throughout (no secrets in history/logs/output)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🔒 security(docs): fix stdin piping example to avoid process exposure
+
+Replace `echo "$MY_SECRET" | langstar secrets set` with safer alternatives:
+- Use `--from-env` flag for environment variables
+- Pipe from secure files with restricted permissions
+- Pipe from password managers
+
+The echo command exposes secrets in process list (visible via ps/proc).
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/525#discussion_r2584985197
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🧪 Testing
+
+- 🧪 test(ci): track test runtime performance with cargo-nextest (#521)
+
+* 🧪 test(ci): track test runtime performance with cargo-nextest
+
+Implement test runtime tracking using cargo-nextest for better CI visibility:
+
+- Add .config/nextest.toml with profiles for CI and integration tests
+- Update CI workflow to use cargo-nextest for test execution
+- Add publish-unit-test-result-action for PR test result comments
+- Store JUnit XML test artifacts for 90-day retention
+- Update docs/dev/ci-cd.md with nextest usage documentation
+
+Benefits:
+- Per-test execution times visible in PR comments
+- JUnit XML reports for historical analysis
+- Up to 3x faster test execution through better parallelization
+- Process-level test isolation
+
+Fixes #516
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): add permissions and improve test result publishing
+
+- Add workflow permissions for publish-unit-test-result-action
+  - checks: write for creating check runs
+  - pull-requests: write for PR comments
+- Add debug step to list nextest output files
+- Set action_fail_on_inconclusive: false to prevent failure on missing results
+- Add if-no-files-found: warn to artifact upload step
+
+Addresses CI failure in PR #521
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): correct JUnit XML output paths for nextest
+
+The nextest junit path was incorrectly combining with the store directory,
+resulting in nested paths like `target/nextest/ci/target/nextest/ci/junit.xml`.
+
+Changed JUnit output paths to workspace root:
+- Unit tests: junit-ci.xml
+- Integration tests: junit-integration.xml
+
+Updated CI workflow and documentation to use new paths.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): correct JUnit XML paths to include nextest store directory
+
+The nextest junit files are created inside the profile subdirectory
+of the store directory (target/nextest/<profile>/junit-<profile>.xml).
+
+Updated CI workflow and documentation to use correct paths:
+- Unit tests: target/nextest/ci/junit-ci.xml
+- Integration tests: target/nextest/integration/junit-integration.xml
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: clarify slow-timeout comment in nextest config
+
+The comment was misleading. Clarified that slow-timeout works in periods:
+- Warns after 60s (1 period)
+- Terminates after 2 periods (120s total)
+
+Addresses Copilot review comment on PR #521
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address Copilot review feedback
+
+- Fix misleading comments in nextest.toml about JUnit XML paths
+  (paths are relative to store dir + profile subdir, not workspace root)
+- Update debug steps in CI workflow to check correct file locations
+- Clarify #[serial] comment: serial_test works with nextest because
+  each test runs in its own process
+
+Addresses Copilot review comments on PR #521
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🧪 test(secrets): comprehensive testing for workspace secrets (#530)
+
+* 🧪 test(secrets): comprehensive testing for workspace secrets
+
+Adds comprehensive test coverage for workspace secrets SDK and CLI per issue #494 requirements:
+
+**SDK Integration Tests** (sdk/tests/secrets_integration_test.rs):
+- List workspace secrets API validation
+- Create/update secret via upsert operation
+- Batch upsert of multiple secrets
+- Delete secret via convenience method
+- Delete via upsert with null value
+- Full CRUD workflow end-to-end test
+- Type serialization compatibility tests
+
+**CLI Security Validation Tests** (cli/tests/secrets_command_test.rs):
+- Verify no secret leakage in command output
+- Verify no secret leakage in error messages
+- Verify help text security messaging
+- Test all input methods (stdin, --from-file, --from-env)
+- Empty value handling
+- Missing env var/file error handling
+
+Security context: CLI is used by automated LLM agents (Claude Code) that
+read stdout/stderr. Tests verify secret values NEVER appear in any output.
+
+Fixes #494
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(tests): address Copilot review feedback
+
+- Use unique env var name with PID and timestamp to avoid parallel test conflicts
+- Update section header to accurately reflect tests cover all input methods
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/530#discussion_r2585504645
+- https://github.com/codekiln/langstar/pull/530#discussion_r2585504675
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [0.12.0] - 2025-12-03
 
 ### ✨ Features
