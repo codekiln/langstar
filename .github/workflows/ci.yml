@@ -23,6 +23,14 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+# Permissions needed for publish-unit-test-result-action
+# See: https://github.com/EnricoMi/publish-unit-test-result-action#permissions
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
 jobs:
   check:
     name: Check
@@ -68,6 +76,12 @@ jobs:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
 
+      - name: List test artifacts
+        if: always()
+        run: |
+          echo "=== Nextest output directory ==="
+          find target/nextest -type f 2>/dev/null || echo "No nextest output found"
+
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
@@ -77,6 +91,8 @@ jobs:
           comment_title: "Unit Test Results"
           time_unit: seconds
           report_individual_runs: true
+          # Don't fail if no test results (e.g., all tests skipped)
+          action_fail_on_inconclusive: false
 
       - name: Upload unit test results
         uses: actions/upload-artifact@v4
@@ -85,6 +101,7 @@ jobs:
           name: unit-test-results-${{ github.run_number }}
           path: target/nextest/ci/junit.xml
           retention-days: 90
+          if-no-files-found: warn
 
   integration-tests:
     name: Integration Tests
@@ -119,6 +136,12 @@ jobs:
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
           LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
 
+      - name: List test artifacts
+        if: always()
+        run: |
+          echo "=== Nextest output directory ==="
+          find target/nextest -type f 2>/dev/null || echo "No nextest output found"
+
       - name: Publish Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
@@ -128,6 +151,7 @@ jobs:
           comment_title: "Integration Test Results"
           time_unit: seconds
           report_individual_runs: true
+          action_fail_on_inconclusive: false
 
       - name: Upload integration test results
         uses: actions/upload-artifact@v4
@@ -136,6 +160,7 @@ jobs:
           name: integration-test-results-${{ github.run_number }}
           path: target/nextest/integration/junit.xml
           retention-days: 90
+          if-no-files-found: warn
 
   clippy:
     name: Clippy
