@@ -56,13 +56,9 @@ impl TestDeployment {
     /// - Deployment creation fails
     /// - Deployment doesn't reach DEPLOYED status within timeout
     pub fn create() -> Self {
-        Self::create_with_config(TestDeploymentConfig {
-            // Use a constant name to enable deployment reuse across test runs.
-            // This is the key to the "get-or-create" pattern - same name means
-            // we find and reuse the existing deployment instead of creating new ones.
-            name: "test-deployment-cli".to_string(),
-            ..Default::default()
-        })
+        // Use SDK default config which provides a constant name ("pr-integration-test")
+        // for deployment reuse. Both SDK and CLI tests share the same deployment.
+        Self::create_with_config(TestDeploymentConfig::default())
     }
 
     /// Create or reuse a test deployment with custom configuration
@@ -110,22 +106,14 @@ impl TestDeployment {
         }
     }
 
-    /// Create a test deployment with default "test-deployment-" prefix
+    /// Create a test deployment for release/lifecycle testing
     ///
-    /// Uses a timestamp-based name for uniqueness when running the full lifecycle.
+    /// Uses the SDK's `for_release_tests()` config which creates a timestamped
+    /// deployment name ("release-integration-test-{timestamp}"). This ensures
+    /// a fresh deployment for testing the full create → test → delete lifecycle.
     #[allow(dead_code)]
-    pub fn create_with_timestamp() -> Self {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-        let deployment_name = format!("test-deployment-{}", timestamp);
-
-        Self::create_with_config(TestDeploymentConfig {
-            name: deployment_name,
-            ..Default::default()
-        })
+    pub fn create_for_release() -> Self {
+        Self::create_with_config(TestDeploymentConfig::for_release_tests())
     }
 
     /// Delete the test deployment

@@ -52,20 +52,32 @@ jobs:
 
           echo "✓ No CI runs in progress, proceeding with cleanup"
 
-          # Get test deployments as JSON with error handling, excluding cli-test-deployment-* deployments
+          # Get release test deployments (timestamped, created for lifecycle testing)
+          # These use the naming pattern "release-integration-test-{timestamp}"
+          # Note: We do NOT clean up "pr-integration-test" since it's reused across test runs
           if ! raw_deployments=$(./target/release/langstar graph list \
-            --name-contains "test-deployment-" \
+            --name-contains "release-integration-test-" \
             --format json); then
             echo "❌ Error: Failed to list deployments"
             echo "$raw_deployments"
             exit 1
           fi
 
-          # Exclude deployments whose names start with "cli-test-deployment-"
-          deployments=$(echo "$raw_deployments" | jq 'if .resources then .resources |= map(select(.name | startswith("cli-test-deployment-") | not)) else . end')
+          # Also check for legacy test-deployment-* deployments (can be removed once cleaned up)
+          if legacy_deployments=$(./target/release/langstar graph list \
+            --name-contains "test-deployment-" \
+            --format json 2>/dev/null); then
+            # Merge legacy deployments (if any) into the cleanup list
+            legacy_count=$(echo "$legacy_deployments" | jq '.resources | length')
+            if [ "$legacy_count" -gt 0 ]; then
+              echo "Found $legacy_count legacy test-deployment-* deployment(s) to clean up"
+              raw_deployments=$(echo "$raw_deployments $legacy_deployments" | jq -s '{ resources: map(.resources) | add }')
+            fi
+          fi
 
+          deployments="$raw_deployments"
           count=$(echo "$deployments" | jq '.resources | length')
-          echo "Found $count test deployment(s) (excluding cli-test-deployment-*)"
+          echo "Found $count test deployment(s) to evaluate for cleanup"
 
           if [ "$count" -eq 0 ]; then
             echo "✅ No test deployments to clean up"

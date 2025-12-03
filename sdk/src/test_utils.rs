@@ -43,13 +43,37 @@ pub struct TestDeploymentConfig {
 impl Default for TestDeploymentConfig {
     fn default() -> Self {
         Self {
-            name: "langstar-integration-test".to_string(),
+            // Use constant name to enable deployment reuse across test runs.
+            // Both SDK and CLI tests share this deployment via the get-or-create pattern.
+            // The "pr-" prefix indicates these are reused for PR/development testing.
+            // See also: for_release_tests() for one-time lifecycle testing.
+            name: "pr-integration-test".to_string(),
             repository_owner: std::env::var("REPOSITORY_OWNER")
                 .unwrap_or_else(|_| "codekiln".to_string()),
             repository_name: std::env::var("REPOSITORY_NAME")
                 .unwrap_or_else(|_| "langstar".to_string()),
             branch: "main".to_string(),
             config_path: "tests/fixtures/test-graph-deployment/langgraph.json".to_string(),
+        }
+    }
+}
+
+impl TestDeploymentConfig {
+    /// Create configuration for release/lifecycle tests
+    ///
+    /// Uses a timestamped name to ensure a fresh deployment is created,
+    /// allowing the full create → test → delete lifecycle to be verified.
+    /// These deployments should be cleaned up after the test completes.
+    pub fn for_release_tests() -> Self {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs();
+
+        Self {
+            name: format!("release-integration-test-{}", timestamp),
+            ..Default::default()
         }
     }
 }
@@ -367,7 +391,15 @@ mod tests {
     #[test]
     fn test_deployment_config_default() {
         let config = TestDeploymentConfig::default();
-        assert_eq!(config.name, "langstar-integration-test");
+        assert_eq!(config.name, "pr-integration-test");
+        assert_eq!(config.branch, "main");
+        assert!(config.config_path.contains("langgraph.json"));
+    }
+
+    #[test]
+    fn test_deployment_config_for_release() {
+        let config = TestDeploymentConfig::for_release_tests();
+        assert!(config.name.starts_with("release-integration-test-"));
         assert_eq!(config.branch, "main");
         assert!(config.config_path.contains("langgraph.json"));
     }
