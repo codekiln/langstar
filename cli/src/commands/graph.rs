@@ -10,9 +10,16 @@ use serde_json::json;
 use tabled::Tabled;
 
 /// Commands for interacting with LangGraph deployments via Control Plane API
+///
+/// # Security Note
+/// All commands sanitize secret values in their output. Secret values are replaced
+/// with "<redacted>" to prevent accidental exposure in logs, terminal output,
+/// or shared command output. This applies to all output formats (JSON and table).
 #[derive(Debug, Subcommand)]
 pub enum GraphCommands {
     /// List all LangGraph deployments
+    ///
+    /// Note: Secret values in deployment output are automatically redacted for security.
     List {
         /// Maximum number of deployments to return
         #[arg(short, long, default_value = "20")]
@@ -36,12 +43,16 @@ pub enum GraphCommands {
     },
 
     /// Get a specific deployment by ID
+    ///
+    /// Note: Secret values in deployment output are automatically redacted for security.
     Get {
         /// Deployment ID
         deployment_id: String,
     },
 
     /// Create a new LangGraph deployment
+    ///
+    /// Note: Secret values in deployment output are automatically redacted for security.
     Create {
         /// Name of the deployment
         #[arg(short, long)]
@@ -229,8 +240,14 @@ impl GraphCommands {
 
                 // Output results
                 if format == OutputFormat::Json {
+                    // Sanitize secrets before outputting
+                    let sanitized_resources: Vec<Deployment> = deployments_list
+                        .resources
+                        .iter()
+                        .map(|d| d.sanitize_secrets())
+                        .collect();
                     formatter.print(&json!({
-                        "resources": deployments_list.resources,
+                        "resources": sanitized_resources,
                         "offset": deployments_list.offset
                     }))?;
                 } else if deployments_list.resources.is_empty() {
@@ -257,8 +274,9 @@ impl GraphCommands {
 
                 let deployment = client.deployments().get(deployment_id).await?;
 
-                // Output in JSON format
-                formatter.print(&serde_json::to_value(&deployment)?)?;
+                // Sanitize secrets before outputting
+                let sanitized = deployment.sanitize_secrets();
+                formatter.print(&serde_json::to_value(&sanitized)?)?;
 
                 Ok(())
             }
@@ -420,7 +438,8 @@ impl GraphCommands {
                 let mut deployment = client.deployments().create(&request).await?;
 
                 if format == OutputFormat::Json && !*wait {
-                    formatter.print(&deployment)?;
+                    // Sanitize secrets before outputting
+                    formatter.print(&deployment.sanitize_secrets())?;
                 } else if !*wait {
                     formatter.success(&format!(
                         "Created deployment: {} (ID: {})",
@@ -467,7 +486,8 @@ impl GraphCommands {
 
                     // Deployment is ready
                     if format == OutputFormat::Json {
-                        formatter.print(&deployment)?;
+                        // Sanitize secrets before outputting
+                        formatter.print(&deployment.sanitize_secrets())?;
                     } else {
                         formatter.success(&format!(
                             "✓ Deployment ready: {} (ID: {})",
