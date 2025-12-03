@@ -7,7 +7,7 @@ pub mod time;
 use clap::{Parser, Subcommand};
 use commands::{
     AssistantCommands, DatasetCommands, EvalCommands, GraphCommands, ModelConfigCommands,
-    PromptCommands, QueueCommands, RunsCommands,
+    PromptCommands, QueueCommands, RunsCommands, SecretsCommands,
 };
 use config::Config;
 use error::Result;
@@ -63,6 +63,10 @@ enum Commands {
     #[command(name = "model-config", subcommand)]
     ModelConfig(ModelConfigCommands),
 
+    /// Manage LangSmith workspace secrets
+    #[command(subcommand)]
+    Secrets(SecretsCommands),
+
     /// Show configuration file location
     Config,
 
@@ -116,6 +120,9 @@ async fn run() -> Result<()> {
         }
         Commands::ModelConfig(model_config_cmd) => {
             model_config_cmd.execute(&config, format).await?;
+        }
+        Commands::Secrets(secrets_cmd) => {
+            secrets_cmd.execute(&config, format).await?;
         }
         Commands::Config => {
             use time::ConfiguredTimezone;

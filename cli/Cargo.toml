@@ -42,6 +42,9 @@ anyhow.workspace = true
 # Config file handling
 dirs = "5.0"
 
+# Secure input for secrets
+rpassword = "7.3"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
