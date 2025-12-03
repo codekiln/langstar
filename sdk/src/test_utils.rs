@@ -4,6 +4,14 @@
 //! during integration tests. Both SDK and CLI tests use these utilities for deployment
 //! lifecycle management.
 //!
+//! # Deployment vs Revision Status
+//!
+//! LangGraph Cloud has two distinct status types:
+//! - [`DeploymentStatus`](crate::DeploymentStatus) - Overall deployment state (terminal: `Ready`)
+//! - [`RevisionStatus`](crate::RevisionStatus) - Build/deploy state of a revision (terminal: `Deployed`)
+//!
+//! See `docs/langgraph-deployments-and-revisions.md` for detailed documentation.
+//!
 //! # Usage
 //!
 //! Enable the `test-utils` feature in your Cargo.toml:
@@ -133,18 +141,21 @@ impl Drop for DeploymentGuard {
     }
 }
 
-/// Default poll interval for waiting on deployment status
+/// Default poll interval for waiting on revision status
 pub const DEFAULT_POLL_INTERVAL: Duration = Duration::from_secs(60);
 
-/// Default maximum wait time for deployment to reach DEPLOYED status (30 minutes)
+/// Default maximum wait time for revision to reach `RevisionStatus::Deployed` (30 minutes)
 pub const DEFAULT_MAX_WAIT_TIME: Duration = Duration::from_secs(1800);
 
-/// Wait for a deployment revision to reach DEPLOYED status
+/// Wait for a revision to reach `RevisionStatus::Deployed`
 ///
 /// Polls the revision status at the specified interval until:
-/// - Status is DEPLOYED (success)
-/// - Status is a failure state (BuildFailed, DeployFailed, Cancelled) (error)
+/// - `RevisionStatus::Deployed` (success)
+/// - A failure state: `BuildFailed`, `DeployFailed`, `Cancelled` (error)
 /// - Timeout is reached (error)
+///
+/// Note: This waits for **revision** status, not deployment status.
+/// See `docs/langgraph-deployments-and-revisions.md` for the distinction.
 ///
 /// # Arguments
 ///
@@ -251,12 +262,14 @@ pub async fn wait_for_deployment_with_options(
 /// Get or create a test deployment by name
 ///
 /// This function implements the "get-or-create" pattern:
-/// 1. Look for existing deployment by name (any status)
-/// 2. If found and in progress, wait for it to become DEPLOYED
-/// 3. If not found, create a new deployment
+/// 1. Look for existing deployment by name (any `DeploymentStatus`)
+/// 2. If found, wait for latest revision to reach `RevisionStatus::Deployed`
+/// 3. If not found, create a new deployment and wait for its revision
 ///
 /// This approach is faster for repeated test runs because it reuses existing
 /// deployments instead of creating new ones each time.
+///
+/// See `docs/langgraph-deployments-and-revisions.md` for status terminology.
 ///
 /// # Arguments
 ///

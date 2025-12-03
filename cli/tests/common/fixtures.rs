@@ -4,15 +4,23 @@
 //! during integration tests. It wraps the SDK test utilities and provides a synchronous
 //! API for use in CLI integration tests.
 //!
+//! # Deployment vs Revision Status
+//!
+//! LangGraph Cloud has two distinct status types:
+//! - `DeploymentStatus` - Overall deployment state (terminal: `Ready`)
+//! - `RevisionStatus` - Build/deploy state of a revision (terminal: `Deployed`)
+//!
+//! See `docs/langgraph-deployments-and-revisions.md` for detailed documentation.
+//!
 //! # Design
 //!
 //! This module uses the SDK directly via `langstar_sdk::test_utils` instead of shelling
 //! out to CLI commands. This approach:
 //!
 //! 1. **Eliminates code duplication** - Uses the same logic as SDK tests
-//! 2. **Fixes the in-progress bug** - Filters by name, not status
+//! 2. **Fixes the in-progress bug** - Filters by name, not `DeploymentStatus`
 //! 3. **Removes env var workarounds** - Uses `find_integration_for_repo()` API
-//! 4. **Enables proper wait behavior** - Can wait for in-progress deployments
+//! 4. **Enables proper wait behavior** - Waits for `RevisionStatus::Deployed`
 //!
 //! # Usage
 //!
@@ -37,10 +45,12 @@ impl TestDeployment {
     /// Create or reuse a test deployment
     ///
     /// This function uses the SDK's `get_or_create_deployment()` utility which:
-    /// 1. Looks for existing deployment by name (any status, not just READY)
-    /// 2. Waits for it if it's in progress
+    /// 1. Looks for existing deployment by name (any `DeploymentStatus`)
+    /// 2. Waits for latest revision to reach `RevisionStatus::Deployed`
     /// 3. Creates a new deployment if none exists
     /// 4. Returns deployment info for use in tests
+    ///
+    /// See `docs/langgraph-deployments-and-revisions.md` for status terminology.
     ///
     /// # Prerequisites
     ///
@@ -54,7 +64,7 @@ impl TestDeployment {
     /// - Required environment variables not set
     /// - GitHub integration cannot be found for the repository
     /// - Deployment creation fails
-    /// - Deployment doesn't reach DEPLOYED status within timeout
+    /// - Revision doesn't reach `RevisionStatus::Deployed` within timeout
     pub fn create() -> Self {
         // Use SDK default config which provides a constant name ("pr-integration-test")
         // for deployment reuse. Both SDK and CLI tests share the same deployment.

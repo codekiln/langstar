@@ -2,6 +2,24 @@
 
 This directory contains integration tests that make real API calls to LangSmith and other LangChain services.
 
+## Key Concepts
+
+### Deployment vs Revision Status
+
+LangGraph Cloud has two distinct status types - see [langgraph-deployments-and-revisions.md](../docs/langgraph-deployments-and-revisions.md) for details:
+
+- **DeploymentStatus** (e.g., `Ready`) - Overall deployment state
+- **RevisionStatus** (e.g., `Deployed`) - Build/deploy state of a specific revision
+
+Test fixtures wait for `RevisionStatus::Deployed`, not `DeploymentStatus::Ready`.
+
+### Test Deployment Naming
+
+Integration tests use shared deployments to reduce API quota and speed up tests:
+
+- **`pr-integration-test`** - Constant name, reused across PR/development test runs
+- **`release-integration-test-{timestamp}`** - Unique name for release lifecycle tests
+
 ## Running Integration Tests
 
 Integration tests are marked with `#[ignore]` and require API keys to run.
