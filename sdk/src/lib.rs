@@ -40,6 +40,16 @@ pub mod runs;
 pub mod secrets;
 pub mod serde_utils;
 
+/// Test utilities for integration tests
+///
+/// Enable with the `test-utils` feature:
+/// ```toml
+/// [dev-dependencies]
+/// langstar-sdk = { features = ["test-utils"] }
+/// ```
+#[cfg(any(test, feature = "test-utils"))]
+pub mod test_utils;
+
 // Re-export commonly used types
 pub use annotation_queues::{
     AnnotationQueue, AnnotationQueueRubricItem, AnnotationQueueWithDetails,
