@@ -205,10 +205,10 @@ fn test_secrets_list_accepts_format_flag() {
     let mut cmd = langstar_cmd();
     cmd.args(["secrets", "list", "--format", "json"]);
 
-    // Will fail due to missing API key, but should parse arguments correctly
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("--format").not()); // No format parsing error
+    // Should parse --format flag correctly (no argument parsing errors)
+    // May succeed (if API key present) or fail (if missing), but --format should parse
+    let assert = cmd.assert();
+    assert.stderr(predicate::str::contains("--format").not()); // No format parsing error
 }
 
 #[test]
@@ -224,10 +224,10 @@ fn test_secrets_set_accepts_format_flag() {
         "json",
     ]);
 
-    // Will fail due to missing API key, but should parse arguments correctly
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("--format").not()); // No format parsing error
+    // Should parse --format flag correctly (no argument parsing errors)
+    // May fail (missing env var or API key), but --format should parse
+    let assert = cmd.assert();
+    assert.stderr(predicate::str::contains("--format").not()); // No format parsing error
 }
 
 #[test]
@@ -235,8 +235,8 @@ fn test_secrets_delete_accepts_format_flag() {
     let mut cmd = langstar_cmd();
     cmd.args(["secrets", "delete", "TEST_KEY", "--format", "json"]);
 
-    // Will fail due to missing API key, but should parse arguments correctly
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("--format").not()); // No format parsing error
+    // Should parse --format flag correctly (no argument parsing errors)
+    // May succeed or fail depending on environment, but --format should parse
+    let assert = cmd.assert();
+    assert.stderr(predicate::str::contains("--format").not()); // No format parsing error
 }
