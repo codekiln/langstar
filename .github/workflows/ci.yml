@@ -56,12 +56,35 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
       - name: Run unit tests
-        run: cargo test --all-features --workspace --lib
+        run: cargo nextest run --profile ci --all-features --workspace --lib
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: target/nextest/ci/junit.xml
+          check_name: "Unit Test Results"
+          comment_title: "Unit Test Results"
+          time_unit: seconds
+          report_individual_runs: true
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ github.run_number }}
+          path: target/nextest/ci/junit.xml
+          retention-days: 90
 
   integration-tests:
     name: Integration Tests
@@ -79,17 +102,40 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
       - name: Run integration tests
         # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
         # Tests with shared resources use #[serial] attribute from serial_test crate
         # Most tests run in parallel; only #[serial] tests run sequentially
-        run: cargo test -p langstar --features integration-tests -- --nocapture
+        run: cargo nextest run --profile integration -p langstar --features integration-tests
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
           LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
+
+      - name: Publish Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: target/nextest/integration/junit.xml
+          check_name: "Integration Test Results"
+          comment_title: "Integration Test Results"
+          time_unit: seconds
+          report_individual_runs: true
+
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ github.run_number }}
+          path: target/nextest/integration/junit.xml
+          retention-days: 90
 
   clippy:
     name: Clippy
