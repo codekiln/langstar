@@ -7,7 +7,7 @@ dir = "target/nextest"
 
 # Default profile settings
 [profile.default]
-# Test timeout (2 minutes for unit tests)
+# Slow test detection: warn after 60s, terminate after 2 periods (120s total)
 slow-timeout = { period = "60s", terminate-after = 2 }
 # Show output for failed tests
 failure-output = "immediate-final"
