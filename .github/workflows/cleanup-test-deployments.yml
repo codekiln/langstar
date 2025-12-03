@@ -52,20 +52,21 @@ jobs:
 
           echo "✓ No CI runs in progress, proceeding with cleanup"
 
-          # Get test deployments as JSON with error handling, excluding cli-test-deployment-* deployments
+          # Get integration test deployments for cleanup
+          # Naming patterns:
+          # - "pr-integration-test" - Reused across PR/dev test runs (clean up when stale)
+          # - "release-integration-test-{timestamp}" - One-time lifecycle tests (always clean up)
           if ! raw_deployments=$(./target/release/langstar graph list \
-            --name-contains "test-deployment-" \
+            --name-contains "integration-test" \
             --format json); then
             echo "❌ Error: Failed to list deployments"
             echo "$raw_deployments"
             exit 1
           fi
 
-          # Exclude deployments whose names start with "cli-test-deployment-"
-          deployments=$(echo "$raw_deployments" | jq 'if .resources then .resources |= map(select(.name | startswith("cli-test-deployment-") | not)) else . end')
-
+          deployments="$raw_deployments"
           count=$(echo "$deployments" | jq '.resources | length')
-          echo "Found $count test deployment(s) (excluding cli-test-deployment-*)"
+          echo "Found $count test deployment(s) to evaluate for cleanup"
 
           if [ "$count" -eq 0 ]; then
             echo "✅ No test deployments to clean up"

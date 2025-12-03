@@ -34,3 +34,9 @@ tokio-test = "0.4"
 mockito = "1.5"
 tokio-stream = "0.1"
 serial_test = "3"
+
+[features]
+default = []
+# Enable test utilities for integration tests
+# Use this feature when you need shared test infrastructure for deployments
+test-utils = []

@@ -51,6 +51,9 @@ predicates = "3.1"
 tempfile = "3.12"
 escargot = "0.5"
 serial_test = "3"
+# Enable test-utils feature for shared test infrastructure
+langstar-sdk = { path = "../sdk", features = ["test-utils"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 
 [features]
 # Feature flag to enable integration tests that require API access
