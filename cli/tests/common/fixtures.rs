@@ -57,7 +57,10 @@ impl TestDeployment {
     /// - Deployment doesn't reach DEPLOYED status within timeout
     pub fn create() -> Self {
         Self::create_with_config(TestDeploymentConfig {
-            name: format!("test-deployment-cli-{}", std::process::id()),
+            // Use a constant name to enable deployment reuse across test runs.
+            // This is the key to the "get-or-create" pattern - same name means
+            // we find and reuse the existing deployment instead of creating new ones.
+            name: "test-deployment-cli".to_string(),
             ..Default::default()
         })
     }
