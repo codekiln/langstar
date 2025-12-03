@@ -103,7 +103,6 @@ Integration tests run automatically in CI for PRs and main branch pushes. See `.
 **Required GitHub Secrets:**
 - `LANGSMITH_API_KEY`
 - `LANGSMITH_WORKSPACE_ID`
-- `LANGGRAPH_GITHUB_INTEGRATION_ID`
 
 The CI uses `cargo nextest` with the `integration` profile and `integration-tests` feature flag.
 
