@@ -25,15 +25,15 @@ pub enum SecretsCommands {
         key: String,
 
         /// Read secret value from file
-        #[arg(long, value_name = "FILE")]
+        #[arg(long, value_name = "FILE", conflicts_with_all = ["from_env", "interactive"])]
         from_file: Option<std::path::PathBuf>,
 
         /// Read secret value from environment variable
-        #[arg(long, value_name = "VAR")]
+        #[arg(long, value_name = "VAR", conflicts_with_all = ["from_file", "interactive"])]
         from_env: Option<String>,
 
         /// Prompt for secret value interactively (masked input)
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["from_file", "from_env"])]
         interactive: bool,
 
         /// Output format (json or table)
