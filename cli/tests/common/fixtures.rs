@@ -201,7 +201,10 @@ impl TestDeployment {
         let bin = match CargoBuild::new().bin("langstar").run() {
             Ok(bin) => bin.path().to_owned(),
             Err(e) => {
-                eprintln!("⚠️  Warning: Failed to build langstar binary.\nError: {}", e);
+                eprintln!(
+                    "⚠️  Warning: Failed to build langstar binary.\nError: {}",
+                    e
+                );
                 return None;
             }
         };
@@ -248,20 +251,15 @@ impl TestDeployment {
         // Look through all deployments for a GitHub source with integration_id
         if let Some(deployments) = json["resources"].as_array() {
             for deployment in deployments {
-                // Check if this is a GitHub deployment
-                if let Some(source) = deployment["source"].as_str() {
-                    if source == "github" {
-                        // Try to extract integration_id from source_config
-                        if let Some(source_config) = deployment["source_config"].as_object() {
-                            if let Some(integration_id) = source_config
-                                .get("integration_id")
-                                .and_then(|v| v.as_str())
-                            {
-                                println!("✓ Found GitHub integration ID: {}", integration_id);
-                                return Some(integration_id.to_string());
-                            }
-                        }
-                    }
+                // Check if this is a GitHub deployment and extract integration_id
+                if let Some(source) = deployment["source"].as_str()
+                    && source == "github"
+                    && let Some(source_config) = deployment["source_config"].as_object()
+                    && let Some(integration_id) =
+                        source_config.get("integration_id").and_then(|v| v.as_str())
+                {
+                    println!("✓ Found GitHub integration ID: {}", integration_id);
+                    return Some(integration_id.to_string());
                 }
             }
         }
