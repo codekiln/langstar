@@ -98,17 +98,17 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 |--------|--------|
 | Graph ID | `assistant.graph_id` (deduplicated) |
 | Assistant Names | Comma-separated list of assistants using this graph |
-| Assistant Count | Count of assistants using this graph |
+| Count | Count of assistants using this graph |
 | Nodes | Node names from `/graph?xray=true` (excluding control nodes) |
 
 **Example output:**
 ```
-╭──────────────┬─────────────────────┬────────────┬─────────────────────╮
-│ Graph ID     │ Assistants          │ Assistant Count │ Nodes               │
-├──────────────┼─────────────────────┼────────────┼─────────────────────┤
-│ agent        │ default, custom-v1  │ 2          │ Responder, Feedback │
-│ rag_pipeline │ rag-assistant       │ 1          │ Retriever, Generate │
-╰──────────────┴─────────────────────┴────────────┴─────────────────────╯
+╭──────────────┬─────────────────────┬───────┬─────────────────────╮
+│ Graph ID     │ Assistants          │ Count │ Nodes               │
+├──────────────┼─────────────────────┼───────┼─────────────────────┤
+│ agent        │ default, custom-v1  │ 2     │ Responder, Feedback │
+│ rag_pipeline │ rag-assistant       │ 1     │ Retriever, Generate │
+╰──────────────┴─────────────────────┴───────┴─────────────────────╯
 ```
 
 ### `langstar graph get <graph_id> --deployment <name-or-id>`
@@ -321,11 +321,11 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 
 **Example output:**
 ```
-╭──────────────┬─────────────────────┬────────────┬─────────────────────╮
-│ Graph ID     │ Assistants          │ # Assists  │ Nodes               │
-├──────────────┼─────────────────────┼────────────┼─────────────────────┤
-│ agent        │ default, custom-v1  │ 2          │ Responder, Feedback │
-╰──────────────┴─────────────────────┴────────────┴─────────────────────╯
+╭──────────────┬─────────────────────┬───────┬─────────────────────╮
+│ Graph ID     │ Assistants          │ Count │ Nodes               │
+├──────────────┼─────────────────────┼───────┼─────────────────────┤
+│ agent        │ default, custom-v1  │ 2     │ Responder, Feedback │
+╰──────────────┴─────────────────────┴───────┴─────────────────────╯
 ```
 
 #### 527.7-testing: Add tests for graph commands
@@ -350,7 +350,7 @@ Unlike LangSmith API features, the Agent Server API spec is **per-deployment** a
 
 1. Cannot validate against a static reference spec
 2. Schema may vary between deployments/versions
-3. Recommend: Fetch spec from test deployment and extract to `reference/api-specs/agent-server/`
+3. Recommend: Fetch spec from test deployment to `reference/openapi/langchain/agent-server/`
 
 ```bash
 # Example: Fetch from test deployment
