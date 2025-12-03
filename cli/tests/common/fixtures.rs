@@ -110,6 +110,7 @@ impl TestDeployment {
     /// Create a test deployment with default "test-deployment-" prefix
     ///
     /// Uses a timestamp-based name for uniqueness when running the full lifecycle.
+    #[allow(dead_code)]
     pub fn create_with_timestamp() -> Self {
         use std::time::{SystemTime, UNIX_EPOCH};
         let timestamp = SystemTime::now()
