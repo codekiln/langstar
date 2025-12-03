@@ -247,8 +247,132 @@ pub struct GraphInfo {
 - Existing assistant commands: `cli/src/commands/assistant.rs`
 - Assistant SDK client: `sdk/src/assistants.rs`
 
-## Next Steps
+## Implementation Roadmap
 
-1. **Issue #529** (or sibling): Rename current `graph.rs` to `deployment.rs`
-2. **Issue #530** (or sibling): Implement SDK graph methods
-3. **Issue #531** (or sibling): Implement CLI `graph list` and `graph get` commands
+This research completes **Phase 1** of the `ls-graph-deployments-separation` milestone (#527). The following analysis maps remaining work to the standard feature development process documented in `docs/dev/feature-development-process.md`.
+
+### Phase Status
+
+| Phase | Name | Status | Notes |
+|-------|------|--------|-------|
+| 0.0 | Pre-Epic Scout | N/A | Would use `/gh-milestones:scout graph-commands` for new features |
+| 0 | Epic Setup | ✅ Complete | Parent #527, milestone created |
+| 1 | Research | ✅ Complete | This report (#528) |
+| 2 | Design | 🔲 Needed | DX consistency, configuration |
+| 3 | OpenAPI Validation | ⚠️ Special | Agent Server API is per-deployment |
+| 4 | SDK Types | 🔲 Needed | Graph structure types |
+| 5 | SDK Client | 🔲 Needed | Extend AssistantsClient |
+| 6 | CLI Commands | 🔲 Needed | `graph list`, `graph get` |
+| 7 | Testing | 🔲 Needed | Unit + integration tests |
+| 8 | Documentation | 🔲 Needed | README, usage docs |
+| 9 | Milestone Release | 🔲 Final | `/gh-milestones:release` |
+
+### Recommended Sub-Issues
+
+Following the `{parent}.{phase}-{slug}` naming convention:
+
+#### 527.2-design: Design DX consistency for graph commands
+
+**Scope:**
+- Analyze existing `langstar assistant` commands for consistency patterns
+- Define flag conventions (`--deployment`, `--xray`, `--format`)
+- Document configuration integration (env vars, precedence)
+- Decide on deployment name resolution pattern (reuse from assistant.rs)
+
+**Deliverable:** Design section added to this research report
+
+#### 527.3-refactor: Rename graph.rs to deployment.rs
+
+**Scope:**
+- Rename `cli/src/commands/graph.rs` → `cli/src/commands/deployment.rs`
+- Update `cli/src/commands/mod.rs` exports
+- Add backward-compatible aliases or deprecation warnings
+- Update any references in documentation
+
+**Rationale:** Current `langstar graph list` actually lists deployments. Semantic clarity requires renaming before introducing true graph commands.
+
+#### 527.4-sdk-types: Implement graph structure types in SDK
+
+**Scope:**
+- Create `sdk/src/types/graph.rs` with `GraphStructure`, `GraphNode`, `GraphEdge`
+- Add `GraphInfo` for list aggregation
+- Register in `sdk/src/lib.rs`
+
+**Reference:** Data types section in this report
+
+#### 527.5-sdk-client: Add graph methods to AssistantsClient
+
+**Scope:**
+- `get_graph(id: &str, xray: bool) -> Result<GraphStructure>`
+- `list_graphs() -> Result<Vec<GraphInfo>>` (aggregates from assistants)
+- Handle per-deployment API URL resolution
+
+**Decision:** Extend `AssistantsClient` rather than creating new client (endpoints are `/assistants/{id}/graph`)
+
+#### 527.6-cli-graph: Implement graph list and get CLI commands
+
+**Scope:**
+- `langstar graph list <deployment-name-or-id>`
+- `langstar graph get <graph_id> --deployment <name-or-id>`
+- Support deployment name resolution (reuse pattern from assistant.rs)
+- Output formats: table (default), json
+
+**Example output:**
+```
+╭──────────────┬─────────────────────┬────────────┬─────────────────────╮
+│ Graph ID     │ Assistants          │ # Assists  │ Nodes               │
+├──────────────┼─────────────────────┼────────────┼─────────────────────┤
+│ agent        │ default, custom-v1  │ 2          │ Responder, Feedback │
+╰──────────────┴─────────────────────┴────────────┴─────────────────────╯
+```
+
+#### 527.7-testing: Add tests for graph commands
+
+**Scope:**
+- Unit tests with httpmock for SDK methods
+- CLI integration tests (requires test deployment)
+- Test deployment name resolution edge cases
+
+#### 527.8-docs: Documentation for graph commands
+
+**Scope:**
+- Update CLI README with graph command examples
+- Add to usage documentation
+- Document relationship between graphs, assistants, and deployments
+
+### Special Considerations
+
+#### OpenAPI Validation (Phase 3)
+
+Unlike LangSmith API features, the Agent Server API spec is **per-deployment** at `<deployment-url>/openapi.json`. This means:
+
+1. Cannot validate against a static reference spec
+2. Schema may vary between deployments/versions
+3. Recommend: Fetch spec from test deployment and extract to `reference/api-specs/agent-server/`
+
+```bash
+# Example: Fetch from test deployment
+curl -H "x-api-key: $LANGSMITH_API_KEY" \
+  "https://<test-deployment-url>/openapi.json" \
+  -o reference/openapi/langchain/agent-server/openapi.json
+```
+
+#### Backward Compatibility
+
+The rename of `graph.rs` → `deployment.rs` affects existing users. Options:
+
+1. **Hard rename** - Breaking change, update docs
+2. **Alias** - Keep `langstar graph list` as alias for `langstar deployment list` with deprecation warning
+3. **Feature flag** - Gradual rollout
+
+**Recommendation:** Option 2 (alias with deprecation) for smoother transition.
+
+### Starting Fresh: Scout Command
+
+For future similar features, use the scout command before creating a milestone:
+
+```bash
+/gh-milestones:scout graph-commands
+```
+
+This creates a Phase 0.0 scout issue to validate feasibility before committing to the full 8-phase process. For this milestone, research was done directly as sub-issue #528 since the parent epic already existed.
