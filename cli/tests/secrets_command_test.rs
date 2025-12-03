@@ -59,9 +59,7 @@ fn test_secrets_list_help() {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains(
-            "List all workspace secret keys",
-        ))
+        .stdout(predicate::str::contains("List all workspace secret keys"))
         .stdout(predicate::str::contains("--format"));
 }
 
