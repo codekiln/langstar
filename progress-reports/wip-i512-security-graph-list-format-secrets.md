@@ -442,7 +442,26 @@ cargo build --release
 
 ---
 
-**Status:** Ready for PR creation and CI verification
+**Status:** ✅ Complete - Ready for PR
+
+---
+
+## Update: Fixture Workarounds Reverted (2025-12-03)
+
+**Commits `ec09c40` and `a8edd7c` were reverted** - removed 118 lines of temporary workarounds from `cli/tests/common/fixtures.rs`.
+
+**Why:**
+- CI has `LANGGRAPH_GITHUB_INTEGRATION_ID` env var set - tests work without workarounds
+- The workarounds used CLI shelling (wrong approach per research)
+- Issue #524 tracks proper refactor: consolidate CLI fixtures to use SDK directly
+- PR #522 should stay focused on security fix
+
+**This PR now contains:**
+1. ✅ Security fix: `sanitize_secrets()` method and application to graph commands
+2. ✅ Research document: `docs/research/i512-integration-test-get-or-create-status-v0.11.0.md`
+3. ✅ Progress report: This file
+
+**Proper fixture refactoring tracked in Issue #524.**
 
 ---
 
