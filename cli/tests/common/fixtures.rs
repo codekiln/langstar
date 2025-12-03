@@ -54,7 +54,7 @@ impl TestDeployment {
     /// - Required environment variables not set
     /// - GitHub integration cannot be found for the repository
     /// - Deployment creation fails
-    /// - Deployment doesn't reach READY status within timeout
+    /// - Deployment doesn't reach DEPLOYED status within timeout
     pub fn create() -> Self {
         Self::create_with_config(TestDeploymentConfig {
             name: format!("test-deployment-cli-{}", std::process::id()),

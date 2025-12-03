@@ -112,7 +112,7 @@ impl Drop for DeploymentGuard {
 /// Default poll interval for waiting on deployment status
 pub const DEFAULT_POLL_INTERVAL: Duration = Duration::from_secs(60);
 
-/// Default maximum wait time for deployment to reach READY status (30 minutes)
+/// Default maximum wait time for deployment to reach DEPLOYED status (30 minutes)
 pub const DEFAULT_MAX_WAIT_TIME: Duration = Duration::from_secs(1800);
 
 /// Wait for a deployment revision to reach DEPLOYED status
@@ -228,7 +228,7 @@ pub async fn wait_for_deployment_with_options(
 ///
 /// This function implements the "get-or-create" pattern:
 /// 1. Look for existing deployment by name (any status)
-/// 2. If found and in progress, wait for it to become READY
+/// 2. If found and in progress, wait for it to become DEPLOYED
 /// 3. If not found, create a new deployment
 ///
 /// This approach is faster for repeated test runs because it reuses existing
@@ -336,9 +336,9 @@ pub async fn get_or_create_deployment(
 
     // Step 4: Wait for deployment if not already deployed
     if latest_revision.status != RevisionStatus::Deployed {
-        eprintln!("Waiting for deployment to become READY...");
+        eprintln!("Waiting for deployment to become DEPLOYED...");
         wait_for_deployment(client, &deployment_id, &revision_id).await?;
-        eprintln!("Deployment is now READY");
+        eprintln!("Deployment is now DEPLOYED");
     }
 
     Ok((deployment_id, revision_id))
