@@ -285,11 +285,13 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 
 **Scope:**
 - Rename `cli/src/commands/graph.rs` → `cli/src/commands/deployment.rs`
+- Change CLI command from `langstar graph` → `langstar deployment`
 - Update `cli/src/commands/mod.rs` exports
-- Add backward-compatible aliases or deprecation warnings
-- Update any references in documentation
+- Update all documentation to reference new command names
 
-**Rationale:** Current `langstar graph list` actually lists deployments. Semantic clarity requires renaming before introducing true graph commands.
+**Rationale:** Current `langstar graph list` actually lists deployments. This is a breaking change that establishes correct semantics:
+- `langstar deployment list` - list deployments (Control Plane API)
+- `langstar graph list <deployment>` - list graphs within a deployment (Agent Server API)
 
 #### 527.4-sdk-types: Implement graph structure types in SDK
 
@@ -356,16 +358,6 @@ curl -H "x-api-key: $LANGSMITH_API_KEY" \
   "https://<test-deployment-url>/openapi.json" \
   -o reference/openapi/langchain/agent-server/openapi.json
 ```
-
-#### Backward Compatibility
-
-The rename of `graph.rs` → `deployment.rs` affects existing users. Options:
-
-1. **Hard rename** - Breaking change, update docs
-2. **Alias** - Keep `langstar graph list` as alias for `langstar deployment list` with deprecation warning
-3. **Feature flag** - Gradual rollout
-
-**Recommendation:** Option 2 (alias with deprecation) for smoother transition.
 
 ### Starting Fresh: Scout Command
 
