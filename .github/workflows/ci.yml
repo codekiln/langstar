@@ -88,7 +88,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: junit-ci.xml
+          files: target/nextest/ci/junit-ci.xml
           check_name: "Unit Test Results"
           comment_title: "Unit Test Results"
           time_unit: seconds
@@ -101,7 +101,7 @@ jobs:
         if: always()
         with:
           name: unit-test-results-${{ github.run_number }}
-          path: junit-ci.xml
+          path: target/nextest/ci/junit-ci.xml
           retention-days: 90
           if-no-files-found: warn
 
@@ -148,7 +148,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: junit-integration.xml
+          files: target/nextest/integration/junit-integration.xml
           check_name: "Integration Test Results"
           comment_title: "Integration Test Results"
           time_unit: seconds
@@ -160,7 +160,7 @@ jobs:
         if: always()
         with:
           name: integration-test-results-${{ github.run_number }}
-          path: junit-integration.xml
+          path: target/nextest/integration/junit-integration.xml
           retention-days: 90
           if-no-files-found: warn
 
