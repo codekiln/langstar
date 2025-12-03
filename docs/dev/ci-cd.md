@@ -17,8 +17,11 @@ This project uses a **validate-on-PR, release-on-tag** CI/CD pipeline strategy, 
    - `cargo fmt --check` - Verify code formatting
    - `cargo check` - Verify code compiles
 
-2. **Test** - Run test suite
-   - `cargo test --workspace` - Run all tests
+2. **Test** - Run test suite with cargo-nextest
+   - `cargo nextest run --profile ci --all-features --workspace --lib` - Run unit tests
+   - Generates JUnit XML reports for test result visualization
+   - Publishes test results to PR comments with timing data
+   - Uploads test artifacts for 90-day retention
 
 3. **Clippy** - Linting and code quality
    - `cargo clippy -- -D warnings` - Treat warnings as errors
@@ -393,6 +396,60 @@ After creating a release:
    ./langstar --help
    ```
 
+## Test Runtime Tracking
+
+### cargo-nextest
+
+This project uses [cargo-nextest](https://nexte.st/) for test execution, providing:
+
+- **Faster execution**: Up to 3x faster than `cargo test` through better parallelization
+- **JUnit XML output**: Native test result reporting with per-test timing data
+- **Better CI integration**: Test retries, flaky test detection, and partitioning support
+- **Process-level isolation**: Each test runs in its own process (not just thread)
+
+### Running Tests Locally
+
+```bash
+# Install cargo-nextest (pre-installed in devcontainer)
+cargo install cargo-nextest
+
+# Run unit tests (fast, parallel)
+cargo nextest run --all-features --workspace --lib
+
+# Run unit tests with CI profile (generates JUnit XML)
+cargo nextest run --profile ci --all-features --workspace --lib
+
+# Run integration tests
+cargo nextest run --profile integration -p langstar --features integration-tests
+
+# List tests without running
+cargo nextest list --all-features --workspace
+```
+
+### Test Profiles
+
+Configured in `.config/nextest.toml`:
+
+| Profile | Use Case | Timeout | Output |
+|---------|----------|---------|--------|
+| `default` | Local development | 60s | Failed tests only |
+| `ci` | CI unit tests | 60s | JUnit XML at `target/nextest/ci/junit-ci.xml` |
+| `integration` | Integration tests | 180s | JUnit XML at `target/nextest/integration/junit-integration.xml` |
+
+### Test Result Visibility
+
+In pull requests:
+- **PR Comments**: Test results with execution times appear as comments
+- **GitHub Checks**: Dedicated check runs for unit and integration test results
+- **Artifacts**: JUnit XML files stored for 90 days for historical analysis
+
+### Identifying Slow Tests
+
+After CI runs, check the PR comment for "Test Results" which shows:
+- Per-test execution time
+- Tests sorted by duration
+- Trend comparison across runs
+
 ## References
 
 - [Conventional Emoji Commits](https://conventional-emoji-commits.site/)
@@ -401,4 +458,6 @@ After creating a release:
 - [cargo-release Documentation](https://github.com/crate-ci/cargo-release)
 - [git-cliff Documentation](https://git-cliff.org/)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [cargo-nextest Documentation](https://nexte.st/)
 - [Issue #9: Release Automation Research](https://github.com/codekiln/langstar/issues/9)
+- [Issue #516: Test Runtime Tracking](https://github.com/codekiln/langstar/issues/516)
