@@ -316,6 +316,75 @@ The cleanup behavior differs by context and is **already correctly implemented**
 
 ---
 
+## Canonical Implementation: `sdk/tests/integration_deployment_workflow.rs`
+
+This file demonstrates the **correct** implementation of the intended behavior.
+
+### Two Test Variants (PR vs Release Context)
+
+**1. `test_deployment_workflow` (PR-style, lines 87-299):**
+- Get-or-create pattern
+- Uses persistent deployment name: `langstar-integration-test`
+- Leaves deployment running for reuse
+- Faster iteration during development
+
+**2. `test_deployment_workflow_full_lifecycle` (Release-style, lines 337-535):**
+- Always creates fresh deployment with timestamp-based name
+- Full create → test → teardown cycle
+- Validates complete workflow
+- Uses `DeploymentGuard` for cleanup on failure
+
+### Proper Get-or-Create Pattern (lines 145-178)
+
+```rust
+// Try to find existing deployment first
+let filters = DeploymentFilters {
+    name_contains: Some(deployment_name.clone()),
+    ..Default::default()
+};
+let deployments = client
+    .deployments()
+    .list(Some(100), None, Some(filters))
+    .await?;
+
+let deployment = if let Some(existing) = deployments
+    .resources
+    .iter()
+    .find(|d| d.name == deployment_name)
+{
+    // Reuse existing deployment
+    existing.clone()
+} else {
+    // Create new deployment
+    client.deployments().create(&create_request).await?
+};
+```
+
+**Key differences from `cli/tests/common/fixtures.rs`:**
+- Uses SDK directly (not CLI commands)
+- Uses `client.integrations().find_integration_for_repo()` for integration ID
+- Filters by name, not status - can find in-progress deployments
+- Has proper wait_for_deployment polling
+
+### Integration ID Discovery (lines 114-119)
+
+```rust
+let integration_id = client
+    .integrations()
+    .find_integration_for_repo(&repository_owner, &repository_name)
+    .await?;
+```
+
+### wait_for_deployment Helper (lines 552-603)
+
+Polls revision status every 60 seconds:
+- DEPLOYED → success
+- BuildFailed/DeployFailed/Cancelled → error
+- Other (Queued, Building, Deploying) → wait and poll again
+- 30 minute timeout
+
+---
+
 ## What Needs to Change in PR #522
 
 1. **Remove `LANGGRAPH_GITHUB_INTEGRATION_ID` fallback** - Use SDK's `client.integrations().list_github_integrations()` instead
