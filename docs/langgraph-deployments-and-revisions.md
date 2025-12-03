@@ -1,6 +1,6 @@
 # LangGraph Deployments and Revisions
 
-This document is the single source of truth for understanding LangGraph Cloud deployment and revision statuses.
+This document explains LangGraph Cloud deployment and revision statuses. For implementation details, see the Rust types in `sdk/src/deployments.rs`.
 
 ## Overview
 
@@ -68,17 +68,6 @@ Queued → Building → BuildSucceeded → AwaitingDeploy → Deploying → Depl
                  ↘ BuildFailed
                                                               ↘ DeployFailed
 ```
-
-## Test Fixtures Behavior
-
-The `get_or_create_deployment()` function in `sdk/src/test_utils.rs`:
-
-1. **Lists deployments** without filtering by `DeploymentStatus` (finds deployments in any status)
-2. **Finds by name** to locate existing deployment
-3. **Gets latest revision** and checks its `RevisionStatus`
-4. **Waits for `RevisionStatus::Deployed`** if not already deployed
-
-This ensures tests can reuse deployments even when they're still building from a previous run.
 
 ## Common Confusion Points
 

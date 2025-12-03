@@ -116,16 +116,6 @@ impl TestDeployment {
         }
     }
 
-    /// Create a test deployment for release/lifecycle testing
-    ///
-    /// Uses the SDK's `for_release_tests()` config which creates a timestamped
-    /// deployment name ("release-integration-test-{timestamp}"). This ensures
-    /// a fresh deployment for testing the full create → test → delete lifecycle.
-    #[allow(dead_code)]
-    pub fn create_for_release() -> Self {
-        Self::create_with_config(TestDeploymentConfig::for_release_tests())
-    }
-
     /// Delete the test deployment
     ///
     /// This function deletes the deployment using the SDK.
@@ -197,8 +187,9 @@ mod tests {
 
     #[test]
     #[ignore] // Only run manually - creates real deployment
-    fn test_fixture_lifecycle() {
-        // This test validates the fixture itself works correctly
+    fn test_fixture_creation() {
+        // This test validates the fixture creates/reuses a deployment correctly.
+        // Note: Deployment persists after test (no automatic cleanup).
         let deployment = TestDeployment::create();
 
         // Verify deployment info
@@ -206,10 +197,8 @@ mod tests {
         assert!(!deployment.name.is_empty());
 
         println!(
-            "Test deployment created: {} ({})",
+            "Test deployment created/reused: {} ({})",
             deployment.name, deployment.id
         );
-
-        // Deployment will be automatically cleaned up when it goes out of scope
     }
 }

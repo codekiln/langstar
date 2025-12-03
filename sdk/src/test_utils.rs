@@ -119,10 +119,10 @@ impl DeploymentGuard {
         }
     }
 
-    /// Disarm the guard to prevent automatic cleanup warning
+    /// Disarm the guard to suppress the cleanup reminder warning
     ///
-    /// Call this when you want to manually control deployment deletion
-    /// (e.g., after explicitly deleting it in the test)
+    /// Call this after manually deleting the deployment in your test
+    /// to indicate cleanup was performed and suppress the warning.
     pub fn disarm(&mut self) {
         self.armed = false;
     }
@@ -132,7 +132,7 @@ impl Drop for DeploymentGuard {
     fn drop(&mut self) {
         if self.armed {
             eprintln!(
-                "DeploymentGuard: Test failed before manual cleanup of deployment {}",
+                "Warning: Test may have failed before cleanup of deployment {}",
                 self.deployment_id
             );
             eprintln!("   Please manually delete this deployment if it still exists.");
