@@ -24,31 +24,20 @@ impl TestDeployment {
     /// 4. Waits for deployment to reach READY status
     /// 5. Returns deployment info for use in tests
     ///
-    /// # GitHub Integration ID Discovery
-    ///
-    /// When creating a new deployment, the GitHub integration ID is determined via:
-    /// 1. **Environment variable**: LANGGRAPH_GITHUB_INTEGRATION_ID (highest priority)
-    /// 2. **Auto-discovery**: Query existing deployments to extract integration_id (fallback)
-    /// 3. **Fail with helpful message**: If neither succeeds
-    ///
-    /// This ensures tests work in CI environments where existing deployments provide
-    /// the integration ID, without requiring the env var to be set.
-    ///
     /// # Prerequisites
     ///
-    /// Required environment variables:
-    /// - LANGSMITH_API_KEY: LangSmith API key for authentication
-    /// - LANGSMITH_WORKSPACE_ID: Workspace ID for deployment creation
+    /// Requires GitHub integration ID to be available via one of:
+    /// - Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
+    /// - Config file: github_integration_id field
+    /// - Auto-discovery: At least one existing GitHub deployment
     ///
-    /// For first-time setup in a clean environment:
-    /// - Set LANGGRAPH_GITHUB_INTEGRATION_ID, OR
-    /// - Create at least one GitHub deployment via LangSmith UI
+    /// For first-time setup, create initial deployment via LangSmith UI or set integration_id.
     ///
     /// # Panics
     ///
     /// Panics if:
     /// - Required environment variables not set (LANGSMITH_API_KEY, LANGSMITH_WORKSPACE_ID)
-    /// - GitHub integration ID cannot be determined (not in env var and no existing deployments)
+    /// - GitHub integration ID cannot be determined (not in config/env and no existing deployments)
     /// - Deployment creation fails
     /// - Deployment doesn't reach READY status within timeout
     pub fn create() -> Self {
@@ -188,86 +177,6 @@ impl TestDeployment {
         Some(Self { id, name })
     }
 
-    /// Query GitHub integrations API to find the first available integration ID
-    ///
-    /// This is used as a fallback when LANGGRAPH_GITHUB_INTEGRATION_ID is not set
-    /// and no existing deployments are found for auto-discovery.
-    ///
-    /// Returns the first GitHub integration ID found, or None if none exist or query fails.
-    fn query_github_integration_id() -> Option<String> {
-        println!("\n🔍 Querying GitHub integrations API...");
-
-        // Build langstar binary
-        let bin = match CargoBuild::new().bin("langstar").run() {
-            Ok(bin) => bin.path().to_owned(),
-            Err(e) => {
-                eprintln!(
-                    "⚠️  Warning: Failed to build langstar binary.\nError: {}",
-                    e
-                );
-                return None;
-            }
-        };
-
-        // Query GitHub integrations using the integrations command
-        // This requires the integrations command to be implemented
-        // For now, we'll try to list deployments and extract integration_id
-        let mut cmd = Command::new(&bin);
-        cmd.args(["graph", "list", "--limit", "100", "--format", "json"]);
-
-        let output = match cmd.output() {
-            Ok(output) => output,
-            Err(e) => {
-                eprintln!(
-                    "⚠️  Warning: Failed to query deployments for integration ID.\nError: {}",
-                    e
-                );
-                return None;
-            }
-        };
-
-        if !output.status.success() {
-            eprintln!(
-                "⚠️  Warning: Deployments query failed.\nStderr: {}",
-                String::from_utf8_lossy(&output.stderr)
-            );
-            return None;
-        }
-
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // Parse JSON to extract integration_id from any GitHub deployment
-        let json: serde_json::Value = match serde_json::from_str(&stdout) {
-            Ok(json) => json,
-            Err(e) => {
-                eprintln!(
-                    "⚠️  Warning: Failed to parse JSON.\nError: {}\nOutput: {}",
-                    e, stdout
-                );
-                return None;
-            }
-        };
-
-        // Look through all deployments for a GitHub source with integration_id
-        if let Some(deployments) = json["resources"].as_array() {
-            for deployment in deployments {
-                // Check if this is a GitHub deployment and extract integration_id
-                if let Some(source) = deployment["source"].as_str()
-                    && source == "github"
-                    && let Some(source_config) = deployment["source_config"].as_object()
-                    && let Some(integration_id) =
-                        source_config.get("integration_id").and_then(|v| v.as_str())
-                {
-                    println!("✓ Found GitHub integration ID: {}", integration_id);
-                    return Some(integration_id.to_string());
-                }
-            }
-        }
-
-        eprintln!("⚠️  Warning: No GitHub deployments found with integration_id");
-        None
-    }
-
     /// Create a new test deployment
     ///
     /// This is the original creation logic, now separated from the reuse logic.
@@ -281,25 +190,8 @@ impl TestDeployment {
 
         println!("\n=================================================");
         println!("🚀 Creating test deployment: {}", deployment_name);
-        println!("   (Integration ID: env var > API query > fail)");
+        println!("   (Integration ID: CLI flag > env/config > auto-discovery)");
         println!("=================================================\n");
-
-        // Determine integration ID
-        let integration_id = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID")
-            .ok()
-            .filter(|s| !s.is_empty())
-            .or_else(|| {
-                println!("LANGGRAPH_GITHUB_INTEGRATION_ID not set, querying API...");
-                Self::query_github_integration_id()
-            })
-            .expect(
-                "GitHub integration ID required but not found. Please either:\n\
-                1. Set LANGGRAPH_GITHUB_INTEGRATION_ID environment variable\n\
-                2. Create at least one GitHub deployment to enable auto-discovery\n\
-                3. Set up GitHub integration via LangSmith UI",
-            );
-
-        println!("Using GitHub integration ID: {}", integration_id);
 
         // Build langstar binary
         let bin = CargoBuild::new()
@@ -309,7 +201,8 @@ impl TestDeployment {
             .path()
             .to_owned();
 
-        // Create deployment with --wait flag and explicit --integration-id
+        // Create deployment with --wait flag
+        // Uses LANGGRAPH_GITHUB_INTEGRATION_ID from environment variable
         let mut cmd = Command::new(&bin);
         cmd.args([
             "graph",
@@ -322,8 +215,6 @@ impl TestDeployment {
             "https://github.com/codekiln/langstar",
             "--branch",
             "main",
-            "--integration-id",
-            &integration_id,
             "--config-path",
             "tests/fixtures/test-graph-deployment/langgraph.json",
             "--deployment-type",
