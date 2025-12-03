@@ -163,14 +163,14 @@ Read secret value from stdin (default when no other method is specified):
 # Pipe from file
 cat /tmp/secret.txt | langstar secrets set DATABASE_PASSWORD
 
-# Pipe from command
-echo "your-secret" | langstar secrets set DATABASE_PASSWORD
+# Pipe from file (with secure permissions)
+cat /run/secrets/api_key | langstar secrets set DATABASE_PASSWORD
 
-# Pipe from password manager
+# Pipe from password manager (recommended)
 pass show database/prod | langstar secrets set DATABASE_PASSWORD
 
-# Pipe from environment variable
-echo "$MY_SECRET" | langstar secrets set API_KEY
+# For environment variables, use --from-env flag instead of piping:
+langstar secrets set API_KEY --from-env MY_SECRET
 ```
 
 **When to use**:
