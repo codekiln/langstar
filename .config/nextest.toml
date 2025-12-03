@@ -23,7 +23,7 @@ success-output = "never"
 # Fail-fast disabled in CI to see all failures
 fail-fast = false
 # Generate JUnit XML report for test results
-# Path is relative to workspace root (not store dir)
+# Path is relative to store dir + profile subdir: target/nextest/ci/junit-ci.xml
 [profile.ci.junit]
 path = "junit-ci.xml"
 store-success-output = true
@@ -39,7 +39,7 @@ success-output = "never"
 # Fail-fast disabled to see all integration test failures
 fail-fast = false
 # Generate JUnit XML report
-# Path is relative to workspace root (not store dir)
+# Path is relative to store dir + profile subdir: target/nextest/integration/junit-integration.xml
 [profile.integration.junit]
 path = "junit-integration.xml"
 store-success-output = true

@@ -79,10 +79,8 @@ jobs:
       - name: List test artifacts
         if: always()
         run: |
-          echo "=== JUnit XML files ==="
-          ls -la junit*.xml 2>/dev/null || echo "No JUnit XML files found in workspace root"
-          echo "=== Nextest directory ==="
-          find target/nextest -type f 2>/dev/null | head -20 || echo "No nextest output found"
+          echo "=== JUnit XML file ==="
+          ls -la target/nextest/ci/junit-ci.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -129,8 +127,8 @@ jobs:
       - name: Run integration tests
         # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
-        # Tests with shared resources use #[serial] attribute from serial_test crate
-        # Most tests run in parallel; only #[serial] tests run sequentially
+        # Note: The serial_test crate's #[serial] attribute works at the process level.
+        # Nextest runs each test in its own process, so #[serial] coordination works correctly.
         run: cargo nextest run --profile integration -p langstar --features integration-tests
         timeout-minutes: 15
         env:
@@ -141,8 +139,8 @@ jobs:
       - name: List test artifacts
         if: always()
         run: |
-          echo "=== JUnit XML files ==="
-          ls -la junit*.xml 2>/dev/null || echo "No JUnit XML files found in workspace root"
+          echo "=== JUnit XML file ==="
+          ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Publish Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
