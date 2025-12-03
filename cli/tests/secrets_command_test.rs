@@ -377,7 +377,7 @@ fn test_secrets_set_from_file_nonexistent_error() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Input Method Tests (stdin)
+// Input Method Tests (stdin, --from-file, --from-env)
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
@@ -441,18 +441,28 @@ fn test_secrets_set_from_file_value_not_in_output() {
 
 #[test]
 fn test_secrets_set_from_env_value_not_in_output() {
-    // Set an environment variable with a known secret value
-    let env_var_name = "LANGSTAR_TEST_SECRET_VAR";
+    // Use a unique env var name with process ID and timestamp to avoid
+    // collisions when tests run in parallel (Rust tests are parallel by default)
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let env_var_name = format!(
+        "LANGSTAR_TEST_SECRET_VAR_{}_{}",
+        std::process::id(),
+        timestamp
+    );
     let secret_value = "ENV_SECRET_VALUE_67890_SHOULD_NOT_APPEAR";
 
     // Set the env var for this test
-    // SAFETY: This test is single-threaded and the env var is cleaned up after use
+    // SAFETY: Using a unique env var name per test execution avoids parallel test conflicts.
+    // The env var is cleaned up at the end of this test.
     unsafe {
-        std::env::set_var(env_var_name, secret_value);
+        std::env::set_var(&env_var_name, secret_value);
     }
 
     let mut cmd = langstar_cmd();
-    cmd.args(["secrets", "set", "TEST_KEY", "--from-env", env_var_name]);
+    cmd.args(["secrets", "set", "TEST_KEY", "--from-env", &env_var_name]);
 
     // Run command - will likely fail due to missing API key, but that's ok
     let output = cmd.output().expect("Failed to execute command");
@@ -471,8 +481,8 @@ fn test_secrets_set_from_env_value_not_in_output() {
     );
 
     // Cleanup
-    // SAFETY: This test is single-threaded and the env var was set by this test
+    // SAFETY: Removing the unique env var we created for this test
     unsafe {
-        std::env::remove_var(env_var_name);
+        std::env::remove_var(&env_var_name);
     }
 }
