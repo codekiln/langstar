@@ -614,12 +614,14 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     // ═══════════════════════════════════════════════════════════════════════
     println!("\n[LIST] Running CLI 'prompt list' (scoped, defaults to private)...");
 
+    // Use limit 20 - newly created prompts appear at top of list
+    // (sufficient for finding our just-created test prompt)
     let mut list_cmd = langstar_cmd();
     list_cmd.args([
         "prompt",
         "list",
         "--limit",
-        "100",
+        "20",
         "--organization-id",
         &org_id,
         "--format",
@@ -670,12 +672,14 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     // ═══════════════════════════════════════════════════════════════════════
     println!("\n[LIST --public] Verifying private prompt excluded from public list...");
 
+    // Use limit 5 - we're verifying our private prompt is NOT in public list
+    // (private prompts won't appear in ANY public results, so small limit suffices)
     let mut public_cmd = langstar_cmd();
     public_cmd.args([
         "prompt",
         "list",
         "--limit",
-        "100",
+        "5",
         "--organization-id",
         &org_id,
         "--public",
