@@ -28,7 +28,8 @@
 //! ```
 
 use crate::{
-    CreateDeploymentRequest, DeploymentFilters, LangchainClient, Revision, RevisionStatus,
+    CreateDeploymentRequest, DeploymentFilters, LangchainClient, LangstarError, Revision,
+    RevisionStatus,
 };
 use serde_json::json;
 use std::time::Duration;
@@ -139,6 +140,25 @@ impl Drop for DeploymentGuard {
             eprintln!("   Note: Automatic cleanup from Drop is not supported in async contexts.");
         }
     }
+}
+
+/// Check if an error is a 409 conflict due to orphaned tracing project
+///
+/// LangSmith automatically creates a tracing project with the same name as a deployment.
+/// If the deployment is deleted but the tracing project isn't, subsequent attempts to
+/// create a deployment with the same name will fail with a 409 conflict.
+fn is_tracing_project_conflict(error: &LangstarError) -> bool {
+    match error {
+        LangstarError::ApiError { status, message } => {
+            *status == 409 && message.contains("tracing project")
+        }
+        _ => false,
+    }
+}
+
+/// Check if an error is any 409 conflict
+fn is_conflict_error(error: &LangstarError) -> bool {
+    matches!(error, LangstarError::ApiError { status: 409, .. })
 }
 
 /// Default poll interval for waiting on revision status
@@ -342,12 +362,60 @@ pub async fn get_or_create_deployment(
             secrets: vec![],
         };
 
-        let new_deployment = client.deployments().create(&create_request).await?;
-        eprintln!(
-            "Created deployment: {} ({})",
-            config.name, new_deployment.id
-        );
-        new_deployment
+        match client.deployments().create(&create_request).await {
+            Ok(new_deployment) => {
+                eprintln!(
+                    "Created deployment: {} ({})",
+                    config.name, new_deployment.id
+                );
+                new_deployment
+            }
+            Err(err) => {
+                // Provide actionable guidance for 409 conflicts
+                if is_tracing_project_conflict(&err) {
+                    eprintln!();
+                    eprintln!("╭────────────────────────────────────────────────────────────────╮");
+                    eprintln!(
+                        "│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │"
+                    );
+                    eprintln!("├────────────────────────────────────────────────────────────────┤");
+                    eprintln!("│ A previous deployment was deleted but its associated tracing  │");
+                    eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
+                    eprintln!("│ deployment with the same name.                                │");
+                    eprintln!("├────────────────────────────────────────────────────────────────┤");
+                    eprintln!("│ To fix this issue:                                            │");
+                    eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
+                    eprintln!("│  2. Find and delete project named: {:24} │", &config.name);
+                    eprintln!("│  3. Re-run the tests                                          │");
+                    eprintln!("╰────────────────────────────────────────────────────────────────╯");
+                    eprintln!();
+                    return Err(format!(
+                        "409 Conflict: Orphaned tracing project '{}' blocks deployment creation. \
+                         See instructions above to resolve.",
+                        config.name
+                    )
+                    .into());
+                } else if is_conflict_error(&err) {
+                    eprintln!();
+                    eprintln!("╭────────────────────────────────────────────────────────────────╮");
+                    eprintln!(
+                        "│ ⚠️  409 CONFLICT ERROR                                          │"
+                    );
+                    eprintln!("├────────────────────────────────────────────────────────────────┤");
+                    eprintln!("│ A resource conflict occurred. This may indicate:              │");
+                    eprintln!("│  - A concurrent test is using the same deployment name        │");
+                    eprintln!("│  - An orphaned resource needs manual cleanup                  │");
+                    eprintln!("├────────────────────────────────────────────────────────────────┤");
+                    eprintln!("│ Suggested actions:                                            │");
+                    eprintln!("│  1. Check if another CI run is in progress                    │");
+                    eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
+                    eprintln!("│  3. Wait and retry if concurrent access suspected             │");
+                    eprintln!("╰────────────────────────────────────────────────────────────────╯");
+                    eprintln!();
+                }
+                return Err(err.into());
+            }
+        }
     };
 
     let deployment_id = deployment.id.clone();
