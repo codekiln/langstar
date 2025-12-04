@@ -253,4 +253,39 @@ mod tests {
         let config: Config = toml::from_str(toml).unwrap();
         assert!(config.hide_workspace_and_org_id_message);
     }
+
+    #[test]
+    fn test_env_var_hide_warning_parsing() {
+        unsafe {
+            // Test parsing "1"
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "1");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            // Test parsing "true" (case-insensitive)
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "true");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "TRUE");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "True");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            // Test that other values are treated as false
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "0");
+            let config = Config::load().unwrap();
+            assert!(!config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "false");
+            let config = Config::load().unwrap();
+            assert!(!config.hide_workspace_and_org_id_message);
+
+            // Cleanup
+            std::env::remove_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE");
+        }
+    }
 }
