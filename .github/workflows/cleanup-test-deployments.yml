@@ -59,10 +59,11 @@ jobs:
           #
           # A single pattern captures both types.
           echo "🔍 Searching for test deployments..."
+          # Capture both stdout and exit status; don't suppress stderr so auth/network errors are visible
           if ! raw_deployments=$(./target/release/langstar graph list \
             --name-contains "integration-test" \
-            --format json 2>/dev/null); then
-            echo "❌ Error: Failed to list deployments"
+            --format json); then
+            echo "❌ Error: Failed to list deployments (check stderr above for details)"
             exit 1
           fi
 

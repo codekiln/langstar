@@ -169,7 +169,8 @@ impl Drop for DeploymentGuard {
 fn is_tracing_project_conflict(error: &LangstarError) -> bool {
     match error {
         LangstarError::ApiError { status, message } => {
-            *status == 409 && message.contains("tracing project")
+            // Case-insensitive check in case API returns "Tracing Project" or other variations
+            *status == 409 && message.to_lowercase().contains("tracing project")
         }
         _ => false,
     }
@@ -345,7 +346,13 @@ async fn create_new_deployment(
                 eprintln!("├────────────────────────────────────────────────────────────────┤");
                 eprintln!("│ To fix this issue:                                            │");
                 eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
-                eprintln!("│  2. Find and delete project named: {:24} │", &config.name);
+                // Truncate long names to fit in the 24-char column; show full name in error below
+                let display_name = if config.name.len() > 24 {
+                    format!("{}...", &config.name[..21])
+                } else {
+                    config.name.clone()
+                };
+                eprintln!("│  2. Find and delete project named: {:24} │", display_name);
                 eprintln!("│  3. Re-run the tests                                          │");
                 eprintln!("╰────────────────────────────────────────────────────────────────╯");
                 eprintln!();
@@ -397,19 +404,22 @@ async fn create_new_deployment(
 ///
 /// # Returns
 ///
-/// * `Ok((deployment_id, revision_id))` - IDs of the deployment and its latest revision
+/// * `Ok((deployment_id, revision_id, deployment_name))` - IDs and actual name of the deployment
 /// * `Err(...)` - If creation or waiting failed
+///
+/// Note: The returned `deployment_name` may differ from `config.name` when an existing
+/// deployment is reused via prefix matching. Always use the returned name for assertions.
 ///
 /// # Example
 ///
 /// ```ignore
 /// let config = TestDeploymentConfig::default();
-/// let (deployment_id, revision_id) = get_or_create_deployment(&client, &config).await?;
+/// let (deployment_id, revision_id, name) = get_or_create_deployment(&client, &config).await?;
 /// ```
 pub async fn get_or_create_deployment(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
-) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(String, String, String), Box<dyn std::error::Error + Send + Sync>> {
     // Step 1: Find GitHub integration ID
     eprintln!(
         "Finding GitHub integration for {}/{}",
@@ -460,6 +470,7 @@ pub async fn get_or_create_deployment(
     };
 
     let deployment_id = deployment.id.clone();
+    let deployment_name = deployment.name.clone();
 
     // Step 3: Get latest revision
     let revisions = client.deployments().list_revisions(&deployment_id).await?;
@@ -487,7 +498,7 @@ pub async fn get_or_create_deployment(
         eprintln!("Deployment is now DEPLOYED");
     }
 
-    Ok((deployment_id, revision_id))
+    Ok((deployment_id, revision_id, deployment_name))
 }
 
 #[cfg(test)]

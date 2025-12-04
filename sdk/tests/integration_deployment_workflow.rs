@@ -59,12 +59,12 @@ async fn test_deployment_workflow() {
 
     // Step 1: Get or create test deployment using shared utility
     println!("📦 Getting or creating deployment...");
-    let (deployment_id, revision_id) = get_or_create_deployment(&client, &config)
+    let (deployment_id, revision_id, deployment_name) = get_or_create_deployment(&client, &config)
         .await
         .expect("Failed to get or create deployment");
     println!(
-        "✓ Deployment ready: {} (revision: {})",
-        deployment_id, revision_id
+        "✓ Deployment ready: {} ({}, revision: {})",
+        deployment_name, deployment_id, revision_id
     );
     println!();
 
@@ -211,12 +211,12 @@ async fn test_deployment_workflow_full_lifecycle() {
     // Step 1: Create fresh deployment using shared utility
     // (for_release_tests has name_prefix: None, so get_or_create always creates)
     println!("📦 Creating fresh deployment...");
-    let (deployment_id, revision_id) = get_or_create_deployment(&client, &config)
+    let (deployment_id, revision_id, deployment_name) = get_or_create_deployment(&client, &config)
         .await
         .expect("Failed to create deployment");
     println!(
-        "✓ Deployment created: {} (revision: {})",
-        deployment_id, revision_id
+        "✓ Deployment created: {} ({}, revision: {})",
+        deployment_name, deployment_id, revision_id
     );
     println!();
 

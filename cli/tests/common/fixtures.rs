@@ -102,17 +102,18 @@ impl TestDeployment {
             get_or_create_deployment(&client, &config).await
         });
 
-        let (deployment_id, _revision_id) = result.expect("Failed to get or create deployment");
+        let (deployment_id, _revision_id, deployment_name) =
+            result.expect("Failed to get or create deployment");
 
         println!("\n=================================================");
         println!("Test deployment ready");
-        println!("   Name: {}", config.name);
+        println!("   Name: {}", deployment_name);
         println!("   ID: {}", deployment_id);
         println!("=================================================\n");
 
         Self {
             id: deployment_id,
-            name: config.name,
+            name: deployment_name,
         }
     }
 
