@@ -295,7 +295,16 @@ impl<'a> PromptClient<'a> {
         let offset = offset.unwrap_or(0);
         let visibility = visibility.unwrap_or(Visibility::Any);
 
-        let path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
+        // Build query string with is_public parameter for server-side filtering
+        // See: reference/api-specs/langsmith/prompt-endpoints.json:161-178
+        let mut path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
+
+        match visibility {
+            Visibility::Public => path.push_str("&is_public=true"),
+            Visibility::Private => path.push_str("&is_public=false"),
+            Visibility::Any => {} // Don't add is_public parameter - return all
+        }
+
         let request = self.client.langsmith_get(&path)?;
 
         // LangSmith API returns a paginated response with a "repos" field
@@ -306,18 +315,7 @@ impl<'a> PromptClient<'a> {
 
         let response: ListReposResponse = self.client.execute(request).await?;
 
-        // Filter by visibility if specified
-        let filtered = match visibility {
-            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
-            Visibility::Private => response
-                .repos
-                .into_iter()
-                .filter(|p| !p.is_public)
-                .collect(),
-            Visibility::Any => response.repos,
-        };
-
-        Ok(filtered)
+        Ok(response.repos)
     }
 
     /// Get a specific prompt by handle
@@ -353,7 +351,20 @@ impl<'a> PromptClient<'a> {
         let limit = limit.unwrap_or(20);
         let visibility = visibility.unwrap_or(Visibility::Any);
 
-        let path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
+        // Build query string with is_public parameter for server-side filtering
+        // See: reference/api-specs/langsmith/prompt-endpoints.json:161-178
+        let mut path = format!(
+            "/api/v1/repos/?query={}&limit={}",
+            urlencoding::encode(query),
+            limit
+        );
+
+        match visibility {
+            Visibility::Public => path.push_str("&is_public=true"),
+            Visibility::Private => path.push_str("&is_public=false"),
+            Visibility::Any => {} // Don't add is_public parameter - return all
+        }
+
         let request = self.client.langsmith_get(&path)?;
 
         // LangSmith API returns a paginated response with a "repos" field (same as list)
@@ -364,18 +375,7 @@ impl<'a> PromptClient<'a> {
 
         let response: SearchReposResponse = self.client.execute(request).await?;
 
-        // Filter by visibility if specified
-        let filtered = match visibility {
-            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
-            Visibility::Private => response
-                .repos
-                .into_iter()
-                .filter(|p| !p.is_public)
-                .collect(),
-            Visibility::Any => response.repos,
-        };
-
-        Ok(filtered)
+        Ok(response.repos)
     }
 
     /// Create a new prompt repository
@@ -613,6 +613,68 @@ impl<'a> PromptClient<'a> {
         let lc_json: LcJson<StructuredPrompt> = serde_json::from_value(manifest)?;
 
         Ok(lc_json.kwargs)
+    }
+
+    /// Delete a prompt from the PromptHub.
+    ///
+    /// For private prompts owned by the current user/organization, use "-" as the owner.
+    /// This follows the LangSmith API pattern where "-" refers to the authenticated user's namespace.
+    ///
+    /// # Arguments
+    /// * `prompt_name` - The name of the prompt to delete (without owner prefix)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// // Delete a private prompt
+    /// prompts.delete("my-test-prompt").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/repos/-/{prompt_name}`
+    /// - The "-" owner refers to the current authenticated user/organization
+    /// - See: Python SDK `langsmith/client.py:7630-7647` for reference implementation
+    pub async fn delete(&self, prompt_name: &str) -> Result<()> {
+        // Use "-" as owner for private prompts (current user's namespace)
+        // Example: DELETE https://api.smith.langchain.com/repos/-/my-prompt
+        let path = format!("/api/v1/repos/-/{}", prompt_name);
+        let request = self.client.langsmith_delete(&path)?;
+        self.client.execute_status_only_request(request).await
+    }
+
+    /// Delete a prompt by full handle (owner/repo format).
+    ///
+    /// # Arguments
+    /// * `handle` - The full prompt handle in "owner/repo" format
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// // Delete using full handle
+    /// prompts.delete_by_handle("my-org/my-prompt").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn delete_by_handle(&self, handle: &str) -> Result<()> {
+        let (owner, repo) = handle.split_once('/').ok_or_else(|| {
+            LangstarError::InvalidInput("Handle must be in format 'owner/repo'".into())
+        })?;
+        let path = format!("/api/v1/repos/{}/{}", owner, repo);
+        let request = self.client.langsmith_delete(&path)?;
+        self.client.execute_status_only_request(request).await
     }
 }
 
