@@ -24,10 +24,11 @@ Consolidate from 8 test deployment naming patterns to exactly **two types**:
 **1.1 Add constants for prefixes (after line 35):**
 ```rust
 /// Prefix for PR/dev test deployments (reusable via get-or-create)
-pub const PR_TEST_DEPLOYMENT_PREFIX: &str = "pr-integration-test-";
+/// Note: No trailing hyphen - this matches both old "pr-integration-test" and new "pr-integration-test-{ts}"
+pub const PR_TEST_DEPLOYMENT_PREFIX: &str = "pr-integration-test";
 
 /// Prefix for release lifecycle test deployments (create fresh, delete after)
-pub const RELEASE_TEST_DEPLOYMENT_PREFIX: &str = "release-integration-test-";
+pub const RELEASE_TEST_DEPLOYMENT_PREFIX: &str = "release-integration-test";
 ```
 
 **1.2 Add `name_prefix` field to `TestDeploymentConfig` (line 39-49):**
@@ -59,7 +60,7 @@ impl Default for TestDeploymentConfig {
             .as_secs();
 
         Self {
-            name: format!("{}{}", PR_TEST_DEPLOYMENT_PREFIX, timestamp),
+            name: format!("{}-{}", PR_TEST_DEPLOYMENT_PREFIX, timestamp),
             name_prefix: Some(PR_TEST_DEPLOYMENT_PREFIX.to_string()),
             repository_owner: std::env::var("REPOSITORY_OWNER")
                 .unwrap_or_else(|_| "codekiln".to_string()),
@@ -82,7 +83,7 @@ pub fn for_release_tests() -> Self {
         .as_secs();
 
     Self {
-        name: format!("{}{}", RELEASE_TEST_DEPLOYMENT_PREFIX, timestamp),
+        name: format!("{}-{}", RELEASE_TEST_DEPLOYMENT_PREFIX, timestamp),
         name_prefix: None,  // No prefix search - always create fresh
         ..Default::default()
     }
@@ -308,7 +309,9 @@ Add note at top referencing this consolidation.
 
 ## Migration Notes
 
-- Existing `pr-integration-test` (without timestamp) deployments will NOT be found by prefix search
-- First run after migration will create a new `pr-integration-test-{ts}` deployment
-- Old deployment will be cleaned up by cron after 4 hours
+- **Backward compatible**: Existing `pr-integration-test` (without timestamp) WILL be found by prefix search
+  - Prefix `pr-integration-test` matches both old `pr-integration-test` and new `pr-integration-test-{ts}`
+- First run after migration will reuse existing deployment if found
+- New deployments created will have timestamp suffix for uniqueness
+- Old deployment will eventually be replaced as tests create new timestamped versions
 - No breaking changes to test behavior, only naming standardization
