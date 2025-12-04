@@ -20,11 +20,32 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 0  # not fatal, container may not use gh
 fi
 
+# Helper function to install gh CLI extensions
+install_gh_extensions() {
+  echo "[setup-github-auth] Installing gh CLI extensions..."
+
+  # Install gh-sub-issue for issue hierarchy management
+  echo "[setup-github-auth] Installing gh-sub-issue extension..."
+  if gh extension install yahsan2/gh-sub-issue 2>/dev/null; then
+    echo "[setup-github-auth] gh-sub-issue installed successfully"
+  else
+    # Extension might already be installed, check if it exists
+    if gh extension list | grep -q "yahsan2/gh-sub-issue"; then
+      echo "[setup-github-auth] gh-sub-issue already installed"
+    else
+      echo "[setup-github-auth] WARNING: Failed to install gh-sub-issue extension"
+    fi
+  fi
+}
+
 # Check if already authenticated (common in Codespaces)
 SKIP_GH_AUTH=false
 if gh auth status >/dev/null 2>&1; then
   echo "[setup-github-auth] Already authenticated via gh. Skipping re-authentication."
   SKIP_GH_AUTH=true
+
+  # Install extensions now since gh is authenticated
+  install_gh_extensions
 fi
 
 # Determine which token source is populated
@@ -126,20 +147,9 @@ if command -v git >/dev/null 2>&1; then
   echo "[setup-github-auth] git credential stored for $USERNAME using 'store' helper."
 fi
 
-# Install gh CLI extensions that require authentication
-echo "[setup-github-auth] Installing gh CLI extensions..."
-
-# Verify gh is available
-if ! command -v gh >/dev/null 2>&1; then
-  echo "[setup-github-auth] WARNING: gh CLI not found. Skipping extension installation."
-else
-  # Install gh-sub-issue for issue hierarchy management
-  echo "[setup-github-auth] Installing gh-sub-issue extension..."
-  if gh extension install yahsan2/gh-sub-issue; then
-    echo "[setup-github-auth] gh-sub-issue installed successfully"
-  else
-    echo "[setup-github-auth] WARNING: Failed to install gh-sub-issue extension"
-  fi
+# Install gh CLI extensions after authentication (if not already done)
+if [[ "$SKIP_GH_AUTH" != "true" ]]; then
+  install_gh_extensions
 fi
 
 echo "[setup-github-auth] Done."
