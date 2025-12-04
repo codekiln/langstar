@@ -10,6 +10,8 @@
 
 Studying mise's self-update implementation as a **production reference** for langstar's auto-update feature (#541). Unlike ripgrep/eza/bat/fd/starship (which have no self-update), mise has a complete, battle-tested implementation using the `self_update` crate.
 
+**Source**: Initial research via [DeepWiki Q&A](https://deepwiki.com/search/does-mise-have-a-command-line_e9362074-9c1b-4e63-9d21-136f721dcd6b), verified against local clone.
+
 **Why mise matters for langstar:**
 - Uses the same `self_update` crate we plan to use
 - Handles package manager detection elegantly
@@ -266,6 +268,7 @@ mise uses `self_update` v0.42. The langstar scout report didn't specify a versio
 
 ## Related Research
 
+- [DeepWiki Q&A: mise self-update implementation](https://deepwiki.com/search/does-mise-have-a-command-line_e9362074-9c1b-4e63-9d21-136f721dcd6b) - Source for initial research
 - [Issue #542: Rust project self-update precedents](https://github.com/codekiln/langstar/issues/542)
 - [Issue #541: Auto-update milestone](https://github.com/codekiln/langstar/issues/541)
 - [Scout Report: Langstar Auto-Update Feasibility](../../../../../docs/research/535-langstar-auto-update-scout.md)
