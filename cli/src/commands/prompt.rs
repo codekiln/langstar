@@ -176,13 +176,18 @@ impl PromptCommands {
         client: LangchainClient,
         flag_org_id: &Option<String>,
         flag_workspace_id: &Option<String>,
+        config: &Config,
     ) -> LangchainClient {
         let mut client = client;
 
         // Warn if both org and workspace IDs are specified
-        if flag_org_id.is_some() && flag_workspace_id.is_some() {
+        if !config.hide_workspace_and_org_id_message
+            && flag_org_id.is_some()
+            && flag_workspace_id.is_some()
+        {
             eprintln!("⚠ Warning: Both organization and workspace IDs specified");
             eprintln!("  → Using workspace scope (narrower scope takes precedence)");
+            eprintln!("  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1");
         }
 
         // Apply organization ID if provided via flag (overrides config/env)
@@ -196,13 +201,15 @@ impl PromptCommands {
         }
 
         // Also warn if client now has both (from config/env combination)
-        if client.organization_id().is_some()
+        if !config.hide_workspace_and_org_id_message
+            && client.organization_id().is_some()
             && client.workspace_id().is_some()
             && flag_org_id.is_none()
             && flag_workspace_id.is_none()
         {
             eprintln!("ℹ Info: Both organization and workspace IDs configured");
             eprintln!("  → Using workspace scope (narrower scope takes precedence)");
+            eprintln!("  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1");
         }
 
         client
@@ -271,7 +278,7 @@ impl PromptCommands {
                 workspace_id,
                 public,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 let visibility = Self::determine_visibility(&client, *public);
 
                 // Show scope information
@@ -311,7 +318,7 @@ impl PromptCommands {
                 organization_id,
                 workspace_id,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 formatter.info(&format!("Fetching prompt '{}'...", handle));
 
                 let prompt = client.prompts().get(handle).await?;
@@ -347,7 +354,7 @@ impl PromptCommands {
                 workspace_id,
                 public,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 let visibility = Self::determine_visibility(&client, *public);
 
                 // Show scope information
@@ -394,7 +401,7 @@ impl PromptCommands {
                 workspace_id,
             } => {
                 // Apply scoping from flags/config
-                let mut client = Self::apply_scoping(client, organization_id, workspace_id);
+                let mut client = Self::apply_scoping(client, organization_id, workspace_id, config);
 
                 // If no organization ID was explicitly provided, try to fetch it
                 if organization_id.is_none() && client.organization_id().is_none() {
@@ -576,7 +583,7 @@ impl PromptCommands {
                 organization_id,
                 workspace_id,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id);
+                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
 
                 // Parse handle into owner/repo
                 let parts: Vec<&str> = handle.split('/').collect();
@@ -687,12 +694,13 @@ mod tests {
         // Client with no scoping
         let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
         let client = LangchainClient::new(auth).unwrap();
+        let config = Config::default();
 
         assert_eq!(client.organization_id(), None);
         assert_eq!(client.workspace_id(), None);
 
         // Apply scoping with no flags - should remain unchanged
-        let scoped_client = PromptCommands::apply_scoping(client, &None, &None);
+        let scoped_client = PromptCommands::apply_scoping(client, &None, &None, &config);
 
         assert_eq!(scoped_client.organization_id(), None);
         assert_eq!(scoped_client.workspace_id(), None);
@@ -702,9 +710,10 @@ mod tests {
     fn test_apply_scoping_with_org_flag() {
         let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
         let client = LangchainClient::new(auth).unwrap();
+        let config = Config::default();
 
         let org_id = Some("test-org-id".to_string());
-        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None);
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None, &config);
 
         assert_eq!(scoped_client.organization_id(), Some("test-org-id"));
         assert_eq!(scoped_client.workspace_id(), None);
@@ -714,9 +723,10 @@ mod tests {
     fn test_apply_scoping_with_workspace_flag() {
         let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
         let client = LangchainClient::new(auth).unwrap();
+        let config = Config::default();
 
         let workspace_id = Some("test-workspace-id".to_string());
-        let scoped_client = PromptCommands::apply_scoping(client, &None, &workspace_id);
+        let scoped_client = PromptCommands::apply_scoping(client, &None, &workspace_id, &config);
 
         assert_eq!(scoped_client.organization_id(), None);
         assert_eq!(scoped_client.workspace_id(), Some("test-workspace-id"));
@@ -726,10 +736,11 @@ mod tests {
     fn test_apply_scoping_with_both_flags() {
         let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
         let client = LangchainClient::new(auth).unwrap();
+        let config = Config::default();
 
         let org_id = Some("test-org-id".to_string());
         let workspace_id = Some("test-workspace-id".to_string());
-        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &workspace_id);
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &workspace_id, &config);
 
         assert_eq!(scoped_client.organization_id(), Some("test-org-id"));
         assert_eq!(scoped_client.workspace_id(), Some("test-workspace-id"));
@@ -745,12 +756,13 @@ mod tests {
             None,
         );
         let client = LangchainClient::new(auth).unwrap();
+        let config = Config::default();
 
         assert_eq!(client.organization_id(), Some("config-org-id"));
 
         // Flag should override config
         let org_id = Some("flag-org-id".to_string());
-        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None);
+        let scoped_client = PromptCommands::apply_scoping(client, &org_id, &None, &config);
 
         assert_eq!(scoped_client.organization_id(), Some("flag-org-id"));
     }

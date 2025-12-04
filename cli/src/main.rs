@@ -139,6 +139,10 @@ async fn run() -> Result<()> {
             };
             println!("  Timezone: {}", tz_display);
             println!(
+                "  Hide workspace/org ID warnings: {}",
+                config.hide_workspace_and_org_id_message
+            );
+            println!(
                 "  LangSmith API key: {}",
                 if config.langsmith_api_key.is_some() {
                     "configured"
@@ -214,6 +218,11 @@ async fn run() -> Result<()> {
             println!(
                 "  LANGSTAR_TIMEZONE: {}",
                 std::env::var("LANGSTAR_TIMEZONE").unwrap_or_else(|_| "not set".to_string())
+            );
+            println!(
+                "  LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE: {}",
+                std::env::var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE")
+                    .unwrap_or_else(|_| "not set".to_string())
             );
         }
         Commands::Version => {
