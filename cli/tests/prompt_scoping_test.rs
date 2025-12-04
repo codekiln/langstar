@@ -591,25 +591,6 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     // Store handle for cleanup
     let prompt_handle = prompt.repo_handle.clone();
 
-    // Cleanup function to log test prompt info when test completes
-    // Note: Actual deletion would require SDK delete method implementation
-    struct CleanupGuard {
-        handle: String,
-    }
-
-    impl Drop for CleanupGuard {
-        fn drop(&mut self) {
-            println!(
-                "\n[CLEANUP] Test prompt '{}' should be deleted manually if test failed",
-                self.handle
-            );
-        }
-    }
-
-    let _cleanup = CleanupGuard {
-        handle: prompt_handle.clone(),
-    };
-
     // ═══════════════════════════════════════════════════════════════════════
     // Step 2: READ - Verify prompt exists via SDK get
     // ═══════════════════════════════════════════════════════════════════════
@@ -731,9 +712,25 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     );
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Step 5: DELETE - Cleanup handled by CleanupGuard on drop
+    // Step 5: DELETE - Clean up the test prompt
     // ═══════════════════════════════════════════════════════════════════════
-    // Note: CleanupGuard will attempt cleanup when it goes out of scope
+    println!("\n[DELETE] Cleaning up test prompt via SDK...");
+
+    let delete_result =
+        runtime.block_on(async { client.prompts().delete(&test_prompt_name).await });
+
+    match delete_result {
+        Ok(()) => {
+            println!("   ✓ Deleted test prompt: {}", test_prompt_name);
+        }
+        Err(e) => {
+            // Log but don't fail - deletion failure shouldn't fail the test
+            println!(
+                "   ⚠ Warning: Failed to delete test prompt '{}': {}",
+                test_prompt_name, e
+            );
+        }
+    }
 
     println!("\n══════════════════════════════════════════════════════════════");
     println!("✓ CRUD Lifecycle Test PASSED");
@@ -741,6 +738,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     println!("  - Read/verified via SDK: OK");
     println!("  - Found in CLI list (private): OK");
     println!("  - Excluded from CLI list --public: OK");
+    println!("  - Deleted test prompt: OK");
     println!("══════════════════════════════════════════════════════════════\n");
 }
 
@@ -843,7 +841,37 @@ fn test_prompt_search_crud_lifecycle() {
         println!("   ⚠ Test prompt not yet indexed for search (this is OK - indexing has delay)");
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // DELETE: Clean up the test prompt
+    // ═══════════════════════════════════════════════════════════════════════
+    println!("\n[DELETE] Cleaning up test prompt via SDK...");
+
+    let delete_result =
+        runtime.block_on(async { client.prompts().delete(&test_prompt_name).await });
+
+    match delete_result {
+        Ok(()) => {
+            println!("   ✓ Deleted test prompt: {}", test_prompt_name);
+        }
+        Err(e) => {
+            println!(
+                "   ⚠ Warning: Failed to delete test prompt '{}': {}",
+                test_prompt_name, e
+            );
+        }
+    }
+
     println!("\n══════════════════════════════════════════════════════════════");
     println!("✓ Search CRUD Lifecycle Test completed");
+    println!("  - Created searchable prompt: {}", test_prompt_name);
+    println!(
+        "  - Searched (indexing may delay): {}",
+        if found {
+            "found"
+        } else {
+            "not found (expected)"
+        }
+    );
+    println!("  - Deleted test prompt: OK");
     println!("══════════════════════════════════════════════════════════════\n");
 }

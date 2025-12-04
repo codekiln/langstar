@@ -614,6 +614,68 @@ impl<'a> PromptClient<'a> {
 
         Ok(lc_json.kwargs)
     }
+
+    /// Delete a prompt from the PromptHub.
+    ///
+    /// For private prompts owned by the current user/organization, use "-" as the owner.
+    /// This follows the LangSmith API pattern where "-" refers to the authenticated user's namespace.
+    ///
+    /// # Arguments
+    /// * `prompt_name` - The name of the prompt to delete (without owner prefix)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// // Delete a private prompt
+    /// prompts.delete("my-test-prompt").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/repos/-/{prompt_name}`
+    /// - The "-" owner refers to the current authenticated user/organization
+    /// - See: Python SDK `langsmith/client.py:7630-7647` for reference implementation
+    pub async fn delete(&self, prompt_name: &str) -> Result<()> {
+        // Use "-" as owner for private prompts (current user's namespace)
+        // Example: DELETE https://api.smith.langchain.com/repos/-/my-prompt
+        let path = format!("/api/v1/repos/-/{}", prompt_name);
+        let request = self.client.langsmith_delete(&path)?;
+        self.client.execute_status_only_request(request).await
+    }
+
+    /// Delete a prompt by full handle (owner/repo format).
+    ///
+    /// # Arguments
+    /// * `handle` - The full prompt handle in "owner/repo" format
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// // Delete using full handle
+    /// prompts.delete_by_handle("my-org/my-prompt").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn delete_by_handle(&self, handle: &str) -> Result<()> {
+        let (owner, repo) = handle.split_once('/').ok_or_else(|| {
+            LangstarError::InvalidInput("Handle must be in format 'owner/repo'".into())
+        })?;
+        let path = format!("/api/v1/repos/{}/{}", owner, repo);
+        let request = self.client.langsmith_delete(&path)?;
+        self.client.execute_status_only_request(request).await
+    }
 }
 
 /// Request to create a commit (upload/update a prompt)

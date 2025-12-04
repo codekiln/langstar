@@ -449,7 +449,7 @@ impl LangchainClient {
     /// # Returns
     /// * `Ok(())` if the request succeeds (2xx status)
     /// * `Err(LangstarError::ApiError)` if the request fails
-    async fn execute_status_only_request(&self, request: RequestBuilder) -> Result<()> {
+    pub async fn execute_status_only_request(&self, request: RequestBuilder) -> Result<()> {
         let response = request.send().await?;
         let status = response.status();
 
