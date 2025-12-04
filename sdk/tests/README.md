@@ -15,11 +15,20 @@ Test fixtures wait for `RevisionStatus::Deployed`, not `DeploymentStatus::Ready`
 
 ### Test Deployment Naming
 
-Integration tests use shared deployments to reduce API quota and speed up tests:
+Integration tests use exactly **two deployment types** with standardized naming:
 
-- **`pr-integration-test`** - Used by `test_utils` module (shared by SDK and CLI tests)
-- **`langstar-integration-test`** - Used by `integration_deployment_workflow.rs` tests
-- **`release-integration-test-{timestamp}`** - For release lifecycle tests (creates fresh deployment)
+| Type | Pattern | Behavior |
+|------|---------|----------|
+| **PR/Dev** | `pr-integration-test-{timestamp}` | Get-or-create by prefix, cleaned by cron (4hr threshold) |
+| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting |
+
+**Using TestDeploymentConfig:**
+- `TestDeploymentConfig::default()` - Creates PR/dev config with prefix-based reuse
+- `TestDeploymentConfig::for_release_tests()` - Creates release config (always fresh)
+
+The `get_or_create_deployment()` function handles:
+- **With prefix**: Searches for existing `pr-integration-test-*` deployment, reuses if found
+- **Without prefix**: Always creates a new deployment (for release tests)
 
 ## Running Integration Tests
 
@@ -302,18 +311,17 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 
 ### Available Deployment Tests
 
-#### `test_deployment_workflow` (Persistent Deployment)
+#### `test_deployment_workflow` (Shared PR/Dev Deployment)
 
 **Duration:** 5-30 minutes (first run: ~22 min, subsequent runs: ~6 min)
 
 **What it tests:**
-1. Finding GitHub integration ID dynamically
-2. Using a persistent deployment named "langstar-integration-test" with get-or-create pattern
-3. Listing revisions and polling first revision to DEPLOYED status
-4. Patching deployment (triggers new revision)
-5. Polling second revision to DEPLOYED status
-6. Validating deployment source, URL, and final status
-7. Reuses existing deployment; does not perform cleanup
+1. Get or create deployment using `TestDeploymentConfig::default()` (prefix-based reuse)
+2. Validates deployment is ready (RevisionStatus::Deployed)
+3. Patching deployment (triggers new revision)
+4. Polling new revision to DEPLOYED status
+5. Validating deployment source, URL, and final status
+6. Leaves deployment running (cleaned by periodic cron job after 4 hours)
 
 **Validations:**
 - ✅ Deployment source is "github"
@@ -321,34 +329,33 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 - ✅ Final revision status is Deployed
 
 **Performance:**
-- First run creates deployment (~22 minutes)
-- Subsequent runs reuse deployment (~6 minutes, 73% time reduction)
+- First run creates `pr-integration-test-{ts}` deployment (~22 minutes)
+- Subsequent runs reuse existing `pr-integration-test-*` deployment (~6 minutes, 73% time reduction)
 
-#### `test_deployment_workflow_full_lifecycle` (Complete Lifecycle)
+#### `test_deployment_workflow_full_lifecycle` (Release Test - Complete Lifecycle)
 
 **Duration:** 20-30 minutes
 
 **What it tests:**
-1. Finding GitHub integration ID dynamically
-2. Creating deployment with timestamp-based unique name
-3. Listing revisions and polling first revision to DEPLOYED status
-4. Patching deployment (triggers new revision)
-5. Polling second revision to DEPLOYED status
-6. Validating deployment source, URL, and final status
-7. Cleanup with RAII guard (deletes deployment after test)
+1. Create fresh deployment using `TestDeploymentConfig::for_release_tests()` (no prefix reuse)
+2. Validates deployment is ready (RevisionStatus::Deployed)
+3. Patching deployment (triggers new revision)
+4. Polling new revision to DEPLOYED status
+5. Validating deployment source, URL, and final status
+6. Cleanup with RAII guard (deletes deployment after test)
 
 **Validations:**
 - ✅ Deployment source is "github"
 - ✅ Deployment has custom_url in source_config
 - ✅ Final revision status is Deployed
-- ✅ Automatic cleanup on test failure
+- ✅ Automatic cleanup on test failure (via DeploymentGuard)
 
 **Use Cases:**
 - Pre-release validation requiring complete create/delete cycle
 - Testing deployment cleanup functionality
 - Scenarios requiring a fresh deployment each run
 
-Creates a uniquely-named deployment and performs a complete lifecycle test including cleanup. This test creates a new deployment each run with RAII guard protection.
+Creates a `release-integration-test-{ts}` deployment and performs a complete lifecycle test including cleanup. This test creates a new deployment each run with RAII guard protection.
 
 #### `test_list_deployments` (Read-Only)
 

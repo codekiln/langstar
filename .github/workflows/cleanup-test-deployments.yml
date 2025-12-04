@@ -52,30 +52,21 @@ jobs:
 
           echo "✓ No CI runs in progress, proceeding with cleanup"
 
-          # Get test deployments for cleanup using multiple patterns
-          # Naming patterns to capture:
-          # - "pr-integration-test" - Reused across PR/dev test runs (clean up when stale)
-          # - "release-integration-test-{timestamp}" - One-time lifecycle tests
-          # - "langstar-test-{timestamp}" - SDK CLI testing workspace tests
-          # - "langstar-integration-test" - SDK integration tests
-          # - "cli-test-*" - CLI graph command tests (deployment, wait, lifecycle, env)
+          # Get test deployments for cleanup
+          # All test deployments now use the "integration-test" naming convention:
+          # - "pr-integration-test-{timestamp}" - Shared PR/dev deployments (get-or-create)
+          # - "release-integration-test-{timestamp}" - Full lifecycle test deployments
           #
-          # We search for multiple patterns and merge results, deduplicating by ID
-          echo "🔍 Searching for test deployments across all patterns..."
-          all_deployments='{"resources":[]}'
+          # A single pattern captures both types.
+          echo "🔍 Searching for test deployments..."
+          if ! raw_deployments=$(./target/release/langstar graph list \
+            --name-contains "integration-test" \
+            --format json 2>/dev/null); then
+            echo "❌ Error: Failed to list deployments"
+            exit 1
+          fi
 
-          for pattern in "integration-test" "langstar-test" "cli-test"; do
-            echo "  Checking pattern: $pattern"
-            if pattern_result=$(./target/release/langstar graph list \
-              --name-contains "$pattern" \
-              --format json 2>/dev/null); then
-              # Merge results (jq will handle deduplication by ID)
-              all_deployments=$(echo "$all_deployments" "$pattern_result" | \
-                jq -s '.[0].resources + .[1].resources | unique_by(.id) | {resources: .}')
-            fi
-          done
-
-          deployments="$all_deployments"
+          deployments="$raw_deployments"
           count=$(echo "$deployments" | jq '.resources | length')
           echo "Found $count test deployment(s) to evaluate for cleanup"
 

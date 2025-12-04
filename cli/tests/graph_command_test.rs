@@ -1,5 +1,6 @@
 use assert_cmd::Command;
 use escargot::CargoBuild;
+use langstar_sdk::test_utils::TestDeploymentConfig;
 
 /// CLI Integration tests for graph commands
 ///
@@ -280,8 +281,6 @@ fn test_graph_list_multiple_filters() {
 #[test]
 #[ignore] // Requires actual API access and creates resources
 fn test_graph_create_basic() {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     if check_env_vars().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
@@ -289,12 +288,9 @@ fn test_graph_create_basic() {
 
     println!("Testing graph create command");
 
-    // Generate unique deployment name
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs();
-    let deployment_name = format!("cli-test-deployment-{}", timestamp);
+    // Use standard release test naming (release-integration-test-{ts})
+    let config = TestDeploymentConfig::for_release_tests();
+    let deployment_name = config.name.clone();
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -337,8 +333,6 @@ fn test_graph_create_basic() {
 #[test]
 #[ignore] // Requires actual API access and creates resources
 fn test_graph_create_with_wait() {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     if check_env_vars().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
@@ -346,12 +340,9 @@ fn test_graph_create_with_wait() {
 
     println!("Testing graph create command with --wait flag");
 
-    // Generate unique deployment name
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs();
-    let deployment_name = format!("cli-test-deployment-wait-{}", timestamp);
+    // Use standard release test naming (release-integration-test-{ts})
+    let config = TestDeploymentConfig::for_release_tests();
+    let deployment_name = config.name.clone();
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -407,8 +398,6 @@ fn test_graph_create_with_wait() {
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[ignore] // Blocked - Requires GitHub integration with repo access permissions
 fn test_deployment_full_lifecycle() {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     if check_env_vars().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
@@ -418,12 +407,9 @@ fn test_deployment_full_lifecycle() {
     println!("Test: Deployment Full Lifecycle (Create, List, Delete)");
     println!("==================================================\n");
 
-    // Generate unique deployment name
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs();
-    let deployment_name = format!("cli-test-lifecycle-{}", timestamp);
+    // Use standard release test naming (release-integration-test-{ts})
+    let config = TestDeploymentConfig::for_release_tests();
+    let deployment_name = config.name.clone();
 
     // Step 1: Create deployment
     println!("Step 1: Creating deployment '{}'", deployment_name);
@@ -597,8 +583,6 @@ fn test_graph_create_missing_branch() {
 
 #[test]
 fn test_graph_create_with_env_vars() {
-    use std::time::{SystemTime, UNIX_EPOCH};
-
     if check_env_vars().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
@@ -606,12 +590,9 @@ fn test_graph_create_with_env_vars() {
 
     println!("Testing graph create with environment variables");
 
-    // Generate unique deployment name
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs();
-    let deployment_name = format!("cli-test-deployment-env-{}", timestamp);
+    // Use standard release test naming (release-integration-test-{ts})
+    let config = TestDeploymentConfig::for_release_tests();
+    let deployment_name = config.name.clone();
 
     let mut cmd = langstar_cmd();
     cmd.args([
