@@ -295,7 +295,16 @@ impl<'a> PromptClient<'a> {
         let offset = offset.unwrap_or(0);
         let visibility = visibility.unwrap_or(Visibility::Any);
 
-        let path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
+        // Build query string with is_public parameter for server-side filtering
+        // See: reference/api-specs/langsmith/prompt-endpoints.json:161-178
+        let mut path = format!("/api/v1/repos/?limit={}&offset={}", limit, offset);
+
+        match visibility {
+            Visibility::Public => path.push_str("&is_public=true"),
+            Visibility::Private => path.push_str("&is_public=false"),
+            Visibility::Any => {} // Don't add is_public parameter - return all
+        }
+
         let request = self.client.langsmith_get(&path)?;
 
         // LangSmith API returns a paginated response with a "repos" field
@@ -306,18 +315,7 @@ impl<'a> PromptClient<'a> {
 
         let response: ListReposResponse = self.client.execute(request).await?;
 
-        // Filter by visibility if specified
-        let filtered = match visibility {
-            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
-            Visibility::Private => response
-                .repos
-                .into_iter()
-                .filter(|p| !p.is_public)
-                .collect(),
-            Visibility::Any => response.repos,
-        };
-
-        Ok(filtered)
+        Ok(response.repos)
     }
 
     /// Get a specific prompt by handle
@@ -353,7 +351,16 @@ impl<'a> PromptClient<'a> {
         let limit = limit.unwrap_or(20);
         let visibility = visibility.unwrap_or(Visibility::Any);
 
-        let path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
+        // Build query string with is_public parameter for server-side filtering
+        // See: reference/api-specs/langsmith/prompt-endpoints.json:161-178
+        let mut path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
+
+        match visibility {
+            Visibility::Public => path.push_str("&is_public=true"),
+            Visibility::Private => path.push_str("&is_public=false"),
+            Visibility::Any => {} // Don't add is_public parameter - return all
+        }
+
         let request = self.client.langsmith_get(&path)?;
 
         // LangSmith API returns a paginated response with a "repos" field (same as list)
@@ -364,18 +371,7 @@ impl<'a> PromptClient<'a> {
 
         let response: SearchReposResponse = self.client.execute(request).await?;
 
-        // Filter by visibility if specified
-        let filtered = match visibility {
-            Visibility::Public => response.repos.into_iter().filter(|p| p.is_public).collect(),
-            Visibility::Private => response
-                .repos
-                .into_iter()
-                .filter(|p| !p.is_public)
-                .collect(),
-            Visibility::Any => response.repos,
-        };
-
-        Ok(filtered)
+        Ok(response.repos)
     }
 
     /// Create a new prompt repository
