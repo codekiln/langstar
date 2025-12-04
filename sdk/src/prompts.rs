@@ -353,7 +353,11 @@ impl<'a> PromptClient<'a> {
 
         // Build query string with is_public parameter for server-side filtering
         // See: reference/api-specs/langsmith/prompt-endpoints.json:161-178
-        let mut path = format!("/api/v1/repos/?query={}&limit={}", query, limit);
+        let mut path = format!(
+            "/api/v1/repos/?query={}&limit={}",
+            urlencoding::encode(query),
+            limit
+        );
 
         match visibility {
             Visibility::Public => path.push_str("&is_public=true"),
