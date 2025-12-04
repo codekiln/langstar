@@ -28,16 +28,26 @@
 //! ```
 
 use crate::{
-    CreateDeploymentRequest, DeploymentFilters, LangchainClient, Revision, RevisionStatus,
+    CreateDeploymentRequest, DeploymentFilters, LangchainClient, LangstarError, Revision,
+    RevisionStatus,
 };
 use serde_json::json;
 use std::time::Duration;
+
+/// Prefix for PR/dev test deployments (reusable via get-or-create)
+/// Note: No trailing hyphen - this matches both old "pr-integration-test" and new "pr-integration-test-{ts}"
+pub const PR_TEST_DEPLOYMENT_PREFIX: &str = "pr-integration-test";
+
+/// Prefix for release lifecycle test deployments (create fresh, delete after)
+pub const RELEASE_TEST_DEPLOYMENT_PREFIX: &str = "release-integration-test";
 
 /// Configuration for creating test deployments
 #[derive(Debug, Clone)]
 pub struct TestDeploymentConfig {
     /// Name of the deployment
     pub name: String,
+    /// Optional prefix for get-or-create lookup (None = always create fresh)
+    pub name_prefix: Option<String>,
     /// Repository owner (e.g., "codekiln")
     pub repository_owner: String,
     /// Repository name (e.g., "langstar")
@@ -50,12 +60,19 @@ pub struct TestDeploymentConfig {
 
 impl Default for TestDeploymentConfig {
     fn default() -> Self {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs();
+
         Self {
-            // Use constant name to enable deployment reuse across test runs.
-            // Both SDK and CLI tests share this deployment via the get-or-create pattern.
+            // Use timestamped name with prefix for get-or-create pattern.
+            // Both SDK and CLI tests share deployments via prefix-based lookup.
             // The "pr-" prefix indicates these are reused for PR/development testing.
             // See also: for_release_tests() for one-time lifecycle testing.
-            name: "pr-integration-test".to_string(),
+            name: format!("{}-{}", PR_TEST_DEPLOYMENT_PREFIX, timestamp),
+            name_prefix: Some(PR_TEST_DEPLOYMENT_PREFIX.to_string()),
             repository_owner: std::env::var("REPOSITORY_OWNER")
                 .unwrap_or_else(|_| "codekiln".to_string()),
             repository_name: std::env::var("REPOSITORY_NAME")
@@ -72,6 +89,8 @@ impl TestDeploymentConfig {
     /// Uses a timestamped name to ensure a fresh deployment is created,
     /// allowing the full create → test → delete lifecycle to be verified.
     /// These deployments should be cleaned up after the test completes.
+    ///
+    /// Sets `name_prefix: None` so get-or-create always creates fresh.
     pub fn for_release_tests() -> Self {
         use std::time::{SystemTime, UNIX_EPOCH};
         let timestamp = SystemTime::now()
@@ -80,7 +99,8 @@ impl TestDeploymentConfig {
             .as_secs();
 
         Self {
-            name: format!("release-integration-test-{}", timestamp),
+            name: format!("{}-{}", RELEASE_TEST_DEPLOYMENT_PREFIX, timestamp),
+            name_prefix: None, // No prefix search - always create fresh
             ..Default::default()
         }
     }
@@ -139,6 +159,26 @@ impl Drop for DeploymentGuard {
             eprintln!("   Note: Automatic cleanup from Drop is not supported in async contexts.");
         }
     }
+}
+
+/// Check if an error is a 409 conflict due to orphaned tracing project
+///
+/// LangSmith automatically creates a tracing project with the same name as a deployment.
+/// If the deployment is deleted but the tracing project isn't, subsequent attempts to
+/// create a deployment with the same name will fail with a 409 conflict.
+fn is_tracing_project_conflict(error: &LangstarError) -> bool {
+    match error {
+        LangstarError::ApiError { status, message } => {
+            // Case-insensitive check in case API returns "Tracing Project" or other variations
+            *status == 409 && message.to_lowercase().contains("tracing project")
+        }
+        _ => false,
+    }
+}
+
+/// Check if an error is any 409 conflict
+fn is_conflict_error(error: &LangstarError) -> bool {
+    matches!(error, LangstarError::ApiError { status: 409, .. })
 }
 
 /// Default poll interval for waiting on revision status
@@ -259,6 +299,92 @@ pub async fn wait_for_deployment_with_options(
     }
 }
 
+/// Helper function to create a new deployment
+async fn create_new_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    eprintln!("No existing deployment found, creating new one...");
+    let create_request = CreateDeploymentRequest {
+        name: config.name.clone(),
+        source: "github".to_string(),
+        source_config: json!({
+            "integration_id": integration_id,
+            "repo_url": format!("https://github.com/{}/{}", config.repository_owner, config.repository_name),
+            "deployment_type": "dev",
+            "build_on_push": false,
+            "custom_url": null,
+            "resource_spec": null,
+        }),
+        source_revision_config: json!({
+            "repo_ref": config.branch,
+            "langgraph_config_path": config.config_path,
+            "image_uri": null,
+        }),
+        secrets: vec![],
+    };
+
+    match client.deployments().create(&create_request).await {
+        Ok(new_deployment) => {
+            eprintln!(
+                "Created deployment: {} ({})",
+                config.name, new_deployment.id
+            );
+            Ok(new_deployment)
+        }
+        Err(err) => {
+            // Provide actionable guidance for 409 conflicts
+            if is_tracing_project_conflict(&err) {
+                eprintln!();
+                eprintln!("╭────────────────────────────────────────────────────────────────╮");
+                eprintln!("│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │");
+                eprintln!("├────────────────────────────────────────────────────────────────┤");
+                eprintln!("│ A previous deployment was deleted but its associated tracing  │");
+                eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
+                eprintln!("│ deployment with the same name.                                │");
+                eprintln!("├────────────────────────────────────────────────────────────────┤");
+                eprintln!("│ To fix this issue:                                            │");
+                eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
+                // Truncate long names to fit in the 24-char column; show full name in error below
+                let display_name = if config.name.len() > 24 {
+                    format!("{}...", &config.name[..21])
+                } else {
+                    config.name.clone()
+                };
+                eprintln!("│  2. Find and delete project named: {:24} │", display_name);
+                eprintln!("│  3. Re-run the tests                                          │");
+                eprintln!("╰────────────────────────────────────────────────────────────────╯");
+                eprintln!();
+                Err(format!(
+                    "409 Conflict: Orphaned tracing project '{}' blocks deployment creation. \
+                     See instructions above to resolve.",
+                    config.name
+                )
+                .into())
+            } else if is_conflict_error(&err) {
+                eprintln!();
+                eprintln!("╭────────────────────────────────────────────────────────────────╮");
+                eprintln!("│ ⚠️  409 CONFLICT ERROR                                          │");
+                eprintln!("├────────────────────────────────────────────────────────────────┤");
+                eprintln!("│ A resource conflict occurred. This may indicate:              │");
+                eprintln!("│  - A concurrent test is using the same deployment name        │");
+                eprintln!("│  - An orphaned resource needs manual cleanup                  │");
+                eprintln!("├────────────────────────────────────────────────────────────────┤");
+                eprintln!("│ Suggested actions:                                            │");
+                eprintln!("│  1. Check if another CI run is in progress                    │");
+                eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
+                eprintln!("│  3. Wait and retry if concurrent access suspected             │");
+                eprintln!("╰────────────────────────────────────────────────────────────────╯");
+                eprintln!();
+                Err(err.into())
+            } else {
+                Err(err.into())
+            }
+        }
+    }
+}
+
 /// Get or create a test deployment by name
 ///
 /// This function implements the "get-or-create" pattern:
@@ -278,19 +404,22 @@ pub async fn wait_for_deployment_with_options(
 ///
 /// # Returns
 ///
-/// * `Ok((deployment_id, revision_id))` - IDs of the deployment and its latest revision
+/// * `Ok((deployment_id, revision_id, deployment_name))` - IDs and actual name of the deployment
 /// * `Err(...)` - If creation or waiting failed
+///
+/// Note: The returned `deployment_name` may differ from `config.name` when an existing
+/// deployment is reused via prefix matching. Always use the returned name for assertions.
 ///
 /// # Example
 ///
 /// ```ignore
 /// let config = TestDeploymentConfig::default();
-/// let (deployment_id, revision_id) = get_or_create_deployment(&client, &config).await?;
+/// let (deployment_id, revision_id, name) = get_or_create_deployment(&client, &config).await?;
 /// ```
 pub async fn get_or_create_deployment(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
-) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+) -> Result<(String, String, String), Box<dyn std::error::Error + Send + Sync>> {
     // Step 1: Find GitHub integration ID
     eprintln!(
         "Finding GitHub integration for {}/{}",
@@ -302,9 +431,15 @@ pub async fn get_or_create_deployment(
         .await?;
     eprintln!("Found integration ID: {}", integration_id);
 
-    // Step 2: Look for existing deployment by name (no status filter!)
+    // Step 2: Look for existing deployment by prefix or name
+    let search_pattern = config
+        .name_prefix
+        .as_ref()
+        .map(|p| p.to_string())
+        .unwrap_or_else(|| config.name.clone());
+
     let filters = DeploymentFilters {
-        name_contains: Some(config.name.clone()),
+        name_contains: Some(search_pattern.clone()),
         ..Default::default()
     };
     let deployments = client
@@ -312,45 +447,30 @@ pub async fn get_or_create_deployment(
         .list(Some(100), None, Some(filters))
         .await?;
 
-    let deployment = if let Some(existing) =
-        deployments.resources.iter().find(|d| d.name == config.name)
-    {
-        eprintln!(
-            "Found existing deployment: {} ({})",
-            config.name, existing.id
-        );
-        existing.clone()
+    // Find deployment matching prefix (for reuse) or exact name
+    let deployment = if config.name_prefix.is_some() {
+        // Prefix-based search: find ANY matching deployment for reuse
+        if let Some(existing) = deployments
+            .resources
+            .iter()
+            .find(|d| d.name.starts_with(&search_pattern))
+        {
+            eprintln!(
+                "Found existing deployment: {} ({})",
+                existing.name, existing.id
+            );
+            existing.clone()
+        } else {
+            // Create new with the generated name
+            create_new_deployment(client, config, &integration_id).await?
+        }
     } else {
-        // Create new deployment
-        eprintln!("No existing deployment found, creating new one...");
-        let create_request = CreateDeploymentRequest {
-            name: config.name.clone(),
-            source: "github".to_string(),
-            source_config: json!({
-                "integration_id": integration_id,
-                "repo_url": format!("https://github.com/{}/{}", config.repository_owner, config.repository_name),
-                "deployment_type": "dev",
-                "build_on_push": false,
-                "custom_url": null,
-                "resource_spec": null,
-            }),
-            source_revision_config: json!({
-                "repo_ref": config.branch,
-                "langgraph_config_path": config.config_path,
-                "image_uri": null,
-            }),
-            secrets: vec![],
-        };
-
-        let new_deployment = client.deployments().create(&create_request).await?;
-        eprintln!(
-            "Created deployment: {} ({})",
-            config.name, new_deployment.id
-        );
-        new_deployment
+        // No prefix: always create fresh
+        create_new_deployment(client, config, &integration_id).await?
     };
 
     let deployment_id = deployment.id.clone();
+    let deployment_name = deployment.name.clone();
 
     // Step 3: Get latest revision
     let revisions = client.deployments().list_revisions(&deployment_id).await?;
@@ -378,7 +498,7 @@ pub async fn get_or_create_deployment(
         eprintln!("Deployment is now DEPLOYED");
     }
 
-    Ok((deployment_id, revision_id))
+    Ok((deployment_id, revision_id, deployment_name))
 }
 
 #[cfg(test)]
@@ -404,7 +524,17 @@ mod tests {
     #[test]
     fn test_deployment_config_default() {
         let config = TestDeploymentConfig::default();
-        assert_eq!(config.name, "pr-integration-test");
+        // Name now has timestamp suffix
+        assert!(
+            config.name.starts_with("pr-integration-test-"),
+            "Default name should start with pr-integration-test-"
+        );
+        // name_prefix is set for get-or-create lookup
+        assert_eq!(
+            config.name_prefix,
+            Some("pr-integration-test".to_string()),
+            "Should have name_prefix for get-or-create"
+        );
         assert_eq!(config.branch, "main");
         assert!(config.config_path.contains("langgraph.json"));
     }
@@ -412,7 +542,15 @@ mod tests {
     #[test]
     fn test_deployment_config_for_release() {
         let config = TestDeploymentConfig::for_release_tests();
-        assert!(config.name.starts_with("release-integration-test-"));
+        assert!(
+            config.name.starts_with("release-integration-test-"),
+            "Release name should start with release-integration-test-"
+        );
+        // name_prefix is None for release tests - always create fresh
+        assert_eq!(
+            config.name_prefix, None,
+            "Release config should have no name_prefix (always create fresh)"
+        );
         assert_eq!(config.branch, "main");
         assert!(config.config_path.contains("langgraph.json"));
     }

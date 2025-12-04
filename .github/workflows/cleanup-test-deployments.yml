@@ -52,15 +52,18 @@ jobs:
 
           echo "✓ No CI runs in progress, proceeding with cleanup"
 
-          # Get integration test deployments for cleanup
-          # Naming patterns:
-          # - "pr-integration-test" - Reused across PR/dev test runs (clean up when stale)
-          # - "release-integration-test-{timestamp}" - One-time lifecycle tests (always clean up)
+          # Get test deployments for cleanup
+          # All test deployments now use the "integration-test" naming convention:
+          # - "pr-integration-test-{timestamp}" - Shared PR/dev deployments (get-or-create)
+          # - "release-integration-test-{timestamp}" - Full lifecycle test deployments
+          #
+          # A single pattern captures both types.
+          echo "🔍 Searching for test deployments..."
+          # Capture both stdout and exit status; don't suppress stderr so auth/network errors are visible
           if ! raw_deployments=$(./target/release/langstar graph list \
             --name-contains "integration-test" \
             --format json); then
-            echo "❌ Error: Failed to list deployments"
-            echo "$raw_deployments"
+            echo "❌ Error: Failed to list deployments (check stderr above for details)"
             exit 1
           fi
 

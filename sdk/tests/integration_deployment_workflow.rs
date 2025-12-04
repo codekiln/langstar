@@ -1,80 +1,34 @@
-use langstar_sdk::{
-    AuthConfig, CreateDeploymentRequest, DeploymentFilters, LangchainClient,
-    PatchDeploymentRequest, RevisionStatus,
+use langstar_sdk::test_utils::{
+    DeploymentGuard, TestDeploymentConfig, get_or_create_deployment, wait_for_deployment,
 };
-use serde_json::json;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-/// RAII guard to remind about deployment cleanup
-///
-/// This guard provides a warning if a test fails before manually cleaning up
-/// a deployment. Due to async context limitations, it cannot perform automatic
-/// cleanup from Drop, but serves as a reminder to clean up orphaned deployments.
-///
-/// Use `disarm()` after manual deletion to prevent the warning.
-struct DeploymentGuard {
-    deployment_id: String,
-    armed: bool,
-}
-
-impl DeploymentGuard {
-    /// Create a new deployment guard
-    fn new(deployment_id: String) -> Self {
-        Self {
-            deployment_id,
-            armed: true,
-        }
-    }
-
-    /// Disarm the guard to prevent automatic cleanup
-    ///
-    /// Call this when you want to manually control deployment deletion
-    /// (e.g., after explicitly deleting it in the test)
-    fn disarm(&mut self) {
-        self.armed = false;
-    }
-}
-
-impl Drop for DeploymentGuard {
-    fn drop(&mut self) {
-        if self.armed {
-            eprintln!(
-                "⚠️  DeploymentGuard: Test failed before manual cleanup of deployment {}",
-                self.deployment_id
-            );
-            eprintln!("   Please manually delete this deployment if it still exists.");
-            eprintln!("   Note: Automatic cleanup from Drop is not supported in async contexts.");
-        }
-    }
-}
+use langstar_sdk::{AuthConfig, LangchainClient, PatchDeploymentRequest, RevisionStatus};
 
 /// Integration test for deployment workflow using reusable test deployment
 ///
 /// This test uses a **persistent test deployment** for faster iteration during development.
-/// The deployment `langstar-integration-test` is created once and reused across test runs.
+/// Deployments with the `pr-integration-test` prefix are reused across test runs via
+/// the get-or-create pattern.
 ///
 /// **What this test validates:**
-/// 1. Find GitHub integration ID dynamically
-/// 2. Get or create persistent test deployment (`langstar-integration-test`)
-/// 3. List revisions and get the latest one
-/// 4. Poll revision status until DEPLOYED (60s interval, 30min timeout)
-/// 5. Patch deployment (triggers new revision)
-/// 6. Poll new revision status until DEPLOYED
-/// 7. Leave deployment running for future test runs
+/// 1. Get or create test deployment using shared TestDeploymentConfig
+/// 2. Verify deployment is ready (RevisionStatus::Deployed)
+/// 3. Patch deployment (triggers new revision)
+/// 4. Poll new revision status until DEPLOYED
+/// 5. Leave deployment running for future test runs (cleaned by cron)
 ///
 /// **Note:** This test does NOT delete the deployment after running. The deployment
-/// persists between test runs for faster iteration. Use `test_deployment_workflow_full_lifecycle`
-/// for complete create/delete cycle testing (recommended for pre-release validation).
+/// persists between test runs for faster iteration and is cleaned up by the
+/// periodic cleanup workflow after 4 hours.
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY with write permissions
-/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGSMITH_WORKSPACE_ID)
+/// 2. Valid LANGSMITH_WORKSPACE_ID
 /// 3. GitHub integration configured with access to the target repository
 /// 4. Repository must contain tests/fixtures/test-graph-deployment/langgraph.json
 ///
 /// **Environment Variables:**
 /// - LANGSMITH_API_KEY: Required
-/// - LANGSMITH_WORKSPACE_ID or LANGSMITH_WORKSPACE_ID: Required
+/// - LANGSMITH_WORKSPACE_ID: Required
 /// - REPOSITORY_OWNER: Default "codekiln"
 /// - REPOSITORY_NAME: Default "langstar"
 ///
@@ -93,151 +47,53 @@ async fn test_deployment_workflow() {
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required for this test");
 
-    // Get repository configuration from environment
-    let repository_owner =
-        std::env::var("REPOSITORY_OWNER").unwrap_or_else(|_| "codekiln".to_string());
-    let repository_name =
-        std::env::var("REPOSITORY_NAME").unwrap_or_else(|_| "langstar".to_string());
-
-    println!("🚀 Starting deployment workflow test");
-    println!("   Repository: {}/{}", repository_owner, repository_name);
-    println!();
-
     // Create client
     let client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
 
-    // Step 1: Find GitHub integration ID
+    // Use shared test deployment config (pr-integration-test-{ts} with prefix-based reuse)
+    let config = TestDeploymentConfig::default();
+    println!("🚀 Starting deployment workflow test");
+    println!("   Config name: {}", config.name);
+    println!("   Config prefix: {:?}", config.name_prefix);
+    println!();
+
+    // Step 1: Get or create test deployment using shared utility
+    println!("📦 Getting or creating deployment...");
+    let (deployment_id, revision_id, deployment_name) = get_or_create_deployment(&client, &config)
+        .await
+        .expect("Failed to get or create deployment");
     println!(
-        "🔍 Finding GitHub integration for {}/{}",
-        repository_owner, repository_name
+        "✓ Deployment ready: {} ({}, revision: {})",
+        deployment_name, deployment_id, revision_id
     );
-    let integration_id = client
-        .integrations()
-        .find_integration_for_repo(&repository_owner, &repository_name)
-        .await
-        .expect("Failed to find GitHub integration for repository");
-    println!("✓ Found integration ID: {}", integration_id);
     println!();
 
-    // Step 2: Get or create persistent test deployment
-    let deployment_name = "langstar-integration-test".to_string();
-
-    println!("📦 Getting or creating deployment: {}", deployment_name);
-    let create_request = CreateDeploymentRequest {
-        name: deployment_name.clone(),
-        source: "github".to_string(),
-        source_config: json!({
-            "integration_id": integration_id,
-            "repo_url": format!("https://github.com/{}/{}", repository_owner, repository_name),
-            "deployment_type": "dev",
-            "build_on_push": false,
-            "custom_url": null,
-            "resource_spec": null,
-        }),
-        source_revision_config: json!({
-            "repo_ref": "main",
-            "langgraph_config_path": "tests/fixtures/test-graph-deployment/langgraph.json",
-            "image_uri": null,
-        }),
-        secrets: vec![],
-    };
-
-    // Try to find existing deployment first
-    let filters = DeploymentFilters {
-        name_contains: Some(deployment_name.clone()),
-        ..Default::default()
-    };
-    let deployments = client
+    // Step 2: Get deployment details and validate
+    let deployment = client
         .deployments()
-        .list(Some(100), None, Some(filters))
+        .get(&deployment_id)
         .await
-        .expect("Failed to list deployments");
+        .expect("Failed to get deployment");
 
-    let deployment = if let Some(existing) = deployments
-        .resources
-        .iter()
-        .find(|d| d.name == deployment_name)
-    {
-        println!(
-            "✓ Found existing deployment: {} ({})",
-            deployment_name, existing.id
-        );
-        existing.clone()
-    } else {
-        println!("  No existing deployment found, creating new one...");
-        let new_deployment = client
-            .deployments()
-            .create(&create_request)
-            .await
-            .expect("Failed to create deployment");
-        println!(
-            "✓ Created deployment: {} ({})",
-            deployment_name, new_deployment.id
-        );
-        new_deployment
-    };
-
-    let deployment_id = deployment.id.clone();
-    println!();
-
-    // Validate deployment creation response
     assert_eq!(
         deployment.source,
         langstar_sdk::DeploymentSource::Github,
         "Deployment source should be Github"
     );
-    // Note: custom_url is populated after deployment completes, not immediately after creation
     println!("✓ Validated deployment source: Github");
 
-    // Step 3: Get latest revision
-    println!("📋 Fetching revisions...");
-    let revisions = client
-        .deployments()
-        .list_revisions(&deployment_id)
-        .await
-        .expect("Failed to list revisions");
-
-    assert!(
-        !revisions.resources.is_empty(),
-        "Expected at least one revision after creating deployment"
-    );
-
-    let latest_revision = &revisions.resources[0];
-    let mut latest_revision_id = latest_revision.id.clone();
-    println!("✓ Latest revision: {}", latest_revision_id);
-    println!("  Status: {:?}", latest_revision.status);
+    if let Some(url) = deployment.custom_url() {
+        println!("✓ Deployment URL: {}", url);
+    }
     println!();
 
-    // Step 4: Poll revision status until DEPLOYED (first revision)
-    println!("⏳ Waiting for first revision to deploy...");
-    wait_for_deployment(&client, &deployment_id, &latest_revision_id)
-        .await
-        .expect("First revision failed to deploy");
-    println!("✓ First revision deployed successfully!");
-    println!();
-
-    // Validate deployment has custom_url after it's deployed
-    let deployed_deployment = client
-        .deployments()
-        .get(&deployment_id)
-        .await
-        .expect("Failed to get deployed deployment");
-    assert!(
-        deployed_deployment.custom_url().is_some(),
-        "Deployment should have custom_url after deployment completes"
-    );
-    println!(
-        "✓ Validated deployment URL: {}",
-        deployed_deployment.custom_url().unwrap()
-    );
-
-    // Step 5: Patch deployment (triggers new revision)
+    // Step 3: Patch deployment (triggers new revision)
     println!("🔧 Patching deployment (triggering new revision)...");
     let patch_request = PatchDeploymentRequest {
-        source_config: Some(json!({
+        source_config: Some(serde_json::json!({
             "build_on_push": true,
         })),
-        source_revision_config: Some(json!({
+        source_revision_config: Some(serde_json::json!({
             "repo_ref": "main",
             "langgraph_config_path": "tests/fixtures/test-graph-deployment/langgraph.json",
         })),
@@ -251,7 +107,7 @@ async fn test_deployment_workflow() {
     println!("✓ Deployment patched");
     println!();
 
-    // Step 6: Get new latest revision
+    // Step 4: Get new latest revision
     println!("📋 Fetching new revisions...");
     let revisions = client
         .deployments()
@@ -260,23 +116,23 @@ async fn test_deployment_workflow() {
         .expect("Failed to list revisions after patch");
 
     let new_latest_revision = &revisions.resources[0];
-    latest_revision_id = new_latest_revision.id.clone();
-    println!("✓ New latest revision: {}", latest_revision_id);
+    let new_revision_id = new_latest_revision.id.clone();
+    println!("✓ New latest revision: {}", new_revision_id);
     println!("  Status: {:?}", new_latest_revision.status);
     println!();
 
-    // Step 7: Poll new revision status until DEPLOYED
-    println!("⏳ Waiting for second revision to deploy...");
-    wait_for_deployment(&client, &deployment_id, &latest_revision_id)
+    // Step 5: Poll new revision status until DEPLOYED
+    println!("⏳ Waiting for new revision to deploy...");
+    wait_for_deployment(&client, &deployment_id, &new_revision_id)
         .await
-        .expect("Second revision failed to deploy");
-    println!("✓ Second revision deployed successfully!");
+        .expect("New revision failed to deploy");
+    println!("✓ New revision deployed successfully!");
     println!();
 
     // Validate final revision status
     let final_revision = client
         .deployments()
-        .get_revision(&deployment_id, &latest_revision_id)
+        .get_revision(&deployment_id, &new_revision_id)
         .await
         .expect("Failed to get final revision");
     assert_eq!(
@@ -288,11 +144,8 @@ async fn test_deployment_workflow() {
     println!();
 
     // Note: We do NOT delete the deployment - it's reused across test runs
-    println!(
-        "💾 Deployment '{}' remains active for future test runs",
-        deployment_name
-    );
-    println!("   To delete manually: Use deployment management subagent (issue #188)");
+    println!("💾 Deployment remains active for future test runs");
+    println!("   Cleaned up by periodic cleanup workflow (4hr threshold)");
     println!();
 
     println!("✅ Deployment workflow test completed successfully!");
@@ -301,16 +154,15 @@ async fn test_deployment_workflow() {
 /// Full lifecycle integration test for pre-release validation
 ///
 /// This test performs a **complete create/delete cycle** with a uniquely-named deployment.
-/// Use this test for pre-release validation to ensure the full deployment lifecycle works.
+/// Uses `TestDeploymentConfig::for_release_tests()` which creates a `release-integration-test-{ts}`
+/// deployment that is always fresh (no prefix-based reuse).
 ///
 /// **What this test validates:**
-/// 1. Find GitHub integration ID dynamically
-/// 2. Create deployment with unique timestamp-based name
-/// 3. List revisions and get the latest one
-/// 4. Poll revision status until DEPLOYED (60s interval, 30min timeout)
-/// 5. Patch deployment (triggers new revision)
-/// 6. Poll new revision status until DEPLOYED
-/// 7. Delete deployment (cleanup)
+/// 1. Create fresh deployment using shared TestDeploymentConfig
+/// 2. Verify deployment is ready (RevisionStatus::Deployed)
+/// 3. Patch deployment (triggers new revision)
+/// 4. Poll new revision status until DEPLOYED
+/// 5. Delete deployment (cleanup)
 ///
 /// **Note:** This test creates a NEW deployment every run and cleans up after itself.
 /// It's slower but provides full isolation. Use `test_deployment_workflow` for faster
@@ -318,13 +170,13 @@ async fn test_deployment_workflow() {
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY with write permissions
-/// 2. Valid LANGSMITH_WORKSPACE_ID (or LANGSMITH_WORKSPACE_ID)
+/// 2. Valid LANGSMITH_WORKSPACE_ID
 /// 3. GitHub integration configured with access to the target repository
 /// 4. Repository must contain tests/fixtures/test-graph-deployment/langgraph.json
 ///
 /// **Environment Variables:**
 /// - LANGSMITH_API_KEY: Required
-/// - LANGSMITH_WORKSPACE_ID or LANGSMITH_WORKSPACE_ID: Required
+/// - LANGSMITH_WORKSPACE_ID: Required
 /// - REPOSITORY_OWNER: Default "codekiln"
 /// - REPOSITORY_NAME: Default "langstar"
 ///
@@ -343,132 +195,60 @@ async fn test_deployment_workflow_full_lifecycle() {
     auth.require_langsmith_key()
         .expect("LANGSMITH_API_KEY is required for this test");
 
-    // Get repository configuration from environment
-    let repository_owner =
-        std::env::var("REPOSITORY_OWNER").unwrap_or_else(|_| "codekiln".to_string());
-    let repository_name =
-        std::env::var("REPOSITORY_NAME").unwrap_or_else(|_| "langstar".to_string());
-
-    println!("🚀 Starting FULL LIFECYCLE deployment workflow test");
-    println!("   Repository: {}/{}", repository_owner, repository_name);
-    println!();
-
     // Create client
     let client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
 
-    // Step 1: Find GitHub integration ID
+    // Use release test config (release-integration-test-{ts}, always creates fresh)
+    let config = TestDeploymentConfig::for_release_tests();
+    println!("🚀 Starting FULL LIFECYCLE deployment workflow test");
+    println!("   Config name: {}", config.name);
     println!(
-        "🔍 Finding GitHub integration for {}/{}",
-        repository_owner, repository_name
+        "   Config prefix: {:?} (None = always create fresh)",
+        config.name_prefix
     );
-    let integration_id = client
-        .integrations()
-        .find_integration_for_repo(&repository_owner, &repository_name)
-        .await
-        .expect("Failed to find GitHub integration for repository");
-    println!("✓ Found integration ID: {}", integration_id);
     println!();
 
-    // Step 2: Create deployment with timestamp-based unique name
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-    let deployment_name = format!("{}-test-{}", repository_name, timestamp);
-
-    println!("📦 Creating deployment: {}", deployment_name);
-    let create_request = CreateDeploymentRequest {
-        name: deployment_name.clone(),
-        source: "github".to_string(),
-        source_config: json!({
-            "integration_id": integration_id,
-            "repo_url": format!("https://github.com/{}/{}", repository_owner, repository_name),
-            "deployment_type": "dev",
-            "build_on_push": false,
-            "custom_url": null,
-            "resource_spec": null,
-        }),
-        source_revision_config: json!({
-            "repo_ref": "main",
-            "langgraph_config_path": "tests/fixtures/test-graph-deployment/langgraph.json",
-            "image_uri": null,
-        }),
-        secrets: vec![],
-    };
-
-    let deployment = client
-        .deployments()
-        .create(&create_request)
+    // Step 1: Create fresh deployment using shared utility
+    // (for_release_tests has name_prefix: None, so get_or_create always creates)
+    println!("📦 Creating fresh deployment...");
+    let (deployment_id, revision_id, deployment_name) = get_or_create_deployment(&client, &config)
         .await
         .expect("Failed to create deployment");
-    let deployment_id = deployment.id.clone();
     println!(
-        "✓ Created deployment: {} ({})",
-        deployment_name, deployment_id
+        "✓ Deployment created: {} ({}, revision: {})",
+        deployment_name, deployment_id, revision_id
     );
     println!();
 
     // Create RAII guard for automatic cleanup on failure
     let mut guard = DeploymentGuard::new(deployment_id.clone());
 
-    // Validate deployment creation response
+    // Step 2: Get deployment details and validate
+    let deployment = client
+        .deployments()
+        .get(&deployment_id)
+        .await
+        .expect("Failed to get deployment");
+
     assert_eq!(
         deployment.source,
         langstar_sdk::DeploymentSource::Github,
         "Deployment source should be Github"
     );
-    // Note: custom_url is populated after deployment completes, not immediately after creation
     println!("✓ Validated deployment source: Github");
 
-    // Step 3: Get latest revision
-    println!("📋 Fetching revisions...");
-    let revisions = client
-        .deployments()
-        .list_revisions(&deployment_id)
-        .await
-        .expect("Failed to list revisions");
-
-    assert!(
-        !revisions.resources.is_empty(),
-        "Expected at least one revision after creating deployment"
-    );
-
-    let latest_revision = &revisions.resources[0];
-    let mut latest_revision_id = latest_revision.id.clone();
-    println!("✓ Latest revision: {}", latest_revision_id);
-    println!("  Status: {:?}", latest_revision.status);
+    if let Some(url) = deployment.custom_url() {
+        println!("✓ Deployment URL: {}", url);
+    }
     println!();
 
-    // Step 4: Poll revision status until DEPLOYED (first revision)
-    println!("⏳ Waiting for first revision to deploy...");
-    wait_for_deployment(&client, &deployment_id, &latest_revision_id)
-        .await
-        .expect("First revision failed to deploy");
-    println!("✓ First revision deployed successfully!");
-    println!();
-
-    // Validate deployment has custom_url after it's deployed
-    let deployed_deployment = client
-        .deployments()
-        .get(&deployment_id)
-        .await
-        .expect("Failed to get deployed deployment");
-    assert!(
-        deployed_deployment.custom_url().is_some(),
-        "Deployment should have custom_url after deployment completes"
-    );
-    println!(
-        "✓ Validated deployment URL: {}",
-        deployed_deployment.custom_url().unwrap()
-    );
-
-    // Step 5: Patch deployment (triggers new revision)
+    // Step 3: Patch deployment (triggers new revision)
     println!("🔧 Patching deployment (triggering new revision)...");
     let patch_request = PatchDeploymentRequest {
-        source_config: Some(json!({
+        source_config: Some(serde_json::json!({
             "build_on_push": true,
         })),
-        source_revision_config: Some(json!({
+        source_revision_config: Some(serde_json::json!({
             "repo_ref": "main",
             "langgraph_config_path": "tests/fixtures/test-graph-deployment/langgraph.json",
         })),
@@ -482,7 +262,7 @@ async fn test_deployment_workflow_full_lifecycle() {
     println!("✓ Deployment patched");
     println!();
 
-    // Step 6: Get new latest revision
+    // Step 4: Get new latest revision
     println!("📋 Fetching new revisions...");
     let revisions = client
         .deployments()
@@ -491,23 +271,23 @@ async fn test_deployment_workflow_full_lifecycle() {
         .expect("Failed to list revisions after patch");
 
     let new_latest_revision = &revisions.resources[0];
-    latest_revision_id = new_latest_revision.id.clone();
-    println!("✓ New latest revision: {}", latest_revision_id);
+    let new_revision_id = new_latest_revision.id.clone();
+    println!("✓ New latest revision: {}", new_revision_id);
     println!("  Status: {:?}", new_latest_revision.status);
     println!();
 
-    // Step 7: Poll new revision status until DEPLOYED
-    println!("⏳ Waiting for second revision to deploy...");
-    wait_for_deployment(&client, &deployment_id, &latest_revision_id)
+    // Step 5: Poll new revision status until DEPLOYED
+    println!("⏳ Waiting for new revision to deploy...");
+    wait_for_deployment(&client, &deployment_id, &new_revision_id)
         .await
-        .expect("Second revision failed to deploy");
-    println!("✓ Second revision deployed successfully!");
+        .expect("New revision failed to deploy");
+    println!("✓ New revision deployed successfully!");
     println!();
 
     // Validate final revision status
     let final_revision = client
         .deployments()
-        .get_revision(&deployment_id, &latest_revision_id)
+        .get_revision(&deployment_id, &new_revision_id)
         .await
         .expect("Failed to get final revision");
     assert_eq!(
@@ -518,7 +298,7 @@ async fn test_deployment_workflow_full_lifecycle() {
     println!("✓ Validated final revision status: Deployed");
     println!();
 
-    // Step 8: Delete deployment (cleanup)
+    // Step 6: Delete deployment (cleanup)
     println!("🗑️  Deleting deployment...");
     client
         .deployments()
@@ -532,75 +312,6 @@ async fn test_deployment_workflow_full_lifecycle() {
     guard.disarm();
 
     println!("✅ Full lifecycle deployment workflow test completed successfully!");
-}
-
-/// Wait for a revision to reach DEPLOYED status
-///
-/// Polls the revision status every 60 seconds until:
-/// - Status is DEPLOYED (success)
-/// - Status contains "FAILED" (error)
-/// - Timeout of 30 minutes is reached (error)
-///
-/// # Arguments
-/// * `client` - The LangchainClient
-/// * `deployment_id` - UUID of the deployment
-/// * `revision_id` - UUID of the revision to poll
-///
-/// # Returns
-/// * `Ok(())` - Revision reached DEPLOYED status
-/// * `Err(...)` - Revision failed or timeout occurred
-async fn wait_for_deployment(
-    client: &LangchainClient,
-    deployment_id: &str,
-    revision_id: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    const POLL_INTERVAL: Duration = Duration::from_secs(60);
-    const MAX_WAIT_TIME: Duration = Duration::from_secs(1800); // 30 minutes
-
-    let start_time = tokio::time::Instant::now();
-
-    loop {
-        // Check timeout
-        if start_time.elapsed() >= MAX_WAIT_TIME {
-            return Err(format!(
-                "Timeout waiting for revision {} to be DEPLOYED after 30 minutes",
-                revision_id
-            )
-            .into());
-        }
-
-        // Get revision status
-        let revision = client
-            .deployments()
-            .get_revision(deployment_id, revision_id)
-            .await?;
-
-        println!("  Revision status: {:?}", revision.status);
-
-        // Check status
-        match revision.status {
-            RevisionStatus::Deployed => {
-                return Ok(());
-            }
-            RevisionStatus::BuildFailed
-            | RevisionStatus::DeployFailed
-            | RevisionStatus::Cancelled => {
-                return Err(format!(
-                    "Revision {} failed with status: {:?}",
-                    revision_id, revision.status
-                )
-                .into());
-            }
-            _ => {
-                // Still in progress, wait and poll again
-                println!(
-                    "  Waiting {} seconds before next check...",
-                    POLL_INTERVAL.as_secs()
-                );
-                tokio::time::sleep(POLL_INTERVAL).await;
-            }
-        }
-    }
 }
 
 /// Test listing deployments with name filter

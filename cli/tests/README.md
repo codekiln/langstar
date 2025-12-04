@@ -134,10 +134,25 @@ Tests for `langstar graph` commands:
 - Full lifecycle test (create → list → delete → verify)
 - Validation tests (invalid inputs, missing parameters)
 
-**Test Deployments**: Each test creates its own deployment
-- Validates create/delete commands work correctly
+**Test Deployments**: Uses standardized `TestDeploymentConfig` naming
+- All graph command tests use `TestDeploymentConfig::for_release_tests()` for naming
+- Creates `release-integration-test-{timestamp}` deployments
+- Each test creates/deletes its own deployment (full lifecycle)
 - Tests are marked with `#[cfg_attr(not(feature = "integration-tests"), ignore)]`
 - Only enabled when running with `--features integration-tests`
+
+### Standardized Test Deployment Naming
+
+All CLI tests use the SDK's `TestDeploymentConfig` for consistent naming:
+
+| Type | Pattern | Usage |
+|------|---------|-------|
+| **Release** | `release-integration-test-{timestamp}` | Graph command tests (full lifecycle) |
+
+The `TestDeploymentConfig::for_release_tests()` creates deployments that:
+- Have unique timestamp-based names
+- Are self-cleaning (deleted after test completion)
+- Are captured by the periodic cleanup workflow (4hr threshold)
 
 ### `prompt_scoping_test.rs`
 Tests for LangSmith prompt scoping (org/workspace):
