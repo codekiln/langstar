@@ -148,6 +148,18 @@ jobs:
             exit 1
           fi
 
+      - name: Test devcontainer version update script
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          # Install pytest for running tests
+          pip install pytest
+
+          # Run tests
+          cd .github/scripts
+          python3 -m pytest test_update_devcontainer_version.py -v
+
       - name: Update devcontainer feature version
         if: steps.check_bump.outputs.skip != 'true'
         run: |
@@ -155,32 +167,10 @@ jobs:
 
           NEW_VERSION="${{ steps.version.outputs.new }}"
 
-          # Update version in devcontainer.json using Python
-          python3 << 'PYTHON_EOF'
-import sys
-import re
-
-version = "$NEW_VERSION"
-file_path = ".devcontainer/devcontainer.json"
-
-# Read the file
-with open(file_path, 'r') as f:
-    content = f.read()
-
-# Update the specific version field while preserving comments and formatting
-pattern = r'("ghcr\.io/codekiln/langstar/langstar:1":\s*\{[^}]*"version":\s*)"[^"]*"'
-replacement = rf'\g<1>"{version}"'
-updated_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
-
-if updated_content == content:
-    print(f"✗ No changes made - pattern not found", file=sys.stderr)
-    sys.exit(1)
-
-with open(file_path, 'w') as f:
-    f.write(updated_content)
-
-print(f"✓ Updated devcontainer version to {version}")
-PYTHON_EOF
+          # Update version using the Python script
+          python3 .github/scripts/update_devcontainer_version.py \
+            .devcontainer/devcontainer.json \
+            "$NEW_VERSION"
 
           # Verify the update using jq (strip comments first)
           ACTUAL_VERSION=$(sed 's|//.*||g' .devcontainer/devcontainer.json | \
