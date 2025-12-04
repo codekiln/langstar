@@ -28,6 +28,9 @@ pub struct Config {
     /// or special values: "local" (system timezone), "UTC"
     #[serde(default = "default_timezone")]
     pub timezone: String,
+    /// Suppress warning when both organization_id and workspace_id are set
+    #[serde(default)]
+    pub hide_workspace_and_org_id_message: bool,
 }
 
 fn default_output_format() -> String {
@@ -48,6 +51,7 @@ impl Default for Config {
             github_integration_id: None,
             output_format: default_output_format(),
             timezone: default_timezone(),
+            hide_workspace_and_org_id_message: false,
         }
     }
 }
@@ -85,11 +89,21 @@ impl Config {
         if let Ok(tz) = std::env::var("LANGSTAR_TIMEZONE") {
             config.timezone = tz;
         }
+        if let Ok(hide) = std::env::var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE") {
+            config.hide_workspace_and_org_id_message =
+                hide == "1" || hide.eq_ignore_ascii_case("true");
+        }
 
         // Log warning if both organization and workspace IDs are set
-        if config.organization_id.is_some() && config.workspace_id.is_some() {
+        if !config.hide_workspace_and_org_id_message
+            && config.organization_id.is_some()
+            && config.workspace_id.is_some()
+        {
             eprintln!(
                 "Warning: Both organization_id and workspace_id are set. Workspace ID takes precedence for narrower scoping."
+            );
+            eprintln!(
+                "  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1 or add 'hide_workspace_and_org_id_message = true' to config.toml"
             );
         }
 
@@ -173,6 +187,7 @@ mod tests {
             github_integration_id: None,
             output_format: "json".to_string(),
             timezone: "America/New_York".to_string(),
+            hide_workspace_and_org_id_message: false,
         };
 
         let toml = toml::to_string(&config).unwrap();
@@ -194,6 +209,7 @@ mod tests {
             github_integration_id: None,
             output_format: "table".to_string(),
             timezone: "local".to_string(),
+            hide_workspace_and_org_id_message: false,
         };
 
         let auth = config.to_auth_config();
@@ -211,10 +227,65 @@ mod tests {
             github_integration_id: None,
             output_format: "table".to_string(),
             timezone: "UTC".to_string(),
+            hide_workspace_and_org_id_message: false,
         };
 
         let auth = config.to_auth_config();
         assert_eq!(auth.organization_id, Some("org_123".to_string()));
         assert_eq!(auth.workspace_id, Some("workspace_456".to_string()));
+    }
+
+    #[test]
+    fn test_hide_warning_flag() {
+        let mut config = Config::default();
+        assert!(!config.hide_workspace_and_org_id_message);
+
+        config.hide_workspace_and_org_id_message = true;
+        assert!(config.hide_workspace_and_org_id_message);
+    }
+
+    #[test]
+    fn test_config_serde_with_hide_warning() {
+        let toml = r#"
+            output_format = "json"
+            hide_workspace_and_org_id_message = true
+        "#;
+        let config: Config = toml::from_str(toml).unwrap();
+        assert!(config.hide_workspace_and_org_id_message);
+    }
+
+    #[test]
+    fn test_env_var_hide_warning_parsing() {
+        unsafe {
+            // Test parsing "1"
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "1");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            // Test parsing "true" (case-insensitive)
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "true");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "TRUE");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "True");
+            let config = Config::load().unwrap();
+            assert!(config.hide_workspace_and_org_id_message);
+
+            // Test that other values are treated as false
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "0");
+            let config = Config::load().unwrap();
+            assert!(!config.hide_workspace_and_org_id_message);
+
+            std::env::set_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE", "false");
+            let config = Config::load().unwrap();
+            assert!(!config.hide_workspace_and_org_id_message);
+
+            // Cleanup
+            std::env::remove_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE");
+        }
     }
 }
