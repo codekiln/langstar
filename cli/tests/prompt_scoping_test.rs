@@ -609,7 +609,10 @@ fn test_prompt_list_private_visibility_crud_lifecycle() {
     };
 
     let cli_private_count = cli_prompts.len();
-    println!("   CLI returned {} prompts (expected: private only)", cli_private_count);
+    println!(
+        "   CLI returned {} prompts (expected: private only)",
+        cli_private_count
+    );
 
     // Step 3: Verify CLI returns similar count to SDK
     // (May not be exactly equal due to pagination/timing, but should be non-zero if SDK found any)
@@ -670,7 +673,10 @@ fn test_prompt_list_private_visibility_crud_lifecycle() {
         for handle in &sdk_handles {
             if cli_public_handles.contains(handle) {
                 // This could happen if the prompt was made public, not necessarily a bug
-                println!("   Note: '{}' appears in both private and public lists", handle);
+                println!(
+                    "   Note: '{}' appears in both private and public lists",
+                    handle
+                );
             }
         }
     }
@@ -707,7 +713,10 @@ fn test_prompt_search_private_visibility_crud_lifecycle() {
     let search_term = "test";
 
     // Step 1: Use SDK to search private prompts
-    println!("Step 1: Search for '{}' via SDK (private only)...", search_term);
+    println!(
+        "Step 1: Search for '{}' via SDK (private only)...",
+        search_term
+    );
     let runtime = create_runtime();
     let client = match create_sdk_client() {
         Some(c) => c,
@@ -726,10 +735,16 @@ fn test_prompt_search_private_visibility_crud_lifecycle() {
     });
 
     let sdk_count = sdk_results.len();
-    println!("   SDK found {} private prompts matching '{}'", sdk_count, search_term);
+    println!(
+        "   SDK found {} private prompts matching '{}'",
+        sdk_count, search_term
+    );
 
     // Step 2: Run CLI search (scoped, defaults to private)
-    println!("\nStep 2: Run CLI 'prompt search {}' (scoped, defaults to private)...", search_term);
+    println!(
+        "\nStep 2: Run CLI 'prompt search {}' (scoped, defaults to private)...",
+        search_term
+    );
     let mut cmd = langstar_cmd();
     cmd.args([
         "prompt",
@@ -768,7 +783,10 @@ fn test_prompt_search_private_visibility_crud_lifecycle() {
             println!("   ✓ Both SDK and CLI returned results");
         }
     } else {
-        println!("   No private prompts matched '{}', test inconclusive", search_term);
+        println!(
+            "   No private prompts matched '{}', test inconclusive",
+            search_term
+        );
     }
 
     println!("\n══════════════════════════════════════════════════════════════");
