@@ -1,6 +1,5 @@
 use assert_cmd::Command;
 use escargot::CargoBuild;
-use langstar_sdk::prompts::Visibility;
 use langstar_sdk::{AuthConfig, LangchainClient};
 use predicates::prelude::*;
 use serde_json::Value;
@@ -592,29 +591,22 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     // Store handle for cleanup
     let prompt_handle = prompt.repo_handle.clone();
 
-    // Cleanup function to ensure we delete the prompt even on test failure
-    struct CleanupGuard<'a> {
-        runtime: &'a tokio::runtime::Runtime,
-        client: &'a LangchainClient,
+    // Cleanup function to log test prompt info when test completes
+    // Note: Actual deletion would require SDK delete method implementation
+    struct CleanupGuard {
         handle: String,
     }
 
-    impl Drop for CleanupGuard<'_> {
+    impl Drop for CleanupGuard {
         fn drop(&mut self) {
-            // Parse owner/repo from handle
-            if let Some((owner, repo)) = self.handle.split_once('/') {
-                println!("\n[CLEANUP] Deleting test prompt: {}", self.handle);
-                // Note: We don't have a delete method in SDK yet, so we just log
-                // In a real implementation, we'd call: self.client.prompts().delete(owner, repo)
-                let _ = (owner, repo); // Suppress unused warnings
-                println!("   (Prompt cleanup would happen here if delete API was implemented)");
-            }
+            println!(
+                "\n[CLEANUP] Test prompt '{}' should be deleted manually if test failed",
+                self.handle
+            );
         }
     }
 
     let _cleanup = CleanupGuard {
-        runtime: &runtime,
-        client: &client,
         handle: prompt_handle.clone(),
     };
 
