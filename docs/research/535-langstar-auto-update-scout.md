@@ -331,6 +331,6 @@ Phase 3 (Optional): Auto-Update (~2-3 days)
 
 - [self_update crate docs](https://docs.rs/self_update/latest/self_update/)
 - [self_update GitHub](https://github.com/jaemk/self_update)
-- [Langstar install.sh](../scripts/install.sh)
+- [Langstar install.sh](../../scripts/install.sh)
 - [Langstar release workflow](../../.github/workflows/release.yml)
 - [Claude Code update documentation](https://docs.anthropic.com/en/docs/claude-code)
