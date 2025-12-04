@@ -148,6 +148,41 @@ jobs:
             exit 1
           fi
 
+      - name: Test devcontainer version update script
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          # Install pytest for running tests
+          pip install pytest
+
+          # Run tests
+          cd .github/scripts
+          python3 -m pytest test_update_devcontainer_version.py -v
+
+      - name: Update devcontainer feature version
+        if: steps.check_bump.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+
+          NEW_VERSION="${{ steps.version.outputs.new }}"
+
+          # Update version using the Python script
+          python3 .github/scripts/update_devcontainer_version.py \
+            .devcontainer/devcontainer.json \
+            "$NEW_VERSION"
+
+          # Verify the update using jq (strip comments first)
+          ACTUAL_VERSION=$(sed 's|//.*||g' .devcontainer/devcontainer.json | \
+              jq -r '.features["ghcr.io/codekiln/langstar/langstar:1"].version')
+
+          if [ "$ACTUAL_VERSION" = "$NEW_VERSION" ]; then
+            echo "✓ Successfully verified devcontainer version is set to $NEW_VERSION"
+          else
+            echo "✗ Version verification failed - expected $NEW_VERSION, got $ACTUAL_VERSION"
+            exit 1
+          fi
+
       - name: Update Cargo.lock
         if: steps.check_bump.outputs.skip != 'true'
         run: |
