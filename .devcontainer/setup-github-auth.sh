@@ -126,4 +126,20 @@ if command -v git >/dev/null 2>&1; then
   echo "[setup-github-auth] git credential stored for $USERNAME using 'store' helper."
 fi
 
+# Install gh CLI extensions that require authentication
+echo "[setup-github-auth] Installing gh CLI extensions..."
+
+# Verify gh is available
+if ! command -v gh >/dev/null 2>&1; then
+  echo "[setup-github-auth] WARNING: gh CLI not found. Skipping extension installation."
+else
+  # Install gh-sub-issue for issue hierarchy management
+  echo "[setup-github-auth] Installing gh-sub-issue extension..."
+  if gh extension install yahsan2/gh-sub-issue; then
+    echo "[setup-github-auth] gh-sub-issue installed successfully"
+  else
+    echo "[setup-github-auth] WARNING: Failed to install gh-sub-issue extension"
+  fi
+fi
+
 echo "[setup-github-auth] Done."
