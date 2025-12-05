@@ -44,6 +44,15 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 - `templates/` - templates for milestone tickets and checklists 
 - `usage/` - Usage documentation and guides
 
+#### Testing Standards (Progressive Disclosure)
+
+For testing documentation, **always use progressive disclosure**:
+1. **TOC First:** Load `@docs/dev/testing/README.md` (~15-line index)
+2. **On-Demand:** Load specific docs only when designing/debugging tests
+3. **Example:** Writing CLI tests? Load `@docs/dev/testing/cli-integration-tests.md`
+
+**Do NOT load all testing docs by default.** See `@docs/dev/progressive-disclosure-docs-standards.md` for patterns.
+
 ### `reference/` - External Resources & Experiments
 - `api-specs/` - API specifications (LangSmith, control-plane)
 - `experiments/` - Python experiments for API interaction
