@@ -162,10 +162,70 @@ class TracerSession(BaseModel):
 
 ## 5. Experiments
 
-**No experiments needed**. The Python SDK and existing langstar patterns provide sufficient clarity:
-- API endpoints are well-documented in Python SDK
-- Request/response shapes are clear from schemas
-- Similar CRUD patterns already implemented in langstar (datasets, annotation queues)
+**Experiment Conducted**: Projects vs Sessions Terminology Disambiguation
+
+**Location**: `reference/experiments/574-ls-projects/`
+
+### Experiment Goal
+
+Empirically verify the "projects" vs "sessions" terminology mapping through actual API calls, since:
+- Python SDK uses "projects" in method names
+- Python SDK uses "TracerSession" in schema classes
+- API endpoints use "/sessions" paths
+- LangSmith UI refers to them as "Projects"
+
+### Experiment Method
+
+Created Python script (`test_projects.py`) that:
+1. Calls `list_projects(limit=3)` to retrieve projects
+2. Calls `read_project(project_name=...)` to read by name
+3. Inspects returned object types and field names
+4. Documents actual API behavior
+
+### Key Findings
+
+**1. Object Types Confirmed**
+```python
+>>> type(project)
+TracerSessionResult
+
+>>> project.id
+UUID('55de255e-0405-4737-82b3-75ce7aaf22f3')
+
+>>> project.name
+'pr-integration-test-1764940001'
+```
+
+**2. Terminology Mapping Verified**
+
+| Layer | Terminology |
+|-------|-------------|
+| LangSmith UI URLs | `https://smith.langchain.com/o/{tenant}/projects/p/{id}` |
+| Python SDK Methods | `list_projects()`, `read_project()`, `create_project()` |
+| Python Schema Classes | `TracerSession`, `TracerSessionResult` |
+| REST API Endpoints | `GET /sessions`, `POST /sessions`, etc. |
+
+**3. Field Names Analysis**
+- Only 1 field uses "session" terminology: `session_feedback_stats`
+- All other fields are neutral: `id`, `name`, `description`, `tenant_id`, etc.
+- No `session_id` field exists (project ID is just `id`)
+
+**4. URL Structure**
+```
+https://smith.langchain.com/o/{tenant_id}/projects/p/{project_id}
+                                            ^^^^^^^^
+```
+The UI explicitly uses "projects/p/" not "sessions/s/"
+
+### Experiment Conclusion
+
+**Recommendation for Rust SDK:**
+- ✅ **Public API**: Use `Project` struct and `*_project()` methods
+- ✅ **Internal mapping**: Map to `/sessions` REST endpoints
+- ✅ **Field names**: Follow Python SDK (keep `session_feedback_stats`)
+- ✅ **Rationale**: Consistency with Python SDK and user expectations
+
+This matches Python SDK's design: user-facing "projects" terminology with internal "sessions" implementation.
 
 ## 6. Recommendation
 
@@ -212,6 +272,7 @@ class TracerSession(BaseModel):
 - LangSmith API Overview: `reference/api-specs/LANGSMITH_API_OVERVIEW.md`
 - Python SDK Client: `reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py:3375-3780`
 - Python SDK Schemas: `reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/schemas.py:729-788`
+- **Python Experiment**: `reference/experiments/574-ls-projects/` - Empirical API testing
 - Existing Langstar Datasets: `sdk/src/datasets.rs` (similar CRUD pattern)
 - Existing Langstar Runs: `sdk/src/runs.rs` (pagination pattern)
 - GitHub Issue: #574
