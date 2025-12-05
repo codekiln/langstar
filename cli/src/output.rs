@@ -231,6 +231,7 @@ impl OutputFormatter {
         columns: Option<&[String]>,
     ) -> Result<()> {
         if data.is_empty() {
+            println!("No results found.");
             return Ok(());
         }
 
