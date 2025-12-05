@@ -212,11 +212,12 @@ class MilestoneWorkflow:
             if result.returncode == 0 and result.stdout.strip():
                 try:
                     parents_data = json.loads(result.stdout)
-                    sub_issues = parents_data.get("subIssues", []) if parents_data else []
-                    if sub_issues and len(sub_issues) > 0:
-                        parent_num = sub_issues[0]["number"]
+                    parent_issues = parents_data.get("subIssues", []) if parents_data else []
+                    if parent_issues:
+                        parent_num = parent_issues[0]["number"]
                         self.parent_map[issue_num] = parent_num
                 except (json.JSONDecodeError, KeyError, TypeError):
+                    # Silently skip - parent relationship is optional and failures are non-critical
                     pass
 
             # Get children
@@ -229,11 +230,11 @@ class MilestoneWorkflow:
             if result.returncode == 0 and result.stdout.strip():
                 try:
                     children_data = json.loads(result.stdout)
-                    sub_issues = children_data.get("subIssues", []) if children_data else []
-                    if sub_issues:
-                        self.children_map[issue_num] = [c["number"] for c in sub_issues]
-                except (json.JSONDecodeError, KeyError, TypeError):
-                    pass
+                    child_issues = children_data.get("subIssues", []) if children_data else []
+                    if child_issues:
+                        self.children_map[issue_num] = [c["number"] for c in child_issues]
+                except (json.JSONDecodeError, KeyError, TypeError) as e:
+                    print(f"⚠️  Failed to parse children for issue {issue_num}: {type(e).__name__}: {e}", file=sys.stderr)
 
         print("   ✓ Hierarchy built successfully")
 
