@@ -31,6 +31,7 @@ class MilestoneWorkflow:
         self.milestone_title: Optional[str] = None
         self.milestone_num: Optional[int] = None
         self.all_issues: List[Dict] = []
+        self.issues_by_number: Dict[int, Dict] = {}  # number -> issue (O(1) lookup)
         self.parent_map: Dict[int, int] = {}  # child -> parent
         self.children_map: Dict[int, List[int]] = {}  # parent -> [children]
         self.use_simple_ordering = False
@@ -143,6 +144,9 @@ class MilestoneWorkflow:
         if not self.all_issues:
             print(f"❌ Error: No issues found in milestone '{self.milestone_title}'", file=sys.stderr)
             sys.exit(1)
+
+        # Build lookup dictionary for O(1) access by issue number
+        self.issues_by_number = {issue["number"]: issue for issue in self.all_issues}
 
         total = len(self.all_issues)
         open_count = sum(1 for i in self.all_issues if i["state"] == "OPEN")
@@ -300,8 +304,9 @@ class MilestoneWorkflow:
             print("   All issues completed. Milestone ready for release.")
             return None
 
-        # Step 4: Traverse down to leaf node
-        next_issue = self._find_first_leaf(next_issue)
+        # Step 4: Traverse down to leaf node (only when using hierarchy)
+        if not self.use_simple_ordering:
+            next_issue = self._find_first_leaf(next_issue)
 
         print(f"   Next issue: #{next_issue['number']} - {next_issue['title']}")
         return next_issue
@@ -324,7 +329,7 @@ class MilestoneWorkflow:
             children = self.children_map[issue_num]
             # Find first open child (sorted by issue number for consistency)
             for child_num in sorted(children):
-                child = next((i for i in self.all_issues if i["number"] == child_num), None)
+                child = self.issues_by_number.get(child_num)
                 if child and child["state"] == "OPEN":
                     # Recursively find leaf of this child
                     return self._find_first_leaf(child)
