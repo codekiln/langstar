@@ -80,7 +80,7 @@ These can be added in future phases as needed.
 | `streaming_rate` | number \| null | No | Streaming run percentage |
 | `test_run_number` | integer \| null | No | Test run sequence number |
 
-**Comparison with Python SDK TracerSession**: ✅ Fields align with Python SDK schema (lines 729-788 in schemas.py).
+**Comparison with Python SDK TracerSession**: ✅ Fields align with Python SDK schema (`reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/schemas.py:729-788`).
 
 ### TracerSessionCreate (Request)
 
@@ -263,6 +263,10 @@ pub struct ProjectCreate {
     pub reference_dataset_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trace_tier: Option<TraceTier>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_time: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_dataset_id: Option<Uuid>,
 }
 
 /// Update request (all fields optional)
@@ -278,6 +282,8 @@ pub struct ProjectUpdate {
     pub extra: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trace_tier: Option<TraceTier>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_dataset_id: Option<Uuid>,
 }
 
 /// List query parameters
