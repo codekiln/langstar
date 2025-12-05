@@ -777,7 +777,566 @@ Not included in core CRUD operations. This is a separate method for accessing sh
 - Experiments: `reference/experiments/574-ls-projects/`
 - API endpoint: `https://api.smith.langchain.com/sessions`
 
-## 9. Next Steps
+## 9. CLI Design Decisions (Phase 2: Issue #590)
+
+**Date Added**: 2025-12-05
+**Context**: Design phase to establish DX consistency for project commands
+
+### 9.1 Design Analysis: Existing Langstar CLI Patterns
+
+#### 9.1.1 Command Structure Patterns
+
+**Established Pattern Across All Commands** (dataset.rs:24-43, queue.rs:24-43, runs.rs:21-26):
+```rust
+#[derive(Debug, Subcommand)]
+pub enum XxxCommands {
+    List(ListArgs),
+    Get(GetArgs),
+    Create(CreateArgs),
+    Update(UpdateArgs),
+    Delete(DeleteArgs),
+    // ... resource-specific operations
+}
+```
+
+**User Advocate Assessment**: ✅ **Excellent**
+- Verb-first naming (list, get, create) matches Unix conventions
+- Consistent ordering across all resource types
+- Resource-specific operations grouped logically
+
+**Application to Projects**:
+```rust
+pub enum ProjectCommands {
+    List(ListArgs),
+    Get(GetArgs),
+    Create(CreateArgs),
+    Update(UpdateArgs),
+    Delete(DeleteArgs),
+}
+```
+
+#### 9.1.2 Flag Naming Conventions
+
+**Filtering Flags** (dataset.rs:68-74, queue.rs:48-54):
+- `--name`: Exact name match
+- `--name-contains`: Substring match
+- Data type filters vary by resource (e.g., `--data-type` for datasets)
+
+**Pagination Flags** (dataset.rs:80-82, queue.rs:56-58, runs.rs:126-127):
+- `-l, --limit`: Maximum results (default: 100)
+- Datasets use `i64`, queues use `u32`, runs use `usize`
+
+**INCONSISTENCY DETECTED** ⚠️:
+- Type mismatch for `--limit` across commands
+- Datasets: `i64` (can be negative!)
+- Queues: `u32` (unsigned)
+- Runs: `usize` (platform-dependent)
+
+**User Advocate Recommendation**:
+```rust
+/// Maximum number of projects to return
+#[arg(short, long, default_value = "100")]
+pub limit: u32,  // ✅ Use u32 for consistency with queues
+```
+
+**Rationale**: Pagination limits cannot be negative. `u32` is more semantically correct than `i64` and more portable than `usize`.
+
+**FILES REQUIRING CHANGE**:
+- `cli/src/commands/dataset.rs:82` - Change `i64` to `u32`
+- `cli/src/commands/runs.rs:127` - Change `usize` to `u32`
+
+#### 9.1.3 Output Format Handling
+
+**Pattern 1: Per-Command JSON Flag** (dataset.rs:61-62, 85-86, 96-97, queue.rs:61-62):
+```rust
+/// Output as JSON
+#[arg(long)]
+pub json: bool,
+```
+
+**Pattern 2: Output Format Enum** (runs.rs:136-137):
+```rust
+#[arg(short = 'o', long = "output", default_value = "table", value_enum)]
+pub output: RunsOutputFormat,
+```
+
+**INCONSISTENCY DETECTED** ⚠️:
+- Datasets/queues use `--json` flag (boolean)
+- Runs use `-o/--output` with enum (json/table/...)
+- Different implementations create different user experiences
+
+**User Advocate Analysis**:
+
+**Pattern 1 Pros**:
+- Simple boolean flag
+- Familiar to users (`--json` is common)
+
+**Pattern 1 Cons**:
+- Cannot extend to other formats (YAML, CSV) without breaking changes
+- Requires conditional logic: `if args.json { OutputFormat::Json } else { OutputFormat::Table }`
+- No way to explicitly request table format
+
+**Pattern 2 Pros**:
+- Extensible to multiple formats
+- Explicit format selection
+- Matches global `-f/--format` pattern (if it exists)
+
+**Pattern 2 Cons**:
+- Slightly more verbose for common case
+- Different from datasets/queues (consistency issue)
+
+**User Advocate Recommendation**: **Adopt Pattern 2 for ALL commands**
+
+```rust
+/// Output format
+#[arg(short = 'o', long = "output", default_value = "table", value_enum)]
+pub output: OutputFormat,
+```
+
+**Rationale**:
+1. **Extensibility**: Supports future formats (text, records) without breaking changes
+2. **Explicitness**: Users can request `--output table` or `--output json` explicitly
+3. **Consistency**: One pattern across the entire CLI
+4. **Research-backed**: CLI output research (#581, PR #583) evaluated precedents (gh, kubectl, aws) and explicitly recommended `-o/--output` pattern over alternatives
+5. **Ecosystem alignment**: Matches kubectl `-o`, AWS CLI `--output`, standard CLI conventions
+
+**FILES REQUIRING CHANGE**:
+- `cli/src/commands/dataset.rs:61-62, 85-86, 96-97, 115-116` - Replace `pub json: bool` with `pub output: OutputFormat`
+- `cli/src/commands/queue.rs:61-62, 97-98, 119-120` - Replace `pub json: bool` with `pub output: OutputFormat`
+- Update all execute() methods to use `args.output` instead of `if args.json`
+
+#### 9.1.4 Destructive Operation Safety
+
+**Pattern 1: Yes Flag** (dataset.rs:125-127):
+```rust
+/// Skip confirmation prompt
+#[arg(long, short = 'y')]
+pub yes: bool,
+```
+
+**Pattern 2: Force Flag** (queue.rs:129-131):
+```rust
+/// Skip confirmation prompt
+#[arg(long)]
+pub force: bool,
+```
+
+**INCONSISTENCY DETECTED** ⚠️:
+- Datasets use `--yes` / `-y`
+- Queues use `--force` (no short flag)
+- Same semantic meaning, different names
+
+**User Advocate Analysis**:
+
+**`--yes` / `-y` Precedents**:
+- apt-get, npm, cargo (all use `-y/--yes`)
+- Semantic: "Answer yes to prompts"
+- Common in package managers
+
+**`--force` Precedents**:
+- git, rm (use `--force` or `-f`)
+- Semantic: "Override safety checks"
+- Common in system tools
+
+**User Advocate Recommendation**: **Standardize on `--force`**
+
+```rust
+/// Skip confirmation prompt
+#[arg(long, short = 'f')]
+pub force: bool,
+```
+
+**Rationale**:
+1. **Semantic Precision**: "force" conveys danger better than "yes"
+2. **Unix Convention**: `rm -f`, `git push --force`
+3. **Short Flag**: `-f` is mnemonic and standard
+4. **Clear Intent**: `langstar project delete <id> --force` reads better than `--yes`
+
+**FILES REQUIRING CHANGE**:
+- `cli/src/commands/dataset.rs:126-127` - Rename `yes` to `force`, change short flag to `-f`
+- Update execute() method in dataset.rs to use `args.force`
+
+#### 9.1.5 Resource Identification Patterns
+
+**Pattern 1: UUID Only** (dataset.rs:92-93, queue.rs:91-93):
+```rust
+/// Dataset ID (UUID)
+pub dataset_id: Uuid,
+```
+
+**Pattern 2: Name or UUID** (runs.rs:31-35):
+```rust
+/// Project name or UUID to query runs from
+#[arg(short, long = "project", value_name = "PROJECT")]
+pub projects: Vec<String>,
+```
+
+**User Advocate Analysis**:
+
+For `get/update/delete` operations, UUIDs are unambiguous but user-hostile:
+- Users remember names ("production-bot"), not UUIDs (`98e12dc6-2171-4bf3-80fb-1153041d6cbf`)
+- Python SDK supports both: `read_project(project_name="foo")` or `read_project(project_id=uuid)`
+- Forcing UUIDs requires users to `list` first, copy UUID, then operate
+
+**User Advocate Recommendation**: **Accept both name and UUID**
+
+```rust
+/// Project identifier (name or UUID)
+pub identifier: String,
+```
+
+**Implementation Strategy** (from Python SDK pattern):
+1. Try parsing as UUID
+2. If parse fails, treat as name
+3. SDK method resolves name to ID internally
+
+**Rust SDK Design** (recommended in precedent report section 6.2):
+```rust
+pub enum ProjectIdentifier {
+    Id(Uuid),
+    Name(String),
+}
+
+impl FromStr for ProjectIdentifier {
+    fn from_str(s: &str) -> Result<Self> {
+        Uuid::parse_str(s)
+            .map(ProjectIdentifier::Id)
+            .or_else(|_| Ok(ProjectIdentifier::Name(s.to_string())))
+    }
+}
+```
+
+**FILES REQUIRING CONSIDERATION** (for future improvement):
+- All `*_id: Uuid` fields in dataset.rs, queue.rs should accept `String` and parse
+- Affects: dataset.rs:93, 104, 123, 134, 149, queue.rs:92, 104, 127, 137, 152, 163
+
+**Decision for Projects**: ✅ **Use flexible identifier from day one**
+
+#### 9.1.6 Configuration Integration
+
+**Pattern** (all commands pass `config: &Config` to execute):
+- config.rs:67-113 shows available config fields
+- Commands access API keys, scoping IDs, output format preferences
+
+**Configuration Priority Order** (established):
+1. Command-line flags (highest priority)
+2. Environment variables
+3. Config file settings (lowest priority)
+
+**For Projects Commands**:
+- API key: `config.langsmith_api_key` (required)
+- Output format: `args.output` (overrides config)
+- Scoping: `args.organization_id` / `args.workspace_id` (if added)
+
+### 9.2 Finalized Design Specifications
+
+#### 9.2.1 Command Structure
+
+```rust
+#[derive(Debug, Subcommand)]
+pub enum ProjectCommands {
+    /// List projects with filtering
+    List(ListArgs),
+    /// Get details of a specific project
+    Get(GetArgs),
+    /// Create a new project
+    Create(CreateArgs),
+    /// Update an existing project
+    Update(UpdateArgs),
+    /// Delete a project
+    Delete(DeleteArgs),
+}
+```
+
+#### 9.2.2 List Command Arguments
+
+```rust
+#[derive(Debug, Args)]
+pub struct ListArgs {
+    /// Filter by exact name match
+    #[arg(long)]
+    pub name: Option<String>,
+
+    /// Filter by name substring
+    #[arg(long)]
+    pub name_contains: Option<String>,
+
+    /// Maximum number of projects to return
+    #[arg(short, long, default_value = "100")]
+    pub limit: u32,
+
+    /// Include aggregate statistics
+    #[arg(long)]
+    pub include_stats: bool,
+
+    /// Output format
+    #[arg(short = 'o', long = "output", default_value = "table", value_enum)]
+    pub output: OutputFormat,
+}
+```
+
+**Deferred Filters** (not in MVP):
+- `--reference-dataset-id`: Complex, low priority
+- `--metadata`: JSON filtering, complex UX
+
+#### 9.2.3 Get Command Arguments
+
+```rust
+#[derive(Debug, Args)]
+pub struct GetArgs {
+    /// Project identifier (name or UUID)
+    pub identifier: String,
+
+    /// Include aggregate statistics
+    #[arg(long)]
+    pub include_stats: bool,
+
+    /// Output format
+    #[arg(short = 'o', long = "output", default_value = "json", value_enum)]
+    pub output: OutputFormat,
+}
+```
+
+**Note**: Default output is `json` for `get` (structured data for piping)
+
+#### 9.2.4 Create Command Arguments
+
+```rust
+#[derive(Debug, Args)]
+pub struct CreateArgs {
+    /// Name of the project (required)
+    #[arg(long)]
+    pub name: String,
+
+    /// Description of the project
+    #[arg(long)]
+    pub description: Option<String>,
+
+    /// Metadata as JSON object
+    #[arg(long)]
+    pub metadata: Option<String>,
+
+    /// Output format
+    #[arg(short = 'o', long = "output", default_value = "json", value_enum)]
+    pub output: OutputFormat,
+}
+```
+
+**Note**: `--metadata` accepts JSON string: `--metadata '{"env":"prod"}'`
+
+#### 9.2.5 Update Command Arguments
+
+```rust
+#[derive(Debug, Args)]
+pub struct UpdateArgs {
+    /// Project identifier (name or UUID)
+    pub identifier: String,
+
+    /// New name for the project
+    #[arg(long)]
+    pub name: Option<String>,
+
+    /// New description for the project
+    #[arg(long)]
+    pub description: Option<String>,
+
+    /// Output format
+    #[arg(short = 'o', long = "output", default_value = "json", value_enum)]
+    pub output: OutputFormat,
+}
+```
+
+**Important Constraint**: Name changes require project to be closed (has `end_time`)
+- Python SDK raises error if attempted on open project
+- CLI should surface this error clearly
+
+#### 9.2.6 Delete Command Arguments
+
+```rust
+#[derive(Debug, Args)]
+pub struct DeleteArgs {
+    /// Project identifier (name or UUID)
+    pub identifier: String,
+
+    /// Skip confirmation prompt
+    #[arg(long, short = 'f')]
+    pub force: bool,
+}
+```
+
+**Safety Behavior**:
+- Without `--force`: Prompt "Delete project '<name>' (ID: <uuid>)? [y/N]"
+- With `--force`: Delete immediately, no prompt
+- Print confirmation: "✓ Deleted project '<name>'"
+
+#### 9.2.7 Output Format Support
+
+**Table Output** (for `list`):
+- Columns: Name, ID (truncated), Created, Run Count (if --include-stats)
+- Uses `tabled` with automatic width adjustment
+- Pattern: output.rs:124-161
+
+**JSON Output** (for `list`, `get`, `create`, `update`):
+- Pretty-printed JSON via serde_json
+- Pattern: output.rs:116-121
+
+**Text Output** (deferred):
+- Tab-separated values for scripting
+- Requires ColumnMetadata trait implementation
+
+### 9.3 Breaking Changes to Existing Commands (DX Improvements)
+
+These improvements enhance consistency but break existing usage:
+
+#### 9.3.1 BREAKING: Standardize --limit Type
+
+**Files**:
+- `cli/src/commands/dataset.rs:82`
+- `cli/src/commands/runs.rs:127`
+
+**Change**:
+```diff
+- pub limit: i64,  // datasets.rs
++ pub limit: u32,
+
+- pub limit: usize,  // runs.rs
++ pub limit: u32,
+```
+
+**Impact**: Users passing negative values will get clap validation error
+**Mitigation**: This was always invalid, error is now clearer
+
+#### 9.3.2 BREAKING: Standardize --json to --output
+
+**Files**:
+- `cli/src/commands/dataset.rs` (multiple locations)
+- `cli/src/commands/queue.rs` (multiple locations)
+
+**Change**:
+```diff
+- /// Output as JSON
+- #[arg(long)]
+- pub json: bool,
++ /// Output format
++ #[arg(short = 'o', long = "output", default_value = "table", value_enum)]
++ pub output: OutputFormat,
+```
+
+**Impact**: Users using `--json` will get "unknown flag" error
+**Migration Path**: Use `--output json` instead
+**Documentation**: Add to CHANGELOG with migration guide
+
+#### 9.3.3 BREAKING: Standardize --yes to --force
+
+**Files**:
+- `cli/src/commands/dataset.rs:126-127`
+
+**Change**:
+```diff
+- #[arg(long, short = 'y')]
+- pub yes: bool,
++ #[arg(long, short = 'f')]
++ pub force: bool,
+```
+
+**Impact**: Scripts using `-y` or `--yes` will fail
+**Migration Path**: Use `-f` or `--force` instead
+**Documentation**: Add to CHANGELOG with migration guide
+
+### 9.4 Implementation Phases
+
+**Phase 1: Implement Projects with New Patterns** (#590)
+- Build `project` commands with consistent patterns from day one
+- Reference implementation for future commands
+
+**Phase 2: Align Datasets** (future issue)
+- Update dataset.rs to match project patterns
+- Breaking changes with version bump
+
+**Phase 3: Align Queues** (future issue)
+- Update queue.rs to match project patterns
+- Breaking changes with version bump
+
+**Phase 4: Align Runs** (future issue)
+- Update runs.rs `--limit` type
+- Breaking changes with version bump
+
+### 9.5 Recommendations and Next Actions
+
+#### 9.5.1 Output Format Pattern for Projects - **Use `-o/--output`**
+
+**Decision for ls-projects**: Implement projects commands with `-o/--output` pattern
+
+**Rationale**:
+- More extensible (supports future text/records formats without breaking changes)
+- Runs command already uses this pattern (partial precedent)
+- Aligns with ls-cli-output-dx milestone direction (#529)
+- Better to build right from the start than retrofit later
+
+**Note on Existing Inconsistency**:
+- Datasets/queues currently use `--json` boolean
+- This creates temporary inconsistency, but:
+  - ls-cli-output-dx milestone (#529, #589) will eventually retrofit all commands
+  - By using `-o/--output` now, projects won't need breaking changes later
+  - New commands should use the future-proof pattern
+
+**Related Future Work** (not blocking ls-projects):
+- ls-cli-output-dx will need to update datasets/queues to use `-o/--output`
+- Would also be good time to standardize `--yes` → `--force` for datasets
+
+#### 9.5.2 Identifier Flexibility - **DEFER to Separate Issue**
+
+**Status**: Approved for implementation, not blocking any milestone
+
+**Scope**: Retrofit all resource commands to accept name OR UUID identifiers
+- Datasets: get, update, delete by name or UUID
+- Queues: get, update, delete by name or UUID
+- Graphs: similar patterns
+- Projects: implement from day one ✅
+
+**Recommended Action**: Create issue under ls-cli-output-dx milestone
+```
+Title: "Standardize resource identifiers: Accept name or UUID for all commands"
+Milestone: ls-cli-output-dx
+Files: dataset.rs, queue.rs, graph.rs + corresponding SDK modules
+Pattern: Use ProjectIdentifier enum approach from projects implementation
+```
+
+#### 9.5.3 Output Format Architecture - **RESOLVED**
+
+**Status**: Architecture already finalized in milestone #529
+
+**Established Pattern**:
+- Per-command flag: `-o/--output table|json|records|text`
+- Config file default: `~/.config/langstar/config.toml`
+  ```toml
+  [output]
+  format = "text"  # Sets global default
+  ```
+- No global CLI flag needed
+
+**Priority Order**:
+1. CLI flag `-o/--output` (highest)
+2. Config file `[output].format`
+3. Built-in default (typically "table")
+
+**For Projects Implementation**: Use established `-o/--output` pattern
+
+### 9.6 Terminology Validation
+
+From scout report (docs/research/574-ls-projects-scout.md:227-430):
+
+**Confirmed Decision**: Use "project" terminology throughout CLI
+- Python SDK: `list_projects()`, `create_project()`
+- LangSmith UI: `/projects/p/{id}`
+- Environment: `LANGSMITH_PROJECT` (never `LANGSMITH_SESSION`)
+- MCP Server: `project_name` parameters
+
+**Internal Mapping**: CLI "project" → API "/sessions"
+- Transparent to users
+- Matches Python SDK design
+
+## 10. Next Steps
 
 **Phase 2: OpenAPI Schema Analysis** (#587)
 - Extract TracerSession schema from OpenAPI spec
@@ -786,7 +1345,7 @@ Not included in core CRUD operations. This is a separate method for accessing sh
 
 **Phase 3: Rust SDK Implementation**
 - Implement `Project` and `ProjectResult` types
-- Implement 6 core methods
+- Implement 6 core methods with `ProjectIdentifier` enum
 - Add pagination helper
 - Add error types
 
@@ -794,6 +1353,7 @@ Not included in core CRUD operations. This is a separate method for accessing sh
 - `langstar project list` with table output
 - `langstar project get` with JSON/YAML output
 - `langstar project create/update/delete`
+- Use finalized design specifications from section 9.2
 
 **Phase 5: Integration Testing**
 - Test against real LangSmith API
