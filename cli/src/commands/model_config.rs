@@ -146,6 +146,10 @@ impl ModelConfigCommands {
                             configs.iter().map(ModelConfigRow::from_response).collect();
                         formatter.print_table(&rows)?;
                     }
+                    OutputFormat::Text => {
+                        // Text format not yet implemented for model configs, fall back to JSON
+                        formatter.print(&configs)?;
+                    }
                 }
 
                 Ok(())
@@ -199,6 +203,10 @@ impl ModelConfigCommands {
                         let row = ModelConfigRow::from_response(&config);
                         formatter.print_table(&[row])?;
                     }
+                    OutputFormat::Text => {
+                        // Text format not yet implemented for model configs, fall back to JSON
+                        formatter.print(&config)?;
+                    }
                 }
 
                 Ok(())
@@ -217,6 +225,10 @@ impl ModelConfigCommands {
                     OutputFormat::Table => {
                         let row = ModelConfigRow::from_response(&response);
                         formatter.print_table(&[row])?;
+                    }
+                    OutputFormat::Text => {
+                        // Text format not yet implemented for model configs, fall back to JSON
+                        formatter.print(&response)?;
                     }
                 }
 
@@ -260,6 +272,10 @@ impl ModelConfigCommands {
                     OutputFormat::Table => {
                         let row = ModelConfigRow::from_response(&response);
                         formatter.print_table(&[row])?;
+                    }
+                    OutputFormat::Text => {
+                        // Text format not yet implemented for model configs, fall back to JSON
+                        formatter.print(&response)?;
                     }
                 }
 
