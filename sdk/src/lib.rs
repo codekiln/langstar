@@ -32,6 +32,7 @@ pub mod deployments;
 pub mod error;
 pub mod evaluations;
 pub mod evaluators;
+pub mod graph;
 pub mod integrations;
 pub mod organization;
 pub mod playground_settings;
@@ -80,6 +81,7 @@ pub use evaluations::{
     FeedbackType, FeedbackUpdate, HeuristicEvaluator, LlmJudgeConfig, ScoreType,
     StructuredEvaluator,
 };
+pub use graph::{Graph, GraphEdge, GraphNode, GraphNodeData, GraphSummary};
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
 pub use playground_settings::{
