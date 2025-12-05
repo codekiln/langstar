@@ -1,0 +1,58 @@
+{
+  "/assistants/{assistant_id}/schemas": {
+    "get": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Get Assistant Schemas",
+      "description": "Get an assistant by ID.",
+      "operationId": "get_assistant_schemas_assistants__assistant_id__schemas_get",
+      "parameters": [
+        {
+          "description": "The ID of the assistant.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assistant Id",
+            "description": "The ID of the assistant."
+          },
+          "name": "assistant_id",
+          "in": "path"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphSchema"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "/assistants/{assistant_id}/graph": {
+    "get": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Get Assistant Graph",
+      "description": "Get an assistant by ID.",
+      "operationId": "get_assistant_graph_assistants__assistant_id__graph_get",
+      "parameters": [
+        {
+          "description": "The ID of the assistant.",
+          "required": true,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "title": "Assistant ID",
+                "description": "The ID of the assistant."
+              },
+              {
+                "type": "string",
+                "title": "Graph ID",
+                "description": "The ID of the graph."
+              }
+            ]
+          },
+          "name": "assistant_id",
+          "in": "path"
+        },
+        {
+          "description": "Include graph representation of subgraphs. If an integer value is provided, only subgraphs with a depth less than or equal to the value will be included.",
+          "required": false,
+          "schema": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Xray",
+            "default": false,
+            "description": "Include graph representation of subgraphs. If an integer value is provided, only subgraphs with a depth less than or equal to the value will be included."
+          },
+          "name": "xray",
+          "in": "query"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": "object",
+                "title": "Response Get Assistant Graph Assistants  Assistant Id  Graph Get"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/assistants/{assistant_id}/subgraphs": {
+    "get": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Get Assistant Subgraphs",
+      "description": "Get an assistant's subgraphs.",
+      "operationId": "get_assistant_subgraphs_assistants__assistant_id__subgraphs_get",
+      "parameters": [
+        {
+          "description": "The ID of the assistant.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assistant Id"
+          },
+          "name": "assistant_id",
+          "in": "path"
+        },
+        {
+          "description": "Recursively retrieve subgraphs of subgraphs.",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "title": "Recurse",
+            "default": false
+          },
+          "name": "recurse",
+          "in": "query"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subgraphs"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/assistants/{assistant_id}/subgraphs/{namespace}": {
+    "get": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Get Assistant Subgraphs by Namespace",
+      "description": "Get an assistant's subgraphs filtered by namespace.",
+      "operationId": "get_assistant_subgraphs_assistants__assistant_id__subgraphs__namespace__get",
+      "parameters": [
+        {
+          "description": "The ID of the assistant.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Assistant Id"
+          },
+          "name": "assistant_id",
+          "in": "path"
+        },
+        {
+          "description": "Namespace of the subgraph to filter by.",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Namespace"
+          },
+          "name": "namespace",
+          "in": "path"
+        },
+        {
+          "description": "Recursively retrieve subgraphs of subgraphs.",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "title": "Recurse",
+            "default": false
+          },
+          "name": "recurse",
+          "in": "query"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Subgraphs"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

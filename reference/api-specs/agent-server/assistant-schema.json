@@ -1,0 +1,90 @@
+{
+  "properties": {
+    "assistant_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Assistant Id",
+      "description": "The ID of the assistant."
+    },
+    "graph_id": {
+      "type": "string",
+      "title": "Graph Id",
+      "description": "The ID of the graph.",
+      "enum": [
+        "test_graph"
+      ]
+    },
+    "config": {
+      "properties": {
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "title": "Tags"
+        },
+        "recursion_limit": {
+          "type": "integer",
+          "title": "Recursion Limit"
+        },
+        "configurable": {
+          "type": "object",
+          "title": "Configurable"
+        }
+      },
+      "type": "object",
+      "title": "Config",
+      "description": "The assistant config."
+    },
+    "context": {
+      "type": "object",
+      "title": "Context",
+      "description": "Static context added to the assistant."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At",
+      "description": "The time the assistant was created."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Updated At",
+      "description": "The last time the assistant was updated."
+    },
+    "metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "description": "The assistant metadata."
+    },
+    "version": {
+      "type": "integer",
+      "title": "Version",
+      "description": "The version of the assistant"
+    },
+    "name": {
+      "type": "string",
+      "title": "Assistant Name",
+      "description": "The name of the assistant"
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Assistant Description",
+      "description": "The description of the assistant"
+    }
+  },
+  "type": "object",
+  "required": [
+    "assistant_id",
+    "graph_id",
+    "config",
+    "created_at",
+    "updated_at",
+    "metadata"
+  ],
+  "title": "Assistant"
+}

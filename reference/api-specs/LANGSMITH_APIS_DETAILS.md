@@ -8,12 +8,16 @@ This document provides a comprehensive catalog of all LangSmith/LangGraph API sp
 |-----|-----------|------|---------|-----------|---------------|---------------|-------------|
 | LangSmith API | `../openapi/langchain/langsmith/openapi.json` | 635K | 0.1.0 | 2025-11-26 | `https://api.smith.langchain.com` | `https://eu.api.smith.langchain.com` | Core LangSmith API - datasets, examples, runs, projects, tracing, org management |
 | LangSmith Deployment Control Plane API | `../openapi/langchain/control-plane/openapi.json` | 70K | 0.1.0 | 2025-11-20 | `https://api.host.langchain.com` | `https://eu.api.host.langchain.com` | Deployment management for LangGraph Server |
-| LangSmith Deployment Agent Server API | Per-deployment | N/A | N/A | N/A | Per-deployment | Per-deployment | Runtime API for assistants, threads, runs (OpenAPI at `/docs` on each deployment) |
+| LangSmith Deployment Agent Server API | `../openapi/langchain/agent-server/openapi.json` | 95K | 0.1.0 | 2025-12-05 | Per-deployment | Per-deployment | Runtime API for assistants, threads, runs, graphs (OpenAPI at `/openapi.json` on each deployment) |
 | SCIM API | SCIM 2.0 compliant | N/A | SCIM 2.0 | N/A | `https://api.smith.langchain.com/scim/v2` | `https://eu.api.smith.langchain.com/scim/v2` | User provisioning (Enterprise only) |
 
 ## Extracted Schema Files
 
-These are subsets extracted from the main OpenAPI specs for focused reference. See [langsmith/FRAGMENTS.md](./langsmith/FRAGMENTS.md) for jq extraction commands.
+These are subsets extracted from the main OpenAPI specs for focused reference. See respective `FRAGMENTS.md` files for jq extraction commands.
+
+### LangSmith API Fragments
+
+See [langsmith/FRAGMENTS.md](./langsmith/FRAGMENTS.md) for extraction commands.
 
 | Schema | File Path | Size | Purpose |
 |--------|-----------|------|---------|
@@ -23,6 +27,20 @@ These are subsets extracted from the main OpenAPI specs for focused reference. S
 | Runs Query Endpoint | `langsmith/runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint spec |
 | Runs Query Request | `langsmith/runs-query-request-schema.json` | 5.5K | Request payload for runs query |
 | Runs Query Response | `langsmith/runs-query-response-schema.json` | 1.1K | Response format for runs query |
+
+### Agent Server API Fragments
+
+See [agent-server/FRAGMENTS.md](./agent-server/FRAGMENTS.md) for extraction commands.
+
+| Schema | File Path | Size | Purpose |
+|--------|-----------|------|---------|
+| Graph Endpoint | `agent-server/graph-endpoint.json` | 6K | GET /assistants/{id}/graph |
+| Subgraphs Endpoints | `agent-server/subgraphs-endpoints.json` | 3.5K | GET /assistants/{id}/subgraphs |
+| Assistants Search Endpoint | `agent-server/assistants-search-endpoint.json` | 1.5K | POST /assistants/search |
+| Schemas Endpoint | `agent-server/schemas-endpoint.json` | 1.5K | GET /assistants/{id}/schemas |
+| Graph Schemas | `agent-server/graph-schemas.json` | 3K | GraphSchema, Subgraphs types |
+| Assistant Schema | `agent-server/assistant-schema.json` | 2K | Assistant type with graph_id field |
+| Assistant Search Request | `agent-server/assistant-search-request-schema.json` | 2K | Search request payload |
 
 ## Remote Sources
 

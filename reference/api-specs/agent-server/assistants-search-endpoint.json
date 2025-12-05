@@ -1,0 +1,58 @@
+{
+  "/assistants/search": {
+    "post": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Search Assistants",
+      "description": "Search for assistants.\n\nThis endpoint also functions as the endpoint to list all assistants.",
+      "operationId": "search_assistants_assistants_search_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AssistantSearchRequest"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/Assistant"
+                },
+                "type": "array",
+                "title": "Response Search Assistants Assistants Search Post"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
