@@ -165,7 +165,7 @@ impl<'a> GraphClient<'a> {
                             }
                         })
                         .collect(),
-                    Err(_) => Vec::new()
+                    Err(_) => Vec::new(),
                 }
             } else {
                 Vec::new()
