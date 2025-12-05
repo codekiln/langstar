@@ -17,7 +17,7 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 
 | File | Size | Purpose | jq Query | Last Updated |
 |------|------|---------|----------|--------------|
-| `graph-endpoint.json` | 6KB | GET /assistants/{id}/graph endpoint | See below | 2025-12-05 |
+| `graph-endpoint.json` | 1KB | GET /assistants/{id}/graph endpoint | See below | 2025-12-05 |
 | `subgraphs-endpoints.json` | 3.5KB | GET /assistants/{id}/subgraphs endpoints | See below | 2025-12-05 |
 | `assistants-search-endpoint.json` | 1.5KB | POST /assistants/search endpoint | See below | 2025-12-05 |
 | `schemas-endpoint.json` | 1.5KB | GET /assistants/{id}/schemas endpoint | See below | 2025-12-05 |
@@ -30,8 +30,8 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 Run these from the repository root (with agent-server openapi.json in place):
 
 ```bash
-# Graph topology endpoint
-jq '.paths | with_entries(select(.key | test("/assistants.*graph")))' \
+# Graph topology endpoint (only /graph, not /subgraphs)
+jq '.paths | with_entries(select(.key | test("/assistants.*/graph$")))' \
   reference/openapi/langchain/agent-server/openapi.json \
   > reference/api-specs/agent-server/graph-endpoint.json
 
