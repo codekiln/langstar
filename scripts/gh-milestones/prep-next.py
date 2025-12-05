@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+import traceback
 from typing import Optional, Dict, List, Tuple
 
 
@@ -448,7 +449,6 @@ class MilestoneWorkflow:
             # Let SystemExit propagate - don't catch success/failure codes
             raise
         except Exception as e:
-            import traceback
             print(f"\n❌ Unexpected error: {type(e).__name__}: {e}", file=sys.stderr)
             print("\nFull traceback:", file=sys.stderr)
             traceback.print_exc()
