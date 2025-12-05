@@ -110,6 +110,22 @@ class TracerSession(BaseModel):
 **Update Response**: TracerSession object
 **Delete Response**: Success/error status
 
+### CLI Filtering Support
+
+**Intended CLI Usage:**
+```bash
+# Filter projects by exact name
+langstar project list --name "my-project"
+
+# Filter projects by partial name match
+langstar project list --name-contains "test"
+
+# Combine filters
+langstar project list --name-contains "prod" --limit 10
+```
+
+The `langstar project list` command will expose the API's `name` and `name_contains` query parameters as CLI flags, enabling server-side filtering of projects by name.
+
 ## 4. Complexity Assessment
 
 **Complexity**: **Medium**
