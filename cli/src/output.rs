@@ -18,6 +18,34 @@ pub fn get_terminal_width() -> usize {
         .unwrap_or(DEFAULT_TERMINAL_WIDTH)
 }
 
+/// Trait for types that can provide column metadata for text output
+///
+/// Commands that implement this trait can support column selection via `--columns`
+/// and column discovery via `--show-columns`.
+#[allow(dead_code)]
+pub trait ColumnMetadata {
+    /// Returns the list of available column names for this type
+    ///
+    /// Column names should be lowercase and use underscores (e.g., "repo_handle", "num_downloads")
+    fn available_columns() -> Vec<&'static str>;
+
+    /// Renders this item as tab-separated values for the given columns
+    ///
+    /// # Arguments
+    /// * `columns` - The list of columns to include in the output
+    ///
+    /// # Returns
+    /// A string with tab-separated values for the requested columns
+    ///
+    /// # Example
+    /// ```ignore
+    /// let columns = vec!["handle".to_string(), "downloads".to_string()];
+    /// let tsv = item.render_tsv(&columns);
+    /// assert_eq!(tsv, "my-prompt\t123");
+    /// ```
+    fn render_tsv(&self, columns: &[String]) -> String;
+}
+
 /// Output format for displaying data
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OutputFormat {
@@ -25,6 +53,8 @@ pub enum OutputFormat {
     Json,
     /// Table output (human-readable)
     Table,
+    /// Text output (tab-separated values)
+    Text,
 }
 
 impl OutputFormat {
@@ -33,8 +63,9 @@ impl OutputFormat {
         match s.to_lowercase().as_str() {
             "json" => Ok(OutputFormat::Json),
             "table" => Ok(OutputFormat::Table),
+            "text" => Ok(OutputFormat::Text),
             _ => Err(crate::error::CliError::Config(format!(
-                "Invalid output format: {}. Valid formats: json, table",
+                "Invalid output format: {}. Valid formats: json, table, text",
                 s
             ))),
         }
@@ -77,6 +108,11 @@ impl OutputFormatter {
             OutputFormat::Table => {
                 // For table format, the type needs to implement Tabled
                 // For now, we'll fall back to JSON for types that don't implement Tabled
+                self.print_json(data)
+            }
+            OutputFormat::Text => {
+                // For text format, the type needs to implement ColumnMetadata
+                // For now, we'll fall back to JSON for types that don't implement ColumnMetadata
                 self.print_json(data)
             }
         }
@@ -176,6 +212,45 @@ impl OutputFormatter {
     pub fn info(&self, message: &str) {
         self.print_message("ℹ".blue(), message);
     }
+
+    /// Print text output (tab-separated values)
+    ///
+    /// # Arguments
+    /// * `data` - The data to display (must implement ColumnMetadata)
+    /// * `columns` - The columns to include in the output. If None, uses all available columns.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let formatter = OutputFormatter::new(OutputFormat::Text);
+    /// formatter.print_text(&items, Some(&["handle".to_string(), "downloads".to_string()]));
+    /// ```
+    #[allow(dead_code)]
+    pub fn print_text<T: ColumnMetadata>(
+        &self,
+        data: &[T],
+        columns: Option<&[String]>,
+    ) -> Result<()> {
+        if data.is_empty() {
+            return Ok(());
+        }
+
+        // Use provided columns or default to all available columns
+        let cols = if let Some(c) = columns {
+            c.to_vec()
+        } else {
+            T::available_columns()
+                .iter()
+                .map(|s| s.to_string())
+                .collect()
+        };
+
+        // Render each item as TSV
+        for item in data {
+            println!("{}", item.render_tsv(&cols));
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -189,7 +264,9 @@ mod tests {
             OutputFormat::from_str("table").unwrap(),
             OutputFormat::Table
         );
+        assert_eq!(OutputFormat::from_str("text").unwrap(), OutputFormat::Text);
         assert_eq!(OutputFormat::from_str("JSON").unwrap(), OutputFormat::Json);
+        assert_eq!(OutputFormat::from_str("TEXT").unwrap(), OutputFormat::Text);
         assert!(OutputFormat::from_str("invalid").is_err());
     }
 
