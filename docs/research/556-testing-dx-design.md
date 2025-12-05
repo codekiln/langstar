@@ -21,7 +21,7 @@
 
 | Principle | Rationale |
 |-----------|-----------|
-| **TOC-first navigation** | Agents read TOC (~10 lines) to identify relevant docs, not all 3,667 lines |
+| **TOC-first navigation** | Agents read TOC (~15 lines) to identify relevant docs, not all 3,667 lines |
 | **Clear file naming** | Names like `crud-lifecycle-pattern.md` are grep-able and self-descriptive |
 | **Size limits** | Each doc <500 lines ensures focused, loadable content |
 | **AGENTS.md integration** | Single reference point that auto-loads on every task |
@@ -32,7 +32,7 @@
 | Metric | Before | After | Improvement |
 |--------|--------|-------|-------------|
 | Lines loaded for typical task | ~1,500 | ~300 | 80% reduction |
-| Token usage for test writing | ~11,000 | ~2,500 | 77% reduction |
+| Token usage for test writing | ~11,000 | ~3,600 | ~67% reduction |
 | DRY violations | 4 major | 0 | Eliminated |
 | #536-type bug prevention | None | CRUD pattern | +1 safeguard |
 
@@ -44,7 +44,7 @@
 
 ```
 docs/dev/testing/
-├── README.md                           # TOC only (~10 lines)
+├── README.md                           # TOC only (~15 lines)
 ├── HIGH_LEVEL_TESTING_GUIDELINES.md    # Principles (<200 lines)
 ├── crud-lifecycle-pattern.md           # Pattern with examples (<300 lines)
 ├── sdk-integration-tests.md            # SDK-specific guidance (<250 lines)
@@ -61,12 +61,12 @@ docs/dev/testing/
 
 ### File Design Rationale
 
-#### README.md (~10 lines)
+#### README.md (~15 lines)
 
 **Purpose:** Minimal TOC that agents auto-load via AGENTS.md reference
 
 **Design constraints:**
-- MUST be ≤10 lines (excluding blank lines)
+- MUST be ≤15 lines (excluding blank lines and table formatting)
 - MUST list all files with one-line descriptions
 - MUST NOT contain substantive content (only links)
 
@@ -173,12 +173,14 @@ docs/dev/testing/
 
 ### Size Limit Enforcement
 
-Each file includes a header comment enforcing size limits:
+Each file includes a header comment enforcing its specific size limit (as defined in the File Structure section above):
 
 ```markdown
 <!--
-  SIZE LIMIT: This file MUST remain under 200 lines.
-  Current: ~180 lines | Last checked: 2025-12-05
+  SIZE LIMIT: This file MUST remain under [X] lines.
+  (Replace [X] with file-specific limit: 200 for HIGH_LEVEL_TESTING_GUIDELINES.md,
+   300 for crud-lifecycle-pattern.md, etc. - see File Structure above)
+  Current: ~[Y] lines | Last checked: [DATE]
   If approaching limit, extract content to sub-document.
 -->
 ```
@@ -193,7 +195,7 @@ Each file includes a header comment enforcing size limits:
 graph TD
     A[Task: Write integration tests for feature X] --> B[Auto-load AGENTS.md]
     B --> C[AGENTS.md references docs/dev/testing/README.md]
-    C --> D[Agent reads TOC ~10 lines]
+    C --> D[Agent reads TOC ~15 lines]
     D --> E{What type of feature?}
     E -->|CLI command| F[Load cli-integration-tests.md]
     E -->|SDK method| G[Load sdk-integration-tests.md]
@@ -208,14 +210,14 @@ graph TD
 - Relevant guide: ~1,500 tokens
 - CRUD pattern: ~2,000 tokens
 - Guidelines: ~1,500 tokens
-- **Total: ~5,100 tokens** (vs ~21,000 if all docs loaded)
+- **Total: ~5,100 tokens** (vs ~10,050 for typical task; see Section 6 for analysis)
 
 ### Workflow 2: Debugging Failing Tests
 
 ```mermaid
 graph TD
     A[Task: Fix failing test] --> B[Auto-load AGENTS.md]
-    B --> C[Agent reads TOC ~10 lines]
+    B --> C[Agent reads TOC ~15 lines]
     C --> D[Load troubleshooting.md]
     D --> E{Issue type?}
     E -->|Auth/env| F[Load test-fixtures.md]
@@ -297,12 +299,12 @@ graph TD
 
 Add to AGENTS.md under "Supporting Repository Structures":
 
-```markdown
+````markdown
 ### Testing Documentation (Progressive Disclosure)
 
 Testing docs use progressive disclosure to minimize context window usage.
 
-**Always-loaded reference:** `@docs/dev/testing/README.md` (10-line TOC)
+**Always-loaded reference:** `@docs/dev/testing/README.md` (~15-line TOC)
 
 **Load on demand:**
 - Writing tests? Load the relevant guide from TOC
@@ -317,7 +319,7 @@ cargo fmt && cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
 cargo test --workspace --all-features && cargo fmt --check
 ```
-```
+````
 
 ### Integration Points
 
@@ -329,7 +331,7 @@ cargo test --workspace --all-features && cargo fmt --check
 
 When AGENTS.md is loaded:
 - Agent sees reference to `@docs/dev/testing/README.md`
-- Agent can optionally load TOC (10 lines, ~100 tokens)
+- Agent can optionally load TOC (~15 lines, ~100 tokens)
 - Agent does NOT auto-load all testing docs
 - Agent decides which docs to load based on task
 
@@ -656,7 +658,7 @@ cargo test --workspace --all-features && cargo fmt --check
 
 **Tasks:**
 1. Create `docs/dev/testing/` directory
-2. Create `README.md` (TOC only, ~10 lines)
+2. Create `README.md` (TOC only, ~15 lines)
 3. Create `HIGH_LEVEL_TESTING_GUIDELINES.md` with:
    - Toyota andon cord principle
    - Test design review checklist
@@ -802,7 +804,7 @@ cargo fmt --check
 
 ## Appendix B: Success Criteria
 
-- [ ] `docs/dev/testing/README.md` is ≤10 lines
+- [ ] `docs/dev/testing/README.md` is ≤15 lines (excluding formatting)
 - [ ] Each testing doc is <500 lines
 - [ ] AGENTS.md includes testing section with progressive disclosure guidance
 - [ ] All original locations have redirect notices
