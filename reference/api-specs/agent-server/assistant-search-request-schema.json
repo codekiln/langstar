@@ -1,0 +1,81 @@
+{
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "title": "Metadata",
+      "description": "Metadata to filter by. Exact match filter for each KV pair."
+    },
+    "graph_id": {
+      "type": "string",
+      "title": "Graph Id",
+      "description": "The ID of the graph to filter by. The graph ID is normally set in your langgraph.json configuration.",
+      "enum": [
+        "test_graph"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "Name of the assistant to filter by. The filtering logic will match (case insensitive) assistants where 'name' is a substring of the assistant name."
+    },
+    "limit": {
+      "type": "integer",
+      "title": "Limit",
+      "description": "The maximum number of results to return.",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 1000
+    },
+    "offset": {
+      "type": "integer",
+      "title": "Offset",
+      "description": "The number of results to skip.",
+      "default": 0,
+      "minimum": 0
+    },
+    "sort_by": {
+      "type": "string",
+      "enum": [
+        "assistant_id",
+        "created_at",
+        "updated_at",
+        "name",
+        "graph_id"
+      ],
+      "title": "Sort By",
+      "description": "The field to sort by."
+    },
+    "sort_order": {
+      "type": "string",
+      "enum": [
+        "asc",
+        "desc"
+      ],
+      "title": "Sort Order",
+      "description": "The order to sort by."
+    },
+    "select": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "assistant_id",
+          "graph_id",
+          "name",
+          "description",
+          "config",
+          "context",
+          "created_at",
+          "updated_at",
+          "metadata",
+          "version"
+        ]
+      },
+      "title": "Select",
+      "description": "Specify which fields to return. If not provided, all fields are returned."
+    }
+  },
+  "type": "object",
+  "title": "AssistantSearchRequest",
+  "description": "Payload for listing assistants."
+}

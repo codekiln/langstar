@@ -1,0 +1,93 @@
+{
+  "/assistants/{assistant_id}/graph": {
+    "get": {
+      "tags": [
+        "Assistants"
+      ],
+      "summary": "Get Assistant Graph",
+      "description": "Get an assistant by ID.",
+      "operationId": "get_assistant_graph_assistants__assistant_id__graph_get",
+      "parameters": [
+        {
+          "description": "The ID of the assistant.",
+          "required": true,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "title": "Assistant ID",
+                "description": "The ID of the assistant."
+              },
+              {
+                "type": "string",
+                "title": "Graph ID",
+                "description": "The ID of the graph."
+              }
+            ]
+          },
+          "name": "assistant_id",
+          "in": "path"
+        },
+        {
+          "description": "Include graph representation of subgraphs. If an integer value is provided, only subgraphs with a depth less than or equal to the value will be included.",
+          "required": false,
+          "schema": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Xray",
+            "default": false,
+            "description": "Include graph representation of subgraphs. If an integer value is provided, only subgraphs with a depth less than or equal to the value will be included."
+          },
+          "name": "xray",
+          "in": "query"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Success",
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": "object",
+                "title": "Response Get Assistant Graph Assistants  Assistant Id  Graph Get"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponse"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

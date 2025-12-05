@@ -21,8 +21,17 @@ api-specs/
 │   ├── run-schema.json            # Run data structures
 │   └── runs-query-*.json          # Runs query endpoint/schemas
 │
-└── control-plane/                 # Control Plane API fragments
-    └── FRAGMENTS.md               # Index (no fragments yet)
+├── control-plane/                 # Control Plane API fragments
+│   └── FRAGMENTS.md               # Index (no fragments yet)
+│
+└── agent-server/                  # Agent Server API fragments (per-deployment)
+    ├── FRAGMENTS.md               # Index with jq queries
+    ├── graph-endpoint.json        # GET /assistants/{id}/graph
+    ├── subgraphs-endpoints.json   # GET /assistants/{id}/subgraphs
+    ├── assistants-search-endpoint.json  # POST /assistants/search
+    ├── schemas-endpoint.json      # GET /assistants/{id}/schemas
+    ├── graph-schemas.json         # GraphSchema, Subgraphs types
+    └── assistant-*.json           # Assistant schema with graph_id
 ```
 
 ## Design Pattern

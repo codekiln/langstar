@@ -1,0 +1,91 @@
+{
+  "GraphSchema": {
+    "properties": {
+      "graph_id": {
+        "type": "string",
+        "title": "Graph Id",
+        "description": "The ID of the graph.",
+        "enum": [
+          "test_graph"
+        ]
+      },
+      "input_schema": {
+        "type": "object",
+        "title": "Input Schema",
+        "description": "The schema for the graph input. Missing if unable to generate JSON schema from graph."
+      },
+      "output_schema": {
+        "type": "object",
+        "title": "Output Schema",
+        "description": "The schema for the graph output. Missing if unable to generate JSON schema from graph."
+      },
+      "state_schema": {
+        "type": "object",
+        "title": "State Schema",
+        "description": "The schema for the graph state. Missing if unable to generate JSON schema from graph."
+      },
+      "config_schema": {
+        "type": "object",
+        "title": "Config Schema",
+        "description": "The schema for the graph config. Missing if unable to generate JSON schema from graph."
+      },
+      "context_schema": {
+        "type": "object",
+        "title": "Context Schema",
+        "description": "The schema for the graph context. Missing if unable to generate JSON schema from graph."
+      }
+    },
+    "type": "object",
+    "required": [
+      "graph_id",
+      "state_schema"
+    ],
+    "title": "GraphSchema",
+    "description": "Defines the structure and properties of a graph."
+  },
+  "GraphSchemaNoId": {
+    "properties": {
+      "input_schema": {
+        "type": "object",
+        "title": "Input Schema",
+        "description": "The schema for the graph input. Missing if unable to generate JSON schema from graph."
+      },
+      "output_schema": {
+        "type": "object",
+        "title": "Output Schema",
+        "description": "The schema for the graph output. Missing if unable to generate JSON schema from graph."
+      },
+      "state_schema": {
+        "type": "object",
+        "title": "State Schema",
+        "description": "The schema for the graph state. Missing if unable to generate JSON schema from graph."
+      },
+      "config_schema": {
+        "type": "object",
+        "title": "Config Schema",
+        "description": "The schema for the graph config. Missing if unable to generate JSON schema from graph."
+      },
+      "context_schema": {
+        "type": "object",
+        "title": "Context Schema",
+        "description": "The schema for the graph context. Missing if unable to generate JSON schema from graph."
+      }
+    },
+    "type": "object",
+    "required": [
+      "input_schema",
+      "output_schema",
+      "state_schema"
+    ],
+    "title": "GraphSchemaNoId",
+    "description": "Defines the structure and properties of a graph without an ID."
+  },
+  "Subgraphs": {
+    "type": "object",
+    "additionalProperties": {
+      "$ref": "#/components/schemas/GraphSchemaNoId"
+    },
+    "title": "Subgraphs",
+    "description": "Map of graph name to graph schema metadata (`input_schema`, `output_schema`, `state_schema`, `config_schema`, `context_schema`)."
+  }
+}
