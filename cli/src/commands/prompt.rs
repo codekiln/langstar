@@ -896,4 +896,46 @@ mod tests {
         let visibility = PromptCommands::determine_visibility(&client, true);
         assert_eq!(visibility, Visibility::Public);
     }
+
+    #[test]
+    fn test_truncate_description_long() {
+        // Test truncation when description exceeds max_len
+        let long_desc = "a".repeat(100);
+        let result = truncate_description(Some(&long_desc), 40);
+        assert_eq!(result.len(), 40);
+        assert!(result.ends_with("..."));
+    }
+
+    #[test]
+    fn test_truncate_description_short() {
+        // Test no truncation when description is shorter than max_len
+        let short_desc = "Short description".to_string();
+        let result = truncate_description(Some(&short_desc), 40);
+        assert_eq!(result, "Short description");
+    }
+
+    #[test]
+    fn test_truncate_description_none() {
+        // Test handling of None
+        let result = truncate_description(None, 40);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_truncate_description_exact_length() {
+        // Test when description is exactly max_len
+        let exact_desc = "a".repeat(40);
+        let result = truncate_description(Some(&exact_desc), 40);
+        assert_eq!(result, exact_desc);
+        assert_eq!(result.len(), 40);
+    }
+
+    #[test]
+    fn test_truncate_description_edge_case_small_max() {
+        // Test edge case with max_len < 3
+        let desc = "Hello world".to_string();
+        let result = truncate_description(Some(&desc), 3);
+        // With max_len=3 and saturating_sub(3)=0, we get "" + "..."
+        assert_eq!(result, "...");
+    }
 }

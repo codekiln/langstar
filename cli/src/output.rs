@@ -114,7 +114,7 @@ impl OutputFormatter {
         let term_width = get_terminal_width();
 
         // Calculate first column max width:
-        // Reserve ~40 chars for other columns + borders, rest for first column
+        // Reserve ~45 chars for other columns + borders, rest for first column
         // Minimum of 30, maximum of 100 (for very wide terminals)
         let first_col_width = first_col_max_width.unwrap_or_else(|| {
             let available = term_width.saturating_sub(45);
@@ -198,5 +198,13 @@ mod tests {
         let formatter = OutputFormatter::new(OutputFormat::Json);
         let data = serde_json::json!({"test": "value"});
         assert!(formatter.print(&data).is_ok());
+    }
+
+    #[test]
+    fn test_get_terminal_width() {
+        let width = get_terminal_width();
+        // Should either detect actual terminal width or fall back to default
+        // In CI environments without a TTY, this will return DEFAULT_TERMINAL_WIDTH
+        assert!(width >= DEFAULT_TERMINAL_WIDTH || width > 0);
     }
 }
