@@ -5,6 +5,314 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-05
+
+### ✨ Features
+
+- ✨ feat(sdk): add graph() client methods for LangGraph API (#607)
+
+* ✨ feat(sdk): add graph() client methods
+
+Implements GraphClient for interacting with graphs via Agent Server API.
+
+Key features:
+- list() - List all unique graphs by scanning assistants
+- get() - Get graph structure by graph_id with xray support
+- subgraphs() - Get subgraphs for a graph
+
+Algorithm for list():
+1. POST /assistants/search to get all assistants
+2. Extract unique graph_id values and group by graph
+3. Optionally fetch graph structure to populate node names
+4. Filter out __start__ and __end__ control nodes
+
+Deliverables:
+- sdk/src/graph_client.rs with GraphClient implementation
+- Updated sdk/src/lib.rs to export graph_client module
+- Unit tests for client creation, filtering, and serialization
+
+Fixes #566
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(sdk): address Copilot review feedback on graph client
+
+- Added performance note about N+1 queries when include_structure=true
+- Implemented pagination for assistants search (limit=100, offset-based)
+- Added error logging for failed graph structure fetches
+
+Addresses review comments on PR #607:
+- Comment 2593386966: Added performance warning documentation
+- Comment 2593386987: Implemented pagination to fetch all assistants
+- Comment 2593387011: Added eprintln! for debugging failed fetches
+
+* 🩹 fix(sdk): improve documentation precision and remove library stderr usage
+
+- Made performance note more precise about API call counts (N pagination + M graph fetches)
+- Removed eprintln! from library code (libraries should not write to stderr)
+- Silently skip graphs that fail to fetch structure (return empty vec)
+
+Addresses follow-up review comments on PR #607
+
+* 🩹 fix(fmt): add missing trailing comma
+
+* 📚 docs(sdk): remove misleading default value note from xray parameter
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): add langstar deployment command (#614)
+
+* ✨ feat(cli): add langstar deployment command
+
+Create the `langstar deployment` command by renaming from `graph`:
+- Add deployment.rs with DeploymentCommands enum
+- Register deployment command in CLI with proper help text
+- Keep graph command as alias (deprecation handled in #527.8)
+
+Subcommands:
+- langstar deployment list - List all LangGraph deployments
+- langstar deployment get - Get a specific deployment by ID
+- langstar deployment create - Create a new deployment
+- langstar deployment delete - Delete a deployment
+
+Fixes #567
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(cli): use ? operator for error handling in deployment delete confirmation
+
+Replace .unwrap() calls with ? operator to properly propagate I/O errors,
+consistent with error handling patterns elsewhere in the codebase.
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/614#discussion_r2593959619
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(cli): add Text output format and ColumnMetadata infrastructure (#613)
+
+* ✨ feat(cli): add Text output format and ColumnMetadata infrastructure
+
+Implements Phase 1 of AI-friendly CLI output (#584):
+- Add Text variant to OutputFormat enum for tab-separated output
+- Create ColumnMetadata trait for column selection and TSV rendering
+- Add print_text() method to OutputFormatter
+- Update OutputFormat::from_str() to parse "text" format
+- Add fallback handling in existing match statements
+
+This provides the foundation for Phase 2, which will implement
+ColumnMetadata for specific commands and add --columns/--show-columns flags.
+
+Fixes #585
+
+* 🩹 fix: add empty data message to print_text for consistency
+
+Addresses review comment requesting consistent empty data handling
+between print_text() and print_table_with_options(). Both methods
+now print 'No results found.' when given empty data.
+
+* 📚 docs(pr-workflow): emphasize using /gh-pr-comment-reply for review comments
+
+Clarifies that agents MUST use the dedicated /gh-pr-comment-reply slash command
+when responding to review comments, rather than gh pr comment (creates top-level
+comments) or manual gh api calls (error-prone).
+
+Changes:
+- Added CRITICAL section explaining how to reply in-thread using the slash command
+- Updated Option 2 (Defer) example to show slash command usage
+- Replaced Command Reference section to recommend slash command over manual methods
+- Added explicit warnings against gh pr comment and manual gh api calls
+
+This prevents the mistake of creating top-level PR comments that can't be marked
+as resolved, which breaks the maintainer workflow.
+
+* 🧪 test: add integration test for text format fallback
+
+Adds test_model_config_list_text_format() to verify that --format text
+correctly falls back to JSON output in Phase 1 (infrastructure only).
+
+This test documents the current Phase 1 behavior and will be updated
+in Phase 2 when Text format produces actual tab-separated values.
+
+Addresses review comment https://github.com/codekiln/langstar/pull/613#discussion_r2593978285
+
+### 🩹 Bug Fixes
+
+- 🩹 fix: improve error handling in prep-next.py script (#605)
+
+* 🩹 fix: improve error handling in prep-next.py script
+
+Replace overly-broad exception handler that was catching and
+misreporting SystemExit exceptions. The previous handler would
+catch SystemExit(0) and print "Unexpected error: 0" which was
+confusing to users.
+
+Changes:
+- Added explicit SystemExit handler that re-raises the exception
+- Enhanced generic exception handler to show exception type and full traceback
+- This provides much better debugging information when errors occur
+
+Fixes #604
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: move traceback import to module level
+
+- Moved traceback import from inline (line 452) to top-level imports
+- Follows Python conventions and avoids repeated import overhead
+- Improves code organization and readability
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/605#discussion_r2593364952
+
+* 🩹 fix: preserve exit codes from SystemExit
+
+- Changed SystemExit handler to return exit code instead of re-raising
+- Preserves intended control flow where methods use sys.exit(1) for errors
+- Prevents exception propagation while still avoiding "Unexpected error: 0"
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/605#discussion_r2593381350
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix: correctly parse gh sub-issue JSON output in prep-next.py (#609)
+
+* 🩹 fix: correctly parse gh sub-issue JSON output in prep-next.py
+
+The gh sub-issue list command returns JSON in the format:
+{"subIssues": [{"number": 586}]}
+
+Previously, the script incorrectly tried to index directly into the JSON
+response as if it were an array, causing KeyError: 0.
+
+This fix:
+- Correctly extracts the "subIssues" wrapper from JSON response
+- Handles None/null cases gracefully with .get() and safe checks
+- Adds TypeError to exception handling for robustness
+- Applies fix to both parent and children relationship parsing
+
+Fixes #608
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: address Copilot review feedback on variable naming and error handling
+
+- Rename sub_issues → parent_issues in parent parsing for clarity
+- Rename sub_issues → child_issues in children parsing for clarity
+- Remove redundant len() > 0 check (more Pythonic)
+- Add explanatory comment to parent parsing except clause
+- Add error logging to children parsing except clause
+
+Addresses Copilot review comments in PR #609
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix: add leaf node traversal to prep-next.py issue selection (#612)
+
+* 🩹 fix: add leaf node traversal to prep-next.py issue selection
+
+Fixes #611
+
+## Problem
+The find_next_issue() method in prep-next.py would select parent issues
+instead of traversing down to their first workable leaf node (issue with
+no open children). This broke the automation promise of selecting the
+actual next issue to work on.
+
+## Solution
+Added _find_first_leaf() helper method that:
+- Recursively traverses down the issue hierarchy
+- Finds the first open child at each level (sorted by issue number)
+- Returns the issue when no open children exist (leaf node)
+- Handles arbitrary nesting depth
+
+The method is called after finding a candidate issue in find_next_issue(),
+ensuring both simple and intelligent traversal modes benefit from it.
+
+## Testing
+Added test_leaf_traversal.py with 4 test cases:
+- Descends from parent to first leaf child
+- Handles multi-level nesting (grandparent -> parent -> child)
+- Returns issue itself when it has no children
+- Skips closed children to find first open leaf
+
+All tests pass.
+
+## Example
+Before: Selects #586 (parent with 8 children)
+After: Selects #590 (first leaf child of #586)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(prep-next): optimize performance with O(1) lookups and conditional traversal
+
+- Add issues_by_number dict for O(1) issue lookups (fixes linear search)
+- Only call _find_first_leaf() when not using simple ordering
+- Reduces unnecessary overhead in fallback mode
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/612#discussion_r2593894069
+- https://github.com/codekiln/langstar/pull/612#discussion_r2593894076
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs(projects): add CLI design decisions for DX consistency (#615)
+
+* 📚 docs(projects): add CLI design decisions for DX consistency
+
+Add comprehensive Section 9 to Phase 1 research report documenting:
+- Analysis of existing CLI patterns (datasets, queues, runs)
+- Three key inconsistencies identified across commands
+- Finalized design specifications for all 5 project commands
+- Recommendations for output format pattern (-o/--output)
+- Recommendations for identifier flexibility (name or UUID)
+- Files requiring changes with specific line numbers
+
+Key Design Decisions:
+- Use -o/--output with OutputFormat enum (extensible, aligns with ls-cli-output-dx)
+- Accept both name and UUID identifiers for user-friendliness
+- Use --force/-f for destructive operations (Unix convention)
+- Standardize --limit to u32 type across commands
+
+Fixes #590
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs(projects): add reference to CLI output research (#581)
+
+Update section 9.1.3 to explicitly cite CLI output research that backs
+the -o/--output recommendation.
+
+The research (#581, PR #583) evaluated major CLI precedents (gh, kubectl,
+AWS CLI) and explicitly recommended the -o/--output pattern over the
+--plain alternative. This adds that citation to the design rationale.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [1.1.0] - 2025-12-05
 
 ### ✨ Features
