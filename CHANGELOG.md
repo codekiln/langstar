@@ -5,6 +5,588 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-12-05
+
+### ✨ Features
+
+- ✨ feat(cli): enhance config management UX (#576)
+
+* ✨ feat(cli): enhance config management UX with DRY messages and new subcommands
+
+Implements enhanced configuration management requested in #555:
+
+1. DRY Principle - Message Constants:
+   - Define suppression message once in config::messages module
+   - Update all 3 warning locations (config.rs:106, prompt.rs:191, prompt.rs:214) to use constant
+   - Message now prioritizes 'langstar config' command over env vars
+
+2. Enhanced Config CLI:
+   - Convert Config from simple enum variant to full subcommand structure
+   - Add 'langstar config show' to display configuration (moved from main.rs)
+   - Implement 'langstar config <setting> --help' for setting-specific help
+   - Implement 'langstar config <setting> set <value>' to update settings
+   - Support for hide_workspace_and_org_id_message, output_format, and timezone
+
+3. Help Message UX:
+   - Prioritize config command in suppression hints
+   - Format: "Run 'langstar config hide_workspace_and_org_id_message set true' or set ENV_VAR=1"
+
+Technical changes:
+- Add toml_edit dependency for config file editing
+- Create cli/src/commands/config.rs with ConfigCommands enum
+- Move config display logic from main.rs to config command
+- Refactor Commands::Config to use subcommand structure
+
+Fixes #555
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(cli): address review feedback on config command UX
+
+Addresses 8 Copilot review comments on PR #576:
+
+1. **CRITICAL**: Flatten command structure to match documented UX
+   - Remove Setting(ConfigSetting) wrapper layer
+   - Enable direct command: `langstar config hide_workspace_and_org_id_message set true`
+   - Previously required: `langstar config setting hide_workspace_and_org_id_message set true`
+
+2. Normalize output_format values to lowercase for consistency
+   - Accepts "JSON", "json", "Table", etc.
+   - Stores normalized value "json" or "table"
+
+3. Remove unnecessary async from execute() and handler methods
+   - No async operations performed
+   - Reduces overhead and improves code clarity
+
+4. Add clarifying comment about empty config file behavior
+
+5. Add documentation comment about boolean value normalization
+
+Fixes command structure bug that prevented documented commands from working.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat: add /gh-milestones:prep-next command (#601)
+
+* ✨ feat: add /gh-milestones:prep-next command
+
+Implements automated workflow for moving to next issue in milestone after
+completing current task. Handles:
+- Milestone detection (auto or explicit)
+- Last completed issue identification
+- Intelligent issue traversal (sibling-first depth-first)
+- Label management (remove wip, add ready)
+- Worktree creation
+- Edge case handling
+
+Fixes #599
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* ♻️ refactor: convert gh-prep-next to Python script
+
+Major refactor addressing Copilot review feedback (#2593206148):
+- Created scripts/gh-milestones/prep-next.py with all logic
+- Replaced inline shell scripts with clean Python implementation
+- Updated command file to delegate to Python script
+- Added comprehensive error handling and type hints
+- Added argument-hint frontmatter per #2593202263
+- Fixed gh-sub-issue extension URL per #2593200719
+
+Benefits:
+- Better error handling than shell scripts
+- Cleaner code organization with classes/functions
+- Easier testing and maintenance
+- Proper JSON parsing without shell escaping issues
+- Type hints for better code clarity
+
+Addresses all critical Copilot review comments.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(sdk): add Graph, GraphNode, GraphEdge types (#602)
+
+* ✨ feat(sdk): add Graph, GraphNode, GraphEdge types
+
+Implements Rust types for representing LangGraph graph topology structures
+returned by the /assistants/{id}/graph endpoint.
+
+## Changes
+
+- Created sdk/src/graph.rs with core types:
+  - Graph: Container for nodes and edges
+  - GraphNode: Individual processing steps
+  - GraphNodeData: Node metadata
+  - GraphEdge: Connections between nodes
+  - GraphSummary: Derived aggregate statistics
+
+- Exported types from sdk/src/lib.rs
+
+- Added comprehensive unit tests for:
+  - Simple graph deserialization
+  - Conditional edges
+  - Serialization round-trip
+  - Default values
+  - GraphSummary creation
+
+## Testing
+
+All 5 tests pass:
+- test_graph_deserialize_simple
+- test_graph_deserialize_conditional_edges
+- test_graph_serialize
+- test_graph_edge_default_conditional
+- test_graph_summary_creation
+
+Fixes #565
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(ci): replace assert_eq bool comparisons with assert
+
+Addresses clippy::bool_assert_comparison warnings by replacing
+`assert_eq!(bool, true/false)` with `assert!(bool)` or `assert!(!bool)`.
+
+This is the idiomatic Rust way to assert boolean values.
+
+Fixed 5 occurrences in sdk/src/graph.rs test module.
+
+* 🩹 fix: address Copilot review feedback on graph types
+
+Addresses 6 Copilot review comments:
+
+1-4. Removed `#[serde(deny_unknown_fields)]` from all API response types
+     (Graph, GraphNode, GraphNodeData, GraphEdge) to allow forward
+     compatibility with future API evolution. This aligns with other
+     SDK modules (Assistant, Dataset, Deployment, Run) which don't
+     use strict validation.
+
+5. Updated example code to clarify that `get_graph()` method will be
+   implemented in a future PR, avoiding user confusion.
+
+6. Added Serialize/Deserialize derives to GraphSummary for consistency
+   with other public types in the module.
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(devcontainer): gh-sub-issue extension installation fails on fresh rebuild (#551)
+
+* 🩹 fix(devcontainer): move gh-sub-issue installation to after auth
+
+Fixes timing issue where gh-sub-issue extension installation failed
+during devcontainer rebuild because gh CLI wasn't authenticated yet.
+
+The extension installation now happens in setup-github-auth.sh after
+authentication completes, instead of in post-create.sh before auth.
+
+Changes:
+- Removed gh-sub-issue installation from post-create.sh (Step 6)
+- Added gh-sub-issue installation to setup-github-auth.sh (after auth)
+- Added clear comment in post-create.sh explaining the change
+
+Fixes #550
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(pr-feedback): ensure gh extensions install in all auth scenarios
+
+Addresses Copilot review feedback about early exits preventing extension
+installation. Refactored to use helper function that installs extensions
+immediately after detecting gh authentication, handling both:
+- Codespaces (pre-authenticated, exits early)
+- Local devcontainer (authenticates with token)
+
+Changes:
+- Created install_gh_extensions() helper function
+- Call after detecting existing auth (line 48)
+- Call after token authentication (line 151)
+- Added check for already-installed extensions
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/551#discussion_r2589965183
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 🩹 fix(cli): improve table formatting for long prompt names (#577)
+
+* 🩹 fix(cli): improve table formatting for long prompt names
+
+- Add terminal_size dependency for dynamic terminal width detection
+- Create CompactPromptRow (default) with essential columns: Handle, Downloads, Description
+- Create FullPromptRow with all columns: Handle, Likes, Downloads, Public, Description
+- Add --full flag to `prompt list` and `prompt search` commands
+- Implement smart truncation for Handle column based on terminal width
+- Truncate descriptions appropriately (40 chars for compact, 50 for full)
+
+Tables remain readable with prompt names up to 200 characters by:
+- Dynamically calculating first column width based on terminal size
+- Clamping width to sensible bounds (30-100 chars)
+- Adding "..." suffix to truncated values
+
+Fixes #554
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(cli): address review feedback - add tests and fix comment
+
+- Fixed comment mismatch in output.rs (said ~40, code used 45)
+- Added test for get_terminal_width function
+- Added 5 tests for truncate_description covering:
+  - Truncation when description exceeds max_len
+  - No truncation when shorter than max_len
+  - Handling of None
+  - Exact length edge case
+  - Small max_len edge case
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/577#discussion_r2592766687
+- https://github.com/codekiln/langstar/pull/577#discussion_r2592766709
+- https://github.com/codekiln/langstar/pull/577#discussion_r2592766726
+
+* 🩹 fix(cli): improve test assertion for terminal width
+
+Fixed flawed assertion that would always pass. Now properly validates
+that width is at least DEFAULT_TERMINAL_WIDTH.
+
+Addresses review comment:
+- https://github.com/codekiln/langstar/pull/577#discussion_r2592819280
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: add design document for graph/deployment separation (#578)
+
+* 📚 docs: add design document for graph/deployment separation
+
+Consolidates research findings from #528 and establishes:
+- DX consistency patterns with existing CLI commands
+- Configuration integration (no new env vars needed)
+- Command specifications for `deployment` and `graph`
+- Backward compatibility strategy with deprecation messaging
+- API mapping (Control Plane vs Agent Server)
+
+Fixes #562
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): clarify column header from "# Assists" to "# Assistants"
+
+Addresses review feedback: the abbreviated header was ambiguous.
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/578#discussion_r2592780438
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(research): audit testing documentation for centralization (#579)
+
+* 📚 docs(research): audit testing documentation for centralization
+
+Comprehensive audit of 10 testing-related documentation files totaling
+~3,667 lines (~27,500 tokens) to support the ls-test-improvement milestone.
+
+Key findings:
+- Significant DRY violations: pre-commit checklist duplicated 3x
+- Missing high-level principles: Toyota andon cord, CRUD lifecycle pattern
+- Heavy context window impact: Large docs loaded unnecessarily
+- Gap that caused #536: Missing guidance on verifying actual behavior
+
+Recommendations:
+- Create centralized docs/dev/testing/ with progressive disclosure
+- Extract high-level testing principles into standalone document
+- Consolidate duplicated content for DRY compliance
+- Document CRUD lifecycle pattern to prevent future #536-type bugs
+
+Fixes #557
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): correct line counts and references per Copilot review
+
+- Fix docs/dev/procedures.md line count: 562→561, section 101-277→103-280
+- Fix docs/dev/README.md line count: ~133→179, section 90-133→123-140
+- Fix token table total: ~2,800→~3,667
+- Remove duplicate code fence backticks
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: scout ls-projects feasibility (#575)
+
+* 📚 docs: scout ls-projects feasibility
+
+Research support for LangSmith projects CRUD operations.
+
+Key findings:
+- Projects are called "sessions" at API level (/sessions endpoint)
+- Python SDK provides comprehensive CRUD methods
+- Medium complexity, similar to existing datasets/annotation_queues
+- Full CRUD: list, read, create, update, delete
+- Requires pagination and metadata handling
+
+Recommendation: Go - feasible with standard 8-phase process
+
+Fixes #574
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* docs: Apply suggestions from code review
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* 📚 docs: add Python experiment for projects API
+
+Add empirical API testing to disambiguate projects vs sessions terminology.
+
+Experiment findings:
+- Python SDK returns TracerSessionResult objects
+- Methods use "projects" terminology (list_projects, read_project)
+- API uses "/sessions" endpoints internally
+- Only one field uses "session" terminology (session_feedback_stats)
+- LangSmith UI URLs use "projects/p/" not "sessions/"
+
+Recommendation confirmed: Use "Project" struct and methods in Rust SDK,
+map internally to /sessions endpoints for API compatibility.
+
+Related to #574
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 📚 docs: add workspace-scale validation to projects experiment
+
+Validate Python SDK can handle real-world workspace scale:
+- List all 162 projects successfully
+- Query specific project by name (test-deployment-cli-48499)
+- Retrieve project ID: 98e12dc6-2171-4bf3-80fb-1153041d6cbf
+- Count runs per project (0 runs found)
+- Confirm pagination works for 162 > 100/page limit
+
+Key findings:
+- Pagination handles large project lists correctly
+- Project lookup by name is reliable
+- Full CRUD workflow validated at scale
+- Run counting per project works via list_runs(project_name=...)
+
+This completes the scout validation with empirical evidence that the
+Rust SDK implementation will work with real-world workspace sizes.
+
+Related to #574
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address Copilot review feedback
+
+- Fixed datasets.rs line count estimate in scout doc
+- Added shebang to validate_projects.py for consistency
+- Added execute permissions comment to run_test.sh
+- Added validate_projects.py to README file list
+- Removed unused Optional import from test_projects.py
+- Added explanatory comment to empty except clause
+
+* 📚 docs(scout): add ecosystem triangulation for projects terminology
+
+Added comprehensive research across LangChain ecosystem to understand
+why "projects" terminology was chosen over "sessions":
+
+**New Research Notes:**
+- langchain-ai/docs: Official definitions, API endpoint revelation
+- langsmith-cookbook: Real-world usage patterns in 50+ notebooks
+- langsmith-mcp-server: Production AI integration terminology choices
+
+**Scout Document Updates:**
+- Added Section 6: Additional Triangulation
+- Semantic analysis of why "session" doesn't fit
+- Developer learning journey analysis
+- Independent validation from multiple implementations
+
+**Key Finding:** The entire ecosystem (docs, SDK, cookbook, MCP) uses
+"project" terminology for semantic correctness, not just precedent.
+
+Addresses PR feedback: https://github.com/codekiln/langstar/pull/575/files#r2592876275
+
+* 📚 docs(scout): clarify CLI intention to support project filtering by name
+
+Added explicit "CLI Filtering Support" section showing intended usage:
+- langstar project list --name "exact-match"
+- langstar project list --name-contains "partial"
+
+Makes it clear that CLI will expose API's name/name_contains query params.
+
+Addresses PR feedback: https://github.com/codekiln/langstar/pull/575/files#r2593016257
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs: validate Agent Server API OpenAPI spec for graph endpoints (#580)
+
+* 📚 docs: validate Agent Server API OpenAPI spec for graph endpoints
+
+Fixes #564
+
+## Summary
+
+Validated research findings from #528 against the actual Agent Server
+OpenAPI specification. All graph-related endpoints exist as documented:
+
+- GET /assistants/{id}/graph - graph topology (nodes/edges)
+- GET /assistants/{id}/subgraphs - subgraph information
+- GET /assistants/{id}/schemas - input/output/state schemas
+- POST /assistants/search - list assistants (to derive graph list)
+
+## Changes
+
+- Added Agent Server OpenAPI spec from live deployment
+- Created extracted fragments for graph endpoints
+- Added validation report documenting findings
+- Updated API documentation to reference new spec
+
+## Artifacts Created
+
+- reference/openapi/langchain/agent-server/openapi.json
+- reference/api-specs/agent-server/FRAGMENTS.md (with jq queries)
+- reference/api-specs/agent-server/*.json (extracted schemas)
+- docs/research/527.3-openapi-validation.md
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix: correct jq regex in graph-endpoint extraction
+
+Address PR review feedback:
+- Fix regex /assistants.*graph to /assistants.*/graph$ to exclude subgraphs
+- Re-extract graph-endpoint.json with only /graph endpoint
+- Update size estimate in FRAGMENTS.md table
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs: research --plain mode for AI-friendly CLI output (#583)
+
+Comprehensive research on scriptable CLI output approaches:
+- Survey of CLI precedents (gh, kubectl, AWS CLI)
+- Comparison of two design approaches
+- Recommendation: Extend -o/--output with text format and --columns
+- Implementation plan with 4 phases
+- AI workflow examples
+
+Closes #581
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(research): design AI agent DX for progressive disclosure testing docs (#582)
+
+* 📚 docs(research): design AI agent DX for progressive disclosure testing docs
+
+Fixes #558
+
+Design document covering:
+- Progressive disclosure architecture for docs/dev/testing/
+- Agent reading workflow design for context window management
+- AGENTS.md integration pattern
+- /gh-milestones:test-plan slash command specification
+- DRY strategy for original doc locations
+- Context window savings analysis (projected 67% reduction)
+- Implementation roadmap (phases 3-8)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address review feedback on design document
+
+- Fixed token calculation consistency: Executive Summary now shows ~67%
+  weighted average matching Section 6 analysis
+- Relaxed README TOC constraint from ~10 to ~15 lines to match actual
+  example content
+- Fixed nested markdown code block using 4-backtick fence
+- Clarified size limit template varies per file type
+
+Addresses review comments on PR #582
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(research): document Python SDK projects precedent for Rust implementation (#603)
+
+Fixes #588
+
+### 🎨 Styling
+
+- 🎨 style(cli): add suppression for workspace/org ID warning (#553)
+
+* 🎨 style(cli): add suppression for workspace/org ID warning
+
+Add ability to suppress the warning that appears when both
+organization_id and workspace_id are set.
+
+Changes:
+- Add hide_workspace_and_org_id_message field to Config struct
+- Support LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE env var (accepts "1" or "true")
+- Update all three warning locations with suppression logic
+- Update warnings to include suppression instructions
+- Pass Config to apply_scoping() for cleaner design
+- Display setting in langstar config command
+- Add unit tests for new functionality
+
+Fixes #552
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(test): add env var parsing test coverage
+
+Add comprehensive test for LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE
+environment variable parsing logic. Verifies parsing of both "1" and
+"true" values (case-insensitive) and ensures other values are treated
+as false.
+
+Addresses review feedback: https://github.com/codekiln/langstar/pull/553#discussion_r2590127677
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
 ## [1.0.0] - 2025-12-04
 
 ### 🩹 Bug Fixes
