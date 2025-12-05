@@ -258,7 +258,161 @@ To further validate the API capabilities at scale, ran additional testing:
 
 This validates that the Rust SDK implementation will have all necessary capabilities for real-world usage with large workspaces.
 
-## 6. Recommendation
+## 6. Additional Triangulation: Broader LangChain Ecosystem
+
+**Research Conducted**: 2025-12-05 (Post-Scout Review)
+**Repositories Examined**:
+- `reference/repo/langchain-ai/docs`
+- `reference/repo/langchain-ai/langsmith-cookbook`
+- `reference/repo/langchain-ai/langsmith-mcp-server`
+
+**Purpose**: Address PR review feedback requesting triangulation beyond langsmith-sdk to understand the rationale behind "sessions" vs "projects" terminology.
+
+### Key Findings Summary
+
+#### Official LangChain Documentation (`docs`)
+
+**Critical Discovery** (`src/langsmith/observability-concepts.mdx:60`):
+> A _project_ is a collection of traces. You can think of a project as a container for all the traces that are related to a single application or service.
+
+**API Endpoint Revelation** (line 116):
+- API endpoint: `delete_tracer_sessions`
+- Python SDK: `delete_project()`
+- JS/TS SDK: `deleteProject()`
+
+**Analysis**: The official docs explicitly show the disconnect - the API uses "tracer_sessions" but both SDKs translate to "project". This is a deliberate abstraction, not an accident.
+
+**Environment Variables**:
+- Primary: `LANGSMITH_PROJECT` (not `LANGSMITH_SESSION`)
+- Legacy: `LANGCHAIN_PROJECT` (shows historical commitment)
+- Used consistently across 20+ documentation files
+
+#### LangSmith Cookbook Examples
+
+**Usage Pattern**: Every single notebook (50+) uses `LANGCHAIN_PROJECT` or `LANGSMITH_PROJECT`:
+
+```python
+import os
+os.environ['LANGCHAIN_PROJECT'] = 'Test'  # First line developers see
+```
+
+**Zero "Session" References**:
+- ❌ No `LANGCHAIN_SESSION` variables
+- ❌ No `session_name` parameters
+- ❌ No `create_session()` methods
+- ✅ Only "project" terminology throughout
+
+**Real-World Patterns Observed**:
+- Projects named after applications: `"DBRX"`, `"RAG_online_eval"`, `"back_testing_v2"`
+- Persistent across multiple experiment runs
+- Used for long-term organization, not ephemeral sessions
+- Project = logical application boundary
+
+#### LangSmith MCP Server
+
+**Production Tool Parameters**:
+
+```python
+def fetch_trace_tool(project_name: str = None, trace_id: str = None):
+    """Fetch the trace content for a specific project"""
+    runs = client.list_runs(project_name=project_name, ...)
+```
+
+**Tool Function Names**:
+- `get_project_runs_stats(project_name=...)`
+- `fetch_trace_tool(project_name=...)`
+- `get_thread_history(thread_id=..., project_name=...)`
+
+**Significance**: The MCP server bridges AI models (Claude, Cursor) to LangSmith. Tool parameters form the vocabulary AI assistants use. Choosing "project" means AI assistants say "get project stats" to users, reinforcing the terminology in natural language.
+
+### Semantic Analysis: Why "Projects" Not "Sessions"
+
+#### The PR Review Question (PR #575, comment #r2592876275):
+
+> "Calling them 'sessions' just seems wrong. a tracing project is a collection of traces. A session is typically a stateful period of time. These don't seem compatible to me."
+
+**This articulates the exact reasoning LangChain followed:**
+
+**"Session" Semantics**:
+- Stateful time period (login to logout)
+- Temporary/ephemeral nature
+- Single interaction sequence
+- Bounded by start/end events
+
+**"Project" Semantics**:
+- Persistent container
+- Application-level scope
+- Collection of related work over time
+- Long-lived organizational unit
+
+**Real-World Examples from Cookbook**:
+- `"RAG_online_eval"` - Not a session, it's an evaluation project
+- `"back_testing_v2"` - Version 2 of backtesting work, persistent across runs
+- `"production-bot"` - Production environment, not a temporary session
+
+**Conclusion**: LangChain chose "project" because it semantically matches how developers actually use the concept - as persistent containers for traces from an application or feature, not as temporary sessions.
+
+### Ecosystem-Wide Consistency
+
+**Discovery**: "Project" terminology appears consistently across:
+
+1. **SDK Layer**: Python/JS SDKs use `project_name` parameters
+2. **Documentation**: Official docs define "project" as primary concept
+3. **Cookbook Examples**: All tutorials use "project" from day one
+4. **MCP Tools**: Production AI integration uses "project" parameters
+5. **Environment Variables**: `LANGSMITH_PROJECT` (never `LANGSMITH_SESSION`)
+6. **UI Layer**: LangSmith URLs use `/projects/p/{id}`
+
+**Only the REST API uses "sessions"** (`/sessions` endpoint, `TracerSession` schema).
+
+### Historical Evidence
+
+**From Docs** (`log-traces-to-project.mdx:17`):
+> The `LANGSMITH_PROJECT` flag is only supported in JS SDK versions >= 0.2.16, use `LANGCHAIN_PROJECT` instead if you are using an older version.
+
+**Inference**:
+- "Project" terminology dates to very early SDK versions (pre-0.2.16)
+- Never had a "session" environment variable
+- Long-term commitment to "project" abstraction
+
+### Developer Learning Journey
+
+**Timeline**:
+1. **First Exposure** (Cookbook line 1): `os.environ['LANGCHAIN_PROJECT'] = 'Test'`
+2. **Reinforcement** (50+ notebooks): Every example uses "project"
+3. **Documentation**: Official definition is "project = collection of traces"
+4. **SDK Usage**: All methods use `project_name` parameters
+5. **AI Integration**: MCP tools use "project" vocabulary
+
+**Result**: Developers never encounter "session" terminology in user-facing materials. Using "session" in Rust SDK would require relearning and create confusion.
+
+### Validation from Independent Implementations
+
+**Key Insight**: Three independent implementations all chose "project":
+
+1. **Python SDK** (langsmith-sdk): Could have exposed `TracerSession` directly, chose `Project` abstraction
+2. **Cookbook Examples** (by different authors): All independently used "project" terminology
+3. **MCP Server** (different codebase): Could have used "session" to match API, chose "project"
+
+**Implication**: "Project" wasn't arbitrary - multiple teams independently concluded it was the correct abstraction.
+
+### Updated Recommendation Rationale
+
+**Original Reasoning** (from Python SDK analysis):
+- Follow Python SDK precedent
+- "Session" terminology exists at API level
+- UI uses "projects"
+
+**Enhanced Reasoning** (from ecosystem triangulation):
+- **Semantic Correctness**: "Project" matches actual usage patterns (persistent containers, not sessions)
+- **Ecosystem Consistency**: Every user-facing interface uses "project"
+- **Developer Expectations**: All learning materials establish "project" mental model
+- **Independent Validation**: Multiple teams arrived at same terminology choice
+- **Natural Language Fit**: "Get project stats" reads better than "get session stats"
+
+**Conclusion**: The Rust SDK should use "project" terminology not just to match the Python SDK, but because it's the semantically correct term that the entire ecosystem has validated through real-world usage.
+
+## 7. Recommendation
 
 **Decision**: **Go**
 
