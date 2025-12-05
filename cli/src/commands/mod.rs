@@ -1,6 +1,7 @@
 pub mod assistant;
 pub mod config;
 pub mod dataset;
+pub mod deployment;
 pub mod eval;
 pub mod graph;
 pub mod model_config;
@@ -12,6 +13,7 @@ pub mod secrets;
 pub use assistant::AssistantCommands;
 pub use config::ConfigCommands;
 pub use dataset::DatasetCommands;
+pub use deployment::DeploymentCommands;
 pub use eval::EvalCommands;
 pub use graph::GraphCommands;
 pub use model_config::ModelConfigCommands;
