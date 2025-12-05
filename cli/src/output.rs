@@ -4,8 +4,19 @@ use colored::Colorize;
 use serde::Serialize;
 use tabled::{
     Table, Tabled,
-    settings::{Modify, Width, object::Rows, style::Style},
+    settings::{Modify, Width, object::Columns, style::Style},
 };
+use terminal_size::{Width as TermWidth, terminal_size};
+
+/// Default terminal width when detection fails
+const DEFAULT_TERMINAL_WIDTH: usize = 80;
+
+/// Get the current terminal width, falling back to default if detection fails
+pub fn get_terminal_width() -> usize {
+    terminal_size()
+        .map(|(TermWidth(w), _)| w as usize)
+        .unwrap_or(DEFAULT_TERMINAL_WIDTH)
+}
 
 /// Output format for displaying data
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,17 +90,41 @@ impl OutputFormatter {
         Ok(())
     }
 
-    /// Print a table
+    /// Print a table with automatic width adjustment based on terminal size
     pub fn print_table<T: Tabled>(&self, data: &[T]) -> Result<()> {
+        self.print_table_with_options(data, None)
+    }
+
+    /// Print a table with configurable first column max width
+    ///
+    /// # Arguments
+    /// * `data` - The data to display
+    /// * `first_col_max_width` - Optional max width for first column (e.g., Handle).
+    ///   If None, uses dynamic calculation based on terminal width.
+    pub fn print_table_with_options<T: Tabled>(
+        &self,
+        data: &[T],
+        first_col_max_width: Option<usize>,
+    ) -> Result<()> {
         if data.is_empty() {
             println!("No results found.");
             return Ok(());
         }
 
+        let term_width = get_terminal_width();
+
+        // Calculate first column max width:
+        // Reserve ~40 chars for other columns + borders, rest for first column
+        // Minimum of 30, maximum of 100 (for very wide terminals)
+        let first_col_width = first_col_max_width.unwrap_or_else(|| {
+            let available = term_width.saturating_sub(45);
+            available.clamp(30, 100)
+        });
+
         let mut table = Table::new(data);
-        table
-            .with(Style::rounded())
-            .with(Modify::new(Rows::first()).with(Width::wrap(80)));
+        table.with(Style::rounded()).with(
+            Modify::new(Columns::first()).with(Width::truncate(first_col_width).suffix("...")),
+        );
 
         println!("{}", table);
         Ok(())

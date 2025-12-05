@@ -35,6 +35,10 @@ pub enum PromptCommands {
         /// Show only public prompts (default: private when scoped, any when not scoped)
         #[arg(long)]
         public: bool,
+
+        /// Show all columns (likes, public) - by default only essential columns are shown
+        #[arg(long)]
+        full: bool,
     },
 
     /// Get details of a specific prompt
@@ -71,6 +75,10 @@ pub enum PromptCommands {
         /// Show only public prompts (default: private when scoped, any when not scoped)
         #[arg(long)]
         public: bool,
+
+        /// Show all columns (likes, public) - by default only essential columns are shown
+        #[arg(long)]
+        full: bool,
     },
 
     /// Push/create a prompt in PromptHub
@@ -131,9 +139,22 @@ pub enum PromptCommands {
     },
 }
 
-/// Simplified prompt info for table display
+/// Compact prompt info for table display (default view)
+/// Shows only essential columns: Handle, Downloads, Description
 #[derive(Debug, Tabled)]
-struct PromptRow {
+struct CompactPromptRow {
+    #[tabled(rename = "Handle")]
+    repo_handle: String,
+    #[tabled(rename = "Downloads")]
+    num_downloads: u32,
+    #[tabled(rename = "Description")]
+    description: String,
+}
+
+/// Full prompt info for table display (--full view)
+/// Shows all columns including Likes and Public status
+#[derive(Debug, Tabled)]
+struct FullPromptRow {
     #[tabled(rename = "Handle")]
     repo_handle: String,
     #[tabled(rename = "Likes")]
@@ -146,24 +167,36 @@ struct PromptRow {
     description: String,
 }
 
-impl From<&Prompt> for PromptRow {
+/// Truncate description to fit table display
+fn truncate_description(desc: Option<&String>, max_len: usize) -> String {
+    desc.map(|d| {
+        if d.len() > max_len {
+            format!("{}...", &d[..max_len.saturating_sub(3)])
+        } else {
+            d.clone()
+        }
+    })
+    .unwrap_or_default()
+}
+
+impl From<&Prompt> for CompactPromptRow {
+    fn from(prompt: &Prompt) -> Self {
+        Self {
+            repo_handle: prompt.repo_handle.clone(),
+            num_downloads: prompt.num_downloads,
+            description: truncate_description(prompt.description.as_ref(), 40),
+        }
+    }
+}
+
+impl From<&Prompt> for FullPromptRow {
     fn from(prompt: &Prompt) -> Self {
         Self {
             repo_handle: prompt.repo_handle.clone(),
             num_likes: prompt.num_likes,
             num_downloads: prompt.num_downloads,
             is_public: if prompt.is_public { "yes" } else { "no" }.to_string(),
-            description: prompt
-                .description
-                .as_ref()
-                .map(|d| {
-                    if d.len() > 50 {
-                        format!("{}...", &d[..47])
-                    } else {
-                        d.clone()
-                    }
-                })
-                .unwrap_or_default(),
+            description: truncate_description(prompt.description.as_ref(), 50),
         }
     }
 }
@@ -279,6 +312,7 @@ impl PromptCommands {
                 organization_id,
                 workspace_id,
                 public,
+                full,
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 let visibility = Self::determine_visibility(&client, *public);
@@ -298,10 +332,19 @@ impl PromptCommands {
 
                 if format == OutputFormat::Json {
                     formatter.print(&prompts)?;
-                } else {
-                    let rows: Vec<PromptRow> = prompts.iter().map(PromptRow::from).collect();
+                } else if *full {
+                    let rows: Vec<FullPromptRow> =
+                        prompts.iter().map(FullPromptRow::from).collect();
                     formatter.print_table(&rows)?;
                     println!("\nFound {} prompts", prompts.len());
+                } else {
+                    let rows: Vec<CompactPromptRow> =
+                        prompts.iter().map(CompactPromptRow::from).collect();
+                    formatter.print_table(&rows)?;
+                    println!(
+                        "\nFound {} prompts (use --full for all columns)",
+                        prompts.len()
+                    );
 
                     // Show hint if scoped and no results
                     if prompts.is_empty()
@@ -355,6 +398,7 @@ impl PromptCommands {
                 organization_id,
                 workspace_id,
                 public,
+                full,
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 let visibility = Self::determine_visibility(&client, *public);
@@ -371,10 +415,19 @@ impl PromptCommands {
 
                 if format == OutputFormat::Json {
                     formatter.print(&prompts)?;
-                } else {
-                    let rows: Vec<PromptRow> = prompts.iter().map(PromptRow::from).collect();
+                } else if *full {
+                    let rows: Vec<FullPromptRow> =
+                        prompts.iter().map(FullPromptRow::from).collect();
                     formatter.print_table(&rows)?;
                     println!("\nFound {} prompts", prompts.len());
+                } else {
+                    let rows: Vec<CompactPromptRow> =
+                        prompts.iter().map(CompactPromptRow::from).collect();
+                    formatter.print_table(&rows)?;
+                    println!(
+                        "\nFound {} prompts (use --full for all columns)",
+                        prompts.len()
+                    );
 
                     // Show hint if scoped and no results
                     if prompts.is_empty()
