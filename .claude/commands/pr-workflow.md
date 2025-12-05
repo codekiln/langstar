@@ -407,6 +407,33 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 
    Use the `resolve-pr-comments` skill for parallel handling if 3+ comments.
 
+   **CRITICAL: Always Reply In-Thread Using `/gh-pr-comment-reply`**
+
+   When replying to review comments, you MUST reply directly to the comment thread (not as a top-level PR comment).
+   This allows maintainers to mark threads as resolved.
+
+   **Steps:**
+   1. Extract the comment URL from the review:
+      ```bash
+      # From unresolved comments JSON (step 1 above), get the comment ID
+      # Build the comment URL: https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
+      COMMENT_URL="https://github.com/$REPO/pull/$PR_NUM#discussion_r$COMMENT_ID"
+      ```
+
+   2. Use the dedicated slash command to reply:
+      ```bash
+      /gh-pr-comment-reply $COMMENT_URL
+      ```
+      This command:
+      - Extracts the comment ID automatically
+      - Uses the correct GitHub API endpoint for in-thread replies
+      - Ensures the reply appears in the comment thread (not top-level)
+      - Allows maintainers to mark the thread as resolved
+
+   3. **NEVER use these for review comment replies:**
+      - ❌ `gh pr comment` - Creates top-level comment (can't be resolved)
+      - ❌ Manual `gh api` calls - Error-prone and unnecessary
+
    **Example commit for Option 1:**
    ```bash
    git commit -m "$(cat <<EOF
@@ -433,9 +460,9 @@ EOF
    # Link as sub-issue of parent
    gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
 
-   # Reply to comment
-   # Use /gh-pr-comment-reply or gh api to reply with:
-   # "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
+   # Reply to comment using the slash command
+   /gh-pr-comment-reply https://github.com/owner/repo/pull/385#discussion_r123456
+   # Reply body: "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
    ```
 
 3. **Check if branch needs rebasing:**
@@ -921,20 +948,18 @@ git rebase origin/<base>
 
 **Review Comments:**
 ```bash
-# Fetch comments
-gh api repos/<owner>/<repo>/pulls/<pr_number>/comments
+# Fetch unresolved comments
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+gh api repos/$REPO/pulls/$PR_NUM/comments \
+  --jq '.[] | select(.resolved == null) | {id, path, line, user: .user.login, body}'
 
-# Reply to a review comment using GitHub API
-# Method 1: POST to the comments endpoint with in_reply_to parameter (recommended)
-gh api repos/<owner>/<repo>/pulls/<pr_number>/comments \
-  -f body="Your reply text here" \
-  -F in_reply_to=<comment_id>
+# Reply to a review comment - ALWAYS use the dedicated slash command
+# Build comment URL: https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
+/gh-pr-comment-reply https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
 
-# Method 2: POST to the comment-specific replies endpoint
-gh api repos/<owner>/<repo>/pulls/<pr_number>/comments/<comment_id>/replies \
-  -f body="Your reply text here"
-
-# Note: gh pr comment does NOT support a --reply flag for inline comment replies
+# ❌ NEVER use these for review comment replies:
+# - gh pr comment <pr_num> --body "..."  (creates top-level comment, can't be resolved)
+# - Manual gh api calls (error-prone, use slash command instead)
 ```
 
 ## See Also
