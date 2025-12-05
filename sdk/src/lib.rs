@@ -33,6 +33,7 @@ pub mod error;
 pub mod evaluations;
 pub mod evaluators;
 pub mod graph;
+pub mod graph_client;
 pub mod integrations;
 pub mod organization;
 pub mod playground_settings;
@@ -82,6 +83,7 @@ pub use evaluations::{
     StructuredEvaluator,
 };
 pub use graph::{Graph, GraphEdge, GraphNode, GraphNodeData, GraphSummary};
+pub use graph_client::GraphClient;
 pub use integrations::{GitHubIntegration, GitHubRepository, IntegrationClient};
 pub use organization::{Organization, Workspace};
 pub use playground_settings::{
