@@ -446,8 +446,8 @@ class MilestoneWorkflow:
             print("\n\n⚠️  Interrupted by user", file=sys.stderr)
             return 130
         except SystemExit as e:
-            # Let SystemExit propagate - don't catch success/failure codes
-            raise
+            # Return the exit code from SystemExit to preserve intended control flow
+            return e.code if e.code is not None else 1
         except Exception as e:
             print(f"\n❌ Unexpected error: {type(e).__name__}: {e}", file=sys.stderr)
             print("\nFull traceback:", file=sys.stderr)
