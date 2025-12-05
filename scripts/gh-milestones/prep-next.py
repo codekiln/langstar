@@ -300,8 +300,37 @@ class MilestoneWorkflow:
             print("   All issues completed. Milestone ready for release.")
             return None
 
+        # Step 4: Traverse down to leaf node
+        next_issue = self._find_first_leaf(next_issue)
+
         print(f"   Next issue: #{next_issue['number']} - {next_issue['title']}")
         return next_issue
+
+    def _find_first_leaf(self, issue: Dict) -> Dict:
+        """
+        Traverse down the hierarchy to find the first leaf node.
+        A leaf node is an issue with no open children.
+
+        Args:
+            issue: The starting issue to traverse from
+
+        Returns:
+            The first leaf node found in the hierarchy
+        """
+        issue_num = issue["number"]
+
+        # Check if this issue has open children
+        if issue_num in self.children_map:
+            children = self.children_map[issue_num]
+            # Find first open child (sorted by issue number for consistency)
+            for child_num in sorted(children):
+                child = next((i for i in self.all_issues if i["number"] == child_num), None)
+                if child and child["state"] == "OPEN":
+                    # Recursively find leaf of this child
+                    return self._find_first_leaf(child)
+
+        # No open children - this is a leaf node
+        return issue
 
     def apply_ready_label(self, issue: Dict):
         """Apply 'ready' label to next issue."""
