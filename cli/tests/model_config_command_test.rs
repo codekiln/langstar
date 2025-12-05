@@ -350,3 +350,16 @@ fn test_model_config_list_table_format() {
         // Should have some table-like output (columns, headers, etc.)
         .stdout(predicate::str::contains("ID").or(predicate::str::contains("Name")));
 }
+
+#[test]
+fn test_model_config_list_text_format() {
+    let mut cmd = langstar_cmd();
+    cmd.args(["model-config", "list", "--format", "text"]);
+
+    // Phase 1: Text format falls back to JSON
+    // In future phases, this will output tab-separated values
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("["))
+        .stdout(predicate::str::contains("]"));
+}
