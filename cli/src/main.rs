@@ -6,8 +6,8 @@ pub mod time;
 
 use clap::{Parser, Subcommand};
 use commands::{
-    AssistantCommands, DatasetCommands, EvalCommands, GraphCommands, ModelConfigCommands,
-    PromptCommands, QueueCommands, RunsCommands, SecretsCommands,
+    AssistantCommands, ConfigCommands, DatasetCommands, EvalCommands, GraphCommands,
+    ModelConfigCommands, PromptCommands, QueueCommands, RunsCommands, SecretsCommands,
 };
 use config::Config;
 use error::Result;
@@ -67,8 +67,9 @@ enum Commands {
     #[command(subcommand)]
     Secrets(SecretsCommands),
 
-    /// Show configuration file location
-    Config,
+    /// Manage configuration settings
+    #[command(subcommand)]
+    Config(ConfigCommands),
 
     /// Show version information
     Version,
@@ -124,106 +125,8 @@ async fn run() -> Result<()> {
         Commands::Secrets(secrets_cmd) => {
             secrets_cmd.execute(&config, format).await?;
         }
-        Commands::Config => {
-            use time::ConfiguredTimezone;
-
-            let config_path = Config::config_file_path()?;
-            println!("Configuration file: {}", config_path.display());
-            println!("\nCurrent configuration:");
-            println!("  Output format: {}", config.output_format);
-
-            // Parse and display timezone with validation
-            let tz_display = match ConfiguredTimezone::parse(&config.timezone) {
-                Ok(tz) => tz.description(),
-                Err(_) => format!("{} (invalid, using UTC)", config.timezone),
-            };
-            println!("  Timezone: {}", tz_display);
-            println!(
-                "  Hide workspace/org ID warnings: {}",
-                config.hide_workspace_and_org_id_message
-            );
-            println!(
-                "  LangSmith API key: {}",
-                if config.langsmith_api_key.is_some() {
-                    "configured"
-                } else {
-                    "not configured"
-                }
-            );
-            println!(
-                "  LangGraph API key: {}",
-                if config.langgraph_api_key.is_some() {
-                    "configured"
-                } else {
-                    "not configured"
-                }
-            );
-
-            // Show scoping configuration
-            println!("\nScoping configuration:");
-            println!(
-                "  Organization ID: {}",
-                config
-                    .organization_id
-                    .as_deref()
-                    .unwrap_or("not configured")
-            );
-            println!(
-                "  Workspace ID: {}",
-                config.workspace_id.as_deref().unwrap_or("not configured")
-            );
-
-            // Show active scope
-            if config.workspace_id.is_some() {
-                println!("\n  Active scope: Workspace (narrower)");
-                println!("  → Operations will be scoped to the workspace");
-            } else if config.organization_id.is_some() {
-                println!("\n  Active scope: Organization");
-                println!("  → Operations will be scoped to the organization");
-            } else {
-                println!("\n  Active scope: None (global)");
-                println!("  → Operations will access all available prompts");
-            }
-
-            println!("\nEnvironment variables:");
-            println!(
-                "  LANGSMITH_API_KEY: {}",
-                if std::env::var("LANGSMITH_API_KEY").is_ok() {
-                    "set"
-                } else {
-                    "not set"
-                }
-            );
-            println!(
-                "  LANGSMITH_ORGANIZATION_ID: {}",
-                std::env::var("LANGSMITH_ORGANIZATION_ID")
-                    .unwrap_or_else(|_| "not set".to_string())
-            );
-            println!(
-                "  LANGSMITH_WORKSPACE_ID: {}",
-                std::env::var("LANGSMITH_WORKSPACE_ID").unwrap_or_else(|_| "not set".to_string())
-            );
-            println!(
-                "  LANGGRAPH_API_KEY: {}",
-                if std::env::var("LANGGRAPH_API_KEY").is_ok() {
-                    "set"
-                } else {
-                    "not set"
-                }
-            );
-            println!(
-                "  LANGSTAR_OUTPUT_FORMAT: {}",
-                std::env::var("LANGSTAR_OUTPUT_FORMAT").unwrap_or_else(|_| "not set".to_string())
-            );
-            println!(
-                "  LANGSTAR_TIMEZONE: {}",
-                std::env::var("LANGSTAR_TIMEZONE").unwrap_or_else(|_| "not set".to_string())
-            );
-            println!(
-                "  LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE: {}",
-                std::env::var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE")
-                    .unwrap_or_else(|_| "not set".to_string())
-            );
+        Commands::Config(config_cmd) => {
+            config_cmd.execute()?;
         }
         Commands::Version => {
             println!("langstar {}", env!("CARGO_PKG_VERSION"));
