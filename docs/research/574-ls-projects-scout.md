@@ -156,7 +156,7 @@ class TracerSession(BaseModel):
 - Filter flags: --name, --name-contains, --limit, --include-stats
 
 **Estimated Implementation Effort**:
-- SDK module: ~200-300 lines (similar to datasets.rs)
+- SDK module: ~200-300 lines (following similar CRUD patterns)
 - CLI module: ~250-350 lines (similar to datasets CLI commands)
 - Tests: ~150-200 lines
 

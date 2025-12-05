@@ -13,7 +13,6 @@ This helps clarify what terminology to use in the Rust SDK and CLI.
 
 import os
 import sys
-from typing import Optional
 
 try:
     from langsmith import Client
@@ -64,6 +63,7 @@ def main():
                                 str_value = str_value[:57] + "..."
                             print(f"  - {attr}: {str_value}")
                     except Exception:
+                        # Some attributes may not be accessible; skip silently
                         pass
     except Exception as e:
         print(f"❌ Error: {e}")

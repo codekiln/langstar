@@ -2,6 +2,9 @@
 # Run the projects API experiment
 #
 # This script sources the devcontainer environment and runs the test script
+#
+# Make this script executable before running:
+#   chmod +x run_test.sh
 
 set -euo pipefail
 

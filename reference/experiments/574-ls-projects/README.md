@@ -38,6 +38,7 @@ export LANGSMITH_API_KEY=<your-api-key>
 
 - `test_projects.py` - Python script to test API behavior
 - `run_test.sh` - Shell wrapper with environment setup
+- `validate_projects.py` - Script to validate full workspace project listing and querying
 
 ## Running the Experiment
 
