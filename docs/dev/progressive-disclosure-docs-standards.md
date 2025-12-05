@@ -51,7 +51,7 @@ This helps identify whether a document contains what you need before committing 
 **Task:** "Add integration tests for new `deployment list` command"
 
 **Efficient approach:**
-1. Load `AGENTS.md` → see testing reference at line 45
+1. Load `AGENTS.md` → find testing reference
 2. Load `docs/dev/testing/README.md` (TOC, ~15 lines)
 3. Identify relevant docs: `cli-integration-tests.md`, `crud-lifecycle-pattern.md`
 4. Load only those 2 docs (~400 lines total)
@@ -128,7 +128,7 @@ docs/dev/testing/
 ├── mocking-patterns.md           # When/how to use httpmock
 ├── debugging-tests.md            # Common failures, debugging
 └── post-mortems/                 # Historical case studies
-    └── 536-prompt-list-testing-gap.md
+    └── NNN-issue-description.md  # Format: issue number + description
 ```
 
 ## Working Pattern

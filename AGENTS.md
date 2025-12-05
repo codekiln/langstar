@@ -47,7 +47,7 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 #### Testing Standards (Progressive Disclosure)
 
 For testing documentation, **always use progressive disclosure**:
-1. **TOC First:** Load `@docs/dev/testing/README.md` (15-line index)
+1. **TOC First:** Load `@docs/dev/testing/README.md` (~15-line index)
 2. **On-Demand:** Load specific docs only when designing/debugging tests
 3. **Example:** Writing CLI tests? Load `@docs/dev/testing/cli-integration-tests.md`
 
