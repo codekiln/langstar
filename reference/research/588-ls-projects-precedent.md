@@ -894,10 +894,11 @@ pub output: OutputFormat,
 ```
 
 **Rationale**:
-1. **Extensibility**: Supports future formats (YAML, CSV, text) without breaking changes
+1. **Extensibility**: Supports future formats (text, records) without breaking changes
 2. **Explicitness**: Users can request `--output table` or `--output json` explicitly
 3. **Consistency**: One pattern across the entire CLI
-4. **User Expectations**: `-o/--output` is standard (see `cargo build -o`, `gcc -o`)
+4. **Research-backed**: CLI output research (#581, PR #583) evaluated precedents (gh, kubectl, aws) and explicitly recommended `-o/--output` pattern over alternatives
+5. **Ecosystem alignment**: Matches kubectl `-o`, AWS CLI `--output`, standard CLI conventions
 
 **FILES REQUIRING CHANGE**:
 - `cli/src/commands/dataset.rs:61-62, 85-86, 96-97, 115-116` - Replace `pub json: bool` with `pub output: OutputFormat`
