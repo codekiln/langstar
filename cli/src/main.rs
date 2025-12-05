@@ -126,7 +126,7 @@ async fn run() -> Result<()> {
             secrets_cmd.execute(&config, format).await?;
         }
         Commands::Config(config_cmd) => {
-            config_cmd.execute().await?;
+            config_cmd.execute()?;
         }
         Commands::Version => {
             println!("langstar {}", env!("CARGO_PKG_VERSION"));

@@ -16,13 +16,6 @@ pub enum ConfigCommands {
     /// Show configuration file location and values
     Show,
 
-    /// Get or set a configuration value
-    #[command(subcommand)]
-    Setting(ConfigSetting),
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ConfigSetting {
     /// Manage hide_workspace_and_org_id_message setting
     #[command(name = "hide_workspace_and_org_id_message")]
     HideWorkspaceAndOrgIdMessage(SettingAction),
@@ -52,19 +45,25 @@ pub enum SettingCommand {
 }
 
 impl ConfigCommands {
-    pub async fn execute(&self) -> Result<()> {
+    pub fn execute(&self) -> Result<()> {
         match self {
             ConfigCommands::Show => {
-                Self::show_config().await?;
+                Self::show_config()?;
             }
-            ConfigCommands::Setting(setting) => {
-                setting.execute().await?;
+            ConfigCommands::HideWorkspaceAndOrgIdMessage(action) => {
+                Self::handle_hide_workspace_and_org_id_message(action)?;
+            }
+            ConfigCommands::OutputFormat(action) => {
+                Self::handle_output_format(action)?;
+            }
+            ConfigCommands::Timezone(action) => {
+                Self::handle_timezone(action)?;
             }
         }
         Ok(())
     }
 
-    async fn show_config() -> Result<()> {
+    fn show_config() -> Result<()> {
         let config = Config::load()?;
         let config_path = Config::config_file_path()?;
 
@@ -166,28 +165,11 @@ impl ConfigCommands {
 
         Ok(())
     }
-}
 
-impl ConfigSetting {
-    async fn execute(&self) -> Result<()> {
-        match self {
-            ConfigSetting::HideWorkspaceAndOrgIdMessage(action) => {
-                Self::handle_hide_workspace_and_org_id_message(action).await?;
-            }
-            ConfigSetting::OutputFormat(action) => {
-                Self::handle_output_format(action).await?;
-            }
-            ConfigSetting::Timezone(action) => {
-                Self::handle_timezone(action).await?;
-            }
-        }
-        Ok(())
-    }
-
-    async fn handle_hide_workspace_and_org_id_message(action: &SettingAction) -> Result<()> {
+    fn handle_hide_workspace_and_org_id_message(action: &SettingAction) -> Result<()> {
         match &action.action {
             Some(SettingCommand::Set { value }) => {
-                // Parse boolean value
+                // Parse boolean value - accepts various formats but normalizes to "true"/"false"
                 let bool_value = match value.to_lowercase().as_str() {
                     "true" | "1" | "yes" | "on" => true,
                     "false" | "0" | "no" | "off" => false,
@@ -222,20 +204,21 @@ impl ConfigSetting {
         Ok(())
     }
 
-    async fn handle_output_format(action: &SettingAction) -> Result<()> {
+    fn handle_output_format(action: &SettingAction) -> Result<()> {
         match &action.action {
             Some(SettingCommand::Set { value }) => {
-                // Validate output format
+                // Normalize to lowercase for consistency
+                let normalized_value = value.to_lowercase();
                 let valid_formats = ["json", "table"];
-                if !valid_formats.contains(&value.to_lowercase().as_str()) {
+                if !valid_formats.contains(&normalized_value.as_str()) {
                     return Err(CliError::Config(format!(
                         "Invalid output format '{}'. Use: json or table",
                         value
                     )));
                 }
 
-                Self::set_config_value("output_format", value)?;
-                println!("✓ Set output_format = {}", value);
+                Self::set_config_value("output_format", &normalized_value)?;
+                println!("✓ Set output_format = {}", normalized_value);
             }
             None => {
                 Self::show_setting_help(
@@ -249,7 +232,7 @@ impl ConfigSetting {
         Ok(())
     }
 
-    async fn handle_timezone(action: &SettingAction) -> Result<()> {
+    fn handle_timezone(action: &SettingAction) -> Result<()> {
         match &action.action {
             Some(SettingCommand::Set { value }) => {
                 // Validate timezone
@@ -315,6 +298,7 @@ impl ConfigSetting {
             if let Some(parent) = config_path.parent() {
                 fs::create_dir_all(parent)?;
             }
+            // Create empty config file - toml_edit handles empty documents
             fs::write(&config_path, "")?;
         }
 
