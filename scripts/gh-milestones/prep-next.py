@@ -211,11 +211,12 @@ class MilestoneWorkflow:
 
             if result.returncode == 0 and result.stdout.strip():
                 try:
-                    parents = json.loads(result.stdout)
-                    if parents and len(parents) > 0:
-                        parent_num = parents[0]["number"]
+                    parents_data = json.loads(result.stdout)
+                    sub_issues = parents_data.get("subIssues", []) if parents_data else []
+                    if sub_issues and len(sub_issues) > 0:
+                        parent_num = sub_issues[0]["number"]
                         self.parent_map[issue_num] = parent_num
-                except json.JSONDecodeError:
+                except (json.JSONDecodeError, KeyError, TypeError):
                     pass
 
             # Get children
@@ -227,10 +228,11 @@ class MilestoneWorkflow:
 
             if result.returncode == 0 and result.stdout.strip():
                 try:
-                    children = json.loads(result.stdout)
-                    if children:
-                        self.children_map[issue_num] = [c["number"] for c in children]
-                except json.JSONDecodeError:
+                    children_data = json.loads(result.stdout)
+                    sub_issues = children_data.get("subIssues", []) if children_data else []
+                    if sub_issues:
+                        self.children_map[issue_num] = [c["number"] for c in sub_issues]
+                except (json.JSONDecodeError, KeyError, TypeError):
                     pass
 
         print("   ✓ Hierarchy built successfully")
