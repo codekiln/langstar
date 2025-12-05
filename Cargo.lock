@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "langstar"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "langstar-sdk"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "async-stream",
  "base64",
