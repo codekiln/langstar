@@ -21,6 +21,7 @@
 //!     let client = LangchainClient::new(auth)?;
 //!
 //!     // Get graph topology for an assistant
+//!     // Note: get_graph() method will be implemented in a future PR
 //!     let graph = client.assistants().get_graph("assistant-id").await?;
 //!
 //!     println!("Graph has {} nodes and {} edges",
@@ -58,7 +59,6 @@ use serde::{Deserialize, Serialize};
 /// }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 pub struct Graph {
     /// List of nodes in the graph
     pub nodes: Vec<GraphNode>,
@@ -79,7 +79,6 @@ pub struct Graph {
 /// - `node_type`: Optional type classification (e.g., "runnable")
 /// - `data`: Optional metadata about the node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 pub struct GraphNode {
     /// Unique identifier for this node
     pub id: String,
@@ -100,7 +99,6 @@ pub struct GraphNode {
 /// Currently contains the display name of the node.
 /// May be extended with additional fields in future API versions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 pub struct GraphNodeData {
     /// Display name for this node
     pub name: Option<String>,
@@ -117,7 +115,6 @@ pub struct GraphNodeData {
 /// { "source": "node_a", "target": "node_b", "conditional": false }
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(deny_unknown_fields)]
 pub struct GraphEdge {
     /// ID of the source node
     pub source: String,
@@ -141,7 +138,7 @@ pub struct GraphEdge {
 ///
 /// When listing multiple assistants and grouping them by graph,
 /// this summary provides aggregate statistics.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GraphSummary {
     /// The graph ID these assistants use
     pub graph_id: String,
