@@ -36,8 +36,8 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 | `.github/workflows/ci.yml` | 302 | CI jobs, test configuration, artifact upload | N/A (workflow) | N/A |
 | `.github/workflows/test-features.yml` | 568 | DevContainer feature testing matrix | N/A (workflow) | N/A |
 | `docs/dev/ci-cd.md` | 464 | Release process, nextest, test profiles | Partial | Pre-commit checklist duplicated |
-| `docs/dev/procedures.md` | 562 | Pre-commit checklist (lines 101-277), rulesets | Yes (extract) | Only covers pre-commit, not test design |
-| `docs/dev/README.md` | ~133 | Pre-commit section (lines 90-133) | DRY violation | Points to procedures.md |
+| `docs/dev/procedures.md` | 561 | Pre-commit checklist (lines 103-280), rulesets | Yes (extract) | Only covers pre-commit, not test design |
+| `docs/dev/README.md` | 179 | Pre-commit section (lines 123-140) | DRY violation | Points to procedures.md |
 
 **Total: ~3,667 lines across 10 files**
 
@@ -198,10 +198,10 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 
 ---
 
-#### `docs/dev/procedures.md` (562 lines, ~4,200 tokens)
+#### `docs/dev/procedures.md` (561 lines, ~4,200 tokens)
 
 **Testing-Related Sections:**
-- Pre-commit checklist (lines 101-278)
+- Pre-commit checklist (lines 103-280)
 - Why each check matters (lines 129-157)
 - Breaking changes checklist (lines 176-198)
 - Common mistakes to avoid (lines 200-227)
@@ -221,7 +221,7 @@ cargo fmt --check
 
 ---
 
-#### `docs/dev/README.md` (Lines 90-133, ~50 lines, ~350 tokens)
+#### `docs/dev/README.md` (Lines 123-140, ~18 lines, ~130 tokens)
 
 **Testing-Related Sections:**
 - Pre-commit checklist reference (points to procedures.md)
@@ -319,8 +319,8 @@ No documentation explaining the philosophy of treating failing tests as blockers
 ### Duplication 1: Pre-Commit Checklist
 
 **Locations:**
-1. `docs/dev/procedures.md:101-278` (178 lines) - Full detailed version
-2. `docs/dev/README.md:90-133` (43 lines) - Summary version
+1. `docs/dev/procedures.md:103-280` (177 lines) - Full detailed version
+2. `docs/dev/README.md:123-140` (18 lines) - Summary version
 3. `docs/dev/ci-cd.md:321-331` (11 lines) - Brief mention
 
 **Consolidation Recommendation:**
@@ -374,11 +374,11 @@ No documentation explaining the philosophy of treating failing tests as blockers
 | `sdk/tests/README.md` | 453 | ~3,500 | Every SDK test task | Only SDK integration tests |
 | `cli/tests/README.md` | 252 | ~1,900 | Every CLI test task | Only CLI integration tests |
 | `docs/dev/ci-cd.md` | 464 | ~3,500 | Every CI-related task | Only release/CI tasks |
-| `docs/dev/procedures.md` | 562 | ~4,200 | Pre-commit tasks | Only pre-commit (extract) |
+| `docs/dev/procedures.md` | 561 | ~4,200 | Pre-commit tasks | Only pre-commit (extract) |
 | `.devcontainer/.../TESTING-GITHUB-ACTIONS.md` | 371 | ~2,800 | DevContainer tasks | Only feature testing |
 | `tests/fixtures/.../README.md` | 272 | ~2,000 | Fixture setup | Only deployment setup |
 | `tests/fixtures/.../DEPLOYMENT_GUIDE.md` | 423 | ~3,200 | Fixture setup | Only initial deployment |
-| **Total** | **~2,800** | **~21,100** | - | - |
+| **Total** | **~3,667** | **~21,100** | - | - |
 
 ### Progressive Disclosure Analysis
 
@@ -623,7 +623,7 @@ Testing Documentation Locations:
 │   ├── ci.yml (302 lines) - testing config
 │   └── test-features.yml (568 lines) - feature testing
 └── docs/dev/
-    ├── README.md (133 lines) - pre-commit reference
-    ├── procedures.md (562 lines) - pre-commit detailed
+    ├── README.md (179 lines) - pre-commit reference
+    ├── procedures.md (561 lines) - pre-commit detailed
     └── ci-cd.md (464 lines) - test runtime info
 ```
