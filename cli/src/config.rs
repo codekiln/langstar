@@ -99,12 +99,11 @@ impl Config {
             && config.organization_id.is_some()
             && config.workspace_id.is_some()
         {
+            use crate::commands::config::messages;
             eprintln!(
                 "Warning: Both organization_id and workspace_id are set. Workspace ID takes precedence for narrower scoping."
             );
-            eprintln!(
-                "  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1 or add 'hide_workspace_and_org_id_message = true' to config.toml"
-            );
+            eprintln!("  {}", messages::SUPPRESS_WORKSPACE_ORG_WARNING);
         }
 
         Ok(config)

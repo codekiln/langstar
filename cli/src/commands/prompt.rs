@@ -185,9 +185,10 @@ impl PromptCommands {
             && flag_org_id.is_some()
             && flag_workspace_id.is_some()
         {
+            use crate::commands::config::messages;
             eprintln!("⚠ Warning: Both organization and workspace IDs specified");
             eprintln!("  → Using workspace scope (narrower scope takes precedence)");
-            eprintln!("  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1");
+            eprintln!("  {}", messages::SUPPRESS_WORKSPACE_ORG_WARNING);
         }
 
         // Apply organization ID if provided via flag (overrides config/env)
@@ -207,9 +208,10 @@ impl PromptCommands {
             && flag_org_id.is_none()
             && flag_workspace_id.is_none()
         {
+            use crate::commands::config::messages;
             eprintln!("ℹ Info: Both organization and workspace IDs configured");
             eprintln!("  → Using workspace scope (narrower scope takes precedence)");
-            eprintln!("  → To suppress: set LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE=1");
+            eprintln!("  {}", messages::SUPPRESS_WORKSPACE_ORG_WARNING);
         }
 
         client

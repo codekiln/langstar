@@ -1,4 +1,5 @@
 pub mod assistant;
+pub mod config;
 pub mod dataset;
 pub mod eval;
 pub mod graph;
@@ -9,6 +10,7 @@ pub mod runs;
 pub mod secrets;
 
 pub use assistant::AssistantCommands;
+pub use config::ConfigCommands;
 pub use dataset::DatasetCommands;
 pub use eval::EvalCommands;
 pub use graph::GraphCommands;
