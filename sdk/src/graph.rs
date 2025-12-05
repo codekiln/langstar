@@ -203,11 +203,11 @@ mod tests {
         // Check edges
         assert_eq!(graph.edges[0].source, "__start__");
         assert_eq!(graph.edges[0].target, "echo");
-        assert_eq!(graph.edges[0].conditional, false);
+        assert!(!graph.edges[0].conditional);
 
         assert_eq!(graph.edges[1].source, "echo");
         assert_eq!(graph.edges[1].target, "__end__");
-        assert_eq!(graph.edges[1].conditional, false);
+        assert!(!graph.edges[1].conditional);
     }
 
     #[test]
@@ -278,17 +278,17 @@ mod tests {
         // Test that conditional defaults to false when not present
         let json = r#"{ "source": "a", "target": "b" }"#;
         let edge: GraphEdge = serde_json::from_str(json).expect("Failed to deserialize edge");
-        assert_eq!(edge.conditional, false);
+        assert!(!edge.conditional);
 
         // Test explicit false
         let json = r#"{ "source": "a", "target": "b", "conditional": false }"#;
         let edge: GraphEdge = serde_json::from_str(json).expect("Failed to deserialize edge");
-        assert_eq!(edge.conditional, false);
+        assert!(!edge.conditional);
 
         // Test explicit true
         let json = r#"{ "source": "a", "target": "b", "conditional": true }"#;
         let edge: GraphEdge = serde_json::from_str(json).expect("Failed to deserialize edge");
-        assert_eq!(edge.conditional, true);
+        assert!(edge.conditional);
     }
 
     #[test]
