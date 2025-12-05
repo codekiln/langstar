@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+import traceback
 from typing import Optional, Dict, List, Tuple
 
 
@@ -444,8 +445,13 @@ class MilestoneWorkflow:
         except KeyboardInterrupt:
             print("\n\n⚠️  Interrupted by user", file=sys.stderr)
             return 130
+        except SystemExit as e:
+            # Return the exit code from SystemExit to preserve intended control flow
+            return e.code if e.code is not None else 1
         except Exception as e:
-            print(f"\n❌ Unexpected error: {e}", file=sys.stderr)
+            print(f"\n❌ Unexpected error: {type(e).__name__}: {e}", file=sys.stderr)
+            print("\nFull traceback:", file=sys.stderr)
+            traceback.print_exc()
             return 1
 
 
