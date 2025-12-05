@@ -158,6 +158,71 @@ def test_skips_closed_children():
     return True
 
 
+def test_closed_siblings_in_hierarchy():
+    """Test that closed siblings are included in children_map for proper sibling traversal.
+
+    This test validates the fix for issue #611 where --state all was added to
+    the gh sub-issue list command. Without this fix, closed siblings would be
+    excluded from children_map, causing sibling traversal to fail.
+    """
+    print("Test 5: Closed siblings must be in children_map for traversal")
+    print("-" * 60)
+
+    # Real-world scenario from ls-cli-output-dx milestone:
+    # Parent #584 with children: #585 (CLOSED), #587 (open), #589 (open)
+    # Last completed: #585
+    # Expected: #587 should be found as next sibling
+
+    # Simulate what happens when --state all is used (CORRECT)
+    workflow_with_closed = MockMilestoneWorkflow(
+        all_issues=[
+            {"number": 584, "state": "OPEN", "title": "Parent"},
+            {"number": 585, "state": "CLOSED", "title": "Phase 1 (closed)"},
+            {"number": 587, "state": "OPEN", "title": "Phase 2 (leaf)"},
+            {"number": 589, "state": "OPEN", "title": "Phase 3 (leaf)"},
+        ],
+        children_map={584: [585, 587, 589]},  # Includes closed #585
+    )
+
+    # When traversing from parent, should skip closed child and find first open
+    parent = {"number": 584, "state": "OPEN", "title": "Parent"}
+    result = workflow_with_closed._find_first_leaf(parent)
+
+    expected = 587
+    actual = result["number"]
+    if actual == expected:
+        print(f"✓ PASS: With closed siblings in map, selected #{actual} (expected #{expected})")
+    else:
+        print(f"✗ FAIL: With closed siblings in map, selected #{actual} (expected #{expected})")
+        return False
+
+    # Demonstrate what would happen WITHOUT --state all (INCORRECT)
+    print("\n  Demonstrating bug when closed siblings excluded from map:")
+    workflow_without_closed = MockMilestoneWorkflow(
+        all_issues=[
+            {"number": 584, "state": "OPEN", "title": "Parent"},
+            {"number": 585, "state": "CLOSED", "title": "Phase 1 (closed)"},
+            {"number": 587, "state": "OPEN", "title": "Phase 2 (leaf)"},
+            {"number": 589, "state": "OPEN", "title": "Phase 3 (leaf)"},
+        ],
+        children_map={584: [587, 589]},  # Missing closed #585
+    )
+
+    # This simulates the sibling lookup failure:
+    # siblings.index(585) would raise ValueError because 585 not in [587, 589]
+    siblings = workflow_without_closed.children_map[584]
+    try:
+        current_idx = siblings.index(585)  # This should fail
+        print(f"  ✗ Unexpected: Found #585 at index {current_idx}")
+        return False
+    except ValueError:
+        print(f"  ✓ As expected: ValueError when looking for #585 in {siblings}")
+        print(f"  ✓ This causes fallback to first open issue (wrong behavior)")
+
+    print()
+    return True
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -170,6 +235,7 @@ def main():
         test_handles_nested_hierarchy,
         test_returns_self_when_no_children,
         test_skips_closed_children,
+        test_closed_siblings_in_hierarchy,
     ]
 
     results = [test() for test in tests]

@@ -224,10 +224,11 @@ class MilestoneWorkflow:
                     # Silently skip - parent relationship is optional and failures are non-critical
                     pass
 
-            # Get children
+            # Get children (include closed issues to support sibling traversal)
             result = self.run_command([
                 "gh", "sub-issue", "list", str(issue_num),
                 "--relation", "children",
+                "--state", "all",
                 "--json", "number"
             ], check=False)
 
