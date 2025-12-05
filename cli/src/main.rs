@@ -6,8 +6,9 @@ pub mod time;
 
 use clap::{Parser, Subcommand};
 use commands::{
-    AssistantCommands, ConfigCommands, DatasetCommands, EvalCommands, GraphCommands,
-    ModelConfigCommands, PromptCommands, QueueCommands, RunsCommands, SecretsCommands,
+    AssistantCommands, ConfigCommands, DatasetCommands, DeploymentCommands, EvalCommands,
+    GraphCommands, ModelConfigCommands, PromptCommands, QueueCommands, RunsCommands,
+    SecretsCommands,
 };
 use config::Config;
 use error::Result;
@@ -39,7 +40,11 @@ enum Commands {
     #[command(subcommand)]
     Assistant(AssistantCommands),
 
-    /// Manage LangGraph deployments
+    /// Manage LangGraph deployments (Control Plane API)
+    #[command(subcommand)]
+    Deployment(DeploymentCommands),
+
+    /// Manage LangGraph deployments (alias for 'deployment', to be deprecated)
     #[command(subcommand)]
     Graph(GraphCommands),
 
@@ -103,6 +108,9 @@ async fn run() -> Result<()> {
         }
         Commands::Assistant(assistant_cmd) => {
             assistant_cmd.execute(&config, format).await?;
+        }
+        Commands::Deployment(deployment_cmd) => {
+            deployment_cmd.execute(&config, format).await?;
         }
         Commands::Graph(graph_cmd) => {
             graph_cmd.execute(&config, format).await?;
