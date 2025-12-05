@@ -444,8 +444,14 @@ class MilestoneWorkflow:
         except KeyboardInterrupt:
             print("\n\n⚠️  Interrupted by user", file=sys.stderr)
             return 130
+        except SystemExit as e:
+            # Let SystemExit propagate - don't catch success/failure codes
+            raise
         except Exception as e:
-            print(f"\n❌ Unexpected error: {e}", file=sys.stderr)
+            import traceback
+            print(f"\n❌ Unexpected error: {type(e).__name__}: {e}", file=sys.stderr)
+            print("\nFull traceback:", file=sys.stderr)
+            traceback.print_exc()
             return 1
 
 
