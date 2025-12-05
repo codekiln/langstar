@@ -203,8 +203,9 @@ mod tests {
     #[test]
     fn test_get_terminal_width() {
         let width = get_terminal_width();
-        // Should either detect actual terminal width or fall back to default
-        // In CI environments without a TTY, this will return DEFAULT_TERMINAL_WIDTH
-        assert!(width >= DEFAULT_TERMINAL_WIDTH || width > 0);
+        // In CI environments without a TTY, terminal_size() returns None,
+        // so we fall back to DEFAULT_TERMINAL_WIDTH (80).
+        // Real terminals may be wider, but never narrower than this minimum.
+        assert!(width >= DEFAULT_TERMINAL_WIDTH);
     }
 }
