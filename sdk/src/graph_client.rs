@@ -87,6 +87,12 @@ impl<'a> GraphClient<'a> {
     /// - Count of assistants
     /// - Node names (if include_structure is true)
     ///
+    /// # Performance Note
+    /// When `include_structure` is true, this method makes one API call per unique graph
+    /// to fetch structure details, in addition to the initial calls to list assistants
+    /// (potentially multiple calls if pagination is needed).
+    /// For deployments with many graphs, this may result in multiple sequential API calls.
+    ///
     /// # Example
     /// ```no_run
     /// # use langstar_sdk::{LangchainClient, AuthConfig};
@@ -102,20 +108,35 @@ impl<'a> GraphClient<'a> {
     /// # }
     /// ```
     pub async fn list(&self, include_structure: bool) -> Result<Vec<GraphSummary>> {
-        // Get all assistants
-        let request_body = AssistantSearchRequest {
-            query: None, // Empty query lists all assistants
-            limit: None, // Get all assistants
-            offset: None,
-        };
+        // Get all assistants using pagination to ensure complete results
+        let mut all_assistants: Vec<Assistant> = Vec::new();
+        let limit: u32 = 100; // Reasonable page size
+        let mut offset: u32 = 0;
 
-        let path = "/assistants/search";
-        let request = self.client.langgraph_post(path)?.json(&request_body);
-        let assistants: Vec<Assistant> = self.client.execute(request).await?;
+        loop {
+            let request_body = AssistantSearchRequest {
+                query: None, // Empty query lists all assistants
+                limit: Some(limit),
+                offset: Some(offset),
+            };
+
+            let path = "/assistants/search";
+            let request = self.client.langgraph_post(path)?.json(&request_body);
+            let mut assistants: Vec<Assistant> = self.client.execute(request).await?;
+
+            let count = assistants.len();
+            all_assistants.append(&mut assistants);
+
+            // If we got fewer results than the limit, we've reached the end
+            if (count as u32) < limit {
+                break;
+            }
+            offset += limit;
+        }
 
         // Group assistants by graph_id
         let mut graph_map: HashMap<String, Vec<String>> = HashMap::new();
-        for assistant in assistants {
+        for assistant in all_assistants {
             graph_map
                 .entry(assistant.graph_id)
                 .or_default()
@@ -142,7 +163,13 @@ impl<'a> GraphClient<'a> {
                             }
                         })
                         .collect(),
-                    Err(_) => Vec::new(), // If we can't fetch the graph, just skip the nodes
+                    Err(e) => {
+                        eprintln!(
+                            "Warning: Failed to fetch graph structure for {}: {}",
+                            graph_id, e
+                        );
+                        Vec::new()
+                    }
                 }
             } else {
                 Vec::new()
