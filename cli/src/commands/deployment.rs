@@ -516,9 +516,9 @@ impl DeploymentCommands {
                     // Read from stdin
                     use std::io::{self, Write};
                     print!("Type 'yes' to confirm: ");
-                    io::stdout().flush().unwrap();
+                    io::stdout().flush()?;
                     let mut confirmation = String::new();
-                    io::stdin().read_line(&mut confirmation).unwrap();
+                    io::stdin().read_line(&mut confirmation)?;
 
                     if confirmation.trim().to_lowercase() != "yes" {
                         formatter.info("Deletion cancelled.");
