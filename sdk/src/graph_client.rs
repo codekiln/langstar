@@ -88,10 +88,12 @@ impl<'a> GraphClient<'a> {
     /// - Node names (if include_structure is true)
     ///
     /// # Performance Note
-    /// When `include_structure` is true, this method makes one API call per unique graph
-    /// to fetch structure details, in addition to the initial calls to list assistants
-    /// (potentially multiple calls if pagination is needed).
-    /// For deployments with many graphs, this may result in multiple sequential API calls.
+    /// This method makes:
+    /// - N API calls to paginate through all assistants (where N = ceil(total_assistants / 100))
+    /// - M additional API calls to fetch structure for M unique graphs (when `include_structure` is true)
+    ///
+    /// The graph structure calls are made sequentially. For deployments with many unique graphs,
+    /// consider using parallel fetching or calling `get()` individually as needed.
     ///
     /// # Example
     /// ```no_run
@@ -163,13 +165,7 @@ impl<'a> GraphClient<'a> {
                             }
                         })
                         .collect(),
-                    Err(e) => {
-                        eprintln!(
-                            "Warning: Failed to fetch graph structure for {}: {}",
-                            graph_id, e
-                        );
-                        Vec::new()
-                    }
+                    Err(_) => Vec::new()
                 }
             } else {
                 Vec::new()
