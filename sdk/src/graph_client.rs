@@ -189,7 +189,7 @@ impl<'a> GraphClient<'a> {
     ///
     /// # Arguments
     /// * `graph_id` - The graph ID to fetch
-    /// * `xray` - If true, includes subgraph representation (default should be true)
+    /// * `xray` - If true, includes subgraph representation
     ///
     /// # Returns
     /// A `Graph` object containing nodes and edges
