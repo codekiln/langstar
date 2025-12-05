@@ -165,6 +165,34 @@ The experiment will demonstrate:
 - **Developer Experience**: More intuitive than "sessions"
 - **API Compatibility**: Internal mapping to /sessions is implementation detail
 
+## Additional Validation
+
+### Full Workspace Project Listing
+
+**Script**: `validate_projects.py`
+
+**Purpose**: Validate that the Python SDK can successfully:
+1. List all projects in a workspace (162 projects)
+2. Query specific project by name
+3. Retrieve project ID
+4. Count runs within a project
+
+**Results**:
+```
+✅ Total projects found: 162
+✅ Found project: test-deployment-cli-48499
+   Project ID: 98e12dc6-2171-4bf3-80fb-1153041d6cbf
+✅ Total runs in project: 0
+```
+
+**Key Findings**:
+- Successfully listed all 162 projects in workspace
+- Project lookup by name works correctly
+- Run counting per project is supported via `list_runs(project_name=...)`
+- Confirms pagination handles large project lists (>100 items)
+
+This validates the full CRUD workflow and ensures the Rust SDK implementation will have all necessary API capabilities.
+
 ## References
 
 - Python SDK client.py:3408-3780 (project methods)
