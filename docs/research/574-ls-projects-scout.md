@@ -25,7 +25,7 @@ Research support for adding `langstar project list` and other langstar project c
 pub projects: Vec<String>,
 ```
 
-**SDK (`sdk/src/runs.rs:92-93`)**:
+**SDK (`sdk/src/runs.rs:93-94`)**:
 ```rust
 /// Session/project ID this run belongs to
 pub session_id: Uuid,
@@ -156,7 +156,7 @@ class TracerSession(BaseModel):
 - Filter flags: --name, --name-contains, --limit, --include-stats
 
 **Estimated Implementation Effort**:
-- SDK module: ~200-300 lines (similar to datasets.rs at 241 lines)
+- SDK module: ~200-300 lines (similar to datasets.rs)
 - CLI module: ~250-350 lines (similar to datasets CLI commands)
 - Tests: ~150-200 lines
 
