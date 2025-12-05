@@ -1,0 +1,623 @@
+{
+  "SessionSortableColumns": {
+    "type": "string",
+    "enum": [
+      "name",
+      "start_time",
+      "last_run_start_time",
+      "latency_p50",
+      "latency_p99",
+      "error_rate",
+      "feedback",
+      "runs_count"
+    ],
+    "title": "SessionSortableColumns"
+  },
+  "TraceTier": {
+    "type": "string",
+    "enum": [
+      "longlived",
+      "shortlived"
+    ],
+    "title": "TraceTier"
+  },
+  "TracerSession": {
+    "properties": {
+      "start_time": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Start Time"
+      },
+      "end_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "End Time"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "default_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Default Dataset Id"
+      },
+      "reference_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Reference Dataset Id"
+      },
+      "trace_tier": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TraceTier"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "run_count": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Count"
+      },
+      "latency_p50": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Latency P50"
+      },
+      "latency_p99": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Latency P99"
+      },
+      "first_token_p50": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "First Token P50"
+      },
+      "first_token_p99": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "First Token P99"
+      },
+      "total_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Total Tokens"
+      },
+      "prompt_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Tokens"
+      },
+      "completion_tokens": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Tokens"
+      },
+      "total_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Total Cost"
+      },
+      "prompt_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Prompt Cost"
+      },
+      "completion_cost": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Completion Cost"
+      },
+      "tenant_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Tenant Id"
+      },
+      "last_run_start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Run Start Time"
+      },
+      "last_run_start_time_live": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Run Start Time Live"
+      },
+      "feedback_stats": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Stats"
+      },
+      "session_feedback_stats": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Feedback Stats"
+      },
+      "run_facets": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Run Facets"
+      },
+      "error_rate": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Error Rate"
+      },
+      "streaming_rate": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Streaming Rate"
+      },
+      "test_run_number": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Test Run Number"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "tenant_id"
+    ],
+    "title": "TracerSession",
+    "description": "TracerSession schema."
+  },
+  "TracerSessionCreate": {
+    "properties": {
+      "start_time": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Start Time"
+      },
+      "end_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "End Time"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "default_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Default Dataset Id"
+      },
+      "reference_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Reference Dataset Id"
+      },
+      "trace_tier": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TraceTier"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Id"
+      }
+    },
+    "type": "object",
+    "title": "TracerSessionCreate",
+    "description": "Create class for TracerSession."
+  },
+  "TracerSessionUpdate": {
+    "properties": {
+      "name": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "default_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Default Dataset Id"
+      },
+      "end_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "End Time"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "trace_tier": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TraceTier"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "type": "object",
+    "title": "TracerSessionUpdate",
+    "description": "Update class for TracerSession."
+  },
+  "TracerSessionWithoutVirtualFields": {
+    "properties": {
+      "start_time": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Start Time"
+      },
+      "end_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "End Time"
+      },
+      "extra": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Extra"
+      },
+      "name": {
+        "type": "string",
+        "title": "Name"
+      },
+      "description": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Description"
+      },
+      "default_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Default Dataset Id"
+      },
+      "reference_dataset_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Reference Dataset Id"
+      },
+      "trace_tier": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TraceTier"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Id"
+      },
+      "tenant_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Tenant Id"
+      },
+      "last_run_start_time_live": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Run Start Time Live"
+      }
+    },
+    "type": "object",
+    "required": [
+      "id",
+      "tenant_id"
+    ],
+    "title": "TracerSessionWithoutVirtualFields",
+    "description": "TracerSession schema."
+  }
+}

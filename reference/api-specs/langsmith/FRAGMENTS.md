@@ -35,6 +35,8 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `playground-settings-create-request.json` | 0.8K | PlaygroundSettingsCreateRequest schema | See below | 2025-12-01 |
 | `playground-settings-update-request.json` | 0.8K | PlaygroundSettingsUpdateRequest schema | See below | 2025-12-01 |
 | `playground-saved-options.json` | 0.3K | PlaygroundSavedOptions schema | See below | 2025-12-01 |
+| `sessions-endpoints.json` | 15K | Sessions (Projects) CRUD API endpoints | See below | 2025-12-05 |
+| `sessions-schemas.json` | 12K | TracerSession and related data types | See below | 2025-12-05 |
 
 ## Extraction Commands
 
@@ -116,6 +118,14 @@ jq '.components.schemas.PlaygroundSettingsUpdateRequest' \
 # PlaygroundSavedOptions schema
 jq '.components.schemas.PlaygroundSavedOptions' \
   openapi.json > ../../api-specs/langsmith/playground-saved-options.json
+
+# Sessions (Projects) endpoints (core CRUD operations only)
+jq '.paths | with_entries(select(.key | test("^/api/v1/sessions($|/\\{session_id\\}$)")))' \
+  openapi.json > ../../api-specs/langsmith/sessions-endpoints.json
+
+# Sessions (Projects) schemas (TracerSession, Create, Update, and related types)
+jq '.components.schemas | with_entries(select(.key | test("TracerSession|SessionSortable|TraceTier")))' \
+  openapi.json > ../../api-specs/langsmith/sessions-schemas.json
 ```
 
 ## Verification
@@ -145,3 +155,4 @@ jq '.paths | keys | map(select(contains("annotation-queue"))) | length' \
   - `../../research/347-openapi-validation.md` - Evaluations/feedback validation
   - `../../research/402-structured-prompts-openapi-validation.md` - Structured output prompts validation
   - `../../research/461-openapi-validation.md` - Playground settings (model providers) validation
+  - `../../research/592-ls-projects-openapi-validation.md` - Sessions/Projects validation
