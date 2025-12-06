@@ -18,7 +18,6 @@ use escargot::CargoBuild;
 /// **Fixtures:**
 /// These tests use the test-graph-deployment fixture from tests/fixtures/test-graph-deployment/
 /// See tests/fixtures/test-graph-deployment/README.md for details.
-
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
@@ -190,7 +189,7 @@ fn test_graph_get_basic() {
     println!("Testing graph get command for graph: {}", graph_id);
 
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "get", graph_id, "--deployment", &deployment]);
+    cmd.args(["graph", "get", &graph_id, "--deployment", &deployment]);
 
     // Run the command
     let output = cmd.output().expect("Failed to execute command");
@@ -240,7 +239,7 @@ fn test_graph_get_with_xray() {
     cmd.args([
         "graph",
         "get",
-        graph_id,
+        &graph_id,
         "--deployment",
         &deployment,
         "--xray",
@@ -278,7 +277,7 @@ fn test_graph_get_json_output() {
     cmd.args([
         "graph",
         "get",
-        graph_id,
+        &graph_id,
         "--deployment",
         &deployment,
         "--format",
