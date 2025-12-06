@@ -135,7 +135,7 @@ Present the generated test plan to the user with:
 - [ ] Unit tests for query building logic (httpmock)
 - [ ] Integration test: Create run with SDK -> verify with SDK
 - [ ] Integration test: Create run with SDK → Query via CLI → Verify in results
-- [ ] Integration test: Test pagination with large result sets
+- [ ] Integration test: Test pagination
 - [ ] Integration test: Test filtering with various query params
 - [ ] All tests must verify actual behavior (not just exit codes)
 
