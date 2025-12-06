@@ -1,15 +1,40 @@
 # Implementation: Graph/Deployment Command Separation
 
-**Issue:** #527 (ls-graph-deployments-separation milestone)
+**Issue:** [#527](https://github.com/codekiln/langstar/issues/527) (ls-graph-deployments-separation milestone)
+**Milestone:** [ls-graph-deployments-separation](https://github.com/codekiln/langstar/milestone/11)
 **Date:** 2025-12-06
+**Status:** ✅ Completed
 
 ## Executive Summary
 
-This document summarizes the semantic separation of `langstar graph` and `langstar deployment` commands, completed as part of milestone #527.
+Semantic separation of `langstar graph` and `langstar deployment` commands to correctly reflect the underlying LangGraph Cloud API structure.
 
-### Problem
+### What Was Built
 
-Previously, `langstar graph list` listed LangGraph Cloud **deployments**, which was semantically confusing. Users expected `langstar graph list` to list graphs, not deployments.
+| Component | Description |
+|-----------|-------------|
+| **`langstar deployment`** | CRUD commands for LangGraph Cloud deployments (Control Plane API) |
+| **`langstar graph`** | Inspection commands for graphs within deployments (Agent Server API) |
+| **SDK Types** | `Graph`, `GraphNode`, `GraphEdge`, `GraphSummary` structs |
+| **SDK Client** | `GraphClient` with `list()`, `get()`, `subgraphs()` methods |
+| **User Docs** | `docs/deployments.md`, `docs/graphs.md` |
+
+### Key Deliverables
+
+| Phase | Issue | Status | Description |
+|-------|-------|--------|-------------|
+| 1 Research | [#528](https://github.com/codekiln/langstar/issues/528) | ✅ | Agent Server API research |
+| 2 Design | [#562](https://github.com/codekiln/langstar/issues/562) | ✅ | DX consistency design |
+| 3 OpenAPI | [#564](https://github.com/codekiln/langstar/issues/564) | ✅ | Agent Server API spec validation |
+| 4 SDK Types | [#566](https://github.com/codekiln/langstar/issues/566) | ✅ | Graph structure types |
+| 5 SDK Client | [#567](https://github.com/codekiln/langstar/issues/567) | ✅ | GraphClient implementation |
+| 6 CLI Graph | [#569](https://github.com/codekiln/langstar/issues/569) | ✅ | `graph list/get` commands |
+| 7 Testing | [#571](https://github.com/codekiln/langstar/issues/571) | ✅ | Integration tests |
+| 8 Docs | [#572](https://github.com/codekiln/langstar/issues/572) | ✅ | User and implementation docs |
+
+### Problem Solved
+
+Previously, `langstar graph list` listed **deployments**, which was semantically confusing. Users expected `langstar graph list` to list graphs, not deployments.
 
 ### Solution
 
@@ -39,54 +64,6 @@ Graphs are **not first-class API resources**. There is no `/graphs` endpoint. In
 2. Each assistant has a `graph_id` field linking it to its underlying graph
 3. Multiple assistants can share the same graph (with different configurations)
 4. Graph structure is accessible via `/assistants/{id}/graph?xray=true`
-
----
-
-## Command Reference
-
-### `langstar deployment` (Control Plane API)
-
-```bash
-# List all deployments
-langstar deployment list [--limit N] [--offset N] [--deployment-type TYPE] [--status STATUS]
-
-# Get deployment details
-langstar deployment get <deployment_id>
-
-# Create new deployment
-langstar deployment create --name NAME --source github --repo-url URL --branch BRANCH [--wait]
-
-# Delete deployment
-langstar deployment delete <deployment_id> [--yes]
-```
-
-### `langstar graph` (Agent Server API)
-
-```bash
-# List graphs in a deployment (requires deployment name or ID)
-langstar graph list <deployment> [--show-nodes]
-
-# Get graph structure
-langstar graph get <graph_id> --deployment <deployment> [--xray]
-```
-
----
-
-## Migration Guide
-
-```
-OLD COMMAND              →  NEW COMMAND
-────────────────────────────────────────────────────────────
-langstar graph list      →  langstar deployment list
-langstar graph get       →  langstar deployment get
-langstar graph create    →  langstar deployment create
-langstar graph delete    →  langstar deployment delete
-
-NEW COMMANDS (no previous equivalent)
-────────────────────────────────────────────────────────────
-langstar graph list <deployment>      # List graphs in deployment
-langstar graph get <id> --deployment  # Get graph structure
-```
 
 ---
 
@@ -132,28 +109,33 @@ impl GraphClient {
 
 ---
 
-## Research References
+## Documentation
 
-| Phase | Issue | Deliverable |
-|-------|-------|-------------|
-| Research | #528 | `docs/research/528-graph-api-research.md` |
-| Design | #562 | `docs/research/527.2-design-dx-consistency.md` |
-| OpenAPI Validation | #564 | `docs/research/527.3-openapi-validation.md` |
-| SDK Types | #566 | `sdk/src/graph.rs` |
-| SDK Client | #567 | `sdk/src/graph_client.rs` |
-| CLI Graph | #569 | `cli/src/commands/graph.rs` |
-| Documentation | #572 | This document |
+### User Documentation
+
+For detailed usage, see:
+- **[Deployments Guide](../deployments.md)** - Complete `langstar deployment` command reference
+- **[Graphs Guide](../graphs.md)** - Complete `langstar graph` command reference
+
+### Research & Design Artifacts
+
+| Document | Purpose |
+|----------|---------|
+| `docs/research/528-graph-api-research.md` | Agent Server API research findings |
+| `docs/research/527.2-design-dx-consistency.md` | DX and UX design decisions |
+| `docs/research/527.3-openapi-validation.md` | OpenAPI spec validation |
+
+### API Specifications
+
+| Spec | Path |
+|------|------|
+| Control Plane API | `reference/openapi/langchain/control-plane/openapi.json` |
+| Agent Server API | `reference/openapi/langchain/agent-server/openapi.json` |
+| Fragment Index | `reference/api-specs/agent-server/FRAGMENTS.md` |
 
 ---
 
-## API Specifications
+## References
 
-- **Control Plane API:** `reference/openapi/langchain/control-plane/openapi.json`
-- **Agent Server API:** `reference/openapi/langchain/agent-server/openapi.json`
-- **Fragment Index:** `reference/api-specs/agent-server/FRAGMENTS.md`
-
----
-
-## Parent Issue
-
-See [#527](https://github.com/codekiln/langstar/issues/527) for the full milestone tracking.
+- **Parent Issue:** [#527](https://github.com/codekiln/langstar/issues/527)
+- **Milestone:** [ls-graph-deployments-separation](https://github.com/codekiln/langstar/milestone/11)
