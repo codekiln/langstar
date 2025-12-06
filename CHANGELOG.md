@@ -5,6 +5,599 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2025-12-06
+
+### ✨ Features
+
+- ✨ feat(cli): implement new langstar graph list/get commands (#626)
+
+* ✨ feat(cli): implement new langstar graph list/get commands
+
+Implements graph commands for listing and inspecting LangGraph graphs within deployments.
+
+## Changes
+
+### New Commands
+- `langstar graph list <deployment>` - Lists all unique graphs in a deployment
+  - `--show-nodes` flag to include node details in output
+  - Displays graph ID, assistants using the graph, and node names
+- `langstar graph get <graph_id> --deployment <deployment>` - Gets graph structure
+  - `--xray` flag to include subgraph details
+  - Displays nodes and edges with full topology
+
+### Implementation Details
+- Created `cli/src/commands/graph.rs` with GraphCommands enum
+- Reuses `resolve_deployment_url()` pattern from assistant commands
+- Integrates with SDK's `client.graphs().list()` and `client.graphs().get()` methods
+- Supports both JSON and table output formats
+- Includes comprehensive unit tests for row conversion
+
+### Tests
+- Added integration tests in `cli/tests/graph_command_test.rs`
+- Tests cover: basic list/get, show-nodes flag, xray flag, JSON output, error handling
+- Tests validate deployment name resolution and parameter handling
+
+### CLI Integration
+- Updated `cli/src/main.rs` to properly describe graph commands
+- Changed from deprecated deployment alias to actual graph inspection commands
+
+Fixes #569
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(cli): address review feedback on graph commands
+
+- Rename "# Assists" → "# Assistants" for clarity
+- Improve resolve_deployment_url documentation with structured sections
+- Extract resolve_deployment_url to shared deployment_utils module
+- Fix TEST_DEPLOYMENT_URL → TEST_DEPLOYMENT_NAME in test docs
+- Implement TEST_GRAPH_ID env var support (defaults to "agent")
+- Add empty state message: "No graphs found in this deployment"
+
+Addresses review comments from PR #626:
+- Comment 2594274344: Table header clarity
+- Comment 2594274352: Function documentation
+- Comment 2594274358: DRY principle for shared code
+- Comment 2594274366: Documentation accuracy
+- Comment 2594274375: Feature implementation
+- Comment 2594274381: UX improvement
+
+* 🩹 fix(tests): resolve CI compilation errors
+
+- Remove empty line after doc comment (clippy warning)
+- Fix type mismatches: use &graph_id instead of graph_id in cmd.args()
+
+Fixes CI failures in Check and Clippy jobs on PR #626
+
+* 🧪 test(integration): mark graph API tests as integration-tests
+
+Mark all tests that call the LangGraph API with #[cfg_attr(not(feature = "integration-tests"), ignore)]
+to prevent them from running in CI without proper credentials and test deployments.
+
+Only test_graph_commands_help() runs in regular CI since it only checks help text.
+
+Fixes integration test failures in CI
+
+* 🩹 fix(tests): use shared TestDeployment fixture for graph integration tests
+
+Replace hardcoded "test-graph-deployment" with the shared TestDeployment::create()
+fixture that dynamically creates/reuses the "pr-integration-test" deployment.
+
+This aligns graph tests with assistant tests and ensures they pass in CI.
+
+Changes:
+- Import TestDeployment fixture from common::fixtures
+- Replace test_deployment_name() with get_test_deployment()
+- Use TEST_DEPLOYMENT OnceLock for deployment reuse across tests
+- All tests now use the same deployment as assistant tests
+
+Fixes integration test failures in CI
+
+* 🩹 fix(tests): remove unused check_env_vars function
+
+* 🩹 fix(cli): address review feedback on graph commands
+
+- Use formatter.info() instead of println!() for consistency
+- Fix doc comment formatting with blank line separator
+- Update fixture references to pr-integration-test
+- Clarify deployment resolution in test prerequisites
+- Remove unused _deployment variables in tests
+
+Addresses multiple review comments from PR #626
+
+* 🩹 fix(cli): remove incorrect ? operator on formatter.info()
+
+formatter.info() returns () not Result, so the ? operator is invalid.
+This fixes the compilation error introduced in the previous commit.
+
+* 🩹 fix(ci): add LANGGRAPH_API_KEY and fix test error message
+
+- Add LANGGRAPH_API_KEY to integration tests env (uses LANGSMITH_API_KEY value)
+- Fix test assertion message to say "graph-id" instead of "graph_id"
+
+The graphs API requires LANGGRAPH_API_KEY when using custom deployment URLs.
+The test error message should match the actual clap parameter format (graph-id).
+
+* 🩹 fix(tests): update assistant test to use new graph list syntax
+
+The test_deployment_discovery_workflow was calling `graph list` without
+a deployment argument, which is now required. Updated to provide the
+deployment name.
+
+* 🩹 fix(tests): improve TEST_GRAPH_ID error message clarity
+
+Changed error message from "Set TEST_GRAPH_ID={}" to
+"Set TEST_GRAPH_ID to a graph that exists in your test deployment (current: '{}')"
+to avoid confusion about setting the env var to the same value that failed.
+
+Addresses review comment: https://github.com/codekiln/langstar/pull/626#discussion_r2594697923
+
+* 🩹 fix(tests): correct graph_id default and help assertion
+
+- Change default graph_id from "agent" to "test_graph" (matches test deployment)
+- Fix help assertion: "graph-id" → "GRAPH_ID" (matches actual CLI output)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): use LANGSMITH_API_KEY for all LangGraph API calls
+
+The langgraph_get/post/patch/delete methods now use require_langsmith_key()
+instead of require_langgraph_key(). This is the correct behavior since
+LANGSMITH_API_KEY provides access to both LangSmith and LangGraph APIs.
+
+Also removes the incorrect LANGGRAPH_API_KEY workaround from CI that was
+added to mask this bug.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* ♻️ refactor(cli): implement pagination for deployment resolution (#631)
+
+Fixes #628
+
+The resolve_deployment_url function now paginates through all deployments
+instead of only checking the first 100. This prevents failures when the
+target deployment exists beyond the first page of results.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
+
+* ♻️ refactor(auth): consolidate to single LANGSMITH_API_KEY (#632)
+
+♻️ refactor(auth): consolidate to single LANGSMITH_API_KEY
+
+Fixes #630
+
+- Remove LANGGRAPH_API_KEY support from SDK and CLI
+- Both LangSmith and LangGraph APIs now use LANGSMITH_API_KEY
+- Simplify AuthConfig from 4 to 3 parameters
+
+BREAKING CHANGE: LANGGRAPH_API_KEY environment variable no longer supported.
+Use LANGSMITH_API_KEY for all LangChain/LangGraph API calls.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): update AuthConfig::new() calls to use 3-arg signature
+
+Update all SDK test and doc examples to use the new 3-argument
+AuthConfig::new() signature after removing langgraph_api_key parameter.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix: update remaining AuthConfig::new() calls to 3-arg signature
+
+Update all remaining test files to use the new 3-argument
+AuthConfig::new() signature:
+- sdk/tests/evaluations_test.rs
+- sdk/tests/dataset_test.rs
+- sdk/tests/runs_query_test.rs
+- sdk/tests/structured_prompts_test.rs
+- sdk/tests/playground_settings_test.rs
+- sdk/tests/org_workspace_scoping_test.rs
+- cli/src/commands/prompt.rs
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🎨 style: apply rustfmt formatting
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix: update remaining 4-arg AuthConfig calls in prompt.rs tests
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs: add implementation progress for #569 graph commands
+
+Documents current status, mistakes made, and next steps for PR #626.
+Not pushed - for context handoff.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES with new testing requirements
+
+Added clarifications to the testing guidelines, emphasizing that tests should run locally as they do in CI and that tests should not be limited to CI configurations.
+
+* wip: failed PR fixes
+
+* 🩹 fix(test): handle empty TEST_GRAPH_ID env var in graph tests
+
+The test_graph_id() function now properly handles the case where
+TEST_GRAPH_ID is set to an empty string, falling back to "test_graph"
+default instead of using the empty value.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): add --paginate to gh api PR comment fetching
+
+The GitHub API returns at most 30 items per page by default. Without
+--paginate, PR comments beyond the first page are silently missed.
+
+Updated files:
+- .claude/commands/pr-workflow.md
+- .claude/skills/pr-lifecycle/SKILL.md
+- .claude/skills/resolve-pr-comments/SKILL.md
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🧪 test(graph): strengthen test_graph_list_basic assertion
+
+Changed from checking for generic "Graph" header to verifying that
+"test_graph" from the test deployment fixture appears in the output.
+
+This ensures the integration test validates actual data, not just
+UI chrome, per testing guidelines.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🧹 refactor(assistant): remove orphaned documentation block
+
+Removed documentation that was left behind when resolve_deployment_url
+was moved to deployment_utils.rs. The doc block was floating before
+`impl AssistantCommands` but documented a function that no longer
+exists in this file.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs(testing): fix grammatical error in testing guidelines
+
+Changed "where the proper is configured" to "where the proper
+environment is configured".
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🧹 chore: remove implementation progress tracking doc
+
+This document was used for cross-session continuity during development.
+The relevant information has been captured in the PR description and
+issue comments.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- ✨ feat(commands): add /gh-milestones:test-plan slash command (#633)
+
+* ✨ feat(commands): add /gh-milestones:test-plan slash command
+
+Create new slash command to generate comprehensive test plans for milestones using progressive disclosure pattern.
+
+Command features:
+- Analyzes milestone type (SDK/CLI/Infrastructure/Docs)
+- Loads only relevant testing docs (<5000 tokens)
+- Generates test plan at docs/implementation/<milestone>-test-plan.md
+- Ensures compliance with testing standards
+
+Files added:
+- .claude/commands/gh-milestones/test-plan.md (command spec)
+- .claude/commands/gh-milestones/README.md (namespace docs)
+- TESTING_CHECKLIST.md (post-merge validation steps)
+
+Files updated:
+- docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md (usage docs)
+
+Fixes #563
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* docs: remove superfluous lines
+
+Removed references to loaded testing documentation and the created test plan. Updated key requirements for integration tests involving SDK and CLI.
+
+* docs: testing shouldn't require "large result sets"
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix: include closed siblings in prep-next.py hierarchy for sibling traversal (#623)
+
+Fixes #611
+
+## Problem
+
+The `build_hierarchy()` method in prep-next.py was using:
+```bash
+gh sub-issue list <issue> --relation children --json number
+```
+
+This defaults to only open issues, causing closed siblings to be excluded
+from `children_map`. When finding the next sibling after a closed issue,
+`siblings.index(closed_num)` would raise ValueError, causing fallback to
+first open issue (wrong behavior).
+
+## Real-World Example
+
+Milestone: ls-cli-output-dx (#12)
+```
+#529 (open, milestone parent)
+  └── #584 (open, implementation parent)
+      ├── #585 (CLOSED) ← Last completed
+      ├── #587 (open)   ← Should select
+      ├── #589 (open)
+      ├── #591 (open)
+      └── #600 (open)
+```
+
+**Before:** Selected #529 (milestone parent) ❌
+**After:** Selects #587 (next sibling) ✅
+
+## Solution
+
+Added --state all flag to include closed siblings in hierarchy:
+```python
+result = self.run_command([
+    "gh", "sub-issue", "list", str(issue_num),
+    "--relation", "children",
+    "--state", "all",  # ← ADDED
+    "--json", "number"
+], check=False)
+```
+
+## Changes
+
+- **scripts/gh-milestones/prep-next.py:231** - Added `--state all` flag
+- **scripts/gh-milestones/test_leaf_traversal.py** - Added test_closed_siblings_in_hierarchy()
+  - Validates closed siblings are included in children_map
+  - Demonstrates the ValueError that occurs without the fix
+  - All 5 tests pass ✅
+
+## Test Plan
+
+- [x] Unit tests pass (5/5 tests)
+- [x] Verified gh sub-issue --state all returns closed siblings
+- [x] Verified logic would select #587 for ls-cli-output-dx milestone
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs(projects): extract OpenAPI fragments and validate design (#617)
+
+* 📚 docs(projects): extract OpenAPI fragments and validate design
+
+- Extract sessions-endpoints.json (15K) with core CRUD endpoints
+- Extract sessions-schemas.json (12K) with TracerSession types
+- Update FRAGMENTS.md with jq extraction queries
+- Create 592-ls-projects-openapi-validation.md validation report
+- Document discrepancies: schema naming, batch delete, response types
+
+Fixes #592
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address review feedback on validation report
+
+- Add full path reference to Python SDK schema location
+- Add missing start_time and default_dataset_id to ProjectCreate
+- Add missing default_dataset_id to ProjectUpdate
+
+Addresses Copilot review comments on PR #617
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(testing): add progressive disclosure standards and testing TOC (#618)
+
+* 📚 docs(testing): add progressive disclosure standards and testing TOC
+
+Establishes foundation for progressive disclosure documentation pattern:
+- Progressive disclosure standards doc with guidelines for AI agents
+- Testing documentation TOC with 15-line index
+- AGENTS.md updated with testing reference
+- Placeholder files for phases 4-7 of milestone ls-test-improvement
+
+Fixes #559
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): address Copilot review feedback
+
+- Consolidate testing TOC to 14 lines (was 17, requirement ≤15)
+- Remove specific line reference from example (line numbers change)
+- Update AGENTS.md to say "~15-line index" for accuracy
+- Use generic post-mortem filename format (NNN-issue-description.md)
+
+Addresses review comments on PR #618
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(testing): centralize testing docs to docs/dev/testing/ (#627)
+
+* 📚 docs(testing): centralize testing docs to docs/dev/testing/
+
+Consolidates scattered testing documentation into centralized location
+following DRY principle. Moves content (not copies) and updates original
+locations with brief redirects.
+
+**New consolidated docs:**
+- docs/dev/testing/sdk-integration-tests.md (512 lines)
+- docs/dev/testing/cli-integration-tests.md (345 lines)
+- docs/dev/testing/devcontainer-feature-tests.md (374 lines)
+- docs/dev/testing/test-fixtures.md (358 lines)
+
+**Updated with redirects (<32 lines each):**
+- sdk/tests/README.md
+- cli/tests/README.md
+- .devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md
+- tests/fixtures/test-graph-deployment/README.md
+- docs/dev/procedures.md (pre-commit section)
+
+**Benefits:**
+- Reduces context window pollution for AI agents
+- Follows progressive disclosure pattern established in #559
+- Eliminates content duplication across 9 files
+- Original locations have quick reference + redirect
+
+Fixes #560
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+* 🩹 fix(docs): remove @ symbols and fix relative paths
+
+- Remove @ symbols from all docs (@ only for AGENTS.md imports)
+- Fix relative paths in sdk-integration-tests.md (use ../../../)
+- Ensures progressive disclosure pattern is correctly implemented
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/627#discussion_r2594281893
+- https://github.com/codekiln/langstar/pull/627#discussion_r2594281897
+- https://github.com/codekiln/langstar/issues/556#issuecomment-3616973909
+
+* 🩹 fix(docs): address review feedback - remove outdated content
+
+- Updated test_push_prompt description to reflect private prompts with `-` repo
+- Removed outdated TEST_GRAPH_ID references (auto-discovery with GitHub integrations)
+- Removed specific env var advocacy (tests auto-discover)
+- Updated assistant tests to reflect actual available tests
+- Removed outdated Phase 5 (Issue #94) reference (now closed)
+
+Addresses review comments from PR #627
+
+---------
+
+Co-authored-by: Claude <noreply@anthropic.com>
+- 📚 docs(testing): add high-level guidelines, CRUD lifecycle pattern, and debugging docs (#629)
+
+* 📚 docs(testing): add high-level guidelines, CRUD lifecycle pattern, mocking and debugging docs
+
+Fixes #561
+
+## Summary
+Implements Phase 5 of ls-test-improvement milestone by creating comprehensive
+testing standards documentation that would have prevented issue #536.
+
+## Changes
+- HIGH_LEVEL_TESTING_GUIDELINES.md: Toyota Andon Cord principle, pre-merge
+  requirements, test type selection guidance (~200 lines)
+- crud-lifecycle-pattern.md: CLI→SDK bidirectional verification pattern with
+  #536 case study as motivating example (~300 lines)
+- mocking-patterns.md: When to mock vs integration test, httpmock examples (~150 lines)
+- debugging-tests.md: Common failure patterns and troubleshooting (~140 lines)
+
+## Key Additions
+- Toyota Andon Cord: Never merge with failing tests, period
+- CRUD Lifecycle Pattern: Create→Verify→Read→Verify→Update→Verify→Delete→Verify
+- Anti-pattern documentation: Exit code only tests (the #536 bug)
+- Code references to existing tests in sdk/src/prompts.rs and cli/tests/
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(docs): use function names instead of line numbers in references
+
+Address Copilot review feedback by making code references more stable:
+- Replace specific line number ranges with function/struct names
+- Update SIZE LIMIT headers to reflect actual line counts
+- Use "search for X" or "function Y" patterns that won't require
+  updates when code is modified
+
+This reduces maintenance burden as line numbers shift during normal
+development.
+
+Addresses review comments on PR #629
+
+---------
+
+Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
+- 📚 docs(testing): document #536 post-mortem and audit recent milestones (#637)
+
+Create comprehensive post-mortem for issue #536 (prompt list bug) and audit
+recent milestones for similar anemic testing patterns.
+
+**Post-Mortem (docs/dev/testing/post-mortems/536-prompt-list-testing-gap.md):**
+- Executive summary of bug, impact, and resolution
+- Detailed root cause analysis with code examples
+- Why tests didn't catch it (exit-code-only pattern)
+- CRUD lifecycle pattern that would have caught it
+- 5 process failures identified with prevention strategies
+- Lessons learned for test authors, reviewers, and process
+
+**Audit Report (docs/research/556-milestone-testing-audit.md):**
+- Analyzed 4 recent milestones for anemic testing patterns
+- Found 2 milestones with exit-code-only tests (ls-evals-basic, ls-runs-query)
+- Found 2 milestones with good CRUD patterns (structured prompts, assistants)
+- Created tracking issues #635 (eval tests) and #636 (runs query tests)
+- Documented testing gap patterns and recommendations
+
+**Tracking Issues Created:**
+- #635: Enhance eval command tests to verify actual API behavior
+- #636: Add integration tests for runs query with filter verification
+
+Fixes #568
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 ## [1.2.0] - 2025-12-05
 
 ### ✨ Features
