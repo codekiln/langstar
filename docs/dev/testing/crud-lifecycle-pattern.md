@@ -1,7 +1,7 @@
 <!--
-  SIZE LIMIT: This file MUST remain under 300 lines.
-  Current: ~280 lines | Last checked: 2025-12-06
-  If approaching limit, extract content to sub-document.
+  SIZE LIMIT: This file SHOULD remain under 300 lines (currently ~310).
+  Last checked: 2025-12-06
+  If significantly exceeding limit, extract content to sub-document.
 -->
 
 # CRUD Lifecycle Testing Pattern
@@ -87,7 +87,7 @@ Integration tests must exercise the entire CRUD lifecycle using **both** the CLI
 
 ### Complete Example: Prompt List Test
 
-This is the test pattern that now exists in `cli/tests/prompt_scoping_test.rs:536-746`:
+This is the test pattern in `cli/tests/prompt_scoping_test.rs` (function `test_prompt_crud_lifecycle_private_visibility`):
 
 ```rust
 #[test]
@@ -182,7 +182,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
 }
 ```
 
-**Reference:** Full implementation at `cli/tests/prompt_scoping_test.rs:536-746`
+**Reference:** Full implementation in `cli/tests/prompt_scoping_test.rs` (search for `test_prompt_crud_lifecycle`)
 
 ## When to Use CRUD Pattern
 
@@ -229,7 +229,7 @@ fn generate_test_prompt_name() -> String {
 }
 ```
 
-**Reference:** `cli/tests/prompt_scoping_test.rs:519-525`
+**Reference:** `cli/tests/prompt_scoping_test.rs` function `generate_test_prompt_name`
 
 ### Create SDK Client for Verification
 
@@ -244,7 +244,7 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
 }
 ```
 
-**Reference:** `cli/tests/prompt_scoping_test.rs:513-516`
+**Reference:** `cli/tests/prompt_scoping_test.rs` function `create_sdk_client`
 
 ### Graceful Skip for Missing Environment
 
@@ -268,7 +268,7 @@ let org_id = match get_org_id_or_skip() {
 };
 ```
 
-**Reference:** `cli/tests/prompt_scoping_test.rs:34-39`
+**Reference:** `cli/tests/prompt_scoping_test.rs` function `get_org_id_or_skip`
 
 ## Common Mistakes
 

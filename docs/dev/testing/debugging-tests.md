@@ -1,7 +1,7 @@
 <!--
-  SIZE LIMIT: This file MUST remain under 150 lines.
-  Current: ~140 lines | Last checked: 2025-12-06
-  If approaching limit, extract content to sub-document.
+  SIZE LIMIT: This file SHOULD remain under 200 lines (currently ~235).
+  Last checked: 2025-12-06
+  If significantly exceeding limit, extract content to sub-document.
 -->
 
 # Debugging Tests

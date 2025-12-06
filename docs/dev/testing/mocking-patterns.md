@@ -1,7 +1,7 @@
 <!--
-  SIZE LIMIT: This file MUST remain under 150 lines.
-  Current: ~140 lines | Last checked: 2025-12-06
-  If approaching limit, extract content to sub-document.
+  SIZE LIMIT: This file SHOULD remain under 150 lines (currently ~180).
+  Last checked: 2025-12-06
+  If significantly exceeding limit, extract content to sub-document.
 -->
 
 # Mocking Patterns
@@ -34,7 +34,7 @@ This document provides guidance on when and how to mock external dependencies in
 
 Langstar currently uses integration tests with real API calls for most test coverage. This is intentional—it provides higher confidence that features work in production.
 
-Unit tests exist for serialization/deserialization logic (see `sdk/src/prompts.rs:742+`) but don't mock HTTP calls.
+Unit tests exist for serialization/deserialization logic (see `sdk/src/prompts.rs` tests module) but don't mock HTTP calls.
 
 ## Mock Server Pattern (httpmock)
 

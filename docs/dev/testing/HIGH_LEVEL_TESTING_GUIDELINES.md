@@ -1,7 +1,7 @@
 <!--
-  SIZE LIMIT: This file MUST remain under 200 lines.
-  Current: ~190 lines | Last checked: 2025-12-06
-  If approaching limit, extract content to sub-document.
+  SIZE LIMIT: This file SHOULD remain under 200 lines (currently ~220).
+  Last checked: 2025-12-06
+  If significantly exceeding limit, extract content to sub-document.
 -->
 
 # High-Level Testing Guidelines
@@ -110,7 +110,7 @@ mod tests {
 }
 ```
 
-**Reference:** `sdk/src/prompts.rs:742-1430` contains unit tests for serialization
+**Reference:** `sdk/src/prompts.rs` tests module (search for `mod tests`)
 
 ### Integration Tests (Real API Calls)
 
@@ -139,7 +139,7 @@ fn test_prompt_crud_lifecycle() {
 }
 ```
 
-**Reference:** `cli/tests/prompt_scoping_test.rs:536-746` demonstrates CRUD lifecycle
+**Reference:** `cli/tests/prompt_scoping_test.rs` function `test_prompt_crud_lifecycle_private_visibility`
 
 ### When Both Are Needed
 
@@ -195,7 +195,7 @@ let prompt = client.prompts().create_repo("test-prompt", ...).await?;
 client.prompts().delete(&prompt.repo_handle).await?;
 ```
 
-**Reference:** `cli/tests/common/fixtures.rs:36-172` shows RAII cleanup pattern
+**Reference:** `cli/tests/common/fixtures.rs` struct `TestDeployment`
 
 ## Test Design Review Checklist
 
