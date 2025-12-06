@@ -44,7 +44,7 @@ enum Commands {
     #[command(subcommand)]
     Deployment(DeploymentCommands),
 
-    /// Manage LangGraph deployments (alias for 'deployment', to be deprecated)
+    /// Inspect LangGraph graphs within deployments
     #[command(subcommand)]
     Graph(GraphCommands),
 
