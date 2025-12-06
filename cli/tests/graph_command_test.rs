@@ -101,11 +101,15 @@ fn test_graph_list_basic() {
     println!("Command output:");
     println!("{}", stdout);
 
-    // Should contain either graph info or empty result
-    let has_graphs = stdout.contains("Graph") || stdout.is_empty();
-    assert!(has_graphs, "Output should contain graph info or be empty");
+    // Test deployment fixture contains "test_graph" - verify it appears in output
+    // This is a proper integration test that verifies actual data, not just headers
+    assert!(
+        stdout.contains("test_graph"),
+        "Output should contain 'test_graph' from test deployment fixture. Got: {}",
+        stdout
+    );
 
-    println!("✓ CLI successfully listed graphs");
+    println!("✓ CLI successfully listed graphs including test_graph");
 }
 
 #[test]
