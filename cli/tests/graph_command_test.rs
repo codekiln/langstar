@@ -11,7 +11,7 @@ use escargot::CargoBuild;
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY environment variable
 /// 2. Valid LANGSMITH_WORKSPACE_ID environment variable (for deployment lookup)
-/// 3. Access to a test deployment (uses TEST_DEPLOYMENT_URL or default test deployment)
+/// 3. Access to a test deployment (uses TEST_DEPLOYMENT_NAME or defaults to "test-graph-deployment")
 ///
 /// Run with: cargo test --test graph_command_test
 ///
@@ -48,6 +48,12 @@ fn check_env_vars() -> Option<(String, String)> {
 /// Uses TEST_DEPLOYMENT_NAME env var or defaults to "test-graph-deployment"
 fn test_deployment_name() -> String {
     std::env::var("TEST_DEPLOYMENT_NAME").unwrap_or_else(|_| "test-graph-deployment".to_string())
+}
+
+/// Helper to get test graph ID
+/// Uses TEST_GRAPH_ID env var or defaults to "agent"
+fn test_graph_id() -> String {
+    std::env::var("TEST_GRAPH_ID").unwrap_or_else(|_| "agent".to_string())
 }
 
 #[test]
@@ -180,10 +186,8 @@ fn test_graph_get_basic() {
     };
 
     let deployment = test_deployment_name();
-    println!("Testing graph get command");
-
-    // Use "agent" as a common graph ID (most test deployments have this)
-    let graph_id = "agent";
+    let graph_id = test_graph_id();
+    println!("Testing graph get command for graph: {}", graph_id);
 
     let mut cmd = langstar_cmd();
     cmd.args(["graph", "get", graph_id, "--deployment", &deployment]);
@@ -196,14 +200,17 @@ fn test_graph_get_basic() {
     println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
 
     // Should succeed (if graph exists in the deployment)
-    // Note: This may fail if the test deployment doesn't have an "agent" graph
-    // In that case, users should set TEST_GRAPH_ID env var
+    // Note: This may fail if the test deployment doesn't have the specified graph
+    // Set TEST_GRAPH_ID env var to specify a different graph ID (defaults to "agent")
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         if stderr.contains("not found") {
             println!("⚠ Graph '{}' not found in test deployment", graph_id);
             println!("  This is expected if the deployment doesn't have this graph");
-            println!("  Set TEST_GRAPH_ID env var to specify a valid graph ID");
+            println!(
+                "  Set TEST_GRAPH_ID={} to specify a valid graph ID",
+                graph_id
+            );
             return;
         }
         panic!("Graph get command failed unexpectedly");
@@ -226,9 +233,8 @@ fn test_graph_get_with_xray() {
     };
 
     let deployment = test_deployment_name();
-    println!("Testing graph get with --xray flag");
-
-    let graph_id = "agent";
+    let graph_id = test_graph_id();
+    println!("Testing graph get with --xray flag for graph: {}", graph_id);
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -265,9 +271,8 @@ fn test_graph_get_json_output() {
     };
 
     let deployment = test_deployment_name();
-    println!("Testing graph get with JSON output");
-
-    let graph_id = "agent";
+    let graph_id = test_graph_id();
+    println!("Testing graph get with JSON output for graph: {}", graph_id);
 
     let mut cmd = langstar_cmd();
     cmd.args([

@@ -1,8 +1,9 @@
 use crate::config::Config;
-use crate::error::{CliError, Result};
+use crate::deployment_utils::resolve_deployment_url;
+use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{AuthConfig, GraphSummary, LangchainClient};
+use langstar_sdk::{GraphSummary, LangchainClient};
 use serde_json::json;
 use tabled::Tabled;
 
@@ -41,7 +42,7 @@ struct GraphRow {
     graph_id: String,
     #[tabled(rename = "Assistants")]
     assistants: String,
-    #[tabled(rename = "# Assists")]
+    #[tabled(rename = "# Assistants")]
     assistant_count: String,
     #[tabled(rename = "Nodes")]
     nodes: String,
@@ -56,44 +57,6 @@ impl From<GraphSummary> for GraphRow {
             nodes: summary.node_names.join(", "),
         }
     }
-}
-
-/// Resolve deployment name or ID to deployment URL
-///
-/// This function queries the Control Plane API to find a deployment matching
-/// the provided name or UUID, then extracts its custom_url for Agent Server API calls.
-async fn resolve_deployment_url(config: &Config, deployment_name_or_id: &str) -> Result<String> {
-    // Create Control Plane client for deployment lookup
-    let auth = AuthConfig::new(
-        config.langsmith_api_key.clone(),
-        None,
-        None,
-        config.workspace_id.clone(),
-    );
-    let client = LangchainClient::new(auth)?;
-
-    // List deployments (limit 100 to catch most cases)
-    let deployments_list = client.deployments().list(Some(100), Some(0), None).await?;
-
-    // Find deployment by name or ID
-    let deployment = deployments_list
-        .resources
-        .iter()
-        .find(|d| d.name == deployment_name_or_id || d.id == deployment_name_or_id)
-        .ok_or_else(|| {
-            CliError::Config(format!(
-                "Deployment '{}' not found. Run 'langstar deployment list' to see available deployments.",
-                deployment_name_or_id
-            ))
-        })?;
-
-    // Extract custom_url
-    deployment.custom_url().ok_or_else(|| {
-        CliError::Config(format!(
-            "Deployment '{}' has no custom_url in source_config",
-            deployment.name
-        ))
-    })
 }
 
 impl GraphCommands {
@@ -125,8 +88,13 @@ impl GraphCommands {
                         formatter.print(&summaries)?;
                     }
                     OutputFormat::Table | OutputFormat::Text => {
-                        let rows: Vec<GraphRow> = summaries.into_iter().map(Into::into).collect();
-                        formatter.print_table(&rows)?;
+                        if summaries.is_empty() {
+                            println!("No graphs found in this deployment");
+                        } else {
+                            let rows: Vec<GraphRow> =
+                                summaries.into_iter().map(Into::into).collect();
+                            formatter.print_table(&rows)?;
+                        }
                     }
                 }
             }

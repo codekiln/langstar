@@ -1,10 +1,9 @@
 use crate::config::Config;
-use crate::error::{CliError, Result};
+use crate::deployment_utils::resolve_deployment_url;
+use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{
-    Assistant, AuthConfig, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest,
-};
+use langstar_sdk::{Assistant, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest};
 use serde_json::json;
 use tabled::Tabled;
 
@@ -163,40 +162,6 @@ impl From<&Assistant> for AssistantRow {
 /// # Returns
 /// * `Ok(String)` - The deployment's custom URL
 /// * `Err` - If deployment not found, no custom_url, or API error
-async fn resolve_deployment_url(config: &Config, deployment_name_or_id: &str) -> Result<String> {
-    // Create Control Plane client for deployment lookup
-    let auth = AuthConfig::new(
-        config.langsmith_api_key.clone(),
-        None,
-        None,
-        config.workspace_id.clone(),
-    );
-    let client = LangchainClient::new(auth)?;
-
-    // List deployments (limit 100 to catch most cases)
-    let deployments_list = client.deployments().list(Some(100), Some(0), None).await?;
-
-    // Find deployment by name or ID
-    let deployment = deployments_list
-        .resources
-        .iter()
-        .find(|d| d.name == deployment_name_or_id || d.id == deployment_name_or_id)
-        .ok_or_else(|| {
-            CliError::Config(format!(
-                "Deployment '{}' not found. Run 'langstar graph list' to see available deployments.",
-                deployment_name_or_id
-            ))
-        })?;
-
-    // Extract custom_url
-    deployment.custom_url().ok_or_else(|| {
-        CliError::Config(format!(
-            "Deployment '{}' has no custom_url in source_config",
-            deployment.name
-        ))
-    })
-}
-
 impl AssistantCommands {
     /// Execute the assistant command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
