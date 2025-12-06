@@ -150,18 +150,6 @@ impl From<&Assistant> for AssistantRow {
     }
 }
 
-/// Resolve a deployment name or ID to its custom URL
-///
-/// This function queries the Control Plane API to find a deployment by name or ID,
-/// then extracts the `custom_url` from the deployment's `source_config`.
-///
-/// # Arguments
-/// * `config` - CLI configuration containing API keys and workspace ID
-/// * `deployment_name_or_id` - Deployment name or UUID to look up
-///
-/// # Returns
-/// * `Ok(String)` - The deployment's custom URL
-/// * `Err` - If deployment not found, no custom_url, or API error
 impl AssistantCommands {
     /// Execute the assistant command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
