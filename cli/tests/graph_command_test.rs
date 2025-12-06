@@ -64,7 +64,10 @@ fn get_test_deployment() -> Option<String> {
 /// Helper to get test graph ID
 /// Uses TEST_GRAPH_ID env var or defaults to "test_graph" (matches test deployment)
 fn test_graph_id() -> String {
-    std::env::var("TEST_GRAPH_ID").unwrap_or_else(|_| "test_graph".to_string())
+    std::env::var("TEST_GRAPH_ID")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "test_graph".to_string())
 }
 
 #[test]
