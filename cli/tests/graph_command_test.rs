@@ -216,7 +216,7 @@ fn test_graph_get_basic() {
             println!("⚠ Graph '{}' not found in test deployment", graph_id);
             println!("  This is expected if the deployment doesn't have this graph");
             println!(
-                "  Set TEST_GRAPH_ID={} to specify a valid graph ID",
+                "  Set TEST_GRAPH_ID to a graph that exists in your test deployment (current: '{}')",
                 graph_id
             );
             return;
