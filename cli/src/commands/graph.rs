@@ -89,7 +89,7 @@ impl GraphCommands {
                     }
                     OutputFormat::Table | OutputFormat::Text => {
                         if summaries.is_empty() {
-                            println!("No graphs found in this deployment");
+                            formatter.info("No graphs found in this deployment")?;
                         } else {
                             let rows: Vec<GraphRow> =
                                 summaries.into_iter().map(Into::into).collect();

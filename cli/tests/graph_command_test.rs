@@ -18,13 +18,14 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY environment variable
 /// 2. Valid LANGSMITH_WORKSPACE_ID environment variable (for deployment lookup)
-/// 3. Access to a test deployment (uses TEST_DEPLOYMENT_NAME or defaults to "test-graph-deployment")
+/// 3. Access to a test deployment (uses a hardcoded deployment name via TestDeployment::create())
 ///
 /// Run with: cargo test --test graph_command_test
 ///
 /// **Fixtures:**
-/// These tests use the test-graph-deployment fixture from tests/fixtures/test-graph-deployment/
-/// See tests/fixtures/test-graph-deployment/README.md for details.
+/// These tests use the pr-integration-test fixture from tests/fixtures/pr-integration-test/
+/// See tests/fixtures/pr-integration-test/README.md for details.
+///
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
@@ -159,10 +160,10 @@ fn test_graph_list_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_invalid_deployment() {
-    let Some(_deployment) = get_test_deployment() else {
+    if get_test_deployment().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
-    };
+    }
 
     println!("Testing graph list with invalid deployment name");
 
@@ -352,10 +353,10 @@ fn test_graph_get_invalid_graph_id() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_missing_deployment() {
-    let Some(_deployment) = get_test_deployment() else {
+    if get_test_deployment().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
-    };
+    }
 
     println!("Testing graph get without --deployment flag");
 
