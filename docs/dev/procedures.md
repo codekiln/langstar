@@ -102,69 +102,9 @@ Before starting any Phase N work:
 
 ## Pre-Commit Checklist
 
-Before committing and pushing code, **always run these checks locally** to catch issues before CI fails. The CI runs these exact checks, so running them locally prevents wasted time and unnecessary commits.
+For pre-commit testing requirements, see `@docs/dev/testing/cli-integration-tests.md`.
 
-### Essential Checks (Run Every Time)
-
-Run these commands from the project root (`/workspace`):
-
-```bash
-# 1. Format code (auto-fixes formatting issues)
-cargo fmt
-
-# 2. Check compilation for entire workspace
-cargo check --workspace --all-features
-
-# 3. Run clippy for linting warnings
-cargo clippy --workspace --all-features -- -D warnings
-
-# 4. Run all tests in workspace
-cargo test --workspace --all-features
-
-# 5. Check formatting (verifies cargo fmt was run)
-cargo fmt --check
-```
-
-### Why Each Check Matters
-
-**1. `cargo fmt`** (Auto-format)
-- Fixes code formatting to match project style
-- **Prevents**: "Check" CI job failures
-- **Lesson from #75**: Forgot to run this, had to add formatting commit
-
-**2. `cargo check --workspace`** (Compile check)
-- Verifies code compiles across **entire workspace** (not just one crate)
-- Much faster than full build
-- **Prevents**: Build CI job failures
-- **Lesson from #75**: Changed `AuthConfig::new()` signature, only tested SDK, missed CLI usage
-- **Critical**: When making breaking changes to SDK, this catches all usages in CLI
-
-**3. `cargo clippy`** (Linting)
-- Catches common mistakes and non-idiomatic code
-- **Prevents**: Clippy CI job failures
-- Use `-- -D warnings` to treat warnings as errors (matches CI)
-
-**4. `cargo test --workspace`** (All tests)
-- Runs tests for **all crates** (SDK + CLI)
-- **Prevents**: Test CI job failures
-- **Lesson from #75**: Only ran `cargo test --lib` in SDK directory, missed workspace-level issues
-- **Critical**: Always test at workspace level, not just individual crates
-
-**5. `cargo fmt --check`** (Verify formatting)
-- Ensures formatting is correct (no changes needed)
-- Should pass after step 1
-- **Prevents**: "Check" CI job failures
-
-### Quick Pre-Commit Script
-
-Save time with a one-liner that runs all checks:
-
-```bash
-cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
-```
-
-**Exit on first failure** (better for catching issues early):
-
+**Quick reference:**
 ```bash
 cargo fmt && \
 cargo check --workspace --all-features && \
@@ -172,6 +112,8 @@ cargo clippy --workspace --all-features -- -D warnings && \
 cargo test --workspace --all-features && \
 cargo fmt --check
 ```
+
+**Full documentation:** `docs/dev/testing/cli-integration-tests.md`
 
 ### Breaking Changes Checklist
 
