@@ -372,7 +372,7 @@ impl LangchainClient {
     ///
     /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langgraph_key()?;
+        let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
 
         Ok(self
@@ -404,7 +404,7 @@ impl LangchainClient {
     ///
     /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
     pub fn langgraph_post(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langgraph_key()?;
+        let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
 
         Ok(self
@@ -416,7 +416,7 @@ impl LangchainClient {
 
     /// Create a PATCH request to LangGraph API
     pub fn langgraph_patch(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langgraph_key()?;
+        let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
 
         Ok(self
@@ -428,7 +428,7 @@ impl LangchainClient {
 
     /// Create a DELETE request to LangGraph API
     pub fn langgraph_delete(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langgraph_key()?;
+        let api_key = self.auth.require_langsmith_key()?;
         let url = format!("{}{}", self.langgraph_base_url, path);
 
         Ok(self
