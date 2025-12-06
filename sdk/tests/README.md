@@ -3,7 +3,7 @@
 > **📍 Documentation Centralized**
 >
 > Testing documentation has been centralized to prevent context pollution.
-> See `@docs/dev/testing/sdk-integration-tests.md` for complete documentation.
+> See `docs/dev/testing/sdk-integration-tests.md` for complete documentation.
 
 ## Quick Reference
 

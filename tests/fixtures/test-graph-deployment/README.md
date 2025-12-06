@@ -2,7 +2,7 @@
 
 > **📍 Testing standards centralized**
 >
-> For deployment fixture patterns and usage, see `@docs/dev/testing/test-fixtures.md`.
+> For deployment fixture patterns and usage, see `docs/dev/testing/test-fixtures.md`.
 
 ## Quick Start
 

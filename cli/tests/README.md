@@ -2,7 +2,7 @@
 
 > **📍 Documentation Centralized**
 >
-> See `@docs/dev/testing/cli-integration-tests.md` for complete documentation.
+> See `docs/dev/testing/cli-integration-tests.md` for complete documentation.
 
 ## Quick Reference
 

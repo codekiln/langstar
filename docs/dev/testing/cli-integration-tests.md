@@ -2,7 +2,7 @@
 
 > **📍 Centralized Testing Documentation**
 >
-> This document is part of the centralized testing documentation suite. See `@docs/dev/testing/README.md` for the complete TOC.
+> This document is part of the centralized testing documentation suite. See `docs/dev/testing/README.md` for the complete TOC.
 
 ## Overview
 

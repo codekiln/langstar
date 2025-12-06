@@ -2,7 +2,7 @@
 
 > **📍 Documentation Centralized**
 >
-> See `@docs/dev/testing/devcontainer-feature-tests.md` for complete documentation.
+> See `docs/dev/testing/devcontainer-feature-tests.md` for complete documentation.
 
 ## Quick Reference
 

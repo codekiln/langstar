@@ -102,7 +102,7 @@ Before starting any Phase N work:
 
 ## Pre-Commit Checklist
 
-For pre-commit testing requirements, see `@docs/dev/testing/cli-integration-tests.md`.
+For pre-commit testing requirements, see `docs/dev/testing/cli-integration-tests.md`.
 
 **Quick reference:**
 ```bash

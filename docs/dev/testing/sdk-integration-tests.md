@@ -2,7 +2,7 @@
 
 > **📍 Centralized Testing Documentation**
 >
-> This document is part of the centralized testing documentation suite. See `@docs/dev/testing/README.md` for the complete TOC.
+> This document is part of the centralized testing documentation suite. See `docs/dev/testing/README.md` for the complete TOC.
 
 ## Overview
 
@@ -121,7 +121,7 @@ Creates a new commit for a prompt in the LangSmith PromptHub.
 
 Before running assistant integration tests, you must deploy the test graph:
 
-1. Follow the deployment guide: `../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`
+1. Follow the deployment guide: `../../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`
 2. Deploy to LangGraph Cloud via LangSmith UI
 3. Note the **Graph ID** from the deployment
 
@@ -400,7 +400,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **Error:** "TEST_GRAPH_ID environment variable not set"
 
 **Solution:**
-1. Deploy test graph (see `../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`)
+1. Deploy test graph (see `../../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`)
 2. Set `TEST_GRAPH_ID` environment variable
 
 ---
