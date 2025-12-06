@@ -89,14 +89,6 @@ impl ConfigCommands {
                 "not configured"
             }
         );
-        println!(
-            "  LangGraph API key: {}",
-            if config.langgraph_api_key.is_some() {
-                "configured"
-            } else {
-                "not configured"
-            }
-        );
 
         // Show scoping configuration
         println!("\nScoping configuration:");
@@ -140,14 +132,6 @@ impl ConfigCommands {
         println!(
             "  LANGSMITH_WORKSPACE_ID: {}",
             std::env::var("LANGSMITH_WORKSPACE_ID").unwrap_or_else(|_| "not set".to_string())
-        );
-        println!(
-            "  LANGGRAPH_API_KEY: {}",
-            if std::env::var("LANGGRAPH_API_KEY").is_ok() {
-                "set"
-            } else {
-                "not set"
-            }
         );
         println!(
             "  LANGSTAR_OUTPUT_FORMAT: {}",

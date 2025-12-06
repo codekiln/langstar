@@ -28,7 +28,6 @@ pub async fn resolve_deployment_url(
     let auth = AuthConfig::new(
         config.langsmith_api_key.clone(),
         None,
-        None,
         config.workspace_id.clone(),
     );
     let client = LangchainClient::new(auth)?;
