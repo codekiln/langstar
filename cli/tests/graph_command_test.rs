@@ -62,9 +62,9 @@ fn get_test_deployment() -> Option<String> {
 }
 
 /// Helper to get test graph ID
-/// Uses TEST_GRAPH_ID env var or defaults to "agent"
+/// Uses TEST_GRAPH_ID env var or defaults to "test_graph" (matches test deployment)
 fn test_graph_id() -> String {
-    std::env::var("TEST_GRAPH_ID").unwrap_or_else(|_| "agent".to_string())
+    std::env::var("TEST_GRAPH_ID").unwrap_or_else(|_| "test_graph".to_string())
 }
 
 #[test]
@@ -428,8 +428,8 @@ fn test_graph_commands_help() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        stdout.contains("graph-id"),
-        "Help should mention graph-id parameter"
+        stdout.contains("GRAPH_ID"),
+        "Help should mention GRAPH_ID parameter"
     );
     assert!(
         stdout.contains("deployment"),
