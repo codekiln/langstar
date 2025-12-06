@@ -3,21 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
-    # Skip CI when only documentation or non-code files are modified
-    # See: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#onpushpull_requestpull_request_targetpathspaths-ignore
-    paths-ignore:
-      - '**/*.md'           # Markdown files (all directories)
-      - 'docs/**'           # Documentation directory
-      - '*.txt'             # Text files (root directory only)
-      - '.gitignore'        # Git ignore file
   pull_request:
     branches: [main]
-    # Skip CI when only documentation or non-code files are modified
-    paths-ignore:
-      - '**/*.md'           # Markdown files (all directories)
-      - 'docs/**'           # Documentation directory
-      - '*.txt'             # Text files (root directory only)
-      - '.gitignore'        # Git ignore file
+    # NOTE: path-ignore removed in favor of job-level path filtering (see #640)
+    # This allows us to override path filters for release branches while
+    # still skipping CI for docs-only changes on regular PRs
 
 env:
   CARGO_TERM_COLOR: always
@@ -32,9 +22,78 @@ permissions:
   pull-requests: write
 
 jobs:
+  # Determines whether to run CI based on changed files and branch name
+  # Always runs CI for release branches (created by prepare-release workflow)
+  # Skips CI for docs-only changes on regular PRs
+  # See issue #640: https://github.com/codekiln/langstar/issues/640
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    # Set job outputs for use in downstream jobs
+    outputs:
+      should_run: ${{ steps.filter.outputs.should_run }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if release branch or code changed
+        id: filter
+        run: |
+          # Always run CI for release preparation branches (created by prepare-release workflow)
+          # Branch pattern: release/v{version} (e.g., release/v1.2.3)
+          # See: .github/workflows/prepare-release.yml:241
+          if [[ "${{ github.head_ref }}" == release/* ]] || [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+            echo "Release branch detected - running CI regardless of changed files"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For non-release branches, check if any non-docs files changed
+          # Skip CI if only these file patterns changed:
+          # - **/*.md (markdown files)
+          # - docs/** (documentation directory)
+          # - *.txt (text files in root)
+          # - .gitignore
+
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # Get list of changed files in PR
+            CHANGED_FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
+
+            # Check if any files outside the ignore patterns changed
+            NON_DOCS_CHANGED=false
+            while IFS= read -r file; do
+              # Skip if file matches ignore patterns
+              if [[ "$file" == *.md ]] || \
+                 [[ "$file" == docs/* ]] || \
+                 [[ "$file" == *.txt && "$file" != */* ]] || \
+                 [[ "$file" == ".gitignore" ]]; then
+                continue
+              fi
+              # Found a non-docs file
+              NON_DOCS_CHANGED=true
+              break
+            done <<< "$CHANGED_FILES"
+
+            if [ "$NON_DOCS_CHANGED" = "true" ]; then
+              echo "Code files changed - running CI"
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "Only docs/non-code files changed - skipping CI"
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # For push events to main, always run
+            echo "Push to main - running CI"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   check:
     name: Check
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,6 +113,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,9 +167,9 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: test
-    # Only run on PRs and main branch to avoid excessive API usage
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    needs: [changes, test]
+    # Only run when changes warrant CI AND (on PRs or main branch) to avoid excessive API usage
+    if: needs.changes.outputs.should_run == 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -165,6 +226,8 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -183,6 +246,8 @@ jobs:
   audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -204,6 +269,8 @@ jobs:
   build:
     name: Build
     runs-on: ${{ matrix.os }}
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -241,8 +308,9 @@ jobs:
   check-feature-publish-status:
     name: Check Feature Publish Status
     runs-on: ubuntu-latest
-    # Only run on PRs to provide visibility during review
-    if: github.event_name == 'pull_request'
+    needs: changes
+    # Only run on PRs when changes warrant CI (provides visibility during review)
+    if: needs.changes.outputs.should_run == 'true' && github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -289,6 +357,7 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     needs:
+      - changes
       - check
       - test
       - integration-tests
