@@ -2150,11 +2150,7 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        let auth = AuthConfig::new(
-            Some("test_key".to_string()),
-            None,
-            None,
-        );
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth);
         assert!(client.is_ok());
     }

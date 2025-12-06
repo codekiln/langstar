@@ -24,11 +24,7 @@ fn make_run_json(id: &str, name: &str, run_type: &str) -> serde_json::Value {
 
 /// Helper function to create a test client with mock server
 fn create_test_client(server_url: &str) -> LangchainClient {
-    let auth = AuthConfig::new(
-        Some("test_langsmith_key".to_string()),
-        None,
-        None,
-    );
+    let auth = AuthConfig::new(Some("test_langsmith_key".to_string()), None, None);
 
     LangchainClient::with_base_urls(
         auth,
