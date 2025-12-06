@@ -131,18 +131,10 @@ Present the generated test plan to the user with:
 **Feature type:** CLI feature with SDK components
 **Test approach:** Unit tests (mocking) + Integration tests (CRUD lifecycle)
 
-### Testing Documentation Loaded:
-- ✅ HIGH_LEVEL_TESTING_GUIDELINES.md
-- ✅ cli-integration-tests.md
-- ✅ crud-lifecycle-pattern.md
-- ✅ sdk-integration-tests.md
-
-### Test Plan Created:
-📄 `docs/implementation/ls-runs-query-test-plan.md`
-
 ### Key Requirements:
 - [ ] Unit tests for query building logic (httpmock)
-- [ ] Integration test: Create run → Query via CLI → Verify in results
+- [ ] Integration test: Create run with SDK -> verify with SDK
+- [ ] Integration test: Create run with SDK → Query via CLI → Verify in results
 - [ ] Integration test: Test pagination with large result sets
 - [ ] Integration test: Test filtering with various query params
 - [ ] All tests must verify actual behavior (not just exit codes)
@@ -155,7 +147,5 @@ See `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` for requirements.
 
 ## Notes
 
-- **Progressive Disclosure:** Only load 2-4 testing docs, not all 8
-- **Context Window:** Keep total context <5000 tokens
 - **Customization:** Tailor test plan to specific milestone needs
 - **Standards Compliance:** Ensure test plan follows HIGH_LEVEL_TESTING_GUIDELINES.md
