@@ -22,7 +22,7 @@ In Toyota manufacturing, any worker can pull the "andon cord" to stop the entire
 - ❌ "We'll fix it in a follow-up PR"
 - ❌ "The test passes on my machine"
 - ❌ "This failure is unrelated to my changes"
-- ❌ "The test should only run in CI where the proper is configured"
+- ❌ "The test should only run in CI where the proper environment is configured"
 
 ### Always Required
 
