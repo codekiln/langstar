@@ -36,20 +36,6 @@ fn langstar_cmd() -> Command {
     Command::new(bin)
 }
 
-/// Helper to verify required environment variables
-/// Returns None if credentials are not available (tests will be skipped)
-fn check_env_vars() -> Option<(String, String)> {
-    let api_key = std::env::var("LANGSMITH_API_KEY").ok()?;
-    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok()?;
-
-    if api_key.is_empty() || workspace_id.is_empty() {
-        return None;
-    }
-
-    println!("Testing with workspace ID: {}", workspace_id);
-    Some((api_key, workspace_id))
-}
-
 /// Helper to get or create test deployment
 /// Returns None if environment variables are not set (tests will be skipped)
 fn get_test_deployment() -> Option<String> {
