@@ -253,17 +253,37 @@ langstar assistant delete <assistant-id> --force  # Skip confirmation
 langstar assistant list --format json
 ```
 
-#### LangGraph Deployments (Control Plane)
+#### Command Migration (v0.5.0+)
+
+> **Note:** Starting in v0.5.0, `langstar graph` commands were semantically separated from `langstar deployment` commands to better reflect the underlying APIs.
+
+| Old Command | New Command | Notes |
+|-------------|-------------|-------|
+| `langstar graph list` | `langstar deployment list` | Lists deployments (Control Plane API) |
+| `langstar graph get` | `langstar deployment get` | Gets deployment details |
+| `langstar graph create` | `langstar deployment create` | Creates a deployment |
+| `langstar graph delete` | `langstar deployment delete` | Deletes a deployment |
+
+**New Commands (no previous equivalent):**
+- `langstar graph list <deployment>` - Lists graphs within a deployment
+- `langstar graph get <id> --deployment <d>` - Gets graph structure
+
+#### LangGraph Deployments (Control Plane API)
+
+Manage deployment lifecycle using the Control Plane API.
 
 ```bash
 # List all deployments
-langstar graph list
+langstar deployment list
 
 # List with filters
-langstar graph list --limit 20 --status READY --deployment-type prod
+langstar deployment list --limit 20 --status READY --deployment-type prod
+
+# Get deployment details
+langstar deployment get <deployment-id>
 
 # Create a new deployment
-langstar graph create \
+langstar deployment create \
   --name "my-deployment" \
   --source github \
   --repo-url https://github.com/owner/repo \
@@ -271,7 +291,7 @@ langstar graph create \
   --deployment-type dev_free
 
 # Create and wait for deployment to be READY
-langstar graph create \
+langstar deployment create \
   --name "my-deployment" \
   --source github \
   --repo-url https://github.com/owner/repo \
@@ -280,7 +300,7 @@ langstar graph create \
   --wait
 
 # Create with environment variables
-langstar graph create \
+langstar deployment create \
   --name "production-deployment" \
   --source github \
   --repo-url https://github.com/owner/repo \
@@ -290,13 +310,13 @@ langstar graph create \
   --env "DEBUG=true"
 
 # Delete a deployment (with confirmation)
-langstar graph delete <deployment-id>
+langstar deployment delete <deployment-id>
 
 # Delete without confirmation
-langstar graph delete <deployment-id> --yes
+langstar deployment delete <deployment-id> --yes
 
 # JSON output
-langstar graph list --format json
+langstar deployment list --format json
 ```
 
 **Deployment Types:**
@@ -307,6 +327,43 @@ langstar graph list --format json
 **Source Types:**
 - `github` - Deploy from a GitHub repository (requires `--repo-url` and `--branch`)
 - `external_docker` - Deploy from an external Docker image
+
+#### LangGraph Graphs (Agent Server API)
+
+Inspect graph structure within deployments using the Agent Server API.
+
+```bash
+# List graphs in a deployment
+langstar graph list <deployment-name-or-id>
+
+# List with node details
+langstar graph list <deployment-name-or-id> --show-nodes
+
+# Get graph structure
+langstar graph get <graph-id> --deployment <deployment-name-or-id>
+
+# Get with full subgraph details
+langstar graph get <graph-id> --deployment <deployment-name-or-id> --xray
+
+# JSON output
+langstar graph list my-deployment --format json
+```
+
+**Key Concepts:**
+- **Graphs are defined in `langgraph.json`** at deployment time
+- **Each assistant has a `graph_id`** linking it to its underlying graph
+- **Multiple assistants can share the same graph** with different configurations
+- **Graph structure shows nodes and edges** representing the workflow topology
+
+**Example Output:**
+```
+╭──────────────┬─────────────────────┬──────────────┬─────────────────────╮
+│ Graph ID     │ Assistants          │ # Assistants │ Nodes               │
+├──────────────┼─────────────────────┼──────────────┼─────────────────────┤
+│ agent        │ default, custom-v1  │ 2            │ Responder, Feedback │
+│ rag_pipeline │ rag-assistant       │ 1            │ Retriever, Generate │
+╰──────────────┴─────────────────────┴──────────────┴─────────────────────╯
+```
 
 #### LangSmith Runs/Traces
 
