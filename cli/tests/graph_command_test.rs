@@ -429,7 +429,7 @@ fn test_graph_commands_help() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         stdout.contains("graph-id"),
-        "Help should mention graph_id parameter"
+        "Help should mention graph-id parameter"
     );
     assert!(
         stdout.contains("deployment"),
