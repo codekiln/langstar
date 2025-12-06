@@ -97,7 +97,8 @@ Determine which PR to work with:
 Use the GitHub API to fetch all review comments:
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
+# IMPORTANT: Use --paginate to get ALL comments (default page size is 30)
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate \
   --jq '.[] | {id: .id, body: .body, user: .user.login, in_reply_to_id: .in_reply_to_id}'
 ```
 
@@ -388,7 +389,7 @@ gh --version
 gh auth status
 
 # Test API access
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq 'length'
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate --jq 'length'
 ```
 
 ## Command Reference
@@ -396,7 +397,8 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --jq 'length'
 ### Fetch All PR Comments
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments
+# IMPORTANT: Use --paginate to get ALL comments (default page size is 30)
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate
 ```
 
 Returns array of comment objects.
@@ -423,7 +425,7 @@ Returns the created comment object.
 
 To find all replies to a comment:
 ```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
+gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate \
   --jq '.[] | select(.in_reply_to_id == COMMENT_ID)'
 ```
 
