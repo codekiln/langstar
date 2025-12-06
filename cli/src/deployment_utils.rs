@@ -33,12 +33,27 @@ pub async fn resolve_deployment_url(
     );
     let client = LangchainClient::new(auth)?;
 
-    // List deployments (limit 100 to catch most cases)
-    let deployments_list = client.deployments().list(Some(100), Some(0), None).await?;
+    // List all deployments with pagination
+    let page_size = 100;
+    let mut offset = 0;
+    let mut all_deployments = Vec::new();
+
+    loop {
+        let deployments_list = client
+            .deployments()
+            .list(Some(page_size), Some(offset), None)
+            .await?;
+        let count = deployments_list.resources.len();
+        all_deployments.extend(deployments_list.resources);
+
+        if count < page_size as usize {
+            break;
+        }
+        offset += page_size;
+    }
 
     // Find deployment by name or ID
-    let deployment = deployments_list
-        .resources
+    let deployment = all_deployments
         .iter()
         .find(|d| d.name == deployment_name_or_id || d.id == deployment_name_or_id)
         .ok_or_else(|| {
