@@ -57,7 +57,12 @@ jobs:
 
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             # Get list of changed files in PR
-            CHANGED_FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
+            CHANGED_FILES=$(gh pr view ${{ github.event.pull_request.number }} --json files --jq '.files[].path' 2>/dev/null || echo "")
+            if [ -z "$CHANGED_FILES" ]; then
+              echo "Warning: Could not fetch changed files, running CI as a precaution"
+              echo "should_run=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
 
             # Check if any files outside the ignore patterns changed
             NON_DOCS_CHANGED=false
@@ -65,7 +70,7 @@ jobs:
               # Skip if file matches ignore patterns
               if [[ "$file" == *.md ]] || \
                  [[ "$file" == docs/* ]] || \
-                 [[ "$file" == *.txt && "$file" != */* ]] || \
+                 [[ "$file" == *.txt && ! "$file" =~ / ]] || \
                  [[ "$file" == ".gitignore" ]]; then
                 continue
               fi
@@ -74,7 +79,7 @@ jobs:
               break
             done <<< "$CHANGED_FILES"
 
-            if [ "$NON_DOCS_CHANGED" = "true" ]; then
+            if [[ "$NON_DOCS_CHANGED" == "true" ]]; then
               echo "Code files changed - running CI"
               echo "should_run=true" >> $GITHUB_OUTPUT
             else
