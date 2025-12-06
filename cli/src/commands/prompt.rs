@@ -862,7 +862,6 @@ mod tests {
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
             None,
-            None,
             Some("test-workspace-id".to_string()),
         );
         let client = LangchainClient::new(auth).unwrap();
@@ -881,7 +880,6 @@ mod tests {
         // Client with both organization and workspace IDs
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
-            None,
             Some("test-org-id".to_string()),
             Some("test-workspace-id".to_string()),
         );
