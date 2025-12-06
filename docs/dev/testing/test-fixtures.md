@@ -291,7 +291,6 @@ To update the graph logic:
 1. Modify `tests/fixtures/test-graph-deployment/test_agent/agent.py`
 2. Commit changes
 3. Redeploy via LangSmith UI or CI/CD
-4. Update `TEST_GRAPH_ID` if deployment changes
 
 ### Cleanup Test Data
 
@@ -321,13 +320,6 @@ langstar assistant delete <assistant-id>
 - Check workspace permissions
 - Wait a few minutes if rate limited
 - Verify GitHub integration exists and has repository access
-
-### "TEST_GRAPH_ID environment variable not set"
-
-**Solution:**
-1. Deploy test graph following `tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`
-2. Copy Graph ID from deployment details
-3. Export `TEST_GRAPH_ID` environment variable
 
 ### "Deployment not found" or "404"
 

@@ -14,7 +14,6 @@ This directory contains a minimal LangGraph echo application for integration tes
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
-export TEST_GRAPH_ID="<graph-id-from-deployment>"
 ```
 
 **Full testing documentation:** `docs/dev/testing/test-fixtures.md`

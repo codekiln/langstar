@@ -93,15 +93,12 @@ Tests the ability to list prompts from the LangSmith PromptHub.
 
 #### `test_push_prompt_to_prompthub` ✅
 
-**Status**: Working (requires prompt repository to exist first)
+**Status**: Working
 
-Creates a new commit for a prompt in the LangSmith PromptHub.
+Creates a new commit for a private prompt in the LangSmith PromptHub using the null repository (`-`).
 
 **Prerequisites**:
 1. Valid `LANGSMITH_API_KEY` with **write permissions**
-2. The prompt repository must already exist in your PromptHub
-   - Create at: https://smith.langchain.com/prompts
-   - Test uses: `codekiln/langstar-integration-test`
 
 **What it tests**:
 - Fetching current organization information
@@ -131,21 +128,9 @@ Before running assistant integration tests, you must deploy the test graph:
 # Required for all tests
 export LANGSMITH_API_KEY="<your-api-key>"
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
-
-# Required for assistant integration tests
-export TEST_GRAPH_ID="<graph-id-from-deployment>"
-
-# Optional: For specific test scenarios
-export TEST_DEPLOYMENT_ID="<deployment-id>"
-export TEST_ASSISTANT_ID="<existing-assistant-id>"
 ```
 
-**Where to find these values:**
-
-- **LANGSMITH_API_KEY**: https://smith.langchain.com/settings → "API Keys"
-- **LANGSMITH_WORKSPACE_ID**: LangSmith UI → Settings → Workspace ID
-- **TEST_GRAPH_ID**: Deployment details page → "Graph ID" field (after deploying test graph)
-- **TEST_DEPLOYMENT_ID**: Deployment details page (optional)
+**Note:** Tests auto-discover GitHub integrations and create deployments as needed. Manual TEST_GRAPH_ID configuration is no longer required.
 
 #### Running Assistant Tests
 
@@ -159,16 +144,10 @@ cargo test --test assistant_integration_test test_assistant_lifecycle -- --ignor
 
 #### Available Assistant Tests
 
-**Note**: Assistant integration tests are part of Phase 5 (Issue #94) and will be implemented after Phase 4 deployment setup is complete.
-
-**Planned tests include:**
+**Available tests:**
 
 - `test_assistant_lifecycle` - Full CRUD lifecycle (create, get, update, delete)
-- `test_assistant_search_exact_match` - Search by exact name
-- `test_assistant_search_partial_match` - Search with partial name matching
-- `test_assistant_search_no_results` - Search with no matching results
-- `test_assistant_list` - List all assistants with pagination
-- `test_assistant_error_handling` - 404, auth failures, invalid configs
+- `test_assistant_search` - Search functionality
 
 **Test Cleanup:**
 
