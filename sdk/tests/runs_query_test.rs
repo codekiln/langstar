@@ -26,7 +26,6 @@ fn make_run_json(id: &str, name: &str, run_type: &str) -> serde_json::Value {
 fn create_test_client(server_url: &str) -> LangchainClient {
     let auth = AuthConfig::new(
         Some("test_langsmith_key".to_string()),
-        Some("test_langgraph_key".to_string()),
         None,
         None,
     );

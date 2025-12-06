@@ -51,7 +51,6 @@ fn make_example_json(id: &str, dataset_id: &str) -> serde_json::Value {
 fn create_test_client(server_url: &str) -> LangchainClient {
     let auth = AuthConfig::new(
         Some("test_langsmith_key".to_string()),
-        Some("test_langgraph_key".to_string()),
         None,
         None,
     );

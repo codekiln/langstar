@@ -747,7 +747,7 @@ mod tests {
     #[test]
     fn test_apply_scoping_with_no_flags() {
         // Client with no scoping
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let config = Config::default();
 
@@ -763,7 +763,7 @@ mod tests {
 
     #[test]
     fn test_apply_scoping_with_org_flag() {
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let config = Config::default();
 
@@ -776,7 +776,7 @@ mod tests {
 
     #[test]
     fn test_apply_scoping_with_workspace_flag() {
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let config = Config::default();
 
@@ -789,7 +789,7 @@ mod tests {
 
     #[test]
     fn test_apply_scoping_with_both_flags() {
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let config = Config::default();
 
@@ -806,7 +806,6 @@ mod tests {
         // Client with org ID from config
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
-            None,
             Some("config-org-id".to_string()),
             None,
         );
@@ -825,7 +824,7 @@ mod tests {
     #[test]
     fn test_determine_visibility_unscoped() {
         // Client with no scoping should default to Any
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
 
         // Without --public flag

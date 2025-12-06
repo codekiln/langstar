@@ -2152,7 +2152,6 @@ mod tests {
     fn test_client_creation() {
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
-            Some("test_key".to_string()),
             None,
             None,
         );
