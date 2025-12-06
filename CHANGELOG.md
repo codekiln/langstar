@@ -5,6 +5,114 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2025-12-06
+
+### 📚 Documentation
+
+- 📚 docs: add deployment/graph separation documentation (#639)
+
+* 📚 docs: add deployment/graph separation documentation
+
+- Add migration guide section to README for v0.5.0+ command changes
+- Update README command examples from `langstar graph` to `langstar deployment` for deployment operations
+- Add new `LangGraph Graphs (Agent Server API)` section documenting graph list/get commands
+- Create implementation summary at docs/implementation/527-graph-deployment-separation.md
+
+Fixes #572
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs: add user-facing deployment and graph guides
+
+- Add docs/deployments.md with complete langstar deployment reference
+- Add docs/graphs.md with complete langstar graph reference
+- Refactor docs/implementation/527-graph-deployment-separation.md:
+  - Add phase tracking table with status indicators
+  - Remove duplicate command/migration content (now in user docs)
+  - Add links to user documentation
+
+Follows progressive disclosure pattern from docs/dev/progressive-disclosure-docs-standards.md
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
+
+### 🔧 Build System
+
+- 🔧 build(ci): ensure CI runs on prepare-release PRs (#641)
+
+* 🔧 build(ci): ensure CI runs on prepare-release PRs
+
+Fixes #640
+
+Modifies CI workflow to always run on release branches (release/v*)
+created by the prepare-release workflow, even when only docs/changelog
+files are modified.
+
+## Changes
+
+- Removed workflow-level `paths-ignore` filters (lines 8-12, 16-22)
+- Added new `changes` job that determines whether to run CI based on:
+  * Branch name pattern (always run for release/* branches)
+  * Changed files (skip for docs-only on regular PRs)
+- Made all CI jobs conditional on `changes` job output
+- Updated `all-jobs` aggregator to include `changes` dependency
+
+## Implementation Details
+
+The `changes` job checks:
+1. If branch matches `release/*` pattern → always run CI
+2. If branch is regular PR → check changed files
+   - Skip if only: *.md, docs/**, *.txt, .gitignore
+   - Run if any code files changed
+3. If push to main → always run CI
+
+This ensures the Release workflow's verify-ci job can find required
+checks (Check, Test, Clippy, Build) even for release PRs that only
+modify CHANGELOG.md and Cargo.toml.
+
+## References
+
+- Issue: #640
+- Failed release run: https://github.com/codekiln/langstar/actions/runs/19992537324
+- prepare-release workflow: .github/workflows/prepare-release.yml:241
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(ci): address Copilot review feedback on error handling
+
+Addresses review comments from PR #641:
+- Add error handling for gh pr view failures (safer default)
+- Add check for empty CHANGED_FILES
+- Fix .txt file pattern matching logic (use regex instead of glob)
+- Use == instead of = for consistency with double-bracket tests
+
+Changes:
+1. Line 60: Added 2>/dev/null error suppression and fallback
+2. Lines 61-65: Added empty check with safe default (run CI)
+3. Line 73: Fixed .txt pattern to use regex `! "$file" =~ /`
+4. Line 82: Changed `=` to `==` for consistency
+
+All changes improve robustness and follow bash best practices.
+
+Addresses:
+- https://github.com/codekiln/langstar/pull/641#discussion_r2595372498
+- https://github.com/codekiln/langstar/pull/641#discussion_r2595372504
+- https://github.com/codekiln/langstar/pull/641#discussion_r2595372512
+- https://github.com/codekiln/langstar/pull/641#discussion_r2595372518
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 ## [2.0.0] - 2025-12-06
 
 ### ✨ Features
