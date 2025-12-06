@@ -56,6 +56,7 @@ fn test_graph_id() -> String {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_basic() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -95,6 +96,7 @@ fn test_graph_list_basic() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_with_show_nodes() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -117,6 +119,7 @@ fn test_graph_list_with_show_nodes() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_json_output() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -149,6 +152,7 @@ fn test_graph_list_json_output() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_invalid_deployment() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -178,6 +182,7 @@ fn test_graph_list_invalid_deployment() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_basic() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -225,6 +230,7 @@ fn test_graph_get_basic() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_with_xray() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -263,6 +269,7 @@ fn test_graph_get_with_xray() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_json_output() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -317,6 +324,7 @@ fn test_graph_get_json_output() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_invalid_graph_id() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
@@ -345,6 +353,7 @@ fn test_graph_get_invalid_graph_id() {
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_missing_deployment() {
     let Some(_creds) = check_env_vars() else {
         println!("Skipping test: Required environment variables not set");
