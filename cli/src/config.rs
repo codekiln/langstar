@@ -6,10 +6,8 @@ use std::path::PathBuf;
 /// Configuration for the Langstar CLI
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    /// LangSmith API key
+    /// LangSmith API key (used for both LangSmith and LangGraph APIs)
     pub langsmith_api_key: Option<String>,
-    /// LangGraph Cloud API key
-    pub langgraph_api_key: Option<String>,
     /// Optional organization ID for scoping LangSmith operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub organization_id: Option<String>,
@@ -45,7 +43,6 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             langsmith_api_key: None,
-            langgraph_api_key: None,
             organization_id: None,
             workspace_id: None,
             github_integration_id: None,
@@ -70,9 +67,6 @@ impl Config {
         // Override with environment variables
         if let Ok(key) = std::env::var("LANGSMITH_API_KEY") {
             config.langsmith_api_key = Some(key);
-        }
-        if let Ok(key) = std::env::var("LANGGRAPH_API_KEY") {
-            config.langgraph_api_key = Some(key);
         }
         if let Ok(org_id) = std::env::var("LANGSMITH_ORGANIZATION_ID") {
             config.organization_id = Some(org_id);
@@ -156,7 +150,6 @@ impl Config {
     pub fn to_auth_config(&self) -> AuthConfig {
         AuthConfig::new(
             self.langsmith_api_key.clone(),
-            self.langgraph_api_key.clone(),
             self.organization_id.clone(),
             self.workspace_id.clone(),
         )
@@ -173,14 +166,12 @@ mod tests {
         assert_eq!(config.output_format, "table");
         assert_eq!(config.timezone, "local");
         assert!(config.langsmith_api_key.is_none());
-        assert!(config.langgraph_api_key.is_none());
     }
 
     #[test]
     fn test_config_serialization() {
         let config = Config {
             langsmith_api_key: Some("test_key".to_string()),
-            langgraph_api_key: None,
             organization_id: Some("test_org_id".to_string()),
             workspace_id: None,
             github_integration_id: None,
@@ -202,7 +193,6 @@ mod tests {
     fn test_config_with_workspace() {
         let config = Config {
             langsmith_api_key: Some("test_key".to_string()),
-            langgraph_api_key: None,
             organization_id: None,
             workspace_id: Some("test_workspace_id".to_string()),
             github_integration_id: None,
@@ -220,7 +210,6 @@ mod tests {
     fn test_config_to_auth_config_with_both() {
         let config = Config {
             langsmith_api_key: Some("key".to_string()),
-            langgraph_api_key: None,
             organization_id: Some("org_123".to_string()),
             workspace_id: Some("workspace_456".to_string()),
             github_integration_id: None,

@@ -293,7 +293,7 @@ async fn test_with_organization_id_builder() {
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
 
     // Create client without org ID
-    let auth = AuthConfig::new(std::env::var("LANGSMITH_API_KEY").ok(), None, None, None);
+    let auth = AuthConfig::new(std::env::var("LANGSMITH_API_KEY").ok(), None, None);
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
     assert_eq!(
@@ -327,7 +327,7 @@ async fn test_with_workspace_id_builder() {
         .expect("LANGSMITH_WORKSPACE_ID must be set for this test");
 
     // Create client without workspace ID
-    let auth = AuthConfig::new(std::env::var("LANGSMITH_API_KEY").ok(), None, None, None);
+    let auth = AuthConfig::new(std::env::var("LANGSMITH_API_KEY").ok(), None, None);
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
     assert_eq!(

@@ -22,6 +22,7 @@ In Toyota manufacturing, any worker can pull the "andon cord" to stop the entire
 - ❌ "We'll fix it in a follow-up PR"
 - ❌ "The test passes on my machine"
 - ❌ "This failure is unrelated to my changes"
+- ❌ "The test should only run in CI where the proper environment is configured"
 
 ### Always Required
 
@@ -30,6 +31,7 @@ In Toyota manufacturing, any worker can pull the "andon cord" to stop the entire
 - ✅ If failure is in unrelated code, fix it or revert the commit that broke it
 - ✅ If test is flaky, fix the flakiness first
 - ✅ All CI checks must be green before merge
+- ✅ All integration tests need to run locally the same as they run in CI
 
 ### Why This Matters
 

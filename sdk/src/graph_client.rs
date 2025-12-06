@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_graph_client_creation() {
-        let auth = AuthConfig::new(None, Some("test".to_string()), None, None);
+        let auth = AuthConfig::new(Some("test".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let _graph_client = client.graphs();
     }
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_client_with_custom_url() {
-        let auth = AuthConfig::new(None, Some("test".to_string()), None, None);
+        let auth = AuthConfig::new(Some("test".to_string()), None, None);
         let client = LangchainClient::new(auth)
             .unwrap()
             .with_langgraph_url("https://custom-deployment.us.langgraph.app".to_string());

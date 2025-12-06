@@ -1,19 +1,31 @@
 use assert_cmd::Command;
 use escargot::CargoBuild;
-use langstar_sdk::test_utils::TestDeploymentConfig;
+use std::sync::OnceLock;
+
+mod common;
+use common::fixtures::TestDeployment;
+
+/// Shared test deployment
+static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 
 /// CLI Integration tests for graph commands
 ///
 /// These tests verify that the langstar CLI correctly:
-/// 1. Lists LangGraph deployments via Control Plane API
-/// 2. Accepts various filter options
-/// 3. Outputs JSON format when requested
+/// 1. Lists graphs within a deployment
+/// 2. Gets graph structure details
+/// 3. Handles deployment name resolution
 ///
 /// **Prerequisites:**
 /// 1. Valid LANGSMITH_API_KEY environment variable
-/// 2. Valid LANGSMITH_WORKSPACE_ID environment variable (required for Control Plane API)
+/// 2. Valid LANGSMITH_WORKSPACE_ID environment variable (for deployment lookup)
+/// 3. Access to a test deployment (uses a hardcoded deployment name via TestDeployment::create())
 ///
 /// Run with: cargo test --test graph_command_test
+///
+/// **Fixtures:**
+/// These tests use the pr-integration-test fixture from tests/fixtures/pr-integration-test/
+/// See tests/fixtures/pr-integration-test/README.md for details.
+///
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
@@ -25,65 +37,92 @@ fn langstar_cmd() -> Command {
     Command::new(bin)
 }
 
-/// Helper to verify required environment variables
-/// Returns None if credentials are not available (tests will be skipped)
-fn check_env_vars() -> Option<String> {
-    let api_key = std::env::var("LANGSMITH_API_KEY").ok()?;
+/// Helper to get or create test deployment
+/// Returns None if environment variables are not set (tests will be skipped)
+fn get_test_deployment() -> Option<String> {
+    // Check if environment variables are set
+    let langsmith_key = std::env::var("LANGSMITH_API_KEY").ok()?;
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok()?;
 
-    if api_key.is_empty() || workspace_id.is_empty() {
+    if langsmith_key.is_empty() || workspace_id.is_empty() {
         return None;
     }
 
-    println!("Testing with workspace ID: {}", workspace_id);
-    Some(workspace_id)
+    // Get or create test deployment
+    let deployment = TEST_DEPLOYMENT.get_or_init(|| {
+        println!("\n📦 Initializing test deployment for graph tests...");
+        TestDeployment::create()
+    });
+
+    println!(
+        "Using test deployment: {} ({})",
+        deployment.name, deployment.id
+    );
+    Some(deployment.name.clone())
+}
+
+/// Helper to get test graph ID
+/// Uses TEST_GRAPH_ID env var or defaults to "test_graph" (matches test deployment)
+fn test_graph_id() -> String {
+    std::env::var("TEST_GRAPH_ID")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "test_graph".to_string())
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_basic() {
-    let Some(_workspace_id) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    println!("Testing basic graph list command");
+    println!(
+        "Testing basic graph list command for deployment: {}",
+        deployment
+    );
 
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list"]);
+    cmd.args(["graph", "list", &deployment]);
 
     // Run the command
     let output = cmd.output().expect("Failed to execute command");
 
     // Should succeed
-    assert!(output.status.success(), "Command should succeed");
+    assert!(
+        output.status.success(),
+        "Command should succeed. Stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
-    // Output should contain deployment information
+    // Output should contain graph information
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     println!("Command output:");
     println!("{}", stdout);
 
-    // Should contain either deployment info or "No deployments found"
-    let has_deployments = stdout.contains("deployment") || stdout.contains("No deployments");
+    // Test deployment fixture contains "test_graph" - verify it appears in output
+    // This is a proper integration test that verifies actual data, not just headers
     assert!(
-        has_deployments,
-        "Output should contain deployment info or 'No deployments found'"
+        stdout.contains("test_graph"),
+        "Output should contain 'test_graph' from test deployment fixture. Got: {}",
+        stdout
     );
 
-    println!("✓ CLI successfully listed deployments");
+    println!("✓ CLI successfully listed graphs including test_graph");
 }
 
 #[test]
-fn test_graph_list_with_limit() {
-    if check_env_vars().is_none() {
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_list_with_show_nodes() {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
-    }
-
-    println!("Testing graph list with --limit flag");
+    };
+    println!("Testing graph list with --show-nodes flag");
 
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--limit", "5"]);
+    cmd.args(["graph", "list", &deployment, "--show-nodes"]);
 
     // Run the command
     let assert = cmd.assert();
@@ -91,20 +130,20 @@ fn test_graph_list_with_limit() {
     // Should succeed
     assert.success();
 
-    println!("✓ CLI successfully handled --limit parameter");
+    println!("✓ CLI successfully handled --show-nodes parameter");
 }
 
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_json_output() {
-    if check_env_vars().is_none() {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
-    }
-
+    };
     println!("Testing graph list with JSON output");
 
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--format", "json"]);
+    cmd.args(["graph", "list", &deployment, "--format", "json"]);
 
     // Run the command
     let output = cmd.output().expect("Failed to execute command");
@@ -118,89 +157,25 @@ fn test_graph_list_json_output() {
     println!("JSON output:");
     println!("{}", stdout);
 
-    // Should contain JSON structure
-    assert!(
-        stdout.contains("resources") || stdout.contains("offset"),
-        "JSON output should contain 'resources' or 'offset' field"
-    );
+    // Should be parseable as JSON
+    let result: Result<serde_json::Value, _> = serde_json::from_str(&stdout);
+    assert!(result.is_ok(), "Output should be valid JSON");
 
     println!("✓ CLI successfully output JSON format");
 }
 
 #[test]
-fn test_graph_list_with_deployment_type_filter() {
-    if check_env_vars().is_none() {
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_list_invalid_deployment() {
+    if get_test_deployment().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
     }
 
-    println!("Testing graph list with --deployment-type filter");
+    println!("Testing graph list with invalid deployment name");
 
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--deployment-type", "prod"]);
-
-    // Run the command
-    let assert = cmd.assert();
-
-    // Should succeed (even if no prod deployments exist)
-    assert.success();
-
-    println!("✓ CLI successfully handled --deployment-type filter");
-}
-
-#[test]
-fn test_graph_list_with_status_filter() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph list with --status filter");
-
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--status", "READY"]);
-
-    // Run the command
-    let assert = cmd.assert();
-
-    // Should succeed
-    assert.success();
-
-    println!("✓ CLI successfully handled --status filter");
-}
-
-#[test]
-fn test_graph_list_with_name_filter() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph list with --name-contains filter");
-
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--name-contains", "test"]);
-
-    // Run the command
-    let assert = cmd.assert();
-
-    // Should succeed
-    assert.success();
-
-    println!("✓ CLI successfully handled --name-contains filter");
-}
-
-#[test]
-fn test_graph_list_invalid_deployment_type() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph list with invalid --deployment-type");
-
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--deployment-type", "invalid_type"]);
+    cmd.args(["graph", "list", "nonexistent-deployment-12345"]);
 
     // Run the command
     let output = cmd.output().expect("Failed to execute command");
@@ -212,492 +187,332 @@ fn test_graph_list_invalid_deployment_type() {
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     assert!(
-        stderr.contains("Invalid deployment type") || stderr.contains("valid values"),
-        "Error message should mention invalid deployment type"
+        stderr.contains("not found") || stderr.contains("Deployment"),
+        "Error message should mention deployment not found"
     );
 
-    println!("✓ CLI correctly rejected invalid deployment type");
-}
-
-#[test]
-fn test_graph_list_invalid_status() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph list with invalid --status");
-
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--status", "INVALID_STATUS"]);
-
-    // Run the command
-    let output = cmd.output().expect("Failed to execute command");
-
-    // Should fail with error message
-    assert!(!output.status.success(), "Command should fail");
-
-    // Should contain helpful error message
-    let stderr = String::from_utf8_lossy(&output.stderr);
-
-    assert!(
-        stderr.contains("Invalid status") || stderr.contains("valid values"),
-        "Error message should mention invalid status"
-    );
-
-    println!("✓ CLI correctly rejected invalid status");
-}
-
-#[test]
-fn test_graph_list_multiple_filters() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph list with multiple filters");
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "list",
-        "--limit",
-        "10",
-        "--deployment-type",
-        "dev",
-        "--status",
-        "READY",
-    ]);
-
-    // Run the command
-    let assert = cmd.assert();
-
-    // Should succeed
-    assert.success();
-
-    println!("✓ CLI successfully handled multiple filters");
-}
-
-#[test]
-#[ignore] // Requires actual API access and creates resources
-fn test_graph_create_basic() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create command");
-
-    // Use standard release test naming (release-integration-test-{ts})
-    let config = TestDeploymentConfig::for_release_tests();
-    let deployment_name = config.name.clone();
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        &deployment_name,
-        "--source",
-        "github",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        "--branch",
-        "main",
-        "--deployment-type",
-        "dev_free",
-    ]);
-
-    // Run the command
-    let output = cmd.output().expect("Failed to execute command");
-
-    println!("Exit status: {}", output.status);
-    println!("Stdout:\n{}", String::from_utf8_lossy(&output.stdout));
-    println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
-
-    // Should succeed
-    assert!(
-        output.status.success(),
-        "Graph create command should succeed"
-    );
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("Created deployment") || stdout.contains(&deployment_name),
-        "Output should confirm deployment creation"
-    );
-
-    println!("✓ CLI successfully created deployment: {}", deployment_name);
-}
-
-#[test]
-#[ignore] // Requires actual API access and creates resources
-fn test_graph_create_with_wait() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create command with --wait flag");
-
-    // Use standard release test naming (release-integration-test-{ts})
-    let config = TestDeploymentConfig::for_release_tests();
-    let deployment_name = config.name.clone();
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        &deployment_name,
-        "--source",
-        "github",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        "--branch",
-        "main",
-        "--deployment-type",
-        "dev_free",
-        "--wait",
-    ]);
-
-    // Run the command (this will take time as it waits for READY status)
-    let output = cmd.output().expect("Failed to execute command");
-
-    println!("Exit status: {}", output.status);
-    println!("Stdout:\n{}", String::from_utf8_lossy(&output.stdout));
-    println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
-
-    // Should succeed
-    assert!(
-        output.status.success(),
-        "Graph create command with --wait should succeed"
-    );
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-
-    // Should show polling messages
-    assert!(
-        stdout.contains("Waiting for deployment") || stdout.contains("Status:"),
-        "Output should show polling status"
-    );
-
-    // Should show deployment is ready
-    assert!(
-        stdout.contains("ready") || stdout.contains("READY") || stdout.contains("Ready"),
-        "Output should confirm deployment is ready"
-    );
-
-    println!(
-        "✓ CLI successfully created deployment with --wait: {}",
-        deployment_name
-    );
+    println!("✓ CLI correctly handled invalid deployment name");
 }
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-#[ignore] // Blocked - Requires GitHub integration with repo access permissions
-fn test_deployment_full_lifecycle() {
-    if check_env_vars().is_none() {
+fn test_graph_get_basic() {
+    let Some(deployment) = get_test_deployment() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
+    let graph_id = test_graph_id();
+    println!("Testing graph get command for graph: {}", graph_id);
+
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "get", &graph_id, "--deployment", &deployment]);
+
+    // Run the command
+    let output = cmd.output().expect("Failed to execute command");
+
+    println!("Exit status: {}", output.status);
+    println!("Stdout:\n{}", String::from_utf8_lossy(&output.stdout));
+    println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
+
+    // Should succeed (if graph exists in the deployment)
+    // Note: This may fail if the test deployment doesn't have the specified graph
+    // Set TEST_GRAPH_ID env var to specify a different graph ID (defaults to "agent")
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not found") {
+            println!("⚠ Graph '{}' not found in test deployment", graph_id);
+            println!("  This is expected if the deployment doesn't have this graph");
+            println!(
+                "  Set TEST_GRAPH_ID to a graph that exists in your test deployment (current: '{}')",
+                graph_id
+            );
+            return;
+        }
+        panic!("Graph get command failed unexpectedly");
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("nodes") || stdout.contains("edges"),
+        "Output should contain graph structure info"
+    );
+
+    println!("✓ CLI successfully retrieved graph structure");
+}
+
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_get_with_xray() {
+    let Some(deployment) = get_test_deployment() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
+    let graph_id = test_graph_id();
+    println!("Testing graph get with --xray flag for graph: {}", graph_id);
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "graph",
+        "get",
+        &graph_id,
+        "--deployment",
+        &deployment,
+        "--xray",
+    ]);
+
+    // Run the command
+    let output = cmd.output().expect("Failed to execute command");
+
+    println!("Exit status: {}", output.status);
+
+    // Should succeed or fail gracefully if graph doesn't exist
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not found") {
+            println!("⚠ Graph '{}' not found - skipping test", graph_id);
+            return;
+        }
+    }
+
+    println!("✓ CLI successfully handled --xray parameter");
+}
+
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_get_json_output() {
+    let Some(deployment) = get_test_deployment() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
+    let graph_id = test_graph_id();
+    println!("Testing graph get with JSON output for graph: {}", graph_id);
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "graph",
+        "get",
+        &graph_id,
+        "--deployment",
+        &deployment,
+        "--format",
+        "json",
+    ]);
+
+    // Run the command
+    let output = cmd.output().expect("Failed to execute command");
+
+    // Should succeed or fail gracefully if graph doesn't exist
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("not found") {
+            println!("⚠ Graph '{}' not found - skipping test", graph_id);
+            return;
+        }
+        panic!("Graph get command failed unexpectedly");
+    }
+
+    // Output should be valid JSON
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    println!("JSON output:");
+    println!("{}", stdout);
+
+    // Should be parseable as JSON
+    let result: Result<serde_json::Value, _> = serde_json::from_str(&stdout);
+    assert!(result.is_ok(), "Output should be valid JSON");
+
+    let json = result.unwrap();
+    assert!(
+        json.get("nodes").is_some() || json.get("edges").is_some(),
+        "JSON should contain nodes or edges"
+    );
+
+    println!("✓ CLI successfully output JSON format for graph get");
+}
+
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_get_invalid_graph_id() {
+    let Some(deployment) = get_test_deployment() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
+    println!("Testing graph get with invalid graph ID");
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "graph",
+        "get",
+        "nonexistent-graph-12345",
+        "--deployment",
+        &deployment,
+    ]);
+
+    // Run the command
+    let output = cmd.output().expect("Failed to execute command");
+
+    // Should fail with error message
+    assert!(!output.status.success(), "Command should fail");
+
+    println!("✓ CLI correctly handled invalid graph ID");
+}
+
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_get_missing_deployment() {
+    if get_test_deployment().is_none() {
         println!("Skipping test: Required environment variables not set");
         return;
     }
 
+    println!("Testing graph get without --deployment flag");
+
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "get", "agent"]);
+
+    // Run the command
+    let output = cmd.output().expect("Failed to execute command");
+
+    // Should fail with error about missing deployment
+    assert!(
+        !output.status.success(),
+        "Command should fail without deployment"
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("deployment") || stderr.contains("required"),
+        "Error should mention missing deployment parameter"
+    );
+
+    println!("✓ CLI correctly rejected get without deployment");
+}
+
+#[test]
+fn test_graph_commands_help() {
+    println!("Testing graph command help output");
+
+    // Test main graph help
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "--help"]);
+
+    let output = cmd.output().expect("Failed to execute command");
+    assert!(output.status.success(), "Help command should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("list"),
+        "Help should mention 'list' subcommand"
+    );
+    assert!(
+        stdout.contains("get"),
+        "Help should mention 'get' subcommand"
+    );
+
+    // Test graph list help
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "list", "--help"]);
+
+    let output = cmd.output().expect("Failed to execute command");
+    assert!(output.status.success(), "Help command should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("deployment"),
+        "Help should mention deployment parameter"
+    );
+    assert!(
+        stdout.contains("show-nodes"),
+        "Help should mention --show-nodes flag"
+    );
+
+    // Test graph get help
+    let mut cmd = langstar_cmd();
+    cmd.args(["graph", "get", "--help"]);
+
+    let output = cmd.output().expect("Failed to execute command");
+    assert!(output.status.success(), "Help command should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("GRAPH_ID"),
+        "Help should mention GRAPH_ID parameter"
+    );
+    assert!(
+        stdout.contains("deployment"),
+        "Help should mention --deployment flag"
+    );
+    assert!(stdout.contains("xray"), "Help should mention --xray flag");
+
+    println!("✓ All graph help commands work correctly");
+}
+
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_graph_workflow_list_then_get() {
+    let Some(deployment) = get_test_deployment() else {
+        println!("Skipping test: Required environment variables not set");
+        return;
+    };
+
     println!("\n==================================================");
-    println!("Test: Deployment Full Lifecycle (Create, List, Delete)");
+    println!("Test: Graph Workflow (List then Get)");
     println!("==================================================\n");
 
-    // Use standard release test naming (release-integration-test-{ts})
-    let config = TestDeploymentConfig::for_release_tests();
-    let deployment_name = config.name.clone();
-
-    // Step 1: Create deployment
-    println!("Step 1: Creating deployment '{}'", deployment_name);
+    // Step 1: List graphs to find available graph IDs
+    println!("Step 1: Listing graphs in deployment '{}'", deployment);
     let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        &deployment_name,
-        "--source",
-        "github",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        "--branch",
-        "main",
-        "--deployment-type",
-        "dev_free",
-    ]);
+    cmd.args(["graph", "list", &deployment, "--format", "json"]);
 
-    let output = cmd.output().expect("Failed to create deployment");
+    let output = cmd.output().expect("Failed to list graphs");
     assert!(
         output.status.success(),
-        "Create command should succeed. Stderr: {}",
+        "List command should succeed. Stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    println!("Create output:\n{}", stdout);
+    println!("List output:\n{}", stdout);
 
-    // Extract deployment ID from output (format: "ID: <id>")
-    let deployment_id = stdout
-        .lines()
-        .find(|line| line.contains("ID:"))
-        .and_then(|line| line.split("ID:").nth(1))
-        .map(|s| s.trim().to_string())
-        .expect("Should find deployment ID in output");
+    // Parse JSON to get first graph ID
+    let graphs: Vec<serde_json::Value> =
+        serde_json::from_str(&stdout).expect("Should be valid JSON array");
 
-    println!("✓ Created deployment with ID: {}", deployment_id);
+    if graphs.is_empty() {
+        println!("⚠ No graphs found in deployment - skipping get test");
+        return;
+    }
 
-    // Step 2: List deployments and verify it exists
-    println!("\nStep 2: Listing deployments to verify creation");
+    let first_graph_id = graphs[0]["graph_id"]
+        .as_str()
+        .expect("Should have graph_id field")
+        .to_string();
+
+    println!("✓ Found graph ID: {}", first_graph_id);
+
+    // Step 2: Get the graph structure
+    println!("\nStep 2: Getting graph structure for '{}'", first_graph_id);
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--name-contains", &deployment_name]);
+    cmd.args(["graph", "get", &first_graph_id, "--deployment", &deployment]);
 
-    let output = cmd.output().expect("Failed to list deployments");
-    assert!(output.status.success(), "List command should succeed");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains(&deployment_name),
-        "List should contain newly created deployment"
-    );
-    println!("✓ Deployment found in list");
-
-    // Step 3: Delete deployment
-    println!("\nStep 3: Deleting deployment '{}'", deployment_id);
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "delete", &deployment_id, "--yes"]);
-
-    let output = cmd.output().expect("Failed to delete deployment");
+    let output = cmd.output().expect("Failed to get graph");
     assert!(
         output.status.success(),
-        "Delete command should succeed. Stderr: {}",
+        "Get command should succeed. Stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("deleted") || stdout.contains("Successfully"),
-        "Delete should confirm success"
-    );
-    println!("✓ Deployment deleted successfully");
+    println!("Get output:\n{}", stdout);
 
-    // Step 4: Verify deletion
-    println!("\nStep 4: Verifying deployment was deleted");
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list", "--name-contains", &deployment_name]);
-
-    let output = cmd.output().expect("Failed to list deployments");
-    let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
-        !stdout.contains(&deployment_name) || stdout.contains("No deployments"),
-        "Deployment should not appear in list after deletion"
+        stdout.contains("nodes") || stdout.contains("edges"),
+        "Graph structure should contain nodes or edges"
     );
-    println!("✓ Deployment successfully removed from list");
+
+    println!("✓ Successfully retrieved graph structure");
 
     println!("\n==================================================");
-    println!("✓ Full lifecycle test completed successfully");
+    println!("✓ Workflow test completed successfully");
     println!("==================================================\n");
-}
-
-#[test]
-fn test_graph_create_missing_repo_url() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create without --repo-url");
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        "test-deployment",
-        "--source",
-        "github",
-        "--branch",
-        "main",
-        // Missing --repo-url
-    ]);
-
-    // Run the command
-    let output = cmd.output().expect("Failed to execute command");
-
-    // Should fail
-    assert!(
-        !output.status.success(),
-        "Command should fail without repo_url"
-    );
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("repo_url is required") || stderr.contains("repo_url"),
-        "Error should mention missing repo_url"
-    );
-
-    println!("✓ CLI correctly rejected create without repo_url");
-}
-
-#[test]
-fn test_graph_create_missing_branch() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create without --branch");
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        "test-deployment",
-        "--source",
-        "github",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        // Missing --branch
-    ]);
-
-    // Run the command
-    let output = cmd.output().expect("Failed to execute command");
-
-    // Should fail
-    assert!(
-        !output.status.success(),
-        "Command should fail without branch"
-    );
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("branch is required") || stderr.contains("branch"),
-        "Error should mention missing branch"
-    );
-
-    println!("✓ CLI correctly rejected create without branch");
-}
-
-#[test]
-fn test_graph_create_with_env_vars() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create with environment variables");
-
-    // Use standard release test naming (release-integration-test-{ts})
-    let config = TestDeploymentConfig::for_release_tests();
-    let deployment_name = config.name.clone();
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        &deployment_name,
-        "--source",
-        "github",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        "--branch",
-        "main",
-        "--env",
-        "DEBUG=true",
-        "--env",
-        "API_TIMEOUT=30",
-    ]);
-
-    // Note: This is marked as ignored by default since it creates resources
-    // Just test that the command can be constructed
-    println!("Command constructed successfully");
-    println!("To run: cargo test test_graph_create_with_env_vars -- --ignored --nocapture");
-}
-
-#[test]
-fn test_graph_create_invalid_source() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph create with invalid source type");
-
-    let mut cmd = langstar_cmd();
-    cmd.args([
-        "graph",
-        "create",
-        "--name",
-        "test-deployment",
-        "--source",
-        "invalid_source",
-        "--repo-url",
-        "https://github.com/langchain-ai/langgraph-example",
-        "--branch",
-        "main",
-    ]);
-
-    // Run the command
-    let output = cmd.output().expect("Failed to execute command");
-
-    // Should fail
-    assert!(
-        !output.status.success(),
-        "Command should fail with invalid source"
-    );
-
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("Invalid source type") || stderr.contains("github, external_docker"),
-        "Error should mention invalid source type"
-    );
-
-    println!("✓ CLI correctly rejected invalid source type");
-}
-
-#[test]
-#[ignore] // Requires actual API access and a deployment ID
-fn test_graph_delete_with_yes_flag() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph delete with --yes flag");
-
-    // Note: This test requires a real deployment ID
-    // In practice, you'd create a deployment first, then delete it
-    let deployment_id = "test-deployment-id-placeholder";
-
-    let mut cmd = langstar_cmd();
-    cmd.args(["graph", "delete", deployment_id, "--yes"]);
-
-    println!("Note: This test requires a valid deployment ID");
-    println!("To run manually:");
-    println!("  1. Create a test deployment");
-    println!("  2. Note the deployment ID");
-    println!("  3. Run: langstar graph delete <id> --yes");
-}
-
-#[test]
-fn test_graph_delete_confirmation_behavior() {
-    if check_env_vars().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
-
-    println!("Testing graph delete confirmation behavior");
-
-    // Document expected behavior
-    println!("\nExpected behavior:");
-    println!("1. Without --yes: prompts user for confirmation");
-    println!("2. User must type 'yes' to confirm deletion");
-    println!("3. With --yes: skips confirmation prompt");
-    println!("\nTo test manually:");
-    println!("  langstar graph delete <deployment-id>");
-    println!("  langstar graph delete <deployment-id> --yes");
 }

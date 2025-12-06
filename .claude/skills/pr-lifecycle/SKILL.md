@@ -301,12 +301,12 @@ PR_NUM=$(gh pr view --json number -q '.number')
 # Get owner/repo dynamically from current repository
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
-# Check for Copilot comments
-gh api repos/$REPO/pulls/$PR_NUM/comments \
+# Check for Copilot comments (use --paginate to get ALL comments)
+gh api repos/$REPO/pulls/$PR_NUM/comments --paginate \
   --jq '.[] | select(.user.login == "copilot") | {id, body, path, line}'
 
-# Check for all review comments
-gh api repos/$REPO/pulls/$PR_NUM/comments \
+# Check for all review comments (use --paginate to get ALL comments)
+gh api repos/$REPO/pulls/$PR_NUM/comments --paginate \
   --jq '.[] | {id, user: .user.login, body: .body[0:100]}'
 ```
 
@@ -487,8 +487,8 @@ gh issue view <num> --json number,title,state
 # View PR
 gh pr view --json number,title,state,closingIssuesReferences
 
-# PR comments (for reviews)
-gh api repos/$REPO/pulls/<num>/comments
+# PR comments (for reviews) - use --paginate to get ALL comments
+gh api repos/$REPO/pulls/<num>/comments --paginate
 
 # Reply to comment
 gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="message"

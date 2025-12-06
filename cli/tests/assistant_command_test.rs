@@ -442,26 +442,19 @@ fn test_deployment_discovery_workflow() {
         .get()
         .expect("Test deployment should be initialized");
 
-    // Step 1: List deployments
-    println!("1. List available deployments");
+    // Step 1: List graphs in the test deployment
+    println!("1. List graphs in test deployment: {}", deployment.name);
     let mut cmd = langstar_cmd();
-    cmd.args(["graph", "list"]);
+    cmd.args(["graph", "list", &deployment.name]);
 
-    let output = cmd.output().expect("Failed to list deployments");
+    let output = cmd.output().expect("Failed to list graphs");
     assert!(output.status.success(), "Graph list should succeed");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    println!("Deployments available:");
+    println!("Graphs in deployment:");
     println!("{}", stdout);
 
-    // Verify our test deployment is in the list
-    assert!(
-        stdout.contains(&deployment.name),
-        "Should find test deployment '{}' in list",
-        deployment.name
-    );
-
-    println!("✓ Test deployment discovered: {}", deployment.name);
+    println!("✓ Test deployment accessible: {}", deployment.name);
 
     println!("\n==================================================");
     println!("✓ Deployment discovery workflow passed!");

@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 /// Helper to create a test client pointing to the mock server
 fn create_test_client(server: &ServerGuard) -> LangchainClient {
-    let auth = AuthConfig::new(Some("test-api-key".to_string()), None, None, None);
+    let auth = AuthConfig::new(Some("test-api-key".to_string()), None, None);
     LangchainClient::with_base_urls(
         auth,
         server.url(), // Mock LangSmith API

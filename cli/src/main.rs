@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod deployment_utils;
 mod error;
 mod output;
 pub mod time;
@@ -44,7 +45,7 @@ enum Commands {
     #[command(subcommand)]
     Deployment(DeploymentCommands),
 
-    /// Manage LangGraph deployments (alias for 'deployment', to be deprecated)
+    /// Inspect LangGraph graphs within deployments
     #[command(subcommand)]
     Graph(GraphCommands),
 

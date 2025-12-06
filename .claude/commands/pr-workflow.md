@@ -376,8 +376,9 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    ```bash
    # Fetch unresolved review comments using the GitHub Reviews API
    # NOTE: GitHub API returns `null` for unresolved comments, not `false`
+   # IMPORTANT: Use --paginate to get ALL comments (default page size is 30)
    REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-   gh api repos/$REPO/pulls/$PR_NUM/comments \
+   gh api repos/$REPO/pulls/$PR_NUM/comments --paginate \
      --jq '.[] | select(.resolved == null) | {id, path, line, user: .user.login, body}'
    ```
    - Count unresolved review comments (where `.resolved == null`)
@@ -948,9 +949,9 @@ git rebase origin/<base>
 
 **Review Comments:**
 ```bash
-# Fetch unresolved comments
+# Fetch unresolved comments (use --paginate to get ALL comments)
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
-gh api repos/$REPO/pulls/$PR_NUM/comments \
+gh api repos/$REPO/pulls/$PR_NUM/comments --paginate \
   --jq '.[] | select(.resolved == null) | {id, path, line, user: .user.login, body}'
 
 # Reply to a review comment - ALWAYS use the dedicated slash command
