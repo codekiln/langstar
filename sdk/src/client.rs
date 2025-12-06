@@ -93,7 +93,7 @@ impl LangchainClient {
     /// # Example
     /// ```no_run
     /// # use langstar_sdk::{LangchainClient, AuthConfig};
-    /// # let auth = AuthConfig::new(None, Some("key".into()), None, None);
+    /// # let auth = AuthConfig::new(Some("key".into()), None, None);
     /// let client = LangchainClient::new(auth).unwrap()
     ///     .with_langgraph_url("https://my-deployment.us.langgraph.app".to_string());
     /// ```
@@ -2162,7 +2162,7 @@ mod tests {
 
     #[test]
     fn test_client_missing_auth() {
-        let auth = AuthConfig::new(None, None, None, None);
+        let auth = AuthConfig::new(None, None, None);
         let client = LangchainClient::new(auth).unwrap();
 
         // Should fail when trying to make authenticated requests
@@ -2174,7 +2174,6 @@ mod tests {
     fn test_client_with_org_and_workspace() {
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
-            None,
             Some("org_123".to_string()),
             Some("workspace_456".to_string()),
         );
@@ -2185,7 +2184,7 @@ mod tests {
 
     #[test]
     fn test_client_builder_methods() {
-        let auth = AuthConfig::new(Some("test_key".to_string()), None, None, None);
+        let auth = AuthConfig::new(Some("test_key".to_string()), None, None);
         let client = LangchainClient::new(auth)
             .unwrap()
             .with_organization_id("new_org".to_string())

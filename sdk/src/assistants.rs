@@ -42,7 +42,7 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // Create auth config and client (scoped to deployment by API key)
-//!     let auth = AuthConfig::new(None, Some("your-api-key".into()), None, None);
+//!     let auth = AuthConfig::new(Some("your-api-key".into()), None, None);
 //!     let client = LangchainClient::new(auth)?;
 //!
 //!     // List assistants in this deployment
@@ -271,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_assistant_client_creation() {
-        let auth = AuthConfig::new(None, Some("test".to_string()), None, None);
+        let auth = AuthConfig::new(Some("test".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let _assistant_client = client.assistants();
     }
