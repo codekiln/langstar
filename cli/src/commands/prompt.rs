@@ -841,7 +841,6 @@ mod tests {
         // Client with organization ID
         let auth = AuthConfig::new(
             Some("test_key".to_string()),
-            None,
             Some("test-org-id".to_string()),
             None,
         );
