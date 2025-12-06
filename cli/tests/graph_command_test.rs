@@ -1,5 +1,12 @@
 use assert_cmd::Command;
 use escargot::CargoBuild;
+use std::sync::OnceLock;
+
+mod common;
+use common::fixtures::TestDeployment;
+
+/// Shared test deployment
+static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 
 /// CLI Integration tests for graph commands
 ///
@@ -43,10 +50,28 @@ fn check_env_vars() -> Option<(String, String)> {
     Some((api_key, workspace_id))
 }
 
-/// Helper to get test deployment name
-/// Uses TEST_DEPLOYMENT_NAME env var or defaults to "test-graph-deployment"
-fn test_deployment_name() -> String {
-    std::env::var("TEST_DEPLOYMENT_NAME").unwrap_or_else(|_| "test-graph-deployment".to_string())
+/// Helper to get or create test deployment
+/// Returns None if environment variables are not set (tests will be skipped)
+fn get_test_deployment() -> Option<String> {
+    // Check if environment variables are set
+    let langsmith_key = std::env::var("LANGSMITH_API_KEY").ok()?;
+    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok()?;
+
+    if langsmith_key.is_empty() || workspace_id.is_empty() {
+        return None;
+    }
+
+    // Get or create test deployment
+    let deployment = TEST_DEPLOYMENT.get_or_init(|| {
+        println!("\n📦 Initializing test deployment for graph tests...");
+        TestDeployment::create()
+    });
+
+    println!(
+        "Using test deployment: {} ({})",
+        deployment.name, deployment.id
+    );
+    Some(deployment.name.clone())
 }
 
 /// Helper to get test graph ID
@@ -58,12 +83,10 @@ fn test_graph_id() -> String {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_basic() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     println!(
         "Testing basic graph list command for deployment: {}",
         deployment
@@ -98,12 +121,10 @@ fn test_graph_list_basic() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_with_show_nodes() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     println!("Testing graph list with --show-nodes flag");
 
     let mut cmd = langstar_cmd();
@@ -121,12 +142,10 @@ fn test_graph_list_with_show_nodes() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_json_output() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     println!("Testing graph list with JSON output");
 
     let mut cmd = langstar_cmd();
@@ -154,7 +173,7 @@ fn test_graph_list_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_invalid_deployment() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(_deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
@@ -184,12 +203,10 @@ fn test_graph_list_invalid_deployment() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_basic() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     let graph_id = test_graph_id();
     println!("Testing graph get command for graph: {}", graph_id);
 
@@ -232,12 +249,10 @@ fn test_graph_get_basic() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_with_xray() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     let graph_id = test_graph_id();
     println!("Testing graph get with --xray flag for graph: {}", graph_id);
 
@@ -271,12 +286,10 @@ fn test_graph_get_with_xray() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_json_output() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     let graph_id = test_graph_id();
     println!("Testing graph get with JSON output for graph: {}", graph_id);
 
@@ -326,12 +339,10 @@ fn test_graph_get_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_invalid_graph_id() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
     println!("Testing graph get with invalid graph ID");
 
     let mut cmd = langstar_cmd();
@@ -355,7 +366,7 @@ fn test_graph_get_invalid_graph_id() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_missing_deployment() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(_deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
@@ -445,12 +456,10 @@ fn test_graph_commands_help() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_workflow_list_then_get() {
-    let Some(_creds) = check_env_vars() else {
+    let Some(deployment) = get_test_deployment() else {
         println!("Skipping test: Required environment variables not set");
         return;
     };
-
-    let deployment = test_deployment_name();
 
     println!("\n==================================================");
     println!("Test: Graph Workflow (List then Get)");
