@@ -46,12 +46,36 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 
 #### Testing Standards (Progressive Disclosure)
 
-For testing documentation, **always use progressive disclosure**:
-1. **TOC First:** Load `@docs/dev/testing/README.md` (~15-line index)
-2. **On-Demand:** Load specific docs only when designing/debugging tests
-3. **Example:** Writing CLI tests? Load `@docs/dev/testing/cli-integration-tests.md`
+**Testing documentation TOC:** @docs/dev/testing/README.md
 
-**Do NOT load all testing docs by default.** See `@docs/dev/progressive-disclosure-docs-standards.md` for patterns.
+The TOC above is auto-loaded (~15 lines). From there, load specific docs on demand:
+
+**Example workflows:**
+
+**Writing SDK integration tests:**
+1. See available docs in auto-loaded TOC
+2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always relevant)
+3. Load `docs/dev/testing/sdk-integration-tests.md` (SDK-specific)
+4. Load `docs/dev/testing/mocking-patterns.md` (if using mocks)
+
+**Writing CLI integration tests:**
+1. See available docs in auto-loaded TOC
+2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (principles)
+3. Load `docs/dev/testing/cli-integration-tests.md` (CLI-specific)
+4. Load `docs/dev/testing/crud-lifecycle-pattern.md` (if CRUD operations)
+
+**Using test planning automation:**
+```
+/gh-milestones:test-plan <milestone-name>
+```
+This command automatically loads relevant docs and generates a test plan.
+
+**Why progressive disclosure matters:**
+- Testing docs total ~3,000 lines (~24,000-30,000 tokens)
+- Most tasks need only 2-3 docs (~500 lines, ~4,000 tokens)
+- Saves ~20,000-25,000 tokens per testing task (~83% context efficiency gain)
+
+See `docs/dev/progressive-disclosure-docs-standards.md` for detailed patterns.
 
 ### `reference/` - External Resources & Experiments
 - `api-specs/` - API specifications (LangSmith, control-plane)
