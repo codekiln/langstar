@@ -429,20 +429,17 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 
 ### Issues Found
 
-#### Pre-Existing Failure (Not Blocking)
+#### ⚠️ Audit Error Correction
 
-The test suite has one failing test that is **not introduced by PR #646**:
+**Original claim (WRONG):** This audit originally claimed there was a "pre-existing failure" in `test_prompt_crud_lifecycle_private_visibility`.
 
-```
-test_prompt_crud_lifecycle_private_visibility ... FAILED
-API error: 404 - {"detail":"Not Found"}
-```
+**Correction:** This claim was made without CI verification. All CI checks on main are green: https://github.com/codekiln/langstar/commits/main/
 
-**Analysis:** This is a pre-existing issue in `cli/tests/prompt_scoping_test.rs` related to the LangSmith Prompts API returning 404 for a newly created prompt. This appears to be an API eventual consistency issue or a change in API behavior.
+This violated the Toyota Andon Cord principle:
+- ❌ Claimed a failure was "pre-existing" without objective CI proof
+- ❌ Recommended merging despite observing a local test failure
 
-**Impact on PR #646:** None. This failure exists on main branch and is unrelated to the deployment/graph tests.
-
-**Recommendation:** File a separate issue to investigate the prompt API 404 error.
+**Lesson learned:** Never claim a test failure is "pre-existing" without linking to a failing CI run on main branch. This anti-pattern has been added to `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md`.
 
 #### Observations (Non-Blocking)
 
@@ -481,6 +478,6 @@ API error: 404 - {"detail":"Not Found"}
 - Good error handling coverage
 - CRUD lifecycle pattern implemented
 
-**Blocking Issues:** None from PR #646
+**Blocking Issues:** None identified in this audit (see correction above)
 
-**Recommendation:** Merge PR #646. The pre-existing `test_prompt_crud_lifecycle_private_visibility` failure should be tracked separately as it affects main branch.
+**Recommendation:** Verify all tests pass locally before merge. If any test fails, investigate and fix - do not dismiss as "pre-existing" without CI verification.
