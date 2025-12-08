@@ -71,9 +71,9 @@ The TOC above is auto-loaded (~10-15 lines). From there, load specific docs on d
 This command automatically loads relevant docs and generates a test plan.
 
 **Why progressive disclosure matters:**
-- Testing docs total ~2000 lines (>15,000 tokens)
+- Testing docs total ~3,000 lines (~24,000-30,000 tokens)
 - Most tasks need only 2-3 docs (~500 lines, ~4,000 tokens)
-- Saves ~11,000 tokens per testing task (73% context efficiency gain)
+- Saves ~20,000-25,000 tokens per testing task (~83% context efficiency gain)
 
 See `docs/dev/progressive-disclosure-docs-standards.md` for detailed patterns.
 

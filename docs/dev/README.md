@@ -20,7 +20,7 @@ These documents outline the coding conventions, best practices, and standards th
 
 Testing documentation uses **progressive disclosure** for context efficiency:
 
-**TOC:** Auto-loaded via AGENTS.md (`docs/dev/testing/README.md`, ~15 lines)
+**TOC:** Auto-loaded via AGENTS.md (`docs/dev/testing/README.md`, ~10-15 lines)
 
 **Load on-demand based on task:**
 - Writing SDK tests? → `docs/dev/testing/sdk-integration-tests.md`
