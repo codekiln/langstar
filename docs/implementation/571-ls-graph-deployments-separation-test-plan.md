@@ -481,3 +481,115 @@ This violated the Toyota Andon Cord principle:
 **Blocking Issues:** None identified in this audit (see correction above)
 
 **Recommendation:** Verify all tests pass locally before merge. If any test fails, investigate and fix - do not dismiss as "pre-existing" without CI verification.
+
+---
+
+## Post-Merge Investigation: Silent Test Skip Bug
+
+**Investigation Date:** 2025-12-08
+**Investigator:** Claude Opus 4.5
+**Related:** PR #646 comment thread
+
+### Summary
+
+After the initial audit approved the PR for merge, a local test run revealed `test_prompt_crud_lifecycle_private_visibility` was failing with a 404 error. Investigation uncovered **two distinct issues**:
+
+1. **SDK Bug:** `PromptClient::get()` didn't prepend `-/` for private prompts
+2. **CI Blind Spot:** The test silently skips in CI due to missing environment variable
+
+### Timeline of Discovery
+
+1. **Initial Audit (above):** Incorrectly claimed failure was "pre-existing" without CI verification
+2. **CI Check:** Verified CI on main shows all green (no failures)
+3. **Local Reproduction:** Test failed with `API error: 404 - {"detail":"Not Found"}`
+4. **Root Cause Analysis:** Discovered SDK bug in `get()` method
+5. **Fix Applied:** Added `-/` prefix logic to `sdk/src/prompts.rs:331-338`
+6. **Deeper Investigation:** Discovered the test was NEVER running in CI
+
+### The SDK Bug
+
+**Location:** `sdk/src/prompts.rs:325` (before fix)
+
+**Problem:** The LangSmith API returns `repo_handle` without owner prefix (e.g., `test-prompt-xyz`), but `GET /api/v1/repos/{owner}/{repo}` requires two path segments. Private prompts use `-` as the owner.
+
+**Fix Applied:**
+```rust
+let full_handle = if handle.contains('/') {
+    handle.to_string()
+} else {
+    format!("-/{}", handle)
+};
+let path = format!("/api/v1/repos/{}", full_handle);
+```
+
+### The CI Blind Spot
+
+**Critical Finding:** The test was showing as "passed" in CI's 289 integration tests, but it was actually **silently skipping**.
+
+**Root Cause:** CI integration tests (`.github/workflows/ci.yml:200-203`) set:
+```yaml
+env:
+  LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+  LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+  LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
+  # NOTE: LANGSMITH_ORGANIZATION_ID is NOT passed to integration tests!
+```
+
+**Test Behavior:**
+```rust
+fn get_org_id_or_skip() -> Option<String> {
+    match std::env::var("LANGSMITH_ORGANIZATION_ID") {
+        Ok(id) if !id.is_empty() => Some(id),
+        _ => None,  // Returns None in CI
+    }
+}
+
+#[test]
+fn test_prompt_crud_lifecycle_private_visibility() {
+    let org_id = match get_org_id_or_skip() {
+        Some(id) => id,
+        None => {
+            println!("Skipping: LANGSMITH_ORGANIZATION_ID not set");
+            return;  // Silent skip - counted as "ok"!
+        }
+    };
+    // ... actual test code never runs in CI
+}
+```
+
+**Result:** Test reports `ok` but never executes the actual test logic. This was counted as one of the 289 "passing" integration tests.
+
+**Verification:**
+```bash
+# Simulating CI environment (no LANGSMITH_ORGANIZATION_ID)
+$ unset LANGSMITH_ORGANIZATION_ID && cargo test --test prompt_scoping_test test_prompt_crud_lifecycle_private_visibility -- --nocapture
+
+running 1 test
+Skipping: LANGSMITH_ORGANIZATION_ID not set
+test test_prompt_crud_lifecycle_private_visibility ... ok  # ← Silent skip!
+```
+
+### Lessons Learned
+
+1. **Silent skips are dangerous:** The `return;` + `println!` pattern creates false confidence. Tests appear to pass but never execute.
+
+2. **Environment variable gaps in CI:** The test required `LANGSMITH_ORGANIZATION_ID` but CI only passes `LANGSMITH_WORKSPACE_ID`.
+
+3. **"Pre-existing failure" claims need CI proof:** The original audit violated the Andon Cord principle by claiming "pre-existing" without CI verification.
+
+4. **289 tests ≠ 289 tested:** Some of those 289 "passed" tests may have silently skipped.
+
+### Recommended Actions
+
+1. **Filed:** Issue to audit all `_or_skip()` patterns for silent skip risks
+2. **Filed:** Issue to add `LANGSMITH_ORGANIZATION_ID` to CI integration test environment
+3. **Consider:** Using `#[ignore]` instead of silent return for tests requiring optional env vars
+4. **Consider:** Adding test summary output showing "X tests skipped due to missing env"
+
+### Fix Verification
+
+All tests pass with the SDK fix applied:
+- ✅ 174 unit tests (`--workspace --lib`)
+- ✅ 15 prompt scoping tests (with `LANGSMITH_ORGANIZATION_ID` set locally)
+- ✅ `cargo clippy` clean
+- ✅ `cargo fmt` clean
