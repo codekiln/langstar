@@ -1,5 +1,29 @@
 @AGENTS.md
 
+## Testing Standards
+
+This project enforces the **Toyota Andon Cord principle** for testing: any failing test stops the merge process. No exceptions.
+
+**Pre-commit requirements:**
+```bash
+cargo fmt && \
+cargo check --workspace --all-features && \
+cargo clippy --workspace --all-features -- -D warnings && \
+cargo test --workspace --all-features
+```
+
+**For comprehensive testing guidelines:**
+- The TOC is auto-loaded via AGENTS.md (`docs/dev/testing/README.md`)
+- Always follow `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (load explicitly)
+- Use CRUD lifecycle pattern for integration tests (see `docs/dev/testing/crud-lifecycle-pattern.md`)
+
+**Never acceptable:**
+- "My changes didn't introduce this failure" ❌
+- Merging with failing tests ❌
+- Exit-code-only tests (must verify actual behavior) ❌
+
+See milestone #556 and issue #536 case study for context.
+
 ## Output Token Budget
 
 EXTREMELY IMPORTANT - before you begin any task, check the value of the `CLAUDE_CODE_MAX_OUTPUT_TOKENS` environment variable and avoid going over that limit in your output. This helps manage API costs and ensures responses stay within configured limits.
