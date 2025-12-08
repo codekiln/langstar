@@ -17,6 +17,7 @@
 
 use assert_cmd::Command;
 use escargot::CargoBuild;
+use serial_test::serial;
 use std::sync::OnceLock;
 
 mod common;
@@ -307,6 +308,7 @@ fn test_deployment_list_invalid_status() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 #[test]
+#[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_get_basic() {
     let Some(deployment) = get_test_deployment() else {
@@ -344,6 +346,7 @@ fn test_deployment_get_basic() {
 }
 
 #[test]
+#[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_get_json_output() {
     let Some(deployment) = get_test_deployment() else {
@@ -610,6 +613,7 @@ fn test_deployment_workflow_list_then_get() {
 }
 
 #[test]
+#[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_secrets_redacted() {
     let Some(deployment) = get_test_deployment() else {
