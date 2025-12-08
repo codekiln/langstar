@@ -38,27 +38,32 @@ fn langstar_cmd() -> Command {
 }
 
 /// Helper to check if environment variables are set
-fn check_env() -> bool {
-    let langsmith_key = std::env::var("LANGSMITH_API_KEY").ok();
-    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok();
+/// Panics if required environment variables are not set
+fn check_env() {
+    let langsmith_key = std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY environment variable must be set for integration tests");
+    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
+        .expect("LANGSMITH_WORKSPACE_ID environment variable must be set for integration tests");
 
-    langsmith_key.is_some()
-        && workspace_id.is_some()
-        && !langsmith_key.as_ref().unwrap().is_empty()
-        && !workspace_id.as_ref().unwrap().is_empty()
+    assert!(
+        !langsmith_key.is_empty(),
+        "LANGSMITH_API_KEY must not be empty"
+    );
+    assert!(
+        !workspace_id.is_empty(),
+        "LANGSMITH_WORKSPACE_ID must not be empty"
+    );
 }
 
 /// Helper to get or create test deployment
-/// Returns None if environment variables are not set (tests will be skipped)
-fn get_test_deployment() -> Option<&'static TestDeployment> {
-    if !check_env() {
-        return None;
-    }
+/// Panics if environment variables are not set
+fn get_test_deployment() -> &'static TestDeployment {
+    check_env();
 
-    Some(TEST_DEPLOYMENT.get_or_init(|| {
+    TEST_DEPLOYMENT.get_or_init(|| {
         println!("\n📦 Initializing test deployment for deployment tests...");
         TestDeployment::create()
-    }))
+    })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -68,10 +73,7 @@ fn get_test_deployment() -> Option<&'static TestDeployment> {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_basic() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing basic deployment list command");
 
@@ -102,10 +104,7 @@ fn test_deployment_list_basic() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_with_limit() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with --limit flag");
 
@@ -127,10 +126,7 @@ fn test_deployment_list_with_limit() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_json_output() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with JSON output");
 
@@ -170,10 +166,7 @@ fn test_deployment_list_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_filter_by_type() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with --deployment-type filter");
 
@@ -195,10 +188,7 @@ fn test_deployment_list_filter_by_type() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_filter_by_status() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with --status filter");
 
@@ -220,10 +210,7 @@ fn test_deployment_list_filter_by_status() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_filter_by_name() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with --name-contains filter");
 
@@ -246,10 +233,7 @@ fn test_deployment_list_filter_by_name() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_invalid_type() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with invalid --deployment-type");
 
@@ -276,10 +260,7 @@ fn test_deployment_list_invalid_type() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_list_invalid_status() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment list with invalid --status");
 
@@ -311,10 +292,7 @@ fn test_deployment_list_invalid_status() {
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_get_basic() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
 
     println!(
         "Testing deployment get command for deployment: {}",
@@ -349,10 +327,7 @@ fn test_deployment_get_basic() {
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_get_json_output() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
 
     println!("Testing deployment get with JSON output");
 
@@ -393,10 +368,7 @@ fn test_deployment_get_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_get_invalid_id() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("Testing deployment get with invalid ID");
 
@@ -522,10 +494,7 @@ fn test_deployment_commands_help() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_workflow_list_then_get() {
-    if !check_env() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    check_env();
 
     println!("\n==================================================");
     println!("Test: Deployment Workflow (List then Get)");
@@ -616,10 +585,7 @@ fn test_deployment_workflow_list_then_get() {
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_deployment_secrets_redacted() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
 
     println!("Testing that deployment secrets are redacted in output");
 
