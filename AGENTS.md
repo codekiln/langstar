@@ -48,7 +48,7 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 
 **Testing documentation TOC:** @docs/dev/testing/README.md
 
-The TOC above is auto-loaded (~10-15 lines). From there, load specific docs on demand:
+The TOC above is auto-loaded (~15 lines). From there, load specific docs on demand:
 
 **Example workflows:**
 

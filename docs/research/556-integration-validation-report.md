@@ -93,7 +93,7 @@ All referenced testing documentation verified to exist:
 **Scenario:** "Write integration tests for new SDK method `list_datasets()`"
 
 **Expected agent workflow:**
-1. ✅ Session starts with AGENTS.md loaded (includes TOC)
+1. ✅ Session starts with AGENTS.md loaded (which auto-imports TOC via @ prefix)
 2. ✅ Agent sees 14-line TOC in context
 3. ✅ Agent identifies relevant docs: HIGH_LEVEL_TESTING_GUIDELINES.md, sdk-integration-tests.md
 4. ✅ Agent loads only those 2 docs using Read tool
@@ -183,7 +183,7 @@ AI agents working on this codebase now have:
 
 The progressive disclosure integration is complete and validated. All testing documentation is now accessible to AI coding agents through AGENTS.md and CLAUDE.md with optimal context efficiency.
 
-**Key achievement:** ~83% reduction in context usage per testing task while maintaining 100% documentation coverage.
+**Key achievement:** ~80% reduction in context usage per testing task while maintaining 100% documentation coverage.
 
 **Next steps:** Submit PR and monitor effectiveness in real-world usage.
 
