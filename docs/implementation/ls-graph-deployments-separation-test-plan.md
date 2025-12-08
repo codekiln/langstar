@@ -1,6 +1,6 @@
 # Test Plan: ls-graph-deployments-separation Milestone
 
-**Issue:** #571 (527.9-testing Comprehensive tests for deployment and graph commands)
+**Issue:** #571 (Comprehensive tests for deployment and graph commands)
 **Milestone:** ls-graph-deployments-separation (#11)
 **Feature Type:** Combined SDK + CLI
 **Date:** 2025-12-06

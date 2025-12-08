@@ -14,7 +14,7 @@ Tests in `cli/tests/deployment_command_test.rs` are deadlocking or pausing indef
 
 This branch adds comprehensive tests for deployment and graph commands:
 
-1. **cli/tests/deployment_command_test.rs** (654 lines)
+1. **cli/tests/deployment_command_test.rs** (658 lines)
    - CLI integration tests for `langstar deployment` commands
    - Uses shared `OnceLock<TestDeployment>` pattern
 
@@ -33,9 +33,9 @@ This branch adds comprehensive tests for deployment and graph commands:
 The file `cli/tests/deployment_command_test.rs`:
 - Uses `static TEST_DEPLOYMENT: OnceLock<TestDeployment>` (line 26)
 - Has THREE tests that call `get_test_deployment()`:
-  - `test_deployment_get_basic` (line 312)
-  - `test_deployment_get_json_output` (line 349)
-  - `test_deployment_secrets_redacted` (line 615)
+  - `test_deployment_get_basic` (line 313)
+  - `test_deployment_get_json_output` (line 351)
+  - `test_deployment_secrets_redacted` (line 618)
 - **Does NOT import `serial_test::serial`**
 - **Does NOT mark tests with `#[serial]`**
 
