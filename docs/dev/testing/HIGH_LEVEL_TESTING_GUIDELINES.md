@@ -23,6 +23,17 @@ In Toyota manufacturing, any worker can pull the "andon cord" to stop the entire
 - ❌ "The test passes on my machine"
 - ❌ "This failure is unrelated to my changes"
 - ❌ "The test should only run in CI where the proper environment is configured"
+- ❌ "This is a pre-existing failure" (without CI proof)
+
+### Verifying "Pre-Existing" Claims
+
+**Never claim a failure is "pre-existing" without objective proof.** Before making this claim:
+
+1. Check CI status on main: https://github.com/codekiln/langstar/commits/main/
+2. All checks must show ❌ for that specific test on main branch
+3. Link to the failing CI run as evidence
+
+If CI is green on main, the failure is **your responsibility** to fix, not a pre-existing issue.
 
 ### Always Required
 
