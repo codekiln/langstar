@@ -321,9 +321,22 @@ impl<'a> PromptClient<'a> {
     /// Get a specific prompt by handle
     ///
     /// # Arguments
-    /// * `handle` - The prompt handle (e.g., "owner/prompt-name")
+    /// * `handle` - The prompt handle (e.g., "owner/prompt-name" or just "prompt-name")
+    ///
+    /// # Note
+    /// If the handle doesn't contain an owner prefix (no `/`), this method
+    /// prepends `-/` which represents the current user's private prompts.
+    /// The LangSmith API returns `repo_handle` without the owner prefix,
+    /// but expects `GET /api/v1/repos/{owner}/{repo}` with owner in the path.
     pub async fn get(&self, handle: &str) -> Result<Prompt> {
-        let path = format!("/api/v1/repos/{}", handle);
+        // If handle doesn't contain '/', prepend '-/' for private prompts
+        // The '-' owner represents the current user's private prompts
+        let full_handle = if handle.contains('/') {
+            handle.to_string()
+        } else {
+            format!("-/{}", handle)
+        };
+        let path = format!("/api/v1/repos/{}", full_handle);
         let request = self.client.langsmith_get(&path)?;
 
         // The API wraps the prompt in a "repo" field
