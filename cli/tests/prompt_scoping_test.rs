@@ -65,7 +65,7 @@ fn test_prompt_list_with_org_id_from_env() {
 fn test_prompt_list_with_workspace_id_from_env() {
     // Requires LANGSMITH_WORKSPACE_ID to be set
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
     println!(
         "Testing prompt list with workspace ID from environment: {}",
@@ -117,7 +117,7 @@ fn test_prompt_list_with_organization_id_flag() {
 fn test_prompt_list_with_workspace_id_flag() {
     // Test that --workspace-id flag works
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
     println!(
         "Testing prompt list with --workspace-id flag: {}",
@@ -372,7 +372,7 @@ fn test_both_org_and_workspace_flags() {
     // Test providing both --organization-id and --workspace-id
     let org_id = get_org_id();
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
     println!("Testing with both --organization-id and --workspace-id flags");
 
