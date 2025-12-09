@@ -11,7 +11,7 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Overview
 
-Each API → CLI feature follows a **10-phase process**:
+Each API → CLI feature follows an **11-phase process**:
 
 | Phase | Name | Goal | Deliverable |
 |-------|------|------|-------------|
@@ -23,11 +23,12 @@ Each API → CLI feature follows a **10-phase process**:
 | 4 | SDK Types | Implement Rust types | `sdk/src/{feature}.rs` types |
 | 5 | SDK Client | Implement client methods | Client methods in SDK |
 | 6 | CLI Commands | Implement CLI commands | `cli/src/commands/{feature}.rs` |
-| 7 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
-| 8 | Documentation | Document usage | README updates, implementation docs |
-| **9** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
+| 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones:test-plan` |
+| 8 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
+| 9 | Documentation | Document usage | README updates, implementation docs |
+| **10** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
 
-**Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 9 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis.
+**Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 10 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) was added to formalize comprehensive test planning before implementation (Issue #634).
 
 ---
 
@@ -41,7 +42,7 @@ For new API features with **unclear complexity or feasibility**, create a scout 
 - ✅ Adding support for a new LangSmith/LangGraph API feature
 - ✅ Implementing functionality with unclear API complexity
 - ✅ Uncertain if existing langstar code already partially covers the feature
-- ✅ Need to validate feasibility before committing to full 8-phase process
+- ✅ Need to validate feasibility before committing to full implementation process
 
 **Skip scout issues when**:
 - ❌ Fixing a bug in existing functionality (scope is already known)
@@ -105,7 +106,7 @@ Create an exploratory research issue using this pattern:
 ### Benefits of Pre-Epic Scouting
 
 **Risk Reduction**:
-- Avoids committing to 8-phase milestone before understanding complexity
+- Avoids committing to full milestone before understanding complexity
 - Identifies technical blockers before resource allocation
 - Surfaces API limitations or missing features early
 
@@ -162,8 +163,9 @@ gh sub-issue create --parent 298 --title "298.3-openapi-validation Validate runs
 gh sub-issue create --parent 298 --title "298.4-sdk-runs-types Implement Run types and QueryRunsRequest in SDK"
 gh sub-issue create --parent 298 --title "298.5-sdk-runs-client Implement query_runs client method with pagination"
 gh sub-issue create --parent 298 --title "298.6-cli-runs-command Implement langstar runs query CLI command"
-gh sub-issue create --parent 298 --title "298.7-runs-testing Add comprehensive tests for runs query"
-gh sub-issue create --parent 298 --title "298.8-runs-docs Documentation for runs query feature"
+gh sub-issue create --parent 298 --title "298.7-test-plan Generate comprehensive test plan for runs query"
+gh sub-issue create --parent 298 --title "298.8-runs-testing Add comprehensive tests for runs query"
+gh sub-issue create --parent 298 --title "298.9-runs-docs Documentation for runs query feature"
 
 # Verify hierarchy
 gh sub-issue list 298 --relation children
@@ -590,9 +592,180 @@ Use the established config pattern from `cli/src/config.rs`:
 
 ---
 
-## Phase 7: Testing
+## Phase 7: Test Planning
 
-### 7.1 Unit Tests with Mocking
+Before implementing tests, generate a comprehensive test plan that ensures complete coverage of the feature's functionality, error conditions, and edge cases. This phase uses the `/gh-milestones:test-plan` command to automate test plan generation.
+
+### 7.1 Review Assets from Prior Phases
+
+Before generating the test plan, review all deliverables from previous phases:
+
+**Required review**:
+- Research reports from Phase 1
+- Design decisions from Phase 2
+- OpenAPI validation from Phase 3
+- SDK types implementation (Phase 4)
+- SDK client methods (Phase 5)
+- CLI commands implementation (Phase 6)
+- All merged PRs and their discussions
+
+**Why this matters**:
+- Test plans must cover all features documented in prior phases
+- Design decisions inform test scenarios
+- OpenAPI validation identifies edge cases
+- Implementation details reveal error conditions to test
+
+### 7.2 Generate Test Plan with /gh-milestones:test-plan
+
+Use the test planning command to generate a comprehensive test plan:
+
+```bash
+/gh-milestones:test-plan <milestone-name-or-number>
+```
+
+**Examples**:
+```bash
+# Using milestone name
+/gh-milestones:test-plan ls-runs-query
+
+# Using milestone number
+/gh-milestones:test-plan 8
+
+# Using milestone URL
+/gh-milestones:test-plan https://github.com/codekiln/langstar/milestone/8
+```
+
+**What the command does**:
+1. Loads relevant testing documentation (progressive disclosure)
+2. Reviews all issues and PRs in the milestone
+3. Analyzes implementation from merged PRs
+4. Generates comprehensive test plan document
+5. Identifies gaps in test coverage
+
+### 7.3 Test Plan Deliverable
+
+The generated test plan should be added to the testing phase issue and should include:
+
+**Required sections**:
+- **Feature Overview**: Summary of what's being tested
+- **Test Scope**: What's in scope and out of scope
+- **SDK Unit Tests**: Mocked tests for SDK methods
+- **SDK Integration Tests**: Real API tests with CRUD lifecycle
+- **CLI Integration Tests**: End-to-end CLI command tests
+- **Error Conditions**: All error scenarios to test
+- **Edge Cases**: Boundary conditions and unusual inputs
+- **Pre-commit Validation**: Checklist before implementation
+
+**Example structure**:
+```markdown
+# Test Plan: Runs Query Feature (Milestone ls-runs-query)
+
+## Feature Overview
+[Summary of runs query functionality]
+
+## Test Scope
+**In scope:**
+- SDK query_runs method with all parameters
+- CLI runs query command
+- Pagination handling
+- Error responses
+
+**Out of scope:**
+- [Features explicitly not covered]
+
+## SDK Unit Tests (Mocked)
+### 7.1.1 test_query_runs_success
+- Mock POST /api/v1/runs/query
+- Verify request structure
+- Verify response parsing
+
+[Additional test cases...]
+
+## SDK Integration Tests (Real API)
+### 7.2.1 test_query_runs_crud_lifecycle
+- Create test project
+- Create test runs
+- Query runs with filters
+- Verify results
+- Clean up resources
+
+[Additional test cases...]
+
+## CLI Integration Tests
+### 7.3.1 test_cli_runs_query_basic
+- Run: `langstar runs query --project test-project`
+- Verify output format
+- Verify exit code
+
+[Additional test cases...]
+
+## Error Conditions
+- Invalid API key
+- Malformed filter expression
+- Non-existent project
+[Additional scenarios...]
+
+## Edge Cases
+- Empty result set
+- Very large result set
+- Special characters in filters
+[Additional scenarios...]
+
+## Pre-commit Validation
+- [ ] All unit tests pass
+- [ ] All integration tests pass
+- [ ] cargo fmt --check passes
+- [ ] cargo clippy passes
+```
+
+### 7.4 Update Testing Ticket with Test Plan
+
+After generating the test plan:
+
+1. **Post test plan to the testing phase issue** (e.g., `298.8-runs-testing`)
+2. **Link test plan in issue description**
+3. **Use test plan as implementation guide** in Phase 8
+
+**Example issue update**:
+```markdown
+## Test Plan
+
+See generated test plan below:
+
+[Generated test plan content]
+
+## Implementation Checklist
+- [ ] SDK unit tests implemented
+- [ ] SDK integration tests implemented
+- [ ] CLI integration tests implemented
+- [ ] All error conditions covered
+- [ ] All edge cases covered
+- [ ] Pre-commit checks passing
+```
+
+### 7.5 Benefits of Test Planning Phase
+
+**Before test implementation**:
+- Comprehensive test coverage plan before writing code
+- Identifies missing test scenarios early
+- Ensures alignment between tests and requirements
+- Provides clear success criteria for Phase 8
+
+**Quality assurance**:
+- Test plans are reviewed before implementation begins
+- Gaps in test coverage are identified before code is written
+- Testing phase has clear deliverables and acceptance criteria
+
+**Efficiency**:
+- Automated test plan generation saves 1-2 hours of manual planning
+- Progressive disclosure loads only relevant testing docs (~4K tokens vs ~24K for all docs)
+- Test plan serves as implementation checklist
+
+---
+
+## Phase 8: Testing
+
+### 8.1 Unit Tests with Mocking
 
 **Location**: In-module tests or `sdk/tests/`
 
@@ -621,7 +794,7 @@ mod tests {
 }
 ```
 
-### 7.2 Integration Tests
+### 8.2 Integration Tests
 
 **Location**: `sdk/tests/{feature}_test.rs` or `cli/tests/{feature}_command_test.rs`
 
@@ -647,7 +820,7 @@ async fn test_query_runs_integration() {
 }
 ```
 
-### 7.3 Pre-Commit Validation
+### 8.3 Pre-Commit Validation
 
 **ALWAYS run before committing**:
 ```bash
@@ -660,9 +833,9 @@ cargo fmt --check
 
 ---
 
-## Phase 8: Documentation
+## Phase 9: Documentation
 
-### 8.1 Implementation Plan
+### 9.1 Implementation Plan
 
 Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
 - Executive summary
@@ -671,14 +844,14 @@ Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
 - Testing plan
 - Future enhancements
 
-### 8.2 Update README
+### 9.2 Update README
 
 Add new commands to main README:
 - Command syntax
 - Example usage
 - Environment variables
 
-### 8.3 In-Code Documentation
+### 9.3 In-Code Documentation
 
 - Rustdoc comments on all public items
 - Examples in doc comments where helpful
@@ -686,11 +859,11 @@ Add new commands to main README:
 
 ---
 
-## Phase 9: Milestone Release
+## Phase 10: Milestone Release
 
 When the milestone's features ship in a GitHub release, use the `/gh-milestones:release` slash command to automate milestone cleanup.
 
-### 9.1 Prerequisites
+### 10.1 Prerequisites
 
 Before running milestone release:
 
@@ -700,7 +873,7 @@ Before running milestone release:
 - [ ] CI/CD passing on main branch
 - [ ] CHANGELOG.md updated (if manual versioning)
 
-### 9.2 Release Command
+### 10.2 Release Command
 
 ```bash
 /gh-milestones:release <milestone> <version>
@@ -715,7 +888,7 @@ Before running milestone release:
 /gh-milestones:release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 ```
 
-### 9.3 What Gets Automated
+### 10.3 What Gets Automated
 
 The `/gh-milestones:release` command performs the following actions:
 
@@ -743,7 +916,7 @@ The `/gh-milestones:release` command performs the following actions:
 ✅ Parent issue #402 closed with release comment
 ```
 
-### 9.4 Manual Override
+### 10.4 Manual Override
 
 If sub-issues are intentionally still open, force the release:
 
@@ -753,7 +926,7 @@ FORCE_RELEASE=true /gh-milestones:release <milestone> <version>
 
 **Note**: Not recommended. Best practice is to close all sub-issues before releasing.
 
-### 9.5 Integration with Release Workflow
+### 10.5 Integration with Release Workflow
 
 **Typical release workflow**:
 ```bash
@@ -767,7 +940,7 @@ gh release create v0.10.0 --generate-notes
 /gh-milestones:release "ls-prompt-structured-outputs" v0.10.0
 ```
 
-### 9.6 Benefits
+### 10.6 Benefits
 
 **Consistency**: Every milestone follows same release tracking pattern
 
@@ -777,7 +950,7 @@ gh release create v0.10.0 --generate-notes
 
 **Validation**: Enforces sub-issue completion, validates release exists
 
-### 9.7 References
+### 10.7 References
 
 - **PR #442**: `/gh-milestones:release` command implementation
 - **Command Documentation**: `.claude/commands/gh-milestones:release.md`
@@ -873,8 +1046,8 @@ The complete milestone lifecycle spans from initial feasibility exploration thro
 |-------|------|------|------------------|
 | 0.0 | Pre-Epic Scouting | Before milestone (optional) | 1-3 days |
 | 0 | Epic Setup | Start of milestone | 1 day |
-| 1-8 | Standard Development | Implementation | 1-4 weeks |
-| 9 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
+| 1-9 | Standard Development | Implementation | 1-4 weeks |
+| 10 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
 
 ### Decision Tree: When to Scout
 
@@ -901,12 +1074,12 @@ Is this a new API feature with unclear complexity?
    - Sub-issues link to parent via `gh-sub-issue`
    - Development waves may be parallelized
 
-3. **Active Development** (Phases 1-8): Sub-issues progress through standard phases
+3. **Active Development** (Phases 1-9): Sub-issues progress through standard phases
    - PRs typically merge directly to main (not hierarchical)
    - Milestone description updated with progress
    - Sub-issues closed as PRs merge
 
-4. **Released** (Phase 9): Milestone closed, linked to GitHub release
+4. **Released** (Phase 10): Milestone closed, linked to GitHub release
    - `/gh-milestones:release` automates cleanup
    - Parent issue closed with release comment
    - Milestone description shows release link
@@ -956,5 +1129,5 @@ A feature is complete when:
 6. Integration tests passing
 7. Documentation updated
 8. GitHub release published
-9. **Milestone closed via `/gh-milestones:release` (Phase 9)**
+9. **Milestone closed via `/gh-milestones:release` (Phase 10)**
 10. **Parent issue closed with release link**
