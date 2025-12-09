@@ -199,8 +199,8 @@ jobs:
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
-          LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
 
       - name: List test artifacts
         if: always()
