@@ -30,25 +30,19 @@ fn langstar_cmd() -> Command {
     Command::new(bin)
 }
 
-/// Helper function to get organization ID from environment, or return None if not available
-fn get_org_id_or_skip() -> Option<String> {
-    match std::env::var("LANGSMITH_ORGANIZATION_ID") {
-        Ok(id) if !id.is_empty() => Some(id),
-        _ => None,
-    }
+/// Helper function to get organization ID from environment, or panic if not available
+///
+/// Integration tests MUST have LANGSMITH_ORGANIZATION_ID set. Panicking ensures
+/// tests fail loudly instead of silently skipping (see issue #647).
+fn get_org_id() -> String {
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests")
 }
 
 #[test]
 fn test_prompt_list_with_org_id_from_env() {
     // Requires LANGSMITH_ORGANIZATION_ID to be set
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            println!("   Set this environment variable to run organization-scoped tests");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!(
         "Testing prompt list with org ID from environment: {}",
@@ -71,7 +65,7 @@ fn test_prompt_list_with_org_id_from_env() {
 fn test_prompt_list_with_workspace_id_from_env() {
     // Requires LANGSMITH_WORKSPACE_ID to be set
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
 
     println!(
         "Testing prompt list with workspace ID from environment: {}",
@@ -93,13 +87,7 @@ fn test_prompt_list_with_workspace_id_from_env() {
 #[test]
 fn test_prompt_list_with_organization_id_flag() {
     // Test that --organization-id flag works
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!(
         "Testing prompt list with --organization-id flag: {}",
@@ -129,7 +117,7 @@ fn test_prompt_list_with_organization_id_flag() {
 fn test_prompt_list_with_workspace_id_flag() {
     // Test that --workspace-id flag works
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
 
     println!(
         "Testing prompt list with --workspace-id flag: {}",
@@ -159,13 +147,7 @@ fn test_prompt_list_with_workspace_id_flag() {
 fn test_prompt_list_scoped_defaults_to_private() {
     // When scoped (org or workspace ID set), should default to private prompts
     // unless --public flag is specified
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!(
         "Testing that scoped list defaults to private (org ID: {})",
@@ -198,13 +180,7 @@ fn test_prompt_list_scoped_defaults_to_private() {
 #[test]
 fn test_prompt_list_scoped_with_public_flag() {
     // When scoped with --public flag, should list public prompts
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!(
         "Testing scoped list with --public flag (org ID: {})",
@@ -234,13 +210,7 @@ fn test_prompt_list_scoped_with_public_flag() {
 #[test]
 fn test_prompt_search_with_organization_id_flag() {
     // Test search command with org ID flag
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("Testing prompt search with --organization-id flag");
 
@@ -267,13 +237,7 @@ fn test_prompt_search_with_organization_id_flag() {
 #[test]
 fn test_prompt_search_scoped_defaults_to_private() {
     // Search should also respect the default-to-private behavior when scoped
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("Testing that scoped search defaults to private");
 
@@ -300,13 +264,7 @@ fn test_prompt_search_scoped_defaults_to_private() {
 #[test]
 fn test_prompt_search_scoped_with_public_flag() {
     // Search with --public flag when scoped
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("Testing scoped search with --public flag");
 
@@ -335,13 +293,7 @@ fn test_prompt_search_scoped_with_public_flag() {
 fn test_prompt_get_with_organization_id_flag() {
     // Test get command with org ID flag
     // Note: This requires a prompt that actually exists
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("Testing prompt get with --organization-id flag");
 
@@ -387,13 +339,7 @@ fn test_prompt_get_with_organization_id_flag() {
 #[test]
 fn test_json_output_format() {
     // Test that JSON output works with scoping
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("Testing JSON output format with organization scoping");
 
@@ -424,15 +370,9 @@ fn test_json_output_format() {
 #[test]
 fn test_both_org_and_workspace_flags() {
     // Test providing both --organization-id and --workspace-id
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for this test");
+        .expect("LANGSMITH_WORKSPACE_ID must be set for this integration test");
 
     println!("Testing with both --organization-id and --workspace-id flags");
 
@@ -461,13 +401,7 @@ fn test_both_org_and_workspace_flags() {
 fn test_flag_overrides_environment() {
     // Test that CLI flag overrides environment variable
     // Set a different org ID via flag
-    let env_org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("⚠️  Skipping test: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let env_org_id = get_org_id();
 
     // Use the same ID for testing (in real scenario, would be different)
     let flag_org_id = env_org_id;
@@ -535,13 +469,7 @@ fn generate_test_prompt_name() -> String {
 /// The test creates its own data and cleans up after itself.
 #[test]
 fn test_prompt_crud_lifecycle_private_visibility() {
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("Skipping: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("\n══════════════════════════════════════════════════════════════");
     println!("CRUD Lifecycle Test: Private Prompt Visibility (Issue #536)");
@@ -751,13 +679,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
 /// This test creates a prompt and verifies search finds it correctly.
 #[test]
 fn test_prompt_search_crud_lifecycle() {
-    let org_id = match get_org_id_or_skip() {
-        Some(id) => id,
-        None => {
-            println!("Skipping: LANGSMITH_ORGANIZATION_ID not set");
-            return;
-        }
-    };
+    let org_id = get_org_id();
 
     println!("\n══════════════════════════════════════════════════════════════");
     println!("CRUD Lifecycle Test: Search Private Prompt Visibility");

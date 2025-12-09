@@ -38,15 +38,14 @@ fn langstar_cmd() -> Command {
 }
 
 /// Helper to get or create test deployment
-/// Returns None if environment variables are not set (tests will be skipped)
-fn get_test_deployment() -> Option<String> {
-    // Check if environment variables are set
-    let langsmith_key = std::env::var("LANGSMITH_API_KEY").ok()?;
-    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok()?;
-
-    if langsmith_key.is_empty() || workspace_id.is_empty() {
-        return None;
-    }
+/// Panics if required environment variables are not set (see issue #647).
+/// Integration tests MUST have LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID set.
+fn get_test_deployment() -> String {
+    // Check if environment variables are set - panic if missing
+    let _langsmith_key = std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let _workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
     // Get or create test deployment
     let deployment = TEST_DEPLOYMENT.get_or_init(|| {
@@ -58,7 +57,7 @@ fn get_test_deployment() -> Option<String> {
         "Using test deployment: {} ({})",
         deployment.name, deployment.id
     );
-    Some(deployment.name.clone())
+    deployment.name.clone()
 }
 
 /// Helper to get test graph ID
@@ -73,10 +72,7 @@ fn test_graph_id() -> String {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_basic() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     println!(
         "Testing basic graph list command for deployment: {}",
         deployment
@@ -115,10 +111,7 @@ fn test_graph_list_basic() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_with_show_nodes() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     println!("Testing graph list with --show-nodes flag");
 
     let mut cmd = langstar_cmd();
@@ -136,10 +129,7 @@ fn test_graph_list_with_show_nodes() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_json_output() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     println!("Testing graph list with JSON output");
 
     let mut cmd = langstar_cmd();
@@ -167,10 +157,7 @@ fn test_graph_list_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_list_invalid_deployment() {
-    if get_test_deployment().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    let _deployment = get_test_deployment();
 
     println!("Testing graph list with invalid deployment name");
 
@@ -197,10 +184,7 @@ fn test_graph_list_invalid_deployment() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_basic() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     let graph_id = test_graph_id();
     println!("Testing graph get command for graph: {}", graph_id);
 
@@ -243,10 +227,7 @@ fn test_graph_get_basic() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_with_xray() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     let graph_id = test_graph_id();
     println!("Testing graph get with --xray flag for graph: {}", graph_id);
 
@@ -280,10 +261,7 @@ fn test_graph_get_with_xray() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_json_output() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     let graph_id = test_graph_id();
     println!("Testing graph get with JSON output for graph: {}", graph_id);
 
@@ -333,10 +311,7 @@ fn test_graph_get_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_invalid_graph_id() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
     println!("Testing graph get with invalid graph ID");
 
     let mut cmd = langstar_cmd();
@@ -360,10 +335,7 @@ fn test_graph_get_invalid_graph_id() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_get_missing_deployment() {
-    if get_test_deployment().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    }
+    let _deployment = get_test_deployment();
 
     println!("Testing graph get without --deployment flag");
 
@@ -450,10 +422,7 @@ fn test_graph_commands_help() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_graph_workflow_list_then_get() {
-    let Some(deployment) = get_test_deployment() else {
-        println!("Skipping test: Required environment variables not set");
-        return;
-    };
+    let deployment = get_test_deployment();
 
     println!("\n==================================================");
     println!("Test: Graph Workflow (List then Get)");

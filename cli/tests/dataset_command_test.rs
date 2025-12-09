@@ -551,18 +551,16 @@ fn test_dataset_export_invalid_format() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Check if we have API credentials available
-fn has_api_credentials() -> bool {
-    std::env::var("LANGSMITH_API_KEY")
-        .map(|k| !k.is_empty())
-        .unwrap_or(false)
+/// Panics if LANGSMITH_API_KEY is not set (see issue #647).
+/// Integration tests MUST have LANGSMITH_API_KEY set.
+fn has_api_credentials() {
+    let _key = std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY must be set for integration tests");
 }
 
 #[test]
 fn test_dataset_list_basic() {
-    if !has_api_credentials() {
-        println!("Skipping test: LANGSMITH_API_KEY not set");
-        return;
-    }
+    has_api_credentials();
 
     let mut cmd = langstar_cmd();
     cmd.args(["dataset", "list", "--limit", "5"]);
@@ -574,10 +572,7 @@ fn test_dataset_list_basic() {
 
 #[test]
 fn test_dataset_list_json_output() {
-    if !has_api_credentials() {
-        println!("Skipping test: LANGSMITH_API_KEY not set");
-        return;
-    }
+    has_api_credentials();
 
     let mut cmd = langstar_cmd();
     cmd.args(["dataset", "list", "--limit", "3", "--json"]);
@@ -597,10 +592,7 @@ fn test_dataset_list_json_output() {
 
 #[test]
 fn test_dataset_list_with_data_type_filter() {
-    if !has_api_credentials() {
-        println!("Skipping test: LANGSMITH_API_KEY not set");
-        return;
-    }
+    has_api_credentials();
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -635,10 +627,7 @@ fn test_dataset_list_with_data_type_filter() {
 
 #[test]
 fn test_dataset_list_with_name_contains_filter() {
-    if !has_api_credentials() {
-        println!("Skipping test: LANGSMITH_API_KEY not set");
-        return;
-    }
+    has_api_credentials();
 
     let mut cmd = langstar_cmd();
     // Use a common substring that might match some datasets
@@ -663,10 +652,7 @@ mod integration {
     /// Test the full CRUD lifecycle for datasets.
     #[test]
     fn test_dataset_crud_lifecycle() {
-        if !has_api_credentials() {
-            println!("Skipping test: LANGSMITH_API_KEY not set");
-            return;
-        }
+        has_api_credentials();
 
         // 1. Create dataset
         let unique_name = format!("test-dataset-{}", &Uuid::new_v4().to_string()[..8]);
@@ -736,10 +722,7 @@ mod integration {
     /// Test import/export roundtrip for datasets.
     #[test]
     fn test_dataset_import_export_roundtrip() {
-        if !has_api_credentials() {
-            println!("Skipping test: LANGSMITH_API_KEY not set");
-            return;
-        }
+        has_api_credentials();
 
         let temp_dir = TempDir::new().unwrap();
         let unique_name = format!("roundtrip-test-{}", &Uuid::new_v4().to_string()[..8]);

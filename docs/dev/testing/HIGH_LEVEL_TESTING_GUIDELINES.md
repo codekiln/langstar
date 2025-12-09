@@ -84,7 +84,34 @@ When a PR adds or modifies features that interact with APIs:
 - [ ] Tests verify actual behavior (not just exit codes)
 - [ ] Tests use CRUD lifecycle pattern (see `crud-lifecycle-pattern.md`)
 - [ ] Test data is cleaned up properly
-- [ ] Tests document required environment variables
+- [ ] Tests use explicit failures (`.expect()`) for missing env vars
+
+#### Required Environment Variables
+
+**Core required env vars for integration tests:**
+- `LANGSMITH_API_KEY` - API key for LangSmith/LangGraph services
+- `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoped operations
+- `LANGSMITH_WORKSPACE_ID` - Workspace ID for scoped operations
+
+**CRITICAL - No Silent Skips (Issue #647):**
+Tests MUST fail explicitly when required env vars are missing:
+
+```rust
+// ❌ WRONG - Silent skip pattern
+fn get_org_id_or_skip() -> Option<String> {
+    std::env::var("LANGSMITH_ORGANIZATION_ID").ok()
+}
+let Some(org_id) = get_org_id_or_skip() else {
+    println!("Skipping test...");
+    return;
+};
+
+// ✅ CORRECT - Explicit failure
+let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+    .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
+```
+
+**Why:** Silent skips create false confidence - "289 tests passing" should mean 289 tests actually tested something, not that some silently skipped.
 
 ### CI/CD Requirements
 
