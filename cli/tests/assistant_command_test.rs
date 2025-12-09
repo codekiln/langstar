@@ -497,11 +497,8 @@ fn test_error_handling_nonexistent_deployment() {
     println!("Test: Error Handling - Nonexistent Deployment");
     println!("==================================================\n");
 
-    if get_test_deployment().is_none() {
-        println!("Skipping test: Required environment variables not set");
-        println!("Set LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID to run this test");
-        return;
-    }
+    // Ensure env vars are set (will panic if missing - no silent skip)
+    let _ = get_test_deployment();
     let assistant_name = generate_test_name("error-test");
 
     println!("Attempting to create assistant with nonexistent deployment...");
