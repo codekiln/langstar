@@ -49,7 +49,7 @@ When addressing review comments, choose ONE of these options:
 1. Close exactly one GitHub issue
 2. Include "Fixes #XYZ" (or similar keyword) in PR body
 3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in `/workspace`, which should always be kept up to date with origin main - instead you should be in `wip/<feature branch>`)
-4. Follow branch naming convention: `m<milestone>-p<parent>-i<issue>-<slug>` (with appropriate variations)
+4. Follow branch naming convention: `m<milestone_id>-p<parent_issue_id>-i<issue_num>-<slug>` (with appropriate variations)
 5. Use Conventional Emoji Commits for PR title
 
 **Why This Matters:** PRs #221 and #222 didn't include "Fixes #XYZ" keywords, causing issues to remain open after merge. This skill prevents such "orphan PRs."
