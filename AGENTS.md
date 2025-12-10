@@ -22,7 +22,7 @@ This project follows a GitHub issue-driven development workflow. For complete de
 
 Key points:
 - Create GitHub issues for all work
-- Use branch naming convention: `<username>/<issue_num>-<issue_slug>`
+- Use branch naming convention: `m<milestone>-p<parent>-i<issue>-<slug>` (with appropriate variations)
 - Follow Conventional Emoji Commits for commit messages
 - Link PRs to issues using `Fixes #N` or `Closes #N`
 

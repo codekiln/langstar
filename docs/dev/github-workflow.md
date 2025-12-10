@@ -155,21 +155,30 @@ Epic: #201 (devcontainer-feature milestone)
 
 ### Branch Naming Convention
 
-Branches should follow this format:
+Branches use prefixes to indicate milestone, parent issue, and issue number:
 
-```
-<username>/<issue_num>-<issue_slug>
-```
+**Prefix Meanings:**
+- `m<id>` = milestone ID
+- `p<id>` = parent issue ID
+- `i<id>` = GitHub issue number
 
-**Components:**
-- `<username>`: Your GitHub username (or `claude` for Claude Code)
-- `<issue_num>`: The issue number (e.g., `7`, `42`)
-- `<issue_slug>`: A short, kebab-case description derived from the issue title
+**Format Combinations:**
 
-**Examples:**
-- `alice/7-add-user-authentication`
-- `bob/42-fix-database-connection`
-- `claude/15-update-documentation`
+1. **With milestone and parent issue:**
+   - Format: `m<milestone_id>-p<parent_id>-i<issue_num>-<issue_slug>`
+   - Example: `m8-p123-i234-add-user-auth` (milestone #8, parent #123, issue #234)
+
+2. **With parent issue only (no milestone):**
+   - Format: `p<parent_id>-i<issue_num>-<issue_slug>`
+   - Example: `p123-i234-add-user-auth` (parent #123, issue #234)
+
+3. **With milestone only (no parent):**
+   - Format: `m<milestone_id>-i<issue_num>-<issue_slug>`
+   - Example: `m8-i234-add-user-auth` (milestone #8, issue #234)
+
+4. **Neither milestone nor parent:**
+   - Format: `i<issue_num>-<issue_slug>`
+   - Example: `i234-add-user-auth` (issue #234)
 
 ### Creating Branches
 
@@ -177,13 +186,16 @@ Branches should follow this format:
 
 ```bash
 # Create and switch to a new branch
-git checkout -b <username>/<issue_num>-<issue_slug>
+git checkout -b <branch_name>
 
-# Example
-git checkout -b alice/7-add-user-authentication
+# Example: issue #234 in milestone #8 with parent #123
+git checkout -b m8-p123-i234-add-user-auth
+
+# Example: standalone issue #42
+git checkout -b i42-fix-database-connection
 
 # Push the branch to remote
-git push -u origin <username>/<issue_num>-<issue_slug>
+git push -u origin <branch_name>
 ```
 
 #### Option 2: Claude Code GitHub Actions
@@ -259,7 +271,7 @@ git add .
 git commit -m "✨ feat: add user authentication endpoints"
 
 # Push to remote
-git push origin <username>/<issue_num>-<issue_slug>
+git push origin <branch_name>
 ```
 
 ---
@@ -401,7 +413,7 @@ git checkout main
 git pull origin main
 
 # Delete local branch
-git branch -d <username>/<issue_num>-<issue_slug>
+git branch -d <branch_name>
 ```
 
 ---
@@ -466,7 +478,8 @@ For more information, see the [Claude Code GitHub Actions FAQ](https://github.co
 
 ### For Branches
 
-- Follow the naming convention: `<username>/<issue_num>-<issue_slug>`
+- Follow the naming convention: `m<milestone>-p<parent>-i<issue>-<slug>` (with appropriate variations)
+- Include milestone and parent prefixes when applicable
 - Create branches from the latest main branch
 - Keep branches focused on a single issue
 - Delete branches after merging
@@ -497,10 +510,10 @@ If a branch already exists for an issue:
 
 ```bash
 # Check out the existing branch
-git checkout <username>/<issue_num>-<issue_slug>
+git checkout <branch_name>
 
 # Pull latest changes
-git pull origin <username>/<issue_num>-<issue_slug>
+git pull origin <branch_name>
 ```
 
 ### Merge Conflicts
@@ -511,7 +524,7 @@ If you encounter merge conflicts:
 # Update your branch with latest main
 git checkout main
 git pull origin main
-git checkout <username>/<issue_num>-<issue_slug>
+git checkout <branch_name>
 git merge main
 
 # Resolve conflicts in your editor
@@ -544,8 +557,9 @@ Here's a complete example from start to finish:
 ### 2. Create Branch
 
 ```bash
-git checkout -b alice/7-document-workflow
-git push -u origin alice/7-document-workflow
+# Assuming issue #7 is standalone (no milestone or parent)
+git checkout -b i7-document-workflow
+git push -u origin i7-document-workflow
 ```
 
 Or mention `@claude` in the issue to have Claude create the branch.
@@ -564,7 +578,7 @@ git commit -m "📚 docs: add GitHub workflow documentation
 Fixes #7"
 
 # Push changes
-git push origin alice/7-document-workflow
+git push origin i7-document-workflow
 ```
 
 ### 4. Create Pull Request

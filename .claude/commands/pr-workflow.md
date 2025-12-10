@@ -136,7 +136,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 2. **Verify branch naming convention:**
    ```bash
    BRANCH=$(git branch --show-current)
-   # Should match: <username>/<issue_num>-<issue_slug>
+   # Should match: m<id>-p<id>-i<num>-<slug> or variants
    ```
    - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | sed -E 's|^[^/]*/([0-9]+)-.*$|\1|')`
    - If no issue number in branch, **STOP** and ask user which issue this PR fixes
@@ -663,7 +663,7 @@ EOF
 ```
 ❌ **Cannot determine issue number**
 
-Your branch name doesn't follow the convention: `<username>/<issue_num>-<issue_slug>`
+Your branch name doesn't follow the convention: `m<milestone>-p<parent>-i<issue>-<slug>` (or variants)
 
 Current branch: <branch_name>
 
