@@ -10,6 +10,7 @@ use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
 use serde_json::json;
 use std::fs;
 use tabled::Tabled;
+use uuid::Uuid;
 
 /// Commands for interacting with LangSmith Prompts
 #[derive(Debug, Subcommand)]
@@ -52,7 +53,12 @@ pub enum PromptCommands {
 
     /// Get details of a specific prompt
     Get {
-        /// Prompt handle (e.g., "owner/prompt-name")
+        /// Prompt handle (e.g., "owner/prompt-name") or UUID
+        ///
+        /// Can be:
+        /// - Full handle: "langchain-ai/rag-prompt"
+        /// - Short handle: "prompt-name" (prepends "-/" for private prompts)
+        /// - UUID: "8fc72dfc-6213-4048-b025-0156b1b735ff"
         handle: String,
 
         /// Organization ID for scoping (overrides config/env)
@@ -198,7 +204,16 @@ impl ColumnMetadata for Prompt {
         columns
             .iter()
             .map(|col| match col.as_str() {
-                "handle" => self.repo_handle.clone(),
+                "handle" => self
+                    .full_name
+                    .clone()
+                    .or_else(|| {
+                        // Fallback: construct from owner + repo_handle if full_name is missing
+                        self.owner
+                            .as_ref()
+                            .map(|owner| format!("{}/{}", owner, self.repo_handle))
+                    })
+                    .unwrap_or_else(|| self.repo_handle.clone()),
                 "likes" => self.num_likes.to_string(),
                 "downloads" => self.num_downloads.to_string(),
                 "public" => self.is_public.to_string(),
@@ -233,8 +248,19 @@ fn truncate_description(desc: Option<&String>, max_len: usize) -> String {
 
 impl From<&Prompt> for CompactPromptRow {
     fn from(prompt: &Prompt) -> Self {
+        let handle = prompt
+            .full_name
+            .clone()
+            .or_else(|| {
+                prompt
+                    .owner
+                    .as_ref()
+                    .map(|owner| format!("{}/{}", owner, prompt.repo_handle))
+            })
+            .unwrap_or_else(|| prompt.repo_handle.clone());
+
         Self {
-            repo_handle: prompt.repo_handle.clone(),
+            repo_handle: handle,
             num_downloads: prompt.num_downloads,
             description: truncate_description(prompt.description.as_ref(), 40),
         }
@@ -243,8 +269,19 @@ impl From<&Prompt> for CompactPromptRow {
 
 impl From<&Prompt> for FullPromptRow {
     fn from(prompt: &Prompt) -> Self {
+        let handle = prompt
+            .full_name
+            .clone()
+            .or_else(|| {
+                prompt
+                    .owner
+                    .as_ref()
+                    .map(|owner| format!("{}/{}", owner, prompt.repo_handle))
+            })
+            .unwrap_or_else(|| prompt.repo_handle.clone());
+
         Self {
-            repo_handle: prompt.repo_handle.clone(),
+            repo_handle: handle,
             num_likes: prompt.num_likes,
             num_downloads: prompt.num_downloads,
             is_public: if prompt.is_public { "yes" } else { "no" }.to_string(),
@@ -451,16 +488,28 @@ impl PromptCommands {
                 workspace_id,
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id, config);
-                formatter.info(&format!("Fetching prompt '{}'...", handle));
 
-                let prompt = client.prompts().get(handle).await?;
+                // Detect if input is a valid UUID using the uuid crate for robust parsing
+                let is_uuid = Uuid::parse_str(handle).is_ok();
+
+                let prompt = if is_uuid {
+                    formatter.info(&format!("Fetching prompt by ID '{}'...", handle));
+                    client.prompts().get_by_id(handle).await?
+                } else {
+                    formatter.info(&format!("Fetching prompt '{}'...", handle));
+                    client.prompts().get(handle).await?
+                };
 
                 if format == OutputFormat::Json {
                     formatter.print(&prompt)?;
                 } else {
                     println!("\n{}", "Prompt Details".to_uppercase());
                     println!("─────────────────────────────────────────");
-                    println!("Handle:      {}", prompt.repo_handle);
+
+                    // Display full_name if available, otherwise fall back to repo_handle
+                    let display_handle = prompt.full_name.as_ref().unwrap_or(&prompt.repo_handle);
+                    println!("Handle:      {}", display_handle);
+                    println!("ID:          {}", prompt.id);
                     println!("Likes:       {}", prompt.num_likes);
                     println!("Downloads:   {}", prompt.num_downloads);
                     println!(

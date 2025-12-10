@@ -243,8 +243,14 @@ pub fn validate_method(method: &str) -> Result<()> {
 pub struct Prompt {
     /// Unique identifier for the prompt
     pub id: String,
-    /// Name of the prompt
+    /// Name of the prompt (without owner prefix)
     pub repo_handle: String,
+    /// Full handle including owner (e.g., "langchain-ai/rag-prompt")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_name: Option<String>,
+    /// Owner of the prompt (e.g., "langchain-ai"), or None for private prompts
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub owner: Option<String>,
     /// Description of the prompt
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
@@ -347,6 +353,45 @@ impl<'a> PromptClient<'a> {
 
         let response: PromptResponse = self.client.execute(request).await?;
         Ok(response.repo)
+    }
+
+    /// Get a specific prompt by UUID
+    ///
+    /// # Arguments
+    /// * `id` - The prompt UUID
+    ///
+    /// # Note
+    /// This method searches through the prompt list to find a prompt with the given ID.
+    /// It uses pagination to search through all prompts until the matching ID is found.
+    /// It's less efficient than `get()` but necessary since the API doesn't provide
+    /// a direct UUID-based endpoint.
+    pub async fn get_by_id(&self, id: &str) -> Result<Prompt> {
+        // Search through all prompts using pagination to find one with matching ID
+        let page_size = 100;
+        let mut offset = 0;
+
+        loop {
+            let prompts = self.list(Some(page_size), Some(offset), None).await?;
+
+            // If we get no results, we've exhausted all prompts
+            if prompts.is_empty() {
+                break;
+            }
+
+            // Check if any prompt in this page matches the ID
+            if let Some(prompt) = prompts.iter().find(|p| p.id == id) {
+                return Ok(prompt.clone());
+            }
+
+            // Move to next page
+            offset += page_size;
+        }
+
+        // Prompt not found after searching all pages
+        Err(crate::error::LangstarError::ApiError {
+            status: 404,
+            message: format!("Prompt with ID '{}' not found", id),
+        })
     }
 
     /// Search for prompts
@@ -768,7 +813,9 @@ mod tests {
     fn test_prompt_serialization() {
         let prompt = Prompt {
             id: "test-id".to_string(),
-            repo_handle: "owner/prompt".to_string(),
+            repo_handle: "prompt".to_string(),
+            full_name: Some("owner/prompt".to_string()),
+            owner: Some("owner".to_string()),
             description: Some("Test prompt".to_string()),
             num_likes: 42,
             num_downloads: 100,

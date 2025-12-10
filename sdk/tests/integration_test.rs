@@ -168,3 +168,75 @@ async fn test_list_prompts_from_prompthub() {
         }
     }
 }
+
+/// Integration test for fetching a prompt by UUID
+///
+/// This test verifies the get_by_id() method which searches through
+/// prompts using pagination to find one with a matching ID.
+///
+/// Run with: cargo test --test integration_test -- --ignored --nocapture
+#[tokio::test]
+#[ignore] // Only run when explicitly requested with --ignored flag
+async fn test_get_prompt_by_id() {
+    // Load authentication from environment
+    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set for integration tests");
+
+    // Create client
+    let client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
+
+    println!("Testing prompt fetch by UUID...");
+
+    // First, list prompts to get a valid UUID
+    let prompts = match client.prompts().list(Some(5), None, None).await {
+        Ok(p) => p,
+        Err(e) => {
+            panic!(
+                "Failed to list prompts: {:?}\n\nPlease verify:\n\
+                1. LANGSMITH_API_KEY is valid\n\
+                2. Network connectivity to api.smith.langchain.com",
+                e
+            );
+        }
+    };
+
+    assert!(
+        !prompts.is_empty(),
+        "Expected to find at least one prompt for testing"
+    );
+
+    let first_prompt = &prompts[0];
+    let prompt_id = &first_prompt.id;
+    println!("  Using prompt ID: {}", prompt_id);
+    println!("  Expected handle: {}", first_prompt.repo_handle);
+
+    // Now fetch by ID
+    match client.prompts().get_by_id(prompt_id).await {
+        Ok(fetched) => {
+            println!("✓ Successfully fetched prompt by ID");
+            println!("  ID:          {}", fetched.id);
+            println!("  Handle:      {}", fetched.repo_handle);
+            println!("  Likes:       {}", fetched.num_likes);
+
+            // Verify we got the right prompt
+            assert_eq!(
+                fetched.id, *prompt_id,
+                "Fetched prompt ID should match requested ID"
+            );
+            assert_eq!(
+                fetched.repo_handle, first_prompt.repo_handle,
+                "Fetched prompt handle should match expected handle"
+            );
+
+            println!("\n✓ Integration test passed!");
+        }
+        Err(e) => {
+            panic!(
+                "Failed to fetch prompt by ID '{}': {:?}\n\nPlease verify:\n\
+                1. LANGSMITH_API_KEY is valid\n\
+                2. Network connectivity to api.smith.langchain.com\n\
+                3. The prompt still exists",
+                prompt_id, e
+            );
+        }
+    }
+}
