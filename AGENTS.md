@@ -30,7 +30,7 @@ Key points:
 
 **IMPORTANT: Always work in worktrees, never directly in `/workspace`**
 
-This project uses git worktrees for parallel development. Keep `/workspace` clean by working in `wip/` directory worktrees.
+This project uses git worktrees for parallel development. Keep `/workspace` clean and synchronized with origin main by doing your work in `wip/` directory worktrees.
 
 **Standard workflow:**
 1. When starting work on an issue, use the `git-worktrees` skill or `/gh-start-issue <issue_number>` command
