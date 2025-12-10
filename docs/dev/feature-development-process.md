@@ -11,7 +11,7 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Overview
 
-Each API → CLI feature follows an **11-phase process**:
+Each API → CLI feature follows a **12-phase process**:
 
 | Phase | Name | Goal | Deliverable |
 |-------|------|------|-------------|
@@ -25,10 +25,11 @@ Each API → CLI feature follows an **11-phase process**:
 | 6 | CLI Commands | Implement CLI commands | `cli/src/commands/{feature}.rs` |
 | 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones:test-plan` |
 | 8 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
-| 9 | Documentation | Document usage | README updates, implementation docs |
-| **10** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
+| 9 | Test Audit | Verify test compliance | Audit report via `/gh-milestones:test-audit` |
+| 10 | Documentation | Document usage | README updates, implementation docs |
+| **11** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
 
-**Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 10 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) was added to formalize comprehensive test planning before implementation (Issue #634).
+**Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 11 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) and Phase 9 (Test Audit) were added to formalize comprehensive test planning and compliance verification (Issue #634).
 
 ---
 
@@ -165,7 +166,8 @@ gh sub-issue create --parent 298 --title "298.5-sdk-runs-client Implement query_
 gh sub-issue create --parent 298 --title "298.6-cli-runs-command Implement langstar runs query CLI command"
 gh sub-issue create --parent 298 --title "298.7-test-plan Generate comprehensive test plan for runs query"
 gh sub-issue create --parent 298 --title "298.8-runs-testing Add comprehensive tests for runs query"
-gh sub-issue create --parent 298 --title "298.9-runs-docs Documentation for runs query feature"
+gh sub-issue create --parent 298 --title "298.9-runs-test-audit Audit test compliance for runs query"
+gh sub-issue create --parent 298 --title "298.10-runs-docs Documentation for runs query feature"
 
 # Verify hierarchy
 gh sub-issue list 298 --relation children
@@ -833,9 +835,148 @@ cargo fmt --check
 
 ---
 
-## Phase 9: Documentation
+## Phase 9: Test Audit
 
-### 9.1 Implementation Plan
+After implementing tests, verify that the implementation complies with both the test plan (Phase 7) and the project's testing guidelines. This phase catches common issues that slip through even well-intentioned test implementations.
+
+### 9.1 Why Test Audit is Necessary
+
+Experience has shown that test implementations often deviate from test plans in problematic ways (see [Issue #637 post-mortem](https://github.com/codekiln/langstar/issues/637)):
+
+**Common problems caught by audit:**
+- Integration tests marked `#[ignore]` instead of properly conditional
+- CI not configured with required environment variables
+- Anemic tests that only verify exit codes, not actual behavior
+- Missing CRUD lifecycle verification (SDK → CLI → SDK)
+- Tests that don't clean up resources
+- Missing error condition coverage
+
+### 9.2 Run Test Audit Command
+
+Use the `/gh-milestones:test-audit` command to verify test compliance:
+
+```bash
+/gh-milestones:test-audit <milestone-name-or-number>
+```
+
+**Examples:**
+```bash
+# Using milestone name
+/gh-milestones:test-audit ls-runs-query
+
+# Using milestone number
+/gh-milestones:test-audit 8
+```
+
+**What the command does:**
+1. Loads the test plan from Phase 7
+2. Loads project testing guidelines (HIGH_LEVEL_TESTING_GUIDELINES.md)
+3. Analyzes implemented tests against the plan
+4. Checks for common anti-patterns
+5. Verifies CI configuration includes required environment variables
+6. Generates compliance report with specific remediation steps
+
+### 9.3 Audit Checklist
+
+The audit verifies compliance with these requirements:
+
+**Test Structure:**
+- [ ] Unit tests use `#[cfg(test)]` module pattern
+- [ ] Integration tests use proper feature flag: `#[cfg_attr(not(feature = "integration-tests"), ignore)]`
+- [ ] Tests are NOT unconditionally ignored with `#[ignore]`
+- [ ] Test files follow naming conventions (`*_test.rs` or `*_command_test.rs`)
+
+**Test Quality (Toyota Andon Cord):**
+- [ ] Tests verify actual behavior, not just exit codes
+- [ ] SDK operations are verified through round-trip assertions
+- [ ] CLI tests verify output content, not just success/failure
+- [ ] Error conditions are tested with specific error type verification
+- [ ] Edge cases from test plan are covered
+
+**CRUD Lifecycle Pattern:**
+- [ ] Integration tests create resources via SDK
+- [ ] Tests operate on resources via CLI or SDK under test
+- [ ] Tests verify results using SDK (not just CLI output)
+- [ ] Tests clean up created resources (even on failure)
+
+**CI Configuration:**
+- [ ] Required environment variables listed in CI workflow
+- [ ] Integration test job has access to `LANGSMITH_API_KEY`
+- [ ] Integration test job has access to `LANGSMITH_WORKSPACE_ID`
+- [ ] Feature flag `integration-tests` is enabled in CI
+
+### 9.4 Test Audit Deliverable
+
+The audit produces a compliance report with:
+
+**Report Structure:**
+```markdown
+# Test Audit Report: [Milestone Name]
+
+## Summary
+- Tests Planned: [count from test plan]
+- Tests Implemented: [count found]
+- Compliance Rate: [percentage]
+- Critical Issues: [count]
+- Warnings: [count]
+
+## Critical Issues (Must Fix)
+### Issue 1: [Description]
+- Location: [file:line]
+- Problem: [specific issue]
+- Remediation: [exact fix needed]
+
+## Warnings (Should Fix)
+### Warning 1: [Description]
+...
+
+## Test Plan Coverage Matrix
+| Test Case (from plan) | Implemented? | File:Line | Notes |
+|----------------------|--------------|-----------|-------|
+| test_create_run      | ✅ Yes       | sdk/tests/runs_test.rs:45 | |
+| test_query_runs_empty| ❌ No        | - | Missing |
+
+## CI Configuration Status
+- [ ] Environment variables configured
+- [ ] Feature flags enabled
+- [ ] Job dependencies correct
+
+## Recommendations
+1. [Specific action item]
+2. [Specific action item]
+```
+
+### 9.5 Remediation Process
+
+If the audit finds issues:
+
+1. **Critical issues** must be fixed before merge
+2. **Warnings** should be addressed unless explicitly justified
+3. Re-run audit after fixes: `/gh-milestones:test-audit <milestone>`
+4. Update test plan if new test cases were discovered
+
+### 9.6 Benefits of Test Audit Phase
+
+**Quality Assurance:**
+- Catches gaps between plan and implementation
+- Enforces Toyota Andon Cord principle
+- Prevents "tests that don't test anything" anti-pattern
+
+**Process Improvement:**
+- Creates feedback loop to improve test planning
+- Documents common issues for future reference
+- Builds institutional knowledge about testing patterns
+
+**CI Reliability:**
+- Ensures tests actually run in CI (not skipped)
+- Verifies environment configuration
+- Prevents "works locally, fails in CI" surprises
+
+---
+
+## Phase 10: Documentation
+
+### 10.1 Implementation Plan
 
 Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
 - Executive summary
@@ -844,14 +985,14 @@ Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
 - Testing plan
 - Future enhancements
 
-### 9.2 Update README
+### 10.2 Update README
 
 Add new commands to main README:
 - Command syntax
 - Example usage
 - Environment variables
 
-### 9.3 In-Code Documentation
+### 10.3 In-Code Documentation
 
 - Rustdoc comments on all public items
 - Examples in doc comments where helpful
@@ -859,11 +1000,11 @@ Add new commands to main README:
 
 ---
 
-## Phase 10: Milestone Release
+## Phase 11: Milestone Release
 
 When the milestone's features ship in a GitHub release, use the `/gh-milestones:release` slash command to automate milestone cleanup.
 
-### 10.1 Prerequisites
+### 11.1 Prerequisites
 
 Before running milestone release:
 
@@ -873,7 +1014,7 @@ Before running milestone release:
 - [ ] CI/CD passing on main branch
 - [ ] CHANGELOG.md updated (if manual versioning)
 
-### 10.2 Release Command
+### 11.2 Release Command
 
 ```bash
 /gh-milestones:release <milestone> <version>
@@ -888,7 +1029,7 @@ Before running milestone release:
 /gh-milestones:release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 ```
 
-### 10.3 What Gets Automated
+### 11.3 What Gets Automated
 
 The `/gh-milestones:release` command performs the following actions:
 
@@ -916,7 +1057,7 @@ The `/gh-milestones:release` command performs the following actions:
 ✅ Parent issue #402 closed with release comment
 ```
 
-### 10.4 Manual Override
+### 11.4 Manual Override
 
 If sub-issues are intentionally still open, force the release:
 
@@ -926,7 +1067,7 @@ FORCE_RELEASE=true /gh-milestones:release <milestone> <version>
 
 **Note**: Not recommended. Best practice is to close all sub-issues before releasing.
 
-### 10.5 Integration with Release Workflow
+### 11.5 Integration with Release Workflow
 
 **Typical release workflow**:
 ```bash
@@ -940,7 +1081,7 @@ gh release create v0.10.0 --generate-notes
 /gh-milestones:release "ls-prompt-structured-outputs" v0.10.0
 ```
 
-### 10.6 Benefits
+### 11.6 Benefits
 
 **Consistency**: Every milestone follows same release tracking pattern
 
@@ -950,7 +1091,7 @@ gh release create v0.10.0 --generate-notes
 
 **Validation**: Enforces sub-issue completion, validates release exists
 
-### 10.7 References
+### 11.7 References
 
 - **PR #442**: `/gh-milestones:release` command implementation
 - **Command Documentation**: `.claude/commands/gh-milestones:release.md`
@@ -1046,8 +1187,8 @@ The complete milestone lifecycle spans from initial feasibility exploration thro
 |-------|------|------|------------------|
 | 0.0 | Pre-Epic Scouting | Before milestone (optional) | 1-3 days |
 | 0 | Epic Setup | Start of milestone | 1 day |
-| 1-9 | Standard Development | Implementation | 1-4 weeks |
-| 10 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
+| 1-10 | Standard Development | Implementation | 1-4 weeks |
+| 11 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
 
 ### Decision Tree: When to Scout
 
@@ -1079,7 +1220,7 @@ Is this a new API feature with unclear complexity?
    - Milestone description updated with progress
    - Sub-issues closed as PRs merge
 
-4. **Released** (Phase 10): Milestone closed, linked to GitHub release
+4. **Released** (Phase 11): Milestone closed, linked to GitHub release
    - `/gh-milestones:release` automates cleanup
    - Parent issue closed with release comment
    - Milestone description shows release link
@@ -1129,5 +1270,5 @@ A feature is complete when:
 6. Integration tests passing
 7. Documentation updated
 8. GitHub release published
-9. **Milestone closed via `/gh-milestones:release` (Phase 10)**
+9. **Milestone closed via `/gh-milestones:release` (Phase 11)**
 10. **Parent issue closed with release link**
