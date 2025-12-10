@@ -6,6 +6,8 @@
 /// - Test repository: codekiln/langstar-structured-test (auto-created if it does not exist)
 ///
 /// Run with: cargo test --test structured_prompts_integration_test -- --ignored --nocapture
+///
+/// Note: These tests run automatically in CI via the `integration-tests-sdk` job
 use langstar_sdk::prompts::{
     LcJson, MessagePromptTemplateKwargs, PromptTemplateKwargs, StructuredOutputKwargs,
     StructuredPrompt,
