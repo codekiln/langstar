@@ -2,16 +2,90 @@
 
 **Issue**: #581
 **Parent**: #529 (ls-cli-output-dx milestone)
-**Date**: 2025-12-05
+**Date**: 2025-12-05 (Updated: 2025-12-10)
 
 ## Executive Summary
 
-This research evaluates two approaches for scriptable CLI output in langstar:
+This research evaluates approaches for scriptable CLI output in langstar and resolves the `-o` short flag conflict discovered during implementation of #587.
 
-1. **Approach A (from #529)**: `-o/--output` flag with `--columns` for field selection
-2. **Approach B (from #581)**: `--plain` flag with individual `--<column>` flags
+**Original recommendation:** `-o/--output` flag with `--columns` for field selection.
 
-After surveying CLI precedents (GitHub CLI, kubectl, AWS CLI) and analyzing langstar's current architecture, **Approach A is recommended** as it aligns with established CLI patterns, offers better extensibility, and integrates naturally with langstar's existing `-f/--format` flag.
+**Updated recommendation after conflict discovery:** Use the existing **`-f/--format` global flag** (no short flag for output) and extend it with `text` format. This avoids conflicts with existing `-o` short flags used for pagination `--offset` in multiple commands.
+
+## Post-Implementation Finding: `-o` Short Flag Conflict (2025-12-10)
+
+During implementation of #587, a constraint was discovered: **`-o` is already used for `--offset` in pagination contexts**. This section documents the audit and design decision.
+
+### Audit of `-o` Short Flag Usage
+
+**Commands using `-o` for `--offset` (pagination):**
+1. **`prompt list`** (`cli/src/commands/prompt.rs:24`)
+   - `#[arg(short, long, default_value = "0")]`
+   - Pagination parameter: number of prompts to skip
+2. **`assistant list`** (`cli/src/commands/assistant.rs:24`)
+   - `#[arg(short, long, default_value = "0")]`
+   - Pagination parameter: number of assistants to skip
+3. **`model-config list`** (`cli/src/commands/model_config.rs:25`)
+   - `#[arg(short, long, default_value = "0")]`
+   - Pagination parameter: number of items to skip
+
+**Commands using `-o` for `--output` (format selection):**
+4. **`runs query`** (`cli/src/commands/runs.rs:136`)
+   - `#[arg(short = 'o', long = "output", default_value = "table", value_enum)]`
+   - Note: Intentionally uses `-o` to avoid conflict with global `-f/--format` flag
+   - Has its own `RunsOutputFormat` enum (Table, Json, JsonPretty)
+
+**Commands with `--offset` but NO short flag:**
+5. **`deployment list`** (`cli/src/commands/deployment.rs:29`)
+   - `#[arg(long, default_value = "0")]`
+   - Only long form, no short flag
+
+**Global format flag:**
+- **`main.rs:27`**: `-f/--format` is global for all commands
+- Environment variable: `LANGSTAR_OUTPUT_FORMAT`
+- Current formats: `json`, `table`
+
+**Summary:**
+- **3 commands** use `-o` for `--offset`
+- **1 command** uses `-o` for `--output` (special case for `runs query`)
+- **1 command** has `--offset` with no short flag
+- Global `-f` is the standard format flag
+
+### Design Decision: Use Existing `-f/--format` Global Flag
+
+**Decision:** Extend the existing `-f/--format` global flag with a `text` format option. Do NOT introduce `-o/--output` as a new flag or reclaim `-o` from pagination.
+
+**Rationale:**
+
+1. **Minimize Breaking Changes**
+   - Removing `-o` from 3 pagination commands would break existing user scripts
+   - Users expect pagination flags to be consistent (`-l` for limit, `-o` for offset)
+
+2. **Leverage Existing Architecture**
+   - `-f/--format` is already global and well-established
+   - Environment variable `LANGSTAR_OUTPUT_FORMAT` already exists
+   - `OutputFormat` enum in `cli/src/output.rs` is the single source of truth
+
+3. **Consistency with Pagination**
+   - Short flags for pagination should be uniform across commands
+   - `deployment list` is the outlier (should gain `-o` for consistency)
+
+4. **Special Case for `runs query`**
+   - `runs query` can keep its `-o/--output` since it's command-specific
+   - Its `RunsOutputFormat` offers more granular control (Table, Json, JsonPretty)
+   - Document that `runs` is an exception due to its unique output needs
+
+5. **CLI Precedent Alignment (Partial)**
+   - While kubectl uses `-o`, we already committed to `-f` in initial design
+   - AWS CLI uses `--output` (long form only)
+   - Our `-f` is closer to Docker CLI's `--format`
+   - Consistency within langstar > mimicking kubectl exactly
+
+**Trade-offs Accepted:**
+- ❌ Not as terse as `-o` for output format
+- ✅ Maintains backward compatibility
+- ✅ Avoids flag conflicts and user confusion
+- ✅ Uses existing, tested infrastructure
 
 ## CLI Precedent Survey
 
@@ -174,9 +248,9 @@ All list commands in langstar (from `cli/src/main.rs:33-72`):
 
 ## Design Recommendation
 
-### Recommended Approach: Extend Existing `-o/--output` Pattern
+### Recommended Approach: Extend Existing `-f/--format` Global Flag
 
-**Rationale**: Aligns with CLI precedents and langstar's existing architecture.
+**Rationale**: Uses established langstar architecture while avoiding conflicts with pagination flags.
 
 #### Proposed Changes
 
@@ -198,8 +272,8 @@ pub enum OutputFormat {
 langstar prompt list --show-columns
 # Output: handle, likes, downloads, public, description, created_at
 
-# Select specific columns
-langstar prompt list -o text --columns handle,downloads
+# Select specific columns (using global -f flag)
+langstar prompt list -f text --columns handle,downloads
 
 # Output (tab-separated):
 # my-prompt	123
@@ -222,16 +296,17 @@ pub struct ColumnMetadata {
 
 ### Comparison: Approach A vs Approach B
 
-| Aspect | Approach A: `-o text --columns` | Approach B: `--plain --<col>` |
+| Aspect | Approach A: `-f text --columns` | Approach B: `--plain --<col>` |
 |--------|----------------------------------|-------------------------------|
-| **Precedent** | ✅ All surveyed CLIs | ❌ No major CLI uses this |
+| **Precedent** | ✅ Similar to Docker --format | ❌ No major CLI uses this |
 | **Extensibility** | ✅ Easy to add formats | ⚠️ Plain is terminal state |
-| **Integration** | ✅ Natural evolution of `-f` | ⚠️ New parallel system |
+| **Integration** | ✅ Uses existing `-f` flag | ⚠️ New parallel system |
 | **Flag count** | ✅ Minimal (2 flags) | ⚠️ O(n) flags per command |
 | **Discovery** | ✅ `--show-columns` clear | ⚠️ `--help` gets cluttered |
 | **AI-friendliness** | ✅ Single introspection point | ⚠️ Must parse help text |
 | **Consistency** | ✅ Uniform across commands | ⚠️ Hard to maintain |
 | **Delimiter** | ✅ Configurable/standard | ⚠️ Unspecified in proposal |
+| **Compatibility** | ✅ No pagination conflicts | ❌ Would need to reclaim `-o` |
 
 ### Why Not `--plain` with `--<column>` Flags?
 
@@ -277,7 +352,7 @@ langstar prompt list --full
 # ╰─────────────────────┴───────┴───────────┴────────┴─────────────────────╯
 
 # After
-langstar prompt list -o text --columns handle,downloads
+langstar prompt list -f text --columns handle,downloads
 # my-prompt	123
 # another-prompt	456
 
@@ -323,7 +398,7 @@ langstar prompt list --show-columns
 
 ```bash
 # Get specific data
-langstar prompt list -o text --columns handle | head -5
+langstar prompt list -f text --columns handle | head -5
 # Output (one per line):
 # anthropics/summarize-v2
 # langchain/qa-chain
@@ -334,8 +409,8 @@ langstar prompt list -o text --columns handle | head -5
 
 ```bash
 # Pipe to xargs for batch operations
-langstar prompt list -o text --columns handle --limit 100 | \
-  xargs -I {} langstar prompt get {} -o json | \
+langstar prompt list -f text --columns handle --limit 100 | \
+  xargs -I {} langstar prompt get {} -f json | \
   jq '.num_downloads' | \
   awk '{sum+=$1} END {print "Total downloads:", sum}'
 ```
@@ -344,14 +419,14 @@ langstar prompt list -o text --columns handle --limit 100 | \
 
 ```bash
 # Combine with standard Unix tools
-langstar prompt list -o text --columns handle,downloads,public | \
+langstar prompt list -f text --columns handle,downloads,public | \
   awk -F'\t' '$3=="true" && $2>100 {print $1}' | \
   sort
 ```
 
 ## Open Questions
 
-1. **Delimiter configuration**: Should `-o text` always use tabs, or add `--delimiter` flag?
+1. **Delimiter configuration**: Should `-f text` always use tabs, or add `--delimiter` flag?
    - **Recommendation**: Tabs by default, add `--delimiter` later if needed
 
 2. **Column aliases**: Should we support `--columns name,id` as shortcuts for `handle,downloads`?
@@ -360,12 +435,15 @@ langstar prompt list -o text --columns handle,downloads,public | \
 3. **Default columns**: Should each command have smart defaults when `--columns` not specified?
    - **Recommendation**: Yes, maintain current compact view as default
 
-4. **Header row**: Should `-o text` include a header row?
+4. **Header row**: Should `-f text` include a header row?
    - **Recommendation**: No by default, add `--header` flag if needed (like `aws --output text`)
+
+5. **`runs query` exception**: Should `runs query` migrate to global `-f` or keep its `-o/--output`?
+   - **Recommendation**: Keep `-o` for now as a documented exception. Revisit if it causes user confusion.
 
 ## Success Criteria
 
-- [ ] `-o text` format outputs tab-separated values
+- [ ] `-f text` format outputs tab-separated values
 - [ ] `--columns` flag selects specific fields
 - [ ] `--show-columns` discovers available fields
 - [ ] All 9 list commands support new output system
