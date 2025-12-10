@@ -172,7 +172,7 @@ impl OutputFormatter {
     /// This follows the Unix/CLI convention used by cargo, git, curl, etc.
     fn print_message(&self, icon: impl std::fmt::Display, message: &str) {
         let formatted = format!("{} {}", icon, message);
-        if self.format == OutputFormat::Json {
+        if self.format == OutputFormat::Json || self.format == OutputFormat::Text {
             eprintln!("{}", formatted);
         } else {
             println!("{}", formatted);
