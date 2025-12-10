@@ -135,7 +135,7 @@ fn create_test_movie_review_prompt() -> StructuredPrompt {
 }
 
 #[tokio::test]
-#[ignore] // Only run with --ignored flag
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_push_structured_prompt_integration() {
     let client = create_integration_test_client().await;
 
@@ -190,7 +190,7 @@ async fn test_push_structured_prompt_integration() {
 }
 
 #[tokio::test]
-#[ignore]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_pull_structured_prompt_integration() {
     let client = create_integration_test_client().await;
 
@@ -243,7 +243,7 @@ async fn test_pull_structured_prompt_integration() {
 }
 
 #[tokio::test]
-#[ignore]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_structured_prompt_round_trip_integration() {
     let client = create_integration_test_client().await;
 
@@ -300,7 +300,7 @@ async fn test_structured_prompt_round_trip_integration() {
 }
 
 #[tokio::test]
-#[ignore]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_push_function_calling_method() {
     let client = create_integration_test_client().await;
 
