@@ -362,18 +362,35 @@ impl<'a> PromptClient<'a> {
     ///
     /// # Note
     /// This method searches through the prompt list to find a prompt with the given ID.
+    /// It uses pagination to search through all prompts until the matching ID is found.
     /// It's less efficient than `get()` but necessary since the API doesn't provide
     /// a direct UUID-based endpoint.
     pub async fn get_by_id(&self, id: &str) -> Result<Prompt> {
-        // Search through prompts to find one with matching ID
-        // Use a reasonable limit - if not found in first 100, probably doesn't exist
-        let prompts = self.list(Some(100), Some(0), None).await?;
+        // Search through all prompts using pagination to find one with matching ID
+        let page_size = 100;
+        let mut offset = 0;
 
-        prompts.into_iter().find(|p| p.id == id).ok_or_else(|| {
-            crate::error::LangstarError::ApiError {
-                status: 404,
-                message: format!("Prompt with ID '{}' not found", id),
+        loop {
+            let prompts = self.list(Some(page_size), Some(offset), None).await?;
+
+            // If we get no results, we've exhausted all prompts
+            if prompts.is_empty() {
+                break;
             }
+
+            // Check if any prompt in this page matches the ID
+            if let Some(prompt) = prompts.iter().find(|p| p.id == id) {
+                return Ok(prompt.clone());
+            }
+
+            // Move to next page
+            offset += page_size;
+        }
+
+        // Prompt not found after searching all pages
+        Err(crate::error::LangstarError::ApiError {
+            status: 404,
+            message: format!("Prompt with ID '{}' not found", id),
         })
     }
 
