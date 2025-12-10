@@ -215,7 +215,10 @@ impl From<&AnnotationQueue> for QueueRow {
             name: queue.name.clone(),
             queue_type: format!("{:?}", queue.queue_type).to_lowercase(),
             description,
-            created: queue.created_at.format("%Y-%m-%d").to_string(),
+            created: queue
+                .created_at
+                .map(|dt| dt.format("%Y-%m-%d").to_string())
+                .unwrap_or_else(|| "-".to_string()),
         }
     }
 }
@@ -315,10 +318,9 @@ impl QueueCommands {
             println!("  ID: {}", queue.base.id);
             println!("  Name: {}", queue.base.name);
             println!("  Type: {:?}", queue.base.queue_type);
-            println!(
-                "  Created: {}",
-                queue.base.created_at.format("%Y-%m-%dT%H:%M:%SZ")
-            );
+            if let Some(created_at) = queue.base.created_at {
+                println!("  Created: {}", created_at.format("%Y-%m-%dT%H:%M:%SZ"));
+            }
         }
 
         Ok(())
@@ -342,14 +344,12 @@ impl QueueCommands {
             if let Some(rubric) = &queue.rubric_instructions {
                 println!("  Rubric: {}", rubric);
             }
-            println!(
-                "  Created: {}",
-                queue.base.created_at.format("%Y-%m-%dT%H:%M:%SZ")
-            );
-            println!(
-                "  Updated: {}",
-                queue.base.updated_at.format("%Y-%m-%dT%H:%M:%SZ")
-            );
+            if let Some(created_at) = queue.base.created_at {
+                println!("  Created: {}", created_at.format("%Y-%m-%dT%H:%M:%SZ"));
+            }
+            if let Some(updated_at) = queue.base.updated_at {
+                println!("  Updated: {}", updated_at.format("%Y-%m-%dT%H:%M:%SZ"));
+            }
         }
 
         Ok(())
