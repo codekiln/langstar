@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::serde_utils::{deserialize_flexible_datetime, deserialize_flexible_datetime_opt};
+use crate::serde_utils::deserialize_flexible_datetime_opt;
 
 /// Queue type enum for annotation queues.
 ///
@@ -97,12 +97,12 @@ pub struct AnnotationQueue {
     pub description: Option<String>,
 
     /// When the queue was created
-    #[serde(deserialize_with = "deserialize_flexible_datetime")]
-    pub created_at: DateTime<Utc>,
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub created_at: Option<DateTime<Utc>>,
 
     /// When the queue was last updated
-    #[serde(deserialize_with = "deserialize_flexible_datetime")]
-    pub updated_at: DateTime<Utc>,
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub updated_at: Option<DateTime<Utc>>,
 
     /// Number of reviewers required per item (default: 1)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -396,9 +396,29 @@ mod tests {
         let queue: AnnotationQueue = serde_json::from_str(json).unwrap();
         assert_eq!(queue.name, "Review Queue");
         assert_eq!(queue.queue_type, QueueType::Single);
+        assert!(queue.created_at.is_some());
+        assert!(queue.updated_at.is_some());
         assert_eq!(queue.num_reviewers_per_item, Some(2));
         assert_eq!(queue.enable_reservations, Some(true));
         assert_eq!(queue.reservation_minutes, Some(5));
+    }
+
+    #[test]
+    fn test_annotation_queue_deserialization_without_timestamps() {
+        // Test that queues can be deserialized even without created_at/updated_at
+        // This was causing the bug in issue #624
+        let json = r#"{
+            "id": "12345678-1234-1234-1234-123456789012",
+            "name": "Minimal Queue",
+            "tenantId": "87654321-4321-4321-4321-210987654321",
+            "queueType": "single"
+        }"#;
+
+        let queue: AnnotationQueue = serde_json::from_str(json).unwrap();
+        assert_eq!(queue.name, "Minimal Queue");
+        assert_eq!(queue.queue_type, QueueType::Single);
+        assert!(queue.created_at.is_none());
+        assert!(queue.updated_at.is_none());
     }
 
     #[test]
