@@ -202,14 +202,16 @@ impl ColumnMetadata for Prompt {
                 "likes" => self.num_likes.to_string(),
                 "downloads" => self.num_downloads.to_string(),
                 "public" => self.is_public.to_string(),
-                "description" => self.description.clone()
+                "description" => self
+                    .description
+                    .clone()
                     .unwrap_or_default()
-                    .replace('\t', " ")
-                    .replace('\n', " "),
-                "created_at" => self.created_at.clone()
+                    .replace(['\t', '\n'], " "),
+                "created_at" => self
+                    .created_at
+                    .clone()
                     .unwrap_or_default()
-                    .replace('\t', " ")
-                    .replace('\n', " "),
+                    .replace(['\t', '\n'], " "),
                 _ => String::new(),
             })
             .collect::<Vec<_>>()
