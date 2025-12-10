@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
+use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::prompts::{
     LcJson, MessagePromptTemplateKwargs, PromptTemplateKwargs, StructuredOutputKwargs,
@@ -39,6 +39,15 @@ pub enum PromptCommands {
         /// Show all columns (likes, public) - by default only essential columns are shown
         #[arg(long)]
         full: bool,
+
+        /// Select specific columns for text output (comma-separated)
+        /// Available: handle, likes, downloads, public, description, created_at
+        #[arg(long, value_delimiter = ',')]
+        columns: Option<Vec<String>>,
+
+        /// Show available columns for text output
+        #[arg(long)]
+        show_columns: bool,
     },
 
     /// Get details of a specific prompt
@@ -165,6 +174,41 @@ struct FullPromptRow {
     is_public: String,
     #[tabled(rename = "Description")]
     description: String,
+}
+
+/// Available columns for prompt list text output
+const PROMPT_COLUMNS: &[&str] = &[
+    "handle",
+    "likes",
+    "downloads",
+    "public",
+    "description",
+    "created_at",
+];
+
+/// Implementation of ColumnMetadata for Prompt
+///
+/// Enables tab-separated text output with column selection
+impl ColumnMetadata for Prompt {
+    fn available_columns() -> Vec<&'static str> {
+        PROMPT_COLUMNS.to_vec()
+    }
+
+    fn render_tsv(&self, columns: &[String]) -> String {
+        columns
+            .iter()
+            .map(|col| match col.as_str() {
+                "handle" => self.repo_handle.clone(),
+                "likes" => self.num_likes.to_string(),
+                "downloads" => self.num_downloads.to_string(),
+                "public" => if self.is_public { "true" } else { "false" }.to_string(),
+                "description" => self.description.clone().unwrap_or_default(),
+                "created_at" => self.created_at.clone().unwrap_or_default(),
+                _ => String::new(),
+            })
+            .collect::<Vec<_>>()
+            .join("\t")
+    }
 }
 
 /// Truncate description to fit table display
@@ -313,7 +357,32 @@ impl PromptCommands {
                 workspace_id,
                 public,
                 full,
+                columns,
+                show_columns,
             } => {
+                // Handle --show-columns flag: display available columns and exit
+                if *show_columns {
+                    println!("Available columns for prompt list:");
+                    for col in PROMPT_COLUMNS {
+                        println!("  {}", col);
+                    }
+                    println!("\nUsage: langstar prompt list -f text --columns handle,downloads");
+                    return Ok(());
+                }
+
+                // Validate --columns if provided
+                if let Some(cols) = columns {
+                    for col in cols {
+                        if !PROMPT_COLUMNS.contains(&col.as_str()) {
+                            return Err(crate::error::CliError::Config(format!(
+                                "Invalid column '{}'. Available columns: {}",
+                                col,
+                                PROMPT_COLUMNS.join(", ")
+                            )));
+                        }
+                    }
+                }
+
                 let client = Self::apply_scoping(client, organization_id, workspace_id, config);
                 let visibility = Self::determine_visibility(&client, *public);
 
@@ -330,30 +399,40 @@ impl PromptCommands {
                     .list(Some(*limit), Some(*offset), Some(visibility))
                     .await?;
 
-                if format == OutputFormat::Json {
-                    formatter.print(&prompts)?;
-                } else if *full {
-                    let rows: Vec<FullPromptRow> =
-                        prompts.iter().map(FullPromptRow::from).collect();
-                    formatter.print_table(&rows)?;
-                    println!("\nFound {} prompts", prompts.len());
-                } else {
-                    let rows: Vec<CompactPromptRow> =
-                        prompts.iter().map(CompactPromptRow::from).collect();
-                    formatter.print_table(&rows)?;
-                    println!(
-                        "\nFound {} prompts (use --full for all columns)",
-                        prompts.len()
-                    );
+                match format {
+                    OutputFormat::Json => {
+                        formatter.print(&prompts)?;
+                    }
+                    OutputFormat::Text => {
+                        // Use provided columns or default to all columns
+                        formatter.print_text(&prompts, columns.as_deref())?;
+                    }
+                    OutputFormat::Table => {
+                        if *full {
+                            let rows: Vec<FullPromptRow> =
+                                prompts.iter().map(FullPromptRow::from).collect();
+                            formatter.print_table(&rows)?;
+                            println!("\nFound {} prompts", prompts.len());
+                        } else {
+                            let rows: Vec<CompactPromptRow> =
+                                prompts.iter().map(CompactPromptRow::from).collect();
+                            formatter.print_table(&rows)?;
+                            println!(
+                                "\nFound {} prompts (use --full for all columns)",
+                                prompts.len()
+                            );
 
-                    // Show hint if scoped and no results
-                    if prompts.is_empty()
-                        && (client.organization_id().is_some() || client.workspace_id().is_some())
-                        && !*public
-                    {
-                        eprintln!("\n💡 Hint: No private prompts found in this scope.");
-                        eprintln!("  Try using --public flag to see public prompts:");
-                        eprintln!("    langstar prompt list --public");
+                            // Show hint if scoped and no results
+                            if prompts.is_empty()
+                                && (client.organization_id().is_some()
+                                    || client.workspace_id().is_some())
+                                && !*public
+                            {
+                                eprintln!("\n💡 Hint: No private prompts found in this scope.");
+                                eprintln!("  Try using --public flag to see public prompts:");
+                                eprintln!("    langstar prompt list --public");
+                            }
+                        }
                     }
                 }
             }
