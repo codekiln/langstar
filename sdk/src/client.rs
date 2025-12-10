@@ -1219,7 +1219,7 @@ impl LangchainClient {
     ///
     /// let dataset_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
     /// let dataset = client.get_dataset(dataset_id).await?;
-    /// println!("Dataset: {} ({} examples)", dataset.name, dataset.example_count);
+    /// println!("Dataset: {} ({:?} examples)", dataset.name, dataset.example_count);
     /// # Ok(())
     /// # }
     /// ```
