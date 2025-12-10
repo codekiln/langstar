@@ -82,25 +82,21 @@ async fn test_list_playground_settings_integration() {
 async fn test_list_playground_settings_pagination() {
     let client = create_integration_test_client().await;
 
-    // Test that pagination parameters are accepted by the API.
-    // Note: The actual pagination behavior depends on the API implementation.
-    // Some APIs may not strictly enforce limits or offsets for small datasets.
-    let page_size = 10;
-
-    // First page
+    // Use larger page size to reduce sensitivity to data changes during test
+    // Fetch first page
     let first_page = client
         .list_playground_settings(ListPlaygroundSettingsParams {
-            limit: Some(page_size),
+            limit: Some(10),
             offset: Some(0),
         })
         .await
         .expect("Failed to fetch first page");
 
-    // Second page with offset
+    // Fetch second page
     let second_page = client
         .list_playground_settings(ListPlaygroundSettingsParams {
-            limit: Some(page_size),
-            offset: Some(page_size),
+            limit: Some(10),
+            offset: Some(10),
         })
         .await
         .expect("Failed to fetch second page");
@@ -111,11 +107,10 @@ async fn test_list_playground_settings_pagination() {
         second_page.len()
     );
 
-    // Verify pagination parameters are being passed correctly.
-    // We check that we can fetch pages without errors - the actual pagination
-    // behavior depends on the total number of items and API implementation.
-    // For small datasets, pages may overlap or return all items.
-    if !first_page.is_empty() && !second_page.is_empty() {
+    // Test pagination consistency: pages should not overlap if both have results
+    // Note: API pagination may not be perfectly stable if data changes during test,
+    // so we only assert when we have full pages
+    if first_page.len() == 10 && second_page.len() == 10 {
         let first_ids: Vec<_> = first_page.iter().map(|c| c.id).collect();
         let second_ids: Vec<_> = second_page.iter().map(|c| c.id).collect();
 
@@ -124,23 +119,21 @@ async fn test_list_playground_settings_pagination() {
             .filter(|id| first_ids.contains(id))
             .count();
 
-        // Log overlap for debugging but don't fail - pagination behavior varies
-        if overlap_count > 0 {
-            let total_unique = first_ids.len() + second_ids.len() - overlap_count;
-            println!(
-                "  Note: {} overlapping item(s), {} total unique items",
-                overlap_count, total_unique
-            );
-        }
-
-        // Minimal assertion: at least one of the pages should have content
+        // Allow up to 1 overlapping item to account for API instability during concurrent access
         assert!(
-            !first_ids.is_empty() || !second_ids.is_empty(),
-            "Both pages are empty - API should return some results"
+            overlap_count <= 1,
+            "Too many configs ({}) appear in both pages (may indicate pagination issue). Overlapping IDs: {:?}",
+            overlap_count,
+            second_ids
+                .iter()
+                .filter(|id| first_ids.contains(id))
+                .collect::<Vec<_>>()
+        );
+    } else {
+        println!(
+            "  ℹ️  Skipping overlap check (pages not full - dataset may be small or changing)"
         );
     }
-
-    println!("✓ Pagination parameters accepted by API");
 }
 
 // ============================================================================
@@ -272,16 +265,10 @@ async fn test_delete_nonexistent_setting() {
     // Use a random UUID that doesn't exist
     let nonexistent_id = uuid::Uuid::new_v4();
 
-    // The LangSmith API implements idempotent DELETE operations:
-    // DELETE on a nonexistent resource returns 200 (success) rather than 404.
-    // This is standard REST API behavior for idempotent operations.
     let result = client.delete_playground_settings(nonexistent_id).await;
 
-    assert!(
-        result.is_ok(),
-        "API should accept idempotent deletes: {:?}",
-        result.err()
-    );
+    // API accepts idempotent deletes (returns 200 even if resource doesn't exist)
+    assert!(result.is_ok(), "API should accept idempotent deletes");
     println!("✓ Idempotent delete succeeded (API returns 200 for nonexistent resources)");
 }
 
