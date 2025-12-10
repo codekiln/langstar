@@ -379,6 +379,7 @@ class MilestoneWorkflow:
             try:
                 milestone_id = int(result.stdout.strip())
             except (ValueError, TypeError):
+                # If parsing fails, leave milestone_id as None
                 pass
 
         # Fetch parent issue ID if exists
@@ -391,12 +392,12 @@ class MilestoneWorkflow:
 
         if result.returncode == 0 and result.stdout.strip():
             try:
-                import json
                 parents_data = json.loads(result.stdout)
                 parent_issues = parents_data.get("subIssues", []) if parents_data else []
                 if parent_issues:
                     parent_id = parent_issues[0]["number"]
             except (json.JSONDecodeError, KeyError, TypeError):
+                # Parent issue information may be missing or malformed, leave parent_id as None
                 pass
 
         # Generate branch name: m<milestone>-p<parent>-i<issue>-<slug>

@@ -40,4 +40,4 @@ Updated branch naming convention from `<username>/<issue_num>-<slug>` to milesto
 
 ## Testing Notes
 
-Script changes are documentation/comment updates and regex enhancements - no impact on test suite. Test failures in #581 were unrelated to this change and have since been resolved.
+Script changes include functional code additions (milestone/parent detection, branch name generation). Comprehensive test suite added in `test_branch_naming.py` with 8 tests covering all branch name format variations and regex extraction logic. All tests passing. Test failures in #581 were unrelated to this change and have since been resolved.
