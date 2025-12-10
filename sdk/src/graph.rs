@@ -12,7 +12,9 @@
 //!
 //! ## Example
 //!
-//! ```no_run
+//! ```ignore
+//! // Note: This example shows the intended API. The get_graph() method
+//! // is accessed via the graphs client, not assistants client.
 //! use langstar_sdk::{LangchainClient, AuthConfig};
 //!
 //! #[tokio::main]
@@ -20,12 +22,12 @@
 //!     let auth = AuthConfig::from_env()?;
 //!     let client = LangchainClient::new(auth)?;
 //!
-//!     // Get graph topology for an assistant
-//!     // Note: get_graph() method will be implemented in a future PR
-//!     let graph = client.assistants().get_graph("assistant-id").await?;
-//!
-//!     println!("Graph has {} nodes and {} edges",
-//!              graph.nodes.len(), graph.edges.len());
+//!     // Get graph topology for a deployment
+//!     let graphs = client.graphs("<deployment-url>".to_string()).await?;
+//!     for (graph_id, graph) in &graphs.graphs {
+//!         println!("Graph {} has {} nodes and {} edges",
+//!                  graph_id, graph.nodes.len(), graph.edges.len());
+//!     }
 //!
 //!     Ok(())
 //! }
