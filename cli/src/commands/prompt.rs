@@ -201,9 +201,15 @@ impl ColumnMetadata for Prompt {
                 "handle" => self.repo_handle.clone(),
                 "likes" => self.num_likes.to_string(),
                 "downloads" => self.num_downloads.to_string(),
-                "public" => if self.is_public { "true" } else { "false" }.to_string(),
-                "description" => self.description.clone().unwrap_or_default(),
-                "created_at" => self.created_at.clone().unwrap_or_default(),
+                "public" => self.is_public.to_string(),
+                "description" => self.description.clone()
+                    .unwrap_or_default()
+                    .replace('\t', " ")
+                    .replace('\n', " "),
+                "created_at" => self.created_at.clone()
+                    .unwrap_or_default()
+                    .replace('\t', " ")
+                    .replace('\n', " "),
                 _ => String::new(),
             })
             .collect::<Vec<_>>()
