@@ -11,7 +11,7 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Overview
 
-Each API → CLI feature follows a **12-phase process**:
+Each API → CLI feature follows a **12-phase process** (plus optional scouting phase 0.0):
 
 | Phase | Name | Goal | Deliverable |
 |-------|------|------|-------------|

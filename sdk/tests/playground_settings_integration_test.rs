@@ -119,7 +119,7 @@ async fn test_list_playground_settings_pagination() {
             .filter(|id| first_ids.contains(id))
             .count();
 
-        // Allow up to 10% overlap to account for API instability during concurrent access
+        // Allow up to 1 overlapping item to account for API instability during concurrent access
         assert!(
             overlap_count <= 1,
             "Too many configs ({}) appear in both pages (may indicate pagination issue). Overlapping IDs: {:?}",
