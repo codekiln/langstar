@@ -365,9 +365,52 @@ class MilestoneWorkflow:
         if not issue_slug:
             issue_slug = "issue"
 
-        username = "claude"
-        branch_name = f"{username}/{issue['number']}-{issue_slug}"
-        worktree_path = f"wip/{username}-{issue['number']}-{issue_slug}"
+        issue_num = issue["number"]
+
+        # Fetch milestone ID if exists
+        milestone_id = None
+        result = self.run_command([
+            "gh", "issue", "view", str(issue_num),
+            "--json", "milestone",
+            "--jq", ".milestone.number // empty"
+        ], check=False)
+
+        if result.returncode == 0 and result.stdout.strip():
+            try:
+                milestone_id = int(result.stdout.strip())
+            except (ValueError, TypeError):
+                pass
+
+        # Fetch parent issue ID if exists
+        parent_id = None
+        result = self.run_command([
+            "gh", "sub-issue", "list", str(issue_num),
+            "--relation", "parent",
+            "--json", "number"
+        ], check=False)
+
+        if result.returncode == 0 and result.stdout.strip():
+            try:
+                import json
+                parents_data = json.loads(result.stdout)
+                parent_issues = parents_data.get("subIssues", []) if parents_data else []
+                if parent_issues:
+                    parent_id = parent_issues[0]["number"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                pass
+
+        # Generate branch name: m<milestone>-p<parent>-i<issue>-<slug>
+        # Format depends on presence of milestone and parent
+        branch_parts = []
+        if milestone_id:
+            branch_parts.append(f"m{milestone_id}")
+        if parent_id:
+            branch_parts.append(f"p{parent_id}")
+        branch_parts.append(f"i{issue_num}")
+        branch_parts.append(issue_slug)
+
+        branch_name = "-".join(branch_parts)
+        worktree_path = f"wip/{branch_name}"
 
         # Check if worktree already exists
         if os.path.exists(worktree_path):
