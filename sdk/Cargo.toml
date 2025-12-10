@@ -37,6 +37,8 @@ serial_test = "3"
 
 [features]
 default = []
+# Feature flag to enable integration tests that require API access
+integration-tests = []
 # Enable test utilities for integration tests
 # Use this feature when you need shared test infrastructure for deployments
 test-utils = []
