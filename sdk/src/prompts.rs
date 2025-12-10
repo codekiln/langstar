@@ -248,7 +248,7 @@ pub struct Prompt {
     /// Full handle including owner (e.g., "langchain-ai/rag-prompt")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full_name: Option<String>,
-    /// Owner of the prompt (e.g., "langchain-ai" or "-" for private)
+    /// Owner of the prompt (e.g., "langchain-ai"), or None for private prompts
     #[serde(skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
     /// Description of the prompt

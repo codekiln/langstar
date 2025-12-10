@@ -10,6 +10,7 @@ use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
 use serde_json::json;
 use std::fs;
 use tabled::Tabled;
+use uuid::Uuid;
 
 /// Commands for interacting with LangSmith Prompts
 #[derive(Debug, Subcommand)]
@@ -488,12 +489,8 @@ impl PromptCommands {
             } => {
                 let client = Self::apply_scoping(client, organization_id, workspace_id, config);
 
-                // Detect if input is a UUID (format: 8-4-4-4-12 hex digits)
-                let is_uuid = handle.len() == 36
-                    && handle.chars().filter(|c| *c == '-').count() == 4
-                    && handle
-                        .split('-')
-                        .all(|part| part.chars().all(|c| c.is_ascii_hexdigit()));
+                // Detect if input is a valid UUID using the uuid crate for robust parsing
+                let is_uuid = Uuid::parse_str(handle).is_ok();
 
                 let prompt = if is_uuid {
                     formatter.info(&format!("Fetching prompt by ID '{}'...", handle));
