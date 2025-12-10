@@ -674,7 +674,7 @@ The generated test plan should be added to the testing phase issue and should in
 - [Features explicitly not covered]
 
 ## SDK Unit Tests (Mocked)
-### 7.1.1 test_query_runs_success
+### 8.1.1 test_query_runs_success
 - Mock POST /api/v1/runs/query
 - Verify request structure
 - Verify response parsing
@@ -682,7 +682,7 @@ The generated test plan should be added to the testing phase issue and should in
 [Additional test cases...]
 
 ## SDK Integration Tests (Real API)
-### 7.2.1 test_query_runs_crud_lifecycle
+### 8.2.1 test_query_runs_crud_lifecycle
 - Create test project
 - Create test runs
 - Query runs with filters
@@ -692,7 +692,7 @@ The generated test plan should be added to the testing phase issue and should in
 [Additional test cases...]
 
 ## CLI Integration Tests
-### 7.3.1 test_cli_runs_query_basic
+### 8.3.1 test_cli_runs_query_basic
 - Run: `langstar runs query --project test-project`
 - Verify output format
 - Verify exit code
