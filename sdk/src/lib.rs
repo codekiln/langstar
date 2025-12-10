@@ -37,6 +37,7 @@ pub mod graph_client;
 pub mod integrations;
 pub mod organization;
 pub mod playground_settings;
+pub mod projects;
 pub mod prompts;
 pub mod runs;
 pub mod secrets;
@@ -89,6 +90,9 @@ pub use organization::{Organization, Workspace};
 pub use playground_settings::{
     ListPlaygroundSettingsParams, PlaygroundSavedOptions, PlaygroundSettingsCreateRequest,
     PlaygroundSettingsResponse, PlaygroundSettingsUpdateRequest,
+};
+pub use projects::{
+    ListProjectsParams, Project, ProjectCreate, ProjectSortColumn, ProjectUpdate, TraceTier,
 };
 pub use prompts::{
     CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs, Prompt, PromptClient,
