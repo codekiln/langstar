@@ -93,14 +93,22 @@ if [ -z "$ISSUE_SLUG" ]; then
   ISSUE_SLUG="issue"
 fi
 
-# Use 'claude' as username for Claude Code
-USERNAME="claude"
+# Fetch milestone ID if exists
+MILESTONE_ID=$(gh issue view ${ISSUE_NUM} --json milestone --jq '.milestone.number // empty')
 
-# Branch: <username>/<issue_num>-<issue_slug>
-BRANCH_NAME="${USERNAME}/${ISSUE_NUM}-${ISSUE_SLUG}"
+# Fetch parent issue ID if exists
+PARENT_ID=$(gh sub-issue list ${ISSUE_NUM} --relation parent --json number --jq '.subIssues[0].number // empty' 2>/dev/null)
 
-# Worktree: wip/<username>-<issue_num>-<issue_slug>
-WORKTREE_PATH="wip/${USERNAME}-${ISSUE_NUM}-${ISSUE_SLUG}"
+# Build branch name: m<milestone>-p<parent>-i<issue>-<slug>
+# Format depends on presence of milestone and parent
+BRANCH_PARTS=()
+[ -n "$MILESTONE_ID" ] && BRANCH_PARTS+=("m${MILESTONE_ID}")
+[ -n "$PARENT_ID" ] && BRANCH_PARTS+=("p${PARENT_ID}")
+BRANCH_PARTS+=("i${ISSUE_NUM}")
+BRANCH_PARTS+=("${ISSUE_SLUG}")
+
+BRANCH_NAME=$(IFS='-'; echo "${BRANCH_PARTS[*]}")
+WORKTREE_PATH="wip/${BRANCH_NAME}"
 
 echo "🌿 Branch: $BRANCH_NAME"
 echo "📂 Worktree: $WORKTREE_PATH"

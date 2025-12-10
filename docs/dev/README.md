@@ -161,7 +161,7 @@ cargo fmt --check
 We follow a principled GitHub issue → PR workflow. If, in the course of working on an issue/PR another task comes up:
 
 1. **File a new issue** for the emergent task
-2. **Create a new feature branch** off the current feature branch (format: `<username>/<new-issue-num>-<new-issue-slug>`)
+2. **Create a new feature branch** off the current feature branch (format: `i<new-issue-num>-<new-issue-slug>` or with m/p prefixes)
 3. **PR from new branch into current branch** with a description that will close the newly opened issue
 
 ### Manual Version Bumps Require Proper PR Title and Changelog

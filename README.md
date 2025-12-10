@@ -835,7 +835,7 @@ This project follows a GitHub issue-driven development workflow.
 ### Development Workflow
 
 1. Create a GitHub issue describing the feature or bug
-2. Create a branch following the convention: `<username>/<issue_num>-<issue_slug>`
+2. Create a branch following the convention: `m<milestone>-p<parent>-i<issue>-<slug>` (or variations)
 3. Make your changes following the coding conventions
 4. Use Conventional Emoji Commits for commit messages
 5. Submit a pull request referencing the issue

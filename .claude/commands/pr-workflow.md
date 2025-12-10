@@ -136,9 +136,9 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 2. **Verify branch naming convention:**
    ```bash
    BRANCH=$(git branch --show-current)
-   # Should match: <username>/<issue_num>-<issue_slug>
+   # Should match: m<id>-p<id>-i<num>-<slug> or variants
    ```
-   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | sed -E 's|^[^/]*/([0-9]+)-.*$|\1|')`
+   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | grep -oP 'i\K[0-9]+' || echo "$BRANCH" | grep -oE '[0-9]+' | head -1)`
    - If no issue number in branch, **STOP** and ask user which issue this PR fixes
 
 3. **Verify issue exists and is open:**
@@ -498,7 +498,8 @@ EOF
    # Check CI/CD status and wait for completion
    while true; do
      # Get the status of all checks
-     checks_running=$(gh pr checks "$PR_NUM" --json status,state --jq '[.[] | select(.status == "in_progress" or .status == "queued" or .state == "pending")] | length')
+     # Note: gh pr checks uses 'state' field with values: SUCCESS, FAILURE, SKIPPED, PENDING, etc.
+     checks_running=$(gh pr checks "$PR_NUM" --json state,completedAt --jq '[.[] | select(.completedAt == null)] | length')
      if [ "$checks_running" -gt 0 ]; then
        echo "⏳ Checks still running, waiting 30 seconds..."
        sleep 30
@@ -515,20 +516,21 @@ EOF
 
 5. **If CI/CD checks fail:**
    ```bash
-   # Get detailed failure information with run IDs
-   # NOTE: Must use --json to get run IDs; plain `gh pr checks` doesn't provide them
-   gh pr checks "$PR_NUM" --json workflowRun,name,state,conclusion \
-     --jq '.[] | select(.conclusion == "FAILURE") | {name, runId: .workflowRun.id}' > failed_checks.json
+   # Get detailed failure information
+   # Note: gh pr checks uses 'state' field (not 'conclusion')
+   # Available fields: bucket, completedAt, description, event, link, name, startedAt, state, workflow
+   gh pr checks "$PR_NUM" --json name,state,link,workflow \
+     --jq '.[] | select(.state == "FAILURE") | {name, workflow, link}' > failed_checks.json
 
-   # Check if any runId is missing and handle error
-   if jq -e '.runId == null' failed_checks.json >/dev/null; then
-     echo "⚠️ Warning: Could not extract runId for one or more failed checks. Please verify the jq filter and GitHub CLI output schema."
-     # Optionally, print the raw output for debugging
-     cat failed_checks.json
-   fi
-
-   # For each failed check, fetch logs using the extracted run IDs
-   # Example: for runId in $(jq -r '.runId' failed_checks.json); do gh run view "$runId" --log-failed; done
+   # Extract run IDs from links (format: https://github.com/owner/repo/actions/runs/12345/job/67890)
+   # For each failed check, fetch logs using gh run view
+   for link in $(jq -r '.link' failed_checks.json); do
+     # Extract run ID from URL
+     run_id=$(echo "$link" | grep -oP 'runs/\K[0-9]+')
+     if [ -n "$run_id" ]; then
+       gh run view "$run_id" --log-failed
+     fi
+   done
    ```
    - Parse error messages from logs
    - Identify specific failures (clippy, tests, fmt, etc.)
@@ -663,7 +665,7 @@ EOF
 ```
 ❌ **Cannot determine issue number**
 
-Your branch name doesn't follow the convention: `<username>/<issue_num>-<issue_slug>`
+Your branch name doesn't follow the convention: `m<milestone>-p<parent>-i<issue>-<slug>` (or variants)
 
 Current branch: <branch_name>
 

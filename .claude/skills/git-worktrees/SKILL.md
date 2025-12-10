@@ -23,12 +23,16 @@ Understanding Langstar's branching structure is critical for correct worktree us
 
 ### Branch Naming Convention
 
-Format: `<username>/<issue_num>-<issue_slug>`
+**Format variations:**
+- With milestone & parent: `m<milestone_id>-p<parent_id>-i<issue_num>-<issue_slug>`
+- With parent only: `p<parent_id>-i<issue_num>-<issue_slug>`
+- With milestone only: `m<milestone_id>-i<issue_num>-<issue_slug>`
+- Standalone: `i<issue_num>-<issue_slug>`
 
 **Examples:**
-- `alice/7-add-authentication`
-- `codekiln/129-gh-sub-issue`
-- `claude/132-create-git-worktrees-skill`
+- `m8-p123-i234-add-authentication`
+- `p129-i132-gh-sub-issue`
+- `i7-add-authentication`
 
 ### Issue Hierarchy and PR Flow
 
@@ -57,11 +61,11 @@ Issue #999 (child of #666)
 
 **Standard location:** `wip/` directory (gitignored)
 
-**Naming pattern:** `wip/<simplified-branch-name>/`
+**Naming pattern:** `wip/<branch-name>/`
 
-**Example mapping:**
-- Branch: `codekiln/130-add-authentication`
-- Worktree: `wip/codekiln-130-add-authentication/`
+**Example mappings:**
+- Branch: `i130-add-authentication` → Worktree: `wip/i130-add-authentication/`
+- Branch: `m8-p123-i234-add-auth` → Worktree: `wip/m8-p123-i234-add-auth/`
 
 The `wip/` directory is already configured in `.gitignore`, keeping worktrees out of version control.
 
@@ -75,7 +79,16 @@ Creates a new worktree with a new branch based on the specified target branch.
 
 **Template:**
 ```bash
-git worktree add -b <username>/<issue_num>-<issue_slug> wip/<simplified-name> <target-branch>
+git worktree add -b <branch-name> wip/<branch-name> <target-branch>
+```
+
+**Examples:**
+```bash
+# Standalone issue
+git worktree add -b i130-add-auth wip/i130-add-auth main
+
+# Issue with milestone and parent
+git worktree add -b m8-p123-i234-add-auth wip/m8-p123-i234-add-auth main
 ```
 
 **Example 1: Top-level issue branching from release branch**
@@ -151,9 +164,9 @@ git worktree prune --verbose    # Prune with output
 TARGET_BRANCH="release/v0.2.0"
 
 # Step 2: Determine branch name from issue
-# Issue #130: "Add user authentication"
-BRANCH_NAME="codekiln/130-add-authentication"
-WORKTREE_PATH="wip/codekiln-130-add-authentication"
+# Issue #130: "Add user authentication" (standalone, no milestone/parent)
+BRANCH_NAME="i130-add-authentication"
+WORKTREE_PATH="wip/i130-add-authentication"
 
 # Step 3: Create worktree
 git worktree add -b $BRANCH_NAME $WORKTREE_PATH $TARGET_BRANCH
@@ -314,9 +327,9 @@ gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 - Consistent location for all worktrees
 - Easy to find and manage
 
-✅ **Use simplified naming**
-- Remove forward slash from branch name
-- Example: `codekiln/130-add-auth` → `wip/codekiln-130-add-auth`
+✅ **Use consistent naming**
+- Worktree path matches branch name
+- Example: `i130-add-auth` → `wip/i130-add-auth`
 
 ❌ **Avoid**
 - Random locations (`../temp`, `~/worktrees/random`)

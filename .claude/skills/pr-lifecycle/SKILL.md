@@ -49,7 +49,7 @@ When addressing review comments, choose ONE of these options:
 1. Close exactly one GitHub issue
 2. Include "Fixes #XYZ" (or similar keyword) in PR body
 3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in `/workspace`, which should always be kept up to date with origin main - instead you should be in `wip/<feature branch>`)
-4. Follow branch naming convention: `<username>/<issue_num>-<issue_slug>`
+4. Follow branch naming convention: `m<milestone_id>-p<parent_issue_id>-i<issue_num>-<slug>` (with appropriate variations)
 5. Use Conventional Emoji Commits for PR title
 
 **Why This Matters:** PRs #221 and #222 didn't include "Fixes #XYZ" keywords, causing issues to remain open after merge. This skill prevents such "orphan PRs."
@@ -118,10 +118,10 @@ pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktre
 # 2. Check branch name follows convention
 BRANCH=$(git branch --show-current)
 echo "Current branch: $BRANCH"
-# Should match: <username>/<issue_num>-<issue_slug>
+# Should match: m<id>-p<id>-i<num>-<slug> or variants (p<id>-i<num>-<slug>, i<num>-<slug>)
 
-# 3. Extract issue number from branch
-ISSUE_NUM=$(echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
+# 3. Extract issue number from branch (look for i<num> pattern)
+ISSUE_NUM=$(echo "$BRANCH" | grep -oP 'i\K[0-9]+' || echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
 echo "Issue number: $ISSUE_NUM"
 
 # 4. Verify issue exists and is open
@@ -149,22 +149,26 @@ pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktre
 
 #### Branch Naming Convention
 
-**Format:** `<username>/<issue_num>-<issue_slug>`
+**Format variations:**
+- With milestone & parent: `m<milestone_id>-p<parent_id>-i<issue_num>-<issue_slug>`
+- With parent only: `p<parent_id>-i<issue_num>-<issue_slug>`
+- With milestone only: `m<milestone_id>-i<issue_num>-<issue_slug>`
+- Standalone: `i<issue_num>-<issue_slug>`
 
 **Examples:**
-- `alice/42-add-authentication`
-- `claude/225-pr-lifecycle-skill`
-- `codekiln/130-add-user-profile`
+- `m8-p123-i234-add-authentication`
+- `p123-i234-add-authentication`
+- `i42-add-authentication`
 
 **Validation:**
 ```bash
 BRANCH=$(git branch --show-current)
 
-# Check format (username/number-slug)
-if [[ "$BRANCH" =~ ^[a-zA-Z0-9_-]+/[0-9]+-[a-zA-Z0-9_-]+$ ]]; then
+# Check format: must contain i<number> pattern
+if [[ "$BRANCH" =~ i[0-9]+ ]]; then
   echo "Branch name follows convention"
 else
-  echo "WARNING: Branch name '$BRANCH' doesn't follow convention"
+  echo "WARNING: Branch name '$BRANCH' doesn't follow convention (missing i<number>)"
 fi
 ```
 
@@ -379,7 +383,7 @@ gh issue close "$ISSUE_NUM" --comment "Closed via PR #$PR_NUM"
 cd /workspace
 
 # Remove the worktree
-WORKTREE_PATH="wip/<branch-name>"
+WORKTREE_PATH="wip/<branch-name>"  # e.g., wip/i42-add-auth or wip/m8-p123-i234-add-auth
 git worktree remove "$WORKTREE_PATH"
 
 # Prune stale references
@@ -390,7 +394,7 @@ git worktree prune --verbose
 
 **Delete local and remote branches:**
 ```bash
-BRANCH="<username>/<issue_num>-<slug>"
+BRANCH="<branch_name>"  # e.g., i42-add-auth or m8-p123-i234-add-auth
 
 # Delete local branch
 git branch -d "$BRANCH"
@@ -537,8 +541,8 @@ gh issue close <num> --comment "Closed via PR #<pr_num>"
 
 **Solution:** Rename branch before PR:
 ```bash
-git branch -m old-name user/42-proper-name
-git push origin -u user/42-proper-name
+git branch -m old-name i42-proper-name
+git push origin -u i42-proper-name
 git push origin --delete old-name
 ```
 

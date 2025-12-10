@@ -7,8 +7,9 @@
 #
 # Requirements:
 #   - GitHub CLI (gh) must be installed and authenticated
-#   - Branch names should follow format: username/issue_num-description
-#   - Example: alice/123-add-feature
+#   - Branch names should follow format: m<milestone>-p<parent>-i<issue>-<slug>
+#   - Examples: m8-p123-i234-issue-slug, p123-i234-issue-slug, i234-issue-slug
+#   - Also supports legacy format: username/issue_num-description
 #
 # This script:
 # 1. Lists all worktrees
@@ -71,9 +72,20 @@ while IFS= read -r line; do
     path="$current_path"
     processed_any=true
 
-    # Extract issue number from branch name (format: username/issue_num-description)
-    if [[ $branch =~ /([0-9]+)- ]]; then
+    # Extract issue number from branch name
+    # Supports new format: m<milestone>-p<parent>-i<issue>-<slug> (and variations)
+    # Also supports old format: username/issue_num-description
+    issue_num=""
+
+    # Try new format first: look for i<number>- pattern
+    if [[ $branch =~ i([0-9]+)- ]]; then
       issue_num="${BASH_REMATCH[1]}"
+    # Fallback to old format: username/issue_num-slug
+    elif [[ $branch =~ /([0-9]+)- ]]; then
+      issue_num="${BASH_REMATCH[1]}"
+    fi
+
+    if [ -n "$issue_num" ]; then
 
       echo -n "Checking worktree: ${path##*/} (issue #${issue_num})... "
 

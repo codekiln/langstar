@@ -69,7 +69,7 @@ Focus on **functional correctness, security, and maintainability** over minor do
 
 - This project follows GitHub issue-driven development (see `docs/dev/github-workflow.md`)
 - PRs should link to issues using `Fixes #N` or `Closes #N`
-- Branch naming: `<username>/<issue_num>-<issue_slug>`
+- Branch naming: `m<milestone>-p<parent>-i<issue>-<slug>` (with variations based on milestone/parent presence)
 
 ### Testing Philosophy
 

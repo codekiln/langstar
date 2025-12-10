@@ -10,7 +10,7 @@ The Claude Code GitHub Action creates branches with a different naming conventio
 
 | Format | Pattern | Example |
 |--------|---------|---------|
-| **Project Convention** | `<username>/<issue_num>-<issue_slug>` | `claude/11-branch-naming-conventions` |
+| **Project Convention** | `i<issue_num>-<issue_slug>` (or with `m`/`p` prefixes) | `i11-branch-naming-conventions` |
 | **Claude Code Actual** | `<prefix>issue-<num>-<timestamp>` | `claude/issue-11-20251026-1529` |
 
 ### Key Differences
@@ -30,7 +30,7 @@ According to the Claude Code Action documentation, the only available input for 
 - **`branch_prefix`** (default: `claude/`)
   - Controls only the prefix portion of the branch name
   - Does NOT control the suffix pattern (issue number, slug, timestamp)
-  - Cannot achieve the desired `<username>/<issue_num>-<issue_slug>` format
+  - Cannot achieve the desired `i<issue_num>-<issue_slug>` format
 
 ### What Cannot Be Configured
 
@@ -124,8 +124,8 @@ For issues requiring strict naming compliance:
 
 ```bash
 # Create branch manually before mentioning @claude
-git checkout -b claude/11-branch-naming-conventions
-git push -u origin claude/11-branch-naming-conventions
+git checkout -b i11-branch-naming-conventions
+git push -u origin i11-branch-naming-conventions
 
 # Then mention @claude in the issue
 # Claude will detect and use the existing branch
@@ -174,11 +174,15 @@ Update `docs/dev/github-workflow.md` to officially support both formats:
 Branches should follow one of these formats:
 
 ### Manual Branch Creation
-<username>/<issue_num>-<issue_slug>
+Formats vary based on milestone/parent:
+- `m<milestone>-p<parent>-i<issue>-<slug>` (with milestone & parent)
+- `p<parent>-i<issue>-<slug>` (with parent only)
+- `i<issue>-<slug>` (standalone)
 
 Examples:
-- `alice/7-add-user-authentication`
-- `bob/42-fix-database-connection`
+- `m8-p123-i234-add-authentication`
+- `p42-i99-fix-database-connection`
+- `i7-add-user-authentication`
 
 ### Automated (Claude Code)
 claude/issue-<issue_num>-<timestamp>
@@ -187,7 +191,7 @@ Examples:
 - `claude/issue-11-20251026-1529`
 - `claude/issue-6-20251026-1344`
 
-Both formats are acceptable. Manual branches use descriptive slugs,
+Both formats are acceptable. Manual branches use milestone/parent prefixes when applicable,
 while automated Claude branches use timestamps for uniqueness.
 ```
 
