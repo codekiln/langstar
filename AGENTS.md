@@ -26,6 +26,31 @@ Key points:
 - Follow Conventional Emoji Commits for commit messages
 - Link PRs to issues using `Fixes #N` or `Closes #N`
 
+### Working in Git Worktrees
+
+**IMPORTANT: Always work in worktrees, never directly in `/workspace`**
+
+This project uses git worktrees for parallel development. Keep `/workspace` clean by working in `wip/` directory worktrees.
+
+**Standard workflow:**
+1. When starting work on an issue, use the `git-worktrees` skill or `/gh-start-issue <issue_number>` command
+2. Work in the created worktree at `wip/<branch-name>/`
+3. Keep `/workspace` reserved for:
+   - Switching between worktrees
+   - Repository-wide operations (git fetch, etc.)
+   - Reading documentation
+
+**Benefits:**
+- Parallel development on multiple issues
+- Clean separation between branches
+- No branch-switching conflicts
+- Easy context switching
+
+**Related resources:**
+- `.claude/skills/git-worktrees/SKILL.md` - Worktree management skill
+- `docs/dev/github-workflow.md` - Issue-driven workflow
+- `scripts/cleanup-closed-issue-worktrees.sh` - Cleanup automation
+
 ## Coding Conventions
 
 All coding conventions and development guidelines can be found in @docs/dev/README.md
