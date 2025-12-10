@@ -25,7 +25,6 @@ use predicates::prelude::*;
 /// - No "anemic tests" that only check success()
 ///
 /// Reference: Issue #587, Parent #584
-
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let bin = CargoBuild::new()
