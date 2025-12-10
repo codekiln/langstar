@@ -138,7 +138,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
    BRANCH=$(git branch --show-current)
    # Should match: m<id>-p<id>-i<num>-<slug> or variants
    ```
-   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | sed -E 's|^[^/]*/([0-9]+)-.*$|\1|')`
+   - Extract issue number: `ISSUE_NUM=$(echo "$BRANCH" | grep -oP 'i\K[0-9]+' || echo "$BRANCH" | grep -oE '[0-9]+' | head -1)`
    - If no issue number in branch, **STOP** and ask user which issue this PR fixes
 
 3. **Verify issue exists and is open:**
