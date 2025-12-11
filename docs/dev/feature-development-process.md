@@ -15,7 +15,7 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 
 | Phase | Name | Goal | Deliverable |
 |-------|------|------|-------------|
-| **0.0** | **Pre-Epic Scouting (Optional)** | **Validate feasibility before milestone** | **Scout research report** |
+| **0.0** | **Pre-Epic Scouting (Optional)** | **Gather research and technical context** | **Scout research report** |
 | 0 | Epic Setup | Establish tracking structure | Parent issue, milestone, sub-issues |
 | 1 | Research | Understand SDK precedent | Research report in `reference/research/` |
 | 2 | Design | Ensure DX consistency and integration | Design decisions documented in research report |
@@ -37,17 +37,17 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 
 ### When to Use Pre-Epic Scouting
 
-For new API features with **unclear complexity or feasibility**, create a scout issue to validate viability *before* committing to a full 8-phase milestone.
+For new API features where you need **preliminary research and technical context**, create a scout issue to gather knowledge *before* authoring the milestone's Phase 0 parent issue.
 
 **Use scout issues when**:
 - ✅ Adding support for a new LangSmith/LangGraph API feature
-- ✅ Implementing functionality with unclear API complexity
-- ✅ Uncertain if existing langstar code already partially covers the feature
-- ✅ Need to validate feasibility before committing to full implementation process
+- ✅ Need to understand API patterns and SDK precedents before writing tickets
+- ✅ Want to explore the solution space through experimentation
+- ✅ Gathering technical context to inform milestone structure and ticket authoring
 
 **Skip scout issues when**:
-- ❌ Fixing a bug in existing functionality (scope is already known)
-- ❌ Small enhancements to existing commands (low risk)
+- ❌ Fixing a bug in existing functionality (scope is already clear)
+- ❌ Small enhancements to existing commands (patterns already established)
 - ❌ Infrastructure changes (devcontainer, CI/CD)
 - ❌ Documentation-only changes
 
@@ -55,24 +55,25 @@ For new API features with **unclear complexity or feasibility**, create a scout 
 
 Create an exploratory research issue using this pattern:
 
-**Title Format**: `[Scout] Research {feature-name} feasibility and API patterns`
+**Title Format**: `[Scout] Research {feature-name} API patterns and technical context`
 
 **Required Sections**:
-- **Purpose**: Why scouting before full milestone
+- **Purpose**: Gather research and knowledge for milestone planning
 - **Scope**: What to research (NOT implementation)
 - **Deliverables**: Research report, SDK notes, optional experiments
-- **Success Criteria**: Feasibility assessment (go/no-go/conditional)
+- **Success Criteria**: Technical insights gathered, milestone structure recommended
 
 **Example**: [Issue #398](https://github.com/codekiln/langstar/issues/398) - Scout for structured output prompts
 
 ### Scout Issue Scope
 
-**Do NOT propose an implementation.** Focus on:
-1. Scout existing langstar code in `./cli` and `./sdk` for partial implementations
+**Focus on research and knowledge gathering, NOT implementation.** Activities include:
+1. Search existing langstar code in `./cli` and `./sdk` for related implementations
 2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
 3. Identify relevant API endpoints and request/response shapes
-4. Document complexity and technical blockers
-5. Assess feasibility (go/no-go recommendation)
+4. Run experiments to explore API behavior and validate assumptions
+5. Document technical patterns, conventions, and integration points
+6. Provide insights for authoring the milestone's first ticket(s)
 
 ### Scout Issue Deliverables
 
@@ -80,18 +81,21 @@ Create an exploratory research issue using this pattern:
    - Existing langstar implementation analysis
    - API endpoint identification
    - SDK precedent analysis (Python SDK)
-   - Manifest/schema structure documentation
-   - Feasibility assessment
+   - Technical patterns and conventions discovered
+   - Experimentation findings (if applicable)
+   - Insights for milestone planning
+   - Recommended structure for Phase 0 parent issue
+   - Suggested initial sub-issues
    - Open questions for implementation
 
 2. **Updated Reference Notes**:
    - `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
-   - Document key SDK findings
+   - Document key SDK patterns and method signatures
 
 3. **Optional: Experiment Scripts**:
    - `reference/experiments/{issue-num}-{slug}/`
-   - Python scripts to test API behavior
-   - Validate assumptions about API functionality
+   - Python scripts to explore API behavior
+   - Validate assumptions through hands-on testing
 
 ### Relationship to Milestone
 
@@ -100,26 +104,29 @@ Create an exploratory research issue using this pattern:
 **Workflow**:
 1. Create scout issue (no milestone yet)
 2. Complete scout research → PR directly to main
-3. Review findings
-4. **If feasible**: Create milestone and parent issue (Phase 0)
+3. Review findings and technical insights
+4. Use research to create milestone and author Phase 0 parent issue
 5. **Optional**: Retroactively attach scout issue to milestone for historical tracking
 
 ### Benefits of Pre-Epic Scouting
 
-**Risk Reduction**:
-- Avoids committing to full milestone before understanding complexity
-- Identifies technical blockers before resource allocation
-- Surfaces API limitations or missing features early
-
-**Better Planning**:
-- Parent issue scope is informed by actual research, not assumptions
-- Sub-issue breakdown is more accurate
-- Effort estimates are more realistic
-
-**Knowledge Building**:
-- Creates reusable research artifacts
+**Knowledge Foundation**:
+- Gathers technical context before authoring milestone tickets
 - Documents API patterns and SDK precedents
-- Establishes foundation for implementation phases
+- Creates reusable research artifacts
+- Helps understand the problem domain through experimentation
+
+**Better Milestone Planning**:
+- Parent issue scope is informed by actual research, not assumptions
+- Sub-issue breakdown reflects discovered patterns
+- Initial tickets target the right technical approach
+- Open questions are identified upfront
+
+**Reduced Uncertainty**:
+- Experimentation validates assumptions early
+- API behavior is understood before implementation
+- Technical integration points are documented
+- Implementation challenges are anticipated
 
 ---
 
@@ -1181,7 +1188,7 @@ Validation report at `reference/research/{num}-openapi-validation.md`
 
 ### Full Lifecycle Overview
 
-The complete milestone lifecycle spans from initial feasibility exploration through GitHub release:
+The complete milestone lifecycle spans from preliminary research through GitHub release:
 
 | Phase | Name | When | Typical Duration |
 |-------|------|------|------------------|
@@ -1193,14 +1200,13 @@ The complete milestone lifecycle spans from initial feasibility exploration thro
 ### Decision Tree: When to Scout
 
 ```
-Is this a new API feature with unclear complexity?
+Is this a new API feature needing research and technical context?
 ├── No → Skip to Phase 0 (Epic Setup)
 └── Yes → Start with Phase 0.0 (Scout)
         ↓
-    Scout reveals feasibility?
-    ├── Go → Proceed to Phase 0
-    ├── No-Go → Cancel/defer milestone
-    └── Conditional → Address blockers, then Phase 0
+    Scout gathers knowledge and insights
+        ↓
+    Use findings to author Phase 0 parent issue
 ```
 
 ### Milestone States Over Time
