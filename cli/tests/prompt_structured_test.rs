@@ -50,7 +50,8 @@ fn check_env_vars_public_prompts() {
         .expect("LANGSMITH_API_KEY must be set for integration tests");
     std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    // SAFETY: Safe to remove env var in test setup before tests run
+    // SAFETY: Modifying environment variables is unsafe in multi-threaded contexts.
+    // Tests using this function MUST be marked with #[serial] to prevent data races.
     unsafe {
         std::env::remove_var("LANGSMITH_WORKSPACE_ID");
     }
@@ -223,6 +224,7 @@ fn create_temp_invalid_schema_file() -> NamedTempFile {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_private_prompt() {
     check_env_vars_private_prompts();
 
@@ -378,6 +380,7 @@ fn test_cli_push_public_prompt_invalid_method() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_private_prompt_function_calling_method() {
     check_env_vars_private_prompts();
 
@@ -417,6 +420,7 @@ fn test_cli_push_private_prompt_function_calling_method() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_pull_private_prompt() {
     check_env_vars_private_prompts();
 
@@ -461,6 +465,7 @@ fn test_cli_pull_private_prompt() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_private_prompt_round_trip() {
     check_env_vars_private_prompts();
 
@@ -531,6 +536,7 @@ fn test_cli_private_prompt_round_trip() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_private_prompt_json_output() {
     check_env_vars_private_prompts();
 
@@ -587,6 +593,7 @@ fn test_cli_push_private_prompt_json_output() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_pull_private_prompt_json_output() {
     check_env_vars_private_prompts();
 
