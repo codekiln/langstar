@@ -132,9 +132,6 @@ After deploying the test graph, set these environment variables:
 # Required for all tests
 export LANGSMITH_API_KEY="<your-api-key>"
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
-```
-
-**See `docs/dev/environment-variables.md` for complete mapping of environment variables to API headers and which APIs require which variables.**
 
 # Required for assistant tests
 export TEST_GRAPH_ID="<graph-id-from-deployment>"
@@ -142,6 +139,8 @@ export TEST_GRAPH_ID="<graph-id-from-deployment>"
 # Optional: For read-only tests
 export TEST_DEPLOYMENT_ID="<deployment-id>"
 ```
+
+**See `docs/dev/environment-variables.md` for complete mapping of environment variables to API headers and which APIs require which variables.**
 
 **Finding these values:**
 
