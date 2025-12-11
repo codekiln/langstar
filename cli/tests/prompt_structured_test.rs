@@ -6,23 +6,28 @@
 /// - PRIVATE prompts (99% use case): Format `-/repo`, requires LANGSMITH_WORKSPACE_ID
 /// - PUBLIC prompts (1% use case): Format `owner/repo`, must NOT have LANGSMITH_WORKSPACE_ID
 ///
+/// **Test Pattern:**
+/// Each test follows CRUD lifecycle with unique repo names to avoid conflicts:
+/// 1. CREATE - Generate unique repo name and create via SDK
+/// 2. TEST - Execute CLI command under test
+/// 3. VERIFY - Verify CLI output and API state
+/// 4. CLEANUP - Delete repo via SDK (even on test failure)
+///
 /// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable
 /// - LANGSMITH_WORKSPACE_ID environment variable (for private prompt tests)
-/// - Test repository: codekiln/langstar-structured-test
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
 use escargot::CargoBuild;
+use langstar_sdk::client::{AuthConfig, LangchainClient};
 use predicates::prelude::*;
 use serde_json::json;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
-const TEST_REPO: &str = "langstar-structured-test";
-const TEST_REPO_PRIVATE: &str = "-/langstar-structured-test"; // Private prompt format
 
 /// Check environment variables for PRIVATE prompt tests (99% use case)
 /// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
@@ -46,6 +51,108 @@ fn check_env_vars_public_prompts() {
     // SAFETY: Safe to remove env var in test setup before tests run
     unsafe {
         std::env::remove_var("LANGSMITH_WORKSPACE_ID");
+    }
+}
+
+/// Helper to create a tokio runtime for SDK operations
+fn create_runtime() -> tokio::runtime::Runtime {
+    tokio::runtime::Runtime::new().expect("Failed to create tokio runtime")
+}
+
+/// Helper to create an SDK client for CRUD operations
+fn create_sdk_client() -> Result<LangchainClient, String> {
+    let auth = AuthConfig::from_env().map_err(|e| format!("Auth config error: {}", e))?;
+    LangchainClient::new(auth).map_err(|e| format!("Client creation error: {}", e))
+}
+
+/// Generate a unique test repo name to avoid conflicts between tests
+fn generate_unique_repo_name(prefix: &str) -> String {
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+    format!("{}-{}", prefix, timestamp)
+}
+
+/// Test fixture that creates a unique repo and cleans it up on drop
+struct PromptRepoFixture {
+    repo_name: String,
+    runtime: tokio::runtime::Runtime,
+    client: LangchainClient,
+    is_private: bool,
+}
+
+impl PromptRepoFixture {
+    /// Create a new private prompt repo fixture
+    fn new_private(prefix: &str) -> Self {
+        let repo_name = generate_unique_repo_name(prefix);
+        let runtime = create_runtime();
+        let client = create_sdk_client().expect("Failed to create SDK client");
+
+        // Create the repo via SDK
+        println!("[SETUP] Creating private repo: -/{}", repo_name);
+        runtime.block_on(async {
+            client.prompts()
+                .create_repo(
+                    &repo_name,
+                    Some(format!("Test repo for {}", prefix)),
+                    None,
+                    false, // is_public = false (private)
+                    None,
+                )
+                .await
+                .expect(&format!("Failed to create test repo: {}", repo_name));
+        });
+
+        Self { repo_name, runtime, client, is_private: true }
+    }
+
+    /// Create a new public prompt repo fixture
+    fn new_public(prefix: &str) -> Self {
+        let repo_name = generate_unique_repo_name(prefix);
+        let runtime = create_runtime();
+        let client = create_sdk_client().expect("Failed to create SDK client");
+
+        // Create the repo via SDK
+        println!("[SETUP] Creating public repo: {}/{}", TEST_OWNER, repo_name);
+        runtime.block_on(async {
+            client.prompts()
+                .create_repo(
+                    &repo_name,
+                    Some(format!("Test repo for {}", prefix)),
+                    None,
+                    true, // is_public = true
+                    None,
+                )
+                .await
+                .expect(&format!("Failed to create test repo: {}", repo_name));
+        });
+
+        Self { repo_name, runtime, client, is_private: false }
+    }
+
+    /// Get the repo handle for CLI commands
+    fn handle(&self) -> String {
+        if self.is_private {
+            format!("-/{}", self.repo_name)
+        } else {
+            format!("{}/{}", TEST_OWNER, self.repo_name)
+        }
+    }
+
+    /// Get just the repo name
+    fn repo_name(&self) -> &str {
+        &self.repo_name
+    }
+}
+
+impl Drop for PromptRepoFixture {
+    fn drop(&mut self) {
+        // Clean up the repo when the fixture goes out of scope
+        println!("[CLEANUP] Deleting repo: {}", self.handle());
+        let _ = self.runtime.block_on(async {
+            self.client.prompts().delete(&self.repo_name).await
+        });
     }
 }
 
@@ -105,6 +212,10 @@ fn create_temp_invalid_schema_file() -> NamedTempFile {
 fn test_cli_push_private_prompt() {
     check_env_vars_private_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-push-private");
+
+    // TEST: Push structured prompt via CLI
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
@@ -116,7 +227,7 @@ fn test_cli_push_private_prompt() {
         "--owner",
         "-",
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Answer this question: {question}",
         "--input-variables",
@@ -127,6 +238,7 @@ fn test_cli_push_private_prompt() {
         "json_schema",
     ]);
 
+    // VERIFY: CLI command succeeds with expected output
     cmd.assert()
         .success()
         .stdout(predicate::str::contains(
@@ -136,6 +248,8 @@ fn test_cli_push_private_prompt() {
         .stdout(predicate::str::contains(
             "Structured prompt with JSON schema",
         ));
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
