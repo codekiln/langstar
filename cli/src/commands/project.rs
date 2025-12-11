@@ -88,8 +88,8 @@ pub struct CreateArgs {
 /// Arguments for the `project update` command
 #[derive(Debug, Args)]
 pub struct UpdateArgs {
-    /// Project ID
-    pub id: Uuid,
+    /// Project ID or name
+    pub id_or_name: String,
 
     /// New name for the project
     #[arg(long)]
@@ -111,8 +111,8 @@ pub struct DeleteArgs {
     pub id_or_name: String,
 
     /// Skip confirmation prompt
-    #[arg(long)]
-    pub force: bool,
+    #[arg(long, short = 'y')]
+    pub yes: bool,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -406,13 +406,15 @@ impl ProjectCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
+        let project_id = resolve_project_id(&client, &args.id_or_name).await?;
+
         let request = ProjectUpdate {
             name: args.name.clone(),
             description: args.description.clone(),
             ..Default::default()
         };
 
-        let project = client.update_project(args.id, request).await?;
+        let project = client.update_project(project_id, request).await?;
 
         match format {
             OutputFormat::Json => {
@@ -423,7 +425,7 @@ impl ProjectCommands {
                 println!("{}\t{}", project.id, name);
             }
             OutputFormat::Table => {
-                println!("Project {} updated successfully", args.id);
+                println!("Project {} updated successfully", project.id);
                 println!("  Name: {}", project.name.as_deref().unwrap_or("<unnamed>"));
                 if let Some(desc) = &project.description {
                     println!("  Description: {}", desc);
@@ -440,10 +442,20 @@ impl ProjectCommands {
 
         let project_id = resolve_project_id(&client, &args.id_or_name).await?;
 
-        if !args.force {
+        if !args.yes {
+            use std::io::{self, Write};
             eprintln!("Are you sure you want to delete project {}?", project_id);
-            eprintln!("Use --force to skip this confirmation.");
-            return Ok(());
+            eprintln!("This action cannot be undone. Use --yes to skip this prompt.");
+            print!("Type 'yes' to confirm: ");
+            io::stdout().flush()?;
+
+            let mut confirmation = String::new();
+            io::stdin().read_line(&mut confirmation)?;
+
+            if confirmation.trim().to_lowercase() != "yes" {
+                println!("Deletion cancelled.");
+                return Ok(());
+            }
         }
 
         client.delete_project(project_id).await?;
