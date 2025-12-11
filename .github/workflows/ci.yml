@@ -253,7 +253,8 @@ jobs:
       - name: Run SDK integration tests
         # Runs ALL SDK integration tests in the langstar-sdk package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
-        run: cargo nextest run --profile integration -p langstar-sdk --features integration-tests
+        # Requires test-utils feature for shared test infrastructure (deployment helpers, etc.)
+        run: cargo nextest run --profile integration -p langstar-sdk --features integration-tests,test-utils
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
