@@ -44,11 +44,11 @@ Mark milestone as done and update parent issue with release information.
 
 ### /gh-milestones:scout
 
-Create a Phase 0.0 scout issue for feasibility research.
+Create a Phase 0.0 scout issue for preliminary research.
 
 **Usage:** `/gh-milestones:scout <feature-name>`
 
-**Description:** Creates a scout issue and performs AI-driven feasibility research before committing to a full 8-phase milestone.
+**Description:** Creates a scout issue to gather preliminary research and technical knowledge for milestone planning and ticket authoring.
 
 **Documentation:** See `scout.md`
 
@@ -81,7 +81,7 @@ Generate comprehensive test plan for a milestone.
 
 These commands work together to support the milestone-driven development process:
 
-1. **Scout** (optional) - Research feasibility before creating full milestone
+1. **Scout** (optional) - Gather research and technical context before creating milestone
 2. **Work** - Implement features through issue-driven workflow
 3. **Test Plan** - Generate comprehensive testing strategy
 4. **Prep Next** - Move between issues within milestone

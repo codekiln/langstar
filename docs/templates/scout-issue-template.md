@@ -1,68 +1,88 @@
 # Scout Issue Template (Phase 0.0)
 
-**Title**: `[Scout] Research {feature-name} feasibility and API patterns`
+**Title**: `[Scout] Research {feature-name} API patterns and technical context`
 **Labels**: `research`, `scout`
 **Milestone**: (none - created before milestone exists)
 
 ## Purpose
 
-Validate feasibility of **{feature-name}** before committing to a full 8-phase milestone.
+Gather preliminary research and technical knowledge about **{feature-name}** to inform milestone planning and ticket authoring.
 
 ## Scope
 
-**Research only - do NOT implement.**
+**Research and experimentation only - do not implement.**
 
-1. **Existing Langstar Code**: Search `./cli` and `./sdk` for partial implementations
-2. **Python SDK Precedent**: Analyze `langsmith-sdk/python/langsmith/client.py`
+1. **Existing Langstar Code**: Search `./cli` and `./sdk` for related implementations
+2. **Python SDK Precedent**: Analyze `langsmith-sdk/python/langsmith/client.py` patterns
 3. **API Endpoints**: Identify REST endpoints and request/response shapes
-4. **Experiments**: Run Python scripts to validate API behavior (critical for complex features)
-5. **Complexity Assessment**: Rate low/medium/high, identify blockers
-6. **Recommendation**: Go / No-Go / Conditional
+4. **Experiments**: Run Python scripts to explore API behavior and validate assumptions
+5. **Technical Patterns**: Document key patterns, conventions, and integration points
+6. **Milestone Planning Insights**: Identify how to structure Phase 0 parent issue and initial tickets
 
 ## Deliverables
 
 ### 1. Research Report
 `docs/research/{issue-num}-{slug}-scout.md`
 
-### 2. Experiments (when needed)
+**Required sections:**
+- Executive summary (purpose and key findings)
+- Existing langstar code analysis
+- Python SDK precedent analysis
+- API endpoints and patterns
+- Experimentation findings (if applicable)
+- Technical insights for milestone planning
+- Recommended structure for Phase 0 parent issue
+- Suggested initial sub-issues
+
+### 2. Experiments (as needed)
 `reference/experiments/{issue-num}-{slug}/`
 
-Create experiments when:
-- API behavior is unclear from documentation
-- Need to validate request/response shapes
-- Testing edge cases or error handling
+Create experiments to:
+- Explore API behavior through hands-on testing
+- Validate assumptions about request/response patterns
+- Test edge cases and error handling
+- Test integration patterns
 
 Example structure:
 ```
 reference/experiments/{issue-num}-{slug}/
 ├── README.md           # Experiment overview and findings
-├── test_{feature}.py   # Python script calling LangSmith API
+├── test_{feature}.py   # Python script for API pattern exploration
 └── run_test.sh         # Shell wrapper with env setup
 ```
 
 ### 3. SDK Notes (optional)
 `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
 
+Document key SDK patterns, method signatures, and conventions that inform Rust implementation.
+
 ## Success Criteria
 
-- [ ] Research report completed
-- [ ] Experiments run (if API behavior unclear)
-- [ ] Feasibility assessed (go/no-go/conditional)
-- [ ] Technical blockers identified
+- [ ] Research report completed with technical insights
+- [ ] Experiments run (if needed to validate assumptions)
+- [ ] SDK precedent patterns documented
+- [ ] API endpoints and request/response shapes identified
+- [ ] Technical context gathered for milestone planning
+- [ ] Clear recommendations for Phase 0 parent issue structure
+- [ ] Suggested initial sub-issues identified
 - [ ] PR merged to main
 
 ## Out of Scope
 
 - Implementing Rust code
-- Creating sub-issues
-- Designing CLI interface
-- Creating milestone
+- Creating the milestone or sub-issues
+- Detailed CLI interface design
+- Final API design decisions
+
+These decisions are informed by scout research but made during milestone planning.
 
 ## Next Steps
 
-**Go**: Create milestone (`ls-{feature-slug}`), then Phase 0 parent issue.
-**No-Go**: Document blockers, close issue.
-**Conditional**: Address conditions, re-assess.
+After scout research is complete:
+1. Use findings to create milestone (`ls-{feature-slug}`)
+2. Author Phase 0 parent issue using technical context from scout
+3. Structure initial sub-issues based on patterns discovered
+4. Reference scout research in milestone documentation
 
 ## References
 

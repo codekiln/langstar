@@ -1,11 +1,11 @@
 ---
-description: Create a Phase 0.0 scout issue and perform feasibility research for a new milestone
+description: Create a Phase 0.0 scout issue and perform preliminary research for a new milestone
 argument-hint: <feature-name>
 ---
 
-# Scout Milestone Feasibility (Phase 0.0)
+# Scout Milestone Research (Phase 0.0)
 
-Create a scout issue and perform AI-driven feasibility research before committing to a full 8-phase milestone.
+Create a scout issue and perform preliminary research to understand the problem domain and gather knowledge for milestone planning.
 
 ## Arguments
 
@@ -18,8 +18,9 @@ Parse: `<feature-name>` - short descriptive name (e.g., "dataset-management", "a
 ## When to Use
 
 - Adding support for a new LangSmith/LangGraph API feature
-- Implementing functionality with unclear API complexity
-- Need to validate feasibility before committing to full 8-phase process
+- Need to understand API patterns and SDK precedents before writing Phase 0 parent issue
+- Want to explore the solution space through research and experimentation
+- Gathering knowledge to inform milestone ticket authoring
 
 ## Execution
 
@@ -48,10 +49,12 @@ fi
 ### 3. Create Scout Issue
 
 ```bash
-ISSUE_BODY=$(cat docs/templates/scout-issue-template.md | sed "s/{feature-name}/$FEATURE_NAME/g")
+# Escape forward slashes and ampersands for safe sed substitution
+ESCAPED_FEATURE_NAME=$(printf '%s' "$FEATURE_NAME" | sed 's/[\/&]/\\&/g')
+ISSUE_BODY=$(cat docs/templates/scout-issue-template.md | sed "s/{feature-name}/$ESCAPED_FEATURE_NAME/g")
 
 ISSUE_URL=$(gh issue create \
-  --title "[Scout] Research $FEATURE_NAME feasibility and API patterns" \
+  --title "[Scout] Research $FEATURE_NAME API patterns and technical context" \
   --body "$ISSUE_BODY" \
   --label "research,scout")
 
@@ -65,7 +68,7 @@ mkdir -p docs/research
 RESEARCH_FILE="docs/research/${ISSUE_NUM}-${FEATURE_SLUG}-scout.md"
 
 cat > "$RESEARCH_FILE" <<EOF
-# $FEATURE_NAME Feasibility Scout
+# $FEATURE_NAME Research Scout
 
 **Issue**: #${ISSUE_NUM}
 **Date**: $(date +%Y-%m-%d)
@@ -73,7 +76,7 @@ cat > "$RESEARCH_FILE" <<EOF
 
 ## Executive Summary
 
-**Feasibility**: [Go / No-Go / Conditional]
+Gather knowledge and technical context for milestone planning.
 
 ## 1. Existing Langstar Code
 
@@ -87,18 +90,25 @@ cat > "$RESEARCH_FILE" <<EOF
 
 <!-- REST endpoints and shapes -->
 
-## 4. Complexity Assessment
+## 4. Technical Patterns
 
-**Complexity**: [Low / Medium / High]
+**Key Patterns Discovered**:
+<!-- Document patterns observed in SDK/API (e.g., pagination, error handling, resource lifecycle) -->
 
 ## 5. Experiments
 
 <!-- Document any API experiments run -->
 
-## 6. Recommendation
+## 6. Insights for Milestone Planning
 
-**Decision**: [Go / No-Go / Conditional]
-**Next Steps**:
+**Knowledge Gathered**:
+<!-- Summarize key technical insights from research -->
+
+**Recommended First Tickets**:
+<!-- Suggest initial sub-issues based on research findings -->
+
+**Open Questions for Implementation**:
+<!-- List unresolved questions to address during implementation -->
 EOF
 ```
 
@@ -137,43 +147,41 @@ git worktree add -b "$BRANCH" "wip/codekiln-${ISSUE_NUM}-scout" main
    - Check LangSmith API docs via MCP
    - Document request/response shapes
 
-4. **Run experiments if needed**
+4. **Run experiments as needed**
    - Create `reference/experiments/${ISSUE_NUM}-${FEATURE_SLUG}/`
-   - Write Python scripts to test API behavior
+   - Write Python scripts to explore API behavior
    - Document findings in research report
 
-5. **Assess complexity** and make recommendation
+5. **Gather knowledge** and document insights for milestone planning
 
 ### 8. Complete Research Report
 
-Update `$RESEARCH_FILE` with findings and clear Go/No-Go/Conditional recommendation.
+Update `$RESEARCH_FILE` with findings, technical patterns discovered, and insights for authoring milestone tickets.
 
 ### 9. Create PR
 
 ```bash
 cd "wip/codekiln-${ISSUE_NUM}-scout"
 git add -A
-git commit -m "docs: scout $FEATURE_NAME feasibility
 
-Fixes #${ISSUE_NUM}"
-gh pr create --title "docs: scout $FEATURE_NAME feasibility" \
-  --body "Fixes #${ISSUE_NUM}
+# Use printf to safely pass commit message to avoid command injection
+COMMIT_MSG=$(printf "docs: scout %s research\n\nFixes #%s" "$FEATURE_NAME" "$ISSUE_NUM")
+git commit -m "$COMMIT_MSG"
 
-## Summary
-Feasibility research for $FEATURE_NAME implementation.
+# Use printf to safely construct PR body
+PR_BODY=$(printf "Fixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- SDK analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
+  "$ISSUE_NUM" "$FEATURE_NAME" "$ISSUE_NUM" "$FEATURE_SLUG")
 
-## Deliverables
-- Research report at docs/research/${ISSUE_NUM}-${FEATURE_SLUG}-scout.md
-- SDK analysis notes (if applicable)"
+gh pr create --title "docs: scout $FEATURE_NAME research" --body "$PR_BODY"
 ```
 
 ## After Scout Completion
 
-**If Go**: Create milestone with `ls-${FEATURE_SLUG}` naming, then Phase 0 parent issue.
-
-**If No-Go**: Close scout issue with explanation.
-
-**If Conditional**: Document conditions, re-assess when resolved.
+Use research findings to:
+- Author the milestone's Phase 0 parent issue with informed scope and technical context
+- Create initial sub-issues based on discovered patterns
+- Structure the implementation plan around the knowledge gathered
+- Reference scout research in milestone documentation
 
 ## References
 
