@@ -102,7 +102,7 @@ Gather knowledge and technical context for milestone planning.
 **Knowledge Gathered**:
 <!-- Summarize key technical insights from research -->
 
-**Recommended First Ticket(s)**:
+**Recommended First Tickets**:
 <!-- Suggest initial sub-issues based on research findings -->
 
 **Open Questions for Implementation**:
