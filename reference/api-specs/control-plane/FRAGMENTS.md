@@ -18,76 +18,67 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 |------|------|---------|----------|--------------|
 | *(none yet)* | - | - | - | - |
 
-## Deployment Schema Notes
-
-### Top-Level Fields
-
-The `Deployment` response model contains these **direct** fields:
-- `id` (UUID, read-only)
-- `name` (string)
-- `source` (enum: "github" | "external_docker")
-- `source_config` (object, see below)
-- `source_revision_config` (object)
-- `secrets` (array of Secret objects)
-- `created_at` (datetime)
-- `updated_at` (datetime)
-- `status` (enum: AWAITING_DATABASE | READY | UNUSED | AWAITING_DELETE | UNKNOWN)
-- `latest_revision_id` (UUID, nullable)
-- `active_revision_id` (UUID, nullable)
-- `image_version` (string, nullable)
-
-### SourceConfig Nested Fields
-
-**IMPORTANT**: `deployment_type` is **NOT** a top-level field. It's nested inside `source_config`:
-
-```json
-{
-  "source_config": {
-    "integration_id": "uuid",
-    "repo_url": "string",
-    "deployment_type": "dev_free" | "dev" | "prod",  // ← HERE
-    "build_on_push": boolean,
-    "custom_url": "string",
-    "resource_spec": {...},
-    "listener_id": "uuid",
-    "listener_config": {...},
-    "install_command": "string",
-    "build_command": "string"
-  }
-}
-```
-
-### SDK Implications
-
-In the Rust SDK (`sdk/src/deployments.rs`):
-- `source_config` is typed as `Option<serde_json::Value>` (unparsed JSON)
-- To access `deployment_type`, you must parse the JSON: `deployment.source_config?.get("deployment_type")`
-- This is why it's not included in the default available columns for text output
-- Accessing it requires JSON parsing overhead on every row
-
-### Text Output Decision (Issue #584, PR #692)
-
-**Decision**: Exclude `deployment_type` from available columns because:
-1. It requires JSON parsing (performance cost)
-2. It's only present for GitHub source deployments (would be null for external_docker)
-3. Not worth the complexity for a field that's rarely used in list views
-4. Can still be accessed via JSON output format or `deployment get` command
-
-If needed in the future, it can be added as an opt-in column with a performance caveat in the help text.
-
 ## Extraction Commands
 
 Run these from the `reference/openapi/langchain/control-plane/` directory:
 
 ```bash
-# Example: Extract deployment endpoints
-jq '.paths | with_entries(select(.key | contains("deployment")))' \
-  openapi.json > ../../api-specs/control-plane/deployments-endpoints.json
+# Deployment endpoints
+jq '.paths | with_entries(select(.key | test("/deployments")))' \
+  openapi.json > ../../api-specs/control-plane/deployment-endpoints.json
 
-# Example: Extract deployment schemas
+# Deployment schemas
 jq '.components.schemas | with_entries(select(.key | test("Deployment"; "i")))' \
-  openapi.json > ../../api-specs/control-plane/deployments-schemas.json
+  openapi.json > ../../api-specs/control-plane/deployment-schemas.json
+
+# Deployment schema (single)
+jq '.components.schemas.Deployment' \
+  openapi.json > ../../api-specs/control-plane/deployment-schema.json
+
+# SourceConfig schema
+jq '.components.schemas.SourceConfig' \
+  openapi.json > ../../api-specs/control-plane/source-config-schema.json
 ```
+
+## Key Schema Facts
+
+### Deployment Response Model
+
+The `Deployment` schema has these **top-level** fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | UUID | Yes | System-generated identifier |
+| `name` | string | Yes | User-assigned name |
+| `source` | enum | Yes | "github" or "external_docker" |
+| `source_config` | object | Yes | Contains `deployment_type` and other config |
+| `source_revision_config` | object | Yes | Git ref or image URI config |
+| `secrets` | array | Yes | Environment variable secrets |
+| `created_at` | datetime | Yes | Creation timestamp |
+| `updated_at` | datetime | Yes | Last update timestamp |
+| `status` | enum | Yes | AWAITING_DATABASE, READY, UNUSED, AWAITING_DELETE, UNKNOWN |
+| `latest_revision_id` | UUID | Yes | Latest revision ID |
+| `active_revision_id` | UUID | Yes | Currently deployed revision ID |
+| `image_version` | string | No | Optional image version |
+
+### SourceConfig Nested Object
+
+The `source_config` field contains these properties (all optional/nullable):
+
+| Field | Type | Applies To | Description |
+|-------|------|------------|-------------|
+| `integration_id` | UUID | GitHub | GitHub integration ID |
+| `repo_url` | string | GitHub | Repository URL |
+| `deployment_type` | enum | GitHub | "dev_free", "dev", or "prod" |
+| `build_on_push` | boolean | GitHub | Auto-deploy on push |
+| `custom_url` | string | Both | Custom deployment URL |
+| `resource_spec` | object | Both | Resource allocation config |
+| `listener_id` | UUID | Both | Listener configuration ID |
+| `listener_config` | object | Both | Listener settings |
+| `install_command` | string | GitHub | Custom install command |
+| `build_command` | string | GitHub | Custom build command |
+
+**Note**: `deployment_type` is nested inside `source_config`, not a top-level field.
 
 ## Adding New Fragments
 
