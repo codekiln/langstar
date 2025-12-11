@@ -110,9 +110,9 @@ pub struct DeleteArgs {
     /// Project ID or name
     pub id_or_name: String,
 
-    /// Skip confirmation prompt
-    #[arg(long, short = 'y')]
-    pub yes: bool,
+    /// Force deletion without confirmation prompt
+    #[arg(long)]
+    pub force: bool,
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -442,10 +442,10 @@ impl ProjectCommands {
 
         let project_id = resolve_project_id(&client, &args.id_or_name).await?;
 
-        if !args.yes {
+        if !args.force {
             use std::io::{self, Write};
             eprintln!("Are you sure you want to delete project {}?", project_id);
-            eprintln!("This action cannot be undone. Use --yes to skip this prompt.");
+            eprintln!("This action cannot be undone. Use --force to skip this prompt.");
             print!("Type 'yes' to confirm: ");
             io::stdout().flush()?;
 
