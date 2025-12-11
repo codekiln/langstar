@@ -220,7 +220,7 @@ Create `docs/testing/claude-code-plugin-qa-plan.md`:
 
 ### v2 Conception (Context Management)
 
-> "Sub-agents are good for doing things like making a request with a lighter model, processing it to remove the noise, and removing the noise, so the context window of the parent agent can stay clean."
+> "Sub-agents are good for doing things like making a request with a lighter model, processing it to remove the noise, so the context window of the parent agent can stay clean."
 
 ### Example: Prompt Search Sub-Agent
 
