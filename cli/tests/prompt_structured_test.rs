@@ -25,6 +25,7 @@ use langstar_sdk::auth::AuthConfig;
 use langstar_sdk::client::LangchainClient;
 use predicates::prelude::*;
 use serde_json::json;
+use serial_test::serial;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
@@ -267,6 +268,7 @@ fn test_cli_push_private_prompt() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_public_prompt_invalid_schema() {
     check_env_vars_public_prompts();
 
@@ -303,6 +305,7 @@ fn test_cli_push_public_prompt_invalid_schema() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_public_prompt_missing_schema() {
     check_env_vars_public_prompts();
 
@@ -336,6 +339,7 @@ fn test_cli_push_public_prompt_missing_schema() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
 fn test_cli_push_public_prompt_invalid_method() {
     check_env_vars_public_prompts();
 
@@ -374,7 +378,7 @@ fn test_cli_push_public_prompt_invalid_method() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_function_calling_method_private_prompt() {
+fn test_cli_push_private_prompt_function_calling_method() {
     check_env_vars_private_prompts();
 
     // CREATE: Setup test repo (cleaned up automatically on drop)
