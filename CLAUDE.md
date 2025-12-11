@@ -12,8 +12,6 @@ cargo clippy --workspace --all-features -- -D warnings && \
 cargo nextest run --profile ci --all-features --workspace
 ```
 
-**Note:** Install cargo-nextest if not already installed: `cargo install cargo-nextest --locked`
-
 **For comprehensive testing guidelines:**
 - The TOC is auto-loaded via AGENTS.md (`docs/dev/testing/README.md`)
 - Always follow `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (load explicitly)

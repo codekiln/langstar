@@ -77,7 +77,7 @@ cargo fmt --check
 
 **Time investment:** ~1-2 minutes locally vs 10-20 minutes CI roundtrips
 
-**Note:** We use `cargo-nextest` instead of `cargo test` for faster parallel execution and better output. Ensure cargo-nextest is installed: `cargo install cargo-nextest --locked`. CI and local testing use the same tool for consistency.
+**Note:** We use `cargo-nextest` instead of `cargo test` for faster parallel execution and better output. CI and local testing use the same tool for consistency. The devcontainer automatically installs `cargo-nextest` via `post-create.sh`.
 
 ### Integration Test Requirements
 

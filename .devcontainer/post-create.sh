@@ -91,7 +91,7 @@ echo "[post-create] cargo found at: $(command -v cargo)"
 echo "[post-create] cargo version: $(cargo --version)"
 
 # Install cargo tools
-cargo install cargo-release git-cliff
+cargo install cargo-release git-cliff cargo-nextest --locked
 
 # Step 6: gh CLI extensions
 # NOTE: gh CLI extensions requiring authentication are installed in setup-github-auth.sh

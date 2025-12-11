@@ -149,8 +149,6 @@ cargo nextest run --profile ci --all-features --workspace && \
 cargo fmt --check
 ```
 
-**Note:** Install cargo-nextest if not already installed: `cargo install cargo-nextest --locked`
-
 **Critical points:**
 - Test at **workspace level** (not just individual crates)
 - When making breaking changes, search for all usages first

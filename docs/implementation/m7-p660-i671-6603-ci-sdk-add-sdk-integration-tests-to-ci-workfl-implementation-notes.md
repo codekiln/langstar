@@ -4,7 +4,7 @@
 **PR:** #680
 **Issue:** #671
 **Date:** 2025-12-11
-**Status:** SDK TESTS STILL FAILING IN CI - FIX INCOMPLETE
+**Status:** FIX APPLIED - SDK tests use UUID for truly unique repo names
 
 ## Current CI Status
 
