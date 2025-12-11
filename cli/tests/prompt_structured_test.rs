@@ -2,14 +2,15 @@
 ///
 /// These tests verify the `langstar prompt push/pull` commands with --schema flag.
 ///
+/// **Test Coverage:**
+/// - PRIVATE prompts (99% use case): Format `-/repo`, requires LANGSMITH_WORKSPACE_ID
+/// - PUBLIC prompts (1% use case): Format `owner/repo`, must NOT have LANGSMITH_WORKSPACE_ID
+///
 /// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable
-/// - LANGSMITH_WORKSPACE_ID must NOT be set (these tests use public prompt format: owner/repo)
-/// - Test repository: codekiln/langstar-structured-test (auto-created if needed)
-///
-/// **Note:** These tests cover PUBLIC prompts (1% use case, owner/repo format).
-/// For PRIVATE prompts (99% use case, -/repo format), LANGSMITH_WORKSPACE_ID is required.
+/// - LANGSMITH_WORKSPACE_ID environment variable (for private prompt tests)
+/// - Test repository: codekiln/langstar-structured-test
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
@@ -21,16 +22,28 @@ use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
 const TEST_REPO: &str = "langstar-structured-test";
+const TEST_REPO_PRIVATE: &str = "-/langstar-structured-test"; // Private prompt format
+const TEST_REPO_PUBLIC: &str = "codekiln/langstar-structured-test"; // Public prompt format
 
-/// Check that required environment variables are set for PUBLIC prompt tests
-/// Panics with descriptive error if any are missing or incorrectly set
-fn check_env_vars() {
+/// Check environment variables for PRIVATE prompt tests (99% use case)
+/// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
+fn check_env_vars_private_prompts() {
     std::env::var("LANGSMITH_API_KEY")
         .expect("LANGSMITH_API_KEY must be set for integration tests");
     std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    // Unset LANGSMITH_WORKSPACE_ID - these tests use PUBLIC prompts (owner/repo format)
-    // For private prompts (-/repo format), workspace ID is required
+    std::env::var("LANGSMITH_WORKSPACE_ID")
+        .expect("LANGSMITH_WORKSPACE_ID must be set for private prompt tests");
+}
+
+/// Check environment variables for PUBLIC prompt tests (1% use case)
+/// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID
+/// Unsets: LANGSMITH_WORKSPACE_ID (incompatible with owner/repo format)
+fn check_env_vars_public_prompts() {
+    std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
     std::env::remove_var("LANGSMITH_WORKSPACE_ID");
 }
 
@@ -87,8 +100,8 @@ fn create_temp_invalid_schema_file() -> NamedTempFile {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_structured_prompt() {
-    check_env_vars();
+fn test_cli_push_private_prompt() {
+    check_env_vars_private_prompts();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -99,7 +112,7 @@ fn test_cli_push_structured_prompt() {
         "prompt",
         "push",
         "--owner",
-        TEST_OWNER,
+        "-",
         "--repo",
         TEST_REPO,
         "--template",
@@ -125,8 +138,8 @@ fn test_cli_push_structured_prompt() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_invalid_schema_file() {
-    check_env_vars();
+fn test_cli_push_public_prompt_invalid_schema() {
+    check_env_vars_public_prompts();
 
     let invalid_schema_file = create_temp_invalid_schema_file();
     let schema_path = invalid_schema_file.path().to_str().unwrap();
@@ -154,8 +167,8 @@ fn test_cli_push_invalid_schema_file() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_missing_schema_file() {
-    check_env_vars();
+fn test_cli_push_public_prompt_missing_schema() {
+    check_env_vars_public_prompts();
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
@@ -180,8 +193,8 @@ fn test_cli_push_missing_schema_file() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_invalid_method() {
-    check_env_vars();
+fn test_cli_push_public_prompt_invalid_method() {
+    check_env_vars_public_prompts();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -211,8 +224,8 @@ fn test_cli_push_invalid_method() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_function_calling_method() {
-    check_env_vars();
+fn test_cli_push_function_calling_method_private_prompt() {
+    check_env_vars_private_prompts();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -223,7 +236,7 @@ fn test_cli_push_function_calling_method() {
         "prompt",
         "push",
         "--owner",
-        TEST_OWNER,
+        "-",
         "--repo",
         TEST_REPO,
         "--template",
@@ -243,10 +256,10 @@ fn test_cli_push_function_calling_method() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_pull_structured_prompt() {
-    check_env_vars();
+fn test_cli_pull_private_prompt() {
+    check_env_vars_private_prompts();
 
-    let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
+    let handle = TEST_REPO_PRIVATE;
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
@@ -263,8 +276,8 @@ fn test_cli_pull_structured_prompt() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_structured_prompt_round_trip() {
-    check_env_vars();
+fn test_cli_private_prompt_round_trip() {
+    check_env_vars_private_prompts();
 
     // Step 1: Push a structured prompt
     let schema_file = create_temp_schema_file();
@@ -276,7 +289,7 @@ fn test_cli_structured_prompt_round_trip() {
         "prompt",
         "push",
         "--owner",
-        TEST_OWNER,
+        "-",
         "--repo",
         TEST_REPO,
         "--template",
@@ -305,7 +318,7 @@ fn test_cli_structured_prompt_round_trip() {
     println!("Pushed with commit hash: {}", commit_hash);
 
     // Step 2: Pull it back
-    let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
+    let handle = TEST_REPO_PRIVATE;
 
     let bin = get_langstar_bin();
     let mut pull_cmd = Command::new(&bin);
@@ -323,8 +336,8 @@ fn test_cli_structured_prompt_round_trip() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_push_structured_prompt_json_output() {
-    check_env_vars();
+fn test_cli_push_private_prompt_json_output() {
+    check_env_vars_private_prompts();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -335,7 +348,7 @@ fn test_cli_push_structured_prompt_json_output() {
         "prompt",
         "push",
         "--owner",
-        TEST_OWNER,
+        "-",
         "--repo",
         TEST_REPO,
         "--template",
@@ -366,10 +379,10 @@ fn test_cli_push_structured_prompt_json_output() {
 
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
-fn test_cli_pull_structured_prompt_json_output() {
-    check_env_vars();
+fn test_cli_pull_private_prompt_json_output() {
+    check_env_vars_private_prompts();
 
-    let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
+    let handle = TEST_REPO_PRIVATE;
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
