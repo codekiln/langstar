@@ -16,7 +16,10 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 
 | File | Size | Purpose | jq Query | Last Updated |
 |------|------|---------|----------|--------------|
-| *(none yet)* | - | - | - | - |
+| `deployment-endpoints.json` | 19K | All /deployments API endpoints | See below | 2025-12-11 |
+| `deployment-schemas.json` | 6.2K | All deployment-related schemas | See below | 2025-12-11 |
+| `deployment-schema.json` | 3.1K | Single Deployment schema | See below | 2025-12-11 |
+| `source-config-schema.json` | 4.3K | SourceConfig schema | See below | 2025-12-11 |
 
 ## Extraction Commands
 

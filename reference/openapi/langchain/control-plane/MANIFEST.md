@@ -31,6 +31,7 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 | Date | Action | Size | Notes |
 |------|--------|------|-------|
 | 2025-11-20 | Initial fetch | 70K | v0.1.0 |
+| 2025-12-11 | Refresh | 71K | Updated spec |
 
 ## Refresh Command
 
@@ -40,7 +41,7 @@ curl -o openapi.json https://api.host.langchain.com/openapi.json
 
 ## Related Files
 
-- **Extracted fragments**: `../../api-specs/control-plane/` (none yet, but see FRAGMENTS.md)
+- **Extracted fragments**: `../../api-specs/control-plane/` (4 files, see FRAGMENTS.md)
 - **Schema documentation**: `../../api-specs/control-plane/FRAGMENTS.md` - Deployment schema details
 - **API overview**: `../../api-specs/LANGSMITH_API_OVERVIEW.md`
 - **Detailed catalog**: `../../api-specs/LANGSMITH_APIS_DETAILS.md`

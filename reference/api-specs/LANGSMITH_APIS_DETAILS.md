@@ -34,7 +34,10 @@ See [control-plane/FRAGMENTS.md](./control-plane/FRAGMENTS.md) for extraction co
 
 | Schema | File Path | Size | Purpose |
 |--------|-----------|------|---------|
-| *(none yet)* | - | - | See FRAGMENTS.md for deployment schema documentation |
+| Deployment Endpoints | `control-plane/deployment-endpoints.json` | 19K | All /deployments API endpoints |
+| Deployment Schemas | `control-plane/deployment-schemas.json` | 6.2K | All deployment-related schemas |
+| Deployment Schema | `control-plane/deployment-schema.json` | 3.1K | Single Deployment response schema |
+| SourceConfig Schema | `control-plane/source-config-schema.json` | 4.3K | Source configuration schema |
 
 **Note**: The Control Plane API FRAGMENTS.md contains detailed documentation about the Deployment schema, including the important detail that `deployment_type` is nested inside `source_config` (not a top-level field). This affects SDK implementation and CLI output formatting decisions.
 

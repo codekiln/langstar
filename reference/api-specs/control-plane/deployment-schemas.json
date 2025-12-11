@@ -1,0 +1,221 @@
+{
+  "Deployment": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "description": "Name of the deployment.<br><br>A LangSmith tracing project with the same name will also automatically be created. This cannot be changed once the deployment is created."
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "github",
+          "external_docker"
+        ],
+        "title": "Source",
+        "description": "Deploy from a GitHub repository (`github`) or a Docker image (`external_docker`).<br><br>Deploying from GitHub is only available for Cloud SaaS deployments. Deploying from a Docker image is only available for self-hosted deployments. This cannot be changed once the deployment is created."
+      },
+      "source_config": {
+        "$ref": "#/components/schemas/SourceConfig"
+      },
+      "source_revision_config": {
+        "$ref": "#/components/schemas/SourceRevisionConfig"
+      },
+      "secrets": {
+        "items": {
+          "$ref": "#/components/schemas/Secret"
+        },
+        "type": "array",
+        "title": "Secrets"
+      },
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "ID",
+        "description": "The ID of the deployment.<br><br>This is a read-only field."
+      },
+      "created_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Created At",
+        "description": "The creation time of the deployment.<br><br>This is a read-only field."
+      },
+      "updated_at": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Updated At",
+        "description": "The last update time of the deployment.<br><br>This is a read-only field."
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "AWAITING_DATABASE",
+          "READY",
+          "UNUSED",
+          "AWAITING_DELETE",
+          "UNKNOWN"
+        ],
+        "title": "Status",
+        "description": "The status of the deployment.<br><br>This is a read-only field."
+      },
+      "latest_revision_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Latest Revision ID",
+        "description": "The ID of the latest revision of the deployment.<br><br>This is a read-only field."
+      },
+      "active_revision_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Active Revision ID",
+        "description": "The ID of the current (actively deployed) revision of the deployment.<br><br>This is a read-only field."
+      },
+      "image_version": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Image Version",
+        "description": "Image version of the deployment."
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "source",
+      "source_config",
+      "source_revision_config",
+      "secrets",
+      "id",
+      "created_at",
+      "updated_at",
+      "status",
+      "latest_revision_id",
+      "active_revision_id"
+    ],
+    "title": "Deployment",
+    "description": "Deployment resource."
+  },
+  "DeploymentCreateRequest": {
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "Name",
+        "description": "Name of the deployment.<br><br>A LangSmith tracing project with the same name will also automatically be created. This cannot be changed once the deployment is created."
+      },
+      "source": {
+        "type": "string",
+        "enum": [
+          "github",
+          "external_docker"
+        ],
+        "title": "Source",
+        "description": "Deploy from a GitHub repository (`github`) or a Docker image (`external_docker`).<br><br>Deploying from GitHub is only available for Cloud SaaS deployments. Deploying from a Docker image is only available for self-hosted deployments. This cannot be changed once the deployment is created."
+      },
+      "source_config": {
+        "$ref": "#/components/schemas/SourceConfigRequest"
+      },
+      "source_revision_config": {
+        "$ref": "#/components/schemas/SourceRevisionConfigRequest"
+      },
+      "secrets": {
+        "items": {
+          "$ref": "#/components/schemas/Secret"
+        },
+        "type": "array",
+        "title": "Secrets"
+      }
+    },
+    "type": "object",
+    "required": [
+      "name",
+      "source",
+      "source_config",
+      "source_revision_config",
+      "secrets"
+    ],
+    "title": "DeploymentCreateRequest",
+    "description": "Request body for creating a deployment."
+  },
+  "DeploymentPatchRequest": {
+    "properties": {
+      "source_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SourceConfigRequest"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "source_revision_config": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SourceRevisionConfigRequest"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "secrets": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/Secret"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Secrets"
+      }
+    },
+    "type": "object",
+    "title": "DeploymentPatchRequest",
+    "description": "Request body for patching a deployment.<br>\n<br>\nPatching a deployment may trigger a new revision depending on the provided `source` configurations."
+  },
+  "DeploymentsList": {
+    "properties": {
+      "resources": {
+        "items": {
+          "$ref": "#/components/schemas/Deployment"
+        },
+        "type": "array",
+        "title": "Resources"
+      },
+      "offset": {
+        "type": "integer",
+        "title": "Offset",
+        "description": "Pagination offset. Pass this value to subsequent requests to fetch the next page."
+      }
+    },
+    "type": "object",
+    "required": [
+      "resources",
+      "offset"
+    ],
+    "title": "DeploymentsList"
+  }
+}
