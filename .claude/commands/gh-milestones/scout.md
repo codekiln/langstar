@@ -74,7 +74,7 @@ cat > "$RESEARCH_FILE" <<EOF
 
 ## Executive Summary
 
-**Purpose**: Gather knowledge and technical context for milestone planning
+Gather knowledge and technical context for milestone planning.
 
 ## 1. Existing Langstar Code
 

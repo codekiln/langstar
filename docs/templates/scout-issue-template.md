@@ -10,7 +10,7 @@ Gather preliminary research and technical knowledge about **{feature-name}** to 
 
 ## Scope
 
-**Research and experimentation only - do NOT implement.**
+**Research and experimentation only - do not implement.**
 
 1. **Existing Langstar Code**: Search `./cli` and `./sdk` for related implementations
 2. **Python SDK Precedent**: Analyze `langsmith-sdk/python/langsmith/client.py` patterns
@@ -47,7 +47,7 @@ Example structure:
 ```
 reference/experiments/{issue-num}-{slug}/
 ├── README.md           # Experiment overview and findings
-├── test_{feature}.py   # Python script exploring LangSmith API
+├── test_{feature}.py   # Python script for API pattern exploration
 └── run_test.sh         # Shell wrapper with env setup
 ```
 

@@ -67,7 +67,7 @@ Create an exploratory research issue using this pattern:
 
 ### Scout Issue Scope
 
-**Focus on research and knowledge gathering, NOT implementation.** Activities include:
+**Focus on research and knowledge gathering, do not implement.** Activities include:
 1. Search existing langstar code in `./cli` and `./sdk` for related implementations
 2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
 3. Identify relevant API endpoints and request/response shapes
