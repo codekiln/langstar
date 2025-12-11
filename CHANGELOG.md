@@ -5,6 +5,684 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-11
+
+### ✨ Features
+
+- ✨ feat(sdk): implement Project types for LangSmith API (#662)
+
+- Created sdk/src/projects.rs with comprehensive Project types
+- Implemented TraceTier enum (longlived/shortlived)
+- Added Project struct matching TracerSession OpenAPI schema
+- Created ProjectCreate and ProjectUpdate request types
+- Added ProjectSortColumn enum for sorting options
+- Implemented ListProjectsParams for query parameters
+- Registered module in sdk/src/lib.rs with public exports
+- Added 14 comprehensive unit tests for serde serialization
+
+All types follow existing patterns from datasets.rs and annotation_queues.rs.
+Uses flexible datetime deserialization for timestamp fields.
+Includes documentation with API references and examples.
+
+Fixes #593
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+- ✨ feat(sdk): implement project client CRUD methods (#693)
+
+Implements all 5 CRUD operations for LangSmith projects:
+- create_project() - POST /api/v1/sessions
+- list_projects() - GET /api/v1/sessions (with pagination support)
+- get_project() - GET /api/v1/sessions/{id}
+- update_project() - PATCH /api/v1/sessions/{id}
+- delete_project() - DELETE /api/v1/sessions/{id}
+
+All methods follow existing patterns from datasets.rs and runs.rs,
+with proper authentication, query parameter handling, and comprehensive
+documentation.
+
+Fixes #586
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+- ✨ feat(cli): add text output support for assistant, deployment, and model-config list (#692)
+
+* ✨ feat(cli): add text output support for assistant, deployment, and model-config list
+
+Implements text output format with column selection for three additional list commands,
+following the pattern established in prompt list (#587).
+
+**Changes:**
+- assistant list: Added ColumnMetadata impl, --columns and --show-columns flags
+- deployment list: Added ColumnMetadata impl, --columns and --show-columns flags
+- model-config list: Added ColumnMetadata impl, --columns and --show-columns flags
+
+All commands now support:
+- `-f text` for tab-separated output
+- `--columns` for field selection
+- `--show-columns` for discovery
+
+Available columns:
+- assistant: assistant_id, name, graph_id, created_at
+- deployment: name, id, status, deployment_type, source, created_at
+- model-config: id, name, provider, model
+
+Closes #584
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): update model-config text format test for actual TSV output
+
+The test was expecting JSON output (Phase 1 fallback behavior), but the
+implementation now outputs actual tab-separated values. Updated the test
+assertion to check for tab characters instead of JSON array markers.
+
+Fixes integration test failure in CI.
+
+* 🩹 fix(cli): address Copilot review feedback on text output
+
+1. Removed deployment_type from available columns since API doesn't provide it
+2. Added secret sanitization before DeploymentRow creation for defense in depth
+3. Sanitized provider and model fields in model-config to prevent TSV corruption
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/692#discussion_r2611309873
+- https://github.com/codekiln/langstar/pull/692#discussion_r2611309905
+- https://github.com/codekiln/langstar/pull/692#discussion_r2611309933
+
+* 📚 docs(api-specs): document deployment schema and deployment_type field location
+
+Clarifies that deployment_type is nested inside source_config JSON object, not a
+top-level field. Explains why it's excluded from text output available columns
+(requires JSON parsing, performance cost, only present for GitHub deployments).
+
+Documents the decision made in PR #692 for future reference.
+
+* 📚 docs(api-specs): cross-reference control-plane deployment schema documentation
+
+Added Control Plane API Fragments section to LANGSMITH_APIS_DETAILS.md and updated
+control-plane MANIFEST.md to reference the deployment schema documentation in
+FRAGMENTS.md. This makes the deployment_type field location (nested in source_config)
+discoverable from the main API catalog.
+
+* 📚 docs(api-specs): remove project decisions from control-plane FRAGMENTS.md
+
+Cleaned up FRAGMENTS.md to contain only factual API schema information
+(matching the pattern in langsmith/ and agent-server/ FRAGMENTS.md files).
+
+Removed:
+- SDK implementation details
+- CLI output formatting decisions
+- Project management rationale
+
+Kept:
+- Schema field tables with types and descriptions
+- Extraction commands with jq queries
+- Factual note that deployment_type is nested (not top-level)
+
+* 📚 docs(api-specs): generate control-plane API fragments and update openapi.json
+
+Generated 4 fragment files from control-plane API:
+- deployment-endpoints.json (19K) - All /deployments endpoints
+- deployment-schemas.json (6.2K) - All deployment-related schemas
+- deployment-schema.json (3.1K) - Single Deployment schema
+- source-config-schema.json (4.3K) - SourceConfig schema
+
+Updated:
+- openapi.json refreshed from API (70K -> 71K)
+- MANIFEST.md with new provenance entry (2025-12-11)
+- FRAGMENTS.md with actual generated file info
+- LANGSMITH_APIS_DETAILS.md with fragment catalog
+
+These fragments provide AI-context-efficient access to deployment schema
+information without loading the full 71K openapi.json spec.
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(sdk): replace unconditional #[ignore] with conditional ignores in SDK integration tests (#678)
+
+Fixes #670
+
+## Changes
+
+### Test Attributes Updated
+- `sdk/tests/structured_prompts_integration_test.rs`:
+  - Line 138: `test_push_structured_prompt_integration`
+  - Line 193: `test_pull_structured_prompt_integration`
+  - Line 246: `test_structured_prompt_round_trip_integration`
+  - Line 303: `test_push_function_calling_method`
+
+Replaced:
+```rust
+#[ignore] // Only run with --ignored flag
+```
+
+With:
+```rust
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+```
+
+### Feature Flag Added
+- `sdk/Cargo.toml`: Added `integration-tests = []` feature flag
+
+## Verification
+
+**Without feature flag** (tests ignored):
+```bash
+cargo test -p langstar-sdk --test structured_prompts_integration_test
+# Result: 0 passed; 0 failed; 4 ignored
+```
+
+**With feature flag** (tests run):
+```bash
+cargo test --features integration-tests -p langstar-sdk --test structured_prompts_integration_test
+# Result: 4 tests run (fail due to API credentials, but not ignored)
+```
+
+**Pre-commit checklist**: ✅ Passes
+
+## Context
+
+These SDK integration tests were using unconditional `#[ignore]` attributes,
+which meant they never ran even with the `--features integration-tests` flag.
+This created a blind spot in test coverage.
+
+The fix enables these tests to run when the `integration-tests` feature is
+enabled, while keeping them ignored in normal test runs.
+
+Note: The CI workflow update to actually run these tests in CI is tracked
+separately in issue #660.3.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs: audit and test plan for ls-prompt-structured-outputs final verification (#663)
+
+* 📚 docs: add test audit report for ls-prompt-structured-outputs
+
+Retroactive test audit identifying 4 critical issues before milestone release.
+
+Related: #661
+
+* 📚 docs: add test plan for ls-prompt-structured-outputs final verification
+
+Breaks down 4 critical issues into 6 logical sub-tickets with implementation guidance.
+
+Fixes #661
+- 📚 docs: add worktree workflow to AGENTS.md (#665)
+
+* 📚 docs: add worktree workflow section to AGENTS.md
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+* docs: Update worktree instructions in AGENTS.md
+
+Clarified instructions for using worktrees and maintaining synchronization with origin main.
+
+---------
+
+Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+- 📚 docs: scout Claude Code plugin marketplace feasibility (#683)
+
+* 📚 docs: scout Claude Code plugin marketplace feasibility
+
+Fixes #681
+
+## Summary
+Complete feasibility research for creating a Claude Code plugin marketplace in the langstar repo. Enables non-technical SMEs to manage LangSmith/LangGraph through natural language.
+
+## Key Findings
+- **Feasibility**: GO ✅
+- **Complexity**: Low-Medium (wraps existing CLI, no SDK changes needed)
+- **No blockers**: All infrastructure exists
+- **MVP**: 5 high-value commands recommended for Phase 1
+
+## Research Coverage
+- Claude Code plugin architecture and marketplace system
+- Existing langstar CLI capabilities mapping
+- User workflow analysis for SME target audience
+- Proposed plugin structure and phased implementation plan
+- Risk assessment and success metrics
+
+## Recommendation
+Proceed to full 8-phase milestone starting with:
+- Phase 0: Experiments to validate plugin development
+- Phase 1: MVP with 5 core commands
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* 📚 docs: redesign scout with deep-first prompt focus
+
+Redesign based on PR #683 review feedback:
+
+- Change from GO to Conditional GO (depends on ls-prompt-ux co-evolution)
+- Narrow scope from 5 MVP commands to single /langstar-prompt-workshop
+- Add 4-level QA methodology for agentic coding instructions
+- Revise sub-agent strategy: context management vs complex workflows
+- Defer runs/queues/datasets until "excellence gate" passed
+- Link to ls-prompt-ux milestone #16 and issue #679 for CLI co-evolution
+
+Key principle: One excellent experience > many mediocre experiences
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* docs: Clean up implementation section in markdown file
+
+Removed unnecessary code block from the implementation section.
+
+* docs: Fix formatting in Push changes section
+
+Removed unnecessary backticks from the Push changes section.
+
+* docs: Update docs/research/681-ls-claude-code-plugin-scout.md
+
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+* 🩹 fix: close unclosed markdown code block in scout doc
+
+Close the markdown code fence that starts at line 322 (command example)
+to prevent incorrect rendering of subsequent sections.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+- 📚 docs: create canonical environment variable to API header mapping documentation (#697)
+
+* 📚 docs: create canonical environment variable to API header mapping documentation
+
+- Create docs/dev/environment-variables.md with complete mapping
+- Add references from AGENTS.md and testing docs
+- Update API reference docs with Control Plane API docs URL
+- Addresses issue #695
+
+Fixes #695
+
+* 🔧 fix: correct formatting in test-fixtures.md
+
+- Move environment variables reference after complete code block
+- Fixes formatting bug identified in PR review
+
+### 🧪 Testing
+
+- 🧪 test(cli): replace silent skip pattern with explicit .expect() in CLI integration tests (#691)
+
+* 🧪 test(cli): replace silent skip pattern with explicit .expect() in CLI integration tests
+
+Replaces check_env_vars() silent skip pattern with explicit .expect() calls
+in all 9 integration tests in cli/tests/prompt_structured_test.rs.
+
+Changes:
+- Each test now explicitly checks for LANGSMITH_API_KEY with .expect()
+- Each test now explicitly checks for LANGSMITH_ORGANIZATION_ID with .expect()
+- Each test now explicitly panics if LANGSMITH_WORKSPACE_ID is set
+- Removed unused check_env_vars() helper function
+
+Benefits:
+- Tests will now fail loudly with clear error messages when env vars are missing
+- CI will properly report test failures instead of silently skipping
+- Follows testing best practices by making requirements explicit
+
+Fixes #672
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): restore check_env_vars helper and require LANGSMITH_WORKSPACE_ID
+
+- Restored check_env_vars() helper function (removed incorrectly in previous commit)
+- Now requires LANGSMITH_WORKSPACE_ID (workspace scoping is required, not incompatible)
+- Removed incorrect "workspace incompatible" logic and documentation
+- All tests now use DRY helper instead of repeated env var checks
+
+Fixes incorrect assumptions from #672 plan:
+1. Helper function should be refactored, not deleted
+2. Workspace scoping IS required for prompt tests, not incompatible
+
+* 🩹 fix(test): correctly handle public vs private prompt scoping
+
+Public prompts (1% use case):
+- Format: owner/repo (e.g., codekiln/langstar-structured-test)
+- LANGSMITH_WORKSPACE_ID must NOT be set
+
+Private prompts (99% use case):
+- Format: -/repo
+- LANGSMITH_WORKSPACE_ID is required
+
+These tests use owner/repo format, so they test PUBLIC prompts.
+The check_env_vars() helper now:
+- Requires LANGSMITH_API_KEY (fails loudly)
+- Requires LANGSMITH_ORGANIZATION_ID (fails loudly)
+- Unsets LANGSMITH_WORKSPACE_ID (incompatible with public prompts)
+
+* 🧪 test(cli): bifurcate private vs public prompt integration tests
+
+Private prompts (99% value, 6 tests):
+- Format: -/repo (e.g., -/langstar-structured-test)
+- Requires: LANGSMITH_WORKSPACE_ID
+- Tests: push, pull, round-trip, function_calling, json output (push/pull)
+
+Public prompts (1% value, 3 tests):
+- Format: owner/repo (e.g., codekiln/langstar-structured-test)
+- Must NOT have: LANGSMITH_WORKSPACE_ID
+- Tests: invalid_schema, missing_schema, invalid_method
+
+Changes:
+- Added check_env_vars_private_prompts() and check_env_vars_public_prompts()
+- Renamed all 9 tests to include _private_prompt or _public_prompt
+- Updated private tests to use "-" as owner and TEST_REPO_PRIVATE handle
+- Both helpers fail loudly when env vars are missing (no silent skips)
+
+* 🩹 fix(test): resolve clippy warnings in prompt_structured_test
+
+- Wrapped std::env::remove_var() in unsafe block (required for safety)
+- Removed unused TEST_REPO_PUBLIC constant
+- Fixed needless_borrow lint by removing & from handle usage
+
+* 🩹 fix(test): escape -/ in private prompt pull commands
+
+Private prompt handles start with `-/` (e.g., `-/langstar-structured-test`),
+which the CLI argument parser interprets as a flag.
+
+Solution: Use `--` to mark end of flags, allowing `-/` to be parsed as a value.
+
+Example: `langstar prompt pull -- -/repo-name`
+
+Updated all 3 pull commands in private prompt tests.
+
+* 🧪 test(cli): add CRUD fixture pattern with automatic cleanup
+
+Implements proper test isolation using CRUD lifecycle pattern:
+
+**PromptRepoFixture:**
+- Creates unique repo per test (timestamp-based names)
+- Automatic cleanup via Drop trait
+- Supports both private and public repos
+
+**Pattern:**
+1. CREATE - Generate unique repo via SDK
+2. TEST - Execute CLI command
+3. VERIFY - Assert output
+4. CLEANUP - Automatic deletion via Drop
+
+**Benefits:**
+✅ Tests isolated - no conflicts between tests
+✅ Tests can run in parallel safely
+✅ Cleanup happens even on test failure
+✅ No 409 conflicts from shared repo state
+
+Refactored 1 test as proof-of-concept: test_cli_push_private_prompt
+
+Next: Refactor remaining 8 tests to use this pattern.
+
+Addresses root cause of CI failures - tests were fighting over shared repo.
+
+* 🩹 fix(test): restore constants and fix AuthConfig import
+
+- Fixed AuthConfig import: use public `auth::AuthConfig` path
+- Restored TEST_REPO and TEST_REPO_PRIVATE constants (still used by unrefactored tests)
+
+Test results:
+✅ test_cli_push_private_prompt PASSED (113s) - uses new fixture pattern
+❌ Other tests still fail with 409 conflicts - use old shared repo pattern
+
+This confirms the fixture pattern works correctly!
+
+* 🧪 test(cli): complete CRUD fixture pattern refactoring for all 9 tests (#700)
+
+- Refactor all 9 prompt_structured tests to use PromptRepoFixture pattern
+- Remove shared TEST_REPO and TEST_REPO_PRIVATE constants
+- Each test now creates unique repo with timestamp suffix
+- Automatic cleanup via Drop trait ensures resources cleaned up on failure
+- Fix clippy expect_fun_call by using unwrap_or_else
+- Fix case sensitivity: "Prompt Manifest" -> "PROMPT MANIFEST"
+- Fix JSON output parsing to skip non-JSON prefix lines
+
+Tests refactored:
+- test_cli_push_private_prompt
+- test_cli_push_public_prompt_invalid_schema
+- test_cli_push_public_prompt_missing_schema
+- test_cli_push_public_prompt_invalid_method
+- test_cli_push_function_calling_method_private_prompt
+- test_cli_pull_private_prompt
+- test_cli_private_prompt_round_trip
+- test_cli_push_private_prompt_json_output
+- test_cli_pull_private_prompt_json_output
+
+Fixes #696
+
+* 🩹 fix(test): address review feedback on test naming and thread safety
+
+- Renamed test_cli_push_function_calling_method_private_prompt to test_cli_push_private_prompt_function_calling_method for consistency
+- Added #[serial] attribute to all tests using check_env_vars_public_prompts() to prevent race conditions from std::env::remove_var()
+- Added serial_test import for thread-safe environment variable handling
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/691#discussion_r2611402502
+- https://github.com/codekiln/langstar/pull/691#discussion_r2611402520
+- https://github.com/codekiln/langstar/pull/691#discussion_r2611449196
+
+* 🩹 fix(test): add #[serial] to ALL tests manipulating environment variables
+
+CRITICAL FIX: Previously, only public prompt tests were marked with #[serial],
+but private prompt tests were not. This created a race condition:
+- Public tests call check_env_vars_public_prompts() which removes LANGSMITH_WORKSPACE_ID
+- Private tests call check_env_vars_private_prompts() which expects LANGSMITH_WORKSPACE_ID
+- Without #[serial] on all tests, these could run concurrently, causing flaky failures
+
+Changes:
+- Added #[serial] to all 6 private prompt tests
+- Clarified SAFETY comment to explain tests MUST be marked #[serial]
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/691#discussion_r2611964515 (critical scope issue)
+- https://github.com/codekiln/langstar/pull/691#discussion_r2611964488 (misleading SAFETY comment)
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+### 🔧 Build System
+
+- 🔧 build(ci): add SDK integration tests to CI workflow (#680)
+
+* 🔧 build(ci): add SDK integration tests to CI workflow
+
+Adds separate integration-tests-sdk job to run SDK integration tests
+in CI alongside existing CLI integration tests.
+
+Changes:
+- New job runs 4 SDK integration tests from langstar-sdk package
+- Uses cargo nextest with --features integration-tests
+- Publishes results as "SDK Integration Test Results"
+- Runs in parallel with CLI integration tests
+- Uses same environment variables and timeout (15 min)
+
+This ensures SDK integration tests run automatically on every PR and
+will fail CI if tests fail, following the Toyota Andon Cord principle.
+
+Fixes #671
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+* 📚 docs(tests): add CI integration note to SDK tests
+
+Adds documentation comment noting that these tests run automatically
+in CI via the integration-tests-sdk job.
+
+This change also triggers the SDK integration tests job to verify
+the CI configuration works correctly.
+
+* 🩹 fix(ci): correct conditional for SDK integration tests job
+
+Fixed the job condition from `code == 'true'` to `should_run == 'true'`
+to match the actual output from the changes detection job.
+
+This was causing the SDK integration tests to be skipped even when
+code files changed.
+
+* 🩹 fix(ci): address Copilot review feedback and standardize on cargo-nextest
+
+- Add test job dependency to SDK integration tests
+- Add conditional logic to run only on PRs or main branch
+- Add LANGSMITH_WORKSPACE_ID env var to SDK integration tests
+- Add integration-tests-sdk to all-jobs dependency list
+- Update all testing documentation to use cargo-nextest
+- Install cargo-nextest v0.9.114 locally for parity with CI
+- Update pre-commit checklist in CLAUDE.md, docs/dev/README.md, and HIGH_LEVEL_TESTING_GUIDELINES.md
+
+Addresses review comments:
+- https://github.com/codekiln/langstar/pull/680#discussion_r2608170476
+- https://github.com/codekiln/langstar/pull/680#discussion_r2608170487
+- https://github.com/codekiln/langstar/pull/680#discussion_r2608170491
+
+* 🩹 fix(ci): enable test-utils feature for SDK integration tests
+
+The SDK integration tests require both integration-tests and test-utils features:
+- integration-tests: enables the integration test code
+- test-utils: exposes test_utils module with TestDeploymentConfig and helpers
+
+Without test-utils, tests fail with "unresolved import langstar_sdk::test_utils"
+
+Fixes compilation error in SDK integration tests.
+
+* 🧪 test(sdk): attempt private prompts with serial execution
+
+**Changes:**
+- Changed TEST_OWNER from "codekiln" to "-" for private prompts
+- Removed repo creation logic (was told private prompts can't be created)
+- Added #[serial_test::serial] to all 4 tests for CRUD lifecycle ordering
+- Updated test documentation
+
+**Status:**
+Tests still fail with 404 "Repository not found" when pushing to
+`-/langstar-structured-test`.
+
+**Next investigation:**
+Need to understand if private prompt repos must be created first.
+Python experiments suggest YES (POST /repos/ with is_public: False).
+
+**Progress documented in:**
+docs/implementation/m7-p660-i671-6603-ci-sdk-add-sdk-integration-tests-to-ci-workfl-implementation-notes.md
+
+Ref: #671
+
+* 🩹 fix(sdk): use unique repo names per test to avoid API conflicts
+
+Each SDK integration test now uses its own isolated repo name to avoid
+409 "Parent commit validation failed" errors when tests run serially.
+
+Changes:
+- Added get_test_repo_name() helper to generate unique repo names
+- Updated ensure_repo_exists() to accept dynamic repo names
+- Each test now uses a unique suffix: push, roundtrip, function-calling
+- Pull test shares the push repo since it reads after push completes
+
+Root cause: The API requires parent_commit for repos with existing commits.
+When multiple tests share a repo, each subsequent push would conflict.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(ci): clarify test-utils feature comment per review feedback
+
+Update comment to more accurately describe that test-utils is included
+for shared test infrastructure used by some SDK tests, rather than
+implying all SDK integration tests require it.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs: update implementation notes with successful fix
+
+Document the final solution: using unique repo names per test to avoid
+409 "Parent commit validation failed" API conflicts.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES to clarify pre-existing failure claims
+
+Added a new guideline to specify that claims regarding CLI test timeouts being separate issues must be supported by verifiable proof. This enhances the clarity and rigor of the testing documentation.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+* 📚 docs: accurate implementation notes - SDK tests still failing
+
+Previous commit incorrectly claimed tests were fixed.
+Actual status: Tests pass locally but FAIL in CI because
+repos persist across runs and trigger 409 conflicts.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): use UUID suffix for truly unique test repo names
+
+Each test run now generates a unique repo name with UUID suffix, preventing
+409 "Parent commit validation failed" errors when CI runs encounter repos
+that already have commits from previous runs.
+
+Also made test_pull_structured_prompt_integration self-contained by pushing
+a prompt first (since UUID makes each get_test_repo_name call unique).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 🔧 build(devcontainer): add cargo-nextest to post-create.sh
+
+Install cargo-nextest alongside cargo-release and git-cliff during
+devcontainer setup. Remove install notices from docs since the tool
+is now automatically available in the dev environment.
+
+Also updated HIGH_LEVEL_TESTING_GUIDELINES.md to reference the
+devcontainer auto-installation.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+* 📚 docs: update implementation notes to reflect passing CI
+
+- Updated status to show all CI checks passing
+- Documented the successful UUID-based fix
+- Added fallback install command for non-devcontainer users
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 ## [2.1.0] - 2025-12-10
 
 ### ✨ Features
