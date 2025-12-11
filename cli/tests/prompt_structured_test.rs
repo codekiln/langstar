@@ -21,13 +21,16 @@
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
 use escargot::CargoBuild;
-use langstar_sdk::client::{AuthConfig, LangchainClient};
+use langstar_sdk::auth::AuthConfig;
+use langstar_sdk::client::LangchainClient;
 use predicates::prelude::*;
 use serde_json::json;
 use std::io::Write;
 use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
+const TEST_REPO: &str = "langstar-structured-test"; // Used by remaining tests (to be refactored)
+const TEST_REPO_PRIVATE: &str = "-/langstar-structured-test"; // Used by remaining tests (to be refactored)
 
 /// Check environment variables for PRIVATE prompt tests (99% use case)
 /// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
