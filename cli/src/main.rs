@@ -8,8 +8,8 @@ pub mod time;
 use clap::{Parser, Subcommand};
 use commands::{
     AssistantCommands, ConfigCommands, DatasetCommands, DeploymentCommands, EvalCommands,
-    GraphCommands, ModelConfigCommands, PromptCommands, QueueCommands, RunsCommands,
-    SecretsCommands,
+    GraphCommands, ModelConfigCommands, ProjectCommands, PromptCommands, QueueCommands,
+    RunsCommands, SecretsCommands,
 };
 use config::Config;
 use error::Result;
@@ -60,6 +60,10 @@ enum Commands {
     /// Manage LangSmith datasets
     #[command(subcommand)]
     Dataset(DatasetCommands),
+
+    /// Manage LangSmith projects
+    #[command(subcommand)]
+    Project(ProjectCommands),
 
     /// Manage LangSmith evaluations
     #[command(subcommand)]
@@ -124,6 +128,9 @@ async fn run() -> Result<()> {
         }
         Commands::Dataset(dataset_cmd) => {
             dataset_cmd.execute(&config, format).await?;
+        }
+        Commands::Project(project_cmd) => {
+            project_cmd.execute(&config, format).await?;
         }
         Commands::Eval(eval_cmd) => {
             eval_cmd.execute(&config, format).await?;
