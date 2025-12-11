@@ -1580,6 +1580,290 @@ impl LangchainClient {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // Projects (Sessions) API Methods
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Create a new project (session).
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Project creation parameters including name, description, and metadata
+    ///
+    /// # Returns
+    ///
+    /// The created `Project` with full details including computed statistics.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use langstar_sdk::projects::ProjectCreate;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let request = ProjectCreate {
+    ///     name: Some("my-application".to_string()),
+    ///     description: Some("Production traces".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let project = client.create_project(request).await?;
+    /// println!("Created project: {} ({})", project.name.unwrap(), project.id);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/sessions`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn create_project(
+        &self,
+        request: crate::projects::ProjectCreate,
+    ) -> Result<crate::projects::Project> {
+        let request_builder = self.langsmith_post("/api/v1/sessions")?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// List projects with optional filtering and pagination.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters including filters (name, name_contains) and pagination
+    ///
+    /// # Returns
+    ///
+    /// A vector of `Project` objects matching the query.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use langstar_sdk::projects::ListProjectsParams;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let params = ListProjectsParams {
+    ///     name_contains: Some("production".to_string()),
+    ///     limit: Some(50),
+    ///     include_stats: Some(true),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let projects = client.list_projects(params).await?;
+    /// println!("Found {} projects", projects.len());
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/sessions`
+    /// - Max limit per request: 100 (per OpenAPI spec)
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    ///
+    /// # Pagination
+    ///
+    /// The API returns max 100 projects per request. For workspaces with >100 projects,
+    /// use the `offset` parameter to paginate through results.
+    pub async fn list_projects(
+        &self,
+        params: crate::projects::ListProjectsParams,
+    ) -> Result<Vec<crate::projects::Project>> {
+        let mut request = self.langsmith_get("/api/v1/sessions")?;
+
+        // Add query parameters
+        if let Some(ids) = &params.id {
+            for id in ids {
+                request = request.query(&[("id", id.to_string())]);
+            }
+        }
+        if let Some(name) = &params.name {
+            request = request.query(&[("name", name)]);
+        }
+        if let Some(name_contains) = &params.name_contains {
+            request = request.query(&[("name_contains", name_contains)]);
+        }
+        if let Some(reference_dataset_id) = &params.reference_dataset_id {
+            for id in reference_dataset_id {
+                request = request.query(&[("reference_dataset_id", id.to_string())]);
+            }
+        }
+        if let Some(reference_free) = params.reference_free {
+            request = request.query(&[("reference_free", reference_free.to_string())]);
+        }
+        if let Some(include_stats) = params.include_stats {
+            request = request.query(&[("include_stats", include_stats.to_string())]);
+        }
+        if let Some(metadata) = &params.metadata {
+            request = request.query(&[("metadata", metadata)]);
+        }
+        if let Some(offset) = params.offset {
+            request = request.query(&[("offset", offset.to_string())]);
+        }
+        if let Some(limit) = params.limit {
+            request = request.query(&[("limit", limit.to_string())]);
+        }
+        if let Some(sort_by) = &params.sort_by {
+            let sort_str = serde_json::to_string(sort_by)?
+                .trim_matches('"')
+                .to_string();
+            request = request.query(&[("sort_by", sort_str)]);
+        }
+        if let Some(sort_by_desc) = params.sort_by_desc {
+            request = request.query(&[("sort_by_desc", sort_by_desc.to_string())]);
+        }
+        if let Some(tag_value_id) = &params.tag_value_id {
+            for id in tag_value_id {
+                request = request.query(&[("tag_value_id", id.to_string())]);
+            }
+        }
+
+        self.execute(request).await
+    }
+
+    /// Get a specific project by ID or name.
+    ///
+    /// # Arguments
+    ///
+    /// * `project_id` - The UUID of the project to retrieve
+    ///
+    /// # Returns
+    ///
+    /// The `Project` with full details including computed statistics.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let project_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let project = client.get_project(project_id).await?;
+    /// println!("Project: {:?}", project.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/sessions/{project_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    ///
+    /// # Note on Name Lookups
+    ///
+    /// To get a project by name, use `list_projects` with `name` filter:
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use langstar_sdk::projects::ListProjectsParams;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// # let client = LangchainClient::new(AuthConfig::from_env()?)?;
+    /// let params = ListProjectsParams {
+    ///     name: Some("my-project".to_string()),
+    ///     limit: Some(1),
+    ///     ..Default::default()
+    /// };
+    /// let projects = client.list_projects(params).await?;
+    /// let project = projects.first();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_project(&self, project_id: uuid::Uuid) -> Result<crate::projects::Project> {
+        let path = format!("/api/v1/sessions/{}", project_id);
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Update a project.
+    ///
+    /// # Arguments
+    ///
+    /// * `project_id` - The UUID of the project to update
+    /// * `request` - Update parameters (all fields are optional for partial updates)
+    ///
+    /// # Returns
+    ///
+    /// The updated `Project`.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use langstar_sdk::projects::ProjectUpdate;
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let project_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// let request = ProjectUpdate {
+    ///     description: Some("Updated description".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let project = client.update_project(project_id, request).await?;
+    /// println!("Updated project: {:?}", project.name);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/sessions/{project_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    ///
+    /// # Note on Name Changes
+    ///
+    /// According to the Python SDK, name changes are only allowed if the project
+    /// has an `end_time` set (is closed).
+    pub async fn update_project(
+        &self,
+        project_id: uuid::Uuid,
+        request: crate::projects::ProjectUpdate,
+    ) -> Result<crate::projects::Project> {
+        let path = format!("/api/v1/sessions/{}", project_id);
+        let request_builder = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request_builder).await
+    }
+
+    /// Delete a project.
+    ///
+    /// # Arguments
+    ///
+    /// * `project_id` - The UUID of the project to delete
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # use uuid::Uuid;
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let project_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
+    /// client.delete_project(project_id).await?;
+    /// println!("Project deleted successfully");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `DELETE /api/v1/sessions/{project_id}`
+    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    pub async fn delete_project(&self, project_id: uuid::Uuid) -> Result<()> {
+        let path = format!("/api/v1/sessions/{}", project_id);
+        let request = self.langsmith_delete(&path)?;
+        self.execute_status_only_request(request).await
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // Feedback (Evaluation) Methods
     // ═══════════════════════════════════════════════════════════════════════
 
