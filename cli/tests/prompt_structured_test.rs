@@ -265,7 +265,7 @@ fn test_cli_pull_private_prompt() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", handle]);
+    cmd.args(["prompt", "pull", "--", handle]);
 
     cmd.assert()
         .success()
@@ -324,7 +324,7 @@ fn test_cli_private_prompt_round_trip() {
 
     let bin = get_langstar_bin();
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.args(["prompt", "pull", handle, "--commit", commit_hash]);
+    pull_cmd.args(["prompt", "pull", "--commit", commit_hash, "--", handle]);
 
     pull_cmd
         .assert()
@@ -388,7 +388,7 @@ fn test_cli_pull_private_prompt_json_output() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", handle, "--format", "json"]);
+    cmd.args(["prompt", "pull", "--format", "json", "--", handle]);
 
     let output = cmd.assert().success();
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
