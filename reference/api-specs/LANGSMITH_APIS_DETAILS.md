@@ -148,6 +148,8 @@ curl -o ../openapi/langchain/control-plane/openapi.json https://api.host.langcha
 
 ## Authentication
 
+For langstar-specific environment variable mapping, see `docs/dev/environment-variables.md`.
+
 | API | Authentication Method | Headers Required |
 |-----|----------------------|------------------|
 | LangSmith API | API Key | `X-Api-Key` |
@@ -155,6 +157,8 @@ curl -o ../openapi/langchain/control-plane/openapi.json https://api.host.langcha
 | LangSmith Deployment Agent Server API | API Key | `X-Api-Key` |
 | SCIM API | Bearer Token | `Authorization: Bearer <token>` |
 | OpenTelemetry Endpoints | API Key | `X-Api-Key` |
+
+**Control Plane API Documentation:** https://api.host.langchain.com/docs
 
 ## Regional Support
 
