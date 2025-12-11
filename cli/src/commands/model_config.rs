@@ -146,8 +146,8 @@ impl ColumnMetadata for PlaygroundSettingsResponse {
                     .clone()
                     .unwrap_or_else(|| "-".to_string())
                     .replace(['\t', '\n'], " "),
-                "provider" => provider.clone(),
-                "model" => model.clone(),
+                "provider" => provider.clone().replace(['\t', '\n'], " "),
+                "model" => model.clone().replace(['\t', '\n'], " "),
                 _ => String::new(),
             })
             .collect::<Vec<_>>()

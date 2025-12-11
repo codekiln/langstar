@@ -10,14 +10,8 @@ use serde_json::json;
 use tabled::Tabled;
 
 /// Available columns for deployment list text output
-const DEPLOYMENT_COLUMNS: &[&str] = &[
-    "name",
-    "id",
-    "status",
-    "deployment_type",
-    "source",
-    "created_at",
-];
+/// Note: deployment_type is not included because the API doesn't provide this field
+const DEPLOYMENT_COLUMNS: &[&str] = &["name", "id", "status", "source", "created_at"];
 
 /// Commands for interacting with LangGraph deployments via Control Plane API
 ///
@@ -52,7 +46,7 @@ pub enum DeploymentCommands {
         name_contains: Option<String>,
 
         /// Select specific columns for text output (comma-separated)
-        /// Available: name, id, status, deployment_type, source, created_at
+        /// Available: name, id, status, source, created_at
         #[arg(long, value_delimiter = ',')]
         columns: Option<Vec<String>>,
 
@@ -196,7 +190,6 @@ impl ColumnMetadata for Deployment {
                 "name" => self.name.replace(['\t', '\n'], " "),
                 "id" => self.id.clone(),
                 "status" => format!("{:?}", self.status),
-                "deployment_type" => "N/A".to_string(), // Not directly in response
                 "source" => format!("{:?}", self.source),
                 "created_at" => self
                     .created_at
@@ -341,10 +334,12 @@ impl DeploymentCommands {
                         if deployments_list.resources.is_empty() {
                             formatter.info("No deployments found.");
                         } else {
+                            // Sanitize secrets before creating rows for consistency
                             let rows: Vec<DeploymentRow> = deployments_list
                                 .resources
                                 .iter()
-                                .map(|d| d.into())
+                                .map(|d| d.sanitize_secrets())
+                                .map(|d| (&d).into())
                                 .collect();
                             formatter.print_table(&rows)?;
                             formatter.info(&format!(
