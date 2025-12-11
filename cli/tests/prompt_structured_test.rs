@@ -5,8 +5,11 @@
 /// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable
-/// - LANGSMITH_WORKSPACE_ID environment variable (required for workspace scoping)
+/// - LANGSMITH_WORKSPACE_ID must NOT be set (these tests use public prompt format: owner/repo)
 /// - Test repository: codekiln/langstar-structured-test (auto-created if needed)
+///
+/// **Note:** These tests cover PUBLIC prompts (1% use case, owner/repo format).
+/// For PRIVATE prompts (99% use case, -/repo format), LANGSMITH_WORKSPACE_ID is required.
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
@@ -19,15 +22,16 @@ use tempfile::NamedTempFile;
 const TEST_OWNER: &str = "codekiln";
 const TEST_REPO: &str = "langstar-structured-test";
 
-/// Check that required environment variables are set
-/// Panics with descriptive error if any are missing
+/// Check that required environment variables are set for PUBLIC prompt tests
+/// Panics with descriptive error if any are missing or incorrectly set
 fn check_env_vars() {
     std::env::var("LANGSMITH_API_KEY")
         .expect("LANGSMITH_API_KEY must be set for integration tests");
     std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    std::env::var("LANGSMITH_WORKSPACE_ID")
-        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
+    // Unset LANGSMITH_WORKSPACE_ID - these tests use PUBLIC prompts (owner/repo format)
+    // For private prompts (-/repo format), workspace ID is required
+    std::env::remove_var("LANGSMITH_WORKSPACE_ID");
 }
 
 /// Helper to build and get the langstar binary path
