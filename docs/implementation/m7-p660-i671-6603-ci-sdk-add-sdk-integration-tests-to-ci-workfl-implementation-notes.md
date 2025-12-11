@@ -4,94 +4,123 @@
 **PR:** #680
 **Issue:** #671
 **Date:** 2025-12-11
-**Status:** SDK tests fixed, awaiting CI verification
+**Status:** SDK TESTS STILL FAILING IN CI - FIX INCOMPLETE
 
-## Current Status
+## Current CI Status
 
-**SDK Integration Tests: FIXED** (all 4 tests pass locally)
+**SDK Integration Tests: FAILING** - `409 "Parent commit validation failed"`
+**CLI Integration Tests: PASSING** (299 tests)
 
-### Test Failures - RESOLVED
+## Problem Analysis
 
-**Original Issue:**
-- SDK integration tests: 4 failures - `409 "Parent commit validation failed"`
-- Tests shared a single repo, causing optimistic locking conflicts
+### Root Cause
+The LangSmith API returns `409 "Parent commit validation failed"` when pushing to repos that already have commits without providing the `parent_commit` parameter.
 
-**Root Cause:**
-The LangSmith API requires `parent_commit` parameter when pushing to repos with existing commits.
-When multiple tests shared the same repo (`-/langstar-structured-test`), each subsequent push
-conflicted because the parent commit had changed.
+### Why "Unique Repo Names" Fix Failed
+1. Repos created in LangSmith **persist across CI runs**
+2. Local test runs created repos like `langstar-structured-test-push`
+3. CI now sees these repos already have commits
+4. Same 409 error occurs
 
-### Final Fix (Session 3 - 2025-12-11)
+### Actual Solutions Needed (NOT YET IMPLEMENTED)
 
-**Commit e71849a - Use unique repo names per test:**
-- Each test now uses its own isolated repo to avoid conflicts:
-  - `langstar-structured-test-push` - for push test
-  - `langstar-structured-test-roundtrip` - for round-trip test
-  - `langstar-structured-test-function-calling` - for function calling test
-  - Pull test shares the push repo (reads after push completes)
+**Option A: Truly Unique Repos**
+- Use timestamp or UUID suffix: `langstar-structured-test-{uuid}`
+- Pros: Simple, no state tracking needed
+- Cons: Creates many orphan repos in LangSmith
 
-**Commit fe8c8d9 - Clarify CI comment:**
-- Updated test-utils feature comment per Copilot review feedback
+**Option B: Get Latest Commit Before Push**
+- Before pushing, pull "latest" to get current commit hash
+- Pass as `parent_commit` parameter
+- Pros: Works with existing repos, no orphans
+- Cons: Requires SDK changes or additional API call
 
-### All Commits in This PR
+**Option C: Delete Repos in Test Teardown**
+- Add cleanup logic to delete test repos after tests
+- Pros: Clean state for each run
+- Cons: More complex, potential race conditions
 
-1. **c34f7a8** - Add SDK integration tests to CI workflow
-2. **9b23adf** - Add CI integration note to SDK tests docs
-3. **d33da7a** - Correct conditional for SDK integration tests job
-4. **94d6fb4** - Address Copilot review feedback and standardize on cargo-nextest
-5. **feb54ab** - Enable test-utils feature for SDK integration tests
-6. **45c0b6a** - Attempt private prompts with serial execution (incomplete fix)
-7. **e71849a** - **Use unique repo names per test to avoid API conflicts** (FINAL FIX)
-8. **fe8c8d9** - Clarify test-utils feature comment per review feedback
+## Session History
 
-### Work Completed
+### Session 1 (Initial PR)
+- Added `integration-tests-sdk` CI job
+- Addressed Copilot review comments
 
-**SDK Integration Tests:**
-- Changed from shared repo to unique repos per test
-- Added `get_test_repo_name()` helper function
-- Updated `ensure_repo_exists()` to accept dynamic repo names
-- All 4 tests pass locally with 0 conflicts
+### Session 2 (Failed Attempt #1)
+- Changed owner from "codekiln" to "-" (private prompts)
+- Removed repo creation logic
+- Added serial test execution
+- Result: Still 404 errors - private repos need creation too
 
-**CI Configuration:**
-- Added `integration-tests-sdk` job with 15-minute timeout
-- Proper dependencies: `[changes, test]`
-- Conditional execution: PRs and main branch only
-- Environment variables: `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, `LANGSMITH_WORKSPACE_ID`
+### Session 3 (Failed Attempt #2 - This Session)
+- Added `ensure_repo_exists()` helper
+- Changed to unique repo names per test
+- Tests pass locally (because repos didn't exist yet)
+- Tests FAIL in CI (because repos persist from local run)
 
-**Documentation:**
-- Updated pre-commit checklist to use cargo-nextest
-- Clarified test-utils feature usage in CI comments
+## What Was Actually Done This Session
 
-**PR Review Comments:**
-- All Copilot review comments addressed with in-thread replies
-- Responded to cargo-nextest devcontainer suggestion (deferred to follow-up)
+1. **e71849a** - Changed to unique repo names (incomplete fix)
+2. **fe8c8d9** - Clarified CI comment
+3. **162ad71** - Updated implementation notes (now outdated)
 
-### Technical Details
+## CLI Test Status
 
-**Why unique repos work:**
-```
-Before: All tests → -/langstar-structured-test → 409 conflict
-After:
-  push test      → -/langstar-structured-test-push
-  roundtrip test → -/langstar-structured-test-roundtrip
-  func test      → -/langstar-structured-test-function-calling
-  pull test      → -/langstar-structured-test-push (reads only)
-```
+**CLI Integration Tests: PASSING in CI** - 299 tests pass
+- Previous timeout issue appears resolved
+- No specific fix was applied - may have been transient
 
-**Key Insight:**
-The original tests were never actually run in CI - they had `#[ignore]` attributes.
-PR #678 removed `#[ignore]`, and this PR is the first to add them to CI.
-The design flaw (shared repo without parent commit handling) was never exposed until now.
-
-### Outstanding Items
-
-1. **CLI test timeout** - Separate issue, not blocking this PR
-2. **cargo-nextest in devcontainer** - Deferred to follow-up issue
-
-### Files Modified
+## Files Modified
 
 - `.github/workflows/ci.yml` - CI configuration
-- `CLAUDE.md` - Pre-commit checklist
-- `docs/dev/README.md` - Pre-commit checklist
+- `sdk/tests/structured_prompts_integration_test.rs` - Test changes (incomplete fix)
 - `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` - cargo-nextest docs
-- `sdk/tests/structured_prompts_integration_test.rs` - Test fixes
+- `CLAUDE.md`, `docs/dev/README.md` - Pre-commit checklists
+
+## PR Comments Status
+
+**Unresolved:**
+- https://github.com/codekiln/langstar/pull/680#discussion_r2610433712 - test-utils comment (addressed in fe8c8d9)
+- https://github.com/codekiln/langstar/pull/680#discussion_r2610797514 - cargo-nextest in devcontainer (MUST ADDRESS - cannot defer)
+
+## Next Session Requirements
+
+The next session MUST:
+
+1. **Fix the 409 error properly** - One of:
+   - Use UUID-based repo names that are truly unique per test run
+   - Implement proper parent_commit handling (get latest before push)
+   - Add test cleanup/teardown
+
+2. **Verify SDK tests pass in CI** - Not just locally
+
+3. **Properly resolve PR comments** - Cannot defer to "follow-up"
+
+4. **Check CLI tests pass** - Currently passing, but verify after changes
+
+## Handoff Information
+
+**Latest CI Run:** https://github.com/codekiln/langstar/actions/runs/20137002176
+**Failing Job:** https://github.com/codekiln/langstar/actions/runs/20137002176/job/57793147572
+
+**Specific Errors:**
+```
+test_push_function_calling_method FAIL - 409 Parent commit validation failed
+test_push_structured_prompt_integration FAIL - 409 Parent commit validation failed
+test_pull_structured_prompt_integration FAIL - depends on push succeeding first
+test_structured_prompt_round_trip_integration FAIL - 409 Parent commit validation failed
+```
+
+**Key Files:**
+- `sdk/tests/structured_prompts_integration_test.rs` - Tests needing fix
+- `sdk/src/prompts.rs` - `push_structured_prompt()` has `parent_commit: Option<String>` param
+- `reference/experiments/398-structured-output-prompts/test_structured_prompts.py` - Python reference
+
+**Recommended Fix Approach:**
+Use UUID suffix for truly unique repo names per test execution:
+```rust
+fn get_test_repo_name(suffix: &str) -> String {
+    let uuid = uuid::Uuid::new_v4().to_string()[..8].to_string();
+    format!("{}-{}-{}", TEST_REPO_BASE, suffix, uuid)
+}
+```
