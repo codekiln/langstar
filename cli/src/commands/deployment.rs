@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
+use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::{
     CreateDeploymentRequest, Deployment, DeploymentFilters, DeploymentStatus, DeploymentType,
@@ -8,6 +8,16 @@ use langstar_sdk::{
 };
 use serde_json::json;
 use tabled::Tabled;
+
+/// Available columns for deployment list text output
+const DEPLOYMENT_COLUMNS: &[&str] = &[
+    "name",
+    "id",
+    "status",
+    "deployment_type",
+    "source",
+    "created_at",
+];
 
 /// Commands for interacting with LangGraph deployments via Control Plane API
 ///
@@ -40,6 +50,15 @@ pub enum DeploymentCommands {
         /// Filter by name (substring match)
         #[arg(long)]
         name_contains: Option<String>,
+
+        /// Select specific columns for text output (comma-separated)
+        /// Available: name, id, status, deployment_type, source, created_at
+        #[arg(long, value_delimiter = ',')]
+        columns: Option<Vec<String>>,
+
+        /// Show available columns for text output
+        #[arg(long)]
+        show_columns: bool,
     },
 
     /// Get a specific deployment by ID
@@ -164,6 +183,34 @@ impl From<&Deployment> for DeploymentRow {
     }
 }
 
+/// Implement ColumnMetadata for Deployment to support text output
+impl ColumnMetadata for Deployment {
+    fn available_columns() -> Vec<&'static str> {
+        DEPLOYMENT_COLUMNS.to_vec()
+    }
+
+    fn render_tsv(&self, columns: &[String]) -> String {
+        columns
+            .iter()
+            .map(|col| match col.as_str() {
+                "name" => self.name.replace(['\t', '\n'], " "),
+                "id" => self.id.clone(),
+                "status" => format!("{:?}", self.status),
+                "deployment_type" => "N/A".to_string(), // Not directly in response
+                "source" => format!("{:?}", self.source),
+                "created_at" => self
+                    .created_at
+                    .split('T')
+                    .next()
+                    .unwrap_or("N/A")
+                    .to_string(),
+                _ => String::new(),
+            })
+            .collect::<Vec<_>>()
+            .join("\t")
+    }
+}
+
 impl DeploymentCommands {
     /// Execute the deployment command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
@@ -178,7 +225,32 @@ impl DeploymentCommands {
                 deployment_type,
                 status,
                 name_contains,
+                columns,
+                show_columns,
             } => {
+                // Handle --show-columns flag: display available columns and exit
+                if *show_columns {
+                    println!("Available columns for deployment list:");
+                    for col in DEPLOYMENT_COLUMNS {
+                        println!("  {}", col);
+                    }
+                    println!("\nUsage: langstar deployment list -f text --columns name,id,status");
+                    return Ok(());
+                }
+
+                // Validate --columns if provided
+                if let Some(cols) = columns {
+                    for col in cols {
+                        if !DEPLOYMENT_COLUMNS.contains(&col.as_str()) {
+                            return Err(crate::error::CliError::Config(format!(
+                                "Invalid column '{}'. Available columns: {}",
+                                col,
+                                DEPLOYMENT_COLUMNS.join(", ")
+                            )));
+                        }
+                    }
+                }
+
                 formatter.info(&format!(
                     "Fetching deployments (limit: {}, offset: {})...",
                     limit, offset
@@ -239,31 +311,49 @@ impl DeploymentCommands {
                     .await?;
 
                 // Output results
-                if format == OutputFormat::Json {
-                    // Sanitize secrets before outputting
-                    let sanitized_resources: Vec<Deployment> = deployments_list
-                        .resources
-                        .iter()
-                        .map(|d| d.sanitize_secrets())
-                        .collect();
-                    formatter.print(&json!({
-                        "resources": sanitized_resources,
-                        "offset": deployments_list.offset
-                    }))?;
-                } else if deployments_list.resources.is_empty() {
-                    formatter.info("No deployments found.");
-                } else {
-                    let rows: Vec<DeploymentRow> = deployments_list
-                        .resources
-                        .iter()
-                        .map(|d| d.into())
-                        .collect();
-                    formatter.print_table(&rows)?;
-                    formatter.info(&format!(
-                        "\nTotal: {} deployment(s) (offset: {})",
-                        deployments_list.resources.len(),
-                        deployments_list.offset
-                    ));
+                match format {
+                    OutputFormat::Json => {
+                        // Sanitize secrets before outputting
+                        let sanitized_resources: Vec<Deployment> = deployments_list
+                            .resources
+                            .iter()
+                            .map(|d| d.sanitize_secrets())
+                            .collect();
+                        formatter.print(&json!({
+                            "resources": sanitized_resources,
+                            "offset": deployments_list.offset
+                        }))?;
+                    }
+                    OutputFormat::Text => {
+                        if deployments_list.resources.is_empty() {
+                            formatter.info("No deployments found.");
+                        } else {
+                            // Sanitize secrets before outputting
+                            let sanitized_resources: Vec<Deployment> = deployments_list
+                                .resources
+                                .iter()
+                                .map(|d| d.sanitize_secrets())
+                                .collect();
+                            formatter.print_text(&sanitized_resources, columns.as_deref())?;
+                        }
+                    }
+                    OutputFormat::Table => {
+                        if deployments_list.resources.is_empty() {
+                            formatter.info("No deployments found.");
+                        } else {
+                            let rows: Vec<DeploymentRow> = deployments_list
+                                .resources
+                                .iter()
+                                .map(|d| d.into())
+                                .collect();
+                            formatter.print_table(&rows)?;
+                            formatter.info(&format!(
+                                "\nTotal: {} deployment(s) (offset: {})",
+                                deployments_list.resources.len(),
+                                deployments_list.offset
+                            ));
+                        }
+                    }
                 }
 
                 Ok(())

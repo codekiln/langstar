@@ -1,11 +1,14 @@
 use crate::config::Config;
 use crate::deployment_utils::resolve_deployment_url;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
+use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::{Assistant, CreateAssistantRequest, LangchainClient, UpdateAssistantRequest};
 use serde_json::json;
 use tabled::Tabled;
+
+/// Available columns for assistant list text output
+const ASSISTANT_COLUMNS: &[&str] = &["assistant_id", "name", "graph_id", "created_at"];
 
 /// Commands for interacting with LangGraph Assistants
 #[derive(Debug, Subcommand)]
@@ -23,6 +26,15 @@ pub enum AssistantCommands {
         /// Number of assistants to skip
         #[arg(short, long, default_value = "0")]
         offset: u32,
+
+        /// Select specific columns for text output (comma-separated)
+        /// Available: assistant_id, name, graph_id, created_at
+        #[arg(long, value_delimiter = ',')]
+        columns: Option<Vec<String>>,
+
+        /// Show available columns for text output
+        #[arg(long)]
+        show_columns: bool,
     },
 
     /// Search for assistants by name
@@ -150,6 +162,31 @@ impl From<&Assistant> for AssistantRow {
     }
 }
 
+/// Implement ColumnMetadata for Assistant to support text output
+impl ColumnMetadata for Assistant {
+    fn available_columns() -> Vec<&'static str> {
+        ASSISTANT_COLUMNS.to_vec()
+    }
+
+    fn render_tsv(&self, columns: &[String]) -> String {
+        columns
+            .iter()
+            .map(|col| match col.as_str() {
+                "assistant_id" => self.assistant_id.clone(),
+                "name" => self.name.replace(['\t', '\n'], " "),
+                "graph_id" => self.graph_id.clone(),
+                "created_at" => self
+                    .created_at
+                    .clone()
+                    .unwrap_or_default()
+                    .replace(['\t', '\n'], " "),
+                _ => String::new(),
+            })
+            .collect::<Vec<_>>()
+            .join("\t")
+    }
+}
+
 impl AssistantCommands {
     /// Execute the assistant command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
@@ -176,7 +213,34 @@ impl AssistantCommands {
                 deployment: _,
                 limit,
                 offset,
+                columns,
+                show_columns,
             } => {
+                // Handle --show-columns flag: display available columns and exit
+                if *show_columns {
+                    println!("Available columns for assistant list:");
+                    for col in ASSISTANT_COLUMNS {
+                        println!("  {}", col);
+                    }
+                    println!(
+                        "\nUsage: langstar assistant list --deployment <name> -f text --columns assistant_id,name"
+                    );
+                    return Ok(());
+                }
+
+                // Validate --columns if provided
+                if let Some(cols) = columns {
+                    for col in cols {
+                        if !ASSISTANT_COLUMNS.contains(&col.as_str()) {
+                            return Err(crate::error::CliError::Config(format!(
+                                "Invalid column '{}'. Available columns: {}",
+                                col,
+                                ASSISTANT_COLUMNS.join(", ")
+                            )));
+                        }
+                    }
+                }
+
                 formatter.info(&format!(
                     "Fetching assistants (limit: {}, offset: {})...",
                     limit, offset
@@ -187,20 +251,27 @@ impl AssistantCommands {
                     .list(Some(*limit), Some(*offset))
                     .await?;
 
-                if format == OutputFormat::Json {
-                    formatter.print(&json!({ "assistants": assistants }))?;
-                } else {
-                    let rows: Vec<AssistantRow> = assistants.iter().map(|a| a.into()).collect();
-                    formatter.print_table(&rows)?;
+                match format {
+                    OutputFormat::Json => {
+                        formatter.print(&json!({ "assistants": assistants }))?;
+                    }
+                    OutputFormat::Text => {
+                        // Use provided columns or default to all columns
+                        formatter.print_text(&assistants, columns.as_deref())?;
+                    }
+                    OutputFormat::Table => {
+                        let rows: Vec<AssistantRow> = assistants.iter().map(|a| a.into()).collect();
+                        formatter.print_table(&rows)?;
 
-                    if assistants.is_empty() {
-                        eprintln!("\nℹ No assistants found");
-                    } else {
-                        eprintln!(
-                            "\nℹ Found {} assistant{}",
-                            assistants.len(),
-                            if assistants.len() == 1 { "" } else { "s" }
-                        );
+                        if assistants.is_empty() {
+                            eprintln!("\nℹ No assistants found");
+                        } else {
+                            eprintln!(
+                                "\nℹ Found {} assistant{}",
+                                assistants.len(),
+                                if assistants.len() == 1 { "" } else { "s" }
+                            );
+                        }
                     }
                 }
 

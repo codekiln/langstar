@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::error::Result;
-use crate::output::{OutputFormat, OutputFormatter};
+use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::LangchainClient;
 use langstar_sdk::playground_settings::{
@@ -11,6 +11,9 @@ use serde_json::Value;
 use std::fs;
 use tabled::Tabled;
 use uuid::Uuid;
+
+/// Available columns for model-config list text output
+const MODEL_CONFIG_COLUMNS: &[&str] = &["id", "name", "provider", "model"];
 
 /// Commands for managing LangSmith model configurations (playground settings)
 #[derive(Debug, Subcommand)]
@@ -24,6 +27,15 @@ pub enum ModelConfigCommands {
         /// Number of items to skip
         #[arg(short, long, default_value = "0")]
         offset: i64,
+
+        /// Select specific columns for text output (comma-separated)
+        /// Available: id, name, provider, model
+        #[arg(long, value_delimiter = ',')]
+        columns: Option<Vec<String>>,
+
+        /// Show available columns for text output
+        #[arg(long)]
+        show_columns: bool,
     },
 
     /// Get details of a specific model configuration
@@ -116,6 +128,33 @@ fn extract_provider_and_model(settings: &Value) -> (String, String) {
     (provider, model)
 }
 
+/// Implement ColumnMetadata for PlaygroundSettingsResponse to support text output
+impl ColumnMetadata for PlaygroundSettingsResponse {
+    fn available_columns() -> Vec<&'static str> {
+        MODEL_CONFIG_COLUMNS.to_vec()
+    }
+
+    fn render_tsv(&self, columns: &[String]) -> String {
+        let (provider, model) = extract_provider_and_model(&self.settings);
+
+        columns
+            .iter()
+            .map(|col| match col.as_str() {
+                "id" => self.id.to_string(),
+                "name" => self
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| "-".to_string())
+                    .replace(['\t', '\n'], " "),
+                "provider" => provider.clone(),
+                "model" => model.clone(),
+                _ => String::new(),
+            })
+            .collect::<Vec<_>>()
+            .join("\t")
+    }
+}
+
 impl ModelConfigCommands {
     /// Execute the model-config command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
@@ -124,7 +163,35 @@ impl ModelConfigCommands {
         let formatter = OutputFormatter::new(format);
 
         match self {
-            ModelConfigCommands::List { limit, offset } => {
+            ModelConfigCommands::List {
+                limit,
+                offset,
+                columns,
+                show_columns,
+            } => {
+                // Handle --show-columns flag: display available columns and exit
+                if *show_columns {
+                    println!("Available columns for model-config list:");
+                    for col in MODEL_CONFIG_COLUMNS {
+                        println!("  {}", col);
+                    }
+                    println!("\nUsage: langstar model-config list -f text --columns id,name,model");
+                    return Ok(());
+                }
+
+                // Validate --columns if provided
+                if let Some(cols) = columns {
+                    for col in cols {
+                        if !MODEL_CONFIG_COLUMNS.contains(&col.as_str()) {
+                            return Err(crate::error::CliError::Config(format!(
+                                "Invalid column '{}'. Available columns: {}",
+                                col,
+                                MODEL_CONFIG_COLUMNS.join(", ")
+                            )));
+                        }
+                    }
+                }
+
                 let params = ListPlaygroundSettingsParams {
                     limit: Some(*limit),
                     offset: Some(*offset),
@@ -147,8 +214,8 @@ impl ModelConfigCommands {
                         formatter.print_table(&rows)?;
                     }
                     OutputFormat::Text => {
-                        // Text format not yet implemented for model configs, fall back to JSON
-                        formatter.print(&configs)?;
+                        // Use provided columns or default to all columns
+                        formatter.print_text(&configs, columns.as_deref())?;
                     }
                 }
 
