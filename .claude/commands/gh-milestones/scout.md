@@ -49,7 +49,9 @@ fi
 ### 3. Create Scout Issue
 
 ```bash
-ISSUE_BODY=$(cat docs/templates/scout-issue-template.md | sed "s/{feature-name}/$FEATURE_NAME/g")
+# Escape forward slashes and ampersands for safe sed substitution
+ESCAPED_FEATURE_NAME=$(printf '%s' "$FEATURE_NAME" | sed 's/[\/&]/\\&/g')
+ISSUE_BODY=$(cat docs/templates/scout-issue-template.md | sed "s/{feature-name}/$ESCAPED_FEATURE_NAME/g")
 
 ISSUE_URL=$(gh issue create \
   --title "[Scout] Research $FEATURE_NAME API patterns and technical context" \
@@ -161,19 +163,16 @@ Update `$RESEARCH_FILE` with findings, technical patterns discovered, and insigh
 ```bash
 cd "wip/codekiln-${ISSUE_NUM}-scout"
 git add -A
-git commit -m "docs: scout $FEATURE_NAME research
 
-Fixes #${ISSUE_NUM}"
-gh pr create --title "docs: scout $FEATURE_NAME research" \
-  --body "Fixes #${ISSUE_NUM}
+# Use printf to safely pass commit message to avoid command injection
+COMMIT_MSG=$(printf "docs: scout %s research\n\nFixes #%s" "$FEATURE_NAME" "$ISSUE_NUM")
+git commit -m "$COMMIT_MSG"
 
-## Summary
-Preliminary research for $FEATURE_NAME implementation.
+# Use printf to safely construct PR body
+PR_BODY=$(printf "Fixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- SDK analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
+  "$ISSUE_NUM" "$FEATURE_NAME" "$ISSUE_NUM" "$FEATURE_SLUG")
 
-## Deliverables
-- Research report at docs/research/${ISSUE_NUM}-${FEATURE_SLUG}-scout.md
-- SDK analysis notes (if applicable)
-- Technical patterns and insights for milestone planning"
+gh pr create --title "docs: scout $FEATURE_NAME research" --body "$PR_BODY"
 ```
 
 ## After Scout Completion
