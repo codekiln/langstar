@@ -53,10 +53,13 @@ async fn create_integration_test_client() -> LangchainClient {
     client
 }
 
-/// Generate a unique test repo name with a suffix
+/// Generate a unique test repo name with a suffix and UUID
 /// This ensures each test uses its own isolated repo to avoid conflicts
+/// The UUID makes repo names unique per test execution, preventing 409 "Parent commit validation failed" errors
+/// when CI runs push to repos that already have commits from previous runs
 fn get_test_repo_name(suffix: &str) -> String {
-    format!("{}-{}", TEST_REPO_BASE, suffix)
+    let uuid_short = &uuid::Uuid::new_v4().to_string()[..8];
+    format!("{}-{}-{}", TEST_REPO_BASE, suffix, uuid_short)
 }
 
 /// Helper to ensure a test repository exists before running tests.
@@ -222,16 +225,26 @@ async fn test_push_structured_prompt_integration() {
 #[serial_test::serial]
 async fn test_pull_structured_prompt_integration() {
     let client = create_integration_test_client().await;
-    // Use the "push" repo that was created by the push test (tests run serially)
-    let test_repo = get_test_repo_name("push");
+    let test_repo = get_test_repo_name("pull");
 
     println!(
         "\n=== Testing pull_structured_prompt from {}/{} ===",
         TEST_OWNER, test_repo
     );
 
-    // Ensure private repository exists before pulling
+    // Create repo and push a prompt first so we have something to pull
     ensure_repo_exists(&client, &test_repo).await;
+    let structured_prompt = create_test_movie_review_prompt();
+    let push_result = client
+        .prompts()
+        .push_structured_prompt(TEST_OWNER, &test_repo, structured_prompt, None)
+        .await;
+    assert!(
+        push_result.is_ok(),
+        "Setup push should succeed: {:?}",
+        push_result.err()
+    );
+    println!("✓ Setup: pushed prompt to new repo");
 
     println!("Pulling latest commit...");
     let result = client
