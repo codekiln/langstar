@@ -91,6 +91,7 @@ cat > "$RESEARCH_FILE" <<EOF
 ## 4. Technical Patterns
 
 **Key Patterns Discovered**:
+<!-- Document patterns observed in SDK/API (e.g., pagination, error handling, resource lifecycle) -->
 
 ## 5. Experiments
 
@@ -99,8 +100,13 @@ cat > "$RESEARCH_FILE" <<EOF
 ## 6. Insights for Milestone Planning
 
 **Knowledge Gathered**:
+<!-- Summarize key technical insights from research -->
+
 **Recommended First Ticket(s)**:
+<!-- Suggest initial sub-issues based on research findings -->
+
 **Open Questions for Implementation**:
+<!-- List unresolved questions to address during implementation -->
 EOF
 ```
 

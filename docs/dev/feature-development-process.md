@@ -111,10 +111,10 @@ Create an exploratory research issue using this pattern:
 ### Benefits of Pre-Epic Scouting
 
 **Knowledge Foundation**:
-- Gathers technical context before authoring milestone tickets
-- Documents API patterns and SDK precedents
-- Creates reusable research artifacts
-- Helps understand the problem domain through experimentation
+- Gather technical context before authoring milestone tickets
+- Document API patterns and SDK precedents
+- Create reusable research artifacts
+- Understand the problem domain through experimentation
 
 **Better Milestone Planning**:
 - Parent issue scope is informed by actual research, not assumptions

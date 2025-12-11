@@ -40,7 +40,7 @@ Gather preliminary research and technical knowledge about **{feature-name}** to 
 Create experiments to:
 - Explore API behavior through hands-on testing
 - Validate assumptions about request/response patterns
-- Understand edge cases and error handling
+- Test edge cases and error handling
 - Test integration patterns
 
 Example structure:
