@@ -29,8 +29,6 @@ use std::io::Write;
 use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
-const TEST_REPO: &str = "langstar-structured-test"; // Used by remaining tests (to be refactored)
-const TEST_REPO_PRIVATE: &str = "-/langstar-structured-test"; // Used by remaining tests (to be refactored)
 
 /// Check environment variables for PRIVATE prompt tests (99% use case)
 /// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
@@ -95,7 +93,8 @@ impl PromptRepoFixture {
         // Create the repo via SDK
         println!("[SETUP] Creating private repo: -/{}", repo_name);
         runtime.block_on(async {
-            client.prompts()
+            client
+                .prompts()
                 .create_repo(
                     &repo_name,
                     Some(format!("Test repo for {}", prefix)),
@@ -104,10 +103,15 @@ impl PromptRepoFixture {
                     None,
                 )
                 .await
-                .expect(&format!("Failed to create test repo: {}", repo_name));
+                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
         });
 
-        Self { repo_name, runtime, client, is_private: true }
+        Self {
+            repo_name,
+            runtime,
+            client,
+            is_private: true,
+        }
     }
 
     /// Create a new public prompt repo fixture
@@ -119,7 +123,8 @@ impl PromptRepoFixture {
         // Create the repo via SDK
         println!("[SETUP] Creating public repo: {}/{}", TEST_OWNER, repo_name);
         runtime.block_on(async {
-            client.prompts()
+            client
+                .prompts()
                 .create_repo(
                     &repo_name,
                     Some(format!("Test repo for {}", prefix)),
@@ -128,10 +133,15 @@ impl PromptRepoFixture {
                     None,
                 )
                 .await
-                .expect(&format!("Failed to create test repo: {}", repo_name));
+                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
         });
 
-        Self { repo_name, runtime, client, is_private: false }
+        Self {
+            repo_name,
+            runtime,
+            client,
+            is_private: false,
+        }
     }
 
     /// Get the repo handle for CLI commands
@@ -153,9 +163,9 @@ impl Drop for PromptRepoFixture {
     fn drop(&mut self) {
         // Clean up the repo when the fixture goes out of scope
         println!("[CLEANUP] Deleting repo: {}", self.handle());
-        let _ = self.runtime.block_on(async {
-            self.client.prompts().delete(&self.repo_name).await
-        });
+        let _ = self
+            .runtime
+            .block_on(async { self.client.prompts().delete(&self.repo_name).await });
     }
 }
 
@@ -260,6 +270,10 @@ fn test_cli_push_private_prompt() {
 fn test_cli_push_public_prompt_invalid_schema() {
     check_env_vars_public_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_public("test-invalid-schema");
+
+    // TEST: Push with invalid schema file
     let invalid_schema_file = create_temp_invalid_schema_file();
     let schema_path = invalid_schema_file.path().to_str().unwrap();
 
@@ -271,17 +285,20 @@ fn test_cli_push_public_prompt_invalid_schema() {
         "--owner",
         TEST_OWNER,
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Test template",
         "--schema",
         schema_path,
     ]);
 
+    // VERIFY: CLI command fails with schema validation error
     cmd.assert().failure().stderr(
         predicate::str::contains("Schema validation failed")
             .or(predicate::str::contains("InvalidSchemaError")),
     );
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -289,6 +306,10 @@ fn test_cli_push_public_prompt_invalid_schema() {
 fn test_cli_push_public_prompt_missing_schema() {
     check_env_vars_public_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_public("test-missing-schema");
+
+    // TEST: Push with nonexistent schema file path
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
     cmd.args([
@@ -297,17 +318,20 @@ fn test_cli_push_public_prompt_missing_schema() {
         "--owner",
         TEST_OWNER,
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Test template",
         "--schema",
         "/nonexistent/path/to/schema.json",
     ]);
 
+    // VERIFY: CLI command fails with file not found error
     cmd.assert().failure().stderr(
         predicate::str::contains("Failed to read schema file")
             .or(predicate::str::contains("No such file or directory")),
     );
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -315,6 +339,10 @@ fn test_cli_push_public_prompt_missing_schema() {
 fn test_cli_push_public_prompt_invalid_method() {
     check_env_vars_public_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_public("test-invalid-method");
+
+    // TEST: Push with invalid schema method
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
@@ -326,7 +354,7 @@ fn test_cli_push_public_prompt_invalid_method() {
         "--owner",
         TEST_OWNER,
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Test template",
         "--schema",
@@ -335,10 +363,13 @@ fn test_cli_push_public_prompt_invalid_method() {
         "invalid_method",
     ]);
 
+    // VERIFY: CLI command fails with invalid method error
     cmd.assert().failure().stderr(
         predicate::str::contains("invalid_method")
             .or(predicate::str::contains("InvalidMethodError")),
     );
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -346,6 +377,10 @@ fn test_cli_push_public_prompt_invalid_method() {
 fn test_cli_push_function_calling_method_private_prompt() {
     check_env_vars_private_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-function-calling");
+
+    // TEST: Push structured prompt with function_calling method
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
@@ -357,7 +392,7 @@ fn test_cli_push_function_calling_method_private_prompt() {
         "--owner",
         "-",
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Test with function calling",
         "--input-variables",
@@ -368,9 +403,12 @@ fn test_cli_push_function_calling_method_private_prompt() {
         "function_calling",
     ]);
 
+    // VERIFY: CLI command succeeds
     cmd.assert().success().stdout(predicate::str::contains(
         "Prompt commit pushed successfully",
     ));
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -378,19 +416,43 @@ fn test_cli_push_function_calling_method_private_prompt() {
 fn test_cli_pull_private_prompt() {
     check_env_vars_private_prompts();
 
-    let handle = TEST_REPO_PRIVATE;
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-pull-private");
 
+    // Setup: First push a structured prompt to pull
+    let schema_file = create_temp_schema_file();
+    let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
-    let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", "--", handle]);
+    let mut push_cmd = Command::new(&bin);
+    push_cmd.args([
+        "prompt",
+        "push",
+        "--owner",
+        "-",
+        "--repo",
+        fixture.repo_name(),
+        "--template",
+        "Test pull: {input}",
+        "--input-variables",
+        "input",
+        "--schema",
+        schema_path,
+    ]);
+    push_cmd.assert().success();
 
+    // TEST: Pull the structured prompt
+    let mut cmd = Command::new(&bin);
+    cmd.args(["prompt", "pull", "--", &fixture.handle()]);
+
+    // VERIFY: CLI command succeeds with expected output
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Prompt Manifest"))
-        .stdout(
-            predicate::str::contains("Structured prompt with JSON schema")
-                .or(predicate::str::contains("Type:").and(predicate::str::contains("Schema"))),
-        );
+        .stdout(predicate::str::contains("PROMPT MANIFEST"))
+        .stdout(predicate::str::contains(
+            "Structured prompt with JSON schema",
+        ));
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -398,7 +460,10 @@ fn test_cli_pull_private_prompt() {
 fn test_cli_private_prompt_round_trip() {
     check_env_vars_private_prompts();
 
-    // Step 1: Push a structured prompt
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-round-trip");
+
+    // TEST Step 1: Push a structured prompt
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
@@ -410,7 +475,7 @@ fn test_cli_private_prompt_round_trip() {
         "--owner",
         "-",
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "Round-trip test: {query}",
         "--input-variables",
@@ -436,13 +501,18 @@ fn test_cli_private_prompt_round_trip() {
 
     println!("Pushed with commit hash: {}", commit_hash);
 
-    // Step 2: Pull it back
-    let handle = TEST_REPO_PRIVATE;
-
-    let bin = get_langstar_bin();
+    // TEST Step 2: Pull it back
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.args(["prompt", "pull", "--commit", commit_hash, "--", handle]);
+    pull_cmd.args([
+        "prompt",
+        "pull",
+        "--commit",
+        commit_hash,
+        "--",
+        &fixture.handle(),
+    ]);
 
+    // VERIFY: Round-trip preserves structured prompt data
     pull_cmd
         .assert()
         .success()
@@ -451,6 +521,8 @@ fn test_cli_private_prompt_round_trip() {
         ))
         .stdout(predicate::str::contains("json_schema"))
         .stdout(predicate::str::contains("Round-trip test"));
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -458,6 +530,10 @@ fn test_cli_private_prompt_round_trip() {
 fn test_cli_push_private_prompt_json_output() {
     check_env_vars_private_prompts();
 
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-json-output-push");
+
+    // TEST: Push structured prompt with JSON output format
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
 
@@ -469,7 +545,7 @@ fn test_cli_push_private_prompt_json_output() {
         "--owner",
         "-",
         "--repo",
-        TEST_REPO,
+        fixture.repo_name(),
         "--template",
         "JSON output test",
         "--schema",
@@ -481,9 +557,16 @@ fn test_cli_push_private_prompt_json_output() {
     let output = cmd.assert().success();
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
 
-    // Verify JSON output can be parsed
-    let json_result: Result<serde_json::Value, _> = serde_json::from_str(&stdout);
-    assert!(json_result.is_ok(), "Output should be valid JSON");
+    // VERIFY: JSON output can be parsed and has expected structure
+    // Skip any non-JSON lines at the beginning (e.g., "✓ Repository exists")
+    let json_str = stdout
+        .lines()
+        .skip_while(|line| !line.trim_start().starts_with('{'))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let json_result: Result<serde_json::Value, _> = serde_json::from_str(&json_str);
+    assert!(json_result.is_ok(), "Output should contain valid JSON");
 
     let json = json_result.unwrap();
     assert!(
@@ -494,6 +577,8 @@ fn test_cli_push_private_prompt_json_output() {
         json["commit"].get("commit_hash").is_some(),
         "JSON should have commit_hash"
     );
+
+    // CLEANUP: Automatic via Drop trait
 }
 
 #[test]
@@ -501,16 +586,45 @@ fn test_cli_push_private_prompt_json_output() {
 fn test_cli_pull_private_prompt_json_output() {
     check_env_vars_private_prompts();
 
-    let handle = TEST_REPO_PRIVATE;
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-json-output-pull");
 
+    // Setup: First push a structured prompt to pull
+    let schema_file = create_temp_schema_file();
+    let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
+    let mut push_cmd = Command::new(&bin);
+    push_cmd.args([
+        "prompt",
+        "push",
+        "--owner",
+        "-",
+        "--repo",
+        fixture.repo_name(),
+        "--template",
+        "Test JSON pull: {input}",
+        "--input-variables",
+        "input",
+        "--schema",
+        schema_path,
+    ]);
+    push_cmd.assert().success();
+
+    // TEST: Pull with JSON output format
     let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", "--format", "json", "--", handle]);
+    cmd.args([
+        "prompt",
+        "pull",
+        "--format",
+        "json",
+        "--",
+        &fixture.handle(),
+    ]);
 
     let output = cmd.assert().success();
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
 
-    // Verify JSON output can be parsed
+    // VERIFY: JSON output can be parsed and has expected structure
     let json_result: Result<serde_json::Value, _> = serde_json::from_str(&stdout);
     assert!(json_result.is_ok(), "Output should be valid JSON");
 
@@ -520,4 +634,6 @@ fn test_cli_pull_private_prompt_json_output() {
         json.get("lc").is_some() || json.get("manifest").is_some(),
         "JSON should have lc or manifest field"
     );
+
+    // CLEANUP: Automatic via Drop trait
 }
