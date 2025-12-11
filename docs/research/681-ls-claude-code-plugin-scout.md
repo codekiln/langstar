@@ -360,6 +360,7 @@ langstar prompt cat <handle>  # Template text for editing
 ```bash
 langstar prompt push --content "..." --description "..." <handle>
 ```
+```
 
 ### Composability Note
 
