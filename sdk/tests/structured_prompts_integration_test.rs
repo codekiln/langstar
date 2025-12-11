@@ -3,9 +3,13 @@
 /// These tests require:
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable (or auto-discovery)
-/// - Test repository: codekiln/langstar-structured-test (auto-created if it does not exist)
 ///
-/// Run with: cargo test --test structured_prompts_integration_test -- --ignored --nocapture
+/// Test Configuration:
+/// - Uses PRIVATE prompts (owner = "-") in authenticated user's namespace
+/// - Private prompt repos exist implicitly and cannot be "created"
+/// - Tests run serially to follow CRUD lifecycle pattern
+///
+/// Run with: cargo test --features integration-tests -p langstar-sdk --test structured_prompts_integration_test
 ///
 /// Note: These tests run automatically in CI via the `integration-tests-sdk` job
 use langstar_sdk::prompts::{
@@ -15,7 +19,9 @@ use langstar_sdk::prompts::{
 use langstar_sdk::{AuthConfig, LangchainClient};
 use serde_json::json;
 
-const TEST_OWNER: &str = "codekiln";
+// Use "-" for private prompts in the authenticated user's namespace
+// Private prompts cannot be "created" - they exist implicitly under "-"
+const TEST_OWNER: &str = "-";
 const TEST_REPO: &str = "langstar-structured-test";
 
 /// Helper to create a test client with organization ID
@@ -138,6 +144,7 @@ fn create_test_movie_review_prompt() -> StructuredPrompt {
 
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial_test::serial]
 async fn test_push_structured_prompt_integration() {
     let client = create_integration_test_client().await;
 
@@ -146,31 +153,7 @@ async fn test_push_structured_prompt_integration() {
         TEST_OWNER, TEST_REPO
     );
 
-    // Create test repository if it doesn't exist
-    let repo_handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
-    match client.prompts().get(&repo_handle).await {
-        Ok(_) => {
-            println!("✓ Repository exists");
-        }
-        Err(_) => {
-            println!("Creating repository...");
-            match client
-                .prompts()
-                .create_repo(
-                    &repo_handle,
-                    Some("Test repository for structured prompts".to_string()),
-                    None,
-                    false,
-                    Some(vec!["test".to_string(), "structured".to_string()]),
-                )
-                .await
-            {
-                Ok(_) => println!("✓ Repository created"),
-                Err(e) => eprintln!("⚠ Could not create repository: {:?}", e),
-            }
-        }
-    }
-
+    // Note: Private prompts (owner = "-") exist implicitly and cannot be "created"
     let structured_prompt = create_test_movie_review_prompt();
 
     println!("Pushing structured prompt with json_schema method...");
@@ -193,6 +176,7 @@ async fn test_push_structured_prompt_integration() {
 
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial_test::serial]
 async fn test_pull_structured_prompt_integration() {
     let client = create_integration_test_client().await;
 
@@ -246,6 +230,7 @@ async fn test_pull_structured_prompt_integration() {
 
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial_test::serial]
 async fn test_structured_prompt_round_trip_integration() {
     let client = create_integration_test_client().await;
 
@@ -303,6 +288,7 @@ async fn test_structured_prompt_round_trip_integration() {
 
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial_test::serial]
 async fn test_push_function_calling_method() {
     let client = create_integration_test_client().await;
 
