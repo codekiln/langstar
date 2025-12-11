@@ -102,6 +102,12 @@ This command automatically loads relevant docs and generates a test plan.
 
 See `docs/dev/progressive-disclosure-docs-standards.md` for detailed patterns.
 
+#### Environment Variables and Authentication
+
+**Environment variable mapping:** @docs/dev/environment-variables.md
+
+Canonical reference for LangSmith environment variables and their mapping to API authentication headers. Essential for understanding which variables are required for different APIs and why tests require all three variables.
+
 ### `reference/` - External Resources & Experiments
 - `api-specs/` - API specifications (LangSmith, control-plane)
 - `experiments/` - Python experiments for API interaction

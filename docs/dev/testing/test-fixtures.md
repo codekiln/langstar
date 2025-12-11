@@ -140,6 +140,8 @@ export TEST_GRAPH_ID="<graph-id-from-deployment>"
 export TEST_DEPLOYMENT_ID="<deployment-id>"
 ```
 
+**See `docs/dev/environment-variables.md` for complete mapping of environment variables to API headers and which APIs require which variables.**
+
 **Finding these values:**
 
 - **LANGSMITH_API_KEY**: [LangSmith Settings](https://smith.langchain.com/settings) → "API Keys"

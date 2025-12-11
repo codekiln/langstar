@@ -63,6 +63,8 @@ export LANGSMITH_ORGANIZATION_ID=<your-org-id>
 
 **In CI:** These are set as repository secrets. Check `.github/workflows/`.
 
+**See `docs/dev/environment-variables.md` for complete mapping of environment variables to API headers and which APIs require which variables.**
+
 ### Pattern 2: Test Skipped (No Output)
 
 **Symptom:** Test shows as passing but didn't run

@@ -96,6 +96,8 @@ When a PR adds or modifies features that interact with APIs:
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoped operations
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID for scoped operations
 
+**See `docs/dev/environment-variables.md` for complete mapping of environment variables to API headers and which APIs require which variables.**
+
 **CRITICAL - No Silent Skips (Issue #647):**
 Tests MUST fail explicitly when required env vars are missing:
 
