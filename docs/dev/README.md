@@ -145,7 +145,7 @@ When working on multi-phase features, **always review prerequisite phases before
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features && \
+cargo nextest run --profile ci --all-features --workspace && \
 cargo fmt --check
 ```
 

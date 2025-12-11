@@ -228,6 +228,65 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
+  integration-tests-sdk:
+    name: SDK Integration Tests
+    runs-on: ubuntu-latest
+    needs: [changes, test]
+    # Only run when changes warrant CI AND (on PRs or main branch) to avoid excessive API usage
+    if: needs.changes.outputs.should_run == 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-nextest
+
+      - name: Run SDK integration tests
+        # Runs SDK integration tests in the langstar-sdk package
+        # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
+        # Note: test-utils feature included for shared test infrastructure used by some SDK tests
+        run: cargo nextest run --profile integration -p langstar-sdk --features integration-tests,test-utils
+        timeout-minutes: 15
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+
+      - name: List test artifacts
+        if: always()
+        run: |
+          echo "=== JUnit XML file ==="
+          ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
+
+      - name: Publish SDK Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: target/nextest/integration/junit-integration.xml
+          check_name: "SDK Integration Test Results"
+          comment_title: "SDK Integration Test Results"
+          time_unit: seconds
+          report_individual_runs: true
+          action_fail_on_inconclusive: false
+
+      - name: Upload SDK integration test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sdk-integration-test-results-${{ github.run_number }}
+          path: target/nextest/integration/junit-integration.xml
+          retention-days: 90
+          if-no-files-found: warn
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -366,6 +425,7 @@ jobs:
       - check
       - test
       - integration-tests
+      - integration-tests-sdk
       - clippy
       - audit
       - build

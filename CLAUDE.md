@@ -9,7 +9,7 @@ This project enforces the **Toyota Andon Cord principle** for testing: any faili
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features
+cargo nextest run --profile ci --all-features --workspace
 ```
 
 **For comprehensive testing guidelines:**

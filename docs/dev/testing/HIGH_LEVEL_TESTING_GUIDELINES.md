@@ -24,6 +24,7 @@ In Toyota manufacturing, any worker can pull the "andon cord" to stop the entire
 - ❌ "This failure is unrelated to my changes"
 - ❌ "The test should only run in CI where the proper environment is configured"
 - ❌ "This is a pre-existing failure" (without CI proof)
+- ❌ "The CLI test timeout is a separate issue (not introduced by this PR)" (without verifiable proof)
 
 ### Verifying "Pre-Existing" Claims
 
@@ -60,7 +61,7 @@ If CI is green on main, the failure is **your responsibility** to fix, not a pre
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features && \
+cargo nextest run --profile ci --all-features --workspace && \
 cargo fmt --check
 ```
 
@@ -71,10 +72,12 @@ cargo fmt --check
 | `cargo fmt` | Auto-format code | Style inconsistencies |
 | `cargo check` | Type checking | Compile errors across workspace |
 | `cargo clippy` | Lint analysis | Common mistakes, code smells |
-| `cargo test` | Run all tests | Regressions, broken features |
+| `cargo nextest run` | Run all tests (parallel) | Regressions, broken features |
 | `cargo fmt --check` | Verify formatting | Uncommitted format changes |
 
 **Time investment:** ~1-2 minutes locally vs 10-20 minutes CI roundtrips
+
+**Note:** We use `cargo-nextest` instead of `cargo test` for faster parallel execution and better output. CI and local testing use the same tool for consistency. The devcontainer automatically installs `cargo-nextest` via `post-create.sh`. If not using the devcontainer, install it with `cargo install cargo-nextest --locked`.
 
 ### Integration Test Requirements
 
