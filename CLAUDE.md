@@ -9,8 +9,10 @@ This project enforces the **Toyota Andon Cord principle** for testing: any faili
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features
+cargo nextest run --profile ci --all-features --workspace
 ```
+
+**Note:** Install cargo-nextest if not already installed: `cargo install cargo-nextest --locked`
 
 **For comprehensive testing guidelines:**
 - The TOC is auto-loaded via AGENTS.md (`docs/dev/testing/README.md`)
