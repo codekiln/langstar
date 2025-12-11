@@ -257,7 +257,6 @@ User's natural language description of desired prompt
 1. Run `langstar prompt list --output json`
 2. Filter by name/description matching user intent
 3. Return summarized results (not full objects)
-```
 
 ### Sub-Agent Use Cases for Prompt Management
 
