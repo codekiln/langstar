@@ -251,9 +251,9 @@ jobs:
           tool: cargo-nextest
 
       - name: Run SDK integration tests
-        # Runs ALL SDK integration tests in the langstar-sdk package
+        # Runs SDK integration tests in the langstar-sdk package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
-        # Requires test-utils feature for shared test infrastructure (deployment helpers, etc.)
+        # Note: test-utils feature included for shared test infrastructure used by some SDK tests
         run: cargo nextest run --profile integration -p langstar-sdk --features integration-tests,test-utils
         timeout-minutes: 15
         env:
