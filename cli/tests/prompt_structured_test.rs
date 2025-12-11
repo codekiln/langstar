@@ -23,7 +23,6 @@ use tempfile::NamedTempFile;
 const TEST_OWNER: &str = "codekiln";
 const TEST_REPO: &str = "langstar-structured-test";
 const TEST_REPO_PRIVATE: &str = "-/langstar-structured-test"; // Private prompt format
-const TEST_REPO_PUBLIC: &str = "codekiln/langstar-structured-test"; // Public prompt format
 
 /// Check environment variables for PRIVATE prompt tests (99% use case)
 /// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
@@ -44,7 +43,10 @@ fn check_env_vars_public_prompts() {
         .expect("LANGSMITH_API_KEY must be set for integration tests");
     std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    std::env::remove_var("LANGSMITH_WORKSPACE_ID");
+    // SAFETY: Safe to remove env var in test setup before tests run
+    unsafe {
+        std::env::remove_var("LANGSMITH_WORKSPACE_ID");
+    }
 }
 
 /// Helper to build and get the langstar binary path
@@ -263,7 +265,7 @@ fn test_cli_pull_private_prompt() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", &handle]);
+    cmd.args(["prompt", "pull", handle]);
 
     cmd.assert()
         .success()
@@ -322,7 +324,7 @@ fn test_cli_private_prompt_round_trip() {
 
     let bin = get_langstar_bin();
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.args(["prompt", "pull", &handle, "--commit", commit_hash]);
+    pull_cmd.args(["prompt", "pull", handle, "--commit", commit_hash]);
 
     pull_cmd
         .assert()
@@ -386,7 +388,7 @@ fn test_cli_pull_private_prompt_json_output() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.args(["prompt", "pull", &handle, "--format", "json"]);
+    cmd.args(["prompt", "pull", handle, "--format", "json"]);
 
     let output = cmd.assert().success();
     let stdout = String::from_utf8_lossy(&output.get_output().stdout);
