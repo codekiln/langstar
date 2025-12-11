@@ -5,14 +5,8 @@
 /// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable
-/// - LANGSMITH_WORKSPACE_ID must NOT be set (workspace scoping uses different repo handle format)
+/// - LANGSMITH_WORKSPACE_ID environment variable (required for workspace scoping)
 /// - Test repository: codekiln/langstar-structured-test (auto-created if needed)
-///
-/// **Why workspace scoping is incompatible:**
-/// These tests use the `owner/repo` format (e.g., `codekiln/langstar-structured-test`) for
-/// repository handles. When LANGSMITH_WORKSPACE_ID is set, the API expects repo handles
-/// without the owner prefix (just `langstar-structured-test`), as the owner is implicit
-/// from the workspace context. The `/` character becomes invalid in workspace scope.
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
@@ -24,6 +18,17 @@ use tempfile::NamedTempFile;
 
 const TEST_OWNER: &str = "codekiln";
 const TEST_REPO: &str = "langstar-structured-test";
+
+/// Check that required environment variables are set
+/// Panics with descriptive error if any are missing
+fn check_env_vars() {
+    std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
+    std::env::var("LANGSMITH_WORKSPACE_ID")
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
+}
 
 /// Helper to build and get the langstar binary path
 fn get_langstar_bin() -> std::path::PathBuf {
@@ -79,15 +84,7 @@ fn create_temp_invalid_schema_file() -> NamedTempFile {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_structured_prompt() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -125,15 +122,7 @@ fn test_cli_push_structured_prompt() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_invalid_schema_file() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let invalid_schema_file = create_temp_invalid_schema_file();
     let schema_path = invalid_schema_file.path().to_str().unwrap();
@@ -162,15 +151,7 @@ fn test_cli_push_invalid_schema_file() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_missing_schema_file() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
@@ -196,15 +177,7 @@ fn test_cli_push_missing_schema_file() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_invalid_method() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -235,15 +208,7 @@ fn test_cli_push_invalid_method() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_function_calling_method() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -275,15 +240,7 @@ fn test_cli_push_function_calling_method() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_pull_structured_prompt() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
 
@@ -303,15 +260,7 @@ fn test_cli_pull_structured_prompt() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_structured_prompt_round_trip() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     // Step 1: Push a structured prompt
     let schema_file = create_temp_schema_file();
@@ -371,15 +320,7 @@ fn test_cli_structured_prompt_round_trip() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_push_structured_prompt_json_output() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let schema_file = create_temp_schema_file();
     let schema_path = schema_file.path().to_str().unwrap();
@@ -422,15 +363,7 @@ fn test_cli_push_structured_prompt_json_output() {
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_cli_pull_structured_prompt_json_output() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    if std::env::var("LANGSMITH_WORKSPACE_ID").is_ok() {
-        panic!(
-            "LANGSMITH_WORKSPACE_ID must NOT be set for these tests (owner/repo format incompatible with workspace scoping)"
-        );
-    }
+    check_env_vars();
 
     let handle = format!("{}/{}", TEST_OWNER, TEST_REPO);
 
