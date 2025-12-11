@@ -28,6 +28,19 @@ See [langsmith/FRAGMENTS.md](./langsmith/FRAGMENTS.md) for extraction commands.
 | Runs Query Request | `langsmith/runs-query-request-schema.json` | 5.5K | Request payload for runs query |
 | Runs Query Response | `langsmith/runs-query-response-schema.json` | 1.1K | Response format for runs query |
 
+### Control Plane API Fragments
+
+See [control-plane/FRAGMENTS.md](./control-plane/FRAGMENTS.md) for extraction commands and schema notes.
+
+| Schema | File Path | Size | Purpose |
+|--------|-----------|------|---------|
+| Deployment Endpoints | `control-plane/deployment-endpoints.json` | 19K | All /deployments API endpoints |
+| Deployment Schemas | `control-plane/deployment-schemas.json` | 6.2K | All deployment-related schemas |
+| Deployment Schema | `control-plane/deployment-schema.json` | 3.1K | Single Deployment response schema |
+| SourceConfig Schema | `control-plane/source-config-schema.json` | 4.3K | Source configuration schema |
+
+**Note**: The Control Plane API FRAGMENTS.md contains detailed documentation about the Deployment schema, including the important detail that `deployment_type` is nested inside `source_config` (not a top-level field). This affects SDK implementation and CLI output formatting decisions.
+
 ### Agent Server API Fragments
 
 See [agent-server/FRAGMENTS.md](./agent-server/FRAGMENTS.md) for extraction commands.

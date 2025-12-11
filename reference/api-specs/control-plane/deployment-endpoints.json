@@ -1,0 +1,758 @@
+{
+  "/v2/deployments": {
+    "get": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "List Deployments",
+      "description": "List all deployments.",
+      "operationId": "list_deployments_v2_deployments_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Maximum number of resources to return.",
+            "default": 20,
+            "title": "Limit"
+          },
+          "description": "Maximum number of resources to return."
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pagination offset. Pass this value to subsequent requests to fetch the next page of resources.",
+            "default": 0,
+            "title": "Offset"
+          },
+          "description": "Pagination offset. Pass this value to subsequent requests to fetch the next page of resources."
+        },
+        {
+          "name": "name_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the deployment to filter by.",
+            "title": "Name Contains"
+          },
+          "description": "Name of the deployment to filter by."
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "`status` of the deployment to filter by.",
+            "title": "Status"
+          },
+          "description": "`status` of the deployment to filter by."
+        },
+        {
+          "name": "remote_reconciled",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Flag to filter by remote reconciled deployments.",
+            "title": "Remote Reconciled"
+          },
+          "description": "Flag to filter by remote reconciled deployments."
+        },
+        {
+          "name": "tag_value_ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Comma separated list of tag value IDs of the deployment to filter by.",
+            "title": "Tag Value Ids"
+          },
+          "description": "Comma separated list of tag value IDs of the deployment to filter by."
+        },
+        {
+          "name": "image_version",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Image version to filter by.",
+            "title": "Image Version"
+          },
+          "description": "Image version to filter by."
+        },
+        {
+          "name": "deployment_type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "dev_free",
+                  "dev",
+                  "prod"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deployment type to filter by.",
+            "title": "Deployment Type"
+          },
+          "description": "Deployment type to filter by."
+        },
+        {
+          "name": "deployment_ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Comma separated list of deployment IDs to filter by.",
+            "title": "Deployment Ids"
+          },
+          "description": "Comma separated list of deployment IDs to filter by."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeploymentsList"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "post": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Create Deployment",
+      "description": "Create a new deployment.",
+      "operationId": "create_deployment_v2_deployments_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DeploymentCreateRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "201": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Deployment"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Error description."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v2/deployments/{deployment_id}": {
+    "get": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Get Deployment",
+      "description": "Get a deployment by ID.",
+      "operationId": "get_deployment_v2_deployments__deployment_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Deployment"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "patch": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Patch Deployment",
+      "description": "Patch a deployment by ID.",
+      "operationId": "patch_deployment_v2_deployments__deployment_id__patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DeploymentPatchRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Deployment"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Error description."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    },
+    "delete": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Delete Deployment",
+      "description": "Delete a deployment by ID.",
+      "operationId": "delete_deployment_v2_deployments__deployment_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "Successful Response"
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v2/deployments/{deployment_id}/revisions": {
+    "get": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "List Revisions",
+      "description": "List all revisions for a deployment.",
+      "operationId": "list_revisions_v2_deployments__deployment_id__revisions_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "description": "Maximum number of resources to return.",
+            "default": 20,
+            "title": "Limit"
+          },
+          "description": "Maximum number of resources to return."
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pagination offset. Pass this value to subsequent requests to fetch the next page of resources.",
+            "default": 0,
+            "title": "Offset"
+          },
+          "description": "Pagination offset. Pass this value to subsequent requests to fetch the next page of resources."
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Comma separated list of revision `status` (CREATING, QUEUED, AWAITING_BUILD, BUILDING, AWAITING_DEPLOY, DEPLOYING, CREATE_FAILED, BUILD_FAILED, DEPLOY_FAILED, DEPLOYED, SKIPPED, INTERRUPTED, UNKNOWN) fields to filter by.",
+            "title": "Status"
+          },
+          "description": "Comma separated list of revision `status` (CREATING, QUEUED, AWAITING_BUILD, BUILDING, AWAITING_DEPLOY, DEPLOYING, CREATE_FAILED, BUILD_FAILED, DEPLOY_FAILED, DEPLOYED, SKIPPED, INTERRUPTED, UNKNOWN) fields to filter by."
+        },
+        {
+          "name": "remote_reconciled",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Flag to filter by remote reconciled revisions.",
+            "title": "Remote Reconciled"
+          },
+          "description": "Flag to filter by remote reconciled revisions."
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionsList"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v2/deployments/{deployment_id}/revisions/{revision_id}": {
+    "get": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Get Revision",
+      "description": "Get a revision by ID for a deployment.",
+      "operationId": "get_revision_v2_deployments__deployment_id__revisions__revision_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        },
+        {
+          "name": "revision_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision ID"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Revision"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/v2/deployments/{deployment_id}/revisions/{revision_id}/redeploy": {
+    "post": {
+      "tags": [
+        "Deployments (v2)"
+      ],
+      "summary": "Redeploy Revision",
+      "description": "Redeploy a specific revision ID.",
+      "operationId": "redeploy_revision_v2_deployments__deployment_id__revisions__revision_id__redeploy_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "deployment_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deployment ID"
+          }
+        },
+        {
+          "name": "revision_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Revision ID"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Deployment"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Deployment ID {deployment_id} not found."
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "example": {
+                "detail": "Error description."
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

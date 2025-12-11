@@ -356,10 +356,9 @@ fn test_model_config_list_text_format() {
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "list", "--format", "text"]);
 
-    // Phase 1: Text format falls back to JSON
-    // In future phases, this will output tab-separated values
+    // Text format should output tab-separated values
+    // Each line should have tabs between columns (id, name, provider, model)
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("["))
-        .stdout(predicate::str::contains("]"));
+        .stdout(predicate::str::contains("\t")); // Should contain tab characters
 }

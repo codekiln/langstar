@@ -1,0 +1,130 @@
+{
+  "properties": {
+    "integration_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Integration ID",
+      "description": "The ID of the integration used for the deployment.<br><br>Retrieve this value from the `GET /v1/integrations/github/install` endpoint. This cannot be changed (`PATCH`) once the deployment is created. Only applicable for `github` source."
+    },
+    "repo_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Repository URL",
+      "description": "The URL of the git repository used for the deployment.<br><br>This cannot be changed (`PATCH`) once the deployment is created. Only applicable for `github` source."
+    },
+    "deployment_type": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "dev_free",
+            "dev",
+            "prod"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Deployment Type",
+      "description": "The type of deployment to create.<br><br>See [Deployment Types](https://langchain-ai.github.io/langgraph/concepts/langgraph_control_plane/#deployment-types) for more details. This cannot be changed (`PATCH`) once the deployment is created. Only applicable for `github` source."
+    },
+    "build_on_push": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Build On Push",
+      "description": "Whether to build a new revision for the deployment on push to the `source_revision_config.repo_ref` (e.g. git branch).<br><br>Cannot be enabled when `source_revision_config.repo_ref` specifies a tag (starts with `refs/tags/`). Tags are immutable and cannot trigger automatic builds on push.<br><br>Only applicable for `github` source."
+    },
+    "custom_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Custom URL",
+      "description": "The custom URL of the deployment.<br><br>This field can only be set for `external_docker` source deployments. However, it will be set automatically for `github` source deployments (read only)."
+    },
+    "resource_spec": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ResourceSpec-Output"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "listener_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Listener ID",
+      "description": "The ID of the listener used for the deployment.<br><br>Retrieve this value from the `GET /v2/listeners` endpoint. This cannot be changed (`PATCH`) once the deployment is created. Only applicable for `external_docker` source."
+    },
+    "listener_config": {
+      "anyOf": [
+        {
+          "$ref": "#/components/schemas/ListenerConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "install_command": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Install Command",
+      "description": "The custom install command to run for your deployment. This only applies to JS deployments. This command will be run from the root of your repository - NOT where your langgraph.json file lives (unless these are the same place). If not provided, we will autodetect the command based on the presence of yarn/npm/etc. files."
+    },
+    "build_command": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Build Command",
+      "description": "The custom build command to run for your deployment. This only applies to JS deployments. This command will be run from where your langgraph.json file lives. This is helpful for using shared workspaces in your deployments, without having to provide a postinstall command or something similar in your package.json."
+    }
+  },
+  "type": "object",
+  "title": "SourceConfig",
+  "description": "Source configuration."
+}
