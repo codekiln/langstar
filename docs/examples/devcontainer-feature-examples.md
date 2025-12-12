@@ -27,6 +27,7 @@ The simplest possible setup:
 ```
 
 This:
+
 - Uses Ubuntu base image
 - Installs latest Langstar version
 - Ready to use after container creation
@@ -133,6 +134,7 @@ Test multiple versions using different configs:
 ```
 
 Switch between configs in VS Code:
+
 1. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
 2. Run "Dev Containers: Open Container Configuration File"
 3. Select desired configuration
@@ -274,6 +276,7 @@ Using GitHub secrets for Codespaces:
 ```
 
 **Setup GitHub Secrets:**
+
 1. Repository Settings → Secrets and variables → Codespaces
 2. Add `LANGSMITH_API_KEY`
 

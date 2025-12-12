@@ -5,6 +5,7 @@
 Research for #228 (sub-issue of #199): Analysis of production-grade Rust CLI release pipelines to inform langstar's automated release PR generation with CI checks.
 
 **Projects Analyzed:**
+
 1. **ripgrep** (BurntSushi/ripgrep) - 50k+ stars, grep alternative
 2. **bat** (sharkdp/bat) - 50k+ stars, cat clone with syntax highlighting
 
@@ -29,25 +30,26 @@ After deep analysis of ripgrep and bat, two of the most widely-used Rust CLI too
 
 ## Comparison Matrix
 
-| Feature | ripgrep | bat | Recommendation for Langstar |
-|---------|---------|-----|----------------------------|
-| **Workflow Structure** | Separate (ci.yml + release.yml) | Combined (CICD.yml) | **Combined** (simpler, DRY) |
-| **Quality Gates: rustfmt** | ✅ Yes | ✅ Yes | ✅ **Adopt** |
-| **Quality Gates: clippy** | ❌ No | ✅ Yes | ✅ **Adopt** (bat's approach) |
-| **Quality Gates: cargo-audit** | ❌ No | ✅ Yes | ✅ **Adopt** (security critical) |
-| **Quality Gates: docs** | ✅ Yes | ✅ Yes | ✅ **Adopt** |
-| **MSRV Testing** | ❌ No | ✅ Yes | ✅ **Adopt** (compatibility guarantee) |
-| **Version Validation** | ✅ Yes (tag vs Cargo.toml) | ❌ No | ✅ **Adopt** (ripgrep's approach) |
-| **Draft Releases** | ✅ Yes | ❌ No (immediate) | ✅ **Adopt** (ripgrep's approach) |
-| **SHA256 Checksums** | ✅ Yes | ❌ No | ✅ **Adopt** (ripgrep's approach) |
-| **Changelog** | Manual (not enforced) | Manual (CI-enforced) | **git-cliff** (automated) |
-| **All-Jobs Gate** | ❌ No | ✅ Yes | ✅ **Adopt** (bat's pattern) |
-| **Cross Installation** | Manual curl+tar | taiki-e action | **taiki-e** (cleaner) |
-| **Cargo Metadata** | Uses tag for version | ✅ Extracts from Cargo.toml | ✅ **Adopt** (bat's DRY approach) |
-| **Smoke Tests** | ❌ No | ✅ Yes (runs binary) | ✅ **Adopt** (validation) |
-| **Feature Flag Testing** | ❌ No | ✅ Yes | Consider (if multi-feature) |
+| Feature                        | ripgrep                         | bat                         | Recommendation for Langstar            |
+| ------------------------------ | ------------------------------- | --------------------------- | -------------------------------------- |
+| **Workflow Structure**         | Separate (ci.yml + release.yml) | Combined (CICD.yml)         | **Combined** (simpler, DRY)            |
+| **Quality Gates: rustfmt**     | ✅ Yes                          | ✅ Yes                      | ✅ **Adopt**                           |
+| **Quality Gates: clippy**      | ❌ No                           | ✅ Yes                      | ✅ **Adopt** (bat's approach)          |
+| **Quality Gates: cargo-audit** | ❌ No                           | ✅ Yes                      | ✅ **Adopt** (security critical)       |
+| **Quality Gates: docs**        | ✅ Yes                          | ✅ Yes                      | ✅ **Adopt**                           |
+| **MSRV Testing**               | ❌ No                           | ✅ Yes                      | ✅ **Adopt** (compatibility guarantee) |
+| **Version Validation**         | ✅ Yes (tag vs Cargo.toml)      | ❌ No                       | ✅ **Adopt** (ripgrep's approach)      |
+| **Draft Releases**             | ✅ Yes                          | ❌ No (immediate)           | ✅ **Adopt** (ripgrep's approach)      |
+| **SHA256 Checksums**           | ✅ Yes                          | ❌ No                       | ✅ **Adopt** (ripgrep's approach)      |
+| **Changelog**                  | Manual (not enforced)           | Manual (CI-enforced)        | **git-cliff** (automated)              |
+| **All-Jobs Gate**              | ❌ No                           | ✅ Yes                      | ✅ **Adopt** (bat's pattern)           |
+| **Cross Installation**         | Manual curl+tar                 | taiki-e action              | **taiki-e** (cleaner)                  |
+| **Cargo Metadata**             | Uses tag for version            | ✅ Extracts from Cargo.toml | ✅ **Adopt** (bat's DRY approach)      |
+| **Smoke Tests**                | ❌ No                           | ✅ Yes (runs binary)        | ✅ **Adopt** (validation)              |
+| **Feature Flag Testing**       | ❌ No                           | ✅ Yes                      | Consider (if multi-feature)            |
 
 **Legend:**
+
 - ✅ Has feature / Recommended
 - ❌ Missing feature / Not recommended
 
@@ -58,6 +60,7 @@ After deep analysis of ripgrep and bat, two of the most widely-used Rust CLI too
 **Problem:** Branch protection can only check one status, but matrix builds create multiple status checks (build-linux, build-windows, etc.)
 
 **Solution:**
+
 ```yaml
 all-jobs:
   if: always() # Run even if dependencies fail
@@ -68,6 +71,7 @@ all-jobs:
 ```
 
 **Why critical:**
+
 - Aggregates all matrix results into single checkable status
 - Branch protection requires only `all-jobs` check
 - Uses `if: always()` to run even when jobs fail
@@ -79,6 +83,7 @@ all-jobs:
 **Problem:** Could tag v1.2.3 but Cargo.toml says 1.2.2 (bat has this weakness)
 
 **Solution:**
+
 ```yaml
 - name: Check that tag version and Cargo.toml version are the same
   run: |
@@ -89,6 +94,7 @@ all-jobs:
 ```
 
 **Why critical:**
+
 - Catches version mismatches before creating release
 - Prevents confusing releases
 - Simple grep-based validation
@@ -100,6 +106,7 @@ all-jobs:
 **Problem:** Once published, releases are permanent (bat publishes immediately)
 
 **Solution:**
+
 ```yaml
 # Job 1: Create draft
 - name: Create GitHub release
@@ -111,6 +118,7 @@ all-jobs:
 ```
 
 **Why critical:**
+
 - Review artifacts before making public
 - Fix issues without embarrassing re-releases
 - Two-phase: create → build → review → publish
@@ -122,6 +130,7 @@ all-jobs:
 **Problem:** Dependencies may have known vulnerabilities (ripgrep doesn't check)
 
 **Solution:**
+
 ```yaml
 cargo-audit:
   steps:
@@ -130,6 +139,7 @@ cargo-audit:
 ```
 
 **Why critical:**
+
 - Identifies CVEs in dependencies
 - Essential for production-grade tools
 - Blocks PR merge if vulnerabilities found
@@ -141,6 +151,7 @@ cargo-audit:
 **Problem:** Common mistakes slip through (ripgrep only has rustfmt)
 
 **Solution:**
+
 ```yaml
 lint:
   steps:
@@ -149,6 +160,7 @@ lint:
 ```
 
 **Flags explained:**
+
 - `--locked`: Ensures Cargo.lock is up-to-date
 - `--all-targets`: Checks bins, libs, tests, examples
 - `--all-features`: Tests all feature combinations
@@ -161,6 +173,7 @@ lint:
 **Problem:** Hardcoded versions in workflow (DRY violation)
 
 **Solution:**
+
 ```yaml
 crate_metadata:
   steps:
@@ -173,6 +186,7 @@ crate_metadata:
 ```
 
 **Why valuable:**
+
 - Single source of truth (Cargo.toml)
 - No version duplication in workflow
 - Automatically extracts MSRV for testing
@@ -182,6 +196,7 @@ crate_metadata:
 ### 7. Cross-Compilation Installation
 
 **ripgrep's approach (manual):**
+
 ```yaml
 - run: |
     curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
@@ -189,6 +204,7 @@ crate_metadata:
 ```
 
 **bat's approach (action):**
+
 ```yaml
 - uses: taiki-e/install-action@v2
   with:
@@ -196,6 +212,7 @@ crate_metadata:
 ```
 
 **Why bat's is better:**
+
 - Cleaner, more maintainable
 - Action handles version pinning
 - No manual URL construction
@@ -205,10 +222,12 @@ crate_metadata:
 ### 8. Changelog Generation
 
 **Current approaches:**
+
 - **ripgrep**: Manual CHANGELOG.md (not enforced)
 - **bat**: Manual CHANGELOG.md (CI-enforced with PR check)
 
 **Problems:**
+
 - Developer burden
 - Prone to forgetting
 - Inconsistent formatting
@@ -217,6 +236,7 @@ crate_metadata:
 Use **git-cliff** for automated changelog generation from conventional commits
 
 **Why better:**
+
 - Automated from commit messages
 - Consistent formatting
 - No manual maintenance
@@ -234,6 +254,7 @@ Use **git-cliff** for automated changelog generation from conventional commits
 ```
 
 **Single workflow with conditional release:**
+
 ```yaml
 on:
   workflow_dispatch:  # Manual trigger
@@ -269,6 +290,7 @@ CICD.yml
 ### Quality Gates
 
 **Must Pass Before Merge:**
+
 1. ✅ cargo fmt --check
 2. ✅ cargo clippy --locked --all-targets --all-features -- -D warnings
 3. ✅ cargo test --workspace --all-features
@@ -280,6 +302,7 @@ CICD.yml
 ### Release Trigger
 
 **On tag push** (v*):
+
 1. Validate tag matches Cargo.toml version
 2. Run all CI quality gates
 3. Build for all targets
@@ -291,6 +314,7 @@ CICD.yml
 ## Implementation Checklist for #199
 
 ### Phase 1: CI Quality Gates
+
 - [ ] Add `all-jobs` gate pattern
 - [ ] Add cargo clippy to CI
 - [ ] Add cargo audit to CI
@@ -298,6 +322,7 @@ CICD.yml
 - [ ] Configure branch protection to require `all-jobs` status
 
 ### Phase 2: Release Automation
+
 - [ ] Add cargo metadata extraction job
 - [ ] Add version validation (tag vs Cargo.toml)
 - [ ] Create draft release on tag push
@@ -306,12 +331,14 @@ CICD.yml
 - [ ] Install and configure git-cliff for changelog
 
 ### Phase 3: Cross-Platform Support (Future)
+
 - [ ] Add macOS build target
 - [ ] Add Windows build target
 - [ ] Add Linux ARM64 target (if needed)
 - [ ] Use taiki-e/install-action for cross-compilation
 
 ### Phase 4: Enhancements (Future)
+
 - [ ] Add smoke tests (run binary with --version, --help)
 - [ ] Feature flag testing (if multi-feature)
 - [ ] Debian package generation (if distributing via apt)
@@ -494,11 +521,13 @@ build:
 ## Token Handling
 
 **Sufficient for langstar:**
+
 - `GITHUB_TOKEN` (automatic, sufficient for releases)
 - No PAT needed
 - No GitHub App needed
 
 **Permissions:**
+
 ```yaml
 # CI jobs
 permissions:
@@ -512,10 +541,12 @@ permissions:
 ## Branch Protection Configuration
 
 **Require before merge:**
+
 - Status check: `All jobs` (from all-jobs gate)
 - Up-to-date branch
 
 **Do NOT require:**
+
 - Individual matrix job statuses (build-linux, build-windows, etc.)
 - Use all-jobs aggregation instead
 
@@ -555,6 +586,7 @@ commit_parsers = [
 ## Comparison to Existing Langstar CI
 
 **Current (.github/workflows/check.yml):**
+
 - ✅ cargo fmt --check
 - ✅ cargo check --workspace
 - ✅ cargo clippy --workspace -- -D warnings
@@ -564,6 +596,7 @@ commit_parsers = [
 - ❌ No release automation
 
 **Improvements needed:**
+
 1. Add cargo-audit job
 2. Add all-jobs aggregation gate
 3. Add release workflow (draft creation, artifacts, checksums)
@@ -574,6 +607,7 @@ commit_parsers = [
 ## Resources
 
 ### Documentation
+
 - [All-jobs gate pattern](https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow#defining-prerequisite-jobs)
 - [cargo-audit](https://github.com/RustSec/rustsec/tree/main/cargo-audit)
 - [git-cliff](https://git-cliff.org/)
@@ -581,6 +615,7 @@ commit_parsers = [
 - [softprops/action-gh-release](https://github.com/softprops/action-gh-release)
 
 ### Reference Implementations
+
 - ripgrep: `.github/workflows/ci.yml`, `.github/workflows/release.yml`
 - bat: `.github/workflows/CICD.yml`
 

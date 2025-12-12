@@ -11,12 +11,14 @@ Guide Claude agents through creating and managing a pull request from start to f
 **IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated. Every GitHub issue gets a fresh Claude Code context.
 
 **You CANNOT:**
+
 - Track issues across sessions
 - Remember to do something later
 - Follow up on tasks in the future
 - Promise to handle something "in a follow-up"
 
 **You MUST NOT say things like:**
+
 - "I'll track this in a follow-up issue"
 - "I'll remember to fix this later"
 - "I'll handle this in a subsequent PR"
@@ -26,15 +28,19 @@ Guide Claude agents through creating and managing a pull request from start to f
 When addressing review comments, choose ONE of these options:
 
 ### Option 1: Implement Now (Preferred)
+
 **When:** The change is small-ish and worth doing.
 **Action:**
+
 1. Implement the fix immediately
 2. Commit with reference: `🩹 fix: address review feedback - {description}`
 3. Reply: "Fixed in commit {sha}: {brief description}"
 
 ### Option 2: Defer with Issue (Expensive - use sparingly)
+
 **When:** Change is large AND worth doing AND not critical to current PR.
 **Action:**
+
 1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
 2. Add to same milestone: `gh issue edit <num> --milestone "<milestone>"`
 3. Add as sub-issue: `gh sub-issue add <parent> <new-issue>`
@@ -42,15 +48,18 @@ When addressing review comments, choose ONE of these options:
 5. Optionally add `// TODO(#XYZ): description` code comment
 
 **Only if:**
+
 - Change is large enough to justify separate PR overhead
 - Not critical to current PR's functionality
 - PR is mature (many comments already resolved, not early review phase)
 
 ### Option 3: Disagree / Won't Fix
+
 **When:** Suggestion is nitpicky, negligible, or you disagree with premise.
 **Action:** Reply explaining why this won't be addressed. Be professional and concise.
 
 **NEVER use for:**
+
 - Test failures or errors (MUST be fixed)
 - Security concerns
 - Critical functionality issues
@@ -58,11 +67,13 @@ When addressing review comments, choose ONE of these options:
 ## Arguments
 
 Arguments are passed via `$ARGUMENTS` in the format:
+
 ```
 [issue-number]
 ```
 
 **Optional:**
+
 - `issue-number`: The GitHub issue number to create a PR for (defaults to extracting from current branch)
 
 ## User Input
@@ -111,6 +122,7 @@ update_tmux_status() {
 ## Overview
 
 This command provides **highly autonomous** PR management, reducing cognitive load by:
+
 - Validating environment and branch setup
 - Analyzing all commits (not just the latest) for comprehensive PR description
 - Creating PR with proper formatting and milestone
@@ -126,6 +138,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 **Goal:** Ensure environment is properly configured before creating PR.
 
 **Actions:**
+
 1. **Check working directory:**
    ```bash
    pwd | grep -q "wip/" && echo "✅ In worktree" || echo "❌ Not in wip/ worktree"
@@ -179,6 +192,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
    - If no PR exists: Continue to Phase 2
 
 **Validation Summary:**
+
 - ✅ In worktree
 - ✅ Branch follows convention
 - ✅ Issue exists and is open
@@ -188,6 +202,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 - ✅ PR existence checked
 
 **If PR already exists:**
+
 ```
 ✅ **Found Existing PR**
 
@@ -210,6 +225,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Goal:** Analyze all changes since branch divergence and draft comprehensive PR description.
 
 **Actions:**
+
 1. **Determine base branch:**
    ```bash
    # Check if this issue has a parent (for hierarchical merging)
@@ -247,24 +263,29 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 4. **Draft PR body using template:**
    ```markdown
    ## Summary
+
    - <High-level summary point 1>
    - <High-level summary point 2>
    - <High-level summary point 3>
 
    ## Changes
+
    - <Specific change 1 with file references>
    - <Specific change 2 with file references>
    - <Specific change 3 with file references>
 
    ## Related Issues
+
    Fixes #$ISSUE_NUM
 
    ## Test Plan
+
    - [ ] <Test item 1>
    - [ ] <Test item 2>
    - [ ] <Test item 3>
 
    ---
+
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
    Co-Authored-By: Claude <noreply@anthropic.com>
@@ -292,6 +313,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Goal:** Create PR with proper formatting and configuration.
 
 **Actions:**
+
 1. **Update tmux status to "submitting PR":**
    ```bash
    !update_tmux_status "🚀" "i" "$ISSUE_NUM"
@@ -353,18 +375,21 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **This is a LOOP - continue until PR is ready or user intervenes.**
 
 **IMPORTANT - Idempotent Design:**
+
 - This phase can be run multiple times safely
 - Each run checks current state and only acts on what's needed
 - Safe to restart if interrupted - will pick up where it left off
 - Safe to run in parallel with manual changes - will sync and continue
 
 **Update tmux status to "PR maintenance" (using PR number):**
+
 ```bash
 !# After PR is created, switch from issue number to PR number
 !update_tmux_status "🔧" "pr" "$PR_NUM"
 ```
 
 **Order of operations (priority):**
+
 1. Review comments FIRST (most important - human feedback)
 2. Rebase check (must be up-to-date before CI is meaningful)
 3. CI/CD checks (verify code quality)
@@ -438,6 +463,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    **Example commit for Option 1:**
    ```bash
    git commit -m "$(cat <<EOF
+   ```
+
 🩹 fix(pr-workflow): address review feedback on error handling
 
 - Added validation before API calls
@@ -446,25 +473,25 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 Addresses review comment: https://github.com/owner/repo/pull/385#discussion_r123456
 EOF
 )"
-   ```
 
-   **Example for Option 2 (Defer):**
-   ```bash
-   # Create issue
-   ISSUE_URL=$(gh issue create --title "Refactor: improve error handling patterns" \
-     --body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
-   NEW_ISSUE=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
+````
+**Example for Option 2 (Defer):**
+```bash
+# Create issue
+ISSUE_URL=$(gh issue create --title "Refactor: improve error handling patterns" \
+  --body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
+NEW_ISSUE=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
 
-   # Add to milestone (if PR has one)
-   gh issue edit "$NEW_ISSUE" --milestone "current-milestone"
+# Add to milestone (if PR has one)
+gh issue edit "$NEW_ISSUE" --milestone "current-milestone"
 
-   # Link as sub-issue of parent
-   gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
+# Link as sub-issue of parent
+gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
 
-   # Reply to comment using the slash command
-   /gh-pr-comment-reply https://github.com/owner/repo/pull/385#discussion_r123456
-   # Reply body: "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
-   ```
+# Reply to comment using the slash command
+/gh-pr-comment-reply https://github.com/owner/repo/pull/385#discussion_r123456
+# Reply body: "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
+````
 
 3. **Check if branch needs rebasing:**
    ```bash
@@ -513,6 +540,7 @@ EOF
    # Now parse output for failed checks
    - If checks pass: proceed to stability monitoring
    - If checks fail: proceed to failure handling
+   ```
 
 5. **If CI/CD checks fail:**
    ```bash
@@ -558,30 +586,33 @@ EOF
      # Replace <specific issue> with actual description (e.g., "clippy warnings")
      # This is a template - interpolate real values when executing
      git commit -m "$(cat <<EOF
+     ```
+
 🩹 fix(ci): address <specific issue>
 
 - Fixed clippy warnings in src/main.rs
 - Resolved test failures in authentication module
-EOF
-)"
+  EOF
+  )"
 
-     git push origin $(git branch --show-current)
-     if [ $? -ne 0 ]; then
-       echo "❌ git push failed due to network or permission issues. Please check your connection and access rights."
-       exit 1
-     fi
-     ```
-   - Report what was fixed:
-     ```
-     ✅ **Fixes Applied:**
-     - Removed unused variable `foo` in src/main.rs:45
-     - Added missing documentation in src/lib.rs:120
-     - Fixed assertion in test_authentication
-     - Resolved panic in test_authorization
+  git push origin $(git branch --show-current)
+  if [ $? -ne 0 ]; then
+  echo "❌ git push failed due to network or permission issues. Please check your connection and access rights."
+  exit 1
+  fi
+  ```
+  - Report what was fixed:
+  ```
+  ✅ **Fixes Applied:**
+  - Removed unused variable `foo` in src/main.rs:45
+  - Added missing documentation in src/lib.rs:120
+  - Fixed assertion in test_authentication
+  - Resolved panic in test_authorization
 
-     🔄 Pushed commit: abc123
-     ⏳ Waiting for CI to run again...
-     ```
+  🔄 Pushed commit: abc123
+  ⏳ Waiting for CI to run again...
+  ```
+  ```
 
 7. **Stability monitoring (after all fixes):**
    - Once all checks pass, monitor for 5-7 minutes to ensure stability
@@ -602,6 +633,7 @@ EOF
    - During stability monitoring if new issues detected
 
 **Exit loop when:**
+
 - ✅ All CI checks passing
 - ✅ No unresolved review comments
 - ✅ Branch up-to-date with base
@@ -613,6 +645,7 @@ EOF
 **Goal:** Confirm PR is ready for review/merge.
 
 **Actions:**
+
 1. **Final status check:**
    ```bash
    gh pr view "$PR_NUM" --json state,mergeable,reviewDecision,statusCheckRollup
@@ -662,6 +695,7 @@ EOF
 **Scenario:** User runs `/pr-workflow` but branch doesn't follow naming convention.
 
 **Action:**
+
 ```
 ❌ **Cannot determine issue number**
 
@@ -680,6 +714,7 @@ Or rename your branch to follow the convention.
 **Scenario:** Issue has a parent issue, indicating it should PR into parent's branch.
 
 **Action:**
+
 ```
 🔍 **Detected Parent Issue**
 
@@ -697,6 +732,7 @@ Proceeding with PR creation targeting parent branch...
 **Scenario:** CI failure is complex and requires manual intervention.
 
 **Action:**
+
 ```
 ❌ **CI Failure Requires Manual Attention**
 
@@ -720,6 +756,7 @@ Would you like me to show you the relevant code sections?
 **Scenario:** Base branch has advanced and rebase results in conflicts.
 
 **Action:**
+
 ```
 ⚠️ **Rebase Required with Potential Conflicts**
 
@@ -752,6 +789,7 @@ I cannot automatically rebase if conflicts occur. Let me know when you've comple
 **Scenario:** Review comments indicate code changes are needed, not just replies.
 
 **Action:**
+
 ```
 💬 **Review Comments Require Code Changes**
 
@@ -774,6 +812,7 @@ C) Just reply that I'm working on them
 ### pr-lifecycle Skill
 
 Use for initial validation (Phase 1):
+
 - Worktree verification
 - Branch naming validation
 - Issue linking checks
@@ -781,6 +820,7 @@ Use for initial validation (Phase 1):
 ### resolve-pr-comments Skill
 
 Use in Phase 4 when resolving multiple comments:
+
 - Fetch all unresolved comments
 - Reply in parallel using subagents
 - Track success/failure of replies
@@ -788,6 +828,7 @@ Use in Phase 4 when resolving multiple comments:
 ### git-worktrees Skill
 
 Reference for users who aren't in a worktree:
+
 - Explain how to create worktree
 - Guide user to proper setup
 
@@ -796,11 +837,13 @@ Reference for users who aren't in a worktree:
 ### Autonomous Operation
 
 **Be proactive:**
+
 - Don't ask permission for obvious fixes (clippy warnings, fmt issues)
 - Automatically retry after pushing fixes
 - Continuously monitor without user prompting
 
 **But ask when needed:**
+
 - Complex CI failures that need investigation
 - Code changes based on review comments
 - Rebasing with potential conflicts
@@ -808,11 +851,13 @@ Reference for users who aren't in a worktree:
 ### Communication
 
 **Progress updates:**
+
 - After each phase completion
 - When starting long-running operations (CI checks)
 - When encountering issues
 
 **Error reporting:**
+
 - Be specific about what failed
 - Provide actionable next steps
 - Include relevant links (logs, docs)
@@ -820,11 +865,13 @@ Reference for users who aren't in a worktree:
 ### Iteration Limits
 
 **Prevent infinite loops:**
+
 - After 5 iterations without progress, stop and ask user
 - If same CI check fails 3 times with same fix attempts, ask user
 - If unable to push commits, stop immediately
 
 **Tracking mechanism example:**
+
 ```bash
 iteration_count=0
 max_iterations=5
@@ -858,6 +905,7 @@ done
 ```
 
 **Example user message:**
+
 ```
 ⚠️ **Iteration Limit Reached**
 
@@ -877,6 +925,7 @@ C) Show me the full error logs for analysis
 ### GitHub API Errors
 
 **401 Unauthorized:**
+
 ```bash
 gh auth status
 # If not authenticated:
@@ -884,22 +933,26 @@ gh auth login
 ```
 
 **404 Not Found:**
+
 - Issue/PR doesn't exist
 - Verify issue number
 - Verify repository access
 
 **422 Unprocessable:**
+
 - Invalid PR body format
 - Review PR description for syntax errors
 
 ### Git Errors
 
 **Push rejected:**
+
 - Check if branch is protected
 - Verify write access
 - Check if force-push is needed (after rebase)
 
 **Diverged branches:**
+
 - Guide user through rebase
 - Offer to show diverged commits
 
@@ -908,6 +961,7 @@ gh auth login
 ### Essential Commands Used
 
 **PR Management:**
+
 ```bash
 # Create PR
 gh pr create --title "..." --body "..." --base main
@@ -924,6 +978,7 @@ gh pr view <num> --json state,mergeable,reviewDecision
 ```
 
 **Issue Management:**
+
 ```bash
 # View issue
 gh issue view <num> --json state,title,milestone
@@ -934,6 +989,7 @@ gh sub-issue list <num> --relation parent
 ```
 
 **Git Operations:**
+
 ```bash
 # Branch info
 git branch --show-current
@@ -950,6 +1006,7 @@ git rebase origin/<base>
 ```
 
 **Review Comments:**
+
 ```bash
 # Fetch unresolved comments (use --paginate to get ALL comments)
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)

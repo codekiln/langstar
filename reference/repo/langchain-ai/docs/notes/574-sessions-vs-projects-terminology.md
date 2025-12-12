@@ -18,6 +18,7 @@ The official LangChain documentation consistently uses "project" terminology in 
 > A _project_ is a collection of traces. You can think of a project as a container for all the traces that are related to a single application or service. You can have multiple projects, and each project can have multiple traces.
 
 **Analysis**:
+
 - Clear, user-friendly definition
 - No mention of "sessions" in the public definition
 - Emphasizes the organizational/containment aspect
@@ -25,6 +26,7 @@ The official LangChain documentation consistently uses "project" terminology in 
 
 **Contrast with "Session" Definition**:
 The documentation does use "session" terminology, but only for:
+
 - **Thread/Conversation Sessions** (lines 40-43): Multi-turn conversations use `session_id`, `thread_id`, or `conversation_id` as metadata keys
 - This is a DIFFERENT concept from the API's `/sessions` endpoint for projects
 
@@ -33,12 +35,14 @@ The documentation does use "session" terminology, but only for:
 **Source**: `src/langsmith/observability-concepts.mdx:116-117`
 
 Deleting projects can be done via:
+
 - **API Endpoint**: `delete_tracer_sessions`
 - **Python SDK**: `delete_project()`
 - **JS/TS SDK**: `deleteProject()`
 
 **Analysis**:
 This is the smoking gun that confirms:
+
 1. The REST API internally calls projects "tracer_sessions"
 2. Both SDKs deliberately translate this to "project" terminology
 3. LangChain made a conscious decision to abstract away "sessions" terminology
@@ -51,11 +55,13 @@ This is the smoking gun that confirms:
 > LangSmith uses the concept of a `Project` to group traces. If left unspecified, the project is set to `default`. You can set the `LANGSMITH_PROJECT` environment variable to configure a custom project name
 
 **Environment Variables**:
+
 - Primary: `LANGSMITH_PROJECT`
 - Legacy (JS SDK < 0.2.16): `LANGCHAIN_PROJECT`
 - No references to `LANGSMITH_SESSION` or similar
 
 **Analysis**:
+
 - User-facing configuration consistently uses "project" terminology
 - Even legacy variables use "project" not "session"
 - This dates back to early SDK versions, showing long-term commitment to "project" terminology
@@ -63,6 +69,7 @@ This is the smoking gun that confirms:
 ### 4. Documentation File Structure
 
 **Files mentioning "project"**: 20+ files including:
+
 - `log-traces-to-project.mdx`
 - `observability-concepts.mdx` (core concepts)
 - `trace-with-api.mdx`, `trace-with-langchain.mdx`
@@ -70,9 +77,11 @@ This is the smoking gun that confirms:
 - `fetch-perf-metrics-experiment.mdx`
 
 **Files mentioning "session" in project context**: 1 file
+
 - `observability-concepts.mdx:116` - API endpoint reference only
 
 **Analysis**:
+
 - Documentation overwhelmingly prefers "project" terminology
 - "Session" only appears when referencing the underlying API
 - File names, headings, and user instructions all use "project"
@@ -98,6 +107,7 @@ From PR #575 comment by @codekiln:
 > Calling them "sessions" just seems wrong. a tracing project is a collection of traces. A session is typically a stateful period of time. These don't seem compatible to me.
 
 **This perfectly articulates why LangChain made the abstraction**:
+
 - "Session" has wrong semantic connotations for trace collection
 - "Project" better matches how developers conceptualize their applications
 - The terminology should serve users, not expose API implementation details
@@ -109,6 +119,7 @@ From PR #575 comment by @codekiln:
 > The `LANGSMITH_PROJECT` flag is only supported in JS SDK versions >= 0.2.16, use `LANGCHAIN_PROJECT` instead if you are using an older version.
 
 **Inference**:
+
 - Very early SDKs used `LANGCHAIN_PROJECT`
 - Later standardized to `LANGSMITH_PROJECT`
 - Never had a "session" variant
@@ -117,12 +128,14 @@ From PR #575 comment by @codekiln:
 ## Terminology Consistency Across the Ecosystem
 
 ### User-Facing Layer
+
 - **Environment Variables**: `LANGSMITH_PROJECT`, `LANGCHAIN_PROJECT`
 - **SDK Methods**: `delete_project()`, `deleteProject()`
 - **Documentation**: "log-traces-to-project", "Projects" section
 - **UI**: LangSmith UI URLs use `/projects/p/{id}`
 
 ### API/Internal Layer
+
 - **REST Endpoints**: `/sessions`, `delete_tracer_sessions`
 - **Schema Classes**: `TracerSession`, `TracerSessionResult`
 - **Query Parameters**: Some internal filtering may use session terminology
@@ -137,6 +150,7 @@ From PR #575 comment by @codekiln:
 4. **Comments**: May note that API uses "sessions" internally
 
 ### Rationale
+
 - **User Expectations**: Users coming from Python/JS SDKs expect "project"
 - **Semantic Accuracy**: "Project" better describes the concept
 - **Consistency**: Aligns with official documentation and other SDKs

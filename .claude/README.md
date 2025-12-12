@@ -5,7 +5,9 @@ This directory contains project-level configuration for Claude Code.
 ## Files
 
 ### `settings.json` (version controlled)
+
 Project-wide configuration that defines:
+
 - Plugin marketplaces
 - Enabled plugins
 - Shared team settings
@@ -13,7 +15,9 @@ Project-wide configuration that defines:
 **Important**: This file is committed to git and shared with all team members.
 
 ### `settings.local.json` (gitignored)
+
 Local overrides for:
+
 - API credentials
 - Environment variables
 - Personal preferences
@@ -24,6 +28,7 @@ Local overrides for:
 ## Plugin Configuration
 
 This project uses the official Anthropic skills marketplace:
+
 - **Repository**: [anthropics/skills](https://github.com/anthropics/skills)
 - **Marketplace Name**: `anthropic-agent-skills`
 
@@ -48,6 +53,7 @@ This project uses the official Anthropic skills marketplace:
 ## How It Works
 
 When you open this project in a devcontainer and trust the repository:
+
 1. Claude Code reads `settings.json`
 2. Automatically clones the `anthropics/skills` repository
 3. Installs and enables the specified plugins

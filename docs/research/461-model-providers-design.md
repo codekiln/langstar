@@ -16,19 +16,20 @@ This document defines the design decisions for implementing model provider confi
 
 Analysis of `langstar prompt`, `langstar graph`, and `langstar eval` commands reveals these established patterns:
 
-| Pattern | Implementation | Example |
-|---------|---------------|---------|
-| **Command structure** | clap Subcommand enum with variants for operations | `List`, `Get`, `Create`, `Update`, `Delete` |
-| **Pagination** | `--limit` (u32, default 20), `--offset` (u32, default 0) | `langstar prompt list --limit 50 --offset 100` |
-| **Scoping** | `--organization-id`, `--workspace-id` flags override config/env | `langstar prompt list --workspace-id <id>` |
-| **Output format** | Global `-f/--format` flag (json\|table) | `langstar prompt list -f json` |
-| **Table display** | Uses `tabled` crate with `Tabled` trait, rounded style | See `PromptRow`, `DeploymentRow` |
-| **User feedback** | `OutputFormatter::info()`, `.success()`, `.warning()` | Writes to stderr in JSON mode |
-| **Boolean flags** | Simple names without `enable-` prefix | `--public`, `--wait`, `--yes` |
-| **Resource identifiers** | Positional args for primary ID, flags for optional params | `langstar prompt get <handle>` |
-| **Confirmation** | `--yes` / `-y` flag to skip prompts on destructive ops | `langstar graph delete <id> --yes` |
+| Pattern                  | Implementation                                                  | Example                                        |
+| ------------------------ | --------------------------------------------------------------- | ---------------------------------------------- |
+| **Command structure**    | clap Subcommand enum with variants for operations               | `List`, `Get`, `Create`, `Update`, `Delete`    |
+| **Pagination**           | `--limit` (u32, default 20), `--offset` (u32, default 0)        | `langstar prompt list --limit 50 --offset 100` |
+| **Scoping**              | `--organization-id`, `--workspace-id` flags override config/env | `langstar prompt list --workspace-id <id>`     |
+| **Output format**        | Global `-f/--format` flag (json\|table)                         | `langstar prompt list -f json`                 |
+| **Table display**        | Uses `tabled` crate with `Tabled` trait, rounded style          | See `PromptRow`, `DeploymentRow`               |
+| **User feedback**        | `OutputFormatter::info()`, `.success()`, `.warning()`           | Writes to stderr in JSON mode                  |
+| **Boolean flags**        | Simple names without `enable-` prefix                           | `--public`, `--wait`, `--yes`                  |
+| **Resource identifiers** | Positional args for primary ID, flags for optional params       | `langstar prompt get <handle>`                 |
+| **Confirmation**         | `--yes` / `-y` flag to skip prompts on destructive ops          | `langstar graph delete <id> --yes`             |
 
 **Reference locations:**
+
 - `cli/src/commands/prompt.rs:15-132` - PromptCommands enum
 - `cli/src/commands/graph.rs:13-92` - GraphCommands enum
 - `cli/src/output.rs:52-144` - OutputFormatter implementation
@@ -38,12 +39,14 @@ Analysis of `langstar prompt`, `langstar graph`, and `langstar eval` commands re
 **Decision: Use `model-config`** (not `model-provider`)
 
 **Rationale:**
+
 1. API uses `/api/v1/playground-settings`, but "playground-settings" is too UI-centric
 2. Data structure is called `PlaygroundSettingsResponse` but represents model configuration
 3. CLI commands should be more semantic than API endpoint names
 4. "Config" is shorter and more CLI-friendly than "configuration"
 
 **Rejected alternatives:**
+
 - `playground-settings` - Too tied to UI terminology
 - `model-provider` - Ambiguous (could mean the provider itself, not configuration)
 - `model` - Too generic, conflicts with potential future model management features
@@ -156,28 +159,29 @@ pub enum ModelConfigCommands {
 
 ### 2.1 Standard Flags (Inherited from Existing Patterns)
 
-| Flag | Type | Default | Purpose | Precedent |
-|------|------|---------|---------|-----------|
-| `--limit` | u32 | 20 | Pagination limit | prompt.rs:20, graph.rs:18 |
-| `--offset` | u32 | 0 | Pagination offset | prompt.rs:24, graph.rs:22 |
-| `--organization-id` | String | None | Scope to organization | prompt.rs:28 |
-| `--workspace-id` | String | None | Scope to workspace | prompt.rs:32 |
-| `-f, --format` | String | table | Output format (global flag) | main.rs:25 |
+| Flag                | Type   | Default | Purpose                     | Precedent                 |
+| ------------------- | ------ | ------- | --------------------------- | ------------------------- |
+| `--limit`           | u32    | 20      | Pagination limit            | prompt.rs:20, graph.rs:18 |
+| `--offset`          | u32    | 0       | Pagination offset           | prompt.rs:24, graph.rs:22 |
+| `--organization-id` | String | None    | Scope to organization       | prompt.rs:28              |
+| `--workspace-id`    | String | None    | Scope to workspace          | prompt.rs:32              |
+| `-f, --format`      | String | table   | Output format (global flag) | main.rs:25                |
 
 ### 2.2 Model-Config-Specific Flags
 
-| Flag | Short | Type | Default | Purpose |
-|------|-------|------|---------|---------|
-| `--name` | `-n` | String | Required | Configuration name |
-| `--provider` | `-p` | String | Required (create) | Provider type filter/value |
-| `--model` | `-m` | String | Required (create) | Model identifier |
-| `--description` | `-d` | String | None | Human-readable description |
-| `--settings` | | PathBuf | None | Path to settings JSON file |
-| `--rate-limit` | | u32 | None | Requests per second |
-| `--name-contains` | | String | None | Name filter (list operation) |
-| `--yes` | `-y` | bool | false | Skip confirmation |
+| Flag              | Short | Type    | Default           | Purpose                      |
+| ----------------- | ----- | ------- | ----------------- | ---------------------------- |
+| `--name`          | `-n`  | String  | Required          | Configuration name           |
+| `--provider`      | `-p`  | String  | Required (create) | Provider type filter/value   |
+| `--model`         | `-m`  | String  | Required (create) | Model identifier             |
+| `--description`   | `-d`  | String  | None              | Human-readable description   |
+| `--settings`      |       | PathBuf | None              | Path to settings JSON file   |
+| `--rate-limit`    |       | u32     | None              | Requests per second          |
+| `--name-contains` |       | String  | None              | Name filter (list operation) |
+| `--yes`           | `-y`  | bool    | false             | Skip confirmation            |
 
 **Design principles:**
+
 1. **Required vs optional**: Only essential fields are required; all configuration is optional
 2. **Short flags**: Only for frequently used flags (`-n`, `-p`, `-m`, `-d`)
 3. **Naming**: Use snake_case for multi-word flags (`--name-contains`, `--rate-limit`)
@@ -188,15 +192,16 @@ pub enum ModelConfigCommands {
 
 **Known provider values** (based on scout research):
 
-| Provider | Value | Notes |
-|----------|-------|-------|
-| Anthropic | `anthropic` | Default for demos/examples |
-| OpenAI | `openai` | Standard OpenAI endpoint |
-| Azure OpenAI | `azure_openai` | Microsoft Azure hosted |
-| AWS Bedrock | `bedrock` | AWS Bedrock Converse API |
-| AWS Bedrock (legacy) | `bedrock_legacy` | Legacy Bedrock API |
+| Provider             | Value            | Notes                      |
+| -------------------- | ---------------- | -------------------------- |
+| Anthropic            | `anthropic`      | Default for demos/examples |
+| OpenAI               | `openai`         | Standard OpenAI endpoint   |
+| Azure OpenAI         | `azure_openai`   | Microsoft Azure hosted     |
+| AWS Bedrock          | `bedrock`        | AWS Bedrock Converse API   |
+| AWS Bedrock (legacy) | `bedrock_legacy` | Legacy Bedrock API         |
 
 **Important**:
+
 - **CLI accepts any string value** for `--provider` - not restricted to this list
 - **First-class support**: Providers listed above have verified API structures and will be used in documentation/examples
 - **Extensibility**: If LangSmith adds new providers or the user has custom provider configurations, the CLI will pass through any value without validation
@@ -211,6 +216,7 @@ pub enum ModelConfigCommands {
 **When**: `langstar model-config list -f json`
 
 **Structure**: Direct passthrough of SDK response
+
 ```json
 [
   {
@@ -273,6 +279,7 @@ struct ModelConfigRow {
 ```
 
 **Example output:**
+
 ```
 ╭────────────────────────┬──────────┬───────────┬────────────────────────────┬────────────┬────────────╮
 │ Name                   │ ID       │ Provider  │ Model                      │ Rate Limit │ Updated    │
@@ -285,6 +292,7 @@ Found 2 model configurations
 ```
 
 **Design decisions:**
+
 - **Truncate IDs**: Show first 8 chars (UUIDs are 36 chars, too wide for tables)
 - **Extract provider**: Parse from `settings.id` array (last element before provider class name)
 - **Extract model**: Parse from `settings.kwargs.model`
@@ -296,6 +304,7 @@ Found 2 model configurations
 ### 3.3 Detailed View (Get Operation)
 
 **Table format**: Human-readable formatted output
+
 ```
 MODEL CONFIGURATION DETAILS
 ─────────────────────────────────────────
@@ -328,18 +337,20 @@ Timestamps:
 
 Following existing `CliError` patterns (cli/src/error.rs):
 
-| Error Type | When | Example Message |
-|------------|------|-----------------|
-| `Sdk(LangstarError)` | SDK operation fails | `Failed to fetch model configurations: API returned 401 Unauthorized` |
-| `Config(String)` | Invalid configuration | `Invalid config file path: /not/found/settings.json` |
-| `Other(anyhow::Error)` | Unexpected errors | `Failed to read settings file: No such file or directory` |
+| Error Type             | When                  | Example Message                                                       |
+| ---------------------- | --------------------- | --------------------------------------------------------------------- |
+| `Sdk(LangstarError)`   | SDK operation fails   | `Failed to fetch model configurations: API returned 401 Unauthorized` |
+| `Config(String)`       | Invalid configuration | `Invalid config file path: /not/found/settings.json`                  |
+| `Other(anyhow::Error)` | Unexpected errors     | `Failed to read settings file: No such file or directory`             |
 
 **Validation strategy:**
+
 - **Minimal CLI validation**: Validate only file existence and JSON parsing. The CLI does **not** validate provider names or model IDs; this is delegated to the SDK/API boundary.
 - **Delegate to SDK**: Provider names, model IDs, settings structure validated by SDK
 - **User-friendly errors**: Catch SDK errors and re-present with helpful context
 
 **Example error flow:**
+
 ```rust
 // CLI layer: validate file exists and is readable JSON
 if let Some(settings_path) = &settings {
@@ -368,14 +379,15 @@ client.model_config().create(...)
 
 Using `OutputFormatter` methods (output.rs:112-143):
 
-| Method | Use Case | Output Destination |
-|--------|----------|-------------------|
-| `formatter.info(msg)` | Progress updates | stderr (JSON mode) / stdout (table mode) |
+| Method                   | Use Case              | Output Destination                       |
+| ------------------------ | --------------------- | ---------------------------------------- |
+| `formatter.info(msg)`    | Progress updates      | stderr (JSON mode) / stdout (table mode) |
 | `formatter.success(msg)` | Success confirmations | stderr (JSON mode) / stdout (table mode) |
-| `formatter.warning(msg)` | Non-fatal issues | stderr (JSON mode) / stdout (table mode) |
-| `formatter.error(msg)` | Error messages | Always stderr |
+| `formatter.warning(msg)` | Non-fatal issues      | stderr (JSON mode) / stdout (table mode) |
+| `formatter.error(msg)`   | Error messages        | Always stderr                            |
 
 **Example usage:**
+
 ```rust
 formatter.info("Fetching model configurations...");
 let configs = client.model_config().list(...).await?;
@@ -383,6 +395,7 @@ formatter.success(&format!("Found {} configurations", configs.len()));
 ```
 
 **Why stderr for info/success in JSON mode:**
+
 - Keeps stdout clean for machine-readable JSON output
 - Follows Unix convention (cargo, git, curl all do this)
 - Documented at output.rs:99-144
@@ -432,6 +445,7 @@ if configs.is_empty() {
 ### 5.1 Environment Variables
 
 **Existing pattern** (config.rs:56-96):
+
 ```
 Priority order:
 1. CLI flags (--organization-id, --workspace-id)
@@ -442,13 +456,13 @@ Priority order:
 
 **Model-config feature uses existing variables** - no new env vars needed:
 
-| Variable | Purpose | Used By |
-|----------|---------|---------|
-| `LANGSMITH_API_KEY` | LangSmith authentication | All LangSmith operations |
-| `LANGSMITH_ORGANIZATION_ID` | Scope to organization | Optional scoping |
-| `LANGSMITH_WORKSPACE_ID` | Scope to workspace | Optional scoping |
-| `LANGSTAR_OUTPUT_FORMAT` | Default output format | Global CLI option |
-| `LANGSTAR_TIMEZONE` | Timezone for timestamps | Table output formatting |
+| Variable                    | Purpose                  | Used By                  |
+| --------------------------- | ------------------------ | ------------------------ |
+| `LANGSMITH_API_KEY`         | LangSmith authentication | All LangSmith operations |
+| `LANGSMITH_ORGANIZATION_ID` | Scope to organization    | Optional scoping         |
+| `LANGSMITH_WORKSPACE_ID`    | Scope to workspace       | Optional scoping         |
+| `LANGSTAR_OUTPUT_FORMAT`    | Default output format    | Global CLI option        |
+| `LANGSTAR_TIMEZONE`         | Timezone for timestamps  | Table output formatting  |
 
 **Rationale**: Model configurations are tenant-scoped resources. They use the same authentication and scoping as prompts, datasets, and other LangSmith resources.
 
@@ -457,6 +471,7 @@ Priority order:
 **No changes needed** to config file structure (config.rs:8-31).
 
 Model-config commands will use:
+
 - `langsmith_api_key` for authentication
 - `organization_id` / `workspace_id` for scoping (if configured)
 - `output_format` for default display mode
@@ -495,6 +510,7 @@ impl ModelConfigCommands {
 ```
 
 **Behavior**:
+
 - No scoping: Operate at tenant-level (personal workspace)
 - `--organization-id`: Operate within organization
 - `--workspace-id`: Operate within specific workspace
@@ -504,14 +520,14 @@ impl ModelConfigCommands {
 
 ### 5.4 Sensible Defaults
 
-| Setting | Default | Rationale |
-|---------|---------|-----------|
-| `--limit` | 20 | Standard pagination default across all commands |
-| `--offset` | 0 | Standard pagination starting point |
-| Output format | `table` | More human-readable for interactive use |
-| Scoping | None (tenant) | Safest default, user opts into narrower scopes |
-| Rate limit | None | No artificial rate limiting unless user specifies |
-| Description | None | Optional field, not required for basic usage |
+| Setting       | Default       | Rationale                                         |
+| ------------- | ------------- | ------------------------------------------------- |
+| `--limit`     | 20            | Standard pagination default across all commands   |
+| `--offset`    | 0             | Standard pagination starting point                |
+| Output format | `table`       | More human-readable for interactive use           |
+| Scoping       | None (tenant) | Safest default, user opts into narrower scopes    |
+| Rate limit    | None          | No artificial rate limiting unless user specifies |
+| Description   | None          | Optional field, not required for basic usage      |
 
 **Philosophy**: Defaults should enable quick usage without sacrificing safety.
 
@@ -522,6 +538,7 @@ impl ModelConfigCommands {
 Based on scout research (docs/research/453-ls-langsmith-model-providers-scout.md):
 
 **UI User Journey:**
+
 1. User navigates to **Playground** in LangSmith web UI
 2. User opens **Settings** panel for a prompt
 3. User selects **Model Provider** (Anthropic, OpenAI, etc.)
@@ -533,6 +550,7 @@ Based on scout research (docs/research/453-ls-langsmith-model-providers-scout.md
 6. Configuration appears in "Saved Configurations" dropdown for reuse
 
 **Key insight**: Model configurations are **reusable templates** that can be:
+
 - Shared across prompts in the same workspace
 - Applied to different prompts with one click
 - Modified centrally and applied to multiple prompts
@@ -540,6 +558,7 @@ Based on scout research (docs/research/453-ls-langsmith-model-providers-scout.md
 ### 6.2 CLI Use Cases
 
 **Use Case 1: List existing configurations** (most common)
+
 ```bash
 # See all model configs in my workspace
 langstar model-config list
@@ -552,6 +571,7 @@ langstar model-config list -f json > configs.json
 ```
 
 **Use Case 2: Inspect configuration details**
+
 ```bash
 # View full configuration including settings
 langstar model-config get d1e1dfff-39bf
@@ -561,6 +581,7 @@ langstar model-config get d1e1dfff-39bf -f json > prod-claude-config.json
 ```
 
 **Use Case 3: Search for specific configurations**
+
 ```bash
 # Search for Claude-related configurations
 langstar model-config search "claude"
@@ -576,6 +597,7 @@ langstar model-config search "gpt" --limit 5 -f json > openai-configs.json
 ```
 
 **Use Case 4: Create standardized configurations** (CI/CD)
+
 ```bash
 # Create production Claude config from template
 cat > claude-prod-settings.json <<EOF
@@ -601,6 +623,7 @@ langstar model-config create \
 ```
 
 **Use Case 5: Update configurations** (version upgrades)
+
 ```bash
 # Update model version for existing config (hypothetical example)
 cat > new-settings.json <<EOF
@@ -622,6 +645,7 @@ langstar model-config update d1e1dfff-39bf \
 ```
 
 **Use Case 6: Clean up unused configurations**
+
 ```bash
 # Delete test configuration
 langstar model-config delete a2b3c4d5-67ef --yes
@@ -632,14 +656,14 @@ langstar model-config delete a2b3c4d5-67ef
 
 ### 6.3 Key Differences: CLI vs UI
 
-| Aspect | UI Workflow | CLI Workflow |
-|--------|------------|--------------|
-| **Audience** | Data scientists, prompt engineers | DevOps, automation, CI/CD |
-| **Interaction** | Interactive forms, dropdowns | Scriptable commands, JSON files |
-| **Secrets** | Select from dropdown | Reference by name in JSON |
-| **Validation** | Real-time feedback | Server-side validation on submit |
-| **Bulk operations** | One at a time | Scriptable loops, batch creation |
-| **Configuration storage** | Browser-based editing | Version-controlled JSON files |
+| Aspect                    | UI Workflow                       | CLI Workflow                     |
+| ------------------------- | --------------------------------- | -------------------------------- |
+| **Audience**              | Data scientists, prompt engineers | DevOps, automation, CI/CD        |
+| **Interaction**           | Interactive forms, dropdowns      | Scriptable commands, JSON files  |
+| **Secrets**               | Select from dropdown              | Reference by name in JSON        |
+| **Validation**            | Real-time feedback                | Server-side validation on submit |
+| **Bulk operations**       | One at a time                     | Scriptable loops, batch creation |
+| **Configuration storage** | Browser-based editing             | Version-controlled JSON files    |
 
 **CLI advantage**: Version-controlled model configurations as code, reproducible across environments.
 
@@ -667,16 +691,19 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 ### 7.2 Potential Enhancements
 
 **Phase 1** (if time permits):
+
 - `--dry-run` flag for create/update (validate without saving)
 - Provider-specific examples in help text
 - Richer table output (show temperature, top_p in table)
 
 **Phase 2** (future milestone):
+
 - `langstar model-config template <provider>` - Generate example settings JSON
 - `langstar model-config validate <file>` - Validate settings file against LangChain schema
 - `langstar model-config clone <id>` - Duplicate existing config with new name
 
 **Phase 3** (advanced):
+
 - Interactive config creation with prompts (like `gh auth login`)
 - Configuration diffing: `langstar model-config diff <id1> <id2>`
 - Export/import: `langstar model-config export --all > backup.json`
@@ -684,11 +711,13 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 ### 7.3 Integration Points
 
 **With other Langstar features:**
+
 - `langstar eval`: Could reference model configs by ID (future enhancement)
 - `langstar prompt`: Could set default model config for a prompt (future API)
 - `langstar runs`: Could filter runs by model config ID (if API supports)
 
 **With external tools:**
+
 - CI/CD: Version-controlled configs, automated deployment
 - Monitoring: Export configs to JSON for change tracking
 - Documentation: Generate config inventory for compliance
@@ -698,6 +727,7 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 Based on scout phase recommendations (docs/research/453-ls-langsmith-model-providers-scout.md:179-191):
 
 **Note on phase numbering**: Phases 0-2 have already been completed:
+
 - **Phase 0**: Scout phase (feasibility research, API exploration - see docs/research/453-ls-langsmith-model-providers-scout.md)
 - **Phase 1**: Requirements gathering and analysis
 - **Phase 2**: Design decisions and DX consistency (this document)
@@ -705,51 +735,63 @@ Based on scout phase recommendations (docs/research/453-ls-langsmith-model-provi
 The following phases describe implementation steps:
 
 ### Phase 3: SDK - List model configurations
+
 **Deliverable**: `sdk/src/model_config.rs` with `list()` method
 **API**: `GET /api/v1/playground-settings`
 **Additional task**: Review OpenAPI spec for provider-related enums or metadata
+
 - Check if spec defines provider values as enum
 - Look for provider-specific schema documentation
 - Document any additional provider information discovered
 - Update provider values table in design doc if new providers found
 
 ### Phase 4: SDK - Get model configuration by ID
+
 **Deliverable**: Add `get()` method to `sdk/src/model_config.rs`
 **API**: `GET /api/v1/playground-settings/{id}`
 **Note**: Requires ID from list operation (no dedicated GET endpoint in scout findings)
 
 ### Phase 5: SDK - Create model configuration
+
 **Deliverable**: Add `create()` method
 **API**: `POST /api/v1/playground-settings`
 **Schema**: `PlaygroundSettingsCreateRequest`
 
 ### Phase 6: SDK - Update model configuration
+
 **Deliverable**: Add `update()` method
 **API**: `PATCH /api/v1/playground-settings/{id}`
 **Schema**: `PlaygroundSettingsUpdateRequest` (all fields optional)
 
 ### Phase 7: SDK - Delete model configuration
+
 **Deliverable**: Add `delete()` method
 **API**: `DELETE /api/v1/playground-settings/{id}`
 
 ### Phase 7.5: SDK - Search model configurations
+
 **Deliverable**: Add `search()` method
 **API**: Check OpenAPI spec for search endpoint (may be `/api/v1/playground-settings?query=...`)
 **Note**: If no dedicated search endpoint exists, implement client-side filtering of `list()` results
 **Search fields**: name, description, model identifier
 
 ### Phase 8: CLI - `langstar model-config list` and `search`
+
 **Deliverable**: `cli/src/commands/model_config.rs` with List and Search variants
 **Features**:
+
 - List: Pagination, provider filter, table/JSON output
 - Search: Query-based search, provider filter, limit
 
 ### Phase 9: CLI - `langstar model-config create/get/update/delete`
+
 **Deliverable**: Complete ModelConfigCommands implementation
 **Features**: All CRUD operations, confirmation prompts, user feedback
 
 ### Phase 10: Documentation and Integration Tests
+
 **Deliverable**:
+
 - `docs/usage/model-config.md` - User-facing documentation
 - `cli/tests/model_config_command_test.rs` - Integration tests
 - Update `README.md` with model-config examples

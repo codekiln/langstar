@@ -14,6 +14,7 @@ This plan provides the implementation roadmap for `langstar runs query`, enablin
 3. **Existing Langstar patterns** - Follows conventions from `sdk/src/client.rs` and `cli/src/commands/`
 
 **Key Decisions:**
+
 - Use `POST /api/v1/runs/query` endpoint (validated against OpenAPI)
 - Implement cursor-based pagination with streaming support
 - Support LangSmith filter query language (function-style syntax)
@@ -40,6 +41,7 @@ This plan provides the implementation roadmap for `langstar runs query`, enablin
 **Goal**: Implement `LangchainClient::query_runs()` method with core functionality.
 
 **Deliverables**:
+
 1. `sdk/src/runs.rs` - Run types and query implementation
 2. Tests using httpmock for mocked API responses
 
@@ -283,6 +285,7 @@ pub use runs::{Run, RunType, QueryRunsRequest, QueryRunsResponse, Cursors};
 **Goal**: Implement `langstar runs query` CLI command.
 
 **Deliverables**:
+
 1. `cli/src/commands/runs.rs` - Runs subcommand
 2. Integration tests
 
@@ -510,23 +513,27 @@ enum Commands {
 Based on this plan, create the following GitHub sub-issues:
 
 ### 298.3-sdk-runs-types
+
 **Title**: `298.3-sdk-runs-types Implement Run types and QueryRunsRequest in SDK`
 **Scope**: Phase 1.1-1.2 (Run types, request/response types)
 **Deliverable**: `sdk/src/runs.rs` with types only
 
 ### 298.4-sdk-runs-client
+
 **Title**: `298.4-sdk-runs-client Implement query_runs client method`
 **Scope**: Phase 1.3-1.4 (client method, pagination)
 **Depends on**: 298.3
 **Deliverable**: `query_runs()` and `query_runs_paginated()` methods
 
 ### 298.5-cli-runs-command
+
 **Title**: `298.5-cli-runs-command Implement langstar runs query CLI command`
 **Scope**: Phase 2 (CLI command, filter builder)
 **Depends on**: 298.4
 **Deliverable**: `langstar runs query` working command
 
 ### 298.6-runs-testing
+
 **Title**: `298.6-runs-testing Add comprehensive tests for runs query`
 **Scope**: Phase 3 (testing)
 **Depends on**: 298.5
@@ -541,6 +548,7 @@ Based on this plan, create the following GitHub sub-issues:
 The filter language is **not documented in the OpenAPI spec**. Use the research report (#299) as the authoritative source:
 
 **Supported Operators** (function-style syntax):
+
 - `eq(field, value)` - Equals
 - `neq(field, value)` - Not equals
 - `gt(field, value)` - Greater than
@@ -553,6 +561,7 @@ The filter language is **not documented in the OpenAPI spec**. Use the research 
 - `or(expr1, expr2)` - Logical OR
 
 **Common Filterable Fields**:
+
 - `status` - Run status ("success", "error", "pending")
 - `error` - Boolean error flag
 - `tags` - Array of tags
@@ -563,12 +572,14 @@ The filter language is **not documented in the OpenAPI spec**. Use the research 
 ### Required vs Optional Fields
 
 **Use OpenAPI spec requirements** (not Python SDK):
+
 - Required: `id`, `name`, `run_type`, `trace_id`, `dotted_order`, `status`, `session_id`, `app_path`
 - All other fields are optional with appropriate `Option<T>` wrappers
 
 ### Token Fields
 
 Per OpenAPI spec, token fields have `default: 0`:
+
 ```rust
 #[serde(default)]
 pub total_tokens: i64,
@@ -603,12 +614,12 @@ async-stream = "0.3"  # For streaming pagination
 
 ## Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Filter syntax mismatch | Low | Medium | Test against live API before release |
-| Pagination edge cases | Medium | Low | Comprehensive integration tests |
-| Field type mismatches | Low | High | Use OpenAPI spec as source of truth |
-| Performance with large result sets | Medium | Medium | Implement streaming pagination |
+| Risk                               | Likelihood | Impact | Mitigation                           |
+| ---------------------------------- | ---------- | ------ | ------------------------------------ |
+| Filter syntax mismatch             | Low        | Medium | Test against live API before release |
+| Pagination edge cases              | Medium     | Low    | Comprehensive integration tests      |
+| Field type mismatches              | Low        | High   | Use OpenAPI spec as source of truth  |
+| Performance with large result sets | Medium     | Medium | Implement streaming pagination       |
 
 ---
 

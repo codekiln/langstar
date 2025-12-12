@@ -15,6 +15,7 @@ Move to the next issue within an active milestone after completing the current t
 **Documentation:** See `gh-prep-next.md`
 
 **Example:**
+
 ```bash
 # Auto-detect from current branch
 /gh-milestones:gh-prep-next
@@ -36,6 +37,7 @@ Mark milestone as done and update parent issue with release information.
 **Documentation:** See `release.md`
 
 **Example:**
+
 ```bash
 /gh-milestones:release "ls-runs-query" v0.5.0
 ```
@@ -53,6 +55,7 @@ Create a Phase 0.0 scout issue for preliminary research.
 **Documentation:** See `scout.md`
 
 **Example:**
+
 ```bash
 /gh-milestones:scout "dataset-management"
 ```
@@ -70,6 +73,7 @@ Generate comprehensive test plan for a milestone.
 **Documentation:** See `test-plan.md`
 
 **Example:**
+
 ```bash
 /gh-milestones:test-plan "ls-runs-query"
 /gh-milestones:test-plan 14

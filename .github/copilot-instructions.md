@@ -109,4 +109,3 @@ Focus on **functional correctness, security, and maintainability** over minor do
 ✅ **Flag**: "This test is missing - the new function `create_user()` has no test coverage"
 
 ✅ **Flag**: "This change breaks backward compatibility - existing code using `old_api()` will fail"
-

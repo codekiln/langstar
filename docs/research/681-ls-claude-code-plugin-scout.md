@@ -11,20 +11,21 @@
 **Revised Vision**: Build a single, excellent prompt management experience for Claude Code before expanding to other LangSmith capabilities. Go deep before going wide.
 
 **Key Insight from Feedback**:
+
 > "We should start with a single use case that will be very valuable to SMEs, and really get that interface good."
 
 **Critical Dependency**: The `langstar prompt` CLI is in flux (see [ls-prompt-ux milestone #16](https://github.com/codekiln/langstar/milestone/16)). The plugin and CLI must co-evolve, with the plugin serving as a QA mechanism for validating Claude-friendly CLI design.
 
 ## What Changed from v1
 
-| Aspect | v1 Approach | v2 Approach |
-|--------|-------------|-------------|
-| **Scope** | 10+ workflows, 5 MVP commands | Single workflow: prompt management |
-| **Depth** | Surface-level coverage of many areas | Deep, excellent UX for one area |
-| **CLI Relationship** | Wrap existing CLI | Co-evolve CLI and plugin together |
-| **QA Strategy** | Not addressed | Plugin as QA mechanism for agentic instructions |
-| **Sub-agents** | Complex workflows | Context management (filter noise for parent agent) |
-| **Other workflows** | Phase 2-4 expansion | Deferred until prompt management is excellent |
+| Aspect               | v1 Approach                          | v2 Approach                                        |
+| -------------------- | ------------------------------------ | -------------------------------------------------- |
+| **Scope**            | 10+ workflows, 5 MVP commands        | Single workflow: prompt management                 |
+| **Depth**            | Surface-level coverage of many areas | Deep, excellent UX for one area                    |
+| **CLI Relationship** | Wrap existing CLI                    | Co-evolve CLI and plugin together                  |
+| **QA Strategy**      | Not addressed                        | Plugin as QA mechanism for agentic instructions    |
+| **Sub-agents**       | Complex workflows                    | Context management (filter noise for parent agent) |
+| **Other workflows**  | Phase 2-4 expansion                  | Deferred until prompt management is excellent      |
 
 ---
 
@@ -54,6 +55,7 @@ Claude: Pushes new version with descriptive commit message
 ```
 
 This single workflow exercises:
+
 - `langstar prompt get/show` - retrieve prompt details
 - `langstar prompt cat` - get editable template text
 - `langstar prompt push` - save changes
@@ -66,12 +68,14 @@ From [Issue #679 - Design prompt command structure](https://github.com/codekiln/
 > **Problem**: "The current `langstar prompt` commands have fundamental UX issues... Claude is the primary user - help text must be self-explanatory"
 
 **Current confusion** (from #679):
+
 - `get` vs `pull` distinction unclear to AI agents
 - Schema only visible in `pull`, not `get`
 - No command to get just the template text for editing
 - Help text not optimized for Claude parsing
 
 **Proposed solutions being evaluated**:
+
 ```bash
 # Option B (Multiple commands by intent):
 langstar prompt info <handle>    # Metadata
@@ -121,18 +125,21 @@ langstar prompt show <handle>    # Everything friendly
 ### Development Approach
 
 **Phase 1: Validate CLI Foundations**
+
 1. Review #679 design decisions
 2. Implement minimal `/langstar-prompt-workshop` command
 3. Test: Can Claude parse CLI help and outputs effectively?
 4. Feed findings back to ls-prompt-ux milestone
 
 **Phase 2: Iterate on Both**
+
 1. As CLI improves, update plugin commands
 2. As plugin reveals pain points, update CLI
 3. Document: "What makes CLI output Claude-friendly?"
 
 **Phase 3: Excellence Gate**
 Before expanding to runs/queues/datasets:
+
 - [ ] SME can complete full prompt engineering workflow
 - [ ] Claude successfully parses all prompt CLI outputs
 - [ ] Error messages guide Claude to correct actions
@@ -151,29 +158,35 @@ Before expanding to runs/queues/datasets:
 #### Level 1: Static Analysis
 
 **Checklist for slash commands:**
+
 - [ ] `allowed-tools` properly scoped (not overly permissive)
 - [ ] Instructions clear and unambiguous
 - [ ] Error scenarios documented with guidance
 - [ ] Success criteria observable and verifiable
 
 **Example checklist item**:
+
 ```markdown
 # Bad: Overly permissive
+
 allowed-tools: Bash(*)
 
 # Good: Scoped to langstar
-allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
+
+allowed-tools: Bash(langstar prompt:_), Read(_), Write(*)
 ```
 
 #### Level 2: Functional Testing
 
 **Golden path tests** (manual, documented):
+
 ```markdown
 ## Test Case: Prompt Workshop Basic Flow
 
 **Setup**: Existing prompt `test-prompt` in workspace
 
 **Steps**:
+
 1. User: "Help me workshop test-prompt"
 2. Claude: Should fetch prompt details
 3. User: "Make it more concise"
@@ -182,6 +195,7 @@ allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
 6. Claude: Should push with commit message
 
 **Pass criteria**:
+
 - [ ] Prompt retrieved correctly
 - [ ] Suggestions are relevant
 - [ ] New version appears in LangSmith
@@ -190,6 +204,7 @@ allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
 #### Level 3: Regression Testing
 
 **CLI output consistency tests**:
+
 - When CLI commands change, verify plugin commands still work
 - Document expected output formats
 - Alert when formats change
@@ -197,6 +212,7 @@ allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
 #### Level 4: User Acceptance
 
 **SME validation protocol**:
+
 1. SME attempts workflow without coaching
 2. Note friction points
 3. Iterate on instructions
@@ -205,6 +221,7 @@ allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
 ### QA Deliverable: Test Plan Document
 
 Create `docs/testing/claude-code-plugin-qa-plan.md`:
+
 - Golden path test cases for each command
 - Expected CLI outputs
 - Common failure modes and how Claude should handle them
@@ -228,21 +245,25 @@ Create `docs/testing/claude-code-plugin-qa-plan.md`:
 
 **Solution**: Sub-agent filters and summarizes
 
-```markdown
+````markdown
 # agents/prompt-finder/README.md
 
 ## Purpose
+
 Search prompts and return concise summary to parent agent.
 
 ## Why Sub-Agent
+
 - Full prompt list can be 50+ items
 - Parent agent only needs top 3-5 matches
 - Use lighter model (haiku) for filtering
 
 ## Input
+
 User's natural language description of desired prompt
 
 ## Output (to parent)
+
 ```json
 {
   "matches": [
@@ -252,19 +273,21 @@ User's natural language description of desired prompt
   "total_searched": 47
 }
 ```
+````
 
 ## Implementation
+
 1. Run `langstar prompt list --output json`
 2. Filter by name/description matching user intent
 3. Return summarized results (not full objects)
 
 ### Sub-Agent Use Cases for Prompt Management
 
-| Sub-Agent | Purpose | Model | Context Savings |
-|-----------|---------|-------|-----------------|
-| `prompt-finder` | Search and summarize prompts | haiku | ~80% |
-| `schema-analyzer` | Parse and explain JSON schemas | haiku | ~60% |
-| `version-differ` | Compare prompt versions | haiku | ~70% |
+| Sub-Agent         | Purpose                        | Model | Context Savings |
+| ----------------- | ------------------------------ | ----- | --------------- |
+| `prompt-finder`   | Search and summarize prompts   | haiku | ~80%            |
+| `schema-analyzer` | Parse and explain JSON schemas | haiku | ~60%            |
+| `version-differ`  | Compare prompt versions        | haiku | ~70%            |
 
 ### When NOT to Use Sub-Agents
 
@@ -278,17 +301,18 @@ User's natural language description of desired prompt
 
 ### Items Removed from v1 MVP
 
-| Item | v1 Location | Why Deferred |
-|------|-------------|--------------|
-| `/langstar-find-runs` | MVP command | Requires project ID discovery; depends on ls-prompt-ux completion |
-| `/langstar-queue-manage` | MVP command | Secondary workflow; wait until prompts excellent |
-| `/langstar-models` | MVP command | Admin utility, not core SME workflow |
-| `/langstar-dataset-create` | MVP command | Complex (requires runs understanding); v2+ |
-| Eval management | Phase 3 | CLI not ready (`langstar eval *` incomplete per feedback) |
+| Item                       | v1 Location | Why Deferred                                                      |
+| -------------------------- | ----------- | ----------------------------------------------------------------- |
+| `/langstar-find-runs`      | MVP command | Requires project ID discovery; depends on ls-prompt-ux completion |
+| `/langstar-queue-manage`   | MVP command | Secondary workflow; wait until prompts excellent                  |
+| `/langstar-models`         | MVP command | Admin utility, not core SME workflow                              |
+| `/langstar-dataset-create` | MVP command | Complex (requires runs understanding); v2+                        |
+| Eval management            | Phase 3     | CLI not ready (`langstar eval *` incomplete per feedback)         |
 
 ### Expansion Criteria
 
 Only expand to new workflows when:
+
 1. Prompt management is rated "excellent" by SME testers
 2. CLI UX patterns established and documented
 3. QA methodology proven effective
@@ -319,7 +343,7 @@ langstar/
 
 ### `/langstar-prompt-workshop` Command (MVP)
 
-```markdown
+````markdown
 ---
 allowed-tools: Bash(langstar prompt:*), Read(*), Write(*)
 description: Interactive prompt engineering workshop - get, edit, and save prompts
@@ -351,17 +375,20 @@ Help the user with prompt engineering. This includes:
 ## Common Workflows
 
 ### View a prompt
+
 ```bash
 langstar prompt get <handle>  # Metadata and stats
 langstar prompt cat <handle>  # Template text for editing
 ```
+````
 
 ### Push changes
+
 ```bash
 langstar prompt push --content "..." --description "..." <handle>
 ```
-```
 
+```
 ### Composability Note
 
 > "Slash commands can call slash commands, skills can call skills and slash commands."
@@ -450,3 +477,4 @@ If this revised approach is approved:
 - [Issue #668 - ls-prompt-ux parent issue](https://github.com/codekiln/langstar/issues/668)
 - [Claude Code plugin docs](https://github.com/anthropics/claude-code)
 - [Phase 0.0 scouting process](../../dev/feature-development-process.md#phase-00-pre-epic-scouting-optional)
+```

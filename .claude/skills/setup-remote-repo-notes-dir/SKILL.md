@@ -8,6 +8,7 @@ description: Create a structured notes directory for studying and documenting re
 ## Overview
 
 Facilitate studying and documenting remote GitHub repositories by creating a structured workspace with:
+
 - A **notes/** directory for committed markdown documentation
 - A **code/** directory for the gitignored cloned repository
 - Automatic .gitignore configuration to keep code local while notes stay in version control
@@ -15,6 +16,7 @@ Facilitate studying and documenting remote GitHub repositories by creating a str
 ## When to Use This Skill
 
 Use this skill when the user:
+
 - Wants to study or analyze an external GitHub repository
 - Needs to take notes about a remote codebase
 - Wants to document findings from exploring another project
@@ -22,6 +24,7 @@ Use this skill when the user:
 - Provides a GitHub URL and mentions research, study, or documentation
 
 **Example requests:**
+
 - "Help me set up notes for studying https://github.com/anthropics/claude-code"
 - "I want to research this repo: https://github.com/facebook/react"
 - "Create a workspace for analyzing https://github.com/rust-lang/rust"
@@ -39,6 +42,7 @@ reference/repo/<github-org-or-user>/<reponame>/
 ```
 
 **Design rationale:**
+
 - **notes/** stays in version control → persistent documentation
 - **code/** is gitignored → can be deleted/re-cloned without affecting notes
 - **Hierarchical organization** → supports multiple repos from same org
@@ -50,20 +54,24 @@ reference/repo/<github-org-or-user>/<reponame>/
 ### Behavior
 
 **When invoked from a git worktree** (e.g., `/workspace/wip/username-123-feature`):
+
 - ✅ **Code cloned to root**: `/workspace/reference/repo/<org>/<repo>/code/` (shared)
 - ✅ **Notes in worktree**: `/workspace/wip/username-123-feature/reference/repo/<org>/<repo>/notes/` (local)
 
 **When invoked from root** (`/workspace`):
+
 - ✅ **Both in root**: `/workspace/reference/repo/<org>/<repo>/` (current behavior)
 
 ### Benefits
 
 **Shared code directory:**
+
 - Saves disk space (no duplicate clones per worktree)
 - Reference repos persist after worktree deletion
 - Single clone shared across all worktrees
 
 **Worktree-local notes:**
+
 - Notes can be committed with branch work
 - Different branches can have different notes
 - Follows git-worktrees best practice of keeping worktrees clean
@@ -99,6 +107,7 @@ Use the bundled bash script to set up the structure automatically:
 ```
 
 **Example:**
+
 ```bash
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/anthropics/claude-code
 ```
@@ -119,6 +128,7 @@ Use the bundled bash script to set up the structure automatically:
 ### Supported GitHub URL Formats
 
 The script accepts multiple GitHub URL formats:
+
 - `https://github.com/owner/repo`
 - `https://github.com/owner/repo.git`
 - `git@github.com:owner/repo.git`
@@ -181,6 +191,7 @@ After running the setup:
 ```
 
 **Result:**
+
 ```
 reference/repo/anthropics/claude-code/
 ├── notes/
@@ -195,6 +206,7 @@ reference/repo/anthropics/claude-code/
 ```
 
 **Result:**
+
 ```
 reference/repo/facebook/react/
 ├── notes/
@@ -205,23 +217,28 @@ reference/repo/facebook/react/
 ## Script Reference
 
 ### Location
+
 `scripts/setup_repo_notes.sh`
 
 ### Usage
+
 ```bash
 ./setup_repo_notes.sh <github-url>
 ```
 
 ### Exit Codes
+
 - `0` - Success
 - `1` - Error (invalid URL, clone failure, etc.)
 
 ### Output
+
 - Colored status messages (info, success, warnings, errors)
 - Summary of created structure
 - Next steps for the user
 
 ### Idempotency
+
 - Safe to run multiple times on the same repository
 - Existing files are preserved with warnings
 - Git pull performed if repository already cloned
@@ -229,18 +246,22 @@ reference/repo/facebook/react/
 ## Troubleshooting
 
 **"Invalid GitHub URL format"**
+
 - Ensure URL is in format: `https://github.com/owner/repo`
 - Check for typos in the URL
 
 **"Repository already cloned"**
+
 - Script will pull latest changes instead of re-cloning
 - Existing notes are preserved
 
 **".gitignore already contains pattern"**
+
 - Pattern already exists, no action needed
 - Setup continues normally
 
 **Clone fails with authentication error**
+
 - Ensure you have access to the repository
 - For private repos, use SSH URL: `git@github.com:owner/repo.git`
 - Check GitHub credentials and SSH keys
@@ -248,6 +269,7 @@ reference/repo/facebook/react/
 ## Integration with Other Skills
 
 This skill complements:
+
 - **example-skills:skill-creator** - For creating skills based on studied repos
 - **example-skills:mcp-builder** - When studying MCP servers for reference
 

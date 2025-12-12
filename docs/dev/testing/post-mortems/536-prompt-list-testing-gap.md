@@ -334,11 +334,11 @@ fn test_prompt_crud_lifecycle_private_visibility() {
 
 **Critical difference from anemic test:**
 
-| Anemic Test | CRUD Lifecycle Test |
-|-------------|---------------------|
-| `assert.success()` | `assert!(found_in_list, "BUG #536 WOULD BE CAUGHT HERE!")` |
-| Checks: exit code 0 | Checks: actual prompt appears in output |
-| Bug invisible | Bug causes test failure |
+| Anemic Test         | CRUD Lifecycle Test                                        |
+| ------------------- | ---------------------------------------------------------- |
+| `assert.success()`  | `assert!(found_in_list, "BUG #536 WOULD BE CAUGHT HERE!")` |
+| Checks: exit code 0 | Checks: actual prompt appears in output                    |
+| Bug invisible       | Bug causes test failure                                    |
 
 **This test would have blocked the merge** and prevented the bug from shipping to production.
 
@@ -353,6 +353,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
 When the default-to-private feature PR was reviewed, the reviewer saw 9 passing integration tests and approved the PR. The reviewer did not ask: "Do these tests verify actual behavior, or just exit codes?"
 
 **Should have asked:**
+
 - "Does this test verify that private prompts are actually returned?"
 - "How do we know the filtering logic works correctly end-to-end?"
 - "Would this test catch a bug where zero results are returned?"
@@ -366,6 +367,7 @@ When the default-to-private feature PR was reviewed, the reviewer saw 9 passing 
 The project had no documentation explaining the CRUD lifecycle pattern or requiring its use for integration tests. Developers and AI agents had no clear guidance on what constitutes a "good" integration test.
 
 **Should have existed:**
+
 - `docs/dev/testing/crud-lifecycle-pattern.md` - Pattern documentation
 - `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` - Quality standards
 - `docs/dev/testing/README.md` - Central index to all testing docs
@@ -385,6 +387,7 @@ The project lacked a clear guideline stating: "Exit code checks are insufficient
 > **Rule: Integration tests must verify actual behavior**
 >
 > Testing only exit codes (assert.success()) is insufficient. Integration tests must:
+>
 > 1. Create deterministic test data
 > 2. Execute the command
 > 3. Parse and verify output content
@@ -412,12 +415,14 @@ The project lacked high-level testing philosophy explaining why test quality mat
 **Problem:** Testing standards scattered across multiple files, not discoverable
 
 Before milestone #556, testing documentation was fragmented:
+
 - `.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md` (371 lines)
 - `cli/tests/README.md` (252 lines)
 - `sdk/tests/README.md` (453 lines)
 - `tests/fixtures/test-graph-deployment/README.md` (272 lines)
 
 **Result:** Developers and AI agents didn't know where to find testing standards, so they:
+
 - Created inconsistent test patterns
 - Missed important requirements
 - Lacked examples of comprehensive tests
@@ -428,10 +433,12 @@ Before milestone #556, testing documentation was fragmented:
 # Testing Documentation
 
 ## Quick Start
+
 - [High-Level Guidelines](./HIGH_LEVEL_TESTING_GUIDELINES.md) - Principles, andon cord
 - [CRUD Lifecycle Pattern](./crud-lifecycle-pattern.md) - Integration test standard
 
 ## Detailed Guides
+
 - [CLI Integration Tests](./cli-integration-tests.md) - Load only when writing CLI tests
 - [SDK Integration Tests](./sdk-integration-tests.md) - Load only when writing SDK tests
 ```
@@ -529,17 +536,17 @@ Before milestone #556, testing documentation was fragmented:
 
 ## Timeline
 
-| Date | Event |
-|------|-------|
-| ~2025-11 | Default-to-private feature implemented (commit 9602e3e) |
-| ~2025-11 | PR merged with 9 passing (but anemic) integration tests |
-| ~2025-11 | Bug shipped in release v0.3.x |
-| ~2025-12 | Bug discovered via manual testing/user report |
-| 2025-12-04 | Issue #536 filed |
-| 2025-12-04 | PR #538 created with fix + comprehensive tests |
-| 2025-12-04 | PR #538 merged, bug fixed |
-| 2025-12-04 | Issue #556 filed (testing documentation gap) |
-| 2025-12-06 | This post-mortem created (issue #568) |
+| Date       | Event                                                   |
+| ---------- | ------------------------------------------------------- |
+| ~2025-11   | Default-to-private feature implemented (commit 9602e3e) |
+| ~2025-11   | PR merged with 9 passing (but anemic) integration tests |
+| ~2025-11   | Bug shipped in release v0.3.x                           |
+| ~2025-12   | Bug discovered via manual testing/user report           |
+| 2025-12-04 | Issue #536 filed                                        |
+| 2025-12-04 | PR #538 created with fix + comprehensive tests          |
+| 2025-12-04 | PR #538 merged, bug fixed                               |
+| 2025-12-04 | Issue #556 filed (testing documentation gap)            |
+| 2025-12-06 | This post-mortem created (issue #568)                   |
 
 ---
 

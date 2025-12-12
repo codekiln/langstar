@@ -67,13 +67,13 @@ cargo fmt --check
 
 **Why each step matters:**
 
-| Command | Purpose | What it catches |
-|---------|---------|-----------------|
-| `cargo fmt` | Auto-format code | Style inconsistencies |
-| `cargo check` | Type checking | Compile errors across workspace |
-| `cargo clippy` | Lint analysis | Common mistakes, code smells |
-| `cargo nextest run` | Run all tests (parallel) | Regressions, broken features |
-| `cargo fmt --check` | Verify formatting | Uncommitted format changes |
+| Command             | Purpose                  | What it catches                 |
+| ------------------- | ------------------------ | ------------------------------- |
+| `cargo fmt`         | Auto-format code         | Style inconsistencies           |
+| `cargo check`       | Type checking            | Compile errors across workspace |
+| `cargo clippy`      | Lint analysis            | Common mistakes, code smells    |
+| `cargo nextest run` | Run all tests (parallel) | Regressions, broken features    |
+| `cargo fmt --check` | Verify formatting        | Uncommitted format changes      |
 
 **Time investment:** ~1-2 minutes locally vs 10-20 minutes CI roundtrips
 
@@ -92,6 +92,7 @@ When a PR adds or modifies features that interact with APIs:
 #### Required Environment Variables
 
 **Core required env vars for integration tests:**
+
 - `LANGSMITH_API_KEY` - API key for LangSmith/LangGraph services
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoped operations
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID for scoped operations
@@ -263,6 +264,7 @@ Before implementing tests for a milestone, generate a comprehensive test plan:
 ```
 
 **What it does:**
+
 - Analyzes milestone type (SDK/CLI/Infrastructure/Docs)
 - Loads relevant testing docs (progressive disclosure, <5000 tokens)
 - Generates test plan at `docs/implementation/<milestone>-test-plan.md`

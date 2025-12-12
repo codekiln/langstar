@@ -22,9 +22,11 @@ Gather preliminary research and technical knowledge about **{feature-name}** to 
 ## Deliverables
 
 ### 1. Research Report
+
 `docs/research/{issue-num}-{slug}-scout.md`
 
 **Required sections:**
+
 - Executive summary (purpose and key findings)
 - Existing langstar code analysis
 - Python SDK precedent analysis
@@ -35,15 +37,18 @@ Gather preliminary research and technical knowledge about **{feature-name}** to 
 - Suggested initial sub-issues
 
 ### 2. Experiments (as needed)
+
 `reference/experiments/{issue-num}-{slug}/`
 
 Create experiments to:
+
 - Explore API behavior through hands-on testing
 - Validate assumptions about request/response patterns
 - Test edge cases and error handling
 - Test integration patterns
 
 Example structure:
+
 ```
 reference/experiments/{issue-num}-{slug}/
 ├── README.md           # Experiment overview and findings
@@ -52,6 +57,7 @@ reference/experiments/{issue-num}-{slug}/
 ```
 
 ### 3. SDK Notes (optional)
+
 `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
 
 Document key SDK patterns, method signatures, and conventions that inform Rust implementation.
@@ -79,6 +85,7 @@ These decisions are informed by scout research but made during milestone plannin
 ## Next Steps
 
 After scout research is complete:
+
 1. Use findings to create milestone (`ls-{feature-slug}`)
 2. Author Phase 0 parent issue using technical context from scout
 3. Structure initial sub-issues based on patterns discovered

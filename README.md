@@ -36,6 +36,7 @@ chmod +x install.sh
 ```
 
 **Install options:**
+
 ```bash
 # Install specific version
 ./install.sh --version 0.4.3
@@ -48,6 +49,7 @@ chmod +x install.sh
 ```
 
 The installer script:
+
 - ✅ Downloads pre-built binaries (no compilation needed)
 - ✅ Verifies SHA256 checksums
 - ✅ Supports Linux (x86_64, aarch64) and macOS (Intel/Apple Silicon)
@@ -85,6 +87,7 @@ The easiest way to use Langstar in development containers is via our official De
 ```
 
 **Benefits:**
+
 - ✅ Automatic installation in devcontainers, GitHub Codespaces, and devpod
 - ✅ Supports x86_64 and ARM64 architectures
 - ✅ Version pinning support (`"latest"` or specific version like `"v0.4.0"`)
@@ -103,13 +106,16 @@ Langstar provides access to **LangSmith services** including both prompts and La
 #### For LangSmith Prompts (`langstar prompt *`)
 
 **Required:**
+
 - `LANGSMITH_API_KEY` - Your LangSmith API key ([get one here](https://smith.langchain.com))
 
 **Optional (for organization/workspace scoping):**
+
 - `LANGSMITH_ORGANIZATION_ID` - Scope operations to a specific organization
 - `LANGSMITH_WORKSPACE_ID` - Scope operations to a specific workspace
 
 **Example:**
+
 ```bash
 # Minimal setup (personal prompts)
 export LANGSMITH_API_KEY="<your-api-key>"
@@ -124,13 +130,16 @@ langstar prompt list
 #### For LangGraph Assistants (`langstar assistant *`)
 
 **Required:**
+
 - `LANGSMITH_API_KEY` - Same API key as prompts (LangGraph Cloud is part of LangSmith)
 
 **Not Used:**
+
 - ❌ Organization/workspace IDs are **not applicable** for assistants
 - ❌ Assistants are **deployment-level resources**, not organization-scoped
 
 **Example:**
+
 ```bash
 # Simple setup - no scoping needed
 export LANGSMITH_API_KEY="<your-api-key>"
@@ -257,14 +266,15 @@ langstar assistant list --format json
 
 > **Note:** Starting in v0.5.0, `langstar graph` commands were semantically separated from `langstar deployment` commands to better reflect the underlying APIs.
 
-| Old Command | New Command | Notes |
-|-------------|-------------|-------|
-| `langstar graph list` | `langstar deployment list` | Lists deployments (Control Plane API) |
-| `langstar graph get` | `langstar deployment get` | Gets deployment details |
-| `langstar graph create` | `langstar deployment create` | Creates a deployment |
-| `langstar graph delete` | `langstar deployment delete` | Deletes a deployment |
+| Old Command             | New Command                  | Notes                                 |
+| ----------------------- | ---------------------------- | ------------------------------------- |
+| `langstar graph list`   | `langstar deployment list`   | Lists deployments (Control Plane API) |
+| `langstar graph get`    | `langstar deployment get`    | Gets deployment details               |
+| `langstar graph create` | `langstar deployment create` | Creates a deployment                  |
+| `langstar graph delete` | `langstar deployment delete` | Deletes a deployment                  |
 
 **New Commands (no previous equivalent):**
+
 - `langstar graph list <deployment>` - Lists graphs within a deployment
 - `langstar graph get <id> --deployment <d>` - Gets graph structure
 
@@ -320,11 +330,13 @@ langstar deployment list --format json
 ```
 
 **Deployment Types:**
+
 - `dev_free` - Free development deployment
 - `dev` - Paid development deployment
 - `prod` - Production deployment with HA and autoscaling
 
 **Source Types:**
+
 - `github` - Deploy from a GitHub repository (requires `--repo-url` and `--branch`)
 - `external_docker` - Deploy from an external Docker image
 
@@ -350,12 +362,14 @@ langstar graph list my-deployment --format json
 ```
 
 **Key Concepts:**
+
 - **Graphs are defined in `langgraph.json`** at deployment time
 - **Each assistant has a `graph_id`** linking it to its underlying graph
 - **Multiple assistants can share the same graph** with different configurations
 - **Graph structure shows nodes and edges** representing the workflow topology
 
 **Example Output:**
+
 ```
 ╭──────────────┬─────────────────────┬──────────────┬─────────────────────╮
 │ Graph ID     │ Assistants          │ # Assistants │ Nodes               │
@@ -408,6 +422,7 @@ langstar runs query --limit 5 --output json-pretty
 ```
 
 **Run Types:**
+
 - `llm` - LLM (Language Model) calls
 - `chain` - Chain executions
 - `tool` - Tool invocations
@@ -418,6 +433,7 @@ langstar runs query --limit 5 --output json-pretty
 
 **Filter Query Language:**
 The `--filter` option accepts LangSmith filter expressions:
+
 - `eq(field, value)` - Equals
 - `neq(field, value)` - Not equals
 - `gt(field, value)` / `gte(field, value)` - Greater than (or equal)
@@ -456,6 +472,7 @@ langstar model-config list --format json
 ```
 
 **Supported Providers:**
+
 - `anthropic` - Anthropic Claude models
 - `openai` - OpenAI models
 - `azure_openai` - Azure OpenAI service
@@ -495,6 +512,7 @@ langstar queue delete <queue-id> --force
 ```
 
 **Queue Types:**
+
 - `single` - Review runs individually (default)
 - `pairwise` - Compare two runs side-by-side
 
@@ -537,11 +555,13 @@ langstar dataset list --json
 ```
 
 **Dataset Types:**
+
 - `kv` - Key-value pairs (default) - generic input/output mapping
 - `llm` - LLM completion format - prompt/completion pairs
 - `chat` - Chat format - message-based conversations
 
 **Import/Export Formats:**
+
 - `jsonl` - JSON Lines format (recommended for programmatic access)
 - `csv` - CSV format (convenient for spreadsheet tools)
 
@@ -607,22 +627,26 @@ langstar eval export <eval-id> --format json --output results.json --include-met
 
 **Evaluator Types:**
 
-*Heuristic Evaluators (zero-cost, deterministic):*
+_Heuristic Evaluators (zero-cost, deterministic):_
+
 - `exact-match` - Exact string equality check
 - `contains` - Substring presence check
 - `regex-match` - Regular expression pattern matching
 - `json-valid` - JSON syntax validation
 - `string-distance` - Levenshtein distance (fuzzy matching)
 
-*LLM-as-Judge Evaluators (requires API calls):*
+_LLM-as-Judge Evaluators (requires API calls):_
+
 - `llm-judge` - Use an LLM to score outputs based on a rubric
 
 **Environment Variables:**
+
 - `LANGSMITH_API_KEY` - Required for all eval commands
 - `ANTHROPIC_API_KEY` - Required for Anthropic judge models
 - `OPENAI_API_KEY` - Required for OpenAI judge models
 
 **Score Types for LLM Judge:**
+
 - `categorical` - Predefined choices (e.g., Pass/Fail, Poor/Fair/Good/Excellent)
 - `continuous` - Numeric range (e.g., 0.0-1.0, 1-10)
 
@@ -671,6 +695,7 @@ export LANGSMITH_WORKSPACE_NAME="<workspace-name>"   # Informational only
 ```
 
 **Scoping Behavior:**
+
 - When scoped (org/workspace ID set), operations **default to private prompts only**
 - Use `--public` flag to explicitly access public prompts when scoped
 - Without scoping, all prompts (public and private) are accessible
@@ -683,6 +708,7 @@ export LANGSMITH_API_KEY="<your-api-key>"
 ```
 
 **No Additional Configuration Needed:**
+
 - ❌ No organization ID
 - ❌ No workspace ID
 - ❌ No deployment configuration
@@ -698,12 +724,14 @@ langstar config
 ```
 
 This displays:
+
 - Configuration file location
 - Which API keys are configured (without showing the actual keys)
 - Organization/workspace scoping status
 - Output format settings
 
 **Example output:**
+
 ```
 Configuration file: ~/.langstar/config.toml
 
@@ -719,11 +747,13 @@ LangSmith Configuration:
 ### Troubleshooting Configuration
 
 **"Authentication failed" errors:**
+
 1. Verify you have `LANGSMITH_API_KEY` set (used for both prompts and assistants)
 2. Ensure your API key is valid and not expired
 3. Check that the key has access to the resources you're trying to access
 
 **"No assistants found" but I have assistants:**
+
 - Assistants are deployment-level resources
 - Ensure your `LANGSMITH_API_KEY` has access to the deployment
 - Unlike prompts, assistants do NOT support org/workspace scoping
@@ -758,14 +788,15 @@ langstar-rs/
 
 Langstar interacts with two LangChain services that have fundamentally different resource scoping models:
 
-| Service | Scope Level | Headers Used | Multi-tenancy |
-|---------|-------------|--------------|---------------|
-| **LangSmith (Prompts)** | Organization/Workspace | `x-api-key`, `x-organization-id`, `X-Tenant-Id` | Yes |
-| **LangGraph (Assistants)** | Deployment-level | `x-api-key` only | No |
+| Service                    | Scope Level            | Headers Used                                    | Multi-tenancy |
+| -------------------------- | ---------------------- | ----------------------------------------------- | ------------- |
+| **LangSmith (Prompts)**    | Organization/Workspace | `x-api-key`, `x-organization-id`, `X-Tenant-Id` | Yes           |
+| **LangGraph (Assistants)** | Deployment-level       | `x-api-key` only                                | No            |
 
 #### LangSmith (Organization/Workspace Model)
 
 LangSmith uses hierarchical multi-tenancy:
+
 - Organizations contain multiple workspaces
 - Workspaces contain prompts
 - API requests can be scoped to org or workspace via headers
@@ -776,6 +807,7 @@ LangSmith uses hierarchical multi-tenancy:
 #### LangGraph (Deployment Model)
 
 LangGraph uses deployment-level resources:
+
 - Assistants belong to a specific deployment
 - Access controlled by API key (tied to deployment)
 - No additional scoping headers needed
@@ -784,6 +816,7 @@ LangGraph uses deployment-level resources:
 **SDK Implementation:** The `langgraph_*()` methods in `client.rs` do NOT add scoping headers, as assistants are deployment-level resources.
 
 **Key Insight**: This architectural difference is reflected throughout the codebase:
+
 - CLI flag design (prompts have `--organization-id`/`--workspace-id`, assistants don't)
 - Configuration file structure (separate sections for each service)
 - Error messages (guide users to correct API key for each service)
@@ -841,6 +874,7 @@ This project follows a GitHub issue-driven development workflow.
 5. Submit a pull request referencing the issue
 
 For complete details, see:
+
 - [GitHub Workflow](./docs/dev/github-workflow.md)
 - [Git SCM Conventions](./docs/dev/git-scm-conventions.md)
 - [Developer Documentation](./docs/dev/)
@@ -903,10 +937,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For coding conventions, best practices, and development guidelines, see the [Developer Documentation](./docs/dev/).
 
 Key documentation:
+
 - [GitHub Workflow](./docs/dev/github-workflow.md) - Issue-driven development process
 - [Git SCM Conventions](./docs/dev/git-scm-conventions.md) - Commit message standards
 
 ## Setup
 
 This project uses a devcontainer for consistent development environment. See [.devcontainer](./.devcontainer) for configuration details.
-

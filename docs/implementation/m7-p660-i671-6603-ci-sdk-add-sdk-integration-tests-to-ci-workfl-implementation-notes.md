@@ -14,9 +14,11 @@
 ## Solution Implemented
 
 ### Problem
+
 The LangSmith API returns `409 "Parent commit validation failed"` when pushing to repos that already have commits from previous test runs.
 
 ### Fix Applied (f73de1c)
+
 **Option A: Truly Unique Repos via UUID** was implemented:
 
 ```rust
@@ -31,6 +33,7 @@ Each test run now generates unique repo names like `langstar-structured-test-pus
 Additionally, `test_pull_structured_prompt_integration` was made self-contained by pushing a prompt before pulling, since the UUID makes each `get_test_repo_name()` call unique.
 
 ### Why This Works
+
 - Each CI run creates fresh repos with unique UUIDs
 - No conflicts with repos from previous runs
 - No need for `parent_commit` parameter
@@ -39,10 +42,12 @@ Additionally, `test_pull_structured_prompt_integration` was made self-contained 
 ## Session History
 
 ### Sessions 1-3 (Failed Attempts)
+
 - Various approaches tried but 409 errors persisted
 - See git history for details
 
 ### Session 4 (Success)
+
 1. **f73de1c** - Added UUID suffix to repo names, made pull test self-contained
 2. **c8d3aeb** - Added cargo-nextest to devcontainer, removed install notices from docs
 
@@ -57,6 +62,7 @@ Additionally, `test_pull_structured_prompt_integration` was made self-contained 
 ## PR Comments Status
 
 All review comments resolved:
+
 - CI workflow issues (Copilot) - Fixed in 94d6fb4
 - test-utils comment - Fixed in fe8c8d9
 - cargo-nextest devcontainer - Fixed in c8d3aeb

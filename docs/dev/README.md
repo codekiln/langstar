@@ -23,6 +23,7 @@ Testing documentation uses **progressive disclosure** for context efficiency:
 **TOC:** Auto-loaded via AGENTS.md (`docs/dev/testing/README.md`, ~10-15 lines)
 
 **Load on-demand based on task:**
+
 - Writing SDK tests? → `docs/dev/testing/sdk-integration-tests.md`
 - Writing CLI tests? → `docs/dev/testing/cli-integration-tests.md`
 - Reviewing test quality? → `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md`
@@ -35,17 +36,21 @@ Testing documentation uses **progressive disclosure** for context efficiency:
 ## Tips from Development - Memories
 
 ### Devcontainer-centricity
+
 - This project uses a devcontainer to standardize the development environment. Never configure the environment in a 1-off way, unless running a 1-off test. Always prefer modifications to .devcontainer folder and related assets.
 
 ### Looking up docs to LangChain
+
 - <rules>
-for ANY question about the langchain ecosystem (langsmith, LangGraph, langchain) use the langgraph-docs-mcp server to help answer -- 
-+ call list_doc_sources tool to get the available llms.txt file
-+ call fetch_docs tool to read it
-+ reflect on the urls in llms.txt 
-+ reflect on the input question 
-+ call fetch_docs on any urls relevant to the question
-</rules>
+
+for ANY question about the langchain ecosystem (langsmith, LangGraph, langchain) use the langgraph-docs-mcp server to help answer --
+
+- call list_doc_sources tool to get the available llms.txt file
+- call fetch_docs tool to read it
+- reflect on the urls in llms.txt
+- reflect on the input question
+- call fetch_docs on any urls relevant to the question
+  </rules>
 
 ### CRITICAL: Privacy and Security - Never Expose Secrets
 
@@ -150,6 +155,7 @@ cargo fmt --check
 ```
 
 **Critical points:**
+
 - Test at **workspace level** (not just individual crates)
 - When making breaking changes, search for all usages first
 - Running checks locally (1 minute) saves 10-20 minutes of CI roundtrips
@@ -189,6 +195,7 @@ We follow a principled GitHub issue → PR workflow. If, in the course of workin
    This manually creates the tag and triggers the release workflow.
 
 **Why this matters:**
+
 - The release workflow requires both: (1) changelog entry for every version, (2) specific PR title format
 - If either is missing, releases won't publish automatically
 - Manual tag creation is recovery mechanism, not preferred workflow

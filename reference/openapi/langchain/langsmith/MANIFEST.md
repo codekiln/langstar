@@ -9,6 +9,7 @@
 ## API Overview
 
 The core LangSmith API provides endpoints for:
+
 - Tracing and observability
 - Datasets and examples management
 - Runs and feedback
@@ -18,10 +19,10 @@ The core LangSmith API provides endpoints for:
 
 ## Base URLs
 
-| Region | Base URL |
-|--------|----------|
-| US | `https://api.smith.langchain.com` |
-| EU | `https://eu.api.smith.langchain.com` |
+| Region | Base URL                             |
+| ------ | ------------------------------------ |
+| US     | `https://api.smith.langchain.com`    |
+| EU     | `https://eu.api.smith.langchain.com` |
 
 ## Authentication
 
@@ -30,10 +31,10 @@ The core LangSmith API provides endpoints for:
 
 ## Provenance
 
-| Date | Action | Size | Notes |
-|------|--------|------|-------|
-| 2025-11-26 | Initial fetch | 635K | v0.1.0 |
-| 2025-11-28 | Refresh for #350 | 639K | Dataset API validation |
+| Date       | Action           | Size | Notes                               |
+| ---------- | ---------------- | ---- | ----------------------------------- |
+| 2025-11-26 | Initial fetch    | 635K | v0.1.0                              |
+| 2025-11-28 | Refresh for #350 | 639K | Dataset API validation              |
 | 2025-11-29 | Refresh for #404 | 638K | Structured output prompt validation |
 
 ## Refresh Command

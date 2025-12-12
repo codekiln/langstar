@@ -274,6 +274,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "Cannot find langgraph.json"
 
 **Solution:**
+
 - Verify the path in deployment settings: `tests/fixtures/test-graph-deployment/langgraph.json`
 - Ensure the file exists in the repository
 - Check branch selection is correct
@@ -283,6 +284,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "Failed to install dependencies"
 
 **Solution:**
+
 - Check `requirements.txt` has valid package names
 - Verify Python version compatibility
 - Look at build logs for specific error messages
@@ -292,6 +294,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "Cannot find module 'test_agent'"
 
 **Solution:**
+
 - Verify `langgraph.json` has `"dependencies": ["./test_agent"]`
 - Ensure directory structure matches:
   ```
@@ -308,6 +311,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "AttributeError: module 'test_agent.agent' has no attribute 'graph'"
 
 **Solution:**
+
 - Verify `agent.py` has `graph = builder.compile()` at module level
 - Check variable name matches `langgraph.json`: `"./test_agent/agent.py:graph"`
 - Ensure `graph` is not inside a function or class
@@ -319,6 +323,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "Invalid graph_id"
 
 **Solution:**
+
 1. Go to deployment details page
 2. Copy the exact **Graph ID** (case-sensitive)
 3. Verify deployment status is "Active"
@@ -329,6 +334,7 @@ If running tests in CI/CD, add these as secrets:
 **Error:** "403 Forbidden" or "Authentication failed"
 
 **Solution:**
+
 1. Verify `LANGSMITH_API_KEY` is set correctly
 2. Check API key has correct permissions:
    - Go to https://smith.langchain.com/settings

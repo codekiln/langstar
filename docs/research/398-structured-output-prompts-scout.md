@@ -18,21 +18,23 @@ This document captures research findings on structured output prompts in LangSmi
 
 ## Data Sources
 
-| Source | Location | Description |
-|--------|----------|-------------|
-| LangSmith OpenAPI Spec | `reference/openapi/langchain/langsmith/openapi.json` | API specification |
-| LangSmith Python SDK | `reference/repo/langchain-ai/langsmith-sdk/code/` | Official SDK implementation |
-| LangSmith MCP Server | `reference/repo/langchain-ai/langsmith-mcp-server/code/` | MCP server prompt handling |
-| Experiment Scripts | `reference/experiments/398-structured-output-prompts/` | Test scripts for this research |
+| Source                 | Location                                                 | Description                    |
+| ---------------------- | -------------------------------------------------------- | ------------------------------ |
+| LangSmith OpenAPI Spec | `reference/openapi/langchain/langsmith/openapi.json`     | API specification              |
+| LangSmith Python SDK   | `reference/repo/langchain-ai/langsmith-sdk/code/`        | Official SDK implementation    |
+| LangSmith MCP Server   | `reference/repo/langchain-ai/langsmith-mcp-server/code/` | MCP server prompt handling     |
+| Experiment Scripts     | `reference/experiments/398-structured-output-prompts/`   | Test scripts for this research |
 
 ## 1. What Are Structured Output Prompts?
 
 Structured output prompts combine:
+
 1. A **prompt template** (messages with variables)
 2. A **JSON schema** defining the expected output structure
 3. A **method** for how the schema is applied (`json_schema` or `function_calling`)
 
 When used with an LLM, the schema constrains the output to match the defined structure, enabling:
+
 - Type-safe data extraction
 - Consistent API responses
 - Validated outputs
@@ -60,13 +62,13 @@ prompt = StructuredPrompt(
 
 ### 2.1 Key Classes and Locations
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `StructuredPrompt` | `langchain_core.prompts.structured` | Core class for structured prompts |
-| `pull_prompt()` | `langsmith/client.py:7696` | Pull prompt from LangSmith |
-| `push_prompt()` | `langsmith/client.py:8542` | Push prompt to LangSmith |
-| Transform logic (pull) | `langsmith/client.py:7776-7794` | Convert stored format to runnable |
-| Transform logic (push) | `langsmith/client.py:8761-8794` | Convert runnable to storage format |
+| Component              | Location                            | Purpose                            |
+| ---------------------- | ----------------------------------- | ---------------------------------- |
+| `StructuredPrompt`     | `langchain_core.prompts.structured` | Core class for structured prompts  |
+| `pull_prompt()`        | `langsmith/client.py:7696`          | Pull prompt from LangSmith         |
+| `push_prompt()`        | `langsmith/client.py:8542`          | Push prompt to LangSmith           |
+| Transform logic (pull) | `langsmith/client.py:7776-7794`     | Convert stored format to runnable  |
+| Transform logic (push) | `langsmith/client.py:8761-8794`     | Convert runnable to storage format |
 
 ### 2.2 The Transform Problem
 
@@ -83,6 +85,7 @@ The SDK handles this with transform logic:
 #### Pull Transform (client.py:7776-7794)
 
 When pulling with `include_model=True`:
+
 1. Deserializes the manifest
 2. If it's a `StructuredPrompt`, wraps it to create the proper runnable chain
 3. Adds an output parser step (2-step → 3-step)
@@ -97,6 +100,7 @@ if isinstance(prompt, StructuredPrompt) and include_model:
 #### Push Transform (client.py:8761-8794)
 
 When pushing a prompt:
+
 1. Inspects the incoming object
 2. If it's a sequence with structured output, extracts the schema
 3. Normalizes to `StructuredPrompt` for storage (3-step → 2-step)
@@ -148,40 +152,41 @@ The `manifest` field in a prompt commit is a flexible JSON object using LangChai
 
 #### Key Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `lc` | int | LangChain serialization version (always 1) |
-| `type` | string | Always "constructor" for class instances |
-| `id` | string[] | Module path to the class |
-| `kwargs` | object | Constructor arguments |
-| `kwargs.messages` | array | Message templates |
-| `kwargs.schema_` | object | JSON Schema for output |
-| `kwargs.method` | string | "json_schema" or "function_calling" |
+| Field             | Type     | Description                                |
+| ----------------- | -------- | ------------------------------------------ |
+| `lc`              | int      | LangChain serialization version (always 1) |
+| `type`            | string   | Always "constructor" for class instances   |
+| `id`              | string[] | Module path to the class                   |
+| `kwargs`          | object   | Constructor arguments                      |
+| `kwargs.messages` | array    | Message templates                          |
+| `kwargs.schema_`  | object   | JSON Schema for output                     |
+| `kwargs.method`   | string   | "json_schema" or "function_calling"        |
 
 ## 3. API Endpoints
 
 ### 3.1 Prompt Repository Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/repos/` | List prompt repositories |
-| POST | `/api/v1/repos/` | Create prompt repository |
-| GET | `/api/v1/repos/{owner}/{repo}` | Get repository |
-| DELETE | `/api/v1/repos/{owner}/{repo}` | Delete repository |
+| Method | Endpoint                       | Description              |
+| ------ | ------------------------------ | ------------------------ |
+| GET    | `/api/v1/repos/`               | List prompt repositories |
+| POST   | `/api/v1/repos/`               | Create prompt repository |
+| GET    | `/api/v1/repos/{owner}/{repo}` | Get repository           |
+| DELETE | `/api/v1/repos/{owner}/{repo}` | Delete repository        |
 
 ### 3.2 Commit Operations
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/commits/{owner}/{repo}/` | List commits |
-| POST | `/api/v1/commits/{owner}/{repo}/` | Create commit |
-| GET | `/api/v1/commits/{owner}/{repo}/{commit}` | Get commit |
+| Method | Endpoint                                  | Description   |
+| ------ | ----------------------------------------- | ------------- |
+| GET    | `/api/v1/commits/{owner}/{repo}/`         | List commits  |
+| POST   | `/api/v1/commits/{owner}/{repo}/`         | Create commit |
+| GET    | `/api/v1/commits/{owner}/{repo}/{commit}` | Get commit    |
 
 **Note**: When using the default owner ("-"), the path simplifies to `/api/v1/commits/{repo}/`. The experiment scripts use this simplified form.
 
 ### 3.3 Prompt Pull/Push (SDK Convenience)
 
 The SDK's `pull_prompt()` and `push_prompt()` methods wrap these endpoints with:
+
 - LangChain object serialization/deserialization
 - Transform logic for structured outputs
 - Model binding support
@@ -191,10 +196,12 @@ The SDK's `pull_prompt()` and `push_prompt()` methods wrap these endpoints with:
 ### 4.1 Existing Prompt Support
 
 Langstar has basic prompt support in:
+
 - `cli/src/commands/prompt.rs` - CLI commands
 - `sdk/src/prompts.rs` - SDK types
 
 Current capabilities:
+
 - `prompt list` - List prompts
 - `prompt get` - Get prompt details
 - `prompt pull` - Pull prompt manifest (raw JSON)
@@ -202,13 +209,13 @@ Current capabilities:
 
 ### 4.2 What's Missing
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| `StructuredPrompt` type | ❌ Missing | No Rust equivalent |
-| Schema handling | ❌ Missing | No JSON Schema support |
-| Transform logic | ❌ Missing | No pull/push transforms |
-| LC-JSON serialization | ❌ Missing | No LangChain format support |
-| Method selection | ❌ Missing | No json_schema/function_calling |
+| Feature                 | Status     | Notes                           |
+| ----------------------- | ---------- | ------------------------------- |
+| `StructuredPrompt` type | ❌ Missing | No Rust equivalent              |
+| Schema handling         | ❌ Missing | No JSON Schema support          |
+| Transform logic         | ❌ Missing | No pull/push transforms         |
+| LC-JSON serialization   | ❌ Missing | No LangChain format support     |
+| Method selection        | ❌ Missing | No json_schema/function_calling |
 
 ## 5. Implementation Recommendations
 
@@ -234,6 +241,7 @@ Current capabilities:
 ### 5.4 Phase 4: Transform Logic
 
 Decide whether to:
+
 - **Option A**: Implement full transform logic in Rust (complex, full compatibility)
 - **Option B**: Store/retrieve raw manifests only (simpler, partial compatibility)
 - **Option C**: Shell out to Python SDK for transforms (pragmatic, full compatibility)
@@ -280,6 +288,7 @@ Experiments were run using `reference/experiments/398-structured-output-prompts/
 **Critical Finding**: Pydantic classes **cannot be serialized** to LC-JSON format.
 
 When passing a Pydantic class to `StructuredPrompt.schema_`:
+
 ```python
 class MovieReview(BaseModel):
     title: str
@@ -289,6 +298,7 @@ prompt = StructuredPrompt(messages=[...], schema_=MovieReview, method="json_sche
 ```
 
 The serialized manifest contains:
+
 ```json
 "schema_": {"lc": 1, "type": "not_implemented", "id": ["__main__", "MovieReview"], "repr": "<class '__main__.MovieReview'>"}
 ```
@@ -296,6 +306,7 @@ The serialized manifest contains:
 When stored in LangSmith, `"not_implemented"` becomes `null`, losing the schema entirely.
 
 **Solution**: Pass a JSON schema dict instead of Pydantic class:
+
 ```python
 json_schema = MovieReview.model_json_schema()  # Get dict from Pydantic
 prompt = StructuredPrompt(messages=[...], schema_=json_schema, method="json_schema")
@@ -373,18 +384,19 @@ Actual manifest structure captured from LangSmith (with proper JSON schema):
 
 ### 9.3 Key Observations
 
-| Observation | Detail |
-|-------------|--------|
-| Module path uses underscore | `langchain_core` not `langchain-core` |
-| Schema stored in `schema_` | Underscore suffix matches Python kwarg |
-| Method stored separately | In `structured_output_kwargs.method` |
-| Valid methods | `"json_schema"` or `"function_calling"` |
-| `name` field | Redundant with `id[-1]`, present for clarity |
-| `input_variables` | Extracted from template placeholders |
+| Observation                 | Detail                                       |
+| --------------------------- | -------------------------------------------- |
+| Module path uses underscore | `langchain_core` not `langchain-core`        |
+| Schema stored in `schema_`  | Underscore suffix matches Python kwarg       |
+| Method stored separately    | In `structured_output_kwargs.method`         |
+| Valid methods               | `"json_schema"` or `"function_calling"`      |
+| `name` field                | Redundant with `id[-1]`, present for clarity |
+| `input_variables`           | Extracted from template placeholders         |
 
 ### 9.4 Deserialization Works
 
 Prompts created with JSON schema dicts deserialize correctly:
+
 ```python
 prompt = client.pull_prompt("test-structured-398-v2", include_model=False)
 # Returns: StructuredPrompt with schema_ as dict
@@ -431,6 +443,7 @@ Push {
 ```
 
 **Observations**:
+
 - Short flags (`-o`, `-r`, `-t`, `-i`) for frequently used options
 - Long-only flags for less common options (`--template-format`, `--organization-id`)
 - Defaults provided where sensible (`template_format = "f-string"`)
@@ -450,6 +463,7 @@ pub format: Option<String>,
 ```
 
 **Observations**:
+
 - Uses `--file <path>` (long flag only) for file paths
 - Auto-detects format from extension with optional `--format` override
 - Uses `PathBuf` type for proper path handling
@@ -497,13 +511,13 @@ Push {
 
 **Design Rationale**:
 
-| Decision | Rationale |
-|----------|-----------|
-| `--schema <FILE>` (long only) | Matches `--file` pattern from dataset commands; not used frequently enough for short flag |
-| `--schema-method` (not `--method`) | Explicit naming avoids ambiguity; clearly indicates it relates to schema handling |
-| Default `json_schema` | Most common method; matches Python SDK defaults |
-| `PathBuf` type | Proper path handling, consistent with dataset import |
-| Optional schema | Backward compatible; existing prompts don't require schema |
+| Decision                           | Rationale                                                                                 |
+| ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| `--schema <FILE>` (long only)      | Matches `--file` pattern from dataset commands; not used frequently enough for short flag |
+| `--schema-method` (not `--method`) | Explicit naming avoids ambiguity; clearly indicates it relates to schema handling         |
+| Default `json_schema`              | Most common method; matches Python SDK defaults                                           |
+| `PathBuf` type                     | Proper path handling, consistent with dataset import                                      |
+| Optional schema                    | Backward compatible; existing prompts don't require schema                                |
 
 **Usage Examples**:
 
@@ -523,9 +537,9 @@ langstar prompt push -o owner -r repo -t "Extract {data}" \
 
 #### Intentional Deviations from Existing Patterns
 
-| Deviation | Rationale |
-|-----------|-----------|
-| No `-s` short flag for `--schema` | `-s` conflicts with potential future `--search` or `--sort` flags |
+| Deviation                                      | Rationale                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| No `-s` short flag for `--schema`              | `-s` conflicts with potential future `--search` or `--sort` flags                                             |
 | `--schema-method` instead of `--schema-format` | "method" matches LangSmith terminology exactly (`json_schema` vs `function_calling` are methods, not formats) |
 
 ### 11.2 Configuration Integration
@@ -534,11 +548,11 @@ langstar prompt push -o owner -r repo -t "Extract {data}" \
 
 The structured output feature uses **only existing environment variables**:
 
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `LANGSMITH_API_KEY` | API authentication | Yes |
-| `LANGSMITH_WORKSPACE_ID` | Workspace scoping | No |
-| `LANGSMITH_ORGANIZATION_ID` | Organization scoping | No |
+| Variable                    | Purpose              | Required |
+| --------------------------- | -------------------- | -------- |
+| `LANGSMITH_API_KEY`         | API authentication   | Yes      |
+| `LANGSMITH_WORKSPACE_ID`    | Workspace scoping    | No       |
+| `LANGSMITH_ORGANIZATION_ID` | Organization scoping | No       |
 
 **No new environment variables required.** The schema file path is provided via CLI flag, not environment configuration.
 
@@ -551,6 +565,7 @@ CLI flags → Environment variables → Config file → Defaults
 ```
 
 **Specific to structured outputs**:
+
 - `--schema`: CLI only (no env var - file paths shouldn't be in env)
 - `--schema-method`: CLI flag value is used if provided; otherwise, the default `json_schema` is used (follows precedence: CLI flag > default)
 
@@ -660,14 +675,14 @@ langstar prompt get owner/prompt-name
 
 ### 11.4 CLI Advantage Over UI
 
-| Aspect | UI | CLI |
-|--------|----|----|
-| **Automation** | Manual clicks each time | Script once, run anywhere |
-| **Version Control** | UI-based versioning | Schema files in git |
-| **CI/CD Integration** | Not possible | `langstar prompt push` in pipeline |
-| **Batch Operations** | One at a time | Loop over multiple schemas |
-| **Schema Reuse** | Copy-paste | Reference same file |
-| **Diff/Review** | UI comparison | `git diff schema.json` |
+| Aspect                | UI                      | CLI                                |
+| --------------------- | ----------------------- | ---------------------------------- |
+| **Automation**        | Manual clicks each time | Script once, run anywhere          |
+| **Version Control**   | UI-based versioning     | Schema files in git                |
+| **CI/CD Integration** | Not possible            | `langstar prompt push` in pipeline |
+| **Batch Operations**  | One at a time           | Loop over multiple schemas         |
+| **Schema Reuse**      | Copy-paste              | Reference same file                |
+| **Diff/Review**       | UI comparison           | `git diff schema.json`             |
 
 **Key CLI advantages for structured outputs specifically**:
 
@@ -693,23 +708,25 @@ langstar prompt get owner/prompt-name
 #### Validation Strategy
 
 **Before push**:
+
 1. Validate schema is valid JSON
 2. Validate schema is valid JSON Schema (using `jsonschema` crate)
 3. Validate method is `json_schema` or `function_calling`
 
 **Error messages**:
+
 - Invalid JSON: `Schema file contains invalid JSON: <parse error>`
 - Invalid schema: `Schema file is not a valid JSON Schema: <validation error>`
 - Invalid method: `Invalid schema method. Valid options: json_schema, function_calling`
 
 ### 11.6 Design Decisions Summary Table
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Schema input | `--schema <FILE>` | Matches dataset import pattern, file paths via flag |
-| Method selection | `--schema-method` with default | Explicit naming, sensible default |
-| Default method | `json_schema` | Most common, matches Python SDK |
-| New env vars | None | Schema paths shouldn't be in environment |
-| Validation | Client-side before push | Fail fast, better error messages |
-| Short flags | None for schema options | Avoid conflicts, these are less frequent |
-| Backward compatibility | Schema is optional | Existing prompts work unchanged |
+| Decision               | Choice                         | Rationale                                           |
+| ---------------------- | ------------------------------ | --------------------------------------------------- |
+| Schema input           | `--schema <FILE>`              | Matches dataset import pattern, file paths via flag |
+| Method selection       | `--schema-method` with default | Explicit naming, sensible default                   |
+| Default method         | `json_schema`                  | Most common, matches Python SDK                     |
+| New env vars           | None                           | Schema paths shouldn't be in environment            |
+| Validation             | Client-side before push        | Fail fast, better error messages                    |
+| Short flags            | None for schema options        | Avoid conflicts, these are less frequent            |
+| Backward compatibility | Schema is optional             | Existing prompts work unchanged                     |

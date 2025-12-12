@@ -1,8 +1,8 @@
 # ADR-0001: SDK Architecture Approach
 
-**Status:** Accepted  
-**Date:** 2025-11-13  
-**Decision Makers:** Langstar Development Team  
+**Status:** Accepted\
+**Date:** 2025-11-13\
+**Decision Makers:** Langstar Development Team\
 **Related Issues:** #106, #115
 
 ## Context
@@ -16,6 +16,7 @@ Langstar currently uses a 100% hand-written SDK in the prototype phase. As the p
 - **Scalability**: Support for growing API surface area
 
 The existing infrastructure includes:
+
 - `tools/generate_sdk.sh` - OpenAPI code generation script (not yet executed)
 - `tools/specs/` - Directory for OpenAPI specifications (empty)
 - `sdk/src/generated/` - Directory for generated code (placeholder only)
@@ -24,12 +25,14 @@ The existing infrastructure includes:
 ### Current State Analysis
 
 **Manual SDK Strengths:**
+
 - ✅ Full control over API design and ergonomics
 - ✅ Tailored to Rust idioms and conventions
 - ✅ Clean abstractions that hide complexity
 - ✅ Excellent documentation and examples
 
 **Manual SDK Weaknesses:**
+
 - ❌ Limited API coverage (only implements most-used endpoints)
 - ❌ Time-consuming to maintain and extend
 - ❌ Risk of drift from upstream API changes
@@ -79,10 +82,12 @@ We adopt a **Layered "Manual-Over-Generated" Architecture** with three distinct 
 ### Layer Responsibilities
 
 #### 1. Generated SDK Layer (Bottom)
+
 **Location:** `sdk/src/generated/langsmith/`, `sdk/src/generated/langgraph/`
 **Purpose:** Comprehensive, auto-generated API clients
 
 **Characteristics:**
+
 - Generated from OpenAPI specifications using `openapi-generator-cli`
 - One-to-one mapping with upstream API endpoints
 - Minimal human intervention
@@ -91,6 +96,7 @@ We adopt a **Layered "Manual-Over-Generated" Architecture** with three distinct 
 - Used as the foundation for manual SDK layer
 
 **Example:**
+
 ```rust
 // Generated code (may be verbose)
 pub struct LangsmithApiClient {
@@ -111,10 +117,12 @@ impl LangsmithApiClient {
 ```
 
 #### 2. Manual SDK Layer (Middle)
+
 **Location:** `sdk/src/*.rs`
 **Purpose:** Ergonomic, idiomatic Rust API
 
 **Characteristics:**
+
 - Hand-written Rust code wrapping generated SDK
 - Builder patterns, smart defaults, convenience methods
 - Domain-specific abstractions (e.g., `PromptClient`, `DeploymentClient`)
@@ -123,6 +131,7 @@ impl LangsmithApiClient {
 - Focused on common use cases and workflows
 
 **Example:**
+
 ```rust
 // Manual ergonomic wrapper
 pub struct PromptClient<'a> {
@@ -149,10 +158,12 @@ impl<'a> PromptClient<'a> {
 ```
 
 #### 3. CLI Layer (Top)
+
 **Location:** `cli/src/`
 **Purpose:** User-facing command-line interface
 
 **Characteristics:**
+
 - Consumes manual SDK layer only
 - Command structure and argument parsing
 - Output formatting (tables, JSON, colors)
@@ -160,6 +171,7 @@ impl<'a> PromptClient<'a> {
 - User experience optimizations
 
 **Example:**
+
 ```rust
 // CLI command using manual SDK
 pub async fn list_prompts(client: &LangchainClient, args: &ListArgs) -> Result<()> {
@@ -175,17 +187,20 @@ pub async fn list_prompts(client: &LangchainClient, args: &ListArgs) -> Result<(
 ### Transition Strategy
 
 **Phase 1 (Current - Prototype):**
+
 - ✅ Manual SDK only
 - ✅ No generated code
 - Focus: Prove concept, validate API design
 
 **Phase 2 (Implementation - Issue #116):**
+
 - Generate low-level SDK from OpenAPI specs
 - Refactor existing manual SDK to wrap generated SDK
 - Maintain backward compatibility in CLI
 - Test extensively to ensure no regressions
 
 **Phase 3 (Maturity):**
+
 - All new endpoints: implement via generated SDK first, add manual wrappers as needed
 - Manual layer focuses on high-value abstractions
 - Generated layer provides comprehensive fallback
@@ -278,12 +293,14 @@ langgraph-client = { path = "src/generated/langgraph" }
 **Description:** Use only OpenAPI-generated code with no manual wrappers.
 
 **Pros:**
+
 - Simplest architecture
 - Fastest updates when API changes
 - No manual maintenance
 - Complete API coverage automatically
 
 **Cons:**
+
 - Non-idiomatic Rust APIs (verbose, awkward)
 - Poor developer experience
 - No domain-specific abstractions
@@ -297,12 +314,14 @@ langgraph-client = { path = "src/generated/langgraph" }
 **Description:** Continue with 100% hand-written SDK, no code generation.
 
 **Pros:**
+
 - Full control over API design
 - Best possible developer experience
 - Idiomatic Rust throughout
 - High-quality documentation
 
 **Cons:**
+
 - Cannot scale to full API coverage
 - Time-consuming to maintain
 - Risk of drift from upstream APIs
@@ -316,10 +335,12 @@ langgraph-client = { path = "src/generated/langgraph" }
 **Description:** Generate code for some endpoints, manually implement others.
 
 **Pros:**
+
 - Flexibility to choose per endpoint
 - Best of both worlds for selected APIs
 
 **Cons:**
+
 - No clear criteria for which approach to use
 - Inconsistent developer experience
 - Difficult to maintain consistency
@@ -332,11 +353,13 @@ langgraph-client = { path = "src/generated/langgraph" }
 **Description:** Use customized OpenAPI generator templates to produce idiomatic Rust.
 
 **Pros:**
+
 - Automated generation of idiomatic code
 - Consistent style across all endpoints
 - Less manual work than pure manual approach
 
 **Cons:**
+
 - Complex template development and maintenance
 - Generator limitations and bugs
 - Still lacks domain-specific abstractions

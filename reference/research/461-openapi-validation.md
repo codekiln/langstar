@@ -14,18 +14,19 @@ The OpenAPI specification for playground-settings endpoints is complete and cons
 
 ### OpenAPI Spec vs Scout Findings
 
-| Endpoint | Method | OpenAPI | Scout | Match |
-|----------|--------|---------|-------|-------|
-| `/api/v1/playground-settings` | GET | `list_playground_settings_api_v1_playground_settings_get` | List all settings | ✅ |
-| `/api/v1/playground-settings` | POST | `create_playground_settings_api_v1_playground_settings_post` | Create new settings | ✅ |
-| `/api/v1/playground-settings/{playground_settings_id}` | PATCH | `update_playground_settings_api_v1_playground_settings__playground_settings_id__patch` | Update existing | ✅ |
-| `/api/v1/playground-settings/{playground_settings_id}` | DELETE | `delete_playground_settings_api_v1_playground_settings__playground_settings_id__delete` | Delete settings | ✅ |
+| Endpoint                                               | Method | OpenAPI                                                                                 | Scout               | Match |
+| ------------------------------------------------------ | ------ | --------------------------------------------------------------------------------------- | ------------------- | ----- |
+| `/api/v1/playground-settings`                          | GET    | `list_playground_settings_api_v1_playground_settings_get`                               | List all settings   | ✅    |
+| `/api/v1/playground-settings`                          | POST   | `create_playground_settings_api_v1_playground_settings_post`                            | Create new settings | ✅    |
+| `/api/v1/playground-settings/{playground_settings_id}` | PATCH  | `update_playground_settings_api_v1_playground_settings__playground_settings_id__patch`  | Update existing     | ✅    |
+| `/api/v1/playground-settings/{playground_settings_id}` | DELETE | `delete_playground_settings_api_v1_playground_settings__playground_settings_id__delete` | Delete settings     | ✅    |
 
 **Note**: No dedicated GET-by-ID endpoint exists. Single items must be filtered from list results.
 
 ### Authentication
 
 All endpoints support the same authentication methods:
+
 - API Key
 - Tenant ID
 - Bearer Auth
@@ -36,15 +37,15 @@ All endpoints support the same authentication methods:
 
 **OpenAPI Schema** (from `playground-settings-response.json`):
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | string (uuid) | ✅ Yes | UUID format |
-| `settings` | object | ✅ Yes | `additionalProperties: true` |
-| `options` | PlaygroundSavedOptions \| null | No | Rate limiting config |
-| `name` | string \| null | No | Display name |
-| `description` | string \| null | No | User description |
-| `created_at` | string (date-time) | ✅ Yes | ISO 8601 |
-| `updated_at` | string (date-time) | ✅ Yes | ISO 8601 |
+| Field         | Type                           | Required | Notes                        |
+| ------------- | ------------------------------ | -------- | ---------------------------- |
+| `id`          | string (uuid)                  | ✅ Yes   | UUID format                  |
+| `settings`    | object                         | ✅ Yes   | `additionalProperties: true` |
+| `options`     | PlaygroundSavedOptions \| null | No       | Rate limiting config         |
+| `name`        | string \| null                 | No       | Display name                 |
+| `description` | string \| null                 | No       | User description             |
+| `created_at`  | string (date-time)             | ✅ Yes   | ISO 8601                     |
+| `updated_at`  | string (date-time)             | ✅ Yes   | ISO 8601                     |
 
 **Sample Data Validation** (from `453-ls-langsmith-model-providers-playground-settings.json`):
 
@@ -66,12 +67,12 @@ All endpoints support the same authentication methods:
 
 **OpenAPI Schema** (from `playground-settings-create-request.json`):
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `settings` | object | ✅ Yes | LangChain serialized model config |
-| `name` | string \| null | No | Optional display name |
-| `description` | string \| null | No | Optional description |
-| `options` | PlaygroundSavedOptions \| null | No | Rate limiting |
+| Field         | Type                           | Required | Notes                             |
+| ------------- | ------------------------------ | -------- | --------------------------------- |
+| `settings`    | object                         | ✅ Yes   | LangChain serialized model config |
+| `name`        | string \| null                 | No       | Optional display name             |
+| `description` | string \| null                 | No       | Optional description              |
+| `options`     | PlaygroundSavedOptions \| null | No       | Rate limiting                     |
 
 **Key Finding**: Only `settings` is required for creation.
 
@@ -79,12 +80,12 @@ All endpoints support the same authentication methods:
 
 **OpenAPI Schema** (from `playground-settings-update-request.json`):
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `name` | string \| null | No | Update name |
-| `description` | string \| null | No | Update description |
-| `settings` | object \| null | No | Update model config |
-| `options` | PlaygroundSavedOptions \| null | No | Update rate limiting |
+| Field         | Type                           | Required | Notes                |
+| ------------- | ------------------------------ | -------- | -------------------- |
+| `name`        | string \| null                 | No       | Update name          |
+| `description` | string \| null                 | No       | Update description   |
+| `settings`    | object \| null                 | No       | Update model config  |
+| `options`     | PlaygroundSavedOptions \| null | No       | Update rate limiting |
 
 **Key Finding**: All fields optional - supports partial updates via PATCH.
 
@@ -92,11 +93,12 @@ All endpoints support the same authentication methods:
 
 **OpenAPI Schema** (from `playground-saved-options.json`):
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `requests_per_second` | integer \| null | No | Rate limit (optional) |
+| Field                 | Type            | Required | Notes                 |
+| --------------------- | --------------- | -------- | --------------------- |
+| `requests_per_second` | integer \| null | No       | Rate limit (optional) |
 
 **Sample Data Validation**:
+
 - 8 of 9 samples: `"requests_per_second": null` ✅
 - 1 sample (id=...000006): `"requests_per_second": 25` ✅
 
@@ -117,13 +119,13 @@ The `settings` field is defined as `additionalProperties: true` (generic object)
 
 ### Provider ID Paths (from sample data)
 
-| Provider | ID Path |
-|----------|---------|
-| Anthropic | `["langchain", "chat_models", "anthropic", "ChatAnthropic"]` |
-| OpenAI | `["langchain", "chat_models", "openai", "ChatOpenAI"]` |
-| Azure OpenAI | `["langchain", "chat_models", "azure_openai", "AzureChatOpenAI"]` |
-| AWS Bedrock (Converse) | `["langchain_aws", "chat_models", "ChatBedrockConverse"]` |
-| AWS Bedrock (Legacy) | `["langchain", "chat_models", "bedrock", "ChatBedrock"]` |
+| Provider               | ID Path                                                           |
+| ---------------------- | ----------------------------------------------------------------- |
+| Anthropic              | `["langchain", "chat_models", "anthropic", "ChatAnthropic"]`      |
+| OpenAI                 | `["langchain", "chat_models", "openai", "ChatOpenAI"]`            |
+| Azure OpenAI           | `["langchain", "chat_models", "azure_openai", "AzureChatOpenAI"]` |
+| AWS Bedrock (Converse) | `["langchain_aws", "chat_models", "ChatBedrockConverse"]`         |
+| AWS Bedrock (Legacy)   | `["langchain", "chat_models", "bedrock", "ChatBedrock"]`          |
 
 ### Secret References
 
@@ -159,13 +161,13 @@ Based on this validation:
 
 ### Rust Type Mapping
 
-| OpenAPI Type | Rust Type |
-|--------------|-----------|
-| `string (uuid)` | `uuid::Uuid` |
-| `string (date-time)` | `chrono::DateTime<Utc>` |
-| `string \| null` | `Option<String>` |
-| `integer \| null` | `Option<i64>` |
-| `object (additionalProperties)` | `serde_json::Value` |
+| OpenAPI Type                    | Rust Type               |
+| ------------------------------- | ----------------------- |
+| `string (uuid)`                 | `uuid::Uuid`            |
+| `string (date-time)`            | `chrono::DateTime<Utc>` |
+| `string \| null`                | `Option<String>`        |
+| `integer \| null`               | `Option<i64>`           |
+| `object (additionalProperties)` | `serde_json::Value`     |
 
 ### Recommended struct definitions
 
@@ -219,13 +221,13 @@ pub struct PlaygroundSettingsUpdate {
 
 The following OpenAPI fragments were extracted and added to `reference/api-specs/langsmith/`:
 
-| File | Size | Content |
-|------|------|---------|
-| `playground-settings-endpoints.json` | 4.9K | Full endpoint definitions |
-| `playground-settings-response.json` | 1.1K | Response schema |
-| `playground-settings-create-request.json` | 0.8K | Create request schema |
-| `playground-settings-update-request.json` | 0.8K | Update request schema |
-| `playground-saved-options.json` | 0.3K | Options sub-schema |
+| File                                      | Size | Content                   |
+| ----------------------------------------- | ---- | ------------------------- |
+| `playground-settings-endpoints.json`      | 4.9K | Full endpoint definitions |
+| `playground-settings-response.json`       | 1.1K | Response schema           |
+| `playground-settings-create-request.json` | 0.8K | Create request schema     |
+| `playground-settings-update-request.json` | 0.8K | Update request schema     |
+| `playground-saved-options.json`           | 0.3K | Options sub-schema        |
 
 **jq extraction commands** added to `reference/api-specs/langsmith/FRAGMENTS.md`.
 

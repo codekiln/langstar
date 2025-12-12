@@ -15,6 +15,7 @@ Not all sub-issues require hierarchical merging. Choose your PR target based on 
 #### PR Directly to Main (Preferred for Most Work)
 
 Use direct-to-main PRs for:
+
 - **Incremental, non-breaking changes** - Research docs, small features, tests
 - **Independent sub-tasks** - Work that doesn't require other sub-tasks to be complete first
 - **Documentation and research** - Reports, specs, and reference materials
@@ -22,6 +23,7 @@ Use direct-to-main PRs for:
 - **Refactoring** - Changes that maintain backward compatibility
 
 **Example**: A research sub-issue (#299) under an epic (#298) can PR directly to main because:
+
 - The research report is standalone and useful immediately
 - It doesn't break anything or require other code to exist first
 - Other developers benefit from having it merged sooner
@@ -29,12 +31,14 @@ Use direct-to-main PRs for:
 #### Hierarchical Merging (For Breaking Changes)
 
 Use hierarchical merging (PR into parent branch) for:
+
 - **Breaking API changes** - Changes that would break other in-progress branches
 - **Interdependent features** - Sub-tasks that build on each other sequentially
 - **Large refactors** - Structural changes that affect multiple components
 - **Feature flags** - When changes must be released together atomically
 
 **Example**: If implementing a new CLI command (#999) requires a new SDK method (#666), and the SDK method changes existing interfaces:
+
 - PR #999 into #666's branch (not main)
 - PR #666 into main only when both are complete
 - This prevents main from having incomplete features
@@ -77,15 +81,18 @@ Start by creating a GitHub issue that describes what needs to be done.
 
 ```markdown
 ## Description
+
 Implement user authentication using JWT tokens
 
 ## Requirements
+
 - [ ] Create login endpoint
 - [ ] Create registration endpoint
 - [ ] Implement JWT token generation
 - [ ] Add authentication middleware
 
 ## Acceptance Criteria
+
 - Users can register with email/password
 - Users can login and receive JWT token
 - Protected routes require valid JWT token
@@ -100,18 +107,21 @@ For complex, multi-phase features, this project uses a hierarchical naming conve
 #### Three-Level Hierarchy
 
 **Level 1: Epic/Milestone Issue**
+
 - Descriptive title without prefix
 - Example: `devcontainer-feature milestone - Create devcontainer feature for langstar CLI installation` (#201)
 - Create matching GitHub Milestone
 - Attach milestone to issue
 
 **Level 2: Phase Issues** (children of epic)
+
 - Format: `{epic-num}.{phase-num}-{slug} {description}`
 - Example: `201.3-devcontainer-feature-ci automated CI testing for devcontainer features` (#240)
 - Attach same milestone as epic
 - Reference parent issue in description
 
 **Level 3: Task Issues** (children of phase)
+
 - Format: `{phase-num}.{task-num}-{slug} {description}`
 - Example: `240.1-devcontainer-feature Create Automated Testing Workflow` (#247)
 - Attach same milestone as epic and phase
@@ -158,6 +168,7 @@ Epic: #201 (devcontainer-feature milestone)
 Branches use prefixes to indicate milestone, parent issue, and issue number:
 
 **Prefix Meanings:**
+
 - `m<id>` = milestone ID
 - `p<id>` = parent issue ID
 - `i<id>` = GitHub issue number
@@ -207,6 +218,7 @@ Claude Code can automatically create branches when you mention `@claude` in an i
 ```
 
 **What Claude Code Does:**
+
 1. Creates a branch automatically
 2. Checks out the branch in the workflow environment
 3. Can make initial commits if requested
@@ -214,6 +226,7 @@ Claude Code can automatically create branches when you mention `@claude` in an i
 
 **Claude Code Branch Format:**
 When Claude creates branches, it uses a different format than the project convention:
+
 ```
 claude/issue-<issue_num>-<timestamp>
 ```
@@ -235,6 +248,7 @@ Make your changes on the issue branch, following the project's coding convention
 This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](./git-scm-conventions.md) for full details.
 
 **Commit Format:**
+
 ```
 <emoji> <type>[optional scope]: <description>
 
@@ -244,6 +258,7 @@ This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](.
 ```
 
 **Common Types:**
+
 - `✨ feat` - New feature
 - `🩹 fix` - Bug fix
 - `📚 docs` - Documentation
@@ -252,6 +267,7 @@ This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](.
 - `🔧 build` - Build system changes
 
 **Examples:**
+
 ```bash
 git commit -m "✨ feat(auth): add JWT authentication"
 git commit -m "🩹 fix: resolve database connection timeout"
@@ -319,11 +335,13 @@ When Claude Code completes work, it provides a pre-filled PR creation link:
 
 **Title Format:**
 Follow the same conventional commit format:
+
 ```
 <emoji> <type>[scope]: <description>
 ```
 
 **PR Description Should Include:**
+
 - **Summary**: What changes were made
 - **Related Issues**: Use keywords to link issues (see below)
 - **Test Plan**: How the changes were tested
@@ -332,16 +350,19 @@ Follow the same conventional commit format:
 
 **IMPORTANT: Always Add Milestone**
 If the related issue has a milestone attached, **you MUST add the same milestone to the PR**:
+
 - Use GitHub web UI: Settings → Milestone
 - Use GitHub CLI: `gh pr edit <pr-num> --milestone "<milestone-name>"`
 
 **Why milestones matter:**
+
 - Enables progress tracking across the epic
 - Allows filtering all PRs related to a milestone
 - Supports project management and burndown charts
 - Maintains consistency with issue hierarchy
 
 **Example:**
+
 ```bash
 # After creating PR #421 for issue #373
 gh pr edit 421 --milestone "ls-evals-basic"
@@ -352,25 +373,31 @@ gh pr edit 421 --milestone "ls-evals-basic"
 Use GitHub keywords in your PR description to automatically close issues when the PR is merged:
 
 **Keywords:**
+
 - `Fixes #7`
 - `Closes #7`
 - `Resolves #7`
 
 **Example PR Description:**
+
 ```markdown
 ## Summary
+
 Implements user authentication using JWT tokens.
 
 ## Changes
+
 - Added login endpoint at `/api/auth/login`
 - Added registration endpoint at `/api/auth/register`
 - Implemented JWT token generation and validation
 - Added authentication middleware for protected routes
 
 ## Related Issues
+
 Fixes #7
 
 ## Test Plan
+
 - [x] Tested login with valid credentials
 - [x] Tested login with invalid credentials
 - [x] Tested registration with new user
@@ -378,6 +405,7 @@ Fixes #7
 - [x] Verified protected routes require authentication
 
 ---
+
 Generated with [Claude Code](https://claude.ai/code)
 ```
 
@@ -457,6 +485,7 @@ Mention `@claude` in an issue or PR comment:
 ### Limitations
 
 Claude Code **cannot**:
+
 - Submit formal GitHub PR reviews
 - Approve pull requests
 - Merge pull requests
@@ -615,6 +644,7 @@ Fixes #7
 ## Summary
 
 This workflow ensures:
+
 - Every change is tracked to an issue
 - Branches follow a consistent naming convention
 - Commits use conventional format for clarity
@@ -622,14 +652,15 @@ This workflow ensures:
 - The team maintains a clear history of all work
 
 By following this process, we maintain high code quality, clear communication, and efficient collaboration.
-- Each PR should fix exactly one github issue. The first line of the PR and the PR commit should contain special github syntax which, upon PR merge, will mark the issue as fixed. As per [Using keywords in issues and pull requests - GitHub Enterprise Cloud Docs](https://docs.github.com/en/enterprise-cloud@latest/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests), any of the following can be used: 
-close
-closes
-closed
-fix
-fixes
-fixed
-resolve
-resolves
-resolved
-For example, Closes #10 or Fixes octo-org/octo-repo#100.
+
+- Each PR should fix exactly one github issue. The first line of the PR and the PR commit should contain special github syntax which, upon PR merge, will mark the issue as fixed. As per [Using keywords in issues and pull requests - GitHub Enterprise Cloud Docs](https://docs.github.com/en/enterprise-cloud@latest/get-started/writing-on-github/working-with-advanced-formatting/using-keywords-in-issues-and-pull-requests), any of the following can be used:
+  close
+  closes
+  closed
+  fix
+  fixes
+  fixed
+  resolve
+  resolves
+  resolved
+  For example, Closes #10 or Fixes octo-org/octo-repo#100.

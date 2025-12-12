@@ -23,16 +23,18 @@ Test fixtures wait for `RevisionStatus::Deployed`, not `DeploymentStatus::Ready`
 
 Integration tests use exactly **two deployment types** with standardized naming:
 
-| Type | Pattern | Behavior |
-|------|---------|----------|
-| **PR/Dev** | `pr-integration-test-{timestamp}` | Get-or-create by prefix, cleaned by cron (4hr threshold) |
-| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting |
+| Type        | Pattern                                | Behavior                                                 |
+| ----------- | -------------------------------------- | -------------------------------------------------------- |
+| **PR/Dev**  | `pr-integration-test-{timestamp}`      | Get-or-create by prefix, cleaned by cron (4hr threshold) |
+| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting                              |
 
 **Using TestDeploymentConfig:**
+
 - `TestDeploymentConfig::default()` - Creates PR/dev config with prefix-based reuse
 - `TestDeploymentConfig::for_release_tests()` - Creates release config (always fresh)
 
 The `get_or_create_deployment()` function handles:
+
 - **With prefix**: Searches for existing `pr-integration-test-*` deployment, reuses if found
 - **Without prefix**: Always creates a new deployment (for release tests)
 
@@ -83,10 +85,12 @@ cargo test -- --include-ignored
 Tests the ability to list prompts from the LangSmith PromptHub.
 
 **Requirements**:
+
 - Valid `LANGSMITH_API_KEY`
 - Read permissions
 
 **What it tests**:
+
 - Authentication with LangSmith API
 - Fetching and parsing paginated prompt list
 - API response deserialization
@@ -98,15 +102,18 @@ Tests the ability to list prompts from the LangSmith PromptHub.
 Creates a new commit for a private prompt in the LangSmith PromptHub using the null repository (`-`).
 
 **Prerequisites**:
+
 1. Valid `LANGSMITH_API_KEY` with **write permissions**
 
 **What it tests**:
+
 - Fetching current organization information
 - Setting X-Organization-Id header for write operations
 - Creating a commit using `POST /api/v1/commits/{owner}/{repo}`
 - Proper request body format (manifest, parent_commit, example_run_ids)
 
 **Expected behavior**:
+
 - If repository exists: ✅ Returns commit hash
 - If repository doesn't exist: ❌ Returns 404 "Repository not found"
 
@@ -166,6 +173,7 @@ langstar assistant delete <assistant-id>
 #### Overview
 
 The `integration_deployment_workflow.rs` file contains tests for LangGraph Cloud deployment operations including:
+
 - Full deployment lifecycle (create, patch, poll, delete)
 - GitHub integration discovery and repository access
 - Deployment URL extraction helpers
@@ -174,18 +182,21 @@ The `integration_deployment_workflow.rs` file contains tests for LangGraph Cloud
 #### Prerequisites
 
 **Required Environment Variables:**
+
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"              # Required
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"    # Required
 ```
 
 **Optional Environment Variables:**
+
 ```bash
 export REPOSITORY_OWNER="codekiln"                     # Default: "codekiln"
 export REPOSITORY_NAME="langstar"                      # Default: "langstar"
 ```
 
 **GitHub Integration Setup:**
+
 - At least one GitHub integration must be configured in your workspace
 - Integration must have access to the target repository
 - Repository must contain `tests/fixtures/test-graph-deployment/langgraph.json`
@@ -193,36 +204,43 @@ export REPOSITORY_NAME="langstar"                      # Default: "langstar"
 #### Running Deployment Tests
 
 **Full deployment workflow (5-30 minutes, persistent deployment):**
+
 ```bash
 cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture
 ```
 
 **Full lifecycle deployment workflow (pre-release validation, 20-30 minutes):**
+
 ```bash
 cargo test --test integration_deployment_workflow test_deployment_workflow_full_lifecycle -- --ignored --nocapture
 ```
 
 **List deployments:**
+
 ```bash
 cargo test --test integration_deployment_workflow test_list_deployments -- --ignored --nocapture
 ```
 
 **List GitHub integrations:**
+
 ```bash
 cargo test --test integration_deployment_workflow test_list_github_integrations -- --ignored --nocapture
 ```
 
 **List repositories:**
+
 ```bash
 cargo test --test integration_deployment_workflow test_list_github_repositories -- --ignored --nocapture
 ```
 
 **Find integration for repo:**
+
 ```bash
 cargo test --test integration_deployment_workflow test_find_integration_for_repo -- --ignored --nocapture
 ```
 
 **Unit test (no API, <1s):**
+
 ```bash
 cargo test --test integration_deployment_workflow test_deployment_url_extraction
 ```
@@ -234,6 +252,7 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 **Duration:** 5-30 minutes (first run: ~22 min, subsequent runs: ~6 min)
 
 **What it tests:**
+
 1. Get or create deployment using `TestDeploymentConfig::default()` (prefix-based reuse)
 2. Validates deployment is ready (RevisionStatus::Deployed)
 3. Patching deployment (triggers new revision)
@@ -242,11 +261,13 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 6. Leaves deployment running (cleaned by periodic cron job after 4 hours)
 
 **Validations:**
+
 - ✅ Deployment source is "github"
 - ✅ Deployment has custom_url in source_config
 - ✅ Final revision status is Deployed
 
 **Performance:**
+
 - First run creates `pr-integration-test-{ts}` deployment (~22 minutes)
 - Subsequent runs reuse existing `pr-integration-test-*` deployment (~6 minutes, 73% time reduction)
 
@@ -255,6 +276,7 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 **Duration:** 20-30 minutes
 
 **What it tests:**
+
 1. Create fresh deployment using `TestDeploymentConfig::for_release_tests()` (no prefix reuse)
 2. Validates deployment is ready (RevisionStatus::Deployed)
 3. Patching deployment (triggers new revision)
@@ -263,12 +285,14 @@ cargo test --test integration_deployment_workflow test_deployment_url_extraction
 6. Cleanup with RAII guard (deletes deployment after test)
 
 **Validations:**
+
 - ✅ Deployment source is "github"
 - ✅ Deployment has custom_url in source_config
 - ✅ Final revision status is Deployed
 - ✅ Automatic cleanup on test failure (via DeploymentGuard)
 
 **Use Cases:**
+
 - Pre-release validation requiring complete create/delete cycle
 - Testing deployment cleanup functionality
 - Scenarios requiring a fresh deployment each run
@@ -324,6 +348,7 @@ guard.disarm();  // Prevents warning about manual cleanup
 ```
 
 **Features:**
+
 - Implements Drop trait for warning-based cleanup reminders
 - Drop implementation prints warnings via `eprintln!` (no automatic cleanup performed)
 - Provides `disarm()` method to skip warning after manual deletion
@@ -335,6 +360,7 @@ guard.disarm();  // Prevents warning about manual cleanup
 Integration tests run automatically in CI for PRs and main branch pushes. See `.github/workflows/ci.yml` for the current configuration.
 
 **Required GitHub Secrets:**
+
 - `LANGSMITH_API_KEY`
 - `LANGSMITH_WORKSPACE_ID`
 
@@ -353,21 +379,27 @@ Each test file is self-contained and can be run independently.
 ## Design Principles
 
 ### 1. Idempotency
+
 Integration tests should be safe to run multiple times without side effects.
 
 ### 2. Cleanup
+
 Tests should clean up any resources they create when possible.
 
 ### 3. Test Data
+
 Use clearly named test resources (e.g., `pr-integration-test`, `release-integration-test`).
 
 ### 4. Timeouts
+
 Integration tests may be slower due to network calls. Deployment tests can take 5-30 minutes.
 
 ### 5. Error Messages
+
 Provide helpful error messages for common failure modes.
 
 ### 6. Resource Reuse
+
 PR/dev tests reuse deployments for faster iteration. Release tests create fresh deployments for complete lifecycle validation.
 
 ## Troubleshooting
@@ -379,6 +411,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **Error:** "TEST_GRAPH_ID environment variable not set"
 
 **Solution:**
+
 1. Deploy test graph (see `../../../tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`)
 2. Set `TEST_GRAPH_ID` environment variable
 
@@ -387,6 +420,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **Error:** "Invalid graph_id"
 
 **Solution:**
+
 1. Verify deployment is active in LangSmith UI
 2. Check Graph ID matches exactly (case-sensitive)
 3. Ensure workspace ID is correct
@@ -396,6 +430,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **Error:** "Authentication failed"
 
 **Solution:**
+
 1. Verify `LANGSMITH_API_KEY` is valid
 2. Check API key has "Assistants" permissions
 3. Verify `LANGSMITH_WORKSPACE_ID` matches your workspace
@@ -405,6 +440,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **Error:** "404 Not Found" when creating assistant
 
 **Solution:**
+
 1. Verify test graph deployment is active
 2. Check deployment status in LangSmith UI
 3. Confirm Graph ID is from an active deployment
@@ -416,6 +452,7 @@ PR/dev tests reuse deployments for faster iteration. Release tests create fresh 
 **"Failed to find GitHub integration for repository"**
 
 Solution:
+
 1. Verify GitHub integration exists in LangSmith UI
 2. Check integration has repository access configured
 3. Verify `REPOSITORY_OWNER` and `REPOSITORY_NAME` environment variables
@@ -425,6 +462,7 @@ Solution:
 **"Timeout waiting for revision to be DEPLOYED after 30 minutes"**
 
 Solution:
+
 1. Check deployment status in LangSmith UI
 2. Review deployment logs for build errors
 3. Verify `langgraph.json` is valid at the specified path
@@ -435,6 +473,7 @@ Solution:
 **"Failed to list GitHub repositories: Forbidden"**
 
 Solution:
+
 1. Verify API key has integration read permissions
 2. Check workspace ID is correct
 3. Ensure integration is in the same workspace

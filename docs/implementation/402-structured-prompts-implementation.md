@@ -18,12 +18,12 @@ This document describes the implementation of structured output prompts in Langs
 
 ### Key Deliverables
 
-| Component | Status | PRs |
-|-----------|--------|-----|
-| SDK Types | ✅ Complete | [#415](https://github.com/codekiln/langstar/pull/415) |
-| SDK Client Methods | ✅ Complete | [#420](https://github.com/codekiln/langstar/pull/420) |
-| CLI Commands | ✅ Complete | [#431](https://github.com/codekiln/langstar/pull/431) |
-| Documentation | ✅ Complete | [#409](https://github.com/codekiln/langstar/issues/409) |
+| Component          | Status      | PRs                                                     |
+| ------------------ | ----------- | ------------------------------------------------------- |
+| SDK Types          | ✅ Complete | [#415](https://github.com/codekiln/langstar/pull/415)   |
+| SDK Client Methods | ✅ Complete | [#420](https://github.com/codekiln/langstar/pull/420)   |
+| CLI Commands       | ✅ Complete | [#431](https://github.com/codekiln/langstar/pull/431)   |
+| Documentation      | ✅ Complete | [#409](https://github.com/codekiln/langstar/issues/409) |
 
 ## Research Phase
 
@@ -33,6 +33,7 @@ This document describes the implementation of structured output prompts in Langs
 **Document**: [398-structured-output-prompts-scout.md](../research/398-structured-output-prompts-scout.md)
 
 Key findings:
+
 1. LangSmith stores prompts as LC-JSON serialized objects
 2. `StructuredPrompt` class in Python SDK is the reference implementation
 3. JSON Schema must be passed as dict, not Pydantic class
@@ -44,6 +45,7 @@ Key findings:
 **Section**: [Research document Section 11](../research/398-structured-output-prompts-scout.md#11-design-decisions)
 
 Key decisions:
+
 - Use `--schema <FILE>` flag (matches dataset import pattern)
 - Default method: `json_schema`
 - Client-side validation before push
@@ -105,6 +107,7 @@ pub fn validate_method(method: &str) -> Result<()>
 ```
 
 **Validation approach:**
+
 - Uses `jsonschema` crate to compile and validate schemas
 - Validates method is `json_schema` or `function_calling`
 - Fails fast with clear error messages
@@ -125,6 +128,7 @@ pub fn validate_method(method: &str) -> Result<()>
 6. POST to `/api/v1/commits/{owner}/{repo}/`
 
 **Key code**:
+
 ```rust
 let structured_prompt = StructuredPrompt {
     input_variables: Some(input_variables),
@@ -172,6 +176,7 @@ Push {
 6. Handle errors with user-friendly messages
 
 **Error handling**:
+
 ```rust
 let schema: Value = match std::fs::read_to_string(&schema_path) {
     Ok(content) => serde_json::from_str(&content)
@@ -188,6 +193,7 @@ validate_method(&schema_method)?;
 **Goal**: Document the structured output prompts feature.
 
 **Deliverables**:
+
 1. ✅ README updates with examples
 2. ✅ Usage guide: [docs/examples/structured-output-prompts.md](../examples/structured-output-prompts.md)
 3. ✅ Implementation plan (this document)
@@ -200,6 +206,7 @@ validate_method(&schema_method)?;
 **Location**: `sdk/src/prompts.rs`
 
 Tests cover:
+
 - LC-JSON serialization/deserialization
 - Schema validation (valid and invalid schemas)
 - Method validation
@@ -210,6 +217,7 @@ Tests cover:
 **Location**: `sdk/tests/prompts_integration.rs`
 
 Tests cover:
+
 - Push structured prompt to LangSmith (requires API key)
 - Pull structured prompt from LangSmith
 - Round-trip: push then pull, verify schema preserved
@@ -246,12 +254,14 @@ cargo run -- prompt pull test/structured-test
 **Decision**: Use LangChain's LC-JSON serialization format for manifests.
 
 **Rationale**:
+
 - LangSmith stores prompts in this format
 - Python SDK uses this format
 - Round-trip compatibility with Python ecosystem
 - Structured and well-documented format
 
 **Alternative considered**: Custom JSON format
+
 - ❌ Would break Python SDK compatibility
 - ❌ Would require custom deserialization on LangSmith side
 
@@ -260,11 +270,13 @@ cargo run -- prompt pull test/structured-test
 **Decision**: Validate JSON Schema on client before pushing.
 
 **Rationale**:
+
 - Fail fast with clear error messages
 - Reduce API round-trips for invalid schemas
 - Better user experience (immediate feedback)
 
 **Implementation**: Uses `jsonschema` crate
+
 ```toml
 [dependencies]
 jsonschema = "0.18"
@@ -275,11 +287,13 @@ jsonschema = "0.18"
 **Decision**: Use `std::path::PathBuf` for `--schema` flag.
 
 **Rationale**:
+
 - Proper path handling across platforms
 - Consistent with `dataset import --file` pattern
 - Type-safe file path representation
 
 **Alternative considered**: String
+
 - ❌ Less type-safe
 - ❌ Requires manual path validation
 
@@ -287,25 +301,25 @@ jsonschema = "0.18"
 
 ### SDK
 
-| File | Lines | Description |
-|------|-------|-------------|
-| `sdk/src/prompts.rs` | 18-70 | LC-JSON types and helpers |
-| `sdk/src/prompts.rs` | 71-149 | StructuredPrompt types |
-| `sdk/src/prompts.rs` | 150-232 | Schema validation functions |
-| `sdk/src/client.rs` | (commit method) | Push/pull implementation |
+| File                 | Lines           | Description                 |
+| -------------------- | --------------- | --------------------------- |
+| `sdk/src/prompts.rs` | 18-70           | LC-JSON types and helpers   |
+| `sdk/src/prompts.rs` | 71-149          | StructuredPrompt types      |
+| `sdk/src/prompts.rs` | 150-232         | Schema validation functions |
+| `sdk/src/client.rs`  | (commit method) | Push/pull implementation    |
 
 ### CLI
 
-| File | Lines | Description |
-|------|-------|-------------|
-| `cli/src/commands/prompt.rs` | 76-113 | CLI flags definition |
+| File                         | Lines            | Description          |
+| ---------------------------- | ---------------- | -------------------- |
+| `cli/src/commands/prompt.rs` | 76-113           | CLI flags definition |
 | `cli/src/commands/prompt.rs` | (execute method) | Schema file handling |
 
 ### Tests
 
-| File | Description |
-|------|-------------|
-| `sdk/src/prompts.rs` | Unit tests for types and validation |
+| File                            | Description                          |
+| ------------------------------- | ------------------------------------ |
+| `sdk/src/prompts.rs`            | Unit tests for types and validation  |
 | `sdk/tests/integration_test.rs` | Integration tests with LangSmith API |
 
 ## Future Enhancements
@@ -389,6 +403,7 @@ The structured output prompts feature is fully implemented and tested. Users can
 4. Use prompts with LLMs to get structured, validated outputs
 
 The implementation follows Langstar's design principles:
+
 - ✅ Thin wrapper over LangSmith API
 - ✅ Type-safe Rust implementation
 - ✅ Automation-friendly CLI

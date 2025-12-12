@@ -22,13 +22,13 @@ Graphs in LangGraph Cloud define the workflow structure of your applications:
 
 ### Key Concepts
 
-| Concept | Description |
-|---------|-------------|
-| Graph | A workflow defined in `langgraph.json` at deployment time |
-| Graph ID | String identifier matching the key in `langgraph.json` |
-| Assistant | A runtime instance that uses a specific graph |
-| Nodes | Processing steps in the graph (excludes `__start__` and `__end__` control nodes) |
-| Edges | Connections between nodes (may be conditional) |
+| Concept   | Description                                                                      |
+| --------- | -------------------------------------------------------------------------------- |
+| Graph     | A workflow defined in `langgraph.json` at deployment time                        |
+| Graph ID  | String identifier matching the key in `langgraph.json`                           |
+| Assistant | A runtime instance that uses a specific graph                                    |
+| Nodes     | Processing steps in the graph (excludes `__start__` and `__end__` control nodes) |
+| Edges     | Connections between nodes (may be conditional)                                   |
 
 ### How Graphs Relate to Assistants
 
@@ -56,6 +56,7 @@ langstar graph list my-deployment
 ```
 
 Output:
+
 ```
 ╭──────────────┬─────────────────────┬──────────────┬─────────────────────╮
 │ Graph ID     │ Assistants          │ # Assistants │ Nodes               │
@@ -72,6 +73,7 @@ langstar graph get agent --deployment my-deployment
 ```
 
 Output:
+
 ```json
 {
   "graph_id": "agent",
@@ -96,6 +98,7 @@ langstar graph list <DEPLOYMENT> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DEPLOYMENT>` - Deployment name or ID (required)
 
 **Options:**
@@ -105,6 +108,7 @@ langstar graph list <DEPLOYMENT> [OPTIONS]
 | `-f, --format <FORMAT>` | Output format: `table`, `json` |
 
 **Examples:**
+
 ```bash
 # List graphs by deployment name
 langstar graph list my-deployment
@@ -136,6 +140,7 @@ langstar graph get <GRAPH_ID> --deployment <DEPLOYMENT> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<GRAPH_ID>` - The graph ID to inspect
 
 **Options:**
@@ -146,6 +151,7 @@ langstar graph get <GRAPH_ID> --deployment <DEPLOYMENT> [OPTIONS]
 | `-f, --format <FORMAT>` | Output format: `table`, `json` |
 
 **Examples:**
+
 ```bash
 # Get graph structure
 langstar graph get agent --deployment my-deployment
@@ -158,6 +164,7 @@ langstar graph get agent --deployment my-deployment --format json
 ```
 
 **JSON Output Structure:**
+
 ```json
 {
   "nodes": [
@@ -183,20 +190,20 @@ langstar graph get agent --deployment my-deployment --format json
 
 Nodes represent processing steps in your graph:
 
-| Node Type | Description |
-|-----------|-------------|
-| `__start__` | Entry point (control node, hidden in table output) |
-| `__end__` | Exit point (control node, hidden in table output) |
+| Node Type    | Description                                        |
+| ------------ | -------------------------------------------------- |
+| `__start__`  | Entry point (control node, hidden in table output) |
+| `__end__`    | Exit point (control node, hidden in table output)  |
 | User-defined | Your custom nodes (e.g., `Responder`, `Retriever`) |
 
 ### Edges
 
 Edges define the flow between nodes:
 
-| Edge Type | `conditional` | Description |
-|-----------|---------------|-------------|
-| Direct | `false` | Always follows this path |
-| Conditional | `true` | May follow based on runtime conditions |
+| Edge Type   | `conditional` | Description                            |
+| ----------- | ------------- | -------------------------------------- |
+| Direct      | `false`       | Always follows this path               |
+| Conditional | `true`        | May follow based on runtime conditions |
 
 ### Example: Simple Agent Graph
 
@@ -210,6 +217,7 @@ langgraph.json:
 ```
 
 Produces a graph like:
+
 ```
 __start__ → Responder → __end__
               ↓
@@ -307,12 +315,12 @@ If `langstar graph list` shows empty "Nodes" column:
 
 > **Note:** In v0.5.0, `langstar graph` was repurposed for graph inspection. Previous `langstar graph` commands for deployment management moved to `langstar deployment`.
 
-| Old Command (pre-v0.5.0) | New Command |
-|--------------------------|-------------|
-| `langstar graph list` | `langstar deployment list` |
+| Old Command (pre-v0.5.0)  | New Command                    |
+| ------------------------- | ------------------------------ |
+| `langstar graph list`     | `langstar deployment list`     |
 | `langstar graph get <id>` | `langstar deployment get <id>` |
-| `langstar graph create` | `langstar deployment create` |
-| `langstar graph delete` | `langstar deployment delete` |
+| `langstar graph create`   | `langstar deployment create`   |
+| `langstar graph delete`   | `langstar deployment delete`   |
 
 See [Command Migration Guide](./README.md#command-migration-v050) for details.
 

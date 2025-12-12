@@ -15,6 +15,7 @@ The LangSmith API provides full CRUD operations for model provider configuration
 **Finding**: No existing implementation for model providers/playground settings.
 
 Searched `./cli` and `./sdk` directories:
+
 - `cli/src/commands/eval.rs` - References `model_config` but for evaluation configuration, not provider management
 - `sdk/src/evaluations.rs` - Similar context, unrelated to playground settings
 
@@ -25,11 +26,13 @@ Searched `./cli` and `./sdk` directories:
 **Finding**: No Python SDK methods for playground settings.
 
 The `langsmith-sdk` Python client does NOT expose playground settings management:
+
 - `client.py` has `_get_settings()` for tenant settings only
 - No `list_playground_settings`, `create_playground_settings`, etc. methods
 - Test files reference `["langsmith", "playground", "PromptPlayground"]` in LangChain serialization format
 
 **Conclusion**: Langstar would be first to implement this API in an SDK. This means:
+
 1. No reference implementation to follow
 2. More flexibility in API design
 3. Opportunity to set precedent for other SDKs
@@ -38,16 +41,17 @@ The `langsmith-sdk` Python client does NOT expose playground settings management
 
 ### Endpoints
 
-| Method | Path | Operation |
-|--------|------|-----------|
-| GET | `/api/v1/playground-settings` | List all settings for tenant |
-| POST | `/api/v1/playground-settings` | Create new settings |
-| PATCH | `/api/v1/playground-settings/{id}` | Update existing settings |
-| DELETE | `/api/v1/playground-settings/{id}` | Delete settings |
+| Method | Path                               | Operation                    |
+| ------ | ---------------------------------- | ---------------------------- |
+| GET    | `/api/v1/playground-settings`      | List all settings for tenant |
+| POST   | `/api/v1/playground-settings`      | Create new settings          |
+| PATCH  | `/api/v1/playground-settings/{id}` | Update existing settings     |
+| DELETE | `/api/v1/playground-settings/{id}` | Delete settings              |
 
 ### Request/Response Schemas
 
 #### PlaygroundSettingsResponse
+
 ```json
 {
   "id": "uuid",
@@ -63,6 +67,7 @@ The `langsmith-sdk` Python client does NOT expose playground settings management
 ```
 
 #### PlaygroundSettingsCreateRequest
+
 ```json
 {
   "name": "string | null",
@@ -73,6 +78,7 @@ The `langsmith-sdk` Python client does NOT expose playground settings management
 ```
 
 #### PlaygroundSettingsUpdateRequest
+
 All fields optional.
 
 ### Settings Object Structure
@@ -99,13 +105,13 @@ The `settings` field uses LangChain's serialization format:
 
 ### Supported Providers (from sample data)
 
-| Provider | ID Path | Key Parameters |
-|----------|---------|----------------|
-| Anthropic | `langchain.chat_models.anthropic.ChatAnthropic` | model, temperature, max_tokens, top_k, top_p |
-| OpenAI | `langchain.chat_models.openai.ChatOpenAI` | model, temperature, top_p, base_url, presence_penalty, frequency_penalty |
-| Azure OpenAI | `langchain.chat_models.azure_openai.AzureChatOpenAI` | deployment_name, azure_endpoint, openai_api_version |
-| AWS Bedrock | `langchain_aws.chat_models.ChatBedrockConverse` | model_id, region_name |
-| AWS Bedrock (legacy) | `langchain.chat_models.bedrock.ChatBedrock` | model_id, region_name |
+| Provider             | ID Path                                              | Key Parameters                                                           |
+| -------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------ |
+| Anthropic            | `langchain.chat_models.anthropic.ChatAnthropic`      | model, temperature, max_tokens, top_k, top_p                             |
+| OpenAI               | `langchain.chat_models.openai.ChatOpenAI`            | model, temperature, top_p, base_url, presence_penalty, frequency_penalty |
+| Azure OpenAI         | `langchain.chat_models.azure_openai.AzureChatOpenAI` | deployment_name, azure_endpoint, openai_api_version                      |
+| AWS Bedrock          | `langchain_aws.chat_models.ChatBedrockConverse`      | model_id, region_name                                                    |
+| AWS Bedrock (legacy) | `langchain.chat_models.bedrock.ChatBedrock`          | model_id, region_name                                                    |
 
 ### Secret References
 
@@ -121,25 +127,28 @@ Credentials are NOT stored directly. Instead, they reference workspace secrets:
 }
 ```
 
-**Important**: Secrets management is a separate concern. The playground settings API only stores *references* to secrets, not the secrets themselves.
+**Important**: Secrets management is a separate concern. The playground settings API only stores _references_ to secrets, not the secrets themselves.
 
 ## 4. Complexity Assessment
 
 **Complexity**: Medium
 
 ### Straightforward Aspects
+
 - Standard CRUD operations
 - OpenAPI spec is complete
 - Authentication follows existing patterns (API Key, Tenant ID, Bearer)
 - Basic schema validation is typed
 
 ### Complex Aspects
+
 1. **Dynamic settings object**: The `settings` field is `additionalProperties: true` - a generic JSON object
 2. **Provider-specific validation**: Each provider has different required/optional fields
 3. **Secret references**: Must validate that referenced secrets exist (separate API)
 4. **LangChain serialization format**: Need to understand and potentially validate the `id`, `lc`, `type`, `kwargs` structure
 
 ### Dependencies
+
 - **Secrets management**: OUT OF SCOPE per scout requirements. Must be separate milestone.
 - Existing SDK authentication infrastructure can be reused
 
@@ -151,6 +160,7 @@ Sample response from `GET /api/v1/playground-settings` is available at:
 `reference/research/453-ls-langsmith-model-providers-playground-settings.json`
 
 Key observations:
+
 1. UUIDs are used for `id` field
 2. Timestamps use ISO 8601 format with microseconds
 3. All providers follow consistent LangChain serialization format
@@ -169,6 +179,7 @@ Before full implementation, consider running these experiments:
 **Decision**: Go
 
 **Rationale**:
+
 1. Full CRUD API exists and is documented in OpenAPI spec
 2. Clear business value: CLI management of model configurations for Prompt Hub
 3. Medium complexity is manageable
@@ -177,17 +188,17 @@ Before full implementation, consider running these experiments:
 
 ### Proposed Phases
 
-| Phase | Description |
-|-------|-------------|
-| 0 | Parent epic issue, milestone creation |
-| 1 | SDK: List playground settings |
-| 2 | SDK: Get single playground setting by ID |
-| 3 | SDK: Create playground setting |
-| 4 | SDK: Update playground setting |
-| 5 | SDK: Delete playground setting |
-| 6 | CLI: `langstar model-config list` |
-| 7 | CLI: `langstar model-config create/update/delete` |
-| 8 | Documentation and integration tests |
+| Phase | Description                                       |
+| ----- | ------------------------------------------------- |
+| 0     | Parent epic issue, milestone creation             |
+| 1     | SDK: List playground settings                     |
+| 2     | SDK: Get single playground setting by ID          |
+| 3     | SDK: Create playground setting                    |
+| 4     | SDK: Update playground setting                    |
+| 5     | SDK: Delete playground setting                    |
+| 6     | CLI: `langstar model-config list`                 |
+| 7     | CLI: `langstar model-config create/update/delete` |
+| 8     | Documentation and integration tests               |
 
 ### Out of Scope (Separate Milestones)
 

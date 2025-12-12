@@ -24,11 +24,11 @@ The existing infrastructure (GitHub releases, install.sh script, SHA256 checksum
 
 ### Current Distribution Channels
 
-| Channel | Description | Update Method |
-|---------|-------------|---------------|
-| GitHub Releases | Pre-built binaries | Manual download or install.sh |
-| install.sh | Official installer script | Re-run with `--version` |
-| Devcontainer Feature | For development environments | Feature version bump |
+| Channel              | Description                  | Update Method                 |
+| -------------------- | ---------------------------- | ----------------------------- |
+| GitHub Releases      | Pre-built binaries           | Manual download or install.sh |
+| install.sh           | Official installer script    | Re-run with `--version`       |
+| Devcontainer Feature | For development environments | Feature version bump          |
 
 ### GitHub Release Assets (v0.13.0)
 
@@ -41,6 +41,7 @@ langstar-0.13.0-aarch64-macos.tar.gz          + .sha256
 ### install.sh Capabilities
 
 The existing `scripts/install.sh` already supports:
+
 - `--version VERSION` - Install specific version (e.g., `--version 0.2.0`)
 - `--prefix DIR` - Custom installation directory
 - Platform auto-detection (Linux x86_64/aarch64, macOS x86_64/arm64)
@@ -60,14 +61,14 @@ The existing `scripts/install.sh` already supports:
 
 #### Features
 
-| Feature | Description |
-|---------|-------------|
-| GitHub Backend | Native GitHub Releases API integration |
-| Archive Support | tar.gz and zip extraction |
-| Binary Replacement | Uses `self_replace` crate for atomic replacement |
-| Version Comparison | Semver-based comparison with current version |
+| Feature               | Description                                         |
+| --------------------- | --------------------------------------------------- |
+| GitHub Backend        | Native GitHub Releases API integration              |
+| Archive Support       | tar.gz and zip extraction                           |
+| Binary Replacement    | Uses `self_replace` crate for atomic replacement    |
+| Version Comparison    | Semver-based comparison with current version        |
 | Checksum Verification | Optional SHA256/signatures via `signatures` feature |
-| Progress Indicators | Built-in download progress via `indicatif` |
+| Progress Indicators   | Built-in download progress via `indicatif`          |
 
 #### Basic Usage Pattern
 
@@ -88,11 +89,13 @@ println!("Update status: {:?}", status);
 #### Asset Naming Convention
 
 The `self_update` crate expects assets in the format:
+
 ```
 <asset>-<semver>-<platform>.<ext>
 ```
 
 Current langstar releases use:
+
 ```
 langstar-0.13.0-x86_64-linux-musl.tar.gz
 ```
@@ -101,11 +104,11 @@ langstar-0.13.0-x86_64-linux-musl.tar.gz
 
 ### Alternative Approaches
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| `self_update` crate | Mature, GitHub-native, minimal code | Additional dependency |
+| Approach                | Pros                                 | Cons                                |
+| ----------------------- | ------------------------------------ | ----------------------------------- |
+| `self_update` crate     | Mature, GitHub-native, minimal code  | Additional dependency               |
 | Shell out to install.sh | Zero new dependencies, battle-tested | Platform-specific, shell dependency |
-| Custom implementation | Full control | Significant development effort |
+| Custom implementation   | Full control                         | Significant development effort      |
 
 **Recommendation**: Use `self_update` crate for the cleanest, most maintainable solution.
 
@@ -116,6 +119,7 @@ langstar-0.13.0-x86_64-linux-musl.tar.gz
 Claude Code's update mechanism provides UX inspiration:
 
 ### Commands
+
 - `claude update` - Manual update to latest stable
 - Background auto-updates every 10 minutes
 - `DISABLE_AUTOUPDATER=1` to disable auto-updates
@@ -142,13 +146,13 @@ langstar update --check      # Check for updates without installing
 
 ### Currently Supported Platforms
 
-| Platform | Target | Status |
-|----------|--------|--------|
-| Linux x86_64 | x86_64-unknown-linux-musl | Released |
-| Linux ARM64 | aarch64-unknown-linux-musl | Released |
-| macOS ARM64 | aarch64-apple-darwin | Released |
-| macOS x86_64 | x86_64-apple-darwin | TODO in workflow |
-| Windows | x86_64-pc-windows-msvc | TODO in workflow |
+| Platform     | Target                     | Status           |
+| ------------ | -------------------------- | ---------------- |
+| Linux x86_64 | x86_64-unknown-linux-musl  | Released         |
+| Linux ARM64  | aarch64-unknown-linux-musl | Released         |
+| macOS ARM64  | aarch64-apple-darwin       | Released         |
+| macOS x86_64 | x86_64-apple-darwin        | TODO in workflow |
+| Windows      | x86_64-pc-windows-msvc     | TODO in workflow |
 
 ### Platform Detection
 
@@ -168,12 +172,12 @@ fn get_target_platform() -> &'static str {
 
 ### Installation Context Considerations
 
-| Context | Self-Update Appropriate? | Notes |
-|---------|-------------------------|-------|
-| User-local (`~/.local/bin`) | Yes | User has write permission |
-| System-wide (`/usr/local/bin`) | Conditional | May need sudo |
-| Devcontainer Feature | No | Should use feature version |
-| cargo install | Conditional | Prefer `cargo install langstar` |
+| Context                        | Self-Update Appropriate? | Notes                           |
+| ------------------------------ | ------------------------ | ------------------------------- |
+| User-local (`~/.local/bin`)    | Yes                      | User has write permission       |
+| System-wide (`/usr/local/bin`) | Conditional              | May need sudo                   |
+| Devcontainer Feature           | No                       | Should use feature version      |
+| cargo install                  | Conditional              | Prefer `cargo install langstar` |
 
 **Recommendation**: Self-update should detect installation context and warn or refuse if updating would fail (e.g., no write permissions).
 
@@ -189,11 +193,11 @@ fn get_target_platform() -> &'static str {
 
 ### Additional Security Options
 
-| Option | Effort | Value |
-|--------|--------|-------|
-| Verify checksums | Low | High - already have .sha256 files |
-| GPG signatures | Medium | Medium - adds complexity |
-| Code signing (macOS) | High | Medium - notarization requirements |
+| Option               | Effort | Value                              |
+| -------------------- | ------ | ---------------------------------- |
+| Verify checksums     | Low    | High - already have .sha256 files  |
+| GPG signatures       | Medium | Medium - adds complexity           |
+| Code signing (macOS) | High   | Medium - notarization requirements |
 
 **Recommendation**: Implement checksum verification (already supported by install.sh, leverage existing .sha256 files).
 
@@ -203,13 +207,13 @@ fn get_target_platform() -> &'static str {
 
 ### Technical Challenges
 
-| Challenge | Difficulty | Mitigation |
-|-----------|------------|------------|
-| Binary replacement while running | Low | `self_replace` handles this |
-| Platform detection | Low | Compile-time conditionals |
-| Permission issues | Medium | Detect and warn user |
-| Network failures | Low | Retry logic, clear errors |
-| Checksum verification | Low | Already have .sha256 files |
+| Challenge                        | Difficulty | Mitigation                  |
+| -------------------------------- | ---------- | --------------------------- |
+| Binary replacement while running | Low        | `self_replace` handles this |
+| Platform detection               | Low        | Compile-time conditionals   |
+| Permission issues                | Medium     | Detect and warn user        |
+| Network failures                 | Low        | Retry logic, clear errors   |
+| Checksum verification            | Low        | Already have .sha256 files  |
 
 ### Estimated Scope
 
@@ -233,11 +237,11 @@ None identified. All infrastructure exists.
 
 ### Potential Blockers
 
-| Blocker | Risk | Mitigation |
-|---------|------|------------|
-| musl binary compatibility | Low | Already releasing musl builds |
-| GitHub rate limiting | Low | Use authenticated requests if needed |
-| macOS Gatekeeper | Medium | Consider code signing later |
+| Blocker                   | Risk   | Mitigation                           |
+| ------------------------- | ------ | ------------------------------------ |
+| musl binary compatibility | Low    | Already releasing musl builds        |
+| GitHub rate limiting      | Low    | Use authenticated requests if needed |
+| macOS Gatekeeper          | Medium | Consider code signing later          |
 
 ---
 

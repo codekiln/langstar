@@ -21,6 +21,7 @@ This document describes testing and publishing workflows for the Langstar DevCon
 **Purpose**: Validates feature metadata and tests feature installation across multiple base images.
 
 **Triggers**:
+
 - Push to `main` branch when `.devcontainer/features/**` changes
 - Push of tags matching `v*` pattern
 - Pull requests that modify `.devcontainer/features/**`
@@ -29,6 +30,7 @@ This document describes testing and publishing workflows for the Langstar DevCon
 **Jobs**:
 
 #### Job 1: `validate-metadata`
+
 - **Purpose**: Validates feature metadata before testing
 - **Runs on**: `ubuntu-latest`
 - **Steps**:
@@ -45,6 +47,7 @@ This document describes testing and publishing workflows for the Langstar DevCon
        - Each option must have `description` field
 
 **Validation Requirements**:
+
 ```json
 {
   "id": "langstar",           // Required
@@ -61,6 +64,7 @@ This document describes testing and publishing workflows for the Langstar DevCon
 ```
 
 #### Job 2: `test-features`
+
 - **Purpose**: Tests feature installation on multiple base images
 - **Runs on**: `ubuntu-latest`
 - **Depends on**: `validate-metadata` job
@@ -73,6 +77,7 @@ This document describes testing and publishing workflows for the Langstar DevCon
   - `mcr.microsoft.com/devcontainers/base:alpine-3.18`
 
 **Test Process**:
+
 1. **Setup**:
    - Checkout code
    - Install Node.js 20
@@ -94,12 +99,14 @@ This document describes testing and publishing workflows for the Langstar DevCon
    - Tests can run in any order
 
 **Verification Commands**:
+
 ```bash
 # The workflow verifies:
 command -v langstar && langstar --version
 ```
 
 **Logging**:
+
 - Test logs saved to `logs/test-<base-image>.log`
 - Summary logs saved to `logs/summary-<base-image>.log`
 - Individual feature logs: `logs/build-<feature>-<base-image>.log` and `logs/exec-<feature>-<base-image>.log`
@@ -108,6 +115,7 @@ command -v langstar && langstar --version
   - On success: `test-logs-success-<base-image>` (7 day retention)
 
 **Success Criteria**:
+
 - Container builds successfully
 - Feature installs without errors
 - `langstar` command is available in PATH
@@ -118,15 +126,18 @@ command -v langstar && langstar --version
 **Purpose**: Publishes features to GitHub Container Registry (GHCR) and generates documentation.
 
 **Triggers**:
+
 - Manual dispatch only (`workflow_dispatch`)
 - Only runs from `main` branch
 
 **Permissions Required**:
+
 - `contents: write` - For creating PRs with generated docs
 - `pull-requests: write` - For PR creation
 - `packages: write` - For publishing to GHCR
 
 **Process**:
+
 1. Checkout repository
 2. Publish features using `devcontainers/action@v1`:
    - `publish-features: "true"`
@@ -135,11 +146,13 @@ command -v langstar && langstar --version
    - Uses `GITHUB_TOKEN` for authentication
 
 **What Happens**:
+
 - Features are published to GHCR: `ghcr.io/codekiln/langstar/langstar:1`
 - Documentation is auto-generated
 - PR is created with updated READMEs (if docs changed)
 
 **Important Notes**:
+
 - First publish creates package as **private** by default
 - Must manually change visibility to **public** in GHCR package settings
 - URL format: `https://github.com/users/codekiln/packages/container/langstar%2Flangstar/settings`
@@ -147,6 +160,7 @@ command -v langstar && langstar --version
 ## Feature Structure
 
 ### File: `.devcontainer/features/langstar/devcontainer-feature.json`
+
 ```json
 {
     "id": "langstar",
@@ -168,12 +182,14 @@ command -v langstar && langstar --version
 ```
 
 ### File: `.devcontainer/features/langstar/install.sh`
+
 - Executes the official installer script from `scripts/install.sh`
 - Handles root vs non-root installation
 - Verifies installation with `command -v langstar && langstar --version`
 - Uses `VERSION` environment variable (from feature options)
 
 **Key Installation Logic**:
+
 ```bash
 # Detects installation prefix based on privileges
 if [ "$(id -u)" -eq 0 ] || [ -w "/usr/local/bin" ]; then
@@ -188,6 +204,7 @@ curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/inst
 ```
 
 ### File: `.devcontainer/features/langstar/test.sh`
+
 - Smoke tests for manual verification
 - Tests:
   1. Binary in PATH
@@ -319,6 +336,7 @@ After pushing changes, verify:
 ### When to Publish
 
 Publish features manually via workflow dispatch when:
+
 - Feature changes are merged to `main`
 - New feature version is ready
 - Documentation needs regeneration

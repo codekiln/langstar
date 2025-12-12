@@ -16,6 +16,7 @@ Error: HTTP request failed: error decoding response body
 ## Hypothesis
 
 Initial hypothesis from issue description:
+
 - API might be returning truncated JSON responses
 - Content-Length mismatches causing early termination
 - Malformed JSON for certain error cases
@@ -23,6 +24,7 @@ Initial hypothesis from issue description:
 ## Investigation Methodology
 
 Created Python experiment (following pattern from `456-ls-secrets`) to:
+
 1. Test POST create and capture raw response
 2. Test GET by ID and capture raw response
 3. Test PATCH update and capture raw response
@@ -64,6 +66,7 @@ $ jq '."/api/v1/playground-settings/{playground_settings_id}" | keys' reference/
 ```
 
 **Supported operations:**
+
 - ✅ `GET /api/v1/playground-settings` - List all settings
 - ✅ `POST /api/v1/playground-settings` - Create new setting
 - ✅ `PATCH /api/v1/playground-settings/{playground_settings_id}` - Update existing setting
@@ -98,14 +101,14 @@ $ jq '."/api/v1/playground-settings/{playground_settings_id}" | keys' reference/
 
 ### Complete CRUD Test Results
 
-| Test | Status | HTTP Status | Response | Notes |
-|------|--------|-------------|----------|-------|
-| CREATE (POST) | ✅ PASS | 200/201 | Full JSON response | Successfully created setting |
-| GET by ID (GET) | ❌ FAIL | 405 | `{"detail":"Method Not Allowed"}` | **Endpoint doesn't exist** |
-| UPDATE (PATCH) | ✅ PASS | 200 | Full JSON response | Successfully updated setting |
-| DELETE (DELETE) | ✅ PASS | 200/204 | Empty/minimal response | Successfully deleted setting |
-| GET non-existent (GET) | ✅ Expected | 405 | `{"detail":"Method Not Allowed"}` | Same 405 as valid ID |
-| LIST all (GET) | ✅ PASS | 200 | Full JSON array (3697 bytes) | Successfully listed all settings |
+| Test                   | Status      | HTTP Status | Response                          | Notes                            |
+| ---------------------- | ----------- | ----------- | --------------------------------- | -------------------------------- |
+| CREATE (POST)          | ✅ PASS     | 200/201     | Full JSON response                | Successfully created setting     |
+| GET by ID (GET)        | ❌ FAIL     | 405         | `{"detail":"Method Not Allowed"}` | **Endpoint doesn't exist**       |
+| UPDATE (PATCH)         | ✅ PASS     | 200         | Full JSON response                | Successfully updated setting     |
+| DELETE (DELETE)        | ✅ PASS     | 200/204     | Empty/minimal response            | Successfully deleted setting     |
+| GET non-existent (GET) | ✅ Expected | 405         | `{"detail":"Method Not Allowed"}` | Same 405 as valid ID             |
+| LIST all (GET)         | ✅ PASS     | 200         | Full JSON array (3697 bytes)      | Successfully listed all settings |
 
 ### Key Observations
 
@@ -148,6 +151,7 @@ pub async fn delete_playground_settings(...) -> Result<()>
 **Issue**: Documentation claims `PlaygroundSettingsResponse` is "Returned by `GET /playground-settings/{id}`" but this endpoint doesn't exist.
 
 **Should be**:
+
 ```rust
 /// Returned by `GET /playground-settings` (list),
 /// `POST /playground-settings` (create),
@@ -200,6 +204,7 @@ assert_eq!(created.name, expected_name);
 The `test_model_config_create_update_delete_cycle` test should:
 
 **Current (broken) approach:**
+
 ```rust
 // Create config
 let create_output = create_cmd.assert().success().get_output().stdout.clone();
@@ -210,6 +215,7 @@ let config_id = create_json["id"].as_str().unwrap();
 ```
 
 **Correct approach:**
+
 ```rust
 // Create config - response contains full object
 let create_output = create_cmd.assert().success().get_output().stdout.clone();
@@ -231,6 +237,7 @@ assert!(all_configs.iter().any(|c| c.id == created_config.id));
 ### 2. Verify CLI Command Implementation (Priority: High)
 
 Check `cli/src/commands/model_config.rs` to ensure:
+
 - ✅ `get` command calls `list_playground_settings()` and filters by ID (NOT a direct GET by ID)
 - ✅ CLI commands match available SDK methods
 - ✅ CLI doesn't assume a GET-by-ID endpoint exists
@@ -240,12 +247,14 @@ Check `cli/src/commands/model_config.rs` to ensure:
 **File**: `sdk/src/playground_settings.rs:54`
 
 **Change from:**
+
 ```rust
 /// Returned by `GET /playground-settings`, `GET /playground-settings/{id}`,
 /// `POST /playground-settings`, `PATCH /playground-settings/{id}`
 ```
 
 **To:**
+
 ```rust
 /// Returned by `GET /playground-settings` (list),
 /// `POST /playground-settings` (create),
@@ -284,10 +293,12 @@ impl LangSmithClient {
 4. Deserialization fails because the schema doesn't match
 
 **The API is working correctly.** The LangSmith playground-settings API intentionally does not provide a GET-by-ID endpoint. Clients must use:
+
 - `GET /api/v1/playground-settings` (LIST) to retrieve all settings
 - Filter client-side by ID if needed
 
 **The fix is in the test code, not the API or SDK.** Integration tests should verify creation using:
+
 1. The response from the CREATE operation itself, or
 2. LIST all settings and filter by ID
 

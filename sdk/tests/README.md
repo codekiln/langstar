@@ -8,11 +8,13 @@
 ## Quick Reference
 
 **Run integration tests:**
+
 ```bash
 cargo test --test integration_test -- --ignored --nocapture
 ```
 
 **Prerequisites:**
+
 - `LANGSMITH_API_KEY` - Your LangSmith API key
 - `LANGSMITH_WORKSPACE_ID` - Your workspace ID (for deployment tests)
 

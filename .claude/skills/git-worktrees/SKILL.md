@@ -12,6 +12,7 @@ Manage git worktrees for parallel feature development in the Langstar project. C
 Git worktrees enable working on multiple branches simultaneously without switching context. In Langstar's issue-driven workflow, worktrees support parallel development while respecting the hierarchical PR flow where child issues branch from parent issue branches.
 
 **Key Benefits:**
+
 - Work on multiple issues simultaneously without branch switching
 - Maintain correct branch hierarchy for sub-issues
 - Isolated working directories prevent context confusion
@@ -24,12 +25,14 @@ Understanding Langstar's branching structure is critical for correct worktree us
 ### Branch Naming Convention
 
 **Format variations:**
+
 - With milestone & parent: `m<milestone_id>-p<parent_id>-i<issue_num>-<issue_slug>`
 - With parent only: `p<parent_id>-i<issue_num>-<issue_slug>`
 - With milestone only: `m<milestone_id>-i<issue_num>-<issue_slug>`
 - Standalone: `i<issue_num>-<issue_slug>`
 
 **Examples:**
+
 - `m8-p123-i234-add-authentication`
 - `p129-i132-gh-sub-issue`
 - `i7-add-authentication`
@@ -53,6 +56,7 @@ Issue #999 (child of #666)
 ```
 
 **Implications for Worktrees:**
+
 - Sub-issues must branch from parent issue's feature branch
 - Top-level issues branch from main or release branch
 - Target branch selection depends on issue hierarchy
@@ -64,6 +68,7 @@ Issue #999 (child of #666)
 **Naming pattern:** `wip/<branch-name>/`
 
 **Example mappings:**
+
 - Branch: `i130-add-authentication` → Worktree: `wip/i130-add-authentication/`
 - Branch: `m8-p123-i234-add-auth` → Worktree: `wip/m8-p123-i234-add-auth/`
 
@@ -78,11 +83,13 @@ The `wip/` directory is already configured in `.gitignore`, keeping worktrees ou
 Creates a new worktree with a new branch based on the specified target branch.
 
 **Template:**
+
 ```bash
 git worktree add -b <branch-name> wip/<branch-name> <target-branch>
 ```
 
 **Examples:**
+
 ```bash
 # Standalone issue
 git worktree add -b i130-add-auth wip/i130-add-auth main
@@ -92,6 +99,7 @@ git worktree add -b m8-p123-i234-add-auth wip/m8-p123-i234-add-auth main
 ```
 
 **Example 1: Top-level issue branching from release branch**
+
 ```bash
 # Issue #130: Add authentication (top-level)
 # Target: release/v0.2.0
@@ -99,6 +107,7 @@ git worktree add -b codekiln/130-add-authentication wip/codekiln-130-add-authent
 ```
 
 **Example 2: Sub-issue branching from parent's feature branch**
+
 ```bash
 # Issue #135: Implement JWT (child of #130)
 # Target: codekiln/130-add-authentication (parent branch)
@@ -106,6 +115,7 @@ git worktree add -b codekiln/135-implement-jwt wip/codekiln-135-implement-jwt co
 ```
 
 **What it does:**
+
 - Creates new directory at specified path
 - Creates new branch from target branch
 - Checks out the new branch in the worktree
@@ -118,6 +128,7 @@ git worktree add -b codekiln/135-implement-jwt wip/codekiln-135-implement-jwt co
 Displays all worktrees with path, commit hash, branch name, and status.
 
 **Usage:**
+
 ```bash
 git worktree list           # Basic list
 git worktree list -v        # Verbose with lock status
@@ -131,6 +142,7 @@ git worktree list --porcelain  # Script-friendly format
 Removes a worktree after PR merge. Must be run from outside the worktree being removed.
 
 **Usage:**
+
 ```bash
 git worktree remove wip/codekiln-130-auth              # Standard
 git worktree remove --force wip/codekiln-130-auth     # Force (with changes)
@@ -144,6 +156,7 @@ git worktree remove --force --force wip/locked        # Remove locked
 Cleans up administrative files for manually deleted worktrees.
 
 **Usage:**
+
 ```bash
 git worktree prune --dry-run    # Preview
 git worktree prune --verbose    # Prune with output
@@ -278,7 +291,6 @@ git worktree list
 
 **Result:** All stale worktree references cleaned up.
 
-
 ## Integration with Other Skills
 
 ### With `gh-sub-issue` Skill
@@ -286,6 +298,7 @@ git worktree list
 Use `gh-sub-issue` to determine correct target branches for sub-issues.
 
 **Query parent to find target branch:**
+
 ```bash
 gh sub-issue list 135 --relation parent
 # Output: #130 - Add user authentication
@@ -293,6 +306,7 @@ gh sub-issue list 135 --relation parent
 ```
 
 **Create worktree and link:**
+
 ```bash
 git worktree add -b codekiln/135-jwt wip/codekiln-135-jwt codekiln/130-add-authentication
 gh sub-issue add 130 135  # Link if not already linked
@@ -312,6 +326,7 @@ git worktree add -b codekiln/102-implement wip/codekiln-102-implement codekiln/1
 ### With Project GitHub Workflow
 
 **PR creation from worktrees:**
+
 ```bash
 cd wip/codekiln-130-add-authentication
 git push -u origin codekiln/130-add-authentication
@@ -323,30 +338,36 @@ gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 ### Location and Naming
 
 ✅ **Always use `wip/` directory**
+
 - Already gitignored
 - Consistent location for all worktrees
 - Easy to find and manage
 
 ✅ **Use consistent naming**
+
 - Worktree path matches branch name
 - Example: `i130-add-auth` → `wip/i130-add-auth`
 
 ❌ **Avoid**
+
 - Random locations (`../temp`, `~/worktrees/random`)
 - Vague names (`wip/test`, `wip/tmp`)
 
 ### Target Branch Selection
 
 ✅ **Top-level issues:**
+
 - Branch from `main` for regular features
 - Branch from `release/vX.Y.Z` for release-specific work
 
 ✅ **Sub-issues:**
+
 - Use `gh sub-issue list <issue> --relation parent` to find parent
 - Branch from parent issue's feature branch
 - Example: `codekiln/135-jwt` branches from `codekiln/130-auth`
 
 ❌ **Avoid**
+
 - Guessing parent branch names
 - Branching sub-issues from main (breaks PR hierarchy)
 - Creating worktrees without verifying target branch exists
@@ -354,22 +375,26 @@ gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 ### Cleanup Hygiene
 
 ✅ **Remove worktrees after PR merge**
+
 ```bash
 cd /workspace
 git worktree remove wip/codekiln-130-add-authentication
 ```
 
 ✅ **Run `git worktree prune` periodically**
+
 ```bash
 git worktree prune --verbose
 ```
 
 ✅ **Delete branches after merge (optional)**
+
 ```bash
 git branch -d codekiln/130-add-authentication
 ```
 
 ❌ **Avoid**
+
 - Leaving stale worktrees around indefinitely
 - Accumulating dozens of old worktrees
 - Manually deleting worktree directories without `git worktree remove`
@@ -377,21 +402,25 @@ git branch -d codekiln/130-add-authentication
 ### Development Workflow
 
 ✅ **Switch to main worktree before cleanup**
+
 ```bash
 cd /workspace  # Main worktree
 git worktree remove wip/old-feature
 ```
 
 ✅ **Verify target branch before creating worktree**
+
 ```bash
 git branch --list codekiln/130-add-authentication
 # If empty, fetch it first
 ```
 
 ✅ **Use descriptive paths matching issue numbers**
+
 - Makes it obvious which worktree corresponds to which issue
 
 ❌ **Avoid**
+
 - Removing worktrees while inside them (causes errors)
 - Creating worktrees from non-existent target branches
 - Mixing conventions (some in `wip/`, some elsewhere)
@@ -418,13 +447,13 @@ git branch --list codekiln/130-add-authentication
 
 ## Command Reference
 
-| Command | Purpose |
-|---------|---------|
-| `git worktree add -b <branch> <path> <target>` | Create worktree |
-| `git worktree list [-v]` | List all worktrees |
-| `git worktree remove [--force] <path>` | Remove worktree |
-| `git worktree prune [--dry-run]` | Clean stale references |
-| `git worktree lock/unlock <path>` | Prevent/allow removal |
+| Command                                        | Purpose                |
+| ---------------------------------------------- | ---------------------- |
+| `git worktree add -b <branch> <path> <target>` | Create worktree        |
+| `git worktree list [-v]`                       | List all worktrees     |
+| `git worktree remove [--force] <path>`         | Remove worktree        |
+| `git worktree prune [--dry-run]`               | Clean stale references |
+| `git worktree lock/unlock <path>`              | Prevent/allow removal  |
 
 ### Complete Workflow
 

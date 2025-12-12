@@ -5,10 +5,12 @@ Research report for [Issue #367](https://github.com/codekiln/langstar/issues/367
 ## Executive Summary
 
 The LangSmith Python SDK provides a flexible evaluation framework with two primary evaluator types:
+
 1. **Heuristic evaluators** - Deterministic, zero-cost evaluators from LangChain (exact_match, regex_match, string_distance, etc.)
 2. **LLM-as-judge evaluators** - Model-based evaluators using configurable LLMs (correctness, criteria, custom rubrics)
 
 Key architectural patterns:
+
 - Evaluators implement `RunEvaluator` interface with `evaluate_run(run, example)` signature
 - Results use `EvaluationResult` with `key`, `score` (numeric), `value` (categorical/string), and optional `comment`
 - Three feedback types: `continuous` (bounded numeric), `categorical` (enum values), `freeform` (text)
@@ -118,6 +120,7 @@ class RunEvaluator:
 Heuristic evaluators are deterministic, rule-based evaluators that don't require LLM calls. They are provided through LangChain's evaluation module and wrapped by `LangChainStringEvaluator`.
 
 **Key characteristics:**
+
 - Zero cost (no API calls)
 - Deterministic results
 - Fast execution
@@ -127,12 +130,12 @@ Heuristic evaluators are deterministic, rule-based evaluators that don't require
 
 From `langsmith/evaluation/integrations/_langchain.py:30-144`:
 
-| Evaluator | Description | Requires Reference | Requires Input |
-|-----------|-------------|-------------------|----------------|
-| `exact_match` | Exact string equality check | Yes | No |
-| `regex_match` | Regex pattern matching | Yes | No |
-| `string_distance` | Levenshtein/other distance metrics | Yes | No |
-| `embedding_distance` | Semantic similarity via embeddings | Yes | No |
+| Evaluator            | Description                        | Requires Reference | Requires Input |
+| -------------------- | ---------------------------------- | ------------------ | -------------- |
+| `exact_match`        | Exact string equality check        | Yes                | No             |
+| `regex_match`        | Regex pattern matching             | Yes                | No             |
+| `string_distance`    | Levenshtein/other distance metrics | Yes                | No             |
+| `embedding_distance` | Semantic similarity via embeddings | Yes                | No             |
 
 ### 2.3 Usage Pattern
 
@@ -246,6 +249,7 @@ class LLMEvaluator(RunEvaluator):
 ```
 
 **Key features:**
+
 - Uses LangChain's `init_chat_model()` for model instantiation
 - Supports any provider via `model_provider` parameter
 - Uses structured output (JSON schema) for reliable scoring
@@ -450,11 +454,11 @@ class FeedbackConfig(TypedDict, total=False):
 
 ### 4.2 Feedback Types Comparison
 
-| Type | Score Field | Value Field | Use Case |
-|------|-------------|-------------|----------|
-| **continuous** | `float` in [min, max] | Optional string | Numeric scores (0-1, 1-10, etc.) |
-| **categorical** | Optional numeric | `str` from enum | Y/N, Pass/Fail, A/B/C ratings |
-| **freeform** | None | `str` | Comments, corrections, explanations |
+| Type            | Score Field           | Value Field     | Use Case                            |
+| --------------- | --------------------- | --------------- | ----------------------------------- |
+| **continuous**  | `float` in [min, max] | Optional string | Numeric scores (0-1, 1-10, etc.)    |
+| **categorical** | Optional numeric      | `str` from enum | Y/N, Pass/Fail, A/B/C ratings       |
+| **freeform**    | None                  | `str`           | Comments, corrections, explanations |
 
 ### 4.3 FeedbackCategory Structure
 
@@ -520,6 +524,7 @@ def create_feedback(
 ```
 
 **Key parameters:**
+
 - `run_id` / `trace_id` - Target run for feedback
 - `key` - Metric name (e.g., "accuracy", "helpfulness")
 - `score` - Numeric value (for continuous feedback)
@@ -553,6 +558,7 @@ def evaluate(
 ```
 
 **Type definitions:**
+
 ```python
 TARGET_T = Union[Callable[[dict], dict], Callable[[dict, dict], dict]]
 DATA_T = Union[str, uuid.UUID, Iterable[Example], Dataset]
@@ -592,6 +598,7 @@ def eval4(inputs: dict, outputs: dict, attachments: dict) -> dict:
 ```
 
 Supported argument names:
+
 - `run` - Full Run object
 - `example` - Full Example object
 - `inputs` - `example.inputs`
@@ -633,13 +640,13 @@ pub struct FeedbackConfig {
 
 Based on the client methods:
 
-| Operation | HTTP Method | Endpoint |
-|-----------|-------------|----------|
-| Create feedback | POST | `/feedback` |
-| List feedback | GET | `/feedback` |
-| Get feedback | GET | `/feedback/{feedback_id}` |
-| Update feedback | PATCH | `/feedback/{feedback_id}` |
-| Delete feedback | DELETE | `/feedback/{feedback_id}` |
+| Operation       | HTTP Method | Endpoint                  |
+| --------------- | ----------- | ------------------------- |
+| Create feedback | POST        | `/feedback`               |
+| List feedback   | GET         | `/feedback`               |
+| Get feedback    | GET         | `/feedback/{feedback_id}` |
+| Update feedback | PATCH       | `/feedback/{feedback_id}` |
+| Delete feedback | DELETE      | `/feedback/{feedback_id}` |
 
 ### 6.3 CLI Commands Pattern
 
@@ -674,13 +681,13 @@ Online evaluation (also called "automation rules" or "run rules") allows you to 
 
 **Key differences from offline evaluation:**
 
-| Aspect | Offline Evaluation | Online Evaluation |
-|--------|-------------------|------------------|
-| Execution | Client-side (SDK) | Server-side (LangSmith) |
-| Trigger | Manual via `evaluate()` | Automatic on trace ingestion |
-| Sampling | All dataset examples | Configurable sampling rate |
-| Code Runtime | Your environment | LangSmith sandboxed environment |
-| Languages | Python/TypeScript | Python or JavaScript |
+| Aspect       | Offline Evaluation      | Online Evaluation               |
+| ------------ | ----------------------- | ------------------------------- |
+| Execution    | Client-side (SDK)       | Server-side (LangSmith)         |
+| Trigger      | Manual via `evaluate()` | Automatic on trace ingestion    |
+| Sampling     | All dataset examples    | Configurable sampling rate      |
+| Code Runtime | Your environment        | LangSmith sandboxed environment |
+| Languages    | Python/TypeScript       | Python or JavaScript            |
 
 ### 7.2 Automation Rules (RunRules)
 
@@ -688,15 +695,15 @@ Automation rules configure how online evaluators are triggered and applied.
 
 #### 7.2.1 API Endpoints
 
-| Operation | Method | Endpoint |
-|-----------|--------|----------|
-| List rules | GET | `/api/v1/runs/rules` |
-| Create rule | POST | `/api/v1/runs/rules` |
-| Update rule | PATCH | `/api/v1/runs/rules/{rule_id}` |
-| Delete rule | DELETE | `/api/v1/runs/rules/{rule_id}` |
-| Get rule logs | GET | `/api/v1/runs/rules/{rule_id}/logs` |
-| Trigger rule manually | POST | `/api/v1/runs/rules/{rule_id}/trigger` |
-| Trigger all rules | POST | `/api/v1/runs/rules/trigger` |
+| Operation             | Method | Endpoint                               |
+| --------------------- | ------ | -------------------------------------- |
+| List rules            | GET    | `/api/v1/runs/rules`                   |
+| Create rule           | POST   | `/api/v1/runs/rules`                   |
+| Update rule           | PATCH  | `/api/v1/runs/rules/{rule_id}`         |
+| Delete rule           | DELETE | `/api/v1/runs/rules/{rule_id}`         |
+| Get rule logs         | GET    | `/api/v1/runs/rules/{rule_id}/logs`    |
+| Trigger rule manually | POST   | `/api/v1/runs/rules/{rule_id}/trigger` |
+| Trigger all rules     | POST   | `/api/v1/runs/rules/trigger`           |
 
 #### 7.2.2 RunRulesCreateSchema
 
@@ -745,11 +752,13 @@ interface RunRulesCreateSchema {
 #### 7.2.3 Sampling Configuration
 
 The `sampling_rate` field controls what percentage of matching runs are evaluated:
+
 - `1.0` = 100% of runs (all matching runs)
 - `0.1` = 10% of runs (random sampling)
 - `0.01` = 1% of runs
 
 **Example:** To evaluate 10% of production traces:
+
 ```json
 {
   "display_name": "Production Quality Check",
@@ -763,11 +772,11 @@ The `sampling_rate` field controls what percentage of matching runs are evaluate
 
 Three filter types are available for targeting specific runs:
 
-| Filter Type | Description | Example |
-|-------------|-------------|---------|
-| `filter` | Run-level attributes | `eq(status, "error")` |
+| Filter Type    | Description           | Example                       |
+| -------------- | --------------------- | ----------------------------- |
+| `filter`       | Run-level attributes  | `eq(status, "error")`         |
 | `trace_filter` | Root trace attributes | `has(metadata, "production")` |
-| `tree_filter` | Run tree structure | Run type, depth, etc. |
+| `tree_filter`  | Run tree structure    | Run type, depth, etc.         |
 
 ### 7.3 Code Evaluators
 
@@ -785,10 +794,12 @@ interface CodeEvaluatorTopLevel {
 #### 7.3.2 Execution Environment
 
 **Languages supported:**
+
 - Python (default)
 - JavaScript
 
 **Function signature (Python):**
+
 ```python
 def evaluate(inputs: dict, outputs: dict, reference_outputs: dict | None) -> dict:
     """
@@ -809,6 +820,7 @@ def evaluate(inputs: dict, outputs: dict, reference_outputs: dict | None) -> dic
 ```
 
 **Function signature (JavaScript):**
+
 ```javascript
 function evaluate({ inputs, outputs, referenceOutputs }) {
     return {
@@ -822,6 +834,7 @@ function evaluate({ inputs, outputs, referenceOutputs }) {
 #### 7.3.3 Example Code Evaluators
 
 **Exact Match (Python):**
+
 ```python
 def evaluate(inputs, outputs, reference_outputs):
     if not reference_outputs:
@@ -837,6 +850,7 @@ def evaluate(inputs, outputs, reference_outputs):
 ```
 
 **Contains Check (Python):**
+
 ```python
 def evaluate(inputs, outputs, reference_outputs):
     output = outputs.get("output", "").lower()
@@ -849,6 +863,7 @@ def evaluate(inputs, outputs, reference_outputs):
 ```
 
 **JSON Validity (Python):**
+
 ```python
 import json
 
@@ -862,6 +877,7 @@ def evaluate(inputs, outputs, reference_outputs):
 ```
 
 **Regex Match (Python):**
+
 ```python
 import re
 
@@ -879,6 +895,7 @@ def evaluate(inputs, outputs, reference_outputs):
 #### 7.3.4 Available Libraries
 
 The server-side execution environment provides access to standard library modules. Based on the common evaluator patterns, the following are typically available:
+
 - `json` - JSON parsing
 - `re` - Regular expressions
 - `math` - Math operations
@@ -919,14 +936,15 @@ interface EvaluatorStructuredOutput {
 
 The `variable_mapping` field maps template variables to data sources:
 
-| Source Path | Description |
-|-------------|-------------|
-| `run.inputs` | Run input data |
-| `run.outputs` | Run output data |
-| `example.inputs` | Dataset example inputs |
+| Source Path       | Description                      |
+| ----------------- | -------------------------------- |
+| `run.inputs`      | Run input data                   |
+| `run.outputs`     | Run output data                  |
+| `example.inputs`  | Dataset example inputs           |
 | `example.outputs` | Dataset example expected outputs |
 
 **Example:**
+
 ```json
 {
   "structured": {
@@ -957,16 +975,16 @@ The `variable_mapping` field maps template variables to data sources:
 
 ### 7.5 Online vs Offline Evaluation Decision Matrix
 
-| Use Case | Recommended | Rationale |
-|----------|-------------|-----------|
-| Development iteration | Offline | Fast feedback, local debugging |
-| CI/CD testing | Offline | Deterministic, versioned |
-| Production monitoring | Online | Automatic, sampling |
-| Cost optimization | Online | Server-side, sampling |
-| Custom complex logic | Offline | Full library access |
-| Simple checks | Online | Code evaluators |
-| LLM-as-judge at scale | Online | Server handles rate limits |
-| Dataset experiments | Offline | Full control |
+| Use Case              | Recommended | Rationale                      |
+| --------------------- | ----------- | ------------------------------ |
+| Development iteration | Offline     | Fast feedback, local debugging |
+| CI/CD testing         | Offline     | Deterministic, versioned       |
+| Production monitoring | Online      | Automatic, sampling            |
+| Cost optimization     | Online      | Server-side, sampling          |
+| Custom complex logic  | Offline     | Full library access            |
+| Simple checks         | Online      | Code evaluators                |
+| LLM-as-judge at scale | Online      | Server handles rate limits     |
+| Dataset experiments   | Offline     | Full control                   |
 
 ### 7.6 API Implementation Notes for Langstar
 
@@ -1049,18 +1067,19 @@ This section documents DX (developer experience) design decisions for implementi
 
 The langstar CLI follows consistent patterns across commands:
 
-| Pattern | `runs query` | `dataset` | Recommended for `eval` |
-|---------|--------------|-----------|------------------------|
-| **Filter syntax** | `--filter <expr>` | - | `--filter <expr>` |
-| **Convenience filters** | `--tag`, `--meta KEY=VALUE` | `--name`, `--name-contains` | `--evaluator-type`, `--score-key` |
-| **Output format** | `-o/--output table|json|json-pretty` | `--json` flag | `-o/--output` (prefer explicit) |
-| **Limit** | `-l/--limit N` | `-l/--limit N` | `-l/--limit N` |
-| **Resource ID** | `--project UUID` | `<dataset_id>` positional | See 8.3.1 |
-| **Time filters** | `--since`, `--until`, `--preset` | - | `--since`, `--preset` |
+| Pattern                 | `runs query`                     | `dataset`                   | Recommended for `eval`            |
+| ----------------------- | -------------------------------- | --------------------------- | --------------------------------- |
+| **Filter syntax**       | `--filter <expr>`                | -                           | `--filter <expr>`                 |
+| **Convenience filters** | `--tag`, `--meta KEY=VALUE`      | `--name`, `--name-contains` | `--evaluator-type`, `--score-key` |
+| **Output format**       | `-o/--output table               | json                        | json-pretty`                      |
+| **Limit**               | `-l/--limit N`                   | `-l/--limit N`              | `-l/--limit N`                    |
+| **Resource ID**         | `--project UUID`                 | `<dataset_id>` positional   | See 8.3.1                         |
+| **Time filters**        | `--since`, `--until`, `--preset` | -                           | `--since`, `--preset`             |
 
 #### 8.1.2 Argument Naming Conventions
 
 Following existing patterns:
+
 - **Long names**: kebab-case (`--evaluator-type`, not `--evaluator_type`)
 - **Short names**: Single letter for frequent options (`-l` for limit, `-o` for output)
 - **Flags**: `--json`, `--yes`/`-y` for confirmation skip
@@ -1106,12 +1125,12 @@ pub enum EvaluatorType {
 
 #### 8.2.3 Heuristic Evaluator Options
 
-| Evaluator | Options | Example |
-|-----------|---------|---------|
-| `exact_match` | `--ignore-case`, `--ignore-whitespace` | `--evaluator exact_match --ignore-case` |
-| `contains` | `--ignore-case`, `--expected <STRING>` | `--evaluator contains --expected "success"` |
-| `regex_match` | `--pattern <REGEX>`, `--flags <FLAGS>` | `--evaluator regex_match --pattern "\\d+"` |
-| `json_valid` | `--schema-file <PATH>` (optional) | `--evaluator json_valid` |
+| Evaluator         | Options                                    | Example                                            |
+| ----------------- | ------------------------------------------ | -------------------------------------------------- |
+| `exact_match`     | `--ignore-case`, `--ignore-whitespace`     | `--evaluator exact_match --ignore-case`            |
+| `contains`        | `--ignore-case`, `--expected <STRING>`     | `--evaluator contains --expected "success"`        |
+| `regex_match`     | `--pattern <REGEX>`, `--flags <FLAGS>`     | `--evaluator regex_match --pattern "\\d+"`         |
+| `json_valid`      | `--schema-file <PATH>` (optional)          | `--evaluator json_valid`                           |
 | `string_distance` | `--metric <METRIC>`, `--threshold <FLOAT>` | `--evaluator string_distance --metric levenshtein` |
 
 #### 8.2.4 LLM-as-Judge Configuration
@@ -1133,17 +1152,17 @@ langstar eval run <id> \
 
 **LLM Judge Options:**
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `--judge-model` | String | `gpt-4o` | Model name for LLM judge |
-| `--judge-provider` | Enum | `openai` | Model provider (openai, anthropic, etc.) |
-| `--rubric` | String | - | Inline rubric text |
-| `--rubric-file` | Path | - | Path to rubric file |
-| `--score-type` | Enum | `categorical` | `categorical` or `continuous` |
-| `--score-choices` | String | `Y,N` | Comma-separated categorical choices |
-| `--score-min` | Float | `0.0` | Minimum for continuous scores |
-| `--score-max` | Float | `1.0` | Maximum for continuous scores |
-| `--include-explanation` | Flag | false | Request chain-of-thought reasoning |
+| Option                  | Type   | Default       | Description                              |
+| ----------------------- | ------ | ------------- | ---------------------------------------- |
+| `--judge-model`         | String | `gpt-4o`      | Model name for LLM judge                 |
+| `--judge-provider`      | Enum   | `openai`      | Model provider (openai, anthropic, etc.) |
+| `--rubric`              | String | -             | Inline rubric text                       |
+| `--rubric-file`         | Path   | -             | Path to rubric file                      |
+| `--score-type`          | Enum   | `categorical` | `categorical` or `continuous`            |
+| `--score-choices`       | String | `Y,N`         | Comma-separated categorical choices      |
+| `--score-min`           | Float  | `0.0`         | Minimum for continuous scores            |
+| `--score-max`           | Float  | `1.0`         | Maximum for continuous scores            |
+| `--include-explanation` | Flag   | false         | Request chain-of-thought reasoning       |
 
 ### 8.3 CLI Command Structure
 
@@ -1205,6 +1224,7 @@ langstar eval batch \
 #### 8.4.1 Single Run Evaluation Output
 
 **Table format (default):**
+
 ```
 Evaluation Results for run 123e4567
 
@@ -1215,6 +1235,7 @@ accuracy     -        pass     Output matches expected
 ```
 
 **JSON format (`-o json`):**
+
 ```json
 {
   "run_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -1232,6 +1253,7 @@ accuracy     -        pass     Output matches expected
 #### 8.4.2 LLM Judge Output with Reasoning
 
 **Table format with explanation:**
+
 ```
 Evaluation Results for run 123e4567
 
@@ -1245,6 +1267,7 @@ a key detail about error handling.
 ```
 
 **JSON format:**
+
 ```json
 {
   "run_id": "123e4567-e89b-12d3-a456-426614174000",
@@ -1267,6 +1290,7 @@ a key detail about error handling.
 #### 8.4.3 Batch Evaluation Summary
 
 **Table format:**
+
 ```
 Batch Evaluation Summary (100 runs)
 
@@ -1281,6 +1305,7 @@ Detailed results: langstar eval results <EXPERIMENT_ID>
 #### 8.4.4 Machine-Readable Batch Output
 
 **JSONL format (`-o jsonl`):**
+
 ```jsonl
 {"run_id":"123e4567...","key":"exact_match","score":1.0}
 {"run_id":"223e4567...","key":"exact_match","score":0.0}
@@ -1312,6 +1337,7 @@ ignore_whitespace = true
 ```
 
 **Usage:**
+
 ```bash
 # Use a preset
 langstar eval run <ID> --preset production_check
@@ -1322,9 +1348,9 @@ langstar eval run <ID> --preset production_check --judge-model gpt-4-turbo
 
 #### 8.5.2 Environment Variable Mapping
 
-| Env Var | Config Key | CLI Flag | Precedence |
-|---------|------------|----------|------------|
-| `LANGSTAR_EVAL_MODEL` | `eval.default_judge_model` | `--judge-model` | CLI > Env > Config |
+| Env Var                  | Config Key                    | CLI Flag           | Precedence         |
+| ------------------------ | ----------------------------- | ------------------ | ------------------ |
+| `LANGSTAR_EVAL_MODEL`    | `eval.default_judge_model`    | `--judge-model`    | CLI > Env > Config |
 | `LANGSTAR_EVAL_PROVIDER` | `eval.default_judge_provider` | `--judge-provider` | CLI > Env > Config |
 
 ### 8.6 Error Handling and User Feedback
@@ -1332,6 +1358,7 @@ langstar eval run <ID> --preset production_check --judge-model gpt-4-turbo
 #### 8.6.1 Progress Indicators
 
 For batch operations:
+
 ```
 Evaluating runs... [████████░░░░] 42/100 (llm_judge)
 ```
@@ -1356,15 +1383,15 @@ Hint: Use --reference-dataset <ID> or ensure the run has associated example data
 
 ### 8.7 Design Decision Summary
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Evaluator selection | `--evaluator <TYPE>` | Consistent with `--run-type` in runs query |
-| Judge model config | `--judge-model`, `--judge-provider` | Explicit, matches SDK patterns |
-| Rubric input | `--rubric` or `--rubric-file` | Flexible for inline or file-based |
-| Score type | `--score-type categorical|continuous` | Matches SDK's CategoricalScoreConfig/ContinuousScoreConfig |
-| Output format | `-o/--output table|json|jsonl` | Consistent with runs query |
-| Batch filtering | Reuse runs query filter syntax | DX consistency, zero learning curve |
-| Config presets | `[eval.presets.*]` in config | Reduces repetition for common workflows |
+| Decision            | Choice                              | Rationale                                  |
+| ------------------- | ----------------------------------- | ------------------------------------------ |
+| Evaluator selection | `--evaluator <TYPE>`                | Consistent with `--run-type` in runs query |
+| Judge model config  | `--judge-model`, `--judge-provider` | Explicit, matches SDK patterns             |
+| Rubric input        | `--rubric` or `--rubric-file`       | Flexible for inline or file-based          |
+| Score type          | `--score-type categorical           | continuous`                                |
+| Output format       | `-o/--output table                  | json                                       |
+| Batch filtering     | Reuse runs query filter syntax      | DX consistency, zero learning curve        |
+| Config presets      | `[eval.presets.*]` in config        | Reduces repetition for common workflows    |
 
 ### 8.8 Future Considerations
 

@@ -9,21 +9,22 @@
 ## Purpose
 
 These fragments are extracted subsets of the full OpenAPI spec, optimized for:
+
 - AI context window efficiency (small file sizes)
 - Focused reference for graph-related features
 - Quick lookup without loading full spec
 
 ## Fragments
 
-| File | Size | Purpose | jq Query | Last Updated |
-|------|------|---------|----------|--------------|
-| `graph-endpoint.json` | 1KB | GET /assistants/{id}/graph endpoint | See below | 2025-12-05 |
-| `subgraphs-endpoints.json` | 3.5KB | GET /assistants/{id}/subgraphs endpoints | See below | 2025-12-05 |
-| `assistants-search-endpoint.json` | 1.5KB | POST /assistants/search endpoint | See below | 2025-12-05 |
-| `schemas-endpoint.json` | 1.5KB | GET /assistants/{id}/schemas endpoint | See below | 2025-12-05 |
-| `graph-schemas.json` | 3KB | GraphSchema, Subgraphs types | See below | 2025-12-05 |
-| `assistant-schema.json` | 2KB | Assistant type (has graph_id) | See below | 2025-12-05 |
-| `assistant-search-request-schema.json` | 2KB | AssistantSearchRequest type | See below | 2025-12-05 |
+| File                                   | Size  | Purpose                                  | jq Query  | Last Updated |
+| -------------------------------------- | ----- | ---------------------------------------- | --------- | ------------ |
+| `graph-endpoint.json`                  | 1KB   | GET /assistants/{id}/graph endpoint      | See below | 2025-12-05   |
+| `subgraphs-endpoints.json`             | 3.5KB | GET /assistants/{id}/subgraphs endpoints | See below | 2025-12-05   |
+| `assistants-search-endpoint.json`      | 1.5KB | POST /assistants/search endpoint         | See below | 2025-12-05   |
+| `schemas-endpoint.json`                | 1.5KB | GET /assistants/{id}/schemas endpoint    | See below | 2025-12-05   |
+| `graph-schemas.json`                   | 3KB   | GraphSchema, Subgraphs types             | See below | 2025-12-05   |
+| `assistant-schema.json`                | 2KB   | Assistant type (has graph_id)            | See below | 2025-12-05   |
+| `assistant-search-request-schema.json` | 2KB   | AssistantSearchRequest type              | See below | 2025-12-05   |
 
 ## Extraction Commands
 
@@ -73,6 +74,7 @@ jq '.components.schemas.AssistantSearchRequest' \
 **Endpoint**: `POST /assistants/search`
 
 No direct `/graphs` endpoint exists. Graphs are discovered by:
+
 1. Searching assistants: `POST /assistants/search`
 2. Extracting unique `graph_id` values from assistants
 
@@ -95,6 +97,7 @@ curl -H "x-api-key: $LANGSMITH_API_KEY" \
 ```
 
 **Response structure** (not fully documented in OpenAPI):
+
 ```json
 {
   "nodes": [
@@ -121,6 +124,7 @@ Returns map of subgraph namespace to schema metadata.
 ## Notes on OpenAPI Spec Quality
 
 The graph topology endpoint (`/assistants/{id}/graph`) has a loose response schema:
+
 ```json
 {
   "additionalProperties": { "items": { "type": "object" }, "type": "array" },

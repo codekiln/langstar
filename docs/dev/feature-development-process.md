@@ -13,21 +13,21 @@ This document codifies the best practices and standard phases for implementing n
 
 Each API → CLI feature follows a **12-phase process** (plus optional scouting phase 0.0):
 
-| Phase | Name | Goal | Deliverable |
-|-------|------|------|-------------|
-| **0.0** | **Pre-Epic Scouting (Optional)** | **Gather research and technical context** | **Scout research report** |
-| 0 | Epic Setup | Establish tracking structure | Parent issue, milestone, sub-issues |
-| 1 | Research | Understand SDK precedent | Research report in `reference/research/` |
-| 2 | Design | Ensure DX consistency and integration | Design decisions documented in research report |
-| 3 | OpenAPI Validation | Verify design against spec | Validation report + extracted schemas |
-| 4 | SDK Types | Implement Rust types | `sdk/src/{feature}.rs` types |
-| 5 | SDK Client | Implement client methods | Client methods in SDK |
-| 6 | CLI Commands | Implement CLI commands | `cli/src/commands/{feature}.rs` |
-| 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones:test-plan` |
-| 8 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
-| 9 | Test Audit | Verify test compliance | Audit report via `/gh-milestones:test-audit` |
-| 10 | Documentation | Document usage | README updates, implementation docs |
-| **11** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
+| Phase   | Name                             | Goal                                      | Deliverable                                       |
+| ------- | -------------------------------- | ----------------------------------------- | ------------------------------------------------- |
+| **0.0** | **Pre-Epic Scouting (Optional)** | **Gather research and technical context** | **Scout research report**                         |
+| 0       | Epic Setup                       | Establish tracking structure              | Parent issue, milestone, sub-issues               |
+| 1       | Research                         | Understand SDK precedent                  | Research report in `reference/research/`          |
+| 2       | Design                           | Ensure DX consistency and integration     | Design decisions documented in research report    |
+| 3       | OpenAPI Validation               | Verify design against spec                | Validation report + extracted schemas             |
+| 4       | SDK Types                        | Implement Rust types                      | `sdk/src/{feature}.rs` types                      |
+| 5       | SDK Client                       | Implement client methods                  | Client methods in SDK                             |
+| 6       | CLI Commands                     | Implement CLI commands                    | `cli/src/commands/{feature}.rs`                   |
+| 7       | Test Planning                    | Generate comprehensive test plan          | Test plan document via `/gh-milestones:test-plan` |
+| 8       | Testing                          | Ensure quality                            | Unit tests (mocked) + integration tests           |
+| 9       | Test Audit                       | Verify test compliance                    | Audit report via `/gh-milestones:test-audit`      |
+| 10      | Documentation                    | Document usage                            | README updates, implementation docs               |
+| **11**  | **Milestone Release**            | **Mark milestone as shipped**             | **Closed milestone linked to GitHub release**     |
 
 **Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 11 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) and Phase 9 (Test Audit) were added to formalize comprehensive test planning and compliance verification (Issue #634).
 
@@ -37,15 +37,17 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 
 ### When to Use Pre-Epic Scouting
 
-For new API features where you need **preliminary research and technical context**, create a scout issue to gather knowledge *before* authoring the milestone's Phase 0 parent issue.
+For new API features where you need **preliminary research and technical context**, create a scout issue to gather knowledge _before_ authoring the milestone's Phase 0 parent issue.
 
 **Use scout issues when**:
+
 - ✅ Adding support for a new LangSmith/LangGraph API feature
 - ✅ Need to understand API patterns and SDK precedents before writing tickets
 - ✅ Want to explore the solution space through experimentation
 - ✅ Gathering technical context to inform milestone structure and ticket authoring
 
 **Skip scout issues when**:
+
 - ❌ Fixing a bug in existing functionality (scope is already clear)
 - ❌ Small enhancements to existing commands (patterns already established)
 - ❌ Infrastructure changes (devcontainer, CI/CD)
@@ -58,6 +60,7 @@ Create an exploratory research issue using this pattern:
 **Title Format**: `[Scout] Research {feature-name} API patterns and technical context`
 
 **Required Sections**:
+
 - **Purpose**: Gather research and knowledge for milestone planning
 - **Scope**: What to research (NOT implementation)
 - **Deliverables**: Research report, SDK notes, optional experiments
@@ -68,6 +71,7 @@ Create an exploratory research issue using this pattern:
 ### Scout Issue Scope
 
 **Focus on research and knowledge gathering, do not implement.** Activities include:
+
 1. Search existing langstar code in `./cli` and `./sdk` for related implementations
 2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
 3. Identify relevant API endpoints and request/response shapes
@@ -99,9 +103,10 @@ Create an exploratory research issue using this pattern:
 
 ### Relationship to Milestone
 
-**Key**: Scout issues exist *before* the milestone is created.
+**Key**: Scout issues exist _before_ the milestone is created.
 
 **Workflow**:
+
 1. Create scout issue (no milestone yet)
 2. Complete scout research → PR directly to main
 3. Review findings and technical insights
@@ -111,18 +116,21 @@ Create an exploratory research issue using this pattern:
 ### Benefits of Pre-Epic Scouting
 
 **Knowledge Foundation**:
+
 - Gather technical context before authoring milestone tickets
 - Document API patterns and SDK precedents
 - Create reusable research artifacts
 - Understand the problem domain through experimentation
 
 **Better Milestone Planning**:
+
 - Parent issue scope is informed by actual research, not assumptions
 - Sub-issue breakdown reflects discovered patterns
 - Initial tickets target the right technical approach
 - Open questions are identified upfront
 
 **Reduced Uncertainty**:
+
 - Experimentation validates assumptions early
 - API behavior is understood before implementation
 - Technical integration points are documented
@@ -141,6 +149,7 @@ Create a milestone-level issue following the naming convention:
 **Example**: `ls-runs-query milestone - Be able to list and filter runs using langstar CLI`
 
 **Required sections**:
+
 - Overview/TL;DR
 - Goals / Success Criteria
 - User Stories (epic-level and concrete)
@@ -201,6 +210,7 @@ Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo
 ```
 
 **Result structure**:
+
 ```
 reference/repo/langchain-ai/langsmith-sdk/
 ├── notes/          # Your research notes (committed)
@@ -210,12 +220,14 @@ reference/repo/langchain-ai/langsmith-sdk/
 ### 1.2 Analyze Python SDK
 
 Key files to examine:
+
 - `code/python/langsmith/client.py` - Main client implementation
 - `code/python/langsmith/schemas.py` - Data models
 - `code/python/langsmith/_internal/` - Internal utilities
 - `code/python/tests/` - Test patterns and examples
 
 **Questions to answer**:
+
 1. What is the method signature?
 2. What parameters are supported?
 3. How is pagination handled?
@@ -228,6 +240,7 @@ Key files to examine:
 Create report at `reference/research/{issue-num}-{slug}-precedent.md`:
 
 **Required sections**:
+
 - Executive Summary
 - Method Signature Analysis
 - Parameter Documentation
@@ -249,6 +262,7 @@ Before diving into implementation, analyze how the new feature will integrate wi
 Evaluate how the feature aligns with existing Langstar commands and patterns:
 
 **Questions to answer**:
+
 1. Which existing commands have similar functionality? (e.g., `runs query` vs `deployments list`)
 2. What flag naming conventions are already established? (e.g., `-p/--project`, `-o/--output`)
 3. What output formats are supported and how should this feature use them?
@@ -256,11 +270,13 @@ Evaluate how the feature aligns with existing Langstar commands and patterns:
 5. What error messages and exit codes are used for similar error conditions?
 
 **Review existing patterns in**:
+
 - `cli/src/commands/` - Command structure and arguments
 - `cli/src/config.rs` - Configuration loading patterns
 - Existing command help text (`langstar <command> --help`)
 
 **Document in research report**:
+
 - Consistency decisions (which patterns to follow)
 - Intentional deviations (with rationale)
 - New patterns being introduced (if any)
@@ -270,17 +286,20 @@ Evaluate how the feature aligns with existing Langstar commands and patterns:
 Analyze how the feature integrates with Langstar's configuration system:
 
 **Questions to answer**:
+
 1. Which environment variables does this feature need? (existing vs new)
 2. Does it need workspace/organization scoping like other features?
 3. What's the precedence order? (CLI flags > env vars > config file > defaults)
 4. Are there sensible defaults that match the UI behavior?
 
 **Review configuration precedents in**:
+
 - `cli/src/config.rs` - Existing configuration patterns
 - Environment variable documentation in README
 - How similar features handle missing configuration
 
 **Configuration checklist**:
+
 - [ ] Uses existing env vars where applicable (`LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`)
 - [ ] New env vars follow naming convention (`LANGSMITH_*` or `LANGGRAPH_*`)
 - [ ] Defaults match reasonable expectations
@@ -291,17 +310,20 @@ Analyze how the feature integrates with Langstar's configuration system:
 Understand what this feature accomplishes from a user's perspective in the LangSmith/LangGraph UI:
 
 **Questions to answer**:
+
 1. What workflow does this feature support in the UI?
 2. What business problem does it solve for users?
 3. How do users currently accomplish this task? (UI clicks, existing CLI, API calls)
 4. What would be the ideal CLI experience for this workflow?
 
 **Research methods**:
+
 - Explore the feature in LangSmith/LangGraph UI
 - Review official documentation for the feature
 - Consider common user scenarios and edge cases
 
 **Document in research report**:
+
 - UI workflow description (what users do in the web interface)
 - Key user scenarios (the "jobs to be done")
 - How the CLI can improve or complement the UI workflow
@@ -314,16 +336,19 @@ Add a "Design Decisions" section to your research report:
 ## Design Decisions
 
 ### DX Consistency
+
 - Following `runs query` pattern for [reason]
 - Using `-f/--filter` flag consistent with [existing command]
 - Output formats: json (default for piping), table (default for terminal)
 
 ### Configuration
+
 - Requires: LANGSMITH_API_KEY (existing), LANGSMITH_PROJECT_NAME (existing)
 - New env var: [none / LANGSMITH_NEW_VAR for reason]
 - Defaults: [list sensible defaults]
 
 ### Business Purpose
+
 - Supports workflow: [describe UI workflow]
 - Key scenarios: [list 2-3 primary use cases]
 - CLI advantage: [why CLI is better than UI for this]
@@ -359,6 +384,7 @@ reference/
 ```
 
 **Benefits**:
+
 - **Separation**: Canonical specs vs AI-friendly fragments
 - **Reproducibility**: jq queries documented in `FRAGMENTS.md`
 - **Provenance**: `MANIFEST.md` tracks when/how specs were fetched
@@ -408,9 +434,9 @@ jq '.components.schemas.Run' openapi.json \
 **IMPORTANT**: After extracting, update `reference/api-specs/langsmith/FRAGMENTS.md`:
 
 ```markdown
-| File | Size | Purpose | jq Query | Last Updated |
-|------|------|---------|----------|--------------|
-| `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | `.paths["/api/v1/runs/query"]` | YYYY-MM-DD |
+| File                       | Size | Purpose                   | jq Query                       | Last Updated |
+| -------------------------- | ---- | ------------------------- | ------------------------------ | ------------ |
+| `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | `.paths["/api/v1/runs/query"]` | YYYY-MM-DD   |
 ```
 
 ### 3.4 Validate Research Against Spec
@@ -418,6 +444,7 @@ jq '.components.schemas.Run' openapi.json \
 Create validation report at `reference/research/{issue-num}-openapi-validation.md`:
 
 **Required validations**:
+
 1. HTTP method matches
 2. Path matches (with version prefix)
 3. Request body schema matches research
@@ -426,6 +453,7 @@ Create validation report at `reference/research/{issue-num}-openapi-validation.m
 6. Required vs optional fields
 
 **Example jq queries for validation** (run from `reference/openapi/langchain/langsmith/`):
+
 ```bash
 # Check endpoint method
 jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].post' openapi.json
@@ -441,6 +469,7 @@ jq '.paths | keys | map(select(contains("annotation-queue")))' openapi.json
 ### 3.5 Document Discrepancies
 
 Any differences between research and OpenAPI spec MUST be documented:
+
 - **Corrections** to research findings
 - **Discoveries** not in research
 - **Confirmations** of research
@@ -535,6 +564,7 @@ impl LangchainClient {
 ### 5.2 Handle Pagination
 
 Follow the cursor-based pagination pattern:
+
 ```rust
 /// Stream all runs with automatic pagination
 pub fn query_runs_stream(&self, request: QueryRunsRequest) -> impl Stream<Item = Result<Run, Error>> {
@@ -595,6 +625,7 @@ enum Commands {
 ### 6.3 Follow Configuration Patterns
 
 Use the established config pattern from `cli/src/config.rs`:
+
 - Environment variables take precedence
 - Support both `LANGSMITH_API_KEY` and `LANGGRAPH_API_KEY`
 - Support organization/workspace scoping
@@ -610,6 +641,7 @@ Before implementing tests, generate a comprehensive test plan that ensures compl
 Before generating the test plan, review all deliverables from previous phases:
 
 **Required review**:
+
 - Research reports from Phase 1
 - Design decisions from Phase 2
 - OpenAPI validation from Phase 3
@@ -619,6 +651,7 @@ Before generating the test plan, review all deliverables from previous phases:
 - All merged PRs and their discussions
 
 **Why this matters**:
+
 - Test plans must cover all features documented in prior phases
 - Design decisions inform test scenarios
 - OpenAPI validation identifies edge cases
@@ -633,6 +666,7 @@ Use the test planning command to generate a comprehensive test plan:
 ```
 
 **Examples**:
+
 ```bash
 # Using milestone name
 /gh-milestones:test-plan ls-runs-query
@@ -645,6 +679,7 @@ Use the test planning command to generate a comprehensive test plan:
 ```
 
 **What the command does**:
+
 1. Loads relevant testing documentation (progressive disclosure)
 2. Reviews all issues and PRs in the milestone
 3. Analyzes implementation from merged PRs
@@ -656,6 +691,7 @@ Use the test planning command to generate a comprehensive test plan:
 The generated test plan should be added to the testing phase issue and should include:
 
 **Required sections**:
+
 - **Feature Overview**: Summary of what's being tested
 - **Test Scope**: What's in scope and out of scope
 - **SDK Unit Tests**: Mocked tests for SDK methods
@@ -666,24 +702,31 @@ The generated test plan should be added to the testing phase issue and should in
 - **Pre-commit Validation**: Checklist before implementation
 
 **Example structure**:
+
 ```markdown
 # Test Plan: Runs Query Feature (Milestone ls-runs-query)
 
 ## Feature Overview
+
 [Summary of runs query functionality]
 
 ## Test Scope
+
 **In scope:**
+
 - SDK query_runs method with all parameters
 - CLI runs query command
 - Pagination handling
 - Error responses
 
 **Out of scope:**
+
 - [Features explicitly not covered]
 
 ## SDK Unit Tests (Mocked)
+
 ### 8.1.1 test_query_runs_success
+
 - Mock POST /api/v1/runs/query
 - Verify request structure
 - Verify response parsing
@@ -691,7 +734,9 @@ The generated test plan should be added to the testing phase issue and should in
 [Additional test cases...]
 
 ## SDK Integration Tests (Real API)
+
 ### 8.2.1 test_query_runs_crud_lifecycle
+
 - Create test project
 - Create test runs
 - Query runs with filters
@@ -701,7 +746,9 @@ The generated test plan should be added to the testing phase issue and should in
 [Additional test cases...]
 
 ## CLI Integration Tests
+
 ### 8.3.1 test_cli_runs_query_basic
+
 - Run: `langstar runs query --project test-project`
 - Verify output format
 - Verify exit code
@@ -709,18 +756,21 @@ The generated test plan should be added to the testing phase issue and should in
 [Additional test cases...]
 
 ## Error Conditions
+
 - Invalid API key
 - Malformed filter expression
 - Non-existent project
-[Additional scenarios...]
+  [Additional scenarios...]
 
 ## Edge Cases
+
 - Empty result set
 - Very large result set
 - Special characters in filters
-[Additional scenarios...]
+  [Additional scenarios...]
 
 ## Pre-commit Validation
+
 - [ ] All unit tests pass
 - [ ] All integration tests pass
 - [ ] cargo fmt --check passes
@@ -736,6 +786,7 @@ After generating the test plan:
 3. **Use test plan as implementation guide** in Phase 8
 
 **Example issue update**:
+
 ```markdown
 ## Test Plan
 
@@ -744,6 +795,7 @@ See generated test plan below:
 [Generated test plan content]
 
 ## Implementation Checklist
+
 - [ ] SDK unit tests implemented
 - [ ] SDK integration tests implemented
 - [ ] CLI integration tests implemented
@@ -755,17 +807,20 @@ See generated test plan below:
 ### 7.5 Benefits of Test Planning Phase
 
 **Before test implementation**:
+
 - Comprehensive test coverage plan before writing code
 - Identifies missing test scenarios early
 - Ensures alignment between tests and requirements
 - Provides clear success criteria for Phase 8
 
 **Quality assurance**:
+
 - Test plans are reviewed before implementation begins
 - Gaps in test coverage are identified before code is written
 - Testing phase has clear deliverables and acceptance criteria
 
 **Efficiency**:
+
 - Automated test plan generation saves 1-2 hours of manual planning
 - Progressive disclosure loads only relevant testing docs (~4K tokens vs ~24K for all docs)
 - Test plan serves as implementation checklist
@@ -779,6 +834,7 @@ See generated test plan below:
 **Location**: In-module tests or `sdk/tests/`
 
 **Use httpmock** for API mocking:
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -808,12 +864,14 @@ mod tests {
 **Location**: `sdk/tests/{feature}_test.rs` or `cli/tests/{feature}_command_test.rs`
 
 **Requirements**:
+
 - Mark with `#[cfg_attr(not(feature = "integration-tests"), ignore)]`
 - Use `LANGSMITH_API_KEY` and `LANGSMITH_WORKSPACE_ID` env vars
 - Clean up any created resources
 - Document prerequisites in test file header
 
 **Pattern** (from `cli/tests/README.md`):
+
 ```rust
 /// Integration test for runs query
 ///
@@ -832,6 +890,7 @@ async fn test_query_runs_integration() {
 ### 8.3 Pre-Commit Validation
 
 **ALWAYS run before committing**:
+
 ```bash
 cargo fmt && \
 cargo check --workspace --all-features && \
@@ -851,6 +910,7 @@ After implementing tests, verify that the implementation complies with both the 
 Experience has shown that test implementations often deviate from test plans in problematic ways (see [Issue #637 post-mortem](https://github.com/codekiln/langstar/issues/637)):
 
 **Common problems caught by audit:**
+
 - Integration tests marked `#[ignore]` instead of properly conditional
 - CI not configured with required environment variables
 - Anemic tests that only verify exit codes, not actual behavior
@@ -867,6 +927,7 @@ Use the `/gh-milestones:test-audit` command to verify test compliance:
 ```
 
 **Examples:**
+
 ```bash
 # Using milestone name
 /gh-milestones:test-audit ls-runs-query
@@ -876,6 +937,7 @@ Use the `/gh-milestones:test-audit` command to verify test compliance:
 ```
 
 **What the command does:**
+
 1. Loads the test plan from Phase 7
 2. Loads project testing guidelines (HIGH_LEVEL_TESTING_GUIDELINES.md)
 3. Analyzes implemented tests against the plan
@@ -888,12 +950,14 @@ Use the `/gh-milestones:test-audit` command to verify test compliance:
 The audit verifies compliance with these requirements:
 
 **Test Structure:**
+
 - [ ] Unit tests use `#[cfg(test)]` module pattern
 - [ ] Integration tests use proper feature flag: `#[cfg_attr(not(feature = "integration-tests"), ignore)]`
 - [ ] Tests are NOT unconditionally ignored with `#[ignore]`
 - [ ] Test files follow naming conventions (`*_test.rs` or `*_command_test.rs`)
 
 **Test Quality (Toyota Andon Cord):**
+
 - [ ] Tests verify actual behavior, not just exit codes
 - [ ] SDK operations are verified through round-trip assertions
 - [ ] CLI tests verify output content, not just success/failure
@@ -901,12 +965,14 @@ The audit verifies compliance with these requirements:
 - [ ] Edge cases from test plan are covered
 
 **CRUD Lifecycle Pattern:**
+
 - [ ] Integration tests create resources via SDK
 - [ ] Tests operate on resources via CLI or SDK under test
 - [ ] Tests verify results using SDK (not just CLI output)
 - [ ] Tests clean up created resources (even on failure)
 
 **CI Configuration:**
+
 - [ ] Required environment variables listed in CI workflow
 - [ ] Integration test job has access to `LANGSMITH_API_KEY`
 - [ ] Integration test job has access to `LANGSMITH_WORKSPACE_ID`
@@ -917,10 +983,12 @@ The audit verifies compliance with these requirements:
 The audit produces a compliance report with:
 
 **Report Structure:**
+
 ```markdown
 # Test Audit Report: [Milestone Name]
 
 ## Summary
+
 - Tests Planned: [count from test plan]
 - Tests Implemented: [count found]
 - Compliance Rate: [percentage]
@@ -928,27 +996,34 @@ The audit produces a compliance report with:
 - Warnings: [count]
 
 ## Critical Issues (Must Fix)
+
 ### Issue 1: [Description]
+
 - Location: [file:line]
 - Problem: [specific issue]
 - Remediation: [exact fix needed]
 
 ## Warnings (Should Fix)
+
 ### Warning 1: [Description]
+
 ...
 
 ## Test Plan Coverage Matrix
-| Test Case (from plan) | Implemented? | File:Line | Notes |
-|----------------------|--------------|-----------|-------|
-| test_create_run      | ✅ Yes       | sdk/tests/runs_test.rs:45 | |
-| test_query_runs_empty| ❌ No        | - | Missing |
+
+| Test Case (from plan) | Implemented? | File:Line                 | Notes   |
+| --------------------- | ------------ | ------------------------- | ------- |
+| test_create_run       | ✅ Yes       | sdk/tests/runs_test.rs:45 |         |
+| test_query_runs_empty | ❌ No        | -                         | Missing |
 
 ## CI Configuration Status
+
 - [ ] Environment variables configured
 - [ ] Feature flags enabled
 - [ ] Job dependencies correct
 
 ## Recommendations
+
 1. [Specific action item]
 2. [Specific action item]
 ```
@@ -965,16 +1040,19 @@ If the audit finds issues:
 ### 9.6 Benefits of Test Audit Phase
 
 **Quality Assurance:**
+
 - Catches gaps between plan and implementation
 - Enforces Toyota Andon Cord principle
 - Prevents "tests that don't test anything" anti-pattern
 
 **Process Improvement:**
+
 - Creates feedback loop to improve test planning
 - Documents common issues for future reference
 - Builds institutional knowledge about testing patterns
 
 **CI Reliability:**
+
 - Ensures tests actually run in CI (not skipped)
 - Verifies environment configuration
 - Prevents "works locally, fails in CI" surprises
@@ -986,6 +1064,7 @@ If the audit finds issues:
 ### 10.1 Implementation Plan
 
 Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
+
 - Executive summary
 - Research sources with links
 - Implementation phases with code snippets
@@ -995,6 +1074,7 @@ Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
 ### 10.2 Update README
 
 Add new commands to main README:
+
 - Command syntax
 - Example usage
 - Environment variables
@@ -1028,6 +1108,7 @@ Before running milestone release:
 ```
 
 **Examples**:
+
 ```bash
 # Using milestone name
 /gh-milestones:release ls-prompt-structured-outputs v0.10.0
@@ -1048,6 +1129,7 @@ The `/gh-milestones:release` command performs the following actions:
 6. **Closes Parent Issue**: Marks parent issue as closed
 
 **Example Output**:
+
 ```
 ✅ **Milestone Release Tracking Complete**
 
@@ -1077,6 +1159,7 @@ FORCE_RELEASE=true /gh-milestones:release <milestone> <version>
 ### 11.5 Integration with Release Workflow
 
 **Typical release workflow**:
+
 ```bash
 # 1. Merge final PR for milestone
 gh pr merge 385 --squash
@@ -1143,13 +1226,13 @@ gh release create v0.10.0 --generate-notes
 
 ## Tools & Skills Reference
 
-| Tool/Skill | Purpose | Location |
-|------------|---------|----------|
-| **gh-sub-issue** | Manage issue hierarchies | `.claude/skills/gh-sub-issue/SKILL.md` |
-| **setup-remote-repo-notes-dir** | Research SDK codebases | `.claude/skills/setup-remote-repo-notes-dir/SKILL.md` |
-| **jq** | OpenAPI spec validation | System tool |
-| **httpmock** | Rust HTTP mocking | Cargo dependency |
-| **langgraph-docs MCP** | LangGraph/LangSmith docs | MCP server |
+| Tool/Skill                      | Purpose                  | Location                                              |
+| ------------------------------- | ------------------------ | ----------------------------------------------------- |
+| **gh-sub-issue**                | Manage issue hierarchies | `.claude/skills/gh-sub-issue/SKILL.md`                |
+| **setup-remote-repo-notes-dir** | Research SDK codebases   | `.claude/skills/setup-remote-repo-notes-dir/SKILL.md` |
+| **jq**                          | OpenAPI spec validation  | System tool                                           |
+| **httpmock**                    | Rust HTTP mocking        | Cargo dependency                                      |
+| **langgraph-docs MCP**          | LangGraph/LangSmith docs | MCP server                                            |
 
 ---
 
@@ -1158,8 +1241,10 @@ gh release create v0.10.0 --generate-notes
 When creating sub-issues, use this template for scope:
 
 ### Research Sub-Issue
+
 ```markdown
 ## Scope
+
 1. Set up research workspace with setup-remote-repo-notes-dir
 2. Analyze Python SDK implementation
 3. Document method signatures and parameters
@@ -1167,18 +1252,22 @@ When creating sub-issues, use this template for scope:
 5. Review tests for usage examples
 
 ## Deliverable
+
 Research report at `reference/research/{num}-{slug}-precedent.md`
 ```
 
 ### OpenAPI Validation Sub-Issue
+
 ```markdown
 ## Scope
+
 1. Fetch OpenAPI spec to reference/api-specs/
 2. Extract relevant endpoint and schema definitions with jq
 3. Validate research findings against spec
 4. Document confirmations, corrections, discoveries
 
 ## Deliverable
+
 Validation report at `reference/research/{num}-openapi-validation.md`
 ```
 
@@ -1190,12 +1279,12 @@ Validation report at `reference/research/{num}-openapi-validation.md`
 
 The complete milestone lifecycle spans from preliminary research through GitHub release:
 
-| Phase | Name | When | Typical Duration |
-|-------|------|------|------------------|
-| 0.0 | Pre-Epic Scouting | Before milestone (optional) | 1-3 days |
-| 0 | Epic Setup | Start of milestone | 1 day |
-| 1-10 | Standard Development | Implementation | 1-4 weeks |
-| 11 | Milestone Release | After merge + GitHub release | <1 hour (automated) |
+| Phase | Name                 | When                         | Typical Duration    |
+| ----- | -------------------- | ---------------------------- | ------------------- |
+| 0.0   | Pre-Epic Scouting    | Before milestone (optional)  | 1-3 days            |
+| 0     | Epic Setup           | Start of milestone           | 1 day               |
+| 1-10  | Standard Development | Implementation               | 1-4 weeks           |
+| 11    | Milestone Release    | After merge + GitHub release | <1 hour (automated) |
 
 ### Decision Tree: When to Scout
 
@@ -1235,11 +1324,13 @@ Is this a new API feature needing research and technical context?
 ### Milestone Naming Best Practices
 
 **Pattern**: Use short, hyphenated names for milestone titles
+
 - ✅ `ls-prompt-structured-outputs` (clear, grep-able)
 - ✅ `ls-evals-basic` (scoped)
 - ❌ `Structured Output Prompts Feature` (spaces, verbose)
 
 **Benefits**:
+
 - Easy to reference in commands: `/gh-milestones:release ls-evals-basic v0.10.0`
 - Grep-able in code and documentation
 - Works well with GitHub API and CLI tools
@@ -1247,6 +1338,7 @@ Is this a new API feature needing research and technical context?
 ### Milestone Management Anti-Patterns
 
 **Avoid**:
+
 - ❌ Creating milestone without parent issue
 - ❌ Attaching milestone only to parent (not sub-issues)
 - ❌ Manually closing milestone without release link
@@ -1268,6 +1360,7 @@ Is this a new API feature needing research and technical context?
 ## Success Metrics
 
 A feature is complete when:
+
 1. All sub-issues closed
 2. Research and validation reports committed
 3. SDK types and methods implemented

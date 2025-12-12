@@ -3,12 +3,14 @@
 ## Pre-Merge Verification
 
 ### File Structure
+
 - [x] `.claude/commands/gh-milestones/test-plan.md` created
 - [x] `.claude/commands/gh-milestones/README.md` created/updated
 - [x] `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` updated
 - [x] Files have correct frontmatter (description, argument-hint)
 
 ### Content Validation
+
 - [x] Command specification is complete
 - [x] All 6 steps are documented
 - [x] Progressive disclosure pattern is enforced
@@ -20,6 +22,7 @@
 After this PR is merged and a new Claude Code session starts:
 
 ### 1. Command Discovery
+
 ```bash
 # Verify command appears in available commands
 /help
@@ -27,6 +30,7 @@ After this PR is merged and a new Claude Code session starts:
 ```
 
 ### 2. Basic Invocation
+
 ```bash
 # Test with milestone name
 /gh-milestones:test-plan ls-test-improvement
@@ -38,6 +42,7 @@ After this PR is merged and a new Claude Code session starts:
 ### 3. Verify Behavior
 
 The command should:
+
 - [ ] Load `@docs/dev/testing/README.md` first
 - [ ] Fetch milestone information via `gh api`
 - [ ] Identify milestone type correctly
@@ -57,6 +62,7 @@ The command should:
 ### 4. Edge Cases
 
 Test with different milestone types:
+
 - [ ] SDK feature milestone
 - [ ] CLI feature milestone
 - [ ] Infrastructure milestone
@@ -65,6 +71,7 @@ Test with different milestone types:
 ### 5. Progressive Disclosure Verification
 
 Monitor which testing docs get loaded:
+
 - [ ] Should NOT load all 8 docs from `docs/dev/testing/`
 - [ ] Should load HIGH_LEVEL_TESTING_GUIDELINES.md always
 - [ ] Should load 1-3 additional relevant docs based on feature type
@@ -72,6 +79,7 @@ Monitor which testing docs get loaded:
 ### 6. Generated Test Plan Quality
 
 Review generated test plan document:
+
 - [ ] Contains concrete, specific test cases
 - [ ] References actual codebase patterns
 - [ ] Follows CRUD lifecycle pattern where applicable
@@ -82,6 +90,7 @@ Review generated test plan document:
 ## Success Criteria
 
 All checks must pass:
+
 - [x] Command file exists with correct structure
 - [x] README documents the command
 - [x] HIGH_LEVEL_TESTING_GUIDELINES.md references command

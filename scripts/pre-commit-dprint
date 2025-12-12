@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------
+# pre-commit-dprint
+# Pre-commit hook for automatic Markdown formatting with dprint
+#
+# This script:
+# 1. Detects staged markdown files (*.md)
+# 2. Runs dprint fmt on them
+# 3. Re-stages the formatted files
+# 4. Allows the commit to proceed
+#
+# Installation:
+#   cp scripts/pre-commit-dprint .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or use a symlink (requires git config core.hooksPath):
+#   ln -sf ../../scripts/pre-commit-dprint .git/hooks/pre-commit
+# ---------------------------------------------------------------------
+
+set -euo pipefail
+
+# Check if dprint is installed
+if ! command -v dprint >/dev/null 2>&1; then
+  echo "ERROR: dprint not found. Please install dprint:"
+  echo "  curl -fsSL https://dprint.dev/install.sh | sh"
+  echo "Or rebuild the devcontainer which includes dprint."
+  exit 1
+fi
+
+# Get list of staged markdown files
+STAGED_MD_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.md$' || true)
+
+# If no markdown files are staged, exit successfully
+if [[ -z "$STAGED_MD_FILES" ]]; then
+  exit 0
+fi
+
+echo "Formatting staged markdown files with dprint..."
+
+# Format each staged markdown file
+echo "$STAGED_MD_FILES" | while IFS= read -r file; do
+  if [[ -f "$file" ]]; then
+    echo "  Formatting: $file"
+    dprint fmt "$file"
+    # Re-stage the formatted file
+    git add "$file"
+  fi
+done
+
+echo "Markdown formatting complete."
+exit 0

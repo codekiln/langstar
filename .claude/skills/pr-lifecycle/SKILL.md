@@ -12,12 +12,14 @@ Enforce project hygiene throughout the pull request lifecycle. This skill provid
 **IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
 
 **You CANNOT:**
+
 - Track issues across sessions
 - Remember to do something later
 - Follow up on tasks in the future
 - Promise to handle something "in a follow-up"
 
 **You MUST NOT say things like:**
+
 - "I'll track this in a follow-up issue"
 - "I'll remember to fix this later"
 - "I'll handle this in a subsequent PR"
@@ -27,18 +29,22 @@ Enforce project hygiene throughout the pull request lifecycle. This skill provid
 When addressing review comments, choose ONE of these options:
 
 ### Option 1: Implement Now (Preferred)
+
 **When:** Change is small-ish and worth doing.
 **Action:** Implement fix, commit, reply with: "Fixed in commit {sha}: {description}"
 
 ### Option 2: Defer with Issue (Expensive - use sparingly)
+
 **When:** Change is large AND worth doing AND not critical to PR.
 **Action:**
+
 1. Create GitHub issue NOW using `gh issue create`
 2. Add to same milestone as PR's issue
 3. Add as sub-issue using `gh sub-issue add`
 4. Reply: "Created #XYZ to track this. Not addressing in this PR because {reason}."
 
 ### Option 3: Disagree / Won't Fix
+
 **When:** Suggestion is nitpicky, negligible, or you disagree.
 **Action:** Reply explaining why not addressing. Be professional.
 **NEVER use for:** Test failures, errors, security concerns.
@@ -46,6 +52,7 @@ When addressing review comments, choose ONE of these options:
 ## Overview
 
 **Project Hygiene Invariant:** Each PR should:
+
 1. Close exactly one GitHub issue
 2. Include "Fixes #XYZ" (or similar keyword) in PR body
 3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in `/workspace`, which should always be kept up to date with origin main - instead you should be in `wip/<feature branch>`)
@@ -61,10 +68,12 @@ When working in a tmux session, window names reflect the current PR lifecycle ph
 **Format:** `<emoji><prefix><number>`
 
 **Prefix Conventions:**
+
 - `i` = Issue number (e.g., `💻i483` = coding on issue #483)
 - `pr` = Pull request number (e.g., `🔧pr485` = maintaining PR #485)
 
 **Examples:**
+
 - `💻i483` - Coding on issue #483
 - `🚀i483` - Submitting PR for issue #483
 - `🔧pr485` - Maintaining PR #485
@@ -72,23 +81,25 @@ When working in a tmux session, window names reflect the current PR lifecycle ph
 
 **Phase Emojis:**
 
-| Phase | Emoji | When Used | Format Example | Command |
-|-------|-------|-----------|----------------|---------|
-| 1. Gathering information | 🔍 | Research/discovery | `🔍i483` | Manual |
-| 2. Coding | 💻 | Active development | `💻i483` | `/gh-start-issue` |
-| 3. Waiting for tests | ⏳ | CI/CD checks running | `⏳pr485` | `/pr-workflow` |
-| 4. Waiting for user | ❓ | Needs input/clarification | `❓i483` or `❓pr485` | Manual |
-| 5. Submitting PR | 🚀 | Creating/pushing PR | `🚀i483` | `/pr-workflow` |
-| 6. PR maintenance | 🔧 | Addressing feedback/fixes | `🔧pr485` | `/pr-workflow` |
-| 7. Cleanup | 🧹 | Post-merge cleanup | `🧹pr485` | Manual |
+| Phase                    | Emoji | When Used                 | Format Example        | Command           |
+| ------------------------ | ----- | ------------------------- | --------------------- | ----------------- |
+| 1. Gathering information | 🔍    | Research/discovery        | `🔍i483`              | Manual            |
+| 2. Coding                | 💻    | Active development        | `💻i483`              | `/gh-start-issue` |
+| 3. Waiting for tests     | ⏳    | CI/CD checks running      | `⏳pr485`             | `/pr-workflow`    |
+| 4. Waiting for user      | ❓    | Needs input/clarification | `❓i483` or `❓pr485` | Manual            |
+| 5. Submitting PR         | 🚀    | Creating/pushing PR       | `🚀i483`              | `/pr-workflow`    |
+| 6. PR maintenance        | 🔧    | Addressing feedback/fixes | `🔧pr485`             | `/pr-workflow`    |
+| 7. Cleanup               | 🧹    | Post-merge cleanup        | `🧹pr485`             | Manual            |
 
 **Automatic Updates:**
+
 - `/gh-start-issue` sets tmux to `💻i<issue_num>` (coding phase on issue)
 - `/pr-workflow` updates tmux through phases:
   - `🚀i<issue_num>` → (PR created) → `🔧pr<pr_num>` → `⏳pr<pr_num>` → `🔧pr<pr_num>`
   - Note: Transitions from issue number to PR number after PR is created
 
 **Manual Updates:**
+
 ```bash
 # Update tmux window name manually for issue work
 ISSUE_NUM=<your_issue_number>
@@ -100,6 +111,7 @@ tmux rename-window "🔧pr${PR_NUM}"  # PR maintenance
 ```
 
 **Why This Convention:**
+
 - **Information density**: Maximizes useful info in limited tmux window title space (5-7 chars vs 50+)
 - **Clear distinction**: Instantly know if you're working on issue or PR
 - **Visual status**: Emoji provides at-a-glance phase indication
@@ -150,17 +162,20 @@ pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktre
 #### Branch Naming Convention
 
 **Format variations:**
+
 - With milestone & parent: `m<milestone_id>-p<parent_id>-i<issue_num>-<issue_slug>`
 - With parent only: `p<parent_id>-i<issue_num>-<issue_slug>`
 - With milestone only: `m<milestone_id>-i<issue_num>-<issue_slug>`
 - Standalone: `i<issue_num>-<issue_slug>`
 
 **Examples:**
+
 - `m8-p123-i234-add-authentication`
 - `p123-i234-add-authentication`
 - `i42-add-authentication`
 
 **Validation:**
+
 ```bash
 BRANCH=$(git branch --show-current)
 
@@ -175,6 +190,7 @@ fi
 #### Issue Verification
 
 **Check issue exists and is open:**
+
 ```bash
 ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
 
@@ -193,6 +209,7 @@ fi
 #### Commit Message Check
 
 **Verify commits reference the issue:**
+
 ```bash
 # Check for GitHub closing keywords in commits
 git log origin/main..HEAD --pretty=format:"%s" | \
@@ -221,6 +238,7 @@ git log origin/main..HEAD --pretty=format:"%s" | \
 | release | 🔖 | Releases |
 
 **Examples:**
+
 - `✨ feat(cli): add deployment management commands`
 - `🩹 fix: resolve race condition in thread handler`
 - `📚 docs: add PR lifecycle skill`
@@ -231,20 +249,25 @@ git log origin/main..HEAD --pretty=format:"%s" | \
 
 ```markdown
 ## Summary
+
 <1-3 bullet points describing the changes>
 
 ## Changes
+
 - <specific change 1>
 - <specific change 2>
 
 ## Related Issues
+
 Fixes #<issue_number>
 
 ## Test Plan
+
 - [ ] <test item 1>
 - [ ] <test item 2>
 
 ---
+
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
@@ -255,6 +278,7 @@ If the issue that the PR fixes is part of a milestone, add the PR to that milest
 ### Create PR Command
 
 **Using gh CLI with proper body:**
+
 ```bash
 ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
 
@@ -283,6 +307,7 @@ EOF
 ### Verify PR Will Close Issue
 
 **After creating PR, verify the link:**
+
 ```bash
 # Get PR number
 PR_NUM=$(gh pr view --json number -q '.number')
@@ -347,6 +372,7 @@ gh pr view "$PR_NUM" --json state,mergeable,reviewDecision
 ### Verify Issue Closure
 
 **Check if the issue was auto-closed:**
+
 ```bash
 ISSUE_NUM=<issue_number>
 
@@ -367,6 +393,7 @@ fi
 **If the issue wasn't auto-closed:**
 
 Ask the user first before doing this:
+
 ```bash
 ISSUE_NUM=<issue_number>
 PR_NUM=<pr_number>
@@ -378,6 +405,7 @@ gh issue close "$ISSUE_NUM" --comment "Closed via PR #$PR_NUM"
 ### Cleanup: Remove Worktree
 
 **After PR merge, clean up the worktree:**
+
 ```bash
 # Switch to main worktree first
 cd /workspace
@@ -393,6 +421,7 @@ git worktree prune --verbose
 ### Cleanup: Delete Branch
 
 **Delete local and remote branches:**
+
 ```bash
 BRANCH="<branch_name>"  # e.g., i42-add-auth or m8-p123-i234-add-auth
 
@@ -408,9 +437,9 @@ git push origin --delete "$BRANCH" 2>/dev/null || echo "Remote branch already de
 
 ### Cleanup: Ensure /workspace is up to date
 
-* `/workspace` should be kept up to date with origin main
-* after merging, `cd /workspace` then ensure workspace is refreshed from origin main
-  * in the unlikely case that another agent has put WIP in `/workspace` (instead of `wip/<feature branch>`) that would be affected by this action, ask user what to do 
+- `/workspace` should be kept up to date with origin main
+- after merging, `cd /workspace` then ensure workspace is refreshed from origin main
+  - in the unlikely case that another agent has put WIP in `/workspace` (instead of `wip/<feature branch>`) that would be affected by this action, ask user what to do
 
 ### Complete Cleanup Workflow
 
@@ -450,16 +479,17 @@ git branch | grep -v "^\*" | grep -v "main\|master"
 
 ### Pre-PR Checklist
 
-| Check | Command | Expected |
-|-------|---------|----------|
-| In worktree | `pwd` &#124; `grep wip/` | In wip/ directory |
-| Branch format | `git branch --show-current` | `user/num-slug` |
-| Issue open | `gh issue view N --json state` | `OPEN` |
-| Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |
+| Check         | Command                              | Expected          |
+| ------------- | ------------------------------------ | ----------------- |
+| In worktree   | `pwd` &#124; `grep wip/`             | In wip/ directory |
+| Branch format | `git branch --show-current`          | `user/num-slug`   |
+| Issue open    | `gh issue view N --json state`       | `OPEN`            |
+| Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword     |
 
 ### GitHub Closing Keywords
 
 Any of these in PR body will auto-close the linked issue:
+
 - `close`, `closes`, `closed`
 - `fix`, `fixes`, `fixed`
 - `resolve`, `resolves`, `resolved`
@@ -468,16 +498,16 @@ Any of these in PR body will auto-close the linked issue:
 
 ### PR Title Emojis
 
-| Emoji | Type | Triggers |
-|-------|------|----------|
-| ✨ | feat | MINOR bump |
-| 🩹 | fix | PATCH bump |
-| 🚨 | BREAKING | MAJOR bump |
-| 📚 | docs | No bump |
-| ♻️ | refactor | No bump |
-| 🧪 | test | No bump |
-| 🔧 | build | No bump |
-| 🔖 | release | N/A |
+| Emoji | Type     | Triggers   |
+| ----- | -------- | ---------- |
+| ✨    | feat     | MINOR bump |
+| 🩹    | fix      | PATCH bump |
+| 🚨    | BREAKING | MAJOR bump |
+| 📚    | docs     | No bump    |
+| ♻️     | refactor | No bump    |
+| 🧪    | test     | No bump    |
+| 🔧    | build    | No bump    |
+| 🔖    | release  | N/A        |
 
 ### Common API Commands
 
@@ -506,6 +536,7 @@ gh issue close <num> --comment "Closed via PR #N"
 ### With `git-worktrees` Skill
 
 Use git-worktrees skill to create proper worktrees before starting work:
+
 ```bash
 # Create worktree for new issue
 git worktree add -b alice/42-new-feature wip/alice-42-new-feature main
@@ -514,6 +545,7 @@ git worktree add -b alice/42-new-feature wip/alice-42-new-feature main
 ### With `gh-sub-issue` Skill
 
 For issues with parent-child relationships, verify PR targets:
+
 ```bash
 # Check if issue has parent
 gh sub-issue list 42 --relation parent
@@ -528,6 +560,7 @@ gh sub-issue list 42 --relation parent
 **Cause:** Missing "Fixes #N" keyword in PR body.
 
 **Solution:**
+
 ```bash
 # Close manually
 gh issue close <num> --comment "Closed via PR #<pr_num>"
@@ -540,6 +573,7 @@ gh issue close <num> --comment "Closed via PR #<pr_num>"
 **Cause:** Branch created without following convention.
 
 **Solution:** Rename branch before PR:
+
 ```bash
 git branch -m old-name i42-proper-name
 git push origin -u i42-proper-name
@@ -551,6 +585,7 @@ git push origin --delete old-name
 **Cause:** Branch name doesn't contain issue number.
 
 **Solution:** Check branch name, rename if needed:
+
 ```bash
 git branch --show-current
 # If no number, rename branch to include issue number
@@ -561,6 +596,7 @@ git branch --show-current
 **Cause:** Wrong issue number in PR body.
 
 **Solution:** Edit PR body on GitHub or:
+
 ```bash
 gh pr edit <num> --body "$(cat updated-body.md)"
 ```

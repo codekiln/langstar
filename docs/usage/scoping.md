@@ -23,6 +23,7 @@ Workspaces are nested under organizations, so workspace-level scoping is more re
 ### Public vs Private Prompts
 
 LangSmith prompts can be either:
+
 - **Public**: Visible to anyone with the link
 - **Private**: Only visible to members of the organization/workspace
 
@@ -79,6 +80,7 @@ langstar prompt list --workspace-id "your-workspace-id"
 4. Copy the Organization ID
 
 Alternatively, check your browser URL when viewing organization settings:
+
 ```
 https://smith.langchain.com/settings?organizationId=<your-org-id>
 ```
@@ -90,6 +92,7 @@ https://smith.langchain.com/settings?organizationId=<your-org-id>
 3. Copy the Workspace ID
 
 Or check the URL when viewing a workspace:
+
 ```
 https://smith.langchain.com/prompts?workspaceId=<your-workspace-id>
 ```

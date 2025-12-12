@@ -6,10 +6,10 @@ This document explains LangGraph Cloud deployment and revision statuses. For imp
 
 LangGraph Cloud has two distinct status types that are often confused:
 
-| Entity | Status Enum | Terminal Success | Where Visible |
-|--------|-------------|-----------------|---------------|
-| **Deployment** | `DeploymentStatus` | `Ready` | `langstar graph list` |
-| **Revision** | `RevisionStatus` | `Deployed` | Revision polling, API responses |
+| Entity         | Status Enum        | Terminal Success | Where Visible                   |
+| -------------- | ------------------ | ---------------- | ------------------------------- |
+| **Deployment** | `DeploymentStatus` | `Ready`          | `langstar graph list`           |
+| **Revision**   | `RevisionStatus`   | `Deployed`       | Revision polling, API responses |
 
 ## Deployment vs Revision
 
@@ -28,13 +28,13 @@ Deployment (e.g., "pr-integration-test")
 
 The overall status of a deployment resource.
 
-| Status | Description |
-|--------|-------------|
-| `AwaitingDatabase` | Database provisioning in progress |
-| `Ready` | **Terminal success** - Deployment is operational |
-| `Unused` | Deployment is inactive |
-| `AwaitingDelete` | Deletion in progress |
-| `Unknown` | Status cannot be determined |
+| Status             | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `AwaitingDatabase` | Database provisioning in progress                |
+| `Ready`            | **Terminal success** - Deployment is operational |
+| `Unused`           | Deployment is inactive                           |
+| `AwaitingDelete`   | Deletion in progress                             |
+| `Unknown`          | Status cannot be determined                      |
 
 **API Value**: `SCREAMING_SNAKE_CASE` (e.g., `"READY"`, `"AWAITING_DATABASE"`)
 
@@ -44,18 +44,18 @@ The overall status of a deployment resource.
 
 The build/deploy status of a specific revision.
 
-| Status | Description |
-|--------|-------------|
-| `Queued` | Waiting in build queue |
-| `Building` | Docker image build in progress |
-| `BuildSucceeded` | Build completed, awaiting deployment |
-| `BuildFailed` | Build failed (check logs) |
-| `AwaitingDeploy` | Waiting to be deployed |
-| `Deploying` | Container deployment in progress |
-| `Deployed` | **Terminal success** - Revision is live |
-| `DeployFailed` | Deployment failed (check logs) |
-| `Cancelled` | Build/deploy was cancelled |
-| `Unknown` | Status cannot be determined |
+| Status           | Description                             |
+| ---------------- | --------------------------------------- |
+| `Queued`         | Waiting in build queue                  |
+| `Building`       | Docker image build in progress          |
+| `BuildSucceeded` | Build completed, awaiting deployment    |
+| `BuildFailed`    | Build failed (check logs)               |
+| `AwaitingDeploy` | Waiting to be deployed                  |
+| `Deploying`      | Container deployment in progress        |
+| `Deployed`       | **Terminal success** - Revision is live |
+| `DeployFailed`   | Deployment failed (check logs)          |
+| `Cancelled`      | Build/deploy was cancelled              |
+| `Unknown`        | Status cannot be determined             |
 
 **API Value**: `SCREAMING_SNAKE_CASE` (e.g., `"DEPLOYED"`, `"BUILDING"`)
 
@@ -74,6 +74,7 @@ Queued → Building → BuildSucceeded → AwaitingDeploy → Deploying → Depl
 ### "Why does `langstar graph list` show Ready but tests wait for Deployed?"
 
 These are different statuses for different entities:
+
 - `Ready` = The **deployment** is operational (`DeploymentStatus`)
 - `Deployed` = The **revision** has finished deploying (`RevisionStatus`)
 

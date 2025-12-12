@@ -54,11 +54,13 @@ Langstar is a unified Rust CLI for the LangChain ecosystem, providing ergonomic 
 **Principle:** Generate code from OpenAPI specs, don't hand-write API wrappers.
 
 **Implementation:**
+
 - OpenAPI specs → Code generation → Rust types
 - Guarantees API coverage and correctness
 - Reduces maintenance burden
 
 **Benefits:**
+
 - API changes detected at generation time
 - Type-safe API clients
 - Consistent error handling
@@ -84,12 +86,14 @@ Full OpenAPI code generation is tracked in [#114](https://github.com/codekiln/la
 **Principle:** Add only lightweight ergonomic helpers, no business logic duplication.
 
 **What we add:**
+
 - Authentication helpers
 - Configuration management
 - Error conversion
 - Pagination helpers
 
 **What we don't add:**
+
 - Business logic (delegate to upstream)
 - Caching (keep stateless)
 - Complex transformations (preserve API contracts)
@@ -111,6 +115,7 @@ impl LangstarClient {
 **Principle:** Design for both human and AI agent usage.
 
 **Implementation:**
+
 - JSON output for scripting
 - Table output for humans
 - Exit codes for CI/CD
@@ -136,6 +141,7 @@ fi
 **Principle:** Type-safe, predictable behavior with clear error messages.
 
 **Implementation:**
+
 - Strong types (no stringly-typed APIs)
 - Clear error messages with context
 - Consistent command patterns
@@ -166,6 +172,7 @@ return Err(Error::MissingApiKey {
 **Why:** These services have fundamentally different resource scoping models.
 
 **Implementation:**
+
 - Separate client methods (`langsmith_*` vs `langgraph_*`)
 - Service-specific configuration sections
 - Different header handling
@@ -206,6 +213,7 @@ impl LangstarClient {
 Different services require different HTTP headers:
 
 **LangSmith:**
+
 ```http
 x-api-key: <LANGSMITH_API_KEY>
 x-organization-id: <org-id>  # Optional, for scoping
@@ -213,6 +221,7 @@ X-Tenant-Id: <workspace-id>   # Optional, for narrower scoping
 ```
 
 **LangGraph:**
+
 ```http
 x-api-key: <LANGSMITH_API_KEY>
 # No additional scoping headers
@@ -224,10 +233,10 @@ x-api-key: <LANGSMITH_API_KEY>
 
 LangSmith and LangGraph have different architectural requirements:
 
-| Service | Resource Model | Multi-tenancy | Typical Users |
-|---------|----------------|---------------|---------------|
-| **LangSmith** | Hierarchical (org→workspace→prompts) | Yes | Enterprise teams with multiple projects |
-| **LangGraph** | Flat (deployment→assistants) | No | Deployment-specific applications |
+| Service       | Resource Model                       | Multi-tenancy | Typical Users                           |
+| ------------- | ------------------------------------ | ------------- | --------------------------------------- |
+| **LangSmith** | Hierarchical (org→workspace→prompts) | Yes           | Enterprise teams with multiple projects |
+| **LangGraph** | Flat (deployment→assistants)         | No            | Deployment-specific applications        |
 
 ### LangSmith: Hierarchical Model
 
@@ -671,13 +680,13 @@ impl LangstarClient {
 
 ### Design Trade-offs
 
-| Decision | Benefit | Trade-off |
-|----------|---------|-----------|
-| Service separation | Clear, predictable behavior | Slight code duplication |
-| Thin wrapper | Easy maintenance, stays in sync | Some verbose APIs |
-| Type safety | Catch errors at compile time | More boilerplate |
-| No caching | Simple, stateless | More network requests |
-| Spec-driven | Guaranteed API coverage | Code generation complexity |
+| Decision           | Benefit                         | Trade-off                  |
+| ------------------ | ------------------------------- | -------------------------- |
+| Service separation | Clear, predictable behavior     | Slight code duplication    |
+| Thin wrapper       | Easy maintenance, stays in sync | Some verbose APIs          |
+| Type safety        | Catch errors at compile time    | More boilerplate           |
+| No caching         | Simple, stateless               | More network requests      |
+| Spec-driven        | Guaranteed API coverage         | Code generation complexity |
 
 ## Additional Resources
 

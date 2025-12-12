@@ -29,11 +29,11 @@ Datasets in LangSmith are collections of input/output examples used for testing,
 
 LangSmith supports three dataset types:
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `kv` | Key-value pairs (default) | Generic input/output mapping |
-| `llm` | LLM completion format | Prompt/completion pairs for language models |
-| `chat` | Chat message format | Conversational AI and chat applications |
+| Type   | Description               | Use Case                                    |
+| ------ | ------------------------- | ------------------------------------------- |
+| `kv`   | Key-value pairs (default) | Generic input/output mapping                |
+| `llm`  | LLM completion format     | Prompt/completion pairs for language models |
+| `chat` | Chat message format       | Conversational AI and chat applications     |
 
 ## Prerequisites
 
@@ -58,17 +58,20 @@ Before using dataset commands, ensure you have:
 Create a new empty dataset.
 
 **Usage:**
+
 ```bash
 langstar dataset create --name <NAME> [OPTIONS]
 ```
 
 **Options:**
+
 - `--name <NAME>` - Dataset name (required)
 - `--data-type <TYPE>` - Data type: `kv`, `llm`, or `chat` (default: `kv`)
 - `--description <DESC>` - Optional description
 - `--json` - Output as JSON instead of human-readable format
 
 **Examples:**
+
 ```bash
 # Create a basic key-value dataset for testing Q&A pairs
 langstar dataset create --name "my-qa-dataset" --data-type kv
@@ -83,6 +86,7 @@ langstar dataset create --name "test-dataset" --data-type llm --json
 ```
 
 **Output:**
+
 ```
 Created dataset:
   ID: 12345678-1234-1234-1234-123456789012
@@ -96,11 +100,13 @@ Created dataset:
 List all datasets with optional filtering.
 
 **Usage:**
+
 ```bash
 langstar dataset list [OPTIONS]
 ```
 
 **Options:**
+
 - `--name <NAME>` - Filter by exact name match
 - `--name-contains <SUBSTRING>` - Filter by name substring
 - `--data-type <TYPE>` - Filter by data type (`kv`, `llm`, `chat`)
@@ -108,6 +114,7 @@ langstar dataset list [OPTIONS]
 - `--json` - Output as JSON
 
 **Examples:**
+
 ```bash
 # List all datasets (default table format)
 langstar dataset list
@@ -123,6 +130,7 @@ langstar dataset list --limit 10 --json
 ```
 
 **Output (table format):**
+
 ```
 ID       Name              Type  Examples  Description              Modified
 12345678 my-qa-dataset     kv    100       Question-answer pairs... 2025-11-28
@@ -136,17 +144,21 @@ Found 2 datasets
 Retrieve detailed information about a specific dataset.
 
 **Usage:**
+
 ```bash
 langstar dataset get <DATASET_ID> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset
 
 **Options:**
+
 - `--json` - Output as JSON
 
 **Examples:**
+
 ```bash
 # Get dataset details
 langstar dataset get 12345678-1234-1234-1234-123456789012
@@ -156,6 +168,7 @@ langstar dataset get 12345678-1234-1234-1234-123456789012 --json
 ```
 
 **Output:**
+
 ```
 Dataset: my-qa-dataset
   ID: 12345678-1234-1234-1234-123456789012
@@ -172,14 +185,17 @@ Dataset: my-qa-dataset
 Update dataset name or description.
 
 **Usage:**
+
 ```bash
 langstar dataset update <DATASET_ID> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset
 
 **Options:**
+
 - `--name <NEW_NAME>` - New name for the dataset
 - `--description <NEW_DESC>` - New description
 - `--json` - Output as JSON
@@ -187,6 +203,7 @@ langstar dataset update <DATASET_ID> [OPTIONS]
 **Note:** At least one of `--name` or `--description` must be provided.
 
 **Examples:**
+
 ```bash
 # Update dataset name
 langstar dataset update 12345678-1234-1234-1234-123456789012 \
@@ -203,6 +220,7 @@ langstar dataset update 12345678-1234-1234-1234-123456789012 \
 ```
 
 **Output:**
+
 ```
 Dataset 12345678-1234-1234-1234-123456789012 updated successfully
   Name: updated-qa-dataset
@@ -214,17 +232,21 @@ Dataset 12345678-1234-1234-1234-123456789012 updated successfully
 Permanently delete a dataset and all its examples.
 
 **Usage:**
+
 ```bash
 langstar dataset delete <DATASET_ID> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset
 
 **Options:**
+
 - `-y, --yes` - Skip confirmation prompt (required for actual deletion)
 
 **Examples:**
+
 ```bash
 # Attempt deletion (shows confirmation message)
 langstar dataset delete 12345678-1234-1234-1234-123456789012
@@ -234,6 +256,7 @@ langstar dataset delete 12345678-1234-1234-1234-123456789012 --yes
 ```
 
 **Output:**
+
 ```
 Deleted dataset 12345678-1234-1234-1234-123456789012
 ```
@@ -243,18 +266,22 @@ Deleted dataset 12345678-1234-1234-1234-123456789012
 Import examples from a JSONL or CSV file into an existing dataset.
 
 **Usage:**
+
 ```bash
 langstar dataset import <DATASET_ID> --file <FILE_PATH> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset to import into
 
 **Options:**
+
 - `--file <PATH>` - Path to the file to import (required)
 - `--format <FORMAT>` - File format: `jsonl` or `csv` (optional; inferred from file extension if not specified)
 
 **Examples:**
+
 ```bash
 # Import from JSONL file (format inferred from .jsonl extension)
 langstar dataset import 12345678-1234-1234-1234-123456789012 \
@@ -266,11 +293,13 @@ langstar dataset import 12345678-1234-1234-1234-123456789012 \
 ```
 
 **Output:**
+
 ```
 Imported 100 examples to dataset 12345678-1234-1234-1234-123456789012
 ```
 
 **Notes:**
+
 - Empty lines and lines starting with `#` are skipped in JSONL files
 - Invalid records generate warnings but don't stop the import
 - Uses bulk create for efficiency
@@ -280,18 +309,22 @@ Imported 100 examples to dataset 12345678-1234-1234-1234-123456789012
 List examples within a dataset.
 
 **Usage:**
+
 ```bash
 langstar dataset list-examples <DATASET_ID> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset
 
 **Options:**
+
 - `-l, --limit <N>` - Maximum number of examples to return (default: 100)
 - `--json` - Output as JSON
 
 **Examples:**
+
 ```bash
 # List examples in table format
 langstar dataset list-examples 12345678-1234-1234-1234-123456789012
@@ -304,6 +337,7 @@ langstar dataset list-examples 12345678-1234-1234-1234-123456789012 --json
 ```
 
 **Output (table format):**
+
 ```
 ID       Name         Inputs                               Outputs                             Created
 abcdef12 Example 1    {"question":"What is 2+2?"}          {"answer":"4"}                      2025-11-28
@@ -317,19 +351,23 @@ Found 2 examples
 Export examples from a dataset to a JSONL or CSV file.
 
 **Usage:**
+
 ```bash
 langstar dataset export <DATASET_ID> --format <FORMAT> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DATASET_ID>` - UUID of the dataset
 
 **Options:**
+
 - `--format <FORMAT>` - Export format: `jsonl` or `csv` (required)
 - `-o, --out <PATH>` - Output file path (prints to stdout if not specified)
 - `-l, --limit <N>` - Maximum number of examples to export (default: 100)
 
 **Examples:**
+
 ```bash
 # Export to JSONL file
 langstar dataset export 12345678-1234-1234-1234-123456789012 \
@@ -349,6 +387,7 @@ langstar dataset export 12345678-1234-1234-1234-123456789012 \
 ```
 
 **Output:**
+
 ```
 Exported 100 examples to "backup.jsonl"
 ```
@@ -360,24 +399,28 @@ Exported 100 examples to "backup.jsonl"
 JSONL (JSON Lines) format stores one JSON object per line. This is the recommended format for programmatic access.
 
 **Structure:**
+
 ```json
 {"inputs": {"field1": "value1"}, "outputs": {"result": "value"}, "metadata": {"key": "value"}}
 {"inputs": {"field1": "value2"}, "outputs": {"result": "value2"}}
 ```
 
 **Fields:**
+
 - `inputs` (required): JSON object containing input data
 - `outputs` (optional): JSON object containing expected output
 - `metadata` (optional): JSON object with additional metadata
 - `id` (optional): UUID for the example (generated if not provided)
 
 **Example:**
+
 ```jsonl
 {"inputs": {"question": "What is 2+2?"}, "outputs": {"answer": "4"}}
 {"inputs": {"question": "What is the capital of France?"}, "outputs": {"answer": "Paris"}, "metadata": {"category": "geography"}}
 ```
 
 **Best Practices:**
+
 - One JSON object per line (no pretty-printing)
 - Empty lines are ignored
 - Lines starting with `#` are treated as comments
@@ -388,6 +431,7 @@ JSONL (JSON Lines) format stores one JSON object per line. This is the recommend
 CSV format is convenient for spreadsheet tools and simple datasets.
 
 **Structure:**
+
 ```csv
 inputs,outputs,metadata
 "{""question"":""What is 2+2?""}","{""answer"":""4""}","{""category"":""math""}"
@@ -395,6 +439,7 @@ inputs,outputs,metadata
 ```
 
 **Columns:**
+
 - `inputs` (required): JSON-encoded string or auto-mapped from columns
 - `outputs` (optional): JSON-encoded string
 - `metadata` (optional): JSON-encoded string
@@ -402,6 +447,7 @@ inputs,outputs,metadata
 - Other columns: Automatically mapped to inputs if no `inputs` column exists
 
 **Auto-Mapping Example:**
+
 ```csv
 question,category,answer
 "What is 2+2?","math",4
@@ -409,10 +455,12 @@ question,category,answer
 ```
 
 When no explicit `inputs` or `outputs` columns are present, all non-reserved columns are mapped to `inputs`:
+
 - Row 1 → `inputs`: `{"question": "What is 2+2?", "category": "math", "answer": "4"}`
 - Row 2 → `inputs`: `{"question": "What is Paris?", "category": "geography", "answer": "Capital of France"}`
 
 **Best Practices:**
+
 - Use explicit `inputs` and `outputs` columns with JSON strings for complex data
 - Use auto-mapping for simple tabular data
 - Escape JSON properly when embedding in CSV
@@ -618,12 +666,14 @@ client.delete_example(example_id).await?;
 ### SDK Types
 
 **Dataset Types:**
+
 - `Dataset` - Response type with all fields
 - `DatasetCreate` - Request type for creating datasets
 - `DatasetUpdate` - Request type for updating datasets
 - `DataType` - Enum: `Kv`, `Llm`, `Chat`
 
 **Example Types:**
+
 - `Example` - Response type with all fields
 - `ExampleCreate` - Request type for creating examples
 - `ExampleUpdate` - Request type for updating examples
@@ -674,6 +724,7 @@ See `sdk/src/datasets.rs` for complete type definitions and field documentation.
 ---
 
 For more information on LangSmith datasets, see:
+
 - [LangSmith API Documentation](https://api.smith.langchain.com/openapi.json)
 - [LangSmith Documentation](https://docs.langchain.com/langsmith/manage-datasets-in-application)
 - [Langstar SDK Reference](../sdk/src/datasets.rs)

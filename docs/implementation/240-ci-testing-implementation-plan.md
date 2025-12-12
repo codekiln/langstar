@@ -28,6 +28,7 @@ Based on analysis of production devcontainer repositories (devcontainers/feature
 **Goal**: Create minimal test infrastructure and verify it works locally.
 
 **Tasks**:
+
 1. Create `test/langstar/` directory structure
 2. Create `test/langstar/test.sh` with basic smoke tests
 3. Test locally with `devcontainer features test`
@@ -35,6 +36,7 @@ Based on analysis of production devcontainer repositories (devcontainers/feature
 **Deliverables**:
 
 **File**: `test/langstar/test.sh`
+
 ```bash
 #!/bin/bash
 
@@ -72,6 +74,7 @@ reportResults
 ```
 
 **Testing Command**:
+
 ```bash
 # From project root
 npm install -g @devcontainers/cli
@@ -79,6 +82,7 @@ devcontainer features test -f langstar -i ubuntu:noble .
 ```
 
 **Success Criteria**:
+
 - All checks pass on ubuntu:noble
 - Test completes in < 5 minutes
 
@@ -89,6 +93,7 @@ devcontainer features test -f langstar -i ubuntu:noble .
 **Goal**: Add GitHub Actions workflow for automated testing on PRs.
 
 **Tasks**:
+
 1. Create `.github/workflows/test-feature-pr.yaml`
 2. Add ShellCheck linting workflow
 3. Test against 3 base images
@@ -96,6 +101,7 @@ devcontainer features test -f langstar -i ubuntu:noble .
 **Deliverables**:
 
 **File**: `.github/workflows/test-feature-pr.yaml`
+
 ```yaml
 name: "PR - Test Langstar Feature"
 
@@ -127,6 +133,7 @@ jobs:
 ```
 
 **File**: `.github/workflows/lint-shell.yaml`
+
 ```yaml
 name: "Lint Shell Scripts"
 
@@ -150,6 +157,7 @@ jobs:
 ```
 
 **Success Criteria**:
+
 - CI runs on every PR that touches langstar feature
 - Tests pass on all 3 base images
 - ShellCheck catches shell script issues
@@ -162,6 +170,7 @@ jobs:
 **Goal**: Add scenario testing and expand base image matrix.
 
 **Tasks**:
+
 1. Create `test/langstar/scenarios.json`
 2. Add scenario-specific test scripts
 3. Expand base image matrix to 7 images
@@ -170,6 +179,7 @@ jobs:
 **Deliverables**:
 
 **File**: `test/langstar/scenarios.json`
+
 ```json
 {
   "langstar_default": {
@@ -204,6 +214,7 @@ jobs:
 ```
 
 **File**: `.github/workflows/test-feature-all.yaml`
+
 ```yaml
 name: "CI - Test Langstar Feature (All Images)"
 
@@ -250,6 +261,7 @@ jobs:
 ```
 
 **Success Criteria**:
+
 - Tests pass on 7+ base images
 - Scenario testing validates different configurations
 - Main branch has comprehensive coverage
@@ -261,29 +273,32 @@ jobs:
 ### Test Library Usage
 
 The `dev-container-features-test-lib` provides:
+
 - `check "<description>" <command>` - Run command and verify exit code 0
 - `reportResults` - Output pass/fail summary
 
 ### Base Image Selection Rationale
 
-| Image | Why Test |
-|-------|----------|
-| ubuntu:noble | Ubuntu 24.04 LTS (latest) |
-| ubuntu:jammy | Ubuntu 22.04 LTS (widely used) |
-| ubuntu:focal | Ubuntu 20.04 LTS (legacy support) |
-| debian:12 | Debian Bookworm (stable) |
-| debian:11 | Debian Bullseye (oldstable) |
-| mcr.microsoft.com/devcontainers/base:ubuntu | Official devcontainer base |
-| mcr.microsoft.com/devcontainers/base:debian | Official devcontainer base |
+| Image                                       | Why Test                          |
+| ------------------------------------------- | --------------------------------- |
+| ubuntu:noble                                | Ubuntu 24.04 LTS (latest)         |
+| ubuntu:jammy                                | Ubuntu 22.04 LTS (widely used)    |
+| ubuntu:focal                                | Ubuntu 20.04 LTS (legacy support) |
+| debian:12                                   | Debian Bookworm (stable)          |
+| debian:11                                   | Debian Bullseye (oldstable)       |
+| mcr.microsoft.com/devcontainers/base:ubuntu | Official devcontainer base        |
+| mcr.microsoft.com/devcontainers/base:debian | Official devcontainer base        |
 
 ### CI Performance Optimization
 
 **PR Workflow** (fast):
+
 - Test only changed features (3 images × 1 feature = 3 jobs)
 - Run in parallel
 - Target: < 10 minutes total
 
 **Main Branch Workflow** (comprehensive):
+
 - Test all scenarios (7 images + scenarios)
 - Can take longer (15-20 minutes)
 - Ensures nothing breaks in integration
@@ -291,6 +306,7 @@ The `dev-container-features-test-lib` provides:
 ### Testing Best Practices (from upstream)
 
 ✅ **DO**:
+
 1. Use `devcontainer features test` (not manual docker commands)
 2. Test across multiple OS distributions
 3. Use `continue-on-error: true` to see all failures
@@ -300,6 +316,7 @@ The `dev-container-features-test-lib` provides:
 7. Use matrix strategy for parallel testing
 
 ❌ **DON'T**:
+
 1. Manually build containers (CLI does it)
 2. Test in VS Code (headless only)
 3. Create complex test infrastructure
@@ -310,6 +327,7 @@ The `dev-container-features-test-lib` provides:
 ## Implementation Checklist
 
 ### Phase 1 (MVP) - 2-3 hours
+
 - [ ] Create `test/langstar/` directory
 - [ ] Write `test/langstar/test.sh`
 - [ ] Make test.sh executable (`chmod +x`)
@@ -319,6 +337,7 @@ The `dev-container-features-test-lib` provides:
 - [ ] Document test results
 
 ### Phase 2 (CI Integration) - 2-3 hours
+
 - [ ] Create `.github/workflows/test-feature-pr.yaml`
 - [ ] Create `.github/workflows/lint-shell.yaml`
 - [ ] Test workflow on a PR
@@ -327,6 +346,7 @@ The `dev-container-features-test-lib` provides:
 - [ ] Update README with CI badge
 
 ### Phase 3 (Comprehensive) - 3-4 hours
+
 - [ ] Create `test/langstar/scenarios.json`
 - [ ] Add scenario-specific test scripts (if needed)
 - [ ] Create `.github/workflows/test-feature-all.yaml`
@@ -340,6 +360,7 @@ The `dev-container-features-test-lib` provides:
 ### Risk 1: devcontainer CLI not available in CI
 
 **Mitigation**: Install via npm in workflow:
+
 ```yaml
 - name: "Install latest devcontainer CLI"
   run: npm install -g @devcontainers/cli
@@ -348,6 +369,7 @@ The `dev-container-features-test-lib` provides:
 ### Risk 2: Tests take too long
 
 **Mitigation**:
+
 - Use path filters to only test on changes
 - Run matrix jobs in parallel
 - Keep test.sh simple (no complex builds)
@@ -355,6 +377,7 @@ The `dev-container-features-test-lib` provides:
 ### Risk 3: Tests fail on some base images
 
 **Mitigation**:
+
 - Use `continue-on-error: true` to see all results
 - Add image-specific exclusions if needed (like upstream does)
 - Document known issues
@@ -362,6 +385,7 @@ The `dev-container-features-test-lib` provides:
 ### Risk 4: Docker-in-Docker issues in CI
 
 **Mitigation**:
+
 - Use standard GitHub runners (they support Docker)
 - Follow exact pattern from devcontainers/features
 - No special runner needed for basic tests
@@ -369,17 +393,20 @@ The `dev-container-features-test-lib` provides:
 ## Success Metrics
 
 ### Phase 1
+
 - Test runs locally without errors
 - All checks pass on ubuntu:noble
 - Test completes in < 5 minutes
 
 ### Phase 2
+
 - CI runs automatically on PRs
 - Tests pass on 3 base images
 - ShellCheck catches script issues
 - PR feedback within 10 minutes
 
 ### Phase 3
+
 - Comprehensive testing on main branch
 - 7+ base images tested
 - Scenarios validate different configurations
@@ -388,15 +415,18 @@ The `dev-container-features-test-lib` provides:
 ## References
 
 ### Documentation
+
 - Dev Container CLI: https://github.com/devcontainers/cli
 - Feature test docs: https://containers.dev/implementors/features/#test
 - Test library: https://github.com/devcontainers/cli/blob/main/scripts/test-lib.sh
 
 ### Example Workflows
+
 - devcontainers/features: `/workspace/reference/repo/devcontainers/features/code/.github/workflows/test-pr.yaml`
 - Rust feature test: `/workspace/reference/repo/devcontainers/features/code/test/rust/`
 
 ### Research Documents
+
 - Best practices: `/workspace/reference/research/241-devcontainer-feature-ci-testing/`
 - Detailed analysis: `/workspace/reference/repo/devcontainers/features/notes/README.md`
 
@@ -410,6 +440,7 @@ The `dev-container-features-test-lib` provides:
 ## Appendix: Commands Reference
 
 ### Local Testing
+
 ```bash
 # Install CLI
 npm install -g @devcontainers/cli
@@ -425,6 +456,7 @@ devcontainer features test -f langstar --skip-autogenerated .
 ```
 
 ### Debugging
+
 ```bash
 # See verbose output
 devcontainer features test -f langstar -i ubuntu:noble . --log-level debug
@@ -434,6 +466,7 @@ devcontainer features test -f langstar -i ubuntu:noble . --preserve-test-contain
 ```
 
 ### CI Commands
+
 ```bash
 # What CI runs (PR)
 devcontainer features test --skip-scenarios -f langstar -i ubuntu:noble .

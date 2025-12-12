@@ -24,6 +24,7 @@ Failed to create playground setting: HttpError(reqwest::Error {
 ```
 
 This matches the original issue description:
+
 - Same error: "premature end of input, line: 1, column: 348"
 - Same location: During CREATE operation in `test_create_update_delete_cycle`
 - Same test file: `playground_settings_integration_test.rs:155`
@@ -35,11 +36,13 @@ This matches the original issue description:
 **Answer**: **YES - This is the real mystery**
 
 Your Python experiment (`reference/experiments/509-playground-settings-api/test_playground_api.py`) shows:
+
 - ✅ POST /api/v1/playground-settings → 200 OK
 - ✅ Full JSON response received
 - ✅ No truncation
 
 But the Rust SDK fails on the exact same operation:
+
 - ❌ POST /api/v1/playground-settings → Error during JSON deserialization
 - ❌ "premature end of input" at column 348
 
@@ -50,6 +53,7 @@ But the Rust SDK fails on the exact same operation:
 **Answer**: **YES** - Your analysis is correct
 
 From `reference/api-specs/langsmith/playground-settings-endpoints.json`:
+
 - ✅ `GET /api/v1/playground-settings` (list) - EXISTS
 - ✅ `POST /api/v1/playground-settings` (create) - EXISTS
 - ✅ `PATCH /api/v1/playground-settings/{id}` (update) - EXISTS
@@ -67,11 +71,13 @@ Your OpenAPI analysis is accurate. The endpoint that doesn't exist is correctly 
 Here's what we know:
 
 #### What's NOT the problem:
+
 - ❌ NOT calling a non-existent endpoint (POST exists and is correct)
 - ❌ NOT attempting GET by ID (error happens before that)
 - ❌ NOT a 405 Method Not Allowed response
 
 #### What IS happening:
+
 1. Rust SDK calls `POST /api/v1/playground-settings` (sdk/src/client.rs:1858-1861)
 2. API responds with 200 OK status (SDK line 478 confirms success)
 3. reqwest attempts to deserialize JSON response (line 489: `response.json::<T>().await?`)
@@ -80,17 +86,20 @@ Here's what we know:
 #### Possible causes:
 
 **A. Response body is actually truncated** (Most likely)
+
 - API sends incomplete JSON
 - Content-Length header might be correct, but transfer is interrupted
 - Column 348 suggests ~348 bytes into the response
 - Python's requests library may handle this differently (retries? buffering?)
 
 **B. Response has unexpected format**
+
 - API returns valid JSON but schema doesn't match `PlaygroundSettingsResponse`
 - Deserialization fails partway through when hitting unexpected field
 - Python experiment doesn't catch this because it just prints the response
 
 **C. reqwest-specific behavior**
+
 - Rust's reqwest has stricter JSON parsing than Python's requests
 - Timeout issues in reqwest causing incomplete reads
 - HTTP/2 vs HTTP/1.1 differences between the two clients
@@ -100,11 +109,14 @@ Here's what we know:
 Your PR #510 has **TWO conflicting conclusions**:
 
 ### README.md conclusion (lines 277-293):
+
 > **There is NO API truncation issue.** The "error decoding response body" was a red herring caused by:
+>
 > 1. Integration tests attempting to call `GET /api/v1/playground-settings/{id}`
 > 2. This endpoint returns `405 Method Not Allowed`
 
 ### Issue comment conclusion (https://github.com/codekiln/langstar/issues/509#issuecomment-3602821199):
+
 > **Actual observation**: When running the SDK integration test locally, the error occurs during **CREATE** (POST), not GET
 
 **These cannot both be true.** The README's conclusion is invalidated by the actual test results.
@@ -129,6 +141,7 @@ Failed to create playground setting: HttpError(reqwest::Error {
 ```
 
 The error is at line 155:
+
 ```rust:sdk/tests/playground_settings_integration_test.rs:155
 let created = client
     .create_playground_settings(create_request)
@@ -165,17 +178,20 @@ let created = client
 ### Investigation Paths
 
 **Path A: API response is actually truncated**
+
 - Add wireshark/tcpdump capture
 - Log raw response bytes in SDK before parsing
 - Check if response is chunked (Transfer-Encoding: chunked)
 - Verify Content-Length matches actual bytes
 
 **Path B: Schema mismatch causing partial deserialization failure**
+
 - Print the full response body before calling `.json()`
 - Manually deserialize with serde_json::from_str to get better error messages
 - Check if API schema changed from OpenAPI spec
 
 **Path C: reqwest configuration issue**
+
 - Try with `reqwest::blocking::Client` instead of async
 - Add explicit timeout configuration
 - Test with reqwest's `text()` method first, then manually parse JSON
@@ -183,6 +199,7 @@ let created = client
 ## Code Locations for Investigation
 
 ### SDK HTTP Client (where error occurs):
+
 ```rust:sdk/src/client.rs:471-491
 pub async fn execute<T: for<'de> Deserialize<'de>>(
     &self,
@@ -206,6 +223,7 @@ pub async fn execute<T: for<'de> Deserialize<'de>>(
 ```
 
 ### CREATE Implementation:
+
 ```rust:sdk/src/client.rs:1854-1862
 pub async fn create_playground_settings(
     &self,
@@ -219,6 +237,7 @@ pub async fn create_playground_settings(
 ```
 
 ### Test That Fails:
+
 ```rust:sdk/tests/playground_settings_integration_test.rs:152-155
 let created = client
     .create_playground_settings(create_request)
@@ -248,6 +267,7 @@ let data: T = serde_json::from_str(&body_text)
 ```
 
 This will show:
+
 - Exact response body length
 - Full response content
 - Precise position of parsing failure
@@ -257,6 +277,7 @@ This will show:
 Your investigation is **on the right track** but led to an **incorrect conclusion in the README**.
 
 **Key findings:**
+
 1. ✅ You correctly identified the non-existent GET endpoint
 2. ✅ Your Python experiment proves POST works with Python
 3. ✅ You correctly reproduced the error locally
@@ -264,6 +285,7 @@ Your investigation is **on the right track** but led to an **incorrect conclusio
 5. ❓ The root cause is still unknown - Python works, Rust doesn't
 
 **What happened:**
+
 - You found that GET by ID doesn't exist (405 error)
 - You assumed this was the error source
 - But the actual test error occurs during POST CREATE

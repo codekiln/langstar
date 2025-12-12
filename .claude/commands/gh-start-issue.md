@@ -11,11 +11,13 @@ Automates the workflow for starting work on a GitHub issue by creating a worktre
 ## Arguments
 
 Arguments are passed via `$ARGUMENTS` in the format:
+
 ```
 <issue_number>
 ```
 
 **Required:**
+
 - `issue_number`: The GitHub issue number (integer)
 
 ## Example Usage

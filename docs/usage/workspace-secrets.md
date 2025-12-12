@@ -60,6 +60,7 @@ langstar secrets list --format json
 ```
 
 **Example Output (table)**:
+
 ```
 Fetching workspace secrets...
 ┌────────────────────┐
@@ -74,6 +75,7 @@ Found 3 secrets
 ```
 
 **Example Output (JSON)**:
+
 ```json
 [
   {"key": "ANTHROPIC_API_KEY"},
@@ -100,6 +102,7 @@ langstar secrets set ANTHROPIC_API_KEY --interactive
 ```
 
 **When to use**:
+
 - Manual one-time setup
 - Testing and development
 - When pasting from password managers
@@ -122,11 +125,13 @@ rm /tmp/secret.txt
 ```
 
 **When to use**:
+
 - CI/CD pipelines
 - Automated deployment scripts
 - Secrets management integration
 
 **Security tip**: Use secure temporary files with restricted permissions:
+
 ```bash
 touch /tmp/secret.txt
 chmod 600 /tmp/secret.txt  # Owner read/write only
@@ -151,6 +156,7 @@ langstar secrets set OPENAI_API_KEY --from-env MY_SECRET
 ```
 
 **When to use**:
+
 - Integration with password managers
 - Shell scripts that already have secrets in environment
 - Docker/container environments
@@ -174,11 +180,13 @@ langstar secrets set API_KEY --from-env MY_SECRET
 ```
 
 **When to use**:
+
 - Shell script pipelines
 - Integration with existing tooling
 - One-liner automation commands
 
 **Anti-pattern** (DO NOT DO THIS):
+
 ```bash
 # ❌ WRONG: Exposes secret in shell history and process list
 langstar secrets set API_KEY --value "sk-ant-..."  # Flag doesn't exist (security)
@@ -194,6 +202,7 @@ langstar secrets delete ANTHROPIC_API_KEY
 ```
 
 **Example Output**:
+
 ```
 Deleting secret 'ANTHROPIC_API_KEY'...
 ✓ Secret 'ANTHROPIC_API_KEY' deleted successfully
@@ -620,6 +629,7 @@ pub struct SecretKey {
 ```
 
 **Fields**:
+
 - `key`: The secret key name (e.g., "ANTHROPIC_API_KEY")
 
 **Note**: Values are never included in this type (API never returns values).
@@ -636,12 +646,14 @@ pub struct SecretUpsert {
 ```
 
 **Fields**:
+
 - `key`: The secret key name
 - `value`:
   - `Some(value)`: Create or update the secret with this value
   - `None`: Delete the secret (serializes as explicit `null` in JSON)
 
 **Constructor Methods**:
+
 - `SecretUpsert::set(key, value)`: Create/update a secret
 - `SecretUpsert::delete(key)`: Delete a secret
 
@@ -662,6 +674,7 @@ See `sdk/src/client.rs`:
 **Cause**: Your API key doesn't have `workspaces:manage` permission.
 
 **Solution**:
+
 1. Go to [LangSmith Settings](https://smith.langchain.com)
 2. Generate a new API key with `workspaces:manage` permission
 3. Update `LANGSMITH_API_KEY` environment variable
@@ -671,10 +684,12 @@ See `sdk/src/client.rs`:
 **Symptom**: Set a secret successfully but it doesn't appear in the list.
 
 **Possible Causes**:
+
 1. **Wrong workspace**: You're setting in one workspace but listing from another
 2. **Wrong organization**: Organization ID scoping mismatch
 
 **Solution**:
+
 ```bash
 # Verify your workspace/organization configuration
 echo "Workspace: $LANGSMITH_WORKSPACE_ID"
@@ -691,6 +706,7 @@ langstar secrets list
 **Cause**: The provided secret value is empty or only whitespace.
 
 **Solution**: Ensure your secret source contains a non-empty value:
+
 ```bash
 # Check file contents before using
 cat /tmp/secret.txt | wc -c  # Should be > 0
@@ -709,6 +725,7 @@ echo "actual-secret-value" | langstar secrets set KEY_NAME
 **Cause**: The specified file doesn't exist or path is incorrect.
 
 **Solution**:
+
 ```bash
 # Verify file exists and is readable
 ls -la /path/to/secret.txt
@@ -727,6 +744,7 @@ langstar secrets set API_KEY --from-file "$(pwd)/secret.txt"
 ## API Specification
 
 For the complete OpenAPI specification, see:
+
 - Production: https://api.smith.langchain.com/openapi.json
 - Implementation: `docs/implementation/484.2-ls-secrets-design.md`
 - Validation: `docs/implementation/490-ls-secrets-openapi-validation.md`

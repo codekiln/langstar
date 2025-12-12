@@ -16,12 +16,14 @@ Orchestrate replying to multiple GitHub PR review comments in parallel using the
 **IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
 
 **You CANNOT:**
+
 - Track issues across sessions
 - Remember to do something later
 - Follow up on tasks in the future
 - Promise to handle something "in a follow-up"
 
 **You MUST NOT say things like:**
+
 - "I'll track this in a follow-up issue"
 - "I'll remember to fix this later"
 - "I'll handle this in a subsequent PR"
@@ -31,21 +33,26 @@ Orchestrate replying to multiple GitHub PR review comments in parallel using the
 When replying to comments, each response MUST use ONE of these options:
 
 ### Option 1: Implement Now (Preferred)
+
 **When:** The change is small-ish and worth doing.
 **Action steps:**
+
 1. Implement the fix immediately
 2. Commit the change
 3. Reply to the comment with: "Fixed in commit {sha}: {brief description}"
 
 ### Option 2: Defer with Issue (Expensive)
+
 **When:** Change is large AND worth doing AND not critical to PR.
 **Action BEFORE replying:**
+
 1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
 2. Add to same milestone as PR's issue
 3. Add as sub-issue of parent ticket
-**Reply format:** "Created #XYZ to track this. Not addressing in this PR because {reason}."
+   **Reply format:** "Created #XYZ to track this. Not addressing in this PR because {reason}."
 
 ### Option 3: Disagree / Won't Fix
+
 **When:** Suggestion is nitpicky, negligible, or you disagree.
 **Reply format:** Professional explanation of why not addressing.
 **NEVER use for:** Test failures, errors, security concerns.
@@ -53,6 +60,7 @@ When replying to comments, each response MUST use ONE of these options:
 ## Overview
 
 This skill automates the process of replying to multiple PR review comments by:
+
 1. Fetching all review comments from a PR
 2. Filtering for unresolved or unanswered comments (optional)
 3. Spawning parallel subagents to handle each reply
@@ -61,12 +69,14 @@ This skill automates the process of replying to multiple PR review comments by:
 ## When to Use This Skill
 
 **Use this skill when:**
+
 - User wants to reply to multiple PR review comments at once
 - User asks to "resolve all comments" on a PR
 - User wants to batch-reply with similar messages (e.g., "Fixed")
 - User needs to mark multiple comments as addressed
 
 **Example user requests:**
+
 - "Reply to all unresolved comments on PR #300"
 - "Mark all review comments as fixed"
 - "Reply to comments 123, 456, and 789 on this PR"
@@ -75,11 +85,13 @@ This skill automates the process of replying to multiple PR review comments by:
 ## Prerequisites
 
 **Before using this skill:**
+
 1. Ensure the `gh` CLI is authenticated with proper permissions
 2. Verify the repository and PR exist
 3. Have the reply text prepared (or a strategy for generating replies)
 
 **Permissions required:**
+
 - Read access to PR comments
 - Write access to post comment replies
 
@@ -88,6 +100,7 @@ This skill automates the process of replying to multiple PR review comments by:
 ### Step 1: Identify the PR
 
 Determine which PR to work with:
+
 - If user provides PR number, use that
 - If in a PR context (e.g., PR comment in GitHub Actions), extract from context
 - Otherwise, ask the user for the PR number
@@ -103,6 +116,7 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate \
 ```
 
 **What this returns:**
+
 - `id`: Comment ID (needed for replying)
 - `body`: Comment text
 - `user`: Who posted the comment
@@ -113,19 +127,23 @@ gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate \
 Depending on user requirements, filter the comments:
 
 **Unresolved comments** (no replies yet):
+
 - First, filter for comments where `in_reply_to_id` is null (top-level comments)
 - For each top-level comment, check if there are any other comments where `in_reply_to_id` equals this comment's `id`
 - If no such child comments exist, then the top-level comment is unresolved
 
 **Specific comments:**
+
 - If user provides comment IDs, only process those
 
 **All comments:**
+
 - Process every comment in the PR
 
 ### Step 4: Prepare Reply Content
 
 Determine what to reply with:
+
 - **User-provided text**: If user specifies reply text, use it for all comments
 - **Per-comment text**: If user provides mapping of comment → reply text
 - **Generated text**: Generate appropriate replies based on comment content
@@ -178,6 +196,7 @@ Task(
 ```
 
 **Key points:**
+
 - All Task calls must be in a SINGLE message for parallel execution
 - Each subagent handles one comment reply independently
 - Use Haiku model for cost efficiency and speed
@@ -187,6 +206,7 @@ Task(
 ### Step 6: Collect Results
 
 After all subagents complete:
+
 - Parse each subagent's response
 - Count successes and failures
 - Identify which comments failed (if any)
@@ -195,6 +215,7 @@ After all subagents complete:
 ### Step 7: Report to User
 
 Provide a comprehensive report:
+
 ```
 Replied to 8/10 comments on PR #300:
 
@@ -217,6 +238,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 **User request:** "Reply to all unresolved comments on PR #300 with 'Fixed'"
 
 **Workflow:**
+
 1. Fetch all comments from PR #300
 2. Build a map of parent → children relationships by iterating over all comments and recording which comments have their `in_reply_to_id` set to another comment's `id`
 3. Filter for comments where `in_reply_to_id` is null (top-level) and the comment's `id` does not appear as a parent in the map (i.e., no other comment references it as a parent)
@@ -228,6 +250,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 **User request:** "Reply to comments 123, 456, and 789 on PR #300 with 'Addressed'"
 
 **Workflow:**
+
 1. No need to fetch all comments (user provided specific IDs)
 2. For each comment ID (123, 456, 789), spawn subagent to reply with "Addressed"
 3. Report results
@@ -235,11 +258,13 @@ Summary: Successfully replied to 8 out of 10 comments.
 ### Scenario 3: Custom Replies Per Comment
 
 **User request:** "Reply to PR #300 comments with these responses:
+
 - Comment 123: 'Fixed in v2.0'
 - Comment 456: 'This is working as intended'
 - Comment 789: 'Good catch, resolved'"
 
 **Workflow:**
+
 1. Parse user's comment → reply mapping
 2. For each comment, spawn subagent with the specific reply text
 3. Report results
@@ -249,6 +274,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 **User request:** "Read all unresolved comments on PR #300 and reply with appropriate responses"
 
 **Workflow:**
+
 1. Fetch all unresolved comments
 2. For each comment, analyze the content
 3. Generate appropriate reply based on comment context
@@ -260,6 +286,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 ### Batching
 
 **Optimal batch sizes:**
+
 - Small PRs (< 10 comments): Process all at once
 - Medium PRs (10-50 comments): Process all, but use Haiku model for speed
 - Large PRs (> 50 comments): Consider asking user which comments to prioritize
@@ -267,11 +294,13 @@ Summary: Successfully replied to 8 out of 10 comments.
 ### Error Handling
 
 **Graceful degradation:**
+
 - If some replies fail, still report successes
 - Provide actionable error messages for failures
 - Offer to retry failed comments
 
 **Common errors:**
+
 - 404: Comment or PR doesn't exist → Verify comment ID
 - 403: Permission denied → Check repository access
 - 422: Invalid parameters → Verify comment ID format
@@ -279,6 +308,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 ### Rate Limiting
 
 **GitHub API rate limits:**
+
 - GitHub API has rate limits (typically 5000 requests/hour for authenticated users)
 - Each reply is one API request
 - For very large batches (> 100 comments), consider warning user about rate limits
@@ -286,6 +316,7 @@ Summary: Successfully replied to 8 out of 10 comments.
 ### User Confirmation
 
 **Before mass-replying:**
+
 - Show user which comments will be replied to
 - Show the reply text that will be used
 - Ask for confirmation before proceeding
@@ -313,6 +344,7 @@ Proceed? (yes/no)
 ### With GitHub CLI (`gh`)
 
 This skill heavily uses `gh` CLI:
+
 - `gh api`: For fetching and posting comments
 - `gh pr view`: For PR context
 - `gh repo view`: For repository information
@@ -324,6 +356,7 @@ The `/gh-pr-comment-reply` slash command is available for single comment replies
 ### With Other Skills
 
 **Combine with:**
+
 - `github-issue-breakdown`: For managing PR-related issues
 - `gh-sub-issue`: For tracking comment resolution as sub-tasks
 - `update-github-issue-project-status`: For updating project boards after resolving comments
@@ -347,6 +380,7 @@ The `/gh-pr-comment-reply` slash command is available for single comment replies
 **Cause:** `gh` CLI not authenticated or lacks permissions
 
 **Solution:**
+
 ```bash
 # Check authentication
 gh auth status
@@ -360,6 +394,7 @@ gh auth refresh -s repo
 **Cause:** Using wrong endpoint or stale comment IDs
 
 **Solution:**
+
 - Fetch fresh comment list from GitHub API
 - Verify PR number is correct
 - Check that comments haven't been deleted
@@ -369,6 +404,7 @@ gh auth refresh -s repo
 **Cause:** No write access to repository
 
 **Solution:**
+
 - Verify repository access: `gh repo view`
 - Check if PR is from a fork (forks have different permissions)
 - Ensure authenticated user has write access
@@ -376,11 +412,13 @@ gh auth refresh -s repo
 ## Environment Requirements
 
 **Prerequisites:**
+
 - `gh` CLI installed and authenticated
 - Write access to repository
 - PR must exist and be accessible
 
 **Verification:**
+
 ```bash
 # Check gh CLI
 gh --version
@@ -424,6 +462,7 @@ Returns the created comment object.
 ### Get Comment Thread
 
 To find all replies to a comment:
+
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments --paginate \
   --jq '.[] | select(.in_reply_to_id == COMMENT_ID)'

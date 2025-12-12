@@ -10,6 +10,7 @@ description: Execute automated release workflow for Rust projects using Conventi
 This skill executes the complete automated release workflow for Rust projects that follow Conventional Emoji Commits. Execute this workflow when a user requests to create a release, bump the version, or publish a new version of the project.
 
 The workflow:
+
 1. Analyzes all commits since the last release tag
 2. Determines the appropriate semantic version bump (MAJOR, MINOR, PATCH, or NONE)
 3. Updates version fields in Cargo.toml file(s)
@@ -21,6 +22,7 @@ The workflow:
 ## When to Use This Skill
 
 Use this skill when the user:
+
 - Requests to "create a release" or "cut a release"
 - Asks to "bump the version" or "publish a new version"
 - Wants to "see what the next release would be" (use dry-run mode)
@@ -29,6 +31,7 @@ Use this skill when the user:
 - Mentions tagging a version
 
 **Examples:**
+
 - "Create a new release for this project"
 - "Bump the version and publish"
 - "What would the next release version be?"
@@ -42,6 +45,7 @@ Before executing the release workflow, verify the following requirements are met
 ### Required Tools
 
 Check that these tools are installed:
+
 - `git` - Version control
 - `gh` (GitHub CLI) - For creating GitHub releases
 - `git-cliff` - Changelog generation (install with `cargo install git-cliff`)
@@ -49,6 +53,7 @@ Check that these tools are installed:
 - `cargo` - Rust build tool (for validation)
 
 **Installation check:**
+
 ```bash
 command -v git && command -v gh && command -v git-cliff && command -v python3 && command -v cargo
 ```
@@ -56,11 +61,13 @@ command -v git && command -v gh && command -v git-cliff && command -v python3 &&
 ### GitHub Authentication
 
 Verify GitHub CLI is authenticated:
+
 ```bash
 gh auth status
 ```
 
 If not authenticated, run:
+
 ```bash
 gh auth login
 ```
@@ -68,6 +75,7 @@ gh auth login
 ### Repository State
 
 Ensure:
+
 - Working directory is clean (no uncommitted changes)
 - Currently on the main branch (or configured release branch)
 - Have permission to push to the repository
@@ -217,12 +225,12 @@ The skill parses Conventional Emoji Commits to determine version bumps. Refer to
 
 **Quick reference:**
 
-| Commit Type | Version Bump | Examples |
-|-------------|--------------|----------|
-| `🚨 BREAKING CHANGE` or `BREAKING CHANGE:` footer | **MAJOR** (1.0.0 → 2.0.0) | Breaking API changes |
-| `✨ feat` or `✨ feature` | **MINOR** (1.0.0 → 1.1.0) | New features |
-| `🩹 fix` or `⚡️ perf` | **PATCH** (1.0.0 → 1.0.1) | Bug fixes, performance |
-| `📚 docs`, `🎨 style`, `♻️ refactor`, `🧪 test`, `🔧 build`, `🤖 ci`, `📦 chore` | **NONE** | Non-releasable |
+| Commit Type                                                                     | Version Bump              | Examples               |
+| ------------------------------------------------------------------------------- | ------------------------- | ---------------------- |
+| `🚨 BREAKING CHANGE` or `BREAKING CHANGE:` footer                               | **MAJOR** (1.0.0 → 2.0.0) | Breaking API changes   |
+| `✨ feat` or `✨ feature`                                                       | **MINOR** (1.0.0 → 1.1.0) | New features           |
+| `🩹 fix` or `⚡️ perf`                                                           | **PATCH** (1.0.0 → 1.0.1) | Bug fixes, performance |
+| `📚 docs`, `🎨 style`, `♻️ refactor`, `🧪 test`, `🔧 build`, `🤖 ci`, `📦 chore` | **NONE**                  | Non-releasable         |
 
 **Priority:** MAJOR > MINOR > PATCH > NONE
 
@@ -235,16 +243,19 @@ When multiple commits exist, the highest priority bump is used.
 Analyzes git commits since last release and determines version bump.
 
 **Usage:**
+
 ```bash
 ./scripts/analyze_commits.py [OPTIONS]
 ```
 
 **Options:**
+
 - `--current-version VERSION` - Specify current version (default: last git tag or 0.0.0)
 - `--format {bump-type|new-version|json}` - Output format (default: bump-type)
 - `--verbose` - Show detailed analysis
 
 **Examples:**
+
 ```bash
 # Get bump type
 ./scripts/analyze_commits.py --format bump-type
@@ -263,6 +274,7 @@ Analyzes git commits since last release and determines version bump.
 ```
 
 **Use this script when:**
+
 - User asks "What would the next version be?"
 - Need to analyze commits before executing release
 - Debugging commit parsing issues
@@ -272,17 +284,20 @@ Analyzes git commits since last release and determines version bump.
 Updates version field in Cargo.toml file(s).
 
 **Usage:**
+
 ```bash
 ./scripts/bump_version.py NEW_VERSION [OPTIONS]
 ```
 
 **Options:**
+
 - `--root PATH` - Project root directory (default: current directory)
 - `--dry-run` - Preview changes without modifying files
 - `--workspace-deps` - Also update workspace dependency version references
 - `--verbose` - Show detailed output
 
 **Examples:**
+
 ```bash
 # Update version to 1.2.3
 ./scripts/bump_version.py 1.2.3
@@ -298,6 +313,7 @@ Updates version field in Cargo.toml file(s).
 ```
 
 **Use this script when:**
+
 - Manually updating versions without full release workflow
 - Need to update only version without commit/tag/changelog
 - Testing version update logic
@@ -307,11 +323,13 @@ Updates version field in Cargo.toml file(s).
 Main orchestration script that executes complete release workflow.
 
 **Usage:**
+
 ```bash
 ./scripts/bump_release.sh [OPTIONS]
 ```
 
 **Options:**
+
 - `-d, --dry-run` - Preview without making changes
 - `-s, --skip-checks` - Skip pre-release checks (dirty tree, branch)
 - `-n, --no-push` - Local release only (don't push or create GitHub release)
@@ -321,6 +339,7 @@ Main orchestration script that executes complete release workflow.
 - `-h, --help` - Show help message
 
 **Examples:**
+
 ```bash
 # Standard release
 ./scripts/bump_release.sh
@@ -342,6 +361,7 @@ Main orchestration script that executes complete release workflow.
 ```
 
 **Use this script:**
+
 - For all standard release workflows
 - This is the primary script users should run
 
@@ -352,6 +372,7 @@ Main orchestration script that executes complete release workflow.
 **Cause:** All commits since last release are non-releasable types (docs, style, refactor, test, build, ci, chore).
 
 **Solution:**
+
 - Check commits with: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
 - Verify commit messages follow Conventional Emoji Commits format
 - Need at least one: `feat`, `fix`, `perf`, or `BREAKING CHANGE`
@@ -361,6 +382,7 @@ Main orchestration script that executes complete release workflow.
 **Cause:** Uncommitted changes in working directory.
 
 **Solution:**
+
 ```bash
 # Check status
 git status
@@ -378,6 +400,7 @@ git stash
 **Cause:** Currently on a different branch.
 
 **Solution:**
+
 ```bash
 # Switch to main
 git checkout main
@@ -392,6 +415,7 @@ git pull
 **Cause:** git-cliff is not installed.
 
 **Solution:**
+
 ```bash
 cargo install git-cliff
 ```
@@ -401,6 +425,7 @@ cargo install git-cliff
 **Cause:** GitHub CLI is not authenticated.
 
 **Solution:**
+
 ```bash
 gh auth login
 ```
@@ -410,6 +435,7 @@ gh auth login
 **Cause:** Cargo.toml changes caused compilation errors.
 
 **Solution:**
+
 - Check `cargo check` output for errors
 - Fix Cargo.toml syntax or dependency issues
 - Ensure version format is valid (X.Y.Z)
@@ -419,6 +445,7 @@ gh auth login
 **Cause:** No permission or network issues.
 
 **Solution:**
+
 ```bash
 # Check remote
 git remote -v
@@ -436,6 +463,7 @@ gh auth status
 **Cause:** No version bump needed (all commits are non-releasable).
 
 **Solution:**
+
 - This is expected behavior
 - Check commits with `--dry-run` to see analysis
 - Add feature or fix commits if a release is needed
@@ -447,6 +475,7 @@ gh auth status
 Create `.cliff.toml` or `cliff.toml` at project root to customize changelog formatting.
 
 **Example configuration:**
+
 ```toml
 [changelog]
 header = "# Changelog\n\n"
@@ -484,6 +513,7 @@ commit_parsers = [
 Execute releases automatically on push to main:
 
 **GitHub Actions example:**
+
 ```yaml
 name: Release
 on:
@@ -549,11 +579,13 @@ gh release create v2.0.0 --notes-file CHANGELOG_ENTRY.md
 For Rust workspaces with multiple crates:
 
 **Single versioning (recommended):**
+
 - Keep all workspace members at the same version
 - `bump_version.py` updates all Cargo.toml files
 - Use `--workspace-deps` flag to update dependency references
 
 **Independent versioning:**
+
 - Release each crate separately
 - Specify `--root` to target specific crate directory
 - Manage tags with prefixes (e.g., `sdk-v1.0.0`, `cli-v1.0.0`)

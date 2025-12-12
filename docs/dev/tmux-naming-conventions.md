@@ -5,6 +5,7 @@ This document describes the tmux window naming conventions used in the Langstar 
 ## Overview
 
 When working with GitHub issues and pull requests in tmux, window names follow a compact format that conveys:
+
 1. **Current workflow phase** (via emoji)
 2. **Type of work** (issue vs PR)
 3. **GitHub number** (issue # or PR #)
@@ -19,36 +20,36 @@ This approach reduces tmux window titles from 50+ characters (full branch names)
 
 ### Components
 
-| Component | Description | Examples |
-|-----------|-------------|----------|
-| `<emoji>` | Visual indicator of current workflow phase | 💻 🔍 🚀 🔧 ⏳ ❓ 🧹 |
-| `<prefix>` | Type: `i` for issue, `pr` for pull request | `i` `pr` |
-| `<number>` | GitHub issue or PR number | `483` `485` |
+| Component  | Description                                | Examples             |
+| ---------- | ------------------------------------------ | -------------------- |
+| `<emoji>`  | Visual indicator of current workflow phase | 💻 🔍 🚀 🔧 ⏳ ❓ 🧹 |
+| `<prefix>` | Type: `i` for issue, `pr` for pull request | `i` `pr`             |
+| `<number>` | GitHub issue or PR number                  | `483` `485`          |
 
 ### Complete Examples
 
-| Window Name | Meaning |
-|-------------|---------|
-| `💻i483` | Coding on issue #483 |
-| `🚀i483` | Submitting PR for issue #483 |
-| `🔧pr485` | Maintaining PR #485 |
-| `⏳pr485` | Waiting for CI tests on PR #485 |
-| `🔍i123` | Researching/gathering info for issue #123 |
-| `🧹pr485` | Cleaning up after PR #485 merge |
+| Window Name | Meaning                                   |
+| ----------- | ----------------------------------------- |
+| `💻i483`    | Coding on issue #483                      |
+| `🚀i483`    | Submitting PR for issue #483              |
+| `🔧pr485`   | Maintaining PR #485                       |
+| `⏳pr485`   | Waiting for CI tests on PR #485           |
+| `🔍i123`    | Researching/gathering info for issue #123 |
+| `🧹pr485`   | Cleaning up after PR #485 merge           |
 
 ## Phase Emojis
 
 The workflow consists of 7 distinct phases, each with its own emoji:
 
-| Phase | Emoji | When Used | Typical Prefix | Automated By |
-|-------|-------|-----------|----------------|--------------|
-| 1. Gathering information | 🔍 | Research, reading docs, exploring codebase | `i` | Manual |
-| 2. Coding | 💻 | Active development on issue | `i` | `/gh-start-issue` |
-| 3. Waiting for tests | ⏳ | CI/CD checks running | `pr` | `/pr-workflow` |
-| 4. Waiting for user | ❓ | Needs user input or clarification | `i` or `pr` | Manual |
-| 5. Submitting PR | 🚀 | Creating and pushing pull request | `i` | `/pr-workflow` |
-| 6. PR maintenance | 🔧 | Addressing review comments, fixing issues | `pr` | `/pr-workflow` |
-| 7. Cleanup | 🧹 | Post-merge cleanup (delete branch, worktree) | `pr` | Manual |
+| Phase                    | Emoji | When Used                                    | Typical Prefix | Automated By      |
+| ------------------------ | ----- | -------------------------------------------- | -------------- | ----------------- |
+| 1. Gathering information | 🔍    | Research, reading docs, exploring codebase   | `i`            | Manual            |
+| 2. Coding                | 💻    | Active development on issue                  | `i`            | `/gh-start-issue` |
+| 3. Waiting for tests     | ⏳    | CI/CD checks running                         | `pr`           | `/pr-workflow`    |
+| 4. Waiting for user      | ❓    | Needs user input or clarification            | `i` or `pr`    | Manual            |
+| 5. Submitting PR         | 🚀    | Creating and pushing pull request            | `i`            | `/pr-workflow`    |
+| 6. PR maintenance        | 🔧    | Addressing review comments, fixing issues    | `pr`           | `/pr-workflow`    |
+| 7. Cleanup               | 🧹    | Post-merge cleanup (delete branch, worktree) | `pr`           | Manual            |
 
 ## Prefix Conventions
 
@@ -57,6 +58,7 @@ The workflow consists of 7 distinct phases, each with its own emoji:
 Use the `i` prefix when working on a GitHub issue before a PR exists.
 
 **Examples:**
+
 - `💻i483` - Coding on issue #483
 - `🔍i256` - Researching solution for issue #256
 - `🚀i483` - About to submit PR for issue #483
@@ -66,6 +68,7 @@ Use the `i` prefix when working on a GitHub issue before a PR exists.
 Use the `pr` prefix once a pull request has been created.
 
 **Examples:**
+
 - `🔧pr485` - Working on feedback for PR #485
 - `⏳pr485` - Waiting for CI checks on PR #485
 - `🧹pr485` - Cleaning up after PR #485 was merged
@@ -105,24 +108,28 @@ When starting work on an issue:
 When creating and managing a PR:
 
 **Phase 1 - Submitting:**
+
 ```bash
 # Before creating PR
 # Tmux: 🚀i483
 ```
 
 **Phase 2 - After PR Created:**
+
 ```bash
 # PR #485 created for issue #483
 # Tmux automatically updates to: 🔧pr485
 ```
 
 **Phase 3 - During CI:**
+
 ```bash
 # While CI checks are running
 # Tmux: ⏳pr485
 ```
 
 **Phase 4 - Back to Maintenance:**
+
 ```bash
 # After CI completes (pass or fail)
 # Tmux: 🔧pr485
@@ -159,18 +166,21 @@ tmux rename-window "❓pr${PR_NUM}"
 Window names are styled for maximum visibility and accessibility (WCAG 2.1 Level AAA):
 
 ### Active Window
+
 - **Background:** colour17 `#00005f` (navy blue)
 - **Text:** colour15 (white)
 - **Contrast ratio:** ~12:1 ✓ WCAG AAA
 - **Effect:** Active window (e.g., `💻i483`) appears with navy blue background
 
 ### Inactive Windows
+
 - **Background:** colour235 `#262626` (dark grey)
 - **Text:** colour250 `#bcbcbc` (light grey)
 - **Contrast ratio:** ~10:1 ✓ WCAG AAA
 - **Effect:** Inactive windows have subtle grey appearance
 
 ### Pane Borders
+
 - **Active:** colour39 `#00afff` (bright cyan-blue)
 - **Inactive:** colour240 (dark grey)
 
@@ -179,20 +189,25 @@ Configuration file: `.devcontainer/.tmux.conf`
 ## Benefits
 
 ### 1. Information Density
+
 - **Old format:** `claude/483-gh-start-issue-and-pr-workflow-tmux-clean-up-pane-` (56 chars)
 - **New format:** `💻i483` (6 chars including emoji)
 - **Space saved:** 50 characters per window
 
 ### 2. At-a-Glance Status
+
 Instantly see:
+
 - What phase you're in (emoji)
 - Whether it's issue work or PR work (i vs pr)
 - Which GitHub number you're working on
 
 ### 3. Context Switching
+
 When switching between multiple issues/PRs in different tmux windows, the compact format helps you quickly identify which window to switch to.
 
 ### 4. Accessibility
+
 All colors meet WCAG 2.1 Level AAA standards (7:1 contrast minimum), ensuring readability for users with visual impairments.
 
 ## Related Files
@@ -248,6 +263,7 @@ With this setup, you can quickly identify which window contains which work witho
 **Cause:** Not in a tmux session, or tmux config not loaded.
 
 **Solution:**
+
 ```bash
 # Verify you're in tmux
 echo $TMUX
@@ -265,6 +281,7 @@ ls -la ~/.tmux.conf
 **Cause:** Terminal doesn't support 256 colors.
 
 **Solution:**
+
 ```bash
 # Check terminal color support
 echo $TERM
@@ -279,6 +296,7 @@ set -g default-terminal "screen-256color"
 **Cause:** Font doesn't support emoji characters.
 
 **Solution:** Use a font with emoji support:
+
 - Noto Color Emoji
 - Segoe UI Emoji
 - Apple Color Emoji

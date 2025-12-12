@@ -9,6 +9,7 @@
 ## API Overview
 
 The Deployment Control Plane API manages LangGraph Server deployments:
+
 - Create, update, delete deployments
 - Manage deployment revisions and rollbacks
 - Configure integrations (GitHub, Docker registries)
@@ -16,10 +17,10 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 
 ## Base URLs
 
-| Region | Base URL |
-|--------|----------|
-| US | `https://api.host.langchain.com` |
-| EU | `https://eu.api.host.langchain.com` |
+| Region | Base URL                            |
+| ------ | ----------------------------------- |
+| US     | `https://api.host.langchain.com`    |
+| EU     | `https://eu.api.host.langchain.com` |
 
 ## Authentication
 
@@ -28,10 +29,10 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 
 ## Provenance
 
-| Date | Action | Size | Notes |
-|------|--------|------|-------|
-| 2025-11-20 | Initial fetch | 70K | v0.1.0 |
-| 2025-12-11 | Refresh | 71K | Updated spec |
+| Date       | Action        | Size | Notes        |
+| ---------- | ------------- | ---- | ------------ |
+| 2025-11-20 | Initial fetch | 70K  | v0.1.0       |
+| 2025-12-11 | Refresh       | 71K  | Updated spec |
 
 ## Refresh Command
 

@@ -36,6 +36,7 @@ gh extension install yahsan2/gh-sub-issue
 Links an existing issue as a sub-task of another issue without closing or recreating it.
 
 **Usage:**
+
 ```bash
 # Link issue #103 as sub-task of #92
 gh sub-issue add 92 103
@@ -45,6 +46,7 @@ gh sub-issue add 92 103 --repo owner/repo
 ```
 
 **What it does:**
+
 - Establishes official parent-child relationship via GitHub API
 - Preserves both issue numbers
 - Shows child in parent's "Sub-issues" dropdown
@@ -52,6 +54,7 @@ gh sub-issue add 92 103 --repo owner/repo
 - Fully reversible with `gh sub-issue remove`
 
 **Example:**
+
 ```bash
 $ gh sub-issue add 92 103
 Successfully linked #103 as a sub-issue of #92
@@ -64,6 +67,7 @@ Successfully linked #103 as a sub-issue of #92
 Creates a new issue with a parent relationship established from the start.
 
 **Usage:**
+
 ```bash
 # Create new sub-issue under #92
 gh sub-issue create --parent 92 --title "Implement authentication"
@@ -81,6 +85,7 @@ gh sub-issue create --parent 92 \
 ```
 
 **What it does:**
+
 - Creates issue with parent relationship already set
 - Avoids need to link separately
 - Supports full issue creation options (body, labels, assignees)
@@ -92,6 +97,7 @@ gh sub-issue create --parent 92 \
 Shows all related issues: children, parent, and siblings.
 
 **Usage:**
+
 ```bash
 # List all relationships for #92
 gh sub-issue list 92
@@ -115,12 +121,14 @@ gh sub-issue list 92 --json number,title,state
 ```
 
 **What it does:**
+
 - Queries GitHub API for issue relationships
 - Displays formatted table of related issues
 - Supports filtering by relation type and state
 - Provides JSON output for automation
 
 **Example:**
+
 ```bash
 $ gh sub-issue list 92 --relation children --state open
 
@@ -137,6 +145,7 @@ $ gh sub-issue list 92 --relation children --state open
 Removes parent-child relationship without deleting issues.
 
 **Usage:**
+
 ```bash
 # Remove single link
 gh sub-issue remove 92 103
@@ -149,6 +158,7 @@ gh sub-issue remove 92 103 --force
 ```
 
 **What it does:**
+
 - Breaks parent-child relationship
 - Keeps both issues intact
 - Child issue becomes standalone again
@@ -160,6 +170,7 @@ gh sub-issue remove 92 103 --force
 
 **1. Linking Existing Issues**
 When issues were created separately but need hierarchical organization:
+
 ```bash
 # You have epic #83 and phases #90-95 already created
 gh sub-issue add 83 90  # Link phase 1
@@ -169,6 +180,7 @@ gh sub-issue add 83 92  # Link phase 3
 
 **2. Creating Issue Hierarchies**
 When planning multi-level work breakdown:
+
 ```bash
 # Epic #83 → Phase #92 → Sub-tasks
 gh sub-issue add 83 92                          # Link phase to epic
@@ -178,6 +190,7 @@ gh sub-issue create --parent 92 --title "Task 2"  # Create sub-task
 
 **3. Querying Relationships**
 When you need to understand issue structure:
+
 ```bash
 # What are the sub-tasks of this phase?
 gh sub-issue list 92 --relation children
@@ -191,6 +204,7 @@ gh sub-issue list 103 --relation siblings
 
 **4. Maintaining Hierarchies**
 When relationships need adjustment:
+
 ```bash
 # Move issue #103 from parent #92 to parent #93
 gh sub-issue remove 92 103
@@ -202,12 +216,14 @@ gh sub-issue add 93 103
 ### Old Approach (Python Script)
 
 **Process:**
+
 1. Close child issue with comment
 2. Recreate with same content but new parent
 3. Child gets NEW issue number
 4. All references broken
 
 **Problems:**
+
 - ❌ Issue number changes (breaks references)
 - ❌ History fragmented across two issues
 - ❌ Comments/discussions on original issue orphaned
@@ -216,11 +232,13 @@ gh sub-issue add 93 103
 ### New Approach (gh-sub-issue)
 
 **Process:**
+
 1. Link issues via GitHub API
 2. Both issues unchanged
 3. Relationship established
 
 **Benefits:**
+
 - ✅ Issue numbers preserved
 - ✅ History intact
 - ✅ All references remain valid
@@ -231,16 +249,21 @@ gh sub-issue add 93 103
 ### With `github-issue-breakdown`
 
 **Use `github-issue-breakdown` for:** Creating multiple sub-issues from task list
+
 ```markdown
 <!-- In issue #92 -->
+
 ## Tasks
+
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Task 3
 ```
+
 Then run `github-issue-breakdown` to create #103, #104, #105 as sub-issues of #92.
 
 **Use `gh-sub-issue add` for:** Linking issues created outside the breakdown workflow
+
 ```bash
 # Someone created #106 manually
 gh sub-issue add 92 106  # Add to the same parent
@@ -249,6 +272,7 @@ gh sub-issue add 92 106  # Add to the same parent
 ### With `update-github-issue-project-status`
 
 After linking issues, update project board status:
+
 ```bash
 # Link sub-tasks to parent
 gh sub-issue add 92 103
@@ -329,6 +353,7 @@ gh sub-issue list 92 --relation children
 ```
 
 **Result:**
+
 - Epic #83 → Phase #92
 - Phase #92 → Sub-tasks #110, #111, #112
 
@@ -354,11 +379,13 @@ gh sub-issue list 105 --relation parent
 ### Planning Ahead
 
 **Preferred:** Use `github-issue-breakdown` when creating issues from task list
+
 - Creates sub-issues correctly from the start
 - Avoids manual linking work
 - Maintains clean history
 
 **Acceptable:** Use `gh-sub-issue add` when:
+
 - Issues already exist
 - Issues were created manually
 - Fixing missing relationships
@@ -366,11 +393,13 @@ gh sub-issue list 105 --relation parent
 ### Consistent Hierarchy
 
 **Establish clear levels:**
+
 - Level 1: Epic (major feature)
 - Level 2: Phase (implementation stage)
 - Level 3: Task (specific work item)
 
 **Example structure:**
+
 ```
 #83 Epic: CLI Implementation
 ├── #90 Phase 1: Research
@@ -384,15 +413,18 @@ gh sub-issue list 105 --relation parent
 ### Documentation
 
 **Always document hierarchy in epic issue:**
+
 ```markdown
 ## Epic Structure
 
 ### Phases
+
 - #90 - Phase 1: Research
 - #91 - Phase 2: Design
 - #92 - Phase 3: Implementation
 
 ### Sub-tasks (Phase 3)
+
 - #103 - Deployment management
 - #104 - Thread management
 - #105 - Run operations
@@ -401,6 +433,7 @@ gh sub-issue list 105 --relation parent
 ### Verification
 
 **After creating hierarchy:**
+
 ```bash
 # Check parent's children
 gh sub-issue list <parent> --relation children --state all
@@ -418,6 +451,7 @@ gh sub-issue list <child> --relation parent
 **Cause:** gh-sub-issue not installed
 
 **Solution:**
+
 ```bash
 gh extension install yahsan2/gh-sub-issue
 gh extension list | grep sub-issue
@@ -428,6 +462,7 @@ gh extension list | grep sub-issue
 **Cause:** Issue number doesn't exist or no repository access
 
 **Solution:**
+
 - Verify issue exists: `gh issue view <number>`
 - Check repository: `gh sub-issue add <parent> <child> --repo owner/name`
 - Confirm access permissions
@@ -437,6 +472,7 @@ gh extension list | grep sub-issue
 **Cause:** GitHub API limitations or permissions
 
 **Solution:**
+
 - Verify both issues exist: `gh issue view <number>`
 - Check authentication: `gh auth status`
 - Ensure repository write access: `gh auth refresh -s repo`
@@ -446,6 +482,7 @@ gh extension list | grep sub-issue
 **Cause:** Various GitHub API errors
 
 **Solution:**
+
 - Check issue state (can't link closed issues in some cases)
 - Verify you're in correct repository
 - Try with explicit repo: `--repo owner/name`
@@ -454,11 +491,13 @@ gh extension list | grep sub-issue
 ## Environment Requirements
 
 **Prerequisites:**
+
 - `gh` CLI installed and authenticated
 - Repository access with write permissions
 - `gh-sub-issue` extension installed (v0.5.1+ recommended)
 
 **Verification:**
+
 ```bash
 # Check gh CLI
 gh --version
@@ -477,12 +516,12 @@ gh sub-issue --help
 
 ### Quick Reference Table
 
-| Command | Purpose | Preserves Issue # | Example |
-|---------|---------|-------------------|---------|
-| `add` | Link existing issues | ✅ Yes | `gh sub-issue add 92 103` |
-| `create` | Create new sub-issue | N/A (new) | `gh sub-issue create --parent 92 --title "Task"` |
-| `list` | Query relationships | N/A (read-only) | `gh sub-issue list 92` |
-| `remove` | Unlink issues | ✅ Yes | `gh sub-issue remove 92 103` |
+| Command  | Purpose              | Preserves Issue # | Example                                          |
+| -------- | -------------------- | ----------------- | ------------------------------------------------ |
+| `add`    | Link existing issues | ✅ Yes            | `gh sub-issue add 92 103`                        |
+| `create` | Create new sub-issue | N/A (new)         | `gh sub-issue create --parent 92 --title "Task"` |
+| `list`   | Query relationships  | N/A (read-only)   | `gh sub-issue list 92`                           |
+| `remove` | Unlink issues        | ✅ Yes            | `gh sub-issue remove 92 103`                     |
 
 ### Common Flag Combinations
 

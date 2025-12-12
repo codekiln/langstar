@@ -14,6 +14,7 @@ This test plan addresses the 4 critical issues identified in the retroactive tes
 See companion document: `ls-prompt-structured-outputs-test-audit.md`
 
 **Critical Issues Found:**
+
 1. SDK integration tests use unconditional `#[ignore]`
 2. SDK integration tests not run in CI
 3. CLI tests don't follow CRUD lifecycle pattern
@@ -33,6 +34,7 @@ See companion document: `ls-prompt-structured-outputs-test-audit.md`
 Replace unconditional `#[ignore]` attributes with conditional `#[cfg_attr(not(feature = "integration-tests"), ignore)]` in SDK integration tests.
 
 **Files to Modify**:
+
 - `sdk/tests/structured_prompts_integration_test.rs`
   - Line 138: `test_push_structured_prompt_integration`
   - Line 193: `test_pull_structured_prompt_integration`
@@ -40,6 +42,7 @@ Replace unconditional `#[ignore]` attributes with conditional `#[cfg_attr(not(fe
   - Line 303: `test_push_function_calling_method`
 
 **Changes Required**:
+
 ```rust
 // BEFORE (4 occurrences)
 #[tokio::test]
@@ -53,6 +56,7 @@ async fn test_push_structured_prompt_integration() { ... }
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All 4 test functions updated with conditional ignore
 - [ ] Tests run with `cargo test --features integration-tests -p langstar-sdk --test structured_prompts_integration_test`
 - [ ] Tests are ignored without the feature flag
@@ -63,6 +67,7 @@ async fn test_push_structured_prompt_integration() { ... }
 **Estimated Complexity**: LOW (10 minutes)
 
 **Verification**:
+
 ```bash
 # Should run 4 tests
 cargo test --features integration-tests -p langstar-sdk --test structured_prompts_integration_test
@@ -81,9 +86,11 @@ cargo test -p langstar-sdk --test structured_prompts_integration_test
 Update CI configuration to run SDK integration tests in addition to CLI integration tests.
 
 **Files to Modify**:
+
 - `.github/workflows/ci.yml`
 
 **Current State** (line 198):
+
 ```yaml
 run: cargo nextest run --profile integration -p langstar --features integration-tests
 ```
@@ -137,6 +144,7 @@ run: cargo nextest run --profile integration --features integration-tests -p lan
 ```
 
 **Acceptance Criteria**:
+
 - [ ] SDK integration tests run in CI
 - [ ] CI shows 4 SDK integration test results
 - [ ] CI fails if SDK integration tests fail
@@ -148,6 +156,7 @@ run: cargo nextest run --profile integration --features integration-tests -p lan
 **Estimated Complexity**: MEDIUM (20-30 minutes)
 
 **Verification**:
+
 - Push to PR and verify CI runs SDK tests
 - Check GitHub Actions logs for "structured_prompts_integration_test"
 - Verify 4 tests execute and results are reported
@@ -162,12 +171,14 @@ run: cargo nextest run --profile integration --features integration-tests -p lan
 Replace the `check_env_vars()` silent skip pattern with explicit `.expect()` calls that fail when required environment variables are missing.
 
 **Files to Modify**:
+
 - `cli/tests/prompt_structured_test.rs`
   - Lines 38-74: Remove `check_env_vars()` function
   - Lines 119-123: Update test to use `.expect()`
   - Update all 9 integration tests that call `check_env_vars()`
 
 **Current Pattern (WRONG)**:
+
 ```rust
 fn check_env_vars() -> bool {
     let has_api_key = std::env::var("LANGSMITH_API_KEY").is_ok();
@@ -189,6 +200,7 @@ fn test_cli_push_structured_prompt() {
 ```
 
 **Required Pattern (CORRECT)**:
+
 ```rust
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -209,6 +221,7 @@ fn test_cli_push_structured_prompt() {
 ```
 
 **Tests to Update** (9 total):
+
 1. `test_cli_push_structured_prompt` (line 119)
 2. `test_cli_push_invalid_schema_file` (line 160)
 3. `test_cli_push_missing_schema_file` (line 191)
@@ -220,6 +233,7 @@ fn test_cli_push_structured_prompt() {
 9. `test_cli_pull_structured_prompt_json_output` (line 422)
 
 **Acceptance Criteria**:
+
 - [ ] `check_env_vars()` function removed
 - [ ] All 9 tests updated with explicit `.expect()` calls
 - [ ] Tests fail explicitly (not silently) when env vars missing
@@ -231,6 +245,7 @@ fn test_cli_push_structured_prompt() {
 **Estimated Complexity**: MEDIUM (30-45 minutes)
 
 **Verification**:
+
 ```bash
 # Without env vars - should fail explicitly
 unset LANGSMITH_API_KEY
@@ -253,17 +268,20 @@ cargo test --features integration-tests -p langstar --test prompt_structured_tes
 Update the main CLI round-trip test to follow the CRUD lifecycle pattern by adding SDK verification after CLI operations.
 
 **Files to Modify**:
+
 - `cli/tests/prompt_structured_test.rs:313-372` - `test_cli_structured_prompt_round_trip`
 
 **Why Start Here**:
 Focus on one representative test first to establish the pattern. Other tests can follow in subsequent tickets if needed.
 
 **Current Test Flow**:
+
 1. Push via CLI
 2. Pull via CLI
 3. Verify CLI output
 
 **Required Test Flow (CRUD Pattern)**:
+
 1. Push via CLI
 2. **Verify via SDK** (new step)
 3. Pull via CLI
@@ -273,6 +291,7 @@ Focus on one representative test first to establish the pattern. Other tests can
 **Implementation Guidance**:
 
 Add SDK client helper:
+
 ```rust
 // Add to top of file or in test
 fn create_sdk_client() -> Result<LangchainClient, String> {
@@ -288,6 +307,7 @@ fn create_runtime() -> tokio::runtime::Runtime {
 ```
 
 Update test:
+
 ```rust
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -344,6 +364,7 @@ fn test_cli_structured_prompt_round_trip() {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] SDK client creation helper added
 - [ ] Tokio runtime helper added
 - [ ] SDK verification added after CLI push
@@ -359,11 +380,13 @@ fn test_cli_structured_prompt_round_trip() {
 **Estimated Complexity**: MEDIUM-HIGH (1-2 hours)
 
 **Verification**:
+
 ```bash
 cargo test --features integration-tests -p langstar --test prompt_structured_test test_cli_structured_prompt_round_trip -- --nocapture
 ```
 
 **Reference**:
+
 - `cli/tests/prompt_scoping_test.rs:test_prompt_crud_lifecycle_private_visibility`
 - `docs/dev/testing/crud-lifecycle-pattern.md`
 
@@ -377,9 +400,11 @@ cargo test --features integration-tests -p langstar --test prompt_structured_tes
 Add a new test that creates via SDK, verifies via CLI, confirms via SDK. This provides the strongest guarantee of CLI/SDK consistency.
 
 **Files to Modify**:
+
 - `cli/tests/prompt_structured_test.rs` (add new test function)
 
 **Test Structure**:
+
 ```rust
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -447,6 +472,7 @@ fn test_structured_prompt_full_lifecycle_sdk_cli_sdk() {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] New test function added
 - [ ] Test creates prompt via SDK
 - [ ] Test verifies via CLI (JSON output)
@@ -462,6 +488,7 @@ fn test_structured_prompt_full_lifecycle_sdk_cli_sdk() {
 **Priority**: Optional (enhances coverage but not critical)
 
 **Verification**:
+
 ```bash
 cargo test --features integration-tests -p langstar --test prompt_structured_test test_structured_prompt_full_lifecycle_sdk_cli_sdk -- --nocapture
 ```
@@ -478,6 +505,7 @@ Run final verification steps, re-run audit, and prepare milestone for release.
 **Tasks**:
 
 1. **Run Complete Test Suite**:
+
 ```bash
 # All unit tests
 cargo test --workspace --lib
@@ -493,17 +521,20 @@ cargo test --workspace --all-features
 ```
 
 2. **Verify CI Passes**:
+
 - Push all changes to feature branch
 - Verify all CI jobs pass (including new SDK integration tests)
 - Check test result reports
 
 3. **Re-Run Audit**:
+
 ```bash
 /gh-milestones:test-audit ls-prompt-structured-outputs
 ```
 
 4. **Document Improvements**:
-Add section to milestone release notes documenting test improvements:
+   Add section to milestone release notes documenting test improvements:
+
 - 4 critical issues resolved
 - SDK integration tests now run in CI
 - CLI tests follow CRUD lifecycle pattern
@@ -511,9 +542,10 @@ Add section to milestone release notes documenting test improvements:
 - X% test coverage improvement
 
 5. **Mark Milestone as Released**:
-Use the appropriate milestone release workflow.
+   Use the appropriate milestone release workflow.
 
 **Acceptance Criteria**:
+
 - [ ] All tests pass locally
 - [ ] All CI checks pass
 - [ ] Audit shows 0 critical issues
@@ -529,17 +561,21 @@ Use the appropriate milestone release workflow.
 ## Implementation Order
 
 ### Phase 1: Quick Wins (Can be parallel)
+
 1. **Ticket 1**: Fix SDK ignore attributes (10 min) → MERGE
 2. **Ticket 3**: Remove silent skip pattern (30-45 min) → MERGE
 
 ### Phase 2: CI Integration (Sequential dependency)
+
 3. **Ticket 2**: Add SDK tests to CI (20-30 min, needs Ticket 1) → MERGE
 
 ### Phase 3: CRUD Lifecycle (Sequential)
+
 4. **Ticket 4**: Add CRUD verification to round-trip test (1-2 hours, needs Ticket 3) → MERGE
 5. **Ticket 5**: (Optional) Add SDK→CLI→SDK test (45-60 min, needs Ticket 4) → MERGE if time allows
 
 ### Phase 4: Release
+
 6. **Ticket 6**: Final verification and release (1 hour, needs all previous) → MERGE
 
 **Total Estimated Time**: 3-5 hours (excluding optional Ticket 5)

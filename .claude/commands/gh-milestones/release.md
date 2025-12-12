@@ -12,6 +12,7 @@ Automates the process of marking milestones as completed and updating related is
 **IMPORTANT:** You are operating in a stateless session. Each Claude Code session is isolated.
 
 **You CANNOT:**
+
 - Track issues across sessions
 - Remember to do something later
 - Follow up on tasks in the future
@@ -22,20 +23,24 @@ Automates the process of marking milestones as completed and updating related is
 ## Arguments
 
 Arguments are passed via `$ARGUMENTS` in the format:
+
 ```
 <milestone> <version>
 ```
 
 **Required:**
+
 - `milestone`: Either a GitHub milestone URL or a milestone name (string)
 - `version`: The release version tag (e.g., `v0.4.1`)
 
 **Parsing rules:**
+
 - If first argument starts with `https://github.com/`: treat as URL and extract milestone number
 - Otherwise: treat as milestone name
 - Second argument is always the version string
 
 **Examples:**
+
 ```bash
 # Using milestone URL
 /gh-milestones:release https://github.com/codekiln/langstar/milestone/5 v0.4.1
@@ -322,70 +327,87 @@ https://github.com/$OWNER/$REPO/issues/$PARENT_ISSUE
 ### Common Errors
 
 **Invalid version format:**
+
 ```
 ❌ Error: Version must be in format vX.Y.Z (e.g., v0.4.1)
 ```
+
 - Ensure version starts with 'v' and follows semantic versioning
 
 **Milestone not found:**
+
 ```
 ❌ Error: Milestone 'milestone-name' not found
 ```
+
 - Check milestone name spelling
 - Verify milestone exists: `gh api repos/$OWNER/$REPO/milestones` (e.g., `gh api repos/octocat/Hello-World/milestones`)
 - If using URL, ensure URL is correct format
 
 **Release not found:**
+
 ```
 ❌ Error: Release 'v0.4.1' not found in repository
    Please create the release first: gh release create v0.4.1
 ```
+
 - Create the GitHub release before running this command
 - Verify release tag exists: `gh release list`
 
 **Parent issue not found:**
+
 ```
 ❌ Error: Could not find parent issue for milestone 'milestone-name'
    No issues found with this milestone attached
 ```
+
 - Ensure at least one issue has the milestone attached
 - The issue with the lowest number is assumed to be the parent
 - Manually verify issues: `gh issue list --milestone "milestone-name"`
 
 **Authentication error:**
+
 ```
 ❌ Error: HTTP 401: Unauthorized
 ```
+
 - Check GitHub CLI authentication: `gh auth status`
 - Re-authenticate if needed: `gh auth login`
 
 **Permission error:**
+
 ```
 ❌ Error: HTTP 403: Forbidden
 ```
+
 - Verify you have write access to the repository
 - Ensure you have permission to close issues and edit milestones
 
 ### Handling Edge Cases
 
 **Milestone already closed:**
+
 - The command will still update the description and parent issue
 - Output will note: `ℹ️  Milestone was already closed`
 
 **Parent issue already closed:**
+
 - The command will still add the release comment
 - Output will note: `ℹ️  Parent issue #N was already closed`
 
 **Release is a draft:**
+
 - Command will warn but continue: `⚠️  Warning: Release 'vX.Y.Z' is still a draft`
 - Consider publishing the release first for consistency
 
 **Sub-issues are open:**
+
 - Command will warn and ask for confirmation
 - If you proceed, milestone will still be closed
 - Best practice: close all sub-issues before releasing
 
 **gh-sub-issue extension not installed:**
+
 - Sub-issue validation will be skipped with a warning
 - All other steps will complete normally
 - Install extension: Check `.claude/skills/gh-sub-issue/SKILL.md` for installation
@@ -468,11 +490,13 @@ Continue anyway? (y/n): y
 ## Integration with Project Workflow
 
 This command is typically used after:
+
 1. **All work for the milestone is complete** - All features implemented, tests passing
 2. **PR is merged to main** - The milestone's code is now in the main branch
 3. **Release is created** - GitHub release has been published with release notes
 
 **Typical release workflow:**
+
 ```bash
 # 1. Merge final PR for milestone
 gh pr merge 385 --squash

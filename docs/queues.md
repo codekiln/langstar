@@ -19,6 +19,7 @@ langstar queue create --name "Production Review" --description "Review productio
 ```
 
 Output:
+
 ```
 Created queue:
   ID: 12345678-1234-1234-1234-123456789012
@@ -34,6 +35,7 @@ langstar queue list
 ```
 
 Output:
+
 ```
 ID        Name               Type    Description                   Created
 12345678  Production Review  single  Review production errors      2025-11-28
@@ -76,6 +78,7 @@ langstar queue list [OPTIONS]
 | `--json` | Output as JSON |
 
 **Examples:**
+
 ```bash
 # List all queues
 langstar queue list
@@ -107,6 +110,7 @@ langstar queue create --name <NAME> [OPTIONS]
 | `--json` | Output as JSON |
 
 **Examples:**
+
 ```bash
 # Basic queue
 langstar queue create --name "Error Triage"
@@ -140,11 +144,13 @@ langstar queue get <QUEUE_ID> [OPTIONS]
 | `--json` | Output as JSON |
 
 **Example:**
+
 ```bash
 langstar queue get 12345678-1234-1234-1234-123456789012
 ```
 
 Output:
+
 ```
 Queue: Production Review
   ID: 12345678-1234-1234-1234-123456789012
@@ -174,6 +180,7 @@ langstar queue update <QUEUE_ID> [OPTIONS]
 | `--json` | Output as JSON |
 
 **Example:**
+
 ```bash
 langstar queue update 12345678-... --name "Updated Queue Name" --description "New description"
 ```
@@ -194,6 +201,7 @@ langstar queue delete <QUEUE_ID> [OPTIONS]
 | `--force` | Skip confirmation prompt |
 
 **Example:**
+
 ```bash
 # With confirmation prompt
 langstar queue delete 12345678-1234-1234-1234-123456789012
@@ -218,6 +226,7 @@ langstar queue add-runs <QUEUE_ID> <RUN_IDS>... [OPTIONS]
 | `--runs-file <FILE>` | File containing run IDs (one per line) |
 
 **Examples:**
+
 ```bash
 # Add single run
 langstar queue add-runs 12345678-... abcdef01-1234-1234-1234-123456789012
@@ -230,6 +239,7 @@ langstar queue add-runs 12345678-... --runs-file runs.txt
 ```
 
 **runs.txt format:**
+
 ```
 # Comments are ignored
 abcdef01-1234-1234-1234-123456789012
@@ -248,6 +258,7 @@ langstar queue remove-run <QUEUE_ID> <RUN_ID>
 ```
 
 **Example:**
+
 ```bash
 langstar queue remove-run 12345678-... abcdef01-...
 ```
@@ -269,11 +280,13 @@ langstar queue items <QUEUE_ID> [OPTIONS]
 | `--json` | Output as JSON |
 
 **Example:**
+
 ```bash
 langstar queue items 12345678-1234-1234-1234-123456789012 --limit 50
 ```
 
 Output:
+
 ```
 Index  Run ID    Name          Status   Added
 0      abcdef01  ChatOpenAI    success  2025-11-28
@@ -369,6 +382,7 @@ langstar queue add-runs "$QUEUE_ID" --runs-file "$RUNS_FILE"
 ```
 
 Usage:
+
 ```bash
 ./import-runs.sh 12345678-... runs_to_review.txt
 ```
@@ -533,11 +547,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### "Authentication failed"
 
 Ensure `LANGSMITH_API_KEY` is set:
+
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
 ```
 
 Verify with:
+
 ```bash
 langstar config
 ```
@@ -555,6 +571,7 @@ langstar config
 ### Empty queue items
 
 The `items` command fetches runs sequentially by index. If you see fewer items than expected:
+
 - Some runs may have been reviewed and removed
 - The queue may be empty
 
@@ -564,15 +581,15 @@ The `items` command fetches runs sequentially by index. If you see fewer items t
 
 The annotation queue commands use the LangSmith REST API:
 
-| CLI Command | HTTP Method | Endpoint |
-|-------------|-------------|----------|
-| `queue list` | GET | `/api/v1/annotation-queues` |
-| `queue create` | POST | `/api/v1/annotation-queues` |
-| `queue get` | GET | `/api/v1/annotation-queues/{id}` |
-| `queue update` | PATCH | `/api/v1/annotation-queues/{id}` |
-| `queue delete` | DELETE | `/api/v1/annotation-queues/{id}` |
-| `queue add-runs` | POST | `/api/v1/annotation-queues/{id}/runs` |
-| `queue remove-run` | DELETE | `/api/v1/annotation-queues/{id}/runs/{run_id}` |
-| `queue items` | GET | `/api/v1/annotation-queues/{id}/run/{index}` |
+| CLI Command        | HTTP Method | Endpoint                                       |
+| ------------------ | ----------- | ---------------------------------------------- |
+| `queue list`       | GET         | `/api/v1/annotation-queues`                    |
+| `queue create`     | POST        | `/api/v1/annotation-queues`                    |
+| `queue get`        | GET         | `/api/v1/annotation-queues/{id}`               |
+| `queue update`     | PATCH       | `/api/v1/annotation-queues/{id}`               |
+| `queue delete`     | DELETE      | `/api/v1/annotation-queues/{id}`               |
+| `queue add-runs`   | POST        | `/api/v1/annotation-queues/{id}/runs`          |
+| `queue remove-run` | DELETE      | `/api/v1/annotation-queues/{id}/runs/{run_id}` |
+| `queue items`      | GET         | `/api/v1/annotation-queues/{id}/run/{index}`   |
 
 For complete API documentation, see the [LangSmith OpenAPI spec](https://api.smith.langchain.com/redoc).

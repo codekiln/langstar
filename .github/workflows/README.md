@@ -42,16 +42,19 @@ The release workflow supports manual triggering via `workflow_dispatch` for reco
 #### When to Use Manual Trigger
 
 **Recovery scenarios:**
+
 - Artifact upload failed during automated release
 - Network issues interrupted release workflow
 - Need to re-run validation checks
 
 **Testing scenarios:**
+
 - Test release process with alpha/beta tags
 - Validate workflow changes before merging
 - Debug release issues without contaminating git history
 
 **Administrative scenarios:**
+
 - Create release for tag that existed before automation was added
 - Recover from workflow chaining issues
 - Manual override when automated flow fails
@@ -59,6 +62,7 @@ The release workflow supports manual triggering via `workflow_dispatch` for reco
 #### How to Use
 
 **Via GitHub CLI:**
+
 ```bash
 # Manually trigger release for existing tag
 gh workflow run release.yml -f tag=v0.5.1
@@ -68,6 +72,7 @@ gh run watch
 ```
 
 **Via GitHub UI:**
+
 1. Navigate to Actions → Release
 2. Click "Run workflow" button
 3. Enter tag name (e.g., `v0.5.1`)
@@ -101,6 +106,7 @@ Before creating a release, the workflow validates that the git tag matches `Carg
 ### Draft Release Process
 
 **Why drafts?**
+
 - Review artifacts before making them public
 - Fix issues without embarrassing re-releases
 - Verify checksums and download links
@@ -131,11 +137,11 @@ Before creating a release, the workflow validates that the git tag matches `Carg
 
 For each release, the workflow builds:
 
-| Platform | Target | Artifact Format |
-|----------|--------|----------------|
-| Linux x86_64 | `x86_64-unknown-linux-musl` | .tar.gz + .sha256 |
-| Linux ARM64 | `aarch64-unknown-linux-musl` | .tar.gz + .sha256 |
-| macOS ARM64 | `aarch64-apple-darwin` | .tar.gz + .sha256 |
+| Platform     | Target                       | Artifact Format   |
+| ------------ | ---------------------------- | ----------------- |
+| Linux x86_64 | `x86_64-unknown-linux-musl`  | .tar.gz + .sha256 |
+| Linux ARM64  | `aarch64-unknown-linux-musl` | .tar.gz + .sha256 |
+| macOS ARM64  | `aarch64-apple-darwin`       | .tar.gz + .sha256 |
 
 **Total**: 6 files (3 archives + 3 checksums)
 
@@ -148,6 +154,7 @@ For each release, the workflow builds:
 **Cause**: Git tag version doesn't match `Cargo.toml` version
 
 **Solution**:
+
 ```bash
 # Delete the incorrect tag
 git push --delete origin vX.Y.Z
@@ -162,6 +169,7 @@ git tag -d vX.Y.Z
 **Symptom**: Workflow runs but no draft release visible
 
 **Possible causes**:
+
 1. Workflow failed - Check Actions logs
 2. Permission issues - Verify GITHUB_TOKEN has write permissions
 3. Tag format incorrect - Must be `v*` (e.g., `v0.4.3`, not `0.4.3`)
@@ -171,6 +179,7 @@ git tag -d vX.Y.Z
 **Symptom**: Draft release exists but no artifacts attached
 
 **Check**:
+
 1. Build jobs completed successfully - View workflow run
 2. Matrix builds ran for all platforms - Check job logs
 3. Upload step succeeded - Look for errors in "Upload release asset" steps
@@ -182,6 +191,7 @@ git tag -d vX.Y.Z
 The `all-jobs` job in `ci.yml` aggregates all CI check results into a single status check.
 
 **Why it exists**:
+
 - Matrix builds create multiple status checks (build-linux, build-macos, etc.)
 - Branch protection can only require ONE status check
 - Solution: Aggregate all jobs → single "All Jobs" check
@@ -213,6 +223,7 @@ all-jobs:
 **Settings**: https://github.com/codekiln/langstar/settings/rules/9196293
 
 This means:
+
 - ✅ "All Jobs" check MUST pass before merge
 - ❌ Cannot merge if "All Jobs" never ran
 - ⚠️ If you change ci.yml, "All Jobs" must still exist
@@ -270,6 +281,7 @@ When adding a NEW required status check to branch protection:
 #### Why This Matters
 
 **What happened in issue #235**:
+
 - Added "All Jobs" to branch protection
 - Added `all-jobs` job to ci.yml
 - PR #223 created BEFORE `all-jobs` merged
@@ -287,6 +299,7 @@ When adding a NEW required status check to branch protection:
 **Cause**: PR ran CI before all-jobs gate was added
 
 **Solution**:
+
 ```bash
 # Option 1: Close and reopen PR
 gh pr close <PR_NUMBER>
@@ -301,6 +314,7 @@ git push
 ### "All Jobs" Check Not Appearing
 
 **Possible causes**:
+
 1. PR created before all-jobs gate merged
    - **Solution**: Re-trigger CI (see above)
 
@@ -336,6 +350,7 @@ For complete documentation on DevContainer feature testing, publishing procedure
 **[`.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md`](../../.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md)**
 
 This document covers:
+
 - Workflow triggers and job details
 - Feature structure and validation requirements
 - Pre-commit and post-commit testing procedures

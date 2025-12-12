@@ -53,16 +53,19 @@ Langstar supports three configuration methods, evaluated in this order of preced
 ### When to Use Each Method
 
 **Command-line flags:**
+
 - One-time operations
 - Overriding default configuration for a single command
 - Scripting with varying parameters
 
 **Configuration file:**
+
 - Persistent settings used regularly
 - Team environments with shared configuration
 - Multiple API keys or projects
 
 **Environment variables:**
+
 - CI/CD pipelines
 - Containerized environments
 - Quick temporary overrides
@@ -162,6 +165,7 @@ export LANGSMITH_API_KEY="<your-api-key>"
 #### No Additional Variables Needed
 
 LangGraph assistants are deployment-level resources:
+
 - ❌ No `LANGSMITH_ORGANIZATION_ID` needed
 - ❌ No `LANGSMITH_WORKSPACE_ID` needed
 - ✅ Scoped automatically by your API key
@@ -180,21 +184,23 @@ export LANGSTAR_OUTPUT_FORMAT="json"
 #### Purpose
 
 LangSmith prompts support hierarchical multi-tenancy:
+
 - **Organizations** contain multiple workspaces
 - **Workspaces** contain prompts
 - Scoping controls which prompts you can access
 
 #### Configuration Options
 
-| Option | Required | Purpose |
-|--------|----------|---------|
-| `langsmith_api_key` | Yes | Authentication |
-| `organization_id` | No | Scope to organization's prompts |
-| `workspace_id` | No | Scope to workspace's prompts |
+| Option              | Required | Purpose                         |
+| ------------------- | -------- | ------------------------------- |
+| `langsmith_api_key` | Yes      | Authentication                  |
+| `organization_id`   | No       | Scope to organization's prompts |
+| `workspace_id`      | No       | Scope to workspace's prompts    |
 
 #### Scoping Behavior
 
 **No scoping (default):**
+
 ```bash
 export LANGSMITH_API_KEY="<key>"
 langstar prompt list
@@ -202,6 +208,7 @@ langstar prompt list
 ```
 
 **Organization scoping:**
+
 ```bash
 export LANGSMITH_API_KEY="<key>"
 export LANGSMITH_ORGANIZATION_ID="<org-id>"
@@ -212,6 +219,7 @@ langstar prompt list --public
 ```
 
 **Workspace scoping:**
+
 ```bash
 export LANGSMITH_API_KEY="<key>"
 export LANGSMITH_WORKSPACE_ID="<workspace-id>"
@@ -237,15 +245,16 @@ langstar prompt list --organization-id "<org-id>" --public
 #### Purpose
 
 LangGraph assistants are deployment-level resources:
+
 - Each API key is tied to a specific deployment
 - No additional scoping configuration needed
 - Simpler model for graph-based applications
 
 #### Configuration Options
 
-| Option | Required | Purpose |
-|--------|----------|---------|
-| `langsmith_api_key` | Yes | Authentication + deployment scoping |
+| Option              | Required | Purpose                             |
+| ------------------- | -------- | ----------------------------------- |
+| `langsmith_api_key` | Yes      | Authentication + deployment scoping |
 
 #### How It Works
 
@@ -256,6 +265,7 @@ langstar assistant list
 ```
 
 The API key automatically determines:
+
 - Which deployment you're accessing
 - Which assistants you can see and manage
 - Authentication and authorization
@@ -263,6 +273,7 @@ The API key automatically determines:
 #### No Additional Configuration
 
 These do NOT apply to assistants:
+
 - ❌ `organization_id` - Not used
 - ❌ `workspace_id` - Not used
 - ❌ No `--organization-id` flags
@@ -314,6 +325,7 @@ langstar prompt list --workspace-id "workspace-from-flag" --format json
 ```
 
 Result:
+
 - API key: `key-from-file` (config file)
 - Organization: `org-from-env` (environment)
 - Workspace: `workspace-from-flag` (command flag)
@@ -471,12 +483,14 @@ Output Format: table
 ```
 
 **What it shows:**
+
 - Configuration file location
 - Which API keys are set (without exposing the actual keys)
 - Organization/workspace scoping status
 - Output format setting
 
 **What it doesn't show:**
+
 - Actual API key values (security)
 - Environment variable values (use `env | grep LANG` to check)
 
@@ -511,6 +525,7 @@ unset LANGSMITH_API_KEY
 ```
 
 **Benefits:**
+
 - Configuration persists across shell sessions
 - Easier to manage multiple settings
 - Can still override with environment or flags
@@ -532,6 +547,7 @@ export LANGSMITH_API_KEY="<langgraph-key>"
 ```
 
 **When to do this:**
+
 - Using different API keys for different services
 - Separate deployment permissions
 - Enhanced security (principle of least privilege)
@@ -563,6 +579,7 @@ langstar prompt list --public  # Returns public prompts in org
 ```
 
 **When to do this:**
+
 - Working with team prompts
 - Need to filter to organization's resources
 - Enterprise deployment with multiple organizations
@@ -640,6 +657,7 @@ langstar config
 ```
 
 If scoped, either:
+
 - Add `--public` flag to access public prompts
 - Remove scoping to access all prompts:
   ```bash
@@ -677,6 +695,7 @@ Config file exists but settings aren't applied.
 ### Protecting API Keys
 
 **DO:**
+
 - ✅ Use config file with restricted permissions:
   ```bash
   chmod 600 ~/.langstar/config.toml
@@ -686,6 +705,7 @@ Config file exists but settings aren't applied.
 - ✅ Rotate keys regularly
 
 **DON'T:**
+
 - ❌ Commit API keys to version control
 - ❌ Share API keys in documentation
 - ❌ Use production keys in development

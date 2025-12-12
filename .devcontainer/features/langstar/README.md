@@ -140,6 +140,7 @@ langstar config
 ## Architecture Support
 
 This feature supports:
+
 - **Linux x86_64** (amd64) ✅
 - **Linux ARM64** (aarch64) ✅
 
@@ -148,6 +149,7 @@ The installer automatically detects your architecture and downloads the appropri
 ## Compatibility
 
 The feature has been tested and verified on:
+
 - Ubuntu 22.04, 24.04
 - Debian 11, 12
 - Alpine 3.18, 3.19
@@ -155,6 +157,7 @@ The feature has been tested and verified on:
 ## Documentation
 
 For complete documentation, visit:
+
 - [Langstar GitHub Repository](https://github.com/codekiln/langstar)
 - [Langstar CLI Documentation](https://github.com/codekiln/langstar/blob/main/README.md)
 - [DevContainer Feature Documentation](https://github.com/codekiln/langstar/blob/main/docs/devcontainer-feature.md)
@@ -162,7 +165,7 @@ For complete documentation, visit:
 ## Support
 
 If you encounter issues:
+
 1. Check the [GitHub Issues](https://github.com/codekiln/langstar/issues)
 2. Review the [installation script](https://github.com/codekiln/langstar/blob/main/scripts/install.sh)
 3. Open a new issue with details about your environment
-

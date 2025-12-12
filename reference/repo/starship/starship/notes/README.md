@@ -9,6 +9,7 @@
 ## Purpose
 
 Studying starship's distribution patterns, specifically:
+
 1. How a major Rust CLI tool handles installation without built-in self-update
 2. Install script patterns that could benefit langstar
 3. Platform detection and privilege handling approaches
@@ -18,6 +19,7 @@ Studying starship's distribution patterns, specifically:
 ### No Built-in Self-Update
 
 Like other major Rust CLI tools (ripgrep, bat, fd, eza), starship does **not** have a built-in self-update command. Instead, it relies on:
+
 - Package managers (brew, apt, cargo, etc.)
 - The `install.sh` script for initial install and updates
 
@@ -26,16 +28,21 @@ Like other major Rust CLI tools (ripgrep, bat, fd, eza), starship does **not** h
 Starship's `install/install.sh` is the most sophisticated install script among analyzed Rust CLI tools. Key patterns:
 
 #### 1. Writability Checks
+
 The script checks if the target directory is writable before attempting installation, avoiding cryptic permission errors.
 
 #### 2. Privilege Escalation
+
 Detects when sudo is needed and handles elevation gracefully, rather than failing unexpectedly.
 
 #### 3. Download Fallbacks
+
 Supports both `curl` and `wget`, maximizing compatibility across systems.
 
 #### 4. Platform Detection
+
 Comprehensive detection including:
+
 - Architecture (x86_64, aarch64, arm)
 - Operating system (Linux, macOS, Windows/WSL)
 - libc variant (glibc vs musl)
@@ -66,6 +73,7 @@ starship/
 ### Why Starship Doesn't Have Self-Update
 
 The starship team chose to:
+
 - Focus on core functionality (prompt customization)
 - Leverage existing package manager ecosystem
 - Avoid security complexity of self-modifying binaries

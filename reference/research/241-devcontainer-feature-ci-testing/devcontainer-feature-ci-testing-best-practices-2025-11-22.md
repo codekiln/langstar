@@ -3,6 +3,7 @@
 **Research Date:** 2025-11-22
 **Issue:** #241
 **Context:** Research for #201 DevContainer Feature Epic - Phase 3 Testing (#240)
+
 # Best Practices in Continuous Integration (CI) Testing for DevContainer Features and Templates
 
 ## Overview
@@ -65,7 +66,7 @@ The `devcontainers/features` repository sets the gold standard for automated, in
 
 - **CI Provider**: Uses GitHub Actions for all testing.
 - **Test Matrix**: Each feature is tested across a range of OS/distribution images (e.g., Ubuntu, Debian, Alpine) to ensure compatibility.
-- **End-to-End Testing**:  
+- **End-to-End Testing**:
   - For each feature, the workflow spins up a container using the respective base image and injects the feature into a test devcontainer definition via the [Dev Container CLI](https://github.com/devcontainers/cli).
   - Installs the feature exactly as a user would via devcontainer tooling.
   - Executes a test script for each feature, often involving running version checks, CLI commands, or functional smoke tests (e.g., verifying node is installed and can run a hello-world JS file).
@@ -76,14 +77,16 @@ The `devcontainers/features` repository sets the gold standard for automated, in
 - **Result Reporting**: Status and results are reported with links, outputs, and logs directly on the PR/status page.
 
 **Example CI Workflow Structure**
+
 - Detect PRs or new pushes
 - Lint feature metadata
 - For each base OS in matrix:
-    - Build test container with feature installed
-    - Run automated test script in container context
-    - Collect and publish logs/results
+  - Build test container with feature installed
+  - Run automated test script in container context
+  - Collect and publish logs/results
 
 **Strengths**
+
 - Fully automated; no user interaction or VS Code invocation required.
 - Comprehensive: covers install, initial setup, and basic operation.
 - Flexible/extensible; new features only need minimal configuration for CI inclusion.
@@ -98,11 +101,11 @@ The `devcontainers/templates` repository automates the validation and testing of
 **Key Aspects of Their CI Workflows**
 
 - **Test Matrix**: All templates are built and tested across supported platforms/distributions.
-- **Automated Build & Launch**:  
+- **Automated Build & Launch**:
   - Each template is used to create a new devcontainer using the [Dev Container CLI](https://github.com/devcontainers/cli).
   - Container is built according to the template, without relying on VS Code.
   - Startup scripts and provisioning steps are executed as they would be in a real user session.
-- **Automated Validation**:  
+- **Automated Validation**:
   - Test scripts or healthcheck commands are automatically run inside the container post-creation.
   - Scripts check that tools, languages, and project scaffolding work (e.g., running a sample Node.js/Go/Python project, verifying successful command output).
 - **Linting & Schema Checks**: Validates that all template files conform to schema and best practices.
@@ -110,15 +113,17 @@ The `devcontainers/templates` repository automates the validation and testing of
 - **Reporting**: Logs and errors clearly surfaced in CI run, and failures block merge.
 
 **CI Workflow Example**
+
 - On PR/push, detect modified/new templates
 - Lint template metadata and structure
 - For each template and platform in matrix:
-    - Initialize new devcontainer from template with Dev Container CLI
-    - Build container, run setup scripts
-    - Run tests to verify installed tools and environment behavior
-    - Report and enforce result in GitHub checks
+  - Initialize new devcontainer from template with Dev Container CLI
+  - Build container, run setup scripts
+  - Run tests to verify installed tools and environment behavior
+  - Report and enforce result in GitHub checks
 
 **Strengths**
+
 - No manual steps, VS Code, or user intervention required.
 - Verifies initialization, install, and critical developer workflows.
 - Ensures templates remain functional and launchable at all times.

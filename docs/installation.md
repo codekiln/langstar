@@ -27,6 +27,7 @@ curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln
 ```
 
 This will:
+
 1. Detect your platform (Linux or macOS) and architecture (x86_64 or ARM64)
 2. Download the appropriate pre-built binary from GitHub releases
 3. Verify the SHA256 checksum
@@ -36,15 +37,16 @@ This will:
 
 langstar currently supports the following platforms:
 
-| Operating System | Architecture | Binary Type | Notes |
-|-----------------|--------------|-------------|-------|
-| **Linux** | x86_64 (64-bit) | Static (musl) | No runtime dependencies |
-| **macOS** | x86_64 (Intel) | Dynamic | macOS 10.13+ |
-| **macOS** | aarch64 (Apple Silicon) | Dynamic | M1/M2/M3 Macs |
+| Operating System | Architecture            | Binary Type   | Notes                   |
+| ---------------- | ----------------------- | ------------- | ----------------------- |
+| **Linux**        | x86_64 (64-bit)         | Static (musl) | No runtime dependencies |
+| **macOS**        | x86_64 (Intel)          | Dynamic       | macOS 10.13+            |
+| **macOS**        | aarch64 (Apple Silicon) | Dynamic       | M1/M2/M3 Macs           |
 
 ### Requirements
 
 **All platforms:**
+
 - `curl` or `wget` (for downloading)
 - `tar` (for extracting archives)
 - `shasum` or `sha256sum` (for checksum verification)
@@ -52,10 +54,12 @@ langstar currently supports the following platforms:
 These tools are pre-installed on most systems.
 
 **Linux:**
+
 - No additional runtime dependencies (static binary)
 - Works on Debian, Ubuntu, Fedora, RHEL, Alpine, and other distributions
 
 **macOS:**
+
 - macOS 10.13 (High Sierra) or later
 - No additional runtime dependencies
 
@@ -74,6 +78,7 @@ curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln
 ```
 
 **What it does:**
+
 - Uses HTTPS with TLS 1.2+ for security
 - Downloads and runs the installer script
 - Installs the latest version
@@ -120,16 +125,19 @@ If you prefer not to use the installer script, you can install manually:
 #### Step 1: Determine Your Platform
 
 **Linux (x86_64):**
+
 ```bash
 PLATFORM="x86_64-linux-musl"
 ```
 
 **macOS (Intel):**
+
 ```bash
 PLATFORM="x86_64-macos"
 ```
 
 **macOS (Apple Silicon):**
+
 ```bash
 PLATFORM="aarch64-macos"
 ```
@@ -163,11 +171,13 @@ tar -xzf "langstar-${VERSION}-${PLATFORM}.tar.gz"
 #### Step 4: Install
 
 **System-wide (requires sudo):**
+
 ```bash
 sudo install -m 755 langstar /usr/local/bin/langstar
 ```
 
 **User-local (no sudo required):**
+
 ```bash
 mkdir -p ~/.local/bin
 install -m 755 langstar ~/.local/bin/langstar
@@ -230,11 +240,11 @@ cargo install --path cli --root ~/.local
 
 The `install.sh` script supports the following options:
 
-| Option | Description | Example |
-|--------|-------------|---------|
-| `--version VERSION` | Install specific version | `--version 0.2.0` |
-| `--prefix DIR` | Install to custom directory | `--prefix ~/bin` |
-| `--help` | Show help message | `--help` |
+| Option              | Description                 | Example           |
+| ------------------- | --------------------------- | ----------------- |
+| `--version VERSION` | Install specific version    | `--version 0.2.0` |
+| `--prefix DIR`      | Install to custom directory | `--prefix ~/bin`  |
+| `--help`            | Show help message           | `--help`          |
 
 ### Installation Directories
 
@@ -263,6 +273,7 @@ LANGSTAR_INSTALL_DIR=~/.local/bin ./install.sh
 If langstar is installed to a directory not in your PATH, you'll need to add it:
 
 **For ~/.local/bin:**
+
 ```bash
 # Bash
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
@@ -277,6 +288,7 @@ fish_add_path ~/.local/bin
 ```
 
 **For custom directory:**
+
 ```bash
 echo 'export PATH="/path/to/custom/dir:$PATH"' >> ~/.bashrc  # or ~/.zshrc
 source ~/.bashrc  # or source ~/.zshrc
@@ -301,6 +313,7 @@ langstar config
 ```
 
 **Expected output:**
+
 ```
 langstar 0.2.0
 ```
@@ -324,6 +337,7 @@ chmod +x install.sh
 ```
 
 The installer will:
+
 1. Detect existing installation
 2. Compare versions
 3. Download and install the new version
@@ -353,16 +367,19 @@ cargo install --path cli --force
 ### If Installed via Installer Script
 
 **System-wide installation:**
+
 ```bash
 sudo rm /usr/local/bin/langstar
 ```
 
 **User-local installation:**
+
 ```bash
 rm ~/.local/bin/langstar
 ```
 
 **Custom installation:**
+
 ```bash
 rm /path/to/custom/dir/langstar
 ```
@@ -396,11 +413,13 @@ rm -rf ~/.langstar
 Install curl:
 
 **Debian/Ubuntu:**
+
 ```bash
 sudo apt-get update && sudo apt-get install curl
 ```
 
 **macOS:**
+
 ```bash
 # curl is pre-installed on macOS
 # If missing, install via Homebrew:
@@ -432,6 +451,7 @@ This indicates the downloaded file is corrupted or tampered with:
 #### "Permission denied"
 
 **For system-wide installation:**
+
 ```bash
 # Use sudo
 sudo ./install.sh
@@ -441,6 +461,7 @@ sudo ./install.sh
 ```
 
 **For user-local installation:**
+
 ```bash
 # Ensure directory exists and is writable
 mkdir -p ~/.local/bin
@@ -451,6 +472,7 @@ chmod 755 ~/.local/bin
 ### Command Not Found After Installation
 
 #### Check if binary exists
+
 ```bash
 # System-wide
 ls -l /usr/local/bin/langstar
@@ -460,6 +482,7 @@ ls -l ~/.local/bin/langstar
 ```
 
 #### Check PATH
+
 ```bash
 echo $PATH
 ```
@@ -467,6 +490,7 @@ echo $PATH
 If the installation directory isn't in PATH, add it (see [PATH Configuration](#path-configuration)).
 
 #### Reload shell
+
 ```bash
 # Reload shell configuration
 source ~/.bashrc  # or source ~/.zshrc for zsh
@@ -485,6 +509,7 @@ If you see "Unsupported operating system" or "Unsupported architecture":
 ### Build from Source Issues
 
 #### Rust not installed
+
 ```bash
 # Install Rust via rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -492,6 +517,7 @@ source ~/.cargo/env
 ```
 
 #### Compilation errors
+
 ```bash
 # Update Rust to latest stable
 rustup update stable
@@ -502,6 +528,7 @@ cargo build --release
 ```
 
 #### Tests failing
+
 ```bash
 # Run tests to diagnose
 cargo test

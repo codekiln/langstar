@@ -19,17 +19,17 @@ This document describes the implementation of model provider configuration manag
 
 ### Key Deliverables
 
-| Phase | Issue | Status | Description |
-|-------|-------|--------|-------------|
-| 0.0 Scout | [#453](https://github.com/codekiln/langstar/issues/453) | ✅ Complete | Feasibility research |
-| 1 SDK Precedent | [#471](https://github.com/codekiln/langstar/issues/471) | ✅ Complete | Research SDK patterns |
-| 2 Design DX | [#472](https://github.com/codekiln/langstar/issues/472) | ✅ Complete | UX consistency design |
-| 3 OpenAPI Validation | [#473](https://github.com/codekiln/langstar/issues/473) | ✅ Complete | Validate API spec |
-| 4 SDK Types | [#474](https://github.com/codekiln/langstar/issues/474) | ✅ Complete | Rust SDK types |
-| 5 SDK Client | [#475](https://github.com/codekiln/langstar/issues/475) | ✅ Complete | Client methods |
-| 6 CLI Commands | [#476](https://github.com/codekiln/langstar/issues/476) | ✅ Complete | CLI integration |
-| 7 Testing | [#477](https://github.com/codekiln/langstar/issues/477) | 🟡 In Progress | Integration tests |
-| 8 Documentation | [#478](https://github.com/codekiln/langstar/issues/478) | ✅ Complete | User/dev docs |
+| Phase                | Issue                                                   | Status         | Description           |
+| -------------------- | ------------------------------------------------------- | -------------- | --------------------- |
+| 0.0 Scout            | [#453](https://github.com/codekiln/langstar/issues/453) | ✅ Complete    | Feasibility research  |
+| 1 SDK Precedent      | [#471](https://github.com/codekiln/langstar/issues/471) | ✅ Complete    | Research SDK patterns |
+| 2 Design DX          | [#472](https://github.com/codekiln/langstar/issues/472) | ✅ Complete    | UX consistency design |
+| 3 OpenAPI Validation | [#473](https://github.com/codekiln/langstar/issues/473) | ✅ Complete    | Validate API spec     |
+| 4 SDK Types          | [#474](https://github.com/codekiln/langstar/issues/474) | ✅ Complete    | Rust SDK types        |
+| 5 SDK Client         | [#475](https://github.com/codekiln/langstar/issues/475) | ✅ Complete    | Client methods        |
+| 6 CLI Commands       | [#476](https://github.com/codekiln/langstar/issues/476) | ✅ Complete    | CLI integration       |
+| 7 Testing            | [#477](https://github.com/codekiln/langstar/issues/477) | 🟡 In Progress | Integration tests     |
+| 8 Documentation      | [#478](https://github.com/codekiln/langstar/issues/478) | ✅ Complete    | User/dev docs         |
 
 ## Research Phase
 
@@ -39,6 +39,7 @@ This document describes the implementation of model provider configuration manag
 **Document**: [453-ls-langsmith-model-providers-scout.md](../research/453-ls-langsmith-model-providers-scout.md)
 
 Key findings:
+
 1. API endpoint: `/api/v1/playground-settings`
 2. Full CRUD operations supported (GET, POST, PATCH, DELETE)
 3. Settings use LangChain LC-JSON serialization format
@@ -52,6 +53,7 @@ Sample data collected: [reference/research/453-ls-langsmith-model-providers-play
 **Issue**: [#471](https://github.com/codekiln/langstar/issues/471)
 
 Analyzed existing SDK patterns:
+
 - Request/Response type naming conventions
 - List parameters structure
 - Error handling patterns
@@ -84,6 +86,7 @@ Key design decisions:
 **Issue**: [#473](https://github.com/codekiln/langstar/issues/473)
 
 Validated against LangSmith OpenAPI spec:
+
 - Endpoint: `/api/v1/playground-settings`
 - Request schemas: `PlaygroundSettingsCreateRequest`, `PlaygroundSettingsUpdateRequest`
 - Response schema: `PlaygroundSettingsResponse`
@@ -252,11 +255,13 @@ OpenAPI spec location: `reference/openapi/langchain/langsmith/openapi.json`
 #### Helper Functions
 
 **`extract_provider_and_model`** - Parses LC-JSON for display
+
 ```rust
 fn extract_provider_and_model(settings: &Value) -> (String, String)
 ```
 
 Extracts:
+
 - Provider from `settings.id[2]` (e.g., "anthropic", "openai")
 - Model from `settings.kwargs.model`
 
@@ -270,18 +275,21 @@ Handles missing/malformed data gracefully (returns "-" for missing fields).
 #### Unit Tests
 
 **SDK Types** (`sdk/src/playground_settings.rs`):
+
 - Serialization/deserialization for all types
 - Round-trip tests
 - Real provider format tests (Anthropic, OpenAI, Bedrock)
 - Edge cases (minimal data, missing fields)
 
 **CLI Logic** (`cli/src/commands/model_config.rs`):
+
 - Provider/model extraction from various LC-JSON structures
 - Edge cases (empty arrays, missing fields, malformed data)
 
 #### Integration Tests
 
 **Planned** (issue #477):
+
 - End-to-end CRUD workflow
 - File-based create
 - Flag-based updates
@@ -368,6 +376,7 @@ Playground settings store model configs in LangChain serialization format:
 ```
 
 **Key components**:
+
 - `lc`: Format version (always 1)
 - `type`: Always "constructor"
 - `id`: Identifies LangChain class (provider at index 2)
@@ -378,28 +387,32 @@ Playground settings store model configs in LangChain serialization format:
 
 ### Supported Providers
 
-| Provider | Package | Module | Class | Example Model |
-|----------|---------|--------|-------|---------------|
-| Anthropic | `langchain` | `chat_models` | `ChatAnthropic` | `claude-3-5-sonnet-20241022` |
-| OpenAI | `langchain` | `chat_models` | `ChatOpenAI` | `gpt-4-turbo` |
-| Azure OpenAI | `langchain` | `chat_models` | `AzureChatOpenAI` | `gpt-4` |
-| AWS Bedrock | `langchain_aws` | `chat_models` | `ChatBedrockConverse` | `anthropic.claude-3-5-sonnet-*` |
+| Provider     | Package         | Module        | Class                 | Example Model                   |
+| ------------ | --------------- | ------------- | --------------------- | ------------------------------- |
+| Anthropic    | `langchain`     | `chat_models` | `ChatAnthropic`       | `claude-3-5-sonnet-20241022`    |
+| OpenAI       | `langchain`     | `chat_models` | `ChatOpenAI`          | `gpt-4-turbo`                   |
+| Azure OpenAI | `langchain`     | `chat_models` | `AzureChatOpenAI`     | `gpt-4`                         |
+| AWS Bedrock  | `langchain_aws` | `chat_models` | `ChatBedrockConverse` | `anthropic.claude-3-5-sonnet-*` |
 
 ### Provider-Specific Details
 
 **Anthropic**:
+
 - Secret: `ANTHROPIC_API_KEY`
 - Common params: `model`, `temperature`, `max_tokens`
 
 **OpenAI**:
+
 - Secret: `OPENAI_API_KEY`
 - Common params: `model`, `temperature`, `max_tokens`
 
 **Azure OpenAI**:
+
 - Secret: `AZURE_OPENAI_API_KEY` or `azure_ad_token`
 - Additional params: `deployment_name`, `azure_endpoint`, `api_version`
 
 **AWS Bedrock**:
+
 - Authentication: AWS IAM (not LangSmith secrets)
 - Additional params: `region_name`
 
@@ -468,6 +481,7 @@ Potential improvements for future milestones:
 ## Milestone Completion
 
 All phases 0.0-8 are complete. Milestone can be closed when:
+
 - Phase 7 (Testing) integration tests merge
 - Any post-launch issues are resolved
 

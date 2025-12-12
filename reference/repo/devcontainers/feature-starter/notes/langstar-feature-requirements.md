@@ -12,11 +12,13 @@ A devcontainer feature is a self-contained, shareable unit of installation code 
 ### Feature Structure
 
 Based on analysis of:
+
 - `devcontainers/feature-starter` - Template repository
 - `devcontainers/features` - Official features collection
 - Particularly the `github-cli` feature as a reference
 
 **Required structure:**
+
 ```
 src/langstar/
 ├── devcontainer-feature.json    # Feature metadata
@@ -32,12 +34,14 @@ src/langstar/
 **Purpose**: Defines feature metadata, options, and dependencies
 
 **Required fields:**
+
 - `id`: Unique identifier (e.g., "langstar")
 - `name`: Human-readable name (e.g., "Langstar CLI")
 - `version`: Semantic version (e.g., "1.0.0")
 - `description`: Brief description of the feature
 
 **Optional but recommended:**
+
 - `documentationURL`: Link to documentation
 - `options`: Configurable parameters
   - `version`: Which version to install (default: "latest")
@@ -46,6 +50,7 @@ src/langstar/
 - `customizations`: Tool-specific settings (e.g., VS Code)
 
 **Example for langstar:**
+
 ```json
 {
     "id": "langstar",
@@ -72,6 +77,7 @@ src/langstar/
 **Purpose**: Installation script executed during devcontainer build
 
 **Key characteristics:**
+
 - Runs as root user
 - Receives options as environment variables (uppercased and sanitized)
 - Should be idempotent (safe to run multiple times)
@@ -79,6 +85,7 @@ src/langstar/
 - Should detect and use existing installers when available
 
 **Environment variables:**
+
 - `VERSION`: From options.version (uppercased)
 - `_REMOTE_USER`: Effective remote user
 - `_REMOTE_USER_HOME`: Remote user's home directory
@@ -86,6 +93,7 @@ src/langstar/
 - `_CONTAINER_USER_HOME`: Container user's home directory
 
 **Best practices observed:**
+
 - Error handling with `set -e`
 - Architecture detection
 - Version validation
@@ -98,6 +106,7 @@ src/langstar/
 #### 3. README.md
 
 **Auto-generated** by the release workflow
+
 - Merges content from NOTES.md (if present)
 - Adds metadata and usage examples
 - Updated via GitHub Actions on release
@@ -109,6 +118,7 @@ src/langstar/
 **File**: `.github/workflows/release-features.yaml`
 
 **Key steps:**
+
 1. Use `devcontainers/action@v1` with:
    - `publish-features: "true"`
    - `base-path-to-features: "./src"`
@@ -119,6 +129,7 @@ src/langstar/
 4. Publishes to GitHub Container Registry (GHCR)
 
 **Required permissions:**
+
 ```yaml
 permissions:
   contents: write
@@ -127,6 +138,7 @@ permissions:
 ```
 
 **Workflow trigger options:**
+
 - `workflow_dispatch`: Manual trigger (recommended for testing)
 - `push: branches: [main]`: Auto-release on main
 - `release: types: [published]`: Release-based trigger
@@ -138,6 +150,7 @@ Features are published to: `ghcr.io/<owner>/<repo>/<feature-id>:<version>`
 **For langstar:** `ghcr.io/codekiln/langstar/langstar:1`
 
 **Steps after first publish:**
+
 1. Navigate to package settings in GHCR
 2. Change visibility from `private` to `public`
 3. URL format: `https://github.com/users/<owner>/packages/container/<repo>%2F<feature-id>/settings`
@@ -145,11 +158,13 @@ Features are published to: `ghcr.io/<owner>/<repo>/<feature-id>:<version>`
 #### Adding to Public Index (Optional)
 
 To make the feature discoverable:
+
 1. Go to https://github.com/devcontainers/devcontainers.github.io
 2. Open PR to modify `collection-index.yml`
 3. Add entry for the langstar feature collection
 
 **Benefits:**
+
 - Appears in VS Code Dev Containers UI
 - Discoverable in GitHub Codespaces
 - Listed on https://containers.dev/features
@@ -176,6 +191,7 @@ Once published, users can add to their `devcontainer.json`:
 **Goal**: Create the basic feature structure in the langstar repository
 
 **Tasks:**
+
 1. Create `src/langstar/` directory structure
 2. Create `devcontainer-feature.json` with appropriate metadata
 3. Create `install.sh` that leverages existing `scripts/install.sh`
@@ -188,6 +204,7 @@ Once published, users can add to their `devcontainer.json`:
 **Goal**: Automate feature publishing to GHCR
 
 **Tasks:**
+
 1. Create `.github/workflows/release-features.yaml`
 2. Configure workflow with appropriate permissions
 3. Set up workflow dispatch trigger for manual releases
@@ -200,6 +217,7 @@ Once published, users can add to their `devcontainer.json`:
 **Goal**: Verify the feature works correctly
 
 **Tasks:**
+
 1. Manually trigger the release workflow
 2. Verify feature is published to GHCR
 3. Set package visibility to public
@@ -214,6 +232,7 @@ Once published, users can add to their `devcontainer.json`:
 **Goal**: Make the feature discoverable and well-documented
 
 **Tasks:**
+
 1. Update langstar README to mention the feature
 2. Add feature usage examples
 3. Submit PR to devcontainers.github.io for public index
@@ -228,6 +247,7 @@ Once published, users can add to their `devcontainer.json`:
 **Current langstar installer**: `/workspace/scripts/install.sh`
 
 **Benefits:**
+
 - Already handles architecture detection
 - Downloads from GitHub releases
 - Verifies checksums
@@ -236,11 +256,13 @@ Once published, users can add to their `devcontainer.json`:
 
 **Integration approach:**
 The feature's `install.sh` can:
+
 1. Download the langstar installer script
 2. Execute it with appropriate flags
 3. Or: Inline the installer logic directly
 
 **Example approach:**
+
 ```bash
 #!/bin/bash
 set -e
@@ -254,11 +276,13 @@ curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/inst
 ### Version Management
 
 **Feature versioning** (in devcontainer-feature.json):
+
 - Independent of langstar CLI version
 - Follows semver for the feature itself
 - Example: `1.0.0`, `1.1.0`, `2.0.0`
 
 **CLI version option** (in options.version):
+
 - What version of langstar to install
 - Default: `"latest"`
 - Can specify exact versions: `"0.4.0"`
@@ -266,14 +290,17 @@ curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/inst
 ### Architecture Support
 
 **Must support:**
+
 - Linux x86_64 (most common)
 - Linux ARM64 (Apple Silicon, ARM servers)
 
 **Current langstar releases:**
+
 - Check: https://github.com/codekiln/langstar/releases
 - Verify both architectures are available
 
 **Install.sh should detect:**
+
 ```bash
 ARCHITECTURE=$(uname -m)
 case $ARCHITECTURE in
@@ -286,11 +313,13 @@ esac
 ### Dependencies
 
 **Recommended installsAfter:**
+
 - `ghcr.io/devcontainers/features/common-utils`
   - Provides common utilities
   - Sets up user environment properly
 
 **Why not more dependencies:**
+
 - Langstar installer is self-contained
 - Only needs basic utilities (curl, bash)
 - Keep it lightweight
@@ -298,6 +327,7 @@ esac
 ## Repository Structure Impact
 
 **New files to create:**
+
 ```
 langstar/
 ├── .devcontainer/
@@ -315,11 +345,13 @@ langstar/
 
 **Note on directory structure:**
 Unlike the reference repositories which use `src/` for features, this repository uses `.devcontainer/features/` to:
+
 - Keep feature definitions within the devcontainer ecosystem
 - Avoid confusion with the project's own `.devcontainer/devcontainer.json`
 - Prevent confusion with source code directories (`sdk/`, `cli/`)
 
 **Changes to existing files:**
+
 - Update root README.md with feature installation instructions
 - Add feature documentation to docs/
 

@@ -12,6 +12,7 @@ This skill automates updating GitHub issue statuses in GitHub Projects V2. It ha
 ## When to Use This Skill
 
 Use this skill when:
+
 - User requests updating issue status in a GitHub Project (e.g., "mark issue 17 as in progress")
 - User wants to bulk-update multiple issue statuses (e.g., "mark issues 15, 16, and 17 as done")
 - User needs to assign issues while updating status
@@ -187,24 +188,27 @@ gh issue view <issue_number> --json projectItems,assignees
 
 ### Arguments
 
-| Argument | Required | Description | Example |
-|----------|----------|-------------|---------|
-| issue_number(s) | Yes | Single issue or comma-separated list | `17` or `15,16,17` |
-| status | Yes | Target status | `todo`, `in_progress`, or `done` |
-| assignee | No | GitHub username (for in_progress) | `codekiln` |
+| Argument        | Required | Description                          | Example                          |
+| --------------- | -------- | ------------------------------------ | -------------------------------- |
+| issue_number(s) | Yes      | Single issue or comma-separated list | `17` or `15,16,17`               |
+| status          | Yes      | Target status                        | `todo`, `in_progress`, or `done` |
+| assignee        | No       | GitHub username (for in_progress)    | `codekiln`                       |
 
 ### Environment Variables
 
 The script uses two separate tokens for different operations:
 
 **For Project Operations (required):**
+
 1. `GITHUB_PROJECT_PAT` (recommended) - Classic PAT with `project` scope
 2. `GH_PROJECT_PAT` (alternative name)
 
 **For Issue Assignment (optional):**
+
 - `GITHUB_PAT` - Fine-grained PAT with `repo` scope
 
 **Repository:**
+
 - Hardcoded to `codekiln/langstar` in the script
 
 ### What the Script Does
@@ -265,6 +269,7 @@ The script uses the same logic as the GitHub Actions automation but provides man
 User says: "I'm starting work on issue 17"
 
 Execute:
+
 ```bash
 ./scripts/update-issue-status.sh 17 in_progress $USER
 ```
@@ -274,6 +279,7 @@ Execute:
 User says: "Mark issues 15, 16, and 17 as done"
 
 Execute:
+
 ```bash
 ./scripts/update-issue-status.sh 15,16,17 done
 ```
@@ -283,6 +289,7 @@ Execute:
 User says: "Move issue 17 back to todo"
 
 Execute:
+
 ```bash
 ./scripts/update-issue-status.sh 17 todo
 ```
@@ -292,6 +299,7 @@ Execute:
 User says: "All issues in the 20-25 range are done"
 
 Execute:
+
 ```bash
 ./scripts/update-issue-status.sh 20,21,22,23,24,25 done
 ```

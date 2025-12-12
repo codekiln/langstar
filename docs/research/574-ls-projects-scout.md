@@ -17,6 +17,7 @@ Research support for adding `langstar project list` and other langstar project c
 ### Current Project References
 
 **CLI (`cli/src/commands/runs.rs:30-34`)**:
+
 ```rust
 /// Project name or UUID to query runs from
 ///
@@ -26,12 +27,14 @@ pub projects: Vec<String>,
 ```
 
 **SDK (`sdk/src/runs.rs:93-94`)**:
+
 ```rust
 /// Session/project ID this run belongs to
 pub session_id: Uuid,
 ```
 
 **Observation**:
+
 - Projects are currently only referenced as filtering criteria for runs
 - No direct project management commands exist (no `langstar project list`, `create`, `delete`, etc.)
 - The SDK uses `session_id` terminology matching the API
@@ -74,6 +77,7 @@ pub session_id: Uuid,
 ### Schema: TracerSession (schemas.py:729-781)
 
 **Key Fields**:
+
 ```python
 class TracerSession(BaseModel):
     id: UUID
@@ -86,7 +90,7 @@ class TracerSession(BaseModel):
     reference_dataset_id: Optional[UUID]
 ```
 
-**Important Comment** (line 732): *"Sessions are also referred to as 'Projects' in the UI."*
+**Important Comment** (line 732): _"Sessions are also referred to as 'Projects' in the UI."_
 
 ## 3. API Endpoints
 
@@ -94,13 +98,13 @@ class TracerSession(BaseModel):
 
 ### REST Endpoints (from Python SDK)
 
-| Operation | Method | Endpoint | Query Params | Request Body |
-|-----------|--------|----------|--------------|--------------|
-| **List** | GET | `/sessions` | limit, id, name, name_contains, reference_dataset, reference_free, include_stats, dataset_version, metadata | N/A |
-| **Read** | GET | `/sessions/{id}` or `/sessions?name={name}` | include_stats, limit=1 | N/A |
-| **Create** | POST | `/sessions` | upsert (optional) | `{"name": str, "description": str, "extra": dict, "id": UUID, "reference_dataset_id": UUID}` |
-| **Update** | PATCH | `/sessions/{id}` | N/A | `{"name": str, "description": str, "extra": dict, "end_time": ISO8601}` |
-| **Delete** | DELETE | `/sessions/{id}` | N/A | N/A |
+| Operation  | Method | Endpoint                                    | Query Params                                                                                                | Request Body                                                                                 |
+| ---------- | ------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **List**   | GET    | `/sessions`                                 | limit, id, name, name_contains, reference_dataset, reference_free, include_stats, dataset_version, metadata | N/A                                                                                          |
+| **Read**   | GET    | `/sessions/{id}` or `/sessions?name={name}` | include_stats, limit=1                                                                                      | N/A                                                                                          |
+| **Create** | POST   | `/sessions`                                 | upsert (optional)                                                                                           | `{"name": str, "description": str, "extra": dict, "id": UUID, "reference_dataset_id": UUID}` |
+| **Update** | PATCH  | `/sessions/{id}`                            | N/A                                                                                                         | `{"name": str, "description": str, "extra": dict, "end_time": ISO8601}`                      |
+| **Delete** | DELETE | `/sessions/{id}`                            | N/A                                                                                                         | N/A                                                                                          |
 
 ### Request/Response Shapes
 
@@ -113,6 +117,7 @@ class TracerSession(BaseModel):
 ### CLI Filtering Support
 
 **Intended CLI Usage:**
+
 ```bash
 # Filter projects by exact name
 langstar project list --name "my-project"
@@ -160,18 +165,21 @@ The `langstar project list` command will expose the API's `name` and `name_conta
 ### Technical Considerations
 
 **Rust SDK (`sdk/src/projects.rs`)**:
+
 - Define `Project` struct matching TracerSession schema
 - Implement `list_projects()`, `get_project()`, `create_project()`, `update_project()`, `delete_project()`
 - Handle pagination for list operation
 - Use serde for JSON serialization of extra/metadata fields
 
 **CLI (`cli/src/commands/projects.rs`)**:
+
 - Subcommands: `list`, `get`, `create`, `update`, `delete`
 - Table output for list (similar to runs, datasets)
 - JSON/YAML output options
 - Filter flags: --name, --name-contains, --limit, --include-stats
 
 **Estimated Implementation Effort**:
+
 - SDK module: ~200-300 lines (following similar CRUD patterns)
 - CLI module: ~250-350 lines (similar to datasets CLI commands)
 - Tests: ~150-200 lines
@@ -185,6 +193,7 @@ The `langstar project list` command will expose the API's `name` and `name_conta
 ### Experiment Goal
 
 Empirically verify the "projects" vs "sessions" terminology mapping through actual API calls, since:
+
 - Python SDK uses "projects" in method names
 - Python SDK uses "TracerSession" in schema classes
 - API endpoints use "/sessions" paths
@@ -193,6 +202,7 @@ Empirically verify the "projects" vs "sessions" terminology mapping through actu
 ### Experiment Method
 
 Created Python script (`test_projects.py`) that:
+
 1. Calls `list_projects(limit=3)` to retrieve projects
 2. Calls `read_project(project_name=...)` to read by name
 3. Inspects returned object types and field names
@@ -201,6 +211,7 @@ Created Python script (`test_projects.py`) that:
 ### Key Findings
 
 **1. Object Types Confirmed**
+
 ```python
 >>> type(project)
 TracerSessionResult
@@ -214,28 +225,32 @@ UUID('55de255e-0405-4737-82b3-75ce7aaf22f3')
 
 **2. Terminology Mapping Verified**
 
-| Layer | Terminology |
-|-------|-------------|
-| LangSmith UI URLs | `https://smith.langchain.com/o/{tenant}/projects/p/{id}` |
-| Python SDK Methods | `list_projects()`, `read_project()`, `create_project()` |
-| Python Schema Classes | `TracerSession`, `TracerSessionResult` |
-| REST API Endpoints | `GET /sessions`, `POST /sessions`, etc. |
+| Layer                 | Terminology                                              |
+| --------------------- | -------------------------------------------------------- |
+| LangSmith UI URLs     | `https://smith.langchain.com/o/{tenant}/projects/p/{id}` |
+| Python SDK Methods    | `list_projects()`, `read_project()`, `create_project()`  |
+| Python Schema Classes | `TracerSession`, `TracerSessionResult`                   |
+| REST API Endpoints    | `GET /sessions`, `POST /sessions`, etc.                  |
 
 **3. Field Names Analysis**
+
 - Only 1 field uses "session" terminology: `session_feedback_stats`
 - All other fields are neutral: `id`, `name`, `description`, `tenant_id`, etc.
 - No `session_id` field exists (project ID is just `id`)
 
 **4. URL Structure**
+
 ```
 https://smith.langchain.com/o/{tenant_id}/projects/p/{project_id}
                                             ^^^^^^^^
 ```
+
 The UI explicitly uses "projects/p/" not "sessions/s/"
 
 ### Experiment Conclusion
 
 **Recommendation for Rust SDK:**
+
 - ✅ **Public API**: Use `Project` struct and `*_project()` methods
 - ✅ **Internal mapping**: Map to `/sessions` REST endpoints
 - ✅ **Field names**: Follow Python SDK (keep `session_feedback_stats`)
@@ -250,12 +265,14 @@ This matches Python SDK's design: user-facing "projects" terminology with intern
 To further validate the API capabilities at scale, ran additional testing:
 
 **Test Goals**:
+
 1. Confirm Python SDK can list all projects in workspace (162 total)
 2. Query specific project by name: `test-deployment-cli-48499`
 3. Retrieve project ID
 4. Count runs within a project
 
 **Results**:
+
 ```
 ✅ Total projects found: 162
 ✅ Found project: test-deployment-cli-48499
@@ -266,6 +283,7 @@ To further validate the API capabilities at scale, ran additional testing:
 ```
 
 **Key Validation Points**:
+
 - ✅ Pagination works correctly for large project lists (162 > 100/page limit)
 - ✅ Project lookup by exact name is reliable
 - ✅ Project IDs are retrievable for all operations
@@ -278,6 +296,7 @@ This validates that the Rust SDK implementation will have all necessary capabili
 
 **Research Conducted**: 2025-12-05 (Post-Scout Review)
 **Repositories Examined**:
+
 - `reference/repo/langchain-ai/docs`
 - `reference/repo/langchain-ai/langsmith-cookbook`
 - `reference/repo/langchain-ai/langsmith-mcp-server`
@@ -289,9 +308,11 @@ This validates that the Rust SDK implementation will have all necessary capabili
 #### Official LangChain Documentation (`docs`)
 
 **Critical Discovery** (`src/langsmith/observability-concepts.mdx:60`):
+
 > A _project_ is a collection of traces. You can think of a project as a container for all the traces that are related to a single application or service.
 
 **API Endpoint Revelation** (line 116):
+
 - API endpoint: `delete_tracer_sessions`
 - Python SDK: `delete_project()`
 - JS/TS SDK: `deleteProject()`
@@ -299,6 +320,7 @@ This validates that the Rust SDK implementation will have all necessary capabili
 **Analysis**: The official docs explicitly show the disconnect - the API uses "tracer_sessions" but both SDKs translate to "project". This is a deliberate abstraction, not an accident.
 
 **Environment Variables**:
+
 - Primary: `LANGSMITH_PROJECT` (not `LANGSMITH_SESSION`)
 - Legacy: `LANGCHAIN_PROJECT` (shows historical commitment)
 - Used consistently across 20+ documentation files
@@ -313,12 +335,14 @@ os.environ['LANGCHAIN_PROJECT'] = 'Test'  # First line developers see
 ```
 
 **Zero "Session" References**:
+
 - ❌ No `LANGCHAIN_SESSION` variables
 - ❌ No `session_name` parameters
 - ❌ No `create_session()` methods
 - ✅ Only "project" terminology throughout
 
 **Real-World Patterns Observed**:
+
 - Projects named after applications: `"DBRX"`, `"RAG_online_eval"`, `"back_testing_v2"`
 - Persistent across multiple experiment runs
 - Used for long-term organization, not ephemeral sessions
@@ -335,6 +359,7 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 ```
 
 **Tool Function Names**:
+
 - `get_project_runs_stats(project_name=...)`
 - `fetch_trace_tool(project_name=...)`
 - `get_thread_history(thread_id=..., project_name=...)`
@@ -350,18 +375,21 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 **This articulates the exact reasoning LangChain followed:**
 
 **"Session" Semantics**:
+
 - Stateful time period (login to logout)
 - Temporary/ephemeral nature
 - Single interaction sequence
 - Bounded by start/end events
 
 **"Project" Semantics**:
+
 - Persistent container
 - Application-level scope
 - Collection of related work over time
 - Long-lived organizational unit
 
 **Real-World Examples from Cookbook**:
+
 - `"RAG_online_eval"` - Not a session, it's an evaluation project
 - `"back_testing_v2"` - Version 2 of backtesting work, persistent across runs
 - `"production-bot"` - Production environment, not a temporary session
@@ -384,9 +412,11 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 ### Historical Evidence
 
 **From Docs** (`log-traces-to-project.mdx:17`):
+
 > The `LANGSMITH_PROJECT` flag is only supported in JS SDK versions >= 0.2.16, use `LANGCHAIN_PROJECT` instead if you are using an older version.
 
 **Inference**:
+
 - "Project" terminology dates to very early SDK versions (pre-0.2.16)
 - Never had a "session" environment variable
 - Long-term commitment to "project" abstraction
@@ -394,6 +424,7 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 ### Developer Learning Journey
 
 **Timeline**:
+
 1. **First Exposure** (Cookbook line 1): `os.environ['LANGCHAIN_PROJECT'] = 'Test'`
 2. **Reinforcement** (50+ notebooks): Every example uses "project"
 3. **Documentation**: Official definition is "project = collection of traces"
@@ -415,11 +446,13 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 ### Updated Recommendation Rationale
 
 **Original Reasoning** (from Python SDK analysis):
+
 - Follow Python SDK precedent
 - "Session" terminology exists at API level
 - UI uses "projects"
 
 **Enhanced Reasoning** (from ecosystem triangulation):
+
 - **Semantic Correctness**: "Project" matches actual usage patterns (persistent containers, not sessions)
 - **Ecosystem Consistency**: Every user-facing interface uses "project"
 - **Developer Expectations**: All learning materials establish "project" mental model
@@ -442,14 +475,17 @@ def fetch_trace_tool(project_name: str = None, trace_id: str = None):
 ### Proposed Implementation Order
 
 **Phase 1**: SDK foundation
+
 - Create `sdk/src/projects.rs` with Project struct and basic list/get methods
 - Implement pagination
 
 **Phase 2**: CLI read-only commands
+
 - `langstar project list`
 - `langstar project get`
 
 **Phase 3**: CLI write commands
+
 - `langstar project create`
 - `langstar project update`
 - `langstar project delete`

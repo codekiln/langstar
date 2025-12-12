@@ -13,6 +13,7 @@ Studying mise's self-update implementation as a **production reference** for lan
 **Source**: Initial research via [DeepWiki Q&A](https://deepwiki.com/search/does-mise-have-a-command-line_e9362074-9c1b-4e63-9d21-136f721dcd6b), verified against local clone.
 
 **Why mise matters for langstar:**
+
 - Uses the same `self_update` crate we plan to use
 - Handles package manager detection elegantly
 - Implements binary signature verification
@@ -26,11 +27,13 @@ Studying mise's self-update implementation as a **production reference** for lan
 Location: `src/cli/self_update.rs`
 
 **Command signature:**
+
 ```
 mise self-update [OPTIONS] [VERSION]
 ```
 
 **Options:**
+
 - `-f, --force` - Update even if already up to date
 - `-y, --yes` - Skip confirmation prompt
 - `--no-plugins` - Disable auto-updating plugins
@@ -39,6 +42,7 @@ mise self-update [OPTIONS] [VERSION]
 ### 2. self_update Crate Configuration
 
 **Dependency** (from `Cargo.toml:176-190`):
+
 ```toml
 # Unix
 self_update = { version = "0.42", optional = true, default-features = false, features = [
@@ -133,11 +137,13 @@ pub fn is_available() -> bool {
 ```
 
 **Detection mechanism** (env.rs):
+
 - Searches for `lib/mise-self-update-instructions.toml` near binary
 - Searches for `lib/.disable-self-update` marker file
 - Package builds create these files (see `scripts/build-deb.sh`)
 
 **Example instructions file** (created by `scripts/build-deb.sh:7-9`):
+
 ```toml
 message = "To update mise from the APT repository, run:\n\n  sudo apt update && sudo apt install --only-upgrade mise\n"
 ```
@@ -145,6 +151,7 @@ message = "To update mise from the APT repository, run:\n\n  sudo apt update && 
 ### 5. Feature-Gated Implementation
 
 From `src/cli/mod.rs:55`:
+
 ```rust
 #[cfg_attr(not(feature = "self_update"), path = "self_update_stub.rs")]
 pub mod self_update;
@@ -181,6 +188,7 @@ fn verify_macos_signature(binary_path: &Path) -> Result<()> {
 ### 7. Post-Update Plugin Refresh
 
 From `src/cli/self_update.rs:98-100`:
+
 ```rust
 if !self.no_plugins {
     cmd!(&*env::MISE_BIN, "plugins", "update").run()?;
@@ -214,37 +222,37 @@ scripts/
 
 ### High Priority
 
-| Pattern | Location | Langstar Adaptation |
-|---------|----------|---------------------|
-| Package manager detection | `is_available()` | Check for devcontainer feature install |
-| Signature verification | `verifying_keys()` | Add zipsign.pub to langstar |
-| GitHub token support | `auth_token()` | Use existing GITHUB_TOKEN handling |
-| Feature-gated build | `cfg_attr` | Optional self_update feature |
+| Pattern                   | Location           | Langstar Adaptation                    |
+| ------------------------- | ------------------ | -------------------------------------- |
+| Package manager detection | `is_available()`   | Check for devcontainer feature install |
+| Signature verification    | `verifying_keys()` | Add zipsign.pub to langstar            |
+| GitHub token support      | `auth_token()`     | Use existing GITHUB_TOKEN handling     |
+| Feature-gated build       | `cfg_attr`         | Optional self_update feature           |
 
 ### Medium Priority
 
-| Pattern | Location | Langstar Adaptation |
-|---------|----------|---------------------|
-| macOS codesign verification | `verify_macos_signature()` | Future if we add macOS signing |
-| Post-update hooks | `plugins update` | Consider cache refresh |
-| Instructions file | `mise-self-update-instructions.toml` | Create for devcontainer feature |
+| Pattern                     | Location                             | Langstar Adaptation             |
+| --------------------------- | ------------------------------------ | ------------------------------- |
+| macOS codesign verification | `verify_macos_signature()`           | Future if we add macOS signing  |
+| Post-update hooks           | `plugins update`                     | Consider cache refresh          |
+| Instructions file           | `mise-self-update-instructions.toml` | Create for devcontainer feature |
 
 ### Lower Priority
 
-| Pattern | Location | Langstar Adaptation |
-|---------|----------|---------------------|
-| Archive format per-platform | `Cargo.toml` features | Already have tar.gz only |
-| Disable marker file | `.disable-self-update` | May not need |
+| Pattern                     | Location               | Langstar Adaptation      |
+| --------------------------- | ---------------------- | ------------------------ |
+| Archive format per-platform | `Cargo.toml` features  | Already have tar.gz only |
+| Disable marker file         | `.disable-self-update` | May not need             |
 
 ## Comparison: mise vs langstar Scout Recommendations
 
-| Aspect | mise Implementation | Scout Recommendation | Delta |
-|--------|---------------------|---------------------|-------|
-| Library | `self_update` v0.42 | `self_update` (latest) | Aligned |
-| Signature verification | zipsign.pub | SHA256 checksums | mise is stronger |
-| Package manager detection | File-based markers | Context detection | mise pattern is better |
-| macOS verification | codesign check | Not mentioned | Add to langstar |
-| Feature gating | Compile-time | Not mentioned | Good pattern to adopt |
+| Aspect                    | mise Implementation | Scout Recommendation   | Delta                  |
+| ------------------------- | ------------------- | ---------------------- | ---------------------- |
+| Library                   | `self_update` v0.42 | `self_update` (latest) | Aligned                |
+| Signature verification    | zipsign.pub         | SHA256 checksums       | mise is stronger       |
+| Package manager detection | File-based markers  | Context detection      | mise pattern is better |
+| macOS verification        | codesign check      | Not mentioned          | Add to langstar        |
+| Feature gating            | Compile-time        | Not mentioned          | Good pattern to adopt  |
 
 ## Notes
 

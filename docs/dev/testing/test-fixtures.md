@@ -12,10 +12,10 @@ This document describes the test deployment fixtures used across SDK and CLI int
 
 Integration tests use exactly **two deployment types** with standardized naming:
 
-| Type | Pattern | Behavior | Usage |
-|------|---------|----------|-------|
-| **PR/Dev** | `pr-integration-test-{timestamp}` | Get-or-create by prefix, cleaned by cron (4hr threshold) | SDK tests, shared deployments |
-| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting | CLI graph tests, full lifecycle tests |
+| Type        | Pattern                                | Behavior                                                 | Usage                                 |
+| ----------- | -------------------------------------- | -------------------------------------------------------- | ------------------------------------- |
+| **PR/Dev**  | `pr-integration-test-{timestamp}`      | Get-or-create by prefix, cleaned by cron (4hr threshold) | SDK tests, shared deployments         |
+| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting                              | CLI graph tests, full lifecycle tests |
 
 ### Using TestDeploymentConfig
 
@@ -30,6 +30,7 @@ let config = TestDeploymentConfig::for_release_tests();
 ```
 
 **Behavior:**
+
 - `TestDeploymentConfig::default()` - Creates PR/dev config with prefix-based reuse
   - Searches for existing `pr-integration-test-*` deployment
   - Reuses if found (saves ~16 minutes per test run)
@@ -43,12 +44,14 @@ let config = TestDeploymentConfig::for_release_tests();
 ### When to Use Each Type
 
 **Use PR/Dev deployments for:**
+
 - Development and testing during PR review
 - Tests that don't modify deployment state
 - Faster iteration (reuses existing deployments)
 - SDK integration tests (default behavior)
 
 **Use Release deployments for:**
+
 - Pre-release validation requiring complete create/delete cycle
 - Testing deployment cleanup functionality
 - CLI graph command tests (full lifecycle)
@@ -84,6 +87,7 @@ The test graph is intentionally minimal:
 - **Fast Execution**: Completes immediately for quick test cycles
 
 **Graph Flow:**
+
 ```
 START → echo_node → END
 ```
@@ -91,6 +95,7 @@ START → echo_node → END
 **Example:**
 
 Input:
+
 ```json
 {
   "message": "Hello, World!"
@@ -98,6 +103,7 @@ Input:
 ```
 
 Output:
+
 ```json
 {
   "message": "Echo: Hello, World!"
@@ -107,6 +113,7 @@ Output:
 ### Deployment Setup
 
 **Prerequisites:**
+
 1. LangSmith account
 2. GitHub integration configured in LangSmith
 3. Repository access for the integration
@@ -116,6 +123,7 @@ Output:
 See `tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md` for detailed step-by-step instructions.
 
 **Quick summary:**
+
 1. Navigate to [LangSmith](https://smith.langchain.com/)
 2. Go to "Deployments" section
 3. Click "New Deployment"
@@ -184,6 +192,7 @@ let deployment = TestDeployment::create();
 ```
 
 **Features:**
+
 - Implements Drop trait for automatic cleanup
 - Provides `disarm()` method to skip cleanup after manual deletion
 - Prints deployment ID and cleanup instructions on drop
@@ -192,17 +201,20 @@ let deployment = TestDeployment::create();
 ### Cleanup Strategies
 
 **Strategy 1: RAII Guards (Preferred)**
+
 - Automatic cleanup on test completion or failure
 - Used by both SDK and CLI tests
 - Most reliable for preventing orphaned resources
 
 **Strategy 2: Periodic Cron Job**
+
 - GitHub Actions workflow runs periodically
 - Cleans up deployments older than 4 hours
 - Captures deployments from both `pr-integration-test-*` and `release-integration-test-*` patterns
 - Backup cleanup mechanism for orphaned deployments
 
 **Strategy 3: Manual Cleanup**
+
 - Use LangSmith UI to bulk delete old test deployments
 - Use CLI commands (once implemented):
   ```bash
@@ -220,16 +232,19 @@ let deployment = TestDeployment::create();
 **Pattern:** `pr-integration-test-{timestamp}`
 
 **Advantages:**
+
 - Faster test execution (~6 min vs ~22 min)
 - Reduced API calls and resource usage
 - Better for development iteration
 
 **Disadvantages:**
+
 - Tests must not modify deployment state
 - Requires coordination between tests
 - May hide deployment lifecycle bugs
 
 **Use for:**
+
 - SDK PromptHub tests
 - SDK deployment workflow tests (default path)
 - Read-only operations
@@ -239,17 +254,20 @@ let deployment = TestDeployment::create();
 **Pattern:** `release-integration-test-{timestamp}`
 
 **Advantages:**
+
 - Complete lifecycle validation
 - No test interdependencies
 - Tests deployment cleanup functionality
 - Catches deployment-specific bugs
 
 **Disadvantages:**
+
 - Slower (creates new deployment each run)
 - More API calls and resource usage
 - Longer test execution time
 
 **Use for:**
+
 - CLI graph command tests
 - SDK deployment workflow full lifecycle tests
 - Pre-release validation
@@ -278,6 +296,7 @@ This prevents name collisions even when tests run concurrently.
 **Most tests run in parallel** by default for better performance.
 
 **Tests with shared resources** are marked with `#[serial]`:
+
 - CLI assistant tests that share a deployment via `OnceLock`
 - Tests that modify global state
 - Tests with resource conflicts
@@ -311,6 +330,7 @@ langstar assistant delete <assistant-id>
 ### "Failed to create test deployment"
 
 **Causes:**
+
 - Invalid API key or workspace ID
 - No access to workspace
 - Rate limiting
@@ -318,6 +338,7 @@ langstar assistant delete <assistant-id>
 - GitHub integration not configured
 
 **Solutions:**
+
 - Verify API key and workspace ID are correct
 - Check workspace permissions
 - Wait a few minutes if rate limited
@@ -326,6 +347,7 @@ langstar assistant delete <assistant-id>
 ### "Deployment not found" or "404"
 
 **Solutions:**
+
 - Verify deployment is active in LangSmith UI
 - Check deployment hasn't been deleted
 - Ensure using correct workspace
@@ -333,11 +355,13 @@ langstar assistant delete <assistant-id>
 ### "Timeout waiting for deployment"
 
 **Causes:**
+
 - Deployment build taking longer than expected (>30 minutes)
 - Build errors in langgraph.json
 - GitHub integration permissions issues
 
 **Solutions:**
+
 - Check deployment logs in LangSmith UI
 - Verify `langgraph.json` is valid
 - Confirm GitHub integration has proper permissions

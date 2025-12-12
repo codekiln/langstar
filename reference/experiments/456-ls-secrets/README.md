@@ -18,15 +18,16 @@ Test the LangSmith Workspace Secrets API to understand:
 
 ### API Endpoints
 
-| Method | Path | Operation |
-|--------|------|-----------|
-| GET | `/api/v1/workspaces/current/secrets` | List secret keys only |
-| POST | `/api/v1/workspaces/current/secrets` | Upsert secrets (create/update) |
-| GET | `/api/v1/workspaces/current/secrets/encrypted` | Get encrypted secrets for specific services (e.g., agent_builder) |
+| Method | Path                                           | Operation                                                         |
+| ------ | ---------------------------------------------- | ----------------------------------------------------------------- |
+| GET    | `/api/v1/workspaces/current/secrets`           | List secret keys only                                             |
+| POST   | `/api/v1/workspaces/current/secrets`           | Upsert secrets (create/update)                                    |
+| GET    | `/api/v1/workspaces/current/secrets/encrypted` | Get encrypted secrets for specific services (e.g., agent_builder) |
 
 ### Request/Response Schemas
 
 #### SecretKey (Response from GET)
+
 ```json
 {
   "key": "string"
@@ -36,6 +37,7 @@ Test the LangSmith Workspace Secrets API to understand:
 **Note**: Only the key is returned, NOT the value. Secret values are never exposed in API responses.
 
 #### SecretUpsert (Request body for POST)
+
 ```json
 {
   "key": "string",
@@ -46,6 +48,7 @@ Test the LangSmith Workspace Secrets API to understand:
 **Note**: POST accepts an array of SecretUpsert objects.
 
 #### InternalSecretsResponse (Response from GET encrypted)
+
 ```json
 {
   "encrypted_secrets": "string"
@@ -84,23 +87,25 @@ This experiment includes **live API testing** to validate OpenAPI spec findings:
 
 ✅ **ALL OPERATIONS SUCCESSFUL** with `workspaces:manage` permission!
 
-| Test | Status | API Response | Behavior |
-|------|--------|--------------|----------|
-| List secrets (GET) | ✅ PASS | 200 OK, `[]` | Returns empty array initially |
-| Create secret (POST) | ✅ PASS | 200 OK, `null` | Secret created successfully |
-| Verify creation (GET) | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret appears in list |
-| Update secret (POST) | ✅ PASS | 200 OK, `null` | Same endpoint as create (upsert) |
-| Verify update (GET) | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret still in list |
-| Delete secret (POST) | ✅ PASS | 200 OK, `null` | POST with `value: null` |
-| Verify deletion (GET) | ✅ PASS | 200 OK, `[]` | Secret removed from list |
+| Test                  | Status  | API Response                                   | Behavior                         |
+| --------------------- | ------- | ---------------------------------------------- | -------------------------------- |
+| List secrets (GET)    | ✅ PASS | 200 OK, `[]`                                   | Returns empty array initially    |
+| Create secret (POST)  | ✅ PASS | 200 OK, `null`                                 | Secret created successfully      |
+| Verify creation (GET) | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret appears in list           |
+| Update secret (POST)  | ✅ PASS | 200 OK, `null`                                 | Same endpoint as create (upsert) |
+| Verify update (GET)   | ✅ PASS | 200 OK, `[{"key":"LANGSTAR_TEST_SECRET_456"}]` | Secret still in list             |
+| Delete secret (POST)  | ✅ PASS | 200 OK, `null`                                 | POST with `value: null`          |
+| Verify deletion (GET) | ✅ PASS | 200 OK, `[]`                                   | Secret removed from list         |
 
 ### Critical Finding: Permission Requirements
 
 **API Key Permissions**:
+
 - `GET /api/v1/workspaces/current/secrets` - Works with standard API key (read access)
 - `POST /api/v1/workspaces/current/secrets` - Requires `workspaces:manage` permission
 
 **Initial Test** (standard API key):
+
 ```json
 {
   "detail": "Permission denied, you do not have the required permission workspaces:manage"

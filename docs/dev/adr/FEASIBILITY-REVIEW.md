@@ -16,12 +16,14 @@ Copilot's Phase 1 research is comprehensive, well-documented, and proposes a sou
 ### 1. Comprehensive Documentation (Excellent)
 
 **Strengths:**
+
 - 4 detailed ADRs covering all major decisions
 - ~2,400 lines of well-structured documentation
 - Clear alternatives considered with rationale
 - Implementation guidance for Phase 2
 
 **Evidence:**
+
 - ADR-0001: SDK Architecture (layered approach)
 - ADR-0002: Version Tracking (JSON manifest)
 - ADR-0003: Changelog Structure (hierarchical)
@@ -30,6 +32,7 @@ Copilot's Phase 1 research is comprehensive, well-documented, and proposes a sou
 ### 2. Layered Architecture Choice (Sound Decision)
 
 **The Chosen Approach:**
+
 ```
 CLI Layer (user-facing)
     ↓
@@ -39,6 +42,7 @@ Generated SDK Layer (OpenAPI-generated)
 ```
 
 **Why This Works:**
+
 - ✅ Balances automation with ergonomics
 - ✅ 100% API coverage via generated layer
 - ✅ Idiomatic Rust via manual wrappers
@@ -46,6 +50,7 @@ Generated SDK Layer (OpenAPI-generated)
 - ✅ Gradual migration path from current manual SDK
 
 **Current State Validation:**
+
 - Manual SDK: ~1,800 lines across 7 files
 - Generated SDK: Empty (ready for Phase 2)
 - Infrastructure exists: `tools/generate_sdk.sh` ready
@@ -55,6 +60,7 @@ Generated SDK Layer (OpenAPI-generated)
 **Format:** `tools/specs/versions.json` with SHA-256 checksums
 
 **Why This Works:**
+
 - Simple, human-readable JSON
 - Git-friendly (easy diffs)
 - Checksum-based drift detection
@@ -67,6 +73,7 @@ Generated SDK Layer (OpenAPI-generated)
 **Phase 3:** Automation (deferred, low priority)
 
 **Why This Works:**
+
 - De-risks by validating approach before automation
 - Manual workflow ensures careful handling of breaking changes
 - Automation only added when manual process proves tedious
@@ -76,16 +83,19 @@ Generated SDK Layer (OpenAPI-generated)
 ### Technical Feasibility: ✅ HIGH
 
 **Rust Tooling Availability:**
+
 - ✅ `openapi-generator-cli` supports Rust (7.x series)
 - ✅ Alternative: `progenitor` (Oxide's Rust-specific generator)
 - ✅ Existing script ready: `tools/generate_sdk.sh`
 
 **Integration Complexity:**
+
 - ✅ Low: Manual SDK can gradually wrap generated layer
 - ✅ Backward compatibility: CLI unchanged during migration
 - ✅ Testing: Existing tests validate no regressions
 
 **Workspace Structure:**
+
 ```toml
 [workspace]
 members = [
@@ -131,6 +141,7 @@ members = [
 **Requirement:** The current manual SDK MUST continue to work until the layered architecture is proven acceptable.
 
 **Migration Approach:**
+
 ```
 Phase 2A: Proof of Concept (Parallel)
 ├── Keep: Existing manual SDK (untouched)
@@ -149,6 +160,7 @@ Phase 2C: Migration (Only after validation)
 ```
 
 **Key Principles:**
+
 - ❌ DO NOT refactor existing manual SDK until layered approach is proven
 - ✅ Build layered SDK in parallel (new workspace members)
 - ✅ Create feature flag or separate modules for testing
@@ -156,6 +168,7 @@ Phase 2C: Migration (Only after validation)
 - ✅ Easy rollback if layered approach fails
 
 **Validation Criteria (Must Pass All):**
+
 - [ ] Generated SDK compiles and passes basic tests
 - [ ] Manual wrappers successfully call generated layer
 - [ ] All existing CLI commands work unchanged
@@ -168,6 +181,7 @@ Phase 2C: Migration (Only after validation)
 
 **Rollback Plan:**
 If layered approach doesn't work:
+
 1. Delete `sdk/src/generated/` directory
 2. Remove generated crate dependencies
 3. Keep existing manual SDK (unchanged)
@@ -179,11 +193,13 @@ If layered approach doesn't work:
 **Problem:** PR #158 body says "Fixes codekiln/langstar#114" but should reference Phase 1 sub-issue
 
 **Current:**
+
 ```markdown
 - Fixes codekiln/langstar#114
 ```
 
 **Should be:**
+
 ```markdown
 Fixes #115 (Phase 1: Research & Design)
 
@@ -197,6 +213,7 @@ Part of #114 (Parent: SDK Generation Strategy)
 **Action:** Before refactoring manual SDK, validate generated code quality
 
 **Test Script:**
+
 ```bash
 # 1. Fetch LangSmith spec
 curl -sSL https://api.smith.langchain.com/openapi.json > /tmp/langsmith.json
@@ -222,18 +239,21 @@ cat /specs/rust-client/src/apis/*.rs | head -100
 ## Pre-Implementation Research (Do First)
 
 ### 1. Generator Selection
+
 - [ ] Test `openapi-generator-cli` output quality
 - [ ] Test `progenitor` output quality (Rust-specific)
 - [ ] Document chosen generator and rationale
 - [ ] Add generator version to `.tool-versions` or similar
 
 ### 2. Proof of Concept
+
 - [ ] Generate LangSmith SDK (don't commit yet)
 - [ ] Write simple wrapper in `sdk/src/prompts.rs`
 - [ ] Verify manual layer can effectively wrap generated
 - [ ] Measure build time impact
 
 ### 3. Migration Strategy
+
 - [ ] Start with ONE endpoint (e.g., `list_prompts`)
 - [ ] Refactor manual code to call generated layer
 - [ ] Verify tests pass
@@ -247,12 +267,14 @@ cat /specs/rust-client/src/apis/*.rs | head -100
 **Question:** Should generated clients be workspace members or dependencies?
 
 **Option A: Workspace Members (Recommended)**
+
 ```toml
 [workspace]
 members = ["cli", "sdk", "sdk/generated/langsmith", "sdk/generated/langgraph"]
 ```
 
 **Option B: Path Dependencies (Simpler)**
+
 ```toml
 # sdk/Cargo.toml
 [dependencies]
@@ -279,12 +301,14 @@ Add to Phase 2 acceptance criteria:
 #### 6. Consider Progenitor Over openapi-generator-cli
 
 **Progenitor Advantages:**
+
 - Rust-native (not Java-based like openapi-generator)
 - Designed by Oxide Computer for Rust API clients
 - Better Rust idioms out of the box
 - Actively maintained for Rust use cases
 
 **Trade-offs:**
+
 - Less mature than openapi-generator ecosystem
 - May have fewer customization options
 - Requires learning new tool
@@ -299,18 +323,22 @@ Add to Phase 2 acceptance criteria:
 ## Success Metrics
 
 ### API Coverage
+
 - Before: ~20 endpoints (manual SDK)
 - After: 100% endpoints (generated + manual)
 
 ### Build Time
+
 - Before: X seconds
 - After: Y seconds (target: <2x increase)
 
 ### Test Coverage
+
 - Maintain: 100% of existing tests pass
 - Add: Integration tests for generated layer
 
 ### Developer Experience
+
 - Manual SDK: Idiomatic, well-documented
 - Generated SDK: Comprehensive, direct access
 ```
@@ -324,11 +352,13 @@ Add to Phase 2 acceptance criteria:
 **Question:** How does generated layer handle auth?
 
 **Recommendation:**
+
 - Generated clients should accept pre-configured HTTP client
 - Manual layer provides authenticated client to generated layer
 - Keep auth logic in manual layer only
 
 **Example:**
+
 ```rust
 // Manual layer configures auth
 let http_client = build_authenticated_client(&api_key)?;
@@ -347,6 +377,7 @@ let prompt_client = PromptClient::new(&client, &generated_client);
 **Question:** How to map generated errors to manual errors?
 
 **Recommendation:**
+
 ```rust
 // Manual layer maps generated errors
 impl From<GeneratedLangsmithError> for LangstarError {
@@ -363,6 +394,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 **Question:** Will generated code use same runtime?
 
 **Recommendation:**
+
 - Ensure generator configured for `tokio` (not `async-std`)
 - Verify compatibility in proof-of-concept
 - Document runtime choice in ADR
@@ -370,22 +402,27 @@ impl From<GeneratedLangsmithError> for LangstarError {
 ## Validation of Key Decisions
 
 ### ✅ Layered Architecture
+
 **Status:** Validated
 **Reasoning:** Industry best practice, used by major Rust API clients
 
 ### ✅ JSON Manifest for Version Tracking
+
 **Status:** Validated
 **Reasoning:** Simple, git-friendly, human-readable
 
 ### ✅ Manual Drift Detection (Phase 2)
+
 **Status:** Validated
 **Reasoning:** De-risks automation, ensures careful handling of breaking changes
 
 ### ✅ Hierarchical Changelogs
+
 **Status:** Validated
 **Reasoning:** Clear separation of concerns for different audiences
 
 ### 🟡 openapi-generator-cli (Not Yet Validated)
+
 **Status:** Needs testing
 **Action:** Compare with `progenitor` in Phase 2 proof-of-concept
 
@@ -394,6 +431,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 ### Recommended Order (Parallel Migration)
 
 **Week 1: Generator Selection & Proof of Concept**
+
 1. Test both `openapi-generator-cli` and `progenitor`
 2. Compare output quality, idiomaticity, build time
 3. Generate LangSmith SDK to `/tmp` (don't commit yet)
@@ -403,6 +441,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 7. **Deliverable:** Generator decision + working proof-of-concept
 
 **Week 2: Parallel Infrastructure Setup**
+
 1. Create `sdk/src/generated/` as NEW workspace members
 2. Update `tools/generate_sdk.sh` for chosen generator
 3. Create `tools/specs/versions.json` structure
@@ -412,6 +451,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 7. **Deliverable:** Generated SDKs exist in parallel
 
 **Week 3: Parallel Validation (Both Paths Work)**
+
 1. Create NEW manual wrappers that use generated layer
 2. Add feature flag or module namespace (e.g., `sdk::v2`)
 3. Wire up ONE CLI command to use new layered path
@@ -421,6 +461,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 7. **Deliverable:** Validation that layered approach works
 
 **Week 4: Migration (Only After Validation)**
+
 1. If validation passed: Switch CLI to use layered SDK
 2. Remove old manual-only implementations
 3. Create changelogs: `sdk/CHANGELOG.md`, `tools/specs/CHANGELOG.md`
@@ -430,6 +471,7 @@ impl From<GeneratedLangsmithError> for LangstarError {
 7. **If validation failed:** Keep old approach, document learnings
 
 **Critical Gates:**
+
 - ✅ Gate 1 (Week 1→2): Generator chosen and proven viable
 - ✅ Gate 2 (Week 2→3): Generated SDK compiles and builds cleanly
 - ✅ Gate 3 (Week 3→4): Layered approach validated (all tests pass)
@@ -439,13 +481,13 @@ impl From<GeneratedLangsmithError> for LangstarError {
 
 ### Summary Assessment
 
-| Criterion | Rating | Notes |
-|-----------|--------|-------|
-| **Documentation Quality** | ⭐⭐⭐⭐⭐ | Comprehensive ADRs |
-| **Technical Soundness** | ⭐⭐⭐⭐⭐ | Proven architecture pattern |
-| **Implementation Feasibility** | ⭐⭐⭐⭐☆ | Minor unknowns (generator choice) |
-| **Risk Management** | ⭐⭐⭐⭐⭐ | Phased approach de-risks |
-| **Future-Proofing** | ⭐⭐⭐⭐⭐ | Scales with API growth |
+| Criterion                      | Rating     | Notes                             |
+| ------------------------------ | ---------- | --------------------------------- |
+| **Documentation Quality**      | ⭐⭐⭐⭐⭐ | Comprehensive ADRs                |
+| **Technical Soundness**        | ⭐⭐⭐⭐⭐ | Proven architecture pattern       |
+| **Implementation Feasibility** | ⭐⭐⭐⭐☆  | Minor unknowns (generator choice) |
+| **Risk Management**            | ⭐⭐⭐⭐⭐ | Phased approach de-risks          |
+| **Future-Proofing**            | ⭐⭐⭐⭐⭐ | Scales with API growth            |
 
 **Overall:** ⭐⭐⭐⭐⭐ (4.8/5.0)
 

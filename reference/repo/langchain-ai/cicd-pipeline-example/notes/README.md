@@ -17,6 +17,7 @@ Studying the LangChain CI/CD pipeline example to understand how to deploy LangGr
 **Yes, you can use GitHub Container Registry instead of Docker Hub!**
 
 Key advantages:
+
 - ✅ Uses built-in `GITHUB_TOKEN` (no separate credentials)
 - ✅ No rate limits (Docker Hub limits to 200 pulls/6 hours)
 - ✅ Free for both public and private images
@@ -27,6 +28,7 @@ See [Container Registry Options](./container-registry-options.md) for complete d
 ### Current Implementation Uses Docker Hub
 
 The example repository uses Docker Hub (`docker.io`) with manual credentials:
+
 - Registry: `docker.io`
 - Requires: `DOCKER_USERNAME` and `DOCKER_PASSWORD` secrets
 - Image: `perinim98/text2sql-agent`
@@ -34,6 +36,7 @@ The example repository uses Docker Hub (`docker.io`) with manual credentials:
 ### Control Plane API Helper Script
 
 Location: `.github/scripts/langgraph_api.py`
+
 - Manages deployments via Control Plane API
 - Creates preview deployments for PRs
 - Creates production deployments on merge
@@ -85,4 +88,3 @@ Location: `.github/scripts/langgraph_api.py`
   - Step-by-step migration guide from Docker Hub to GHCR
   - Troubleshooting common issues
   - Cost and rate limit comparisons
-

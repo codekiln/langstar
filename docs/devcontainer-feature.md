@@ -31,14 +31,15 @@ Add to your `.devcontainer/devcontainer.json`:
 
 Specify which version of Langstar CLI to install.
 
-| Value | Description | Example |
-|-------|-------------|---------|
-| `"latest"` | Most recent release (default) | `"latest"` |
-| Specific version | Pin to exact version | `"v0.4.0"`, `"v0.3.0"` |
+| Value            | Description                   | Example                |
+| ---------------- | ----------------------------- | ---------------------- |
+| `"latest"`       | Most recent release (default) | `"latest"`             |
+| Specific version | Pin to exact version          | `"v0.4.0"`, `"v0.3.0"` |
 
 **Default:** `"latest"`
 
 **Example:**
+
 ```jsonc
 {
     "features": {
@@ -63,23 +64,23 @@ Specify which version of Langstar CLI to install.
 
 The feature has been tested and verified on:
 
-| Distribution | Versions | Status |
-|--------------|----------|--------|
-| Ubuntu | 22.04, 24.04 | ✅ Fully tested |
-| Debian | 11 (bullseye), 12 (bookworm) | ✅ Fully tested |
-| Alpine | 3.18, 3.19 | ✅ Fully tested |
+| Distribution | Versions                     | Status          |
+| ------------ | ---------------------------- | --------------- |
+| Ubuntu       | 22.04, 24.04                 | ✅ Fully tested |
+| Debian       | 11 (bullseye), 12 (bookworm) | ✅ Fully tested |
+| Alpine       | 3.18, 3.19                   | ✅ Fully tested |
 
 The feature should work on any Linux-based devcontainer image.
 
 ### Devcontainer Implementations
 
-| Implementation | Support |
-|----------------|---------|
-| VS Code Dev Containers | ✅ Supported |
-| GitHub Codespaces | ✅ Supported |
-| devpod | ✅ Supported |
-| Docker | ✅ Supported |
-| Podman | ✅ Supported (with devcontainer CLI) |
+| Implementation         | Support                              |
+| ---------------------- | ------------------------------------ |
+| VS Code Dev Containers | ✅ Supported                         |
+| GitHub Codespaces      | ✅ Supported                         |
+| devpod                 | ✅ Supported                         |
+| Docker                 | ✅ Supported                         |
+| Podman                 | ✅ Supported (with devcontainer CLI) |
 
 ## Installation Examples
 
@@ -257,10 +258,12 @@ Always use the most recent release:
 ```
 
 **Pros:**
+
 - Always up-to-date with latest features and fixes
 - No manual version management
 
 **Cons:**
+
 - May introduce breaking changes (follow semantic versioning)
 - Less reproducible across team members
 
@@ -279,11 +282,13 @@ Lock to a specific version for reproducibility:
 ```
 
 **Pros:**
+
 - Reproducible builds across team
 - No surprise breaking changes
 - Better for CI/CD pipelines
 
 **Cons:**
+
 - Manual updates required
 - May miss bug fixes and new features
 
@@ -343,6 +348,7 @@ curl -fsSL https://raw.githubusercontent.com/codekiln/langstar/main/scripts/inst
 ```
 
 Source code:
+
 - Feature definition: `.devcontainer/features/langstar/devcontainer-feature.json`
 - Install script: `.devcontainer/features/langstar/install.sh`
 - Published to: `ghcr.io/codekiln/langstar/langstar:1`
@@ -503,8 +509,8 @@ test:
 ### Version Compatibility
 
 | Feature Version | Langstar CLI Versions | Status |
-|----------------|----------------------|---------|
-| `1.x.x` | `v0.3.0` and above | Active |
+| --------------- | --------------------- | ------ |
+| `1.x.x`         | `v0.3.0` and above    | Active |
 
 ### Update Notifications
 
@@ -577,11 +583,13 @@ Execute custom scripts at different container lifecycle stages:
 ### Credential Management
 
 **Do NOT:**
+
 - Hard-code API keys in `devcontainer.json`
 - Commit secrets to version control
 - Share API keys in plain text
 
 **Do:**
+
 - Use environment variables with `${localEnv:VAR}`
 - Use secrets for Codespaces (`${secret:VAR}`)
 - Use vault solutions for team environments
@@ -619,6 +627,7 @@ If you encounter issues:
 ### Contributing
 
 Contributions welcome! See:
+
 - [GitHub Workflow](./dev/github-workflow.md)
 - [Development Guidelines](./dev/README.md)
 

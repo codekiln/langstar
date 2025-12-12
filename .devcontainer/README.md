@@ -68,14 +68,14 @@ Codespaces uses repository or organization secrets instead of local `.env` files
 
 2. **Add the following secrets:**
 
-   | Secret Name | Description | Example Value |
-   |-------------|-------------|---------------|
-   | `GH_PAT` | GitHub Personal Access Token | `ghp_xxxxx` |
-   | `GH_USER` | Your GitHub username | `your_username` |
-   | `GH_PROJECT_PAT` | GitHub PAT with project permissions | `ghp_xxxxx` |
-   | `AWS_ACCESS_KEY_ID` | AWS access key for Bedrock | `AKIAXXXXXXX` |
-   | `AWS_SECRET_ACCESS_KEY` | AWS secret access key | `xxxxx` |
-   | `LANGSMITH_API_KEY` | LangSmith API key | `lsv2_xxxxx` |
+   | Secret Name             | Description                         | Example Value   |
+   | ----------------------- | ----------------------------------- | --------------- |
+   | `GH_PAT`                | GitHub Personal Access Token        | `ghp_xxxxx`     |
+   | `GH_USER`               | Your GitHub username                | `your_username` |
+   | `GH_PROJECT_PAT`        | GitHub PAT with project permissions | `ghp_xxxxx`     |
+   | `AWS_ACCESS_KEY_ID`     | AWS access key for Bedrock          | `AKIAXXXXXXX`   |
+   | `AWS_SECRET_ACCESS_KEY` | AWS secret access key               | `xxxxx`         |
+   | `LANGSMITH_API_KEY`     | LangSmith API key                   | `lsv2_xxxxx`    |
 
 3. **Create a Codespace:**
    - Go to the repository on GitHub
@@ -86,6 +86,7 @@ Codespaces uses repository or organization secrets instead of local `.env` files
 ### How Codespaces Works
 
 In Codespaces:
+
 - The `devcontainer.json` uses Docker Compose configuration
 - `docker-compose.yml` uses fallback syntax: `${GITHUB_PAT:-${GH_PAT}}`
 - Environment variables come from Codespaces secrets (`GH_PAT`, `GH_USER`, etc.)
@@ -96,16 +97,16 @@ In Codespaces:
 
 ### Configuration Files
 
-| File | Purpose | Committed to Git | Environment |
-|------|---------|------------------|-------------|
-| `devcontainer.json` | Dev Container config (points to Docker Compose) | ✅ Yes | Both |
-| `docker-compose.yml` | Docker Compose service definition | ✅ Yes | Both |
-| `docker-compose.override.yml.template` | Template for local Docker overrides | ✅ Yes | Both |
-| `docker-compose.override.yml` | Local Docker Compose overrides | ❌ No (gitignored) | Local only |
-| `.env.default` | Environment variables template | ✅ Yes | Both |
-| `.env` | Actual environment variables | ❌ No (gitignored) | Local only |
-| `Dockerfile` | Container image definition | ✅ Yes | Both |
-| `setup-github-auth.sh` | Git authentication setup | ✅ Yes | Both |
+| File                                   | Purpose                                         | Committed to Git   | Environment |
+| -------------------------------------- | ----------------------------------------------- | ------------------ | ----------- |
+| `devcontainer.json`                    | Dev Container config (points to Docker Compose) | ✅ Yes             | Both        |
+| `docker-compose.yml`                   | Docker Compose service definition               | ✅ Yes             | Both        |
+| `docker-compose.override.yml.template` | Template for local Docker overrides             | ✅ Yes             | Both        |
+| `docker-compose.override.yml`          | Local Docker Compose overrides                  | ❌ No (gitignored) | Local only  |
+| `.env.default`                         | Environment variables template                  | ✅ Yes             | Both        |
+| `.env`                                 | Actual environment variables                    | ❌ No (gitignored) | Local only  |
+| `Dockerfile`                           | Container image definition                      | ✅ Yes             | Both        |
+| `setup-github-auth.sh`                 | Git authentication setup                        | ✅ Yes             | Both        |
 
 ### How Docker Compose Environment Variables Work
 
@@ -130,6 +131,7 @@ Docker Compose has **native `.env` file support**:
 ### Docker Compose Structure
 
 **`docker-compose.yml`** (base configuration, committed):
+
 ```yaml
 services:
   langstar-dev:
@@ -147,6 +149,7 @@ services:
 ```
 
 **`docker-compose.override.yml`** (local only, gitignored):
+
 ```yaml
 services:
   langstar-dev:
@@ -164,11 +167,13 @@ services:
 **Problem:** Container fails to build
 
 **Local Development:**
+
 1. Verify Docker Desktop is running
 2. Check `.env` file exists and has actual values (not placeholders)
 3. Try: `docker-compose -f .devcontainer/docker-compose.yml build --no-cache`
 
 **Codespaces:**
+
 1. Ensure Codespaces secrets are configured correctly
 2. Verify secret names match exactly: `GH_PAT`, `GH_USER`, etc.
 3. Check secrets have proper permissions
@@ -178,6 +183,7 @@ services:
 **Problem:** Environment variables are undefined in the container
 
 **Local Development:**
+
 1. Verify `.devcontainer/.env` exists and has actual values
 2. Check you're in `.devcontainer` directory when running Docker Compose
 3. Rebuild: `Dev Containers: Rebuild Container`
@@ -188,6 +194,7 @@ services:
    ```
 
 **Codespaces:**
+
 1. Check Codespaces secrets in repository settings
 2. Restart the Codespace
 3. Verify: `printenv | grep -E 'GH_|ANTHROPIC|LANGSMITH'`
@@ -197,6 +204,7 @@ services:
 **Problem:** Git operations fail with authentication errors
 
 **Solution:**
+
 1. Check that `GITHUB_PAT` (local) or `GH_PAT` (Codespaces) is set correctly
 2. Verify the token has `repo` scope
 3. Run setup script manually: `bash .devcontainer/setup-github-auth.sh`
@@ -210,6 +218,7 @@ services:
 **Problem:** Local overrides in `docker-compose.override.yml` aren't applied
 
 **Solution:**
+
 1. Ensure file is named exactly `docker-compose.override.yml` (not `.template`)
 2. Verify it's in `.devcontainer/` directory
 3. Check YAML syntax is valid: `docker-compose config`
@@ -241,28 +250,28 @@ services:
 
 ### GitHub Authentication
 
-| Variable | Local Name | Codespaces Name | Required | Description |
-|----------|-----------|-----------------|----------|-------------|
-| GitHub PAT | `GITHUB_PAT` | `GH_PAT` | Yes | Personal access token for git operations |
-| GitHub User | `GITHUB_USER` | `GH_USER` | Yes | Your GitHub username |
+| Variable           | Local Name           | Codespaces Name  | Required | Description                                                                     |
+| ------------------ | -------------------- | ---------------- | -------- | ------------------------------------------------------------------------------- |
+| GitHub PAT         | `GITHUB_PAT`         | `GH_PAT`         | Yes      | Personal access token for git operations                                        |
+| GitHub User        | `GITHUB_USER`        | `GH_USER`        | Yes      | Your GitHub username                                                            |
 | GitHub Project PAT | `GITHUB_PROJECT_PAT` | `GH_PROJECT_PAT` | Optional | PAT with project permissions for manual project status updates via Claude skill |
 
 ### API Keys
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AWS_ACCESS_KEY_ID` | Yes | AWS access key for Bedrock authentication |
-| `AWS_SECRET_ACCESS_KEY` | Yes | AWS secret access key for Bedrock authentication |
-| `LANGSMITH_API_KEY` | Optional | LangSmith API key for testing |
+| Variable                | Required | Description                                      |
+| ----------------------- | -------- | ------------------------------------------------ |
+| `AWS_ACCESS_KEY_ID`     | Yes      | AWS access key for Bedrock authentication        |
+| `AWS_SECRET_ACCESS_KEY` | Yes      | AWS secret access key for Bedrock authentication |
+| `LANGSMITH_API_KEY`     | Optional | LangSmith API key for testing                    |
 
 ### Anthropic Configuration
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `ANTHROPIC_MODEL` | No | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | Primary Claude model |
-| `ANTHROPIC_SMALL_FAST_MODEL` | No | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | Fast model for simple tasks |
-| `AWS_REGION` | No | `us-east-1` | AWS region for Bedrock |
-| `CLAUDE_CODE_USE_BEDROCK` | No | `1` | Use Bedrock for Claude |
+| Variable                     | Required | Default                                        | Description                 |
+| ---------------------------- | -------- | ---------------------------------------------- | --------------------------- |
+| `ANTHROPIC_MODEL`            | No       | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | Primary Claude model        |
+| `ANTHROPIC_SMALL_FAST_MODEL` | No       | `us.anthropic.claude-haiku-4-5-20251001-v1:0`  | Fast model for simple tasks |
+| `AWS_REGION`                 | No       | `us-east-1`                                    | AWS region for Bedrock      |
+| `CLAUDE_CODE_USE_BEDROCK`    | No       | `1`                                            | Use Bedrock for Claude      |
 
 ## Advanced Usage
 

@@ -10,12 +10,14 @@
 ## Purpose
 
 This repository provides **usage patterns and real-world examples** for LangSmith features. It's our reference for understanding:
+
 - How developers **use** LangSmith APIs in practice
 - Common patterns and best practices
 - End-to-end workflows for tracing, testing, and evaluation
 - What data structures and responses to expect
 
 Use this cookbook to:
+
 1. **Understand user workflows** before implementing SDK methods
 2. **Validate API design** against real-world usage patterns
 3. **Create test cases** based on proven examples
@@ -41,11 +43,13 @@ langsmith-cookbook/
 ### For `ls-runs-query` (Milestone 3)
 
 **Must-read examples:**
+
 - `tracing-examples/traceable/tracing_without_langchain.ipynb` - Core tracing concepts
 - `tracing-examples/rest/rest.ipynb` - **Direct REST API usage** (shows request/response formats)
 - `tracing-examples/nesting-tools/nest_runs_within_tools.ipynb` - Understanding run hierarchies
 
 **Key learnings:**
+
 - Run data structure (inputs, outputs, metadata, parent-child relationships)
 - Filtering and query patterns
 - How users debug traces in practice
@@ -53,6 +57,7 @@ langsmith-cookbook/
 ### For `ls-datasets` (Milestone 5)
 
 **Must-read examples:**
+
 - `testing-examples/using-fixed-sources/using_fixed_sources.ipynb` - Dataset creation patterns
 - `testing-examples/dynamic-data/testing_dynamic_data.ipynb` - Datasets with changing data
 - `testing-examples/backtesting/backtesting.ipynb` - **Converting runs to datasets** (key workflow!)
@@ -60,6 +65,7 @@ langsmith-cookbook/
 - `testing-examples/download-feedback-and-examples/download_example.ipynb` - Fetching examples
 
 **Key learnings:**
+
 - Dataset types (chat, key-value, custom)
 - Example structure and metadata
 - Pagination and filtering patterns
@@ -68,11 +74,13 @@ langsmith-cookbook/
 ### For `ls-annotation-queues` (Milestone 4)
 
 **Must-read examples:**
+
 - `feedback-examples/algorithmic-feedback/algorithmic_feedback.ipynb` - Automated feedback pipelines
 - `feedback-examples/realtime-algorithmic-feedback/realtime_feedback.ipynb` - Real-time feedback
 - `feedback-examples/streamlit/` - **Interactive feedback capture** (shows UX patterns)
 
 **Key learnings:**
+
 - Feedback vs annotation workflows
 - How annotation queues fit into evaluation lifecycle
 - User expectations for review/labeling interfaces
@@ -120,6 +128,7 @@ jupyter notebook testing-examples/backtesting/backtesting.ipynb
 ### Pattern: REST API Structure
 
 The REST API example (`tracing-examples/rest/rest.ipynb`) is particularly valuable because it shows:
+
 - Raw HTTP requests without SDK abstraction
 - Exact request/response formats
 - Authentication patterns
@@ -128,6 +137,7 @@ The REST API example (`tracing-examples/rest/rest.ipynb`) is particularly valuab
 ### Pattern: Dataset Workflows
 
 Common dataset workflows from examples:
+
 1. **Create** → **Add Examples** → **Run Evaluation** → **Iterate**
 2. **Production Runs** → **Convert to Dataset** → **Regression Testing** (backtesting pattern)
 3. **Export** → **Analyze Offline** → **Re-import** (data portability)
@@ -135,6 +145,7 @@ Common dataset workflows from examples:
 ### Pattern: Tracing & Debugging
 
 Debugging workflow shown in examples:
+
 1. **Trace** the execution
 2. **Fetch** the trace by ID or filter criteria
 3. **Analyze** the nested run structure
@@ -145,4 +156,3 @@ Debugging workflow shown in examples:
 - **LangSmith Docs**: https://docs.smith.langchain.com/
 - **LangSmith Python SDK**: https://github.com/langchain-ai/langsmith-sdk
 - **OpenAPI Spec**: Check LangSmith SDK repo for `openapi/openapi.yaml`
-

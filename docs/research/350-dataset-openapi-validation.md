@@ -15,21 +15,21 @@ This report validates the dataset API research findings from #348/349 against th
 
 ## 1. OpenAPI Spec Update
 
-| Property | Value |
-|----------|-------|
-| Source URL | `https://api.smith.langchain.com/openapi.json` |
-| Fetch Date | 2025-11-28 |
-| File Size | 639K (up from 635K on 2025-11-26) |
+| Property   | Value                                                |
+| ---------- | ---------------------------------------------------- |
+| Source URL | `https://api.smith.langchain.com/openapi.json`       |
+| Fetch Date | 2025-11-28                                           |
+| File Size  | 639K (up from 635K on 2025-11-26)                    |
 | Local Path | `reference/openapi/langchain/langsmith/openapi.json` |
 
 ### Extracted Fragments
 
-| Fragment | Size | Purpose |
-|----------|------|---------|
-| `dataset-endpoints.json` | 61K | All `/api/v1/datasets/*` endpoints |
-| `dataset-schemas.json` | 43K | All dataset-related schemas |
-| `example-endpoints.json` | 30K | All `/api/v1/examples/*` endpoints |
-| `example-schemas.json` | 29K | All example-related schemas |
+| Fragment                 | Size | Purpose                            |
+| ------------------------ | ---- | ---------------------------------- |
+| `dataset-endpoints.json` | 61K  | All `/api/v1/datasets/*` endpoints |
+| `dataset-schemas.json`   | 43K  | All dataset-related schemas        |
+| `example-endpoints.json` | 30K  | All `/api/v1/examples/*` endpoints |
+| `example-schemas.json`   | 29K  | All example-related schemas        |
 
 ---
 
@@ -37,27 +37,27 @@ This report validates the dataset API research findings from #348/349 against th
 
 ### 2.1 Dataset CRUD - ✅ Confirmed
 
-| Method | Endpoint | Research | OpenAPI | Status |
-|--------|----------|----------|---------|--------|
-| GET | `/api/v1/datasets` | ✅ | ✅ | Confirmed |
-| POST | `/api/v1/datasets` | ✅ | ✅ | Confirmed |
-| GET | `/api/v1/datasets/{dataset_id}` | ✅ | ✅ | Confirmed |
-| PATCH | `/api/v1/datasets/{dataset_id}` | ✅ | ✅ | Confirmed |
-| DELETE | `/api/v1/datasets/{dataset_id}` | ✅ | ✅ | Confirmed |
+| Method | Endpoint                        | Research | OpenAPI | Status    |
+| ------ | ------------------------------- | -------- | ------- | --------- |
+| GET    | `/api/v1/datasets`              | ✅       | ✅      | Confirmed |
+| POST   | `/api/v1/datasets`              | ✅       | ✅      | Confirmed |
+| GET    | `/api/v1/datasets/{dataset_id}` | ✅       | ✅      | Confirmed |
+| PATCH  | `/api/v1/datasets/{dataset_id}` | ✅       | ✅      | Confirmed |
+| DELETE | `/api/v1/datasets/{dataset_id}` | ✅       | ✅      | Confirmed |
 
 ### 2.2 Example CRUD - ✅ Confirmed
 
-| Method | Endpoint | Research | OpenAPI | Status |
-|--------|----------|----------|---------|--------|
-| GET | `/api/v1/examples` | ✅ | ✅ | Confirmed |
-| POST | `/api/v1/examples` | ✅ | ✅ | Confirmed |
-| POST | `/api/v1/examples/bulk` | ✅ | ✅ | Confirmed |
-| PATCH | `/api/v1/examples/bulk` | ✅ | ✅ | Confirmed |
-| DELETE | `/api/v1/examples` | ✅ | ✅ | Confirmed |
-| GET | `/api/v1/examples/{example_id}` | ✅ | ✅ | Confirmed |
-| PATCH | `/api/v1/examples/{example_id}` | ✅ | ✅ | Confirmed |
-| DELETE | `/api/v1/examples/{example_id}` | ✅ | ✅ | Confirmed |
-| GET | `/api/v1/examples/count` | ✅ | ✅ | Confirmed |
+| Method | Endpoint                        | Research | OpenAPI | Status    |
+| ------ | ------------------------------- | -------- | ------- | --------- |
+| GET    | `/api/v1/examples`              | ✅       | ✅      | Confirmed |
+| POST   | `/api/v1/examples`              | ✅       | ✅      | Confirmed |
+| POST   | `/api/v1/examples/bulk`         | ✅       | ✅      | Confirmed |
+| PATCH  | `/api/v1/examples/bulk`         | ✅       | ✅      | Confirmed |
+| DELETE | `/api/v1/examples`              | ✅       | ✅      | Confirmed |
+| GET    | `/api/v1/examples/{example_id}` | ✅       | ✅      | Confirmed |
+| PATCH  | `/api/v1/examples/{example_id}` | ✅       | ✅      | Confirmed |
+| DELETE | `/api/v1/examples/{example_id}` | ✅       | ✅      | Confirmed |
+| GET    | `/api/v1/examples/count`        | ✅       | ✅      | Confirmed |
 
 ### 2.3 Import/Export - ✅ Confirmed
 
@@ -71,15 +71,15 @@ All versioning endpoints documented in research are present in OpenAPI spec.
 
 The following endpoints were not in research but exist in OpenAPI:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/v1/examples/validate` | POST | Validate single example |
-| `/api/v1/examples/validate/bulk` | POST | Validate multiple examples |
-| `/api/v1/datasets/{dataset_id}/splits` | GET/PUT | Manage dataset splits |
-| `/api/v1/datasets/{dataset_id}/index` | POST | Create semantic index |
-| `/api/v1/datasets/{dataset_id}/index/sync` | POST | Sync semantic index |
-| `/api/v1/datasets/{dataset_id}/search` | POST | Semantic search |
-| `/api/v1/datasets/{dataset_id}/generate` | POST | Generate synthetic examples |
+| Endpoint                                   | Method  | Purpose                     |
+| ------------------------------------------ | ------- | --------------------------- |
+| `/api/v1/examples/validate`                | POST    | Validate single example     |
+| `/api/v1/examples/validate/bulk`           | POST    | Validate multiple examples  |
+| `/api/v1/datasets/{dataset_id}/splits`     | GET/PUT | Manage dataset splits       |
+| `/api/v1/datasets/{dataset_id}/index`      | POST    | Create semantic index       |
+| `/api/v1/datasets/{dataset_id}/index/sync` | POST    | Sync semantic index         |
+| `/api/v1/datasets/{dataset_id}/search`     | POST    | Semantic search             |
+| `/api/v1/datasets/{dataset_id}/generate`   | POST    | Generate synthetic examples |
 
 ---
 
@@ -101,15 +101,15 @@ Research was correct: `kv`, `llm`, `chat` are the valid data types.
 
 **Research vs OpenAPI differences:**
 
-| Field | Research | OpenAPI | Action |
-|-------|----------|---------|--------|
-| `inputs_schema` | `Option<serde_json::Value>` | `inputs_schema_definition` | **Rename field** |
-| `outputs_schema` | `Option<serde_json::Value>` | `outputs_schema_definition` | **Rename field** |
-| `tenant_id` | Not documented | `Uuid` (required) | **Add field** |
-| `externally_managed` | Not documented | `Option<bool>` | **Add field** |
-| `modified_at` | `Option<DateTime<Utc>>` | `DateTime<Utc>` (required) | **Make required** |
-| `example_count` | `Option<i64>` | `i64` (required) | **Make required** |
-| `session_count` | `Option<i64>` | `i64` (required) | **Make required** |
+| Field                | Research                    | OpenAPI                     | Action            |
+| -------------------- | --------------------------- | --------------------------- | ----------------- |
+| `inputs_schema`      | `Option<serde_json::Value>` | `inputs_schema_definition`  | **Rename field**  |
+| `outputs_schema`     | `Option<serde_json::Value>` | `outputs_schema_definition` | **Rename field**  |
+| `tenant_id`          | Not documented              | `Uuid` (required)           | **Add field**     |
+| `externally_managed` | Not documented              | `Option<bool>`              | **Add field**     |
+| `modified_at`        | `Option<DateTime<Utc>>`     | `DateTime<Utc>` (required)  | **Make required** |
+| `example_count`      | `Option<i64>`               | `i64` (required)            | **Make required** |
+| `session_count`      | `Option<i64>`               | `i64` (required)            | **Make required** |
 
 **Corrected Dataset struct:**
 
@@ -147,15 +147,15 @@ pub struct Dataset {
 
 ### 3.3 DatasetCreate Schema - ⚠️ Corrections Required
 
-| Field | Research | OpenAPI | Action |
-|-------|----------|---------|--------|
-| `id` | Not documented | `Option<Uuid>` | **Add field** (client-generated ID) |
-| `extra` | Not documented | `Option<Value>` | **Add field** |
-| `inputs_schema_definition` | Not in create | Present | **Add field** |
-| `outputs_schema_definition` | Not in create | Present | **Add field** |
-| `externally_managed` | Not in create | Present | **Add field** |
-| `transformations` | Not in create | Present | **Add field** |
-| `created_at` | Not in create | Present | **Add field** |
+| Field                       | Research       | OpenAPI         | Action                              |
+| --------------------------- | -------------- | --------------- | ----------------------------------- |
+| `id`                        | Not documented | `Option<Uuid>`  | **Add field** (client-generated ID) |
+| `extra`                     | Not documented | `Option<Value>` | **Add field**                       |
+| `inputs_schema_definition`  | Not in create  | Present         | **Add field**                       |
+| `outputs_schema_definition` | Not in create  | Present         | **Add field**                       |
+| `externally_managed`        | Not in create  | Present         | **Add field**                       |
+| `transformations`           | Not in create  | Present         | **Add field**                       |
+| `created_at`                | Not in create  | Present         | **Add field**                       |
 
 ### 3.4 DatasetTransformation - ⚠️ Correction Required
 
@@ -172,6 +172,7 @@ pub struct DatasetTransformation {
 ```
 
 **DatasetTransformationType enum values (confirmed):**
+
 - `convert_to_openai_message`
 - `convert_to_openai_tool`
 - `remove_system_messages`
@@ -180,13 +181,14 @@ pub struct DatasetTransformation {
 
 ### 3.5 Example Schema - ⚠️ Corrections Required
 
-| Field | Research | OpenAPI | Action |
-|-------|----------|---------|--------|
-| `name` | Not documented | `String` (required) | **Add field** |
-| `inputs` | `Option<Value>` | `Value` (required) | **Make required** |
+| Field         | Research                                  | OpenAPI                          | Action                |
+| ------------- | ----------------------------------------- | -------------------------------- | --------------------- |
+| `name`        | Not documented                            | `String` (required)              | **Add field**         |
+| `inputs`      | `Option<Value>`                           | `Value` (required)               | **Make required**     |
 | `attachments` | `Option<HashMap<String, AttachmentInfo>>` | `attachment_urls: Option<Value>` | **Rename & simplify** |
 
 **Example schema has required fields:**
+
 - `id` (Uuid)
 - `dataset_id` (Uuid)
 - `inputs` (Object)
@@ -196,27 +198,29 @@ pub struct DatasetTransformation {
 
 The ExampleCreate schema in OpenAPI includes additional fields:
 
-| Field | Type | Default | Notes |
-|-------|------|---------|-------|
-| `dataset_id` | Uuid | - | **Required** |
-| `inputs` | Option<Value> | - | Optional in create |
-| `outputs` | Option<Value> | - | Optional |
-| `metadata` | Option<Value> | - | Optional |
-| `split` | String or String[] | `"base"` | Default is "base" |
-| `id` | Option<Uuid> | - | Client-generated ID |
-| `source_run_id` | Option<Uuid> | - | Link to source run |
-| `use_source_run_io` | bool | `false` | Copy I/O from run |
-| `use_source_run_attachments` | String[] | `[]` | Copy attachments |
-| `use_legacy_message_format` | bool | `false` | LLM message format |
-| `created_at` | Option<String> | - | Custom timestamp |
+| Field                        | Type               | Default  | Notes               |
+| ---------------------------- | ------------------ | -------- | ------------------- |
+| `dataset_id`                 | Uuid               | -        | **Required**        |
+| `inputs`                     | Option<Value>      | -        | Optional in create  |
+| `outputs`                    | Option<Value>      | -        | Optional            |
+| `metadata`                   | Option<Value>      | -        | Optional            |
+| `split`                      | String or String[] | `"base"` | Default is "base"   |
+| `id`                         | Option<Uuid>       | -        | Client-generated ID |
+| `source_run_id`              | Option<Uuid>       | -        | Link to source run  |
+| `use_source_run_io`          | bool               | `false`  | Copy I/O from run   |
+| `use_source_run_attachments` | String[]           | `[]`     | Copy attachments    |
+| `use_legacy_message_format`  | bool               | `false`  | LLM message format  |
+| `created_at`                 | Option<String>     | -        | Custom timestamp    |
 
 ### 3.7 ExampleUpdate Schema - ✅ Confirmed with additions
 
 New fields discovered:
+
 - `attachments_operations: Option<AttachmentsOperations>` - Rename/retain attachments
 - `overwrite: bool` (default: false) - Overwrite vs merge behavior
 
 **AttachmentsOperations schema:**
+
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttachmentsOperations {
@@ -230,6 +234,7 @@ pub struct AttachmentsOperations {
 ### 3.8 DatasetVersion Schema - ✅ Confirmed
 
 Research was correct:
+
 ```rust
 pub struct DatasetVersion {
     pub tags: Option<Vec<String>>,
@@ -247,37 +252,37 @@ Research was correct for the structure.
 
 ### 4.1 List Datasets Parameters - ⚠️ One correction
 
-| Parameter | Research | OpenAPI | Status |
-|-----------|----------|---------|--------|
-| `id` | uuid[] | uuid[] | ✅ Confirmed |
-| `data_type` | string | DataType or DataType[] | ⚠️ Can be array |
-| `name` | string | string | ✅ Confirmed |
-| `name_contains` | string | string | ✅ Confirmed |
-| `metadata` | object | string (JSON) | ⚠️ Type is string |
-| `offset` | int | int (default: 0) | ✅ Confirmed |
-| `limit` | int | int (max: 100, default: 100) | ✅ Confirmed |
-| `sort_by` | string | SortByDatasetColumn | ✅ Confirmed |
-| `sort_by_desc` | bool | bool (default: true) | ✅ Confirmed |
-| `tag_value_id` | uuid[] | uuid[] | ✅ Confirmed |
-| `exclude_corrections_datasets` | Not documented | bool (default: false) | 🆕 New |
+| Parameter                      | Research       | OpenAPI                      | Status           |
+| ------------------------------ | -------------- | ---------------------------- | ---------------- |
+| `id`                           | uuid[]         | uuid[]                       | ✅ Confirmed     |
+| `data_type`                    | string         | DataType or DataType[]       | ⚠️ Can be array   |
+| `name`                         | string         | string                       | ✅ Confirmed     |
+| `name_contains`                | string         | string                       | ✅ Confirmed     |
+| `metadata`                     | object         | string (JSON)                | ⚠️ Type is string |
+| `offset`                       | int            | int (default: 0)             | ✅ Confirmed     |
+| `limit`                        | int            | int (max: 100, default: 100) | ✅ Confirmed     |
+| `sort_by`                      | string         | SortByDatasetColumn          | ✅ Confirmed     |
+| `sort_by_desc`                 | bool           | bool (default: true)         | ✅ Confirmed     |
+| `tag_value_id`                 | uuid[]         | uuid[]                       | ✅ Confirmed     |
+| `exclude_corrections_datasets` | Not documented | bool (default: false)        | 🆕 New           |
 
 ### 4.2 List Examples Parameters - ✅ Confirmed
 
-| Parameter | Research | OpenAPI | Status |
-|-----------|----------|---------|--------|
-| `dataset` | uuid (required) | uuid | ⚠️ Optional in spec |
-| `id` | uuid[] | uuid[] | ✅ Confirmed |
-| `as_of` | datetime | datetime or "latest" | ✅ Confirmed |
-| `metadata` | object | string (JSON) | ⚠️ Type is string |
-| `full_text_contains` | string | string[] | ⚠️ Is array |
-| `splits` | string[] | string[] | ✅ Confirmed |
-| `filter` | string | string | ✅ Confirmed |
-| `offset` | int | int (default: 0) | ✅ Confirmed |
-| `limit` | int | int (max: 100, default: 100) | ✅ Confirmed |
-| `order` | string | ExampleListOrder | ✅ Confirmed |
-| `descending` | bool | bool | ✅ Confirmed |
-| `select` | string[] | ExampleSelect[] | ✅ Confirmed |
-| `random_seed` | int | number | ✅ Confirmed |
+| Parameter            | Research        | OpenAPI                      | Status             |
+| -------------------- | --------------- | ---------------------------- | ------------------ |
+| `dataset`            | uuid (required) | uuid                         | ⚠️ Optional in spec |
+| `id`                 | uuid[]          | uuid[]                       | ✅ Confirmed       |
+| `as_of`              | datetime        | datetime or "latest"         | ✅ Confirmed       |
+| `metadata`           | object          | string (JSON)                | ⚠️ Type is string   |
+| `full_text_contains` | string          | string[]                     | ⚠️ Is array         |
+| `splits`             | string[]        | string[]                     | ✅ Confirmed       |
+| `filter`             | string          | string                       | ✅ Confirmed       |
+| `offset`             | int             | int (default: 0)             | ✅ Confirmed       |
+| `limit`              | int             | int (max: 100, default: 100) | ✅ Confirmed       |
+| `order`              | string          | ExampleListOrder             | ✅ Confirmed       |
+| `descending`         | bool            | bool                         | ✅ Confirmed       |
+| `select`             | string[]        | ExampleSelect[]              | ✅ Confirmed       |
+| `random_seed`        | int             | number                       | ✅ Confirmed       |
 
 ---
 
@@ -341,20 +346,20 @@ Create `sdk/src/datasets.rs` following the pattern from `sdk/src/annotation_queu
 
 ### 6.2 Structs to Implement (Priority Order)
 
-| Struct | Source | Notes |
-|--------|--------|-------|
-| `DataType` | Section 3.1 | Enum: `kv`, `llm`, `chat` |
-| `Dataset` | Section 3.2 | Use corrected struct (7 required, 8 optional fields) |
-| `DatasetCreate` | Section 3.3 | Only `name` required |
-| `DatasetUpdate` | OpenAPI `DatasetUpdate` | All fields optional |
-| `DatasetTransformation` | Section 3.4 | `path: Vec<String>` (not String) |
-| `DatasetTransformationType` | Section 3.4 | 5-value enum |
-| `Example` | Section 3.5 | 4 required fields including `name` |
-| `ExampleCreate` | Section 3.6 | Only `dataset_id` required |
-| `ExampleUpdate` | Section 3.7 | Includes `AttachmentsOperations` |
-| `DatasetVersion` | Section 3.8 | `as_of` required |
-| `DatasetDiffInfo` | Research doc | 3 Vec<Uuid> fields |
-| `AttachmentsOperations` | Section 3.7 | For attachment rename/retain |
+| Struct                      | Source                  | Notes                                                |
+| --------------------------- | ----------------------- | ---------------------------------------------------- |
+| `DataType`                  | Section 3.1             | Enum: `kv`, `llm`, `chat`                            |
+| `Dataset`                   | Section 3.2             | Use corrected struct (7 required, 8 optional fields) |
+| `DatasetCreate`             | Section 3.3             | Only `name` required                                 |
+| `DatasetUpdate`             | OpenAPI `DatasetUpdate` | All fields optional                                  |
+| `DatasetTransformation`     | Section 3.4             | `path: Vec<String>` (not String)                     |
+| `DatasetTransformationType` | Section 3.4             | 5-value enum                                         |
+| `Example`                   | Section 3.5             | 4 required fields including `name`                   |
+| `ExampleCreate`             | Section 3.6             | Only `dataset_id` required                           |
+| `ExampleUpdate`             | Section 3.7             | Includes `AttachmentsOperations`                     |
+| `DatasetVersion`            | Section 3.8             | `as_of` required                                     |
+| `DatasetDiffInfo`           | Research doc            | 3 Vec<Uuid> fields                                   |
+| `AttachmentsOperations`     | Section 3.7             | For attachment rename/retain                         |
 
 ### 6.3 Key Implementation Notes
 
@@ -367,12 +372,12 @@ Create `sdk/src/datasets.rs` following the pattern from `sdk/src/annotation_queu
 
 ### 6.4 Reference Files
 
-| File | Purpose |
-|------|---------|
-| `reference/api-specs/langsmith/dataset-schemas.json` | Full Dataset schemas from OpenAPI |
-| `reference/api-specs/langsmith/example-schemas.json` | Full Example schemas from OpenAPI |
-| `sdk/src/annotation_queues.rs` | Pattern to follow |
-| `docs/research/346-dataset-api-research.md` | Original research with SDK method signatures |
+| File                                                 | Purpose                                      |
+| ---------------------------------------------------- | -------------------------------------------- |
+| `reference/api-specs/langsmith/dataset-schemas.json` | Full Dataset schemas from OpenAPI            |
+| `reference/api-specs/langsmith/example-schemas.json` | Full Example schemas from OpenAPI            |
+| `sdk/src/annotation_queues.rs`                       | Pattern to follow                            |
+| `docs/research/346-dataset-api-research.md`          | Original research with SDK method signatures |
 
 ---
 

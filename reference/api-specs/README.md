@@ -38,12 +38,12 @@ api-specs/
 
 This structure follows the **"canonical source + derived fragments"** pattern:
 
-| Location | Content | Version Control | Purpose |
-|----------|---------|-----------------|---------|
+| Location                                  | Content    | Version Control   | Purpose                        |
+| ----------------------------------------- | ---------- | ----------------- | ------------------------------ |
 | `../openapi/langchain/{api}/openapi.json` | Full specs | Committed (large) | Source of truth for jq queries |
-| `../openapi/langchain/{api}/MANIFEST.md` | Provenance | Committed | When/how specs were fetched |
-| `api-specs/{api}/*.json` | Fragments | Committed (small) | AI context grounding |
-| `api-specs/{api}/FRAGMENTS.md` | Index | Committed | jq queries for reproducibility |
+| `../openapi/langchain/{api}/MANIFEST.md`  | Provenance | Committed         | When/how specs were fetched    |
+| `api-specs/{api}/*.json`                  | Fragments  | Committed (small) | AI context grounding           |
+| `api-specs/{api}/FRAGMENTS.md`            | Index      | Committed         | jq queries for reproducibility |
 
 ### Benefits
 

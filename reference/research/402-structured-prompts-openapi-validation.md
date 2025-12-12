@@ -15,6 +15,7 @@ This report validates the research findings from [#398](https://github.com/codek
 **Research Finding**: POST /commits/{owner}/{repo}/ endpoint for creating prompt commits
 
 **OpenAPI Validation**:
+
 - **Status**: ✅ **CONFIRMED**
 - **Path**: `/api/v1/commits/{owner}/{repo}`
 - **Method**: POST
@@ -22,6 +23,7 @@ This report validates the research findings from [#398](https://github.com/codek
 - **Location**: `reference/api-specs/langsmith/prompt-endpoints.json:1-199`
 
 **Schema Details**:
+
 ```json
 {
   "properties": {
@@ -50,6 +52,7 @@ This report validates the research findings from [#398](https://github.com/codek
 ```
 
 **Key Observations**:
+
 - The `manifest` field is **required**
 - `manifest` allows arbitrary JSON (`additionalProperties: true`)
 - No validation of internal manifest structure by the API
@@ -59,6 +62,7 @@ This report validates the research findings from [#398](https://github.com/codek
 **Research Finding**: Manifests use LC-JSON format with specific structure
 
 **OpenAPI Validation**:
+
 - **Status**: ✅ **CONFIRMED WITH CLARIFICATION**
 - **Schema**: `CreateRepoCommitRequest.manifest` and `CommitManifestResponse.manifest`
 - **Type**: `object` with `additionalProperties: true`
@@ -67,6 +71,7 @@ This report validates the research findings from [#398](https://github.com/codek
 The OpenAPI spec intentionally **does not constrain** the manifest structure. This is by design - the API treats manifests as opaque JSON blobs, allowing LangChain to evolve the serialization format without API changes.
 
 **Implication for Langstar**:
+
 - Langstar must implement LC-JSON serialization logic in SDK
 - No server-side validation of manifest structure
 - Client-side schema validation recommended before pushing
@@ -76,11 +81,13 @@ The OpenAPI spec intentionally **does not constrain** the manifest structure. Th
 **Research Finding**: `StructuredPrompt` has `schema_` and `structured_output_kwargs` fields
 
 **OpenAPI Validation**:
+
 - **Status**: ✅ **CONFIRMED AS CLIENT-SIDE CONCERN**
 - The OpenAPI spec does **not** define these fields because they exist within the opaque `manifest` object
 - These fields are part of the LC-JSON format (LangChain's serialization)
 
 **LC-JSON Structure** (from research experiments):
+
 ```json
 {
   "lc": 1,
@@ -100,6 +107,7 @@ The OpenAPI spec intentionally **does not constrain** the manifest structure. Th
 ```
 
 **Validation**:
+
 - ✅ `schema_` field exists in `kwargs` (stores JSON Schema dict)
 - ✅ `structured_output_kwargs.method` stores the method selection
 
@@ -108,12 +116,14 @@ The OpenAPI spec intentionally **does not constrain** the manifest structure. Th
 **Research Finding**: Two methods supported: `"json_schema"` and `"function_calling"`
 
 **OpenAPI Validation**:
+
 - **Status**: ✅ **CONFIRMED AS CLIENT-SIDE CONCERN**
 - Not enforced by API (opaque manifest)
 - Validated by experiments in #398
 
 **From Research Experiments**:
 Both methods work when included in the manifest's `structured_output_kwargs`:
+
 - `"json_schema"` - Use JSON Schema mode
 - `"function_calling"` - Use function calling mode
 
@@ -125,23 +135,24 @@ Both methods work when included in the manifest's `structured_output_kwargs`:
 
 All research findings align with the OpenAPI spec. The key insight is understanding the **API boundary**:
 
-| Layer | Validation | Ownership |
-|-------|------------|-----------|
-| API Layer | `manifest` is valid JSON object | LangSmith API |
-| SDK Layer | LC-JSON format, schema_ structure, method values | Langstar SDK |
+| Layer     | Validation                                       | Ownership     |
+| --------- | ------------------------------------------------ | ------------- |
+| API Layer | `manifest` is valid JSON object                  | LangSmith API |
+| SDK Layer | LC-JSON format, schema_ structure, method values | Langstar SDK  |
 
 ## Key Findings Summary
 
-| Finding | Research | OpenAPI Spec | Status |
-|---------|----------|--------------|--------|
-| POST /commits endpoint | ✅ Documented | ✅ Exists | ✅ Match |
-| Manifest is flexible JSON | ✅ Documented | ✅ `additionalProperties: true` | ✅ Match |
-| LC-JSON format | ✅ Documented | ⚪ Out of scope | ✅ SDK concern |
-| `schema_` field | ✅ In experiments | ⚪ Not in spec | ✅ SDK concern |
-| `structured_output_kwargs` | ✅ In experiments | ⚪ Not in spec | ✅ SDK concern |
-| Method options | ✅ Validated | ⚪ Not enumerated | ✅ SDK concern |
+| Finding                    | Research          | OpenAPI Spec                    | Status         |
+| -------------------------- | ----------------- | ------------------------------- | -------------- |
+| POST /commits endpoint     | ✅ Documented     | ✅ Exists                       | ✅ Match       |
+| Manifest is flexible JSON  | ✅ Documented     | ✅ `additionalProperties: true` | ✅ Match       |
+| LC-JSON format             | ✅ Documented     | ⚪ Out of scope                 | ✅ SDK concern |
+| `schema_` field            | ✅ In experiments | ⚪ Not in spec                  | ✅ SDK concern |
+| `structured_output_kwargs` | ✅ In experiments | ⚪ Not in spec                  | ✅ SDK concern |
+| Method options             | ✅ Validated      | ⚪ Not enumerated               | ✅ SDK concern |
 
 **Legend**:
+
 - ✅ Confirmed
 - ⚪ Expected to be out of scope
 - ❌ Conflict (none found)
@@ -178,20 +189,24 @@ All research findings align with the OpenAPI spec. The key insight is understand
 ## References
 
 ### API Spec Fragments
+
 - **Endpoints**: `reference/api-specs/langsmith/prompt-endpoints.json`
 - **Schemas**: `reference/api-specs/langsmith/prompt-schemas.json`
 - **Full Spec**: `reference/openapi/langchain/langsmith/openapi.json`
 
 ### Related Research
+
 - [#398 Research Report](../../docs/research/398-structured-output-prompts-scout.md)
 - [#403 Design Consistency](https://github.com/codekiln/langstar/issues/403)
 
 ### OpenAPI Details
+
 - **Provenance**: Fetched 2025-11-29 from `https://api.smith.langchain.com/openapi.json`
 - **Size**: 638K
 - **MANIFEST**: `reference/openapi/langchain/langsmith/MANIFEST.md`
 
 ### Extraction Commands Used
+
 ```bash
 # Extract prompt endpoints
 jq '.paths | with_entries(select(.key | test("^/api/v1/(repos|commits)")))' \

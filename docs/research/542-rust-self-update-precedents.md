@@ -18,17 +18,18 @@ Analysis of five major Rust CLI tools reveals that **none implement built-in sel
 
 ### Projects Analyzed
 
-| Project | Stars | Self-Update? | Update Method |
-|---------|-------|--------------|---------------|
-| ripgrep | 49k+ | No | Package managers (cargo, brew, apt, etc.) |
-| eza | 13k+ | No | Package managers, cargo install |
-| bat | 50k+ | No | Package managers, cargo install |
-| fd | 35k+ | No | Package managers, cargo install |
-| starship | 46k+ | No | install.sh script, package managers |
+| Project  | Stars | Self-Update? | Update Method                             |
+| -------- | ----- | ------------ | ----------------------------------------- |
+| ripgrep  | 49k+  | No           | Package managers (cargo, brew, apt, etc.) |
+| eza      | 13k+  | No           | Package managers, cargo install           |
+| bat      | 50k+  | No           | Package managers, cargo install           |
+| fd       | 35k+  | No           | Package managers, cargo install           |
+| starship | 46k+  | No           | install.sh script, package managers       |
 
 ### Key Finding
 
 **Zero** of these major Rust CLI tools have built-in self-update commands. This is a deliberate architectural choice favoring:
+
 - Separation of concerns (installation is not the tool's responsibility)
 - Security (avoiding privilege escalation within the binary)
 - Ecosystem integration (letting package managers handle updates)
@@ -143,6 +144,7 @@ download() {
 ### 3.4 Platform Detection
 
 Starship uses sophisticated platform detection including:
+
 - Architecture detection (x86_64, aarch64, arm)
 - OS detection (Linux, macOS, Windows via WSL)
 - libc detection (glibc vs musl)
@@ -159,13 +161,13 @@ While the five projects above lack self-update, **mise** (jdx/mise) provides a c
 
 ### Key Implementation Details
 
-| Aspect | mise Approach |
-|--------|---------------|
-| Library | `self_update` v0.42 with `signatures` feature |
-| Package detection | File-based markers (`mise-self-update-instructions.toml`) |
-| Signature verification | `zipsign.pub` public key via `verifying_keys()` |
-| macOS handling | Post-update `codesign --verify` check |
-| Feature gating | `#[cfg_attr(not(feature = "self_update"), path = "self_update_stub.rs")]` |
+| Aspect                 | mise Approach                                                             |
+| ---------------------- | ------------------------------------------------------------------------- |
+| Library                | `self_update` v0.42 with `signatures` feature                             |
+| Package detection      | File-based markers (`mise-self-update-instructions.toml`)                 |
+| Signature verification | `zipsign.pub` public key via `verifying_keys()`                           |
+| macOS handling         | Post-update `codesign --verify` check                                     |
+| Feature gating         | `#[cfg_attr(not(feature = "self_update"), path = "self_update_stub.rs")]` |
 
 ### Patterns Worth Adopting
 
@@ -206,6 +208,7 @@ See `reference/repo/jdx/mise/notes/README.md` for detailed analysis with code ex
 ### 6.1 Confirm Original Scout Recommendation
 
 The `self_update` crate remains the right choice:
+
 - Mature, maintained library
 - GitHub Releases integration
 - Handles binary replacement safely
@@ -215,16 +218,17 @@ The `self_update` crate remains the right choice:
 
 Incorporate these patterns from starship:
 
-| Pattern | Benefit | Implementation |
-|---------|---------|----------------|
-| Writability check | Fail fast with clear error | Check before attempting update |
-| Privilege escalation hints | Guide user to solution | "Try running with sudo" |
-| Download fallbacks | Broader compatibility | Support curl and wget |
-| Platform detection | Correct binary selection | Compile-time conditionals |
+| Pattern                    | Benefit                    | Implementation                 |
+| -------------------------- | -------------------------- | ------------------------------ |
+| Writability check          | Fail fast with clear error | Check before attempting update |
+| Privilege escalation hints | Guide user to solution     | "Try running with sudo"        |
+| Download fallbacks         | Broader compatibility      | Support curl and wget          |
+| Platform detection         | Correct binary selection   | Compile-time conditionals      |
 
 ### 6.3 Differentiate from Ecosystem Norm
 
 Since major Rust tools don't have self-update:
+
 - Document why langstar does (GitHub Release distribution focus)
 - Make it optional (users can disable)
 - Respect package manager installations (detect and warn)
@@ -233,16 +237,17 @@ Since major Rust tools don't have self-update:
 
 ## 7. Changes to Original Scout Recommendation
 
-| Aspect | Original | Updated |
-|--------|----------|---------|
-| Library choice | `self_update` crate | **No change** - confirmed |
-| Precedent validation | Not analyzed | **Added** - no precedents found |
-| Install script patterns | Not analyzed | **Added** - adopt starship patterns |
-| Risk assessment | Low | **Confirmed** - no ecosystem conflict |
+| Aspect                  | Original            | Updated                               |
+| ----------------------- | ------------------- | ------------------------------------- |
+| Library choice          | `self_update` crate | **No change** - confirmed             |
+| Precedent validation    | Not analyzed        | **Added** - no precedents found       |
+| Install script patterns | Not analyzed        | **Added** - adopt starship patterns   |
+| Risk assessment         | Low                 | **Confirmed** - no ecosystem conflict |
 
 ### New Insight
 
 The absence of self-update in major Rust tools is **not a technical limitation** but a **design choice**. Langstar can reasonably choose differently given:
+
 - Different distribution model (GitHub Releases primary)
 - Different user base (DevContainer/CI environments)
 - Explicit user request

@@ -17,11 +17,13 @@ This guide demonstrates common workflows for managing LangGraph assistants using
 ### Key Concepts
 
 **Deployment-Level Resources:**
+
 - Each assistant belongs to a specific LangGraph deployment
 - Your API key determines which deployment you're accessing
 - No organization or workspace scoping needed
 
 **Differences from Prompts:**
+
 - ❌ No `--organization-id` flags
 - ❌ No `--workspace-id` flags
 - ✅ Simple: Just API key + assistant commands
@@ -64,6 +66,7 @@ langstar assistant list
 ```
 
 **Output example:**
+
 ```
 ID                Name                    Graph ID            Created
 asst_abc123...    Customer Support Bot    graph_xyz789...     2024-01-15
@@ -92,6 +95,7 @@ langstar assistant get asst_abc123
 ```
 
 **Output example:**
+
 ```
 ID: asst_abc123
 Name: Customer Support Bot
@@ -112,6 +116,7 @@ langstar assistant search "customer"
 ```
 
 **Output example:**
+
 ```
 ID                Name                    Graph ID
 asst_abc123...    Customer Support Bot    graph_xyz789...
@@ -143,6 +148,7 @@ langstar assistant create \
 ```
 
 **Output:**
+
 ```
 Created assistant: asst_new123
 Name: My New Assistant

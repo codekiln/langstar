@@ -13,6 +13,7 @@ This project uses a **validate-on-PR, release-on-tag** CI/CD pipeline strategy, 
 **Purpose**: Validate code quality and correctness
 
 **Jobs**:
+
 1. **Check** - Formatting and compilation checks
    - `cargo fmt --check` - Verify code formatting
    - `cargo check` - Verify code compiles
@@ -37,6 +38,7 @@ This project uses a **validate-on-PR, release-on-tag** CI/CD pipeline strategy, 
 **Purpose**: Build release artifacts and publish GitHub releases
 
 **Jobs**:
+
 1. **Verify CI** (quality gate)
    - Wait for Check, Test, Clippy, and Build jobs to pass
    - Ensures all CI checks complete before proceeding
@@ -105,6 +107,7 @@ cargo release major --execute
 ```
 
 **What cargo-release does**:
+
 1. Updates version in `Cargo.toml`
 2. Runs git-cliff to generate changelog
 3. Creates a git commit with version bump
@@ -137,6 +140,7 @@ git push && git push origin v1.2.3
 ```
 
 **What happens next**:
+
 - GitHub Actions detects the tag
 - Release workflow builds binaries for all platforms
 - GitHub Release is created with changelog and binaries
@@ -165,12 +169,14 @@ Pre-releases are automatically detected and marked appropriately on GitHub.
 Configures `git-cliff` to generate changelogs from Conventional Emoji Commits.
 
 **Key features**:
+
 - Parses commits with emojis and conventional format
 - Groups commits by type (Features, Bug Fixes, etc.)
 - Links to GitHub PRs automatically
 - Prioritizes breaking changes at the top
 
 **Testing locally**:
+
 ```bash
 # Preview changelog for next release
 git-cliff --unreleased
@@ -187,6 +193,7 @@ git-cliff --tag v1.2.3 --output CHANGELOG.md
 Configures `cargo-release` for automated version bumping.
 
 **Key settings**:
+
 - Disables crates.io publishing (GitHub releases only)
 - Enables git-cliff integration for changelog
 - Configures tag format (`v{{version}}`)
@@ -194,6 +201,7 @@ Configures `cargo-release` for automated version bumping.
 - Pushes tags automatically
 
 **Testing locally**:
+
 ```bash
 # Dry-run to see what would happen
 cargo release patch --dry-run
@@ -206,17 +214,18 @@ cargo release patch --dry-run --verbose
 
 Version bumps are determined by commit types following Conventional Emoji Commits:
 
-| Commit Type | Version Bump | Example |
-|-------------|--------------|---------|
-| `🚨 BREAKING CHANGE` or `BREAKING CHANGE:` in body | **MAJOR** (1.0.0 → 2.0.0) | Breaking API changes |
-| `!` before `:` in subject | **MAJOR** (1.0.0 → 2.0.0) | `feat!: redesign API` |
-| `✨ feat` | **MINOR** (1.0.0 → 1.1.0) | New features |
-| `🩹 fix`, `⚡️ perf` | **PATCH** (1.0.0 → 1.0.1) | Bug fixes, performance |
-| Other types (docs, style, refactor, test, build, ci, chore) | **No bump** | Non-releasable changes |
+| Commit Type                                                 | Version Bump              | Example                |
+| ----------------------------------------------------------- | ------------------------- | ---------------------- |
+| `🚨 BREAKING CHANGE` or `BREAKING CHANGE:` in body          | **MAJOR** (1.0.0 → 2.0.0) | Breaking API changes   |
+| `!` before `:` in subject                                   | **MAJOR** (1.0.0 → 2.0.0) | `feat!: redesign API`  |
+| `✨ feat`                                                   | **MINOR** (1.0.0 → 1.1.0) | New features           |
+| `🩹 fix`, `⚡️ perf`                                         | **PATCH** (1.0.0 → 1.0.1) | Bug fixes, performance |
+| Other types (docs, style, refactor, test, build, ci, chore) | **No bump**               | Non-releasable changes |
 
 **Priority**: When multiple commits exist, use the highest priority: MAJOR > MINOR > PATCH
 
 **Examples**:
+
 ```bash
 # PATCH release (bug fix)
 git commit -m "🩹 fix: resolve memory leak in client"
@@ -239,11 +248,13 @@ cargo release major --execute
 ### Release workflow failed to build
 
 **Check**:
+
 1. Does the code compile locally? `cargo build --release`
 2. Are all tests passing? `cargo test --workspace`
 3. Check the Actions logs on GitHub for specific errors
 
 **Fix**:
+
 1. Fix the issue locally
 2. Create a new patch version
 3. Push the new tag
@@ -251,10 +262,12 @@ cargo release major --execute
 ### Changelog is empty or incorrect
 
 **Check**:
+
 1. Are commits following Conventional Emoji Commits format?
 2. Test locally: `git-cliff --unreleased`
 
 **Fix**:
+
 1. Verify `cliff.toml` configuration
 2. Check commit messages: `git log --oneline`
 3. Ensure commits have proper emoji/type prefixes
@@ -262,11 +275,13 @@ cargo release major --execute
 ### cargo-release fails with "working directory is dirty"
 
 **Check**:
+
 ```bash
 git status
 ```
 
 **Fix**:
+
 ```bash
 # Commit or stash uncommitted changes
 git add .
@@ -279,11 +294,13 @@ git stash
 ### Tag was pushed but release workflow didn't trigger
 
 **Check**:
+
 1. Was it an annotated tag? `git tag -v v1.2.3`
 2. Does the tag match `v*` pattern?
 3. Check Actions tab on GitHub
 
 **Fix**:
+
 1. Delete and recreate as annotated tag:
    ```bash
    git tag -d v1.2.3
@@ -295,12 +312,14 @@ git stash
 ### Need to undo a release
 
 **Before pushing** (tag is local only):
+
 ```bash
 git tag -d v1.2.3
 git reset --hard HEAD~1  # If you made a commit
 ```
 
 **After pushing** (tag is on GitHub):
+
 ```bash
 # 1. Delete GitHub Release
 gh release delete v1.2.3 --yes
@@ -430,15 +449,16 @@ cargo nextest list --all-features --workspace
 
 Configured in `.config/nextest.toml`:
 
-| Profile | Use Case | Timeout | Output |
-|---------|----------|---------|--------|
-| `default` | Local development | 60s | Failed tests only |
-| `ci` | CI unit tests | 60s | JUnit XML at `target/nextest/ci/junit-ci.xml` |
-| `integration` | Integration tests | 180s | JUnit XML at `target/nextest/integration/junit-integration.xml` |
+| Profile       | Use Case          | Timeout | Output                                                          |
+| ------------- | ----------------- | ------- | --------------------------------------------------------------- |
+| `default`     | Local development | 60s     | Failed tests only                                               |
+| `ci`          | CI unit tests     | 60s     | JUnit XML at `target/nextest/ci/junit-ci.xml`                   |
+| `integration` | Integration tests | 180s    | JUnit XML at `target/nextest/integration/junit-integration.xml` |
 
 ### Test Result Visibility
 
 In pull requests:
+
 - **PR Comments**: Test results with execution times appear as comments
 - **GitHub Checks**: Dedicated check runs for unit and integration test results
 - **Artifacts**: JUnit XML files stored for 90 days for historical analysis
@@ -446,6 +466,7 @@ In pull requests:
 ### Identifying Slow Tests
 
 After CI runs, check the PR comment for "Test Results" which shows:
+
 - Per-test execution time
 - Tests sorted by duration
 - Trend comparison across runs

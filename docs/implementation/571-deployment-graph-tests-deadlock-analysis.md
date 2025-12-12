@@ -31,6 +31,7 @@ This branch adds comprehensive tests for deployment and graph commands:
 **The Deadlock Pattern:**
 
 The file `cli/tests/deployment_command_test.rs`:
+
 - Uses `static TEST_DEPLOYMENT: OnceLock<TestDeployment>` (line 26)
 - Has THREE tests that call `get_test_deployment()`:
   - `test_deployment_get_basic` (line 313)
@@ -94,11 +95,13 @@ From `docs/dev/testing/cli-integration-tests.md` lines 76-92:
 > **Which tests are marked `#[serial]`?**
 >
 > Tests in `assistant_command_test.rs` that use the shared `TEST_DEPLOYMENT` via `OnceLock`:
+>
 > - `test_assistant_create_basic`
 > - `test_assistant_lifecycle`
 > - ... (all tests using shared deployment)
 >
 > **Why these tests need to be serial:**
+>
 > - They share a single `TestDeployment` via `OnceLock<TestDeployment>`
 > - Parallel execution could cause resource conflicts on the shared deployment
 > - The `#[serial]` attribute ensures only one of these tests runs at a time
@@ -145,6 +148,7 @@ fn test_deployment_secrets_redacted() { ... }
 ### Tests That Don't Need `#[serial]`
 
 These tests do NOT call `get_test_deployment()` and can run in parallel:
+
 - `test_deployment_list_basic`
 - `test_deployment_list_with_limit`
 - `test_deployment_list_json_output`

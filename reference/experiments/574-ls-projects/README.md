@@ -15,6 +15,7 @@ The Python SDK uses "projects" in method names (`list_projects()`) but the schem
 ## Hypothesis
 
 Based on code analysis:
+
 - **Python SDK public API**: Uses "projects" terminology
 - **Python SDK schemas**: Uses "TracerSession" classes
 - **REST API endpoints**: Uses "/sessions" paths
@@ -115,14 +116,14 @@ The experiment will demonstrate:
 
 ### Terminology Mapping Verified
 
-| Concept | Python SDK | REST API | Rust SDK (Recommended) |
-|---------|-----------|----------|------------------------|
-| Collection endpoint | `list_projects()` | `GET /sessions` | `list_projects()` |
-| Single read | `read_project()` | `GET /sessions/{id}` | `get_project()` or `read_project()` |
-| Create | `create_project()` | `POST /sessions` | `create_project()` |
-| Update | `update_project()` | `PATCH /sessions/{id}` | `update_project()` |
-| Delete | `delete_project()` | `DELETE /sessions/{id}` | `delete_project()` |
-| Schema class | `TracerSessionResult` | - | `Project` or `TracerSession` |
+| Concept             | Python SDK            | REST API                | Rust SDK (Recommended)              |
+| ------------------- | --------------------- | ----------------------- | ----------------------------------- |
+| Collection endpoint | `list_projects()`     | `GET /sessions`         | `list_projects()`                   |
+| Single read         | `read_project()`      | `GET /sessions/{id}`    | `get_project()` or `read_project()` |
+| Create              | `create_project()`    | `POST /sessions`        | `create_project()`                  |
+| Update              | `update_project()`    | `PATCH /sessions/{id}`  | `update_project()`                  |
+| Delete              | `delete_project()`    | `DELETE /sessions/{id}` | `delete_project()`                  |
+| Schema class        | `TracerSessionResult` | -                       | `Project` or `TracerSession`        |
 
 ## Implications for Rust SDK
 
@@ -173,12 +174,14 @@ The experiment will demonstrate:
 **Script**: `validate_projects.py`
 
 **Purpose**: Validate that the Python SDK can successfully:
+
 1. List all projects in a workspace (162 projects)
 2. Query specific project by name
 3. Retrieve project ID
 4. Count runs within a project
 
 **Results**:
+
 ```
 ✅ Total projects found: 162
 ✅ Found project: test-deployment-cli-48499
@@ -187,6 +190,7 @@ The experiment will demonstrate:
 ```
 
 **Key Findings**:
+
 - Successfully listed all 162 projects in workspace
 - Project lookup by name works correctly
 - Run counting per project is supported via `list_runs(project_name=...)`

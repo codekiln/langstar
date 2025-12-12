@@ -782,16 +782,19 @@ Returns authentication error.
 ### Getting Support
 
 **Documentation:**
+
 - [README](../README.md)
 - [Configuration Guide](./configuration.md)
 - [Example Workflows](./examples/)
 - [Architecture Documentation](./architecture.md)
 
 **Community:**
+
 - [GitHub Issues](https://github.com/codekiln/langstar/issues)
 - [Discussions](https://github.com/codekiln/langstar/discussions)
 
 **Upstream Documentation:**
+
 - [LangSmith Docs](https://docs.smith.langchain.com/)
 - [LangGraph Cloud Docs](https://langchain-ai.github.io/langgraph/cloud/)
 
@@ -835,14 +838,14 @@ langstar assistant list --format json | jq '. | length'
 
 ### Common Error Codes
 
-| Code | Meaning | Common Cause |
-|------|---------|--------------|
-| 401 | Unauthorized | Invalid or missing API key |
-| 403 | Forbidden | No access to resource |
-| 404 | Not Found | Resource doesn't exist or wrong scoping |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Server Error | Upstream service issue |
-| Timeout | Connection timeout | Network or firewall issue |
+| Code    | Meaning            | Common Cause                            |
+| ------- | ------------------ | --------------------------------------- |
+| 401     | Unauthorized       | Invalid or missing API key              |
+| 403     | Forbidden          | No access to resource                   |
+| 404     | Not Found          | Resource doesn't exist or wrong scoping |
+| 429     | Too Many Requests  | Rate limit exceeded                     |
+| 500     | Server Error       | Upstream service issue                  |
+| Timeout | Connection timeout | Network or firewall issue               |
 
 ## Still Having Issues?
 
@@ -854,6 +857,7 @@ If you've tried the solutions in this guide and still have problems:
 4. **Check Upstream Status**: LangSmith/LangGraph may have service issues
 
 **Before asking for help:**
+
 - [ ] Checked configuration with `langstar config`
 - [ ] Verified API keys are correct and active
 - [ ] Tried basic commands (`langstar prompt list`, `langstar assistant list`)

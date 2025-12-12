@@ -45,9 +45,11 @@ Fixes #593
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - ✨ feat(sdk): implement project client CRUD methods (#693)
 
 Implements all 5 CRUD operations for LangSmith projects:
+
 - create_project() - POST /api/v1/sessions
 - list_projects() - GET /api/v1/sessions (with pagination support)
 - get_project() - GET /api/v1/sessions/{id}
@@ -63,6 +65,7 @@ Fixes #586
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - ✨ feat(cli): add text output support for assistant, deployment, and model-config list (#692)
 
 * ✨ feat(cli): add text output support for assistant, deployment, and model-config list
@@ -71,16 +74,19 @@ Implements text output format with column selection for three additional list co
 following the pattern established in prompt list (#587).
 
 **Changes:**
+
 - assistant list: Added ColumnMetadata impl, --columns and --show-columns flags
 - deployment list: Added ColumnMetadata impl, --columns and --show-columns flags
 - model-config list: Added ColumnMetadata impl, --columns and --show-columns flags
 
 All commands now support:
+
 - `-f text` for tab-separated output
 - `--columns` for field selection
 - `--show-columns` for discovery
 
 Available columns:
+
 - assistant: assistant_id, name, graph_id, created_at
 - deployment: name, id, status, deployment_type, source, created_at
 - model-config: id, name, provider, model
@@ -91,7 +97,7 @@ Closes #584
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(test): update model-config text format test for actual TSV output
+- 🩹 fix(test): update model-config text format test for actual TSV output
 
 The test was expecting JSON output (Phase 1 fallback behavior), but the
 implementation now outputs actual tab-separated values. Updated the test
@@ -99,13 +105,14 @@ assertion to check for tab characters instead of JSON array markers.
 
 Fixes integration test failure in CI.
 
-* 🩹 fix(cli): address Copilot review feedback on text output
+- 🩹 fix(cli): address Copilot review feedback on text output
 
 1. Removed deployment_type from available columns since API doesn't provide it
 2. Added secret sanitization before DeploymentRow creation for defense in depth
 3. Sanitized provider and model fields in model-config to prevent TSV corruption
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/692#discussion_r2611309873
 - https://github.com/codekiln/langstar/pull/692#discussion_r2611309905
 - https://github.com/codekiln/langstar/pull/692#discussion_r2611309933
@@ -118,24 +125,26 @@ top-level field. Explains why it's excluded from text output available columns
 
 Documents the decision made in PR #692 for future reference.
 
-* 📚 docs(api-specs): cross-reference control-plane deployment schema documentation
+- 📚 docs(api-specs): cross-reference control-plane deployment schema documentation
 
 Added Control Plane API Fragments section to LANGSMITH_APIS_DETAILS.md and updated
 control-plane MANIFEST.md to reference the deployment schema documentation in
 FRAGMENTS.md. This makes the deployment_type field location (nested in source_config)
 discoverable from the main API catalog.
 
-* 📚 docs(api-specs): remove project decisions from control-plane FRAGMENTS.md
+- 📚 docs(api-specs): remove project decisions from control-plane FRAGMENTS.md
 
 Cleaned up FRAGMENTS.md to contain only factual API schema information
 (matching the pattern in langsmith/ and agent-server/ FRAGMENTS.md files).
 
 Removed:
+
 - SDK implementation details
 - CLI output formatting decisions
 - Project management rationale
 
 Kept:
+
 - Schema field tables with types and descriptions
 - Extraction commands with jq queries
 - Factual note that deployment_type is nested (not top-level)
@@ -143,12 +152,14 @@ Kept:
 * 📚 docs(api-specs): generate control-plane API fragments and update openapi.json
 
 Generated 4 fragment files from control-plane API:
+
 - deployment-endpoints.json (19K) - All /deployments endpoints
 - deployment-schemas.json (6.2K) - All deployment-related schemas
 - deployment-schema.json (3.1K) - Single Deployment schema
 - source-config-schema.json (4.3K) - SourceConfig schema
 
 Updated:
+
 - openapi.json refreshed from API (70K -> 71K)
 - MANIFEST.md with new provenance entry (2025-12-11)
 - FRAGMENTS.md with actual generated file info
@@ -157,14 +168,16 @@ Updated:
 These fragments provide AI-context-efficient access to deployment schema
 information without loading the full 71K openapi.json spec.
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - ✨ feat(cli): add project CLI commands (#701)
 
 * ✨ feat(cli): add project CLI commands
 
 Implements langstar project command group with CRUD operations:
+
 - list: List projects with filters (name, name-contains, limit, include-stats)
 - get: Get project by ID or name
 - create: Create project with name, description, metadata
@@ -175,14 +188,15 @@ All commands support -f/--format flag for json|text output (per PR #653).
 
 Fixes #595
 
-* 🩹 fix(cli): address Copilot review feedback on project commands
+- 🩹 fix(cli): address Copilot review feedback on project commands
 
-- Fix delete confirmation to actually wait for user input (was silently doing nothing)
-- Change delete flag from --force to --yes/-y for consistency with dataset command
-- Allow update command to accept project name or UUID (was UUID-only)
-- Update command now uses resolve_project_id helper like get/delete
+* Fix delete confirmation to actually wait for user input (was silently doing nothing)
+* Change delete flag from --force to --yes/-y for consistency with dataset command
+* Allow update command to accept project name or UUID (was UUID-only)
+* Update command now uses resolve_project_id helper like get/delete
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/701#discussion_r2611911687
 - https://github.com/codekiln/langstar/pull/701#discussion_r2611911700
 - https://github.com/codekiln/langstar/pull/701#discussion_r2611911720
@@ -190,6 +204,7 @@ Addresses review comments:
 * ♻️ refactor(cli): revert delete flag from --yes back to --force
 
 After analysis of the codebase and Unix conventions:
+
 - --force is more semantically correct for destructive operations
 - Aligns with Unix tradition (rm -f, git push --force, docker rm -f)
 - Clearer UX: signals overriding a safety mechanism
@@ -213,6 +228,7 @@ Fixes #670
 ## Changes
 
 ### Test Attributes Updated
+
 - `sdk/tests/structured_prompts_integration_test.rs`:
   - Line 138: `test_push_structured_prompt_integration`
   - Line 193: `test_pull_structured_prompt_integration`
@@ -220,27 +236,32 @@ Fixes #670
   - Line 303: `test_push_function_calling_method`
 
 Replaced:
+
 ```rust
 #[ignore] // Only run with --ignored flag
 ```
 
 With:
+
 ```rust
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 ```
 
 ### Feature Flag Added
+
 - `sdk/Cargo.toml`: Added `integration-tests = []` feature flag
 
 ## Verification
 
 **Without feature flag** (tests ignored):
+
 ```bash
 cargo test -p langstar-sdk --test structured_prompts_integration_test
 # Result: 0 passed; 0 failed; 4 ignored
 ```
 
 **With feature flag** (tests run):
+
 ```bash
 cargo test --features integration-tests -p langstar-sdk --test structured_prompts_integration_test
 # Result: 4 tests run (fail due to API credentials, but not ignored)
@@ -274,25 +295,27 @@ Retroactive test audit identifying 4 critical issues before milestone release.
 
 Related: #661
 
-* 📚 docs: add test plan for ls-prompt-structured-outputs final verification
+- 📚 docs: add test plan for ls-prompt-structured-outputs final verification
 
 Breaks down 4 critical issues into 6 logical sub-tickets with implementation guidance.
 
 Fixes #661
+
 - 📚 docs: add worktree workflow to AGENTS.md (#665)
 
 * 📚 docs: add worktree workflow section to AGENTS.md
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* docs: Update worktree instructions in AGENTS.md
+- docs: Update worktree instructions in AGENTS.md
 
 Clarified instructions for using worktrees and maintaining synchronization with origin main.
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
 - 📚 docs: scout Claude Code plugin marketplace feasibility (#683)
 
 * 📚 docs: scout Claude Code plugin marketplace feasibility
@@ -300,15 +323,18 @@ Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 Fixes #681
 
 ## Summary
+
 Complete feasibility research for creating a Claude Code plugin marketplace in the langstar repo. Enables non-technical SMEs to manage LangSmith/LangGraph through natural language.
 
 ## Key Findings
+
 - **Feasibility**: GO ✅
 - **Complexity**: Low-Medium (wraps existing CLI, no SDK changes needed)
 - **No blockers**: All infrastructure exists
 - **MVP**: 5 high-value commands recommended for Phase 1
 
 ## Research Coverage
+
 - Claude Code plugin architecture and marketplace system
 - Existing langstar CLI capabilities mapping
 - User workflow analysis for SME target audience
@@ -316,7 +342,9 @@ Complete feasibility research for creating a Claude Code plugin marketplace in t
 - Risk assessment and success metrics
 
 ## Recommendation
+
 Proceed to full 8-phase milestone starting with:
+
 - Phase 0: Experiments to validate plugin development
 - Phase 1: MVP with 5 core commands
 
@@ -324,7 +352,7 @@ Proceed to full 8-phase milestone starting with:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 📚 docs: redesign scout with deep-first prompt focus
+- 📚 docs: redesign scout with deep-first prompt focus
 
 Redesign based on PR #683 review feedback:
 
@@ -341,19 +369,19 @@ Key principle: One excellent experience > many mediocre experiences
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* docs: Clean up implementation section in markdown file
+- docs: Clean up implementation section in markdown file
 
 Removed unnecessary code block from the implementation section.
 
-* docs: Fix formatting in Push changes section
+- docs: Fix formatting in Push changes section
 
 Removed unnecessary backticks from the Push changes section.
 
-* docs: Update docs/research/681-ls-claude-code-plugin-scout.md
+- docs: Update docs/research/681-ls-claude-code-plugin-scout.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* 🩹 fix: close unclosed markdown code block in scout doc
+- 🩹 fix: close unclosed markdown code block in scout doc
 
 Close the markdown code fence that starts at line 322 (command example)
 to prevent incorrect rendering of subsequent sections.
@@ -362,10 +390,11 @@ to prevent incorrect rendering of subsequent sections.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs: create canonical environment variable to API header mapping documentation (#697)
 
 * 📚 docs: create canonical environment variable to API header mapping documentation
@@ -377,10 +406,10 @@ Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
 Fixes #695
 
-* 🔧 fix: correct formatting in test-fixtures.md
+- 🔧 fix: correct formatting in test-fixtures.md
 
-- Move environment variables reference after complete code block
-- Fixes formatting bug identified in PR review
+* Move environment variables reference after complete code block
+* Fixes formatting bug identified in PR review
 
 ### 🧪 Testing
 
@@ -392,12 +421,14 @@ Replaces check_env_vars() silent skip pattern with explicit .expect() calls
 in all 9 integration tests in cli/tests/prompt_structured_test.rs.
 
 Changes:
+
 - Each test now explicitly checks for LANGSMITH_API_KEY with .expect()
 - Each test now explicitly checks for LANGSMITH_ORGANIZATION_ID with .expect()
 - Each test now explicitly panics if LANGSMITH_WORKSPACE_ID is set
 - Removed unused check_env_vars() helper function
 
 Benefits:
+
 - Tests will now fail loudly with clear error messages when env vars are missing
 - CI will properly report test failures instead of silently skipping
 - Follows testing best practices by making requirements explicit
@@ -408,29 +439,33 @@ Fixes #672
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(test): restore check_env_vars helper and require LANGSMITH_WORKSPACE_ID
+- 🩹 fix(test): restore check_env_vars helper and require LANGSMITH_WORKSPACE_ID
 
-- Restored check_env_vars() helper function (removed incorrectly in previous commit)
-- Now requires LANGSMITH_WORKSPACE_ID (workspace scoping is required, not incompatible)
-- Removed incorrect "workspace incompatible" logic and documentation
-- All tests now use DRY helper instead of repeated env var checks
+* Restored check_env_vars() helper function (removed incorrectly in previous commit)
+* Now requires LANGSMITH_WORKSPACE_ID (workspace scoping is required, not incompatible)
+* Removed incorrect "workspace incompatible" logic and documentation
+* All tests now use DRY helper instead of repeated env var checks
 
 Fixes incorrect assumptions from #672 plan:
+
 1. Helper function should be refactored, not deleted
 2. Workspace scoping IS required for prompt tests, not incompatible
 
-* 🩹 fix(test): correctly handle public vs private prompt scoping
+- 🩹 fix(test): correctly handle public vs private prompt scoping
 
 Public prompts (1% use case):
+
 - Format: owner/repo (e.g., codekiln/langstar-structured-test)
 - LANGSMITH_WORKSPACE_ID must NOT be set
 
 Private prompts (99% use case):
+
 - Format: -/repo
 - LANGSMITH_WORKSPACE_ID is required
 
 These tests use owner/repo format, so they test PUBLIC prompts.
 The check_env_vars() helper now:
+
 - Requires LANGSMITH_API_KEY (fails loudly)
 - Requires LANGSMITH_ORGANIZATION_ID (fails loudly)
 - Unsets LANGSMITH_WORKSPACE_ID (incompatible with public prompts)
@@ -438,16 +473,19 @@ The check_env_vars() helper now:
 * 🧪 test(cli): bifurcate private vs public prompt integration tests
 
 Private prompts (99% value, 6 tests):
+
 - Format: -/repo (e.g., -/langstar-structured-test)
 - Requires: LANGSMITH_WORKSPACE_ID
 - Tests: push, pull, round-trip, function_calling, json output (push/pull)
 
 Public prompts (1% value, 3 tests):
+
 - Format: owner/repo (e.g., codekiln/langstar-structured-test)
 - Must NOT have: LANGSMITH_WORKSPACE_ID
 - Tests: invalid_schema, missing_schema, invalid_method
 
 Changes:
+
 - Added check_env_vars_private_prompts() and check_env_vars_public_prompts()
 - Renamed all 9 tests to include _private_prompt or _public_prompt
 - Updated private tests to use "-" as owner and TEST_REPO_PRIVATE handle
@@ -470,16 +508,18 @@ Example: `langstar prompt pull -- -/repo-name`
 
 Updated all 3 pull commands in private prompt tests.
 
-* 🧪 test(cli): add CRUD fixture pattern with automatic cleanup
+- 🧪 test(cli): add CRUD fixture pattern with automatic cleanup
 
 Implements proper test isolation using CRUD lifecycle pattern:
 
 **PromptRepoFixture:**
+
 - Creates unique repo per test (timestamp-based names)
 - Automatic cleanup via Drop trait
 - Supports both private and public repos
 
 **Pattern:**
+
 1. CREATE - Generate unique repo via SDK
 2. TEST - Execute CLI command
 3. VERIFY - Assert output
@@ -497,10 +537,10 @@ Next: Refactor remaining 8 tests to use this pattern.
 
 Addresses root cause of CI failures - tests were fighting over shared repo.
 
-* 🩹 fix(test): restore constants and fix AuthConfig import
+- 🩹 fix(test): restore constants and fix AuthConfig import
 
-- Fixed AuthConfig import: use public `auth::AuthConfig` path
-- Restored TEST_REPO and TEST_REPO_PRIVATE constants (still used by unrefactored tests)
+* Fixed AuthConfig import: use public `auth::AuthConfig` path
+* Restored TEST_REPO and TEST_REPO_PRIVATE constants (still used by unrefactored tests)
 
 Test results:
 ✅ test_cli_push_private_prompt PASSED (113s) - uses new fixture pattern
@@ -508,17 +548,18 @@ Test results:
 
 This confirms the fixture pattern works correctly!
 
-* 🧪 test(cli): complete CRUD fixture pattern refactoring for all 9 tests (#700)
+- 🧪 test(cli): complete CRUD fixture pattern refactoring for all 9 tests (#700)
 
-- Refactor all 9 prompt_structured tests to use PromptRepoFixture pattern
-- Remove shared TEST_REPO and TEST_REPO_PRIVATE constants
-- Each test now creates unique repo with timestamp suffix
-- Automatic cleanup via Drop trait ensures resources cleaned up on failure
-- Fix clippy expect_fun_call by using unwrap_or_else
-- Fix case sensitivity: "Prompt Manifest" -> "PROMPT MANIFEST"
-- Fix JSON output parsing to skip non-JSON prefix lines
+* Refactor all 9 prompt_structured tests to use PromptRepoFixture pattern
+* Remove shared TEST_REPO and TEST_REPO_PRIVATE constants
+* Each test now creates unique repo with timestamp suffix
+* Automatic cleanup via Drop trait ensures resources cleaned up on failure
+* Fix clippy expect_fun_call by using unwrap_or_else
+* Fix case sensitivity: "Prompt Manifest" -> "PROMPT MANIFEST"
+* Fix JSON output parsing to skip non-JSON prefix lines
 
 Tests refactored:
+
 - test_cli_push_private_prompt
 - test_cli_push_public_prompt_invalid_schema
 - test_cli_push_public_prompt_missing_schema
@@ -531,13 +572,14 @@ Tests refactored:
 
 Fixes #696
 
-* 🩹 fix(test): address review feedback on test naming and thread safety
+- 🩹 fix(test): address review feedback on test naming and thread safety
 
-- Renamed test_cli_push_function_calling_method_private_prompt to test_cli_push_private_prompt_function_calling_method for consistency
-- Added #[serial] attribute to all tests using check_env_vars_public_prompts() to prevent race conditions from std::env::remove_var()
-- Added serial_test import for thread-safe environment variable handling
+* Renamed test_cli_push_function_calling_method_private_prompt to test_cli_push_private_prompt_function_calling_method for consistency
+* Added #[serial] attribute to all tests using check_env_vars_public_prompts() to prevent race conditions from std::env::remove_var()
+* Added serial_test import for thread-safe environment variable handling
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/691#discussion_r2611402502
 - https://github.com/codekiln/langstar/pull/691#discussion_r2611402520
 - https://github.com/codekiln/langstar/pull/691#discussion_r2611449196
@@ -546,19 +588,22 @@ Addresses review comments:
 
 CRITICAL FIX: Previously, only public prompt tests were marked with #[serial],
 but private prompt tests were not. This created a race condition:
+
 - Public tests call check_env_vars_public_prompts() which removes LANGSMITH_WORKSPACE_ID
 - Private tests call check_env_vars_private_prompts() which expects LANGSMITH_WORKSPACE_ID
 - Without #[serial] on all tests, these could run concurrently, causing flaky failures
 
 Changes:
+
 - Added #[serial] to all 6 private prompt tests
 - Clarified SAFETY comment to explain tests MUST be marked #[serial]
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/691#discussion_r2611964515 (critical scope issue)
 - https://github.com/codekiln/langstar/pull/691#discussion_r2611964488 (misleading SAFETY comment)
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -572,6 +617,7 @@ Adds separate integration-tests-sdk job to run SDK integration tests
 in CI alongside existing CLI integration tests.
 
 Changes:
+
 - New job runs 4 SDK integration tests from langstar-sdk package
 - Uses cargo nextest with --features integration-tests
 - Publishes results as "SDK Integration Test Results"
@@ -587,7 +633,7 @@ Fixes #671
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 📚 docs(tests): add CI integration note to SDK tests
+- 📚 docs(tests): add CI integration note to SDK tests
 
 Adds documentation comment noting that these tests run automatically
 in CI via the integration-tests-sdk job.
@@ -595,7 +641,7 @@ in CI via the integration-tests-sdk job.
 This change also triggers the SDK integration tests job to verify
 the CI configuration works correctly.
 
-* 🩹 fix(ci): correct conditional for SDK integration tests job
+- 🩹 fix(ci): correct conditional for SDK integration tests job
 
 Fixed the job condition from `code == 'true'` to `should_run == 'true'`
 to match the actual output from the changes detection job.
@@ -603,17 +649,18 @@ to match the actual output from the changes detection job.
 This was causing the SDK integration tests to be skipped even when
 code files changed.
 
-* 🩹 fix(ci): address Copilot review feedback and standardize on cargo-nextest
+- 🩹 fix(ci): address Copilot review feedback and standardize on cargo-nextest
 
-- Add test job dependency to SDK integration tests
-- Add conditional logic to run only on PRs or main branch
-- Add LANGSMITH_WORKSPACE_ID env var to SDK integration tests
-- Add integration-tests-sdk to all-jobs dependency list
-- Update all testing documentation to use cargo-nextest
-- Install cargo-nextest v0.9.114 locally for parity with CI
-- Update pre-commit checklist in CLAUDE.md, docs/dev/README.md, and HIGH_LEVEL_TESTING_GUIDELINES.md
+* Add test job dependency to SDK integration tests
+* Add conditional logic to run only on PRs or main branch
+* Add LANGSMITH_WORKSPACE_ID env var to SDK integration tests
+* Add integration-tests-sdk to all-jobs dependency list
+* Update all testing documentation to use cargo-nextest
+* Install cargo-nextest v0.9.114 locally for parity with CI
+* Update pre-commit checklist in CLAUDE.md, docs/dev/README.md, and HIGH_LEVEL_TESTING_GUIDELINES.md
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/680#discussion_r2608170476
 - https://github.com/codekiln/langstar/pull/680#discussion_r2608170487
 - https://github.com/codekiln/langstar/pull/680#discussion_r2608170491
@@ -621,6 +668,7 @@ Addresses review comments:
 * 🩹 fix(ci): enable test-utils feature for SDK integration tests
 
 The SDK integration tests require both integration-tests and test-utils features:
+
 - integration-tests: enables the integration test code
 - test-utils: exposes test_utils module with TestDeploymentConfig and helpers
 
@@ -628,9 +676,10 @@ Without test-utils, tests fail with "unresolved import langstar_sdk::test_utils"
 
 Fixes compilation error in SDK integration tests.
 
-* 🧪 test(sdk): attempt private prompts with serial execution
+- 🧪 test(sdk): attempt private prompts with serial execution
 
 **Changes:**
+
 - Changed TEST_OWNER from "codekiln" to "-" for private prompts
 - Removed repo creation logic (was told private prompts can't be created)
 - Added #[serial_test::serial] to all 4 tests for CRUD lifecycle ordering
@@ -649,12 +698,13 @@ docs/implementation/m7-p660-i671-6603-ci-sdk-add-sdk-integration-tests-to-ci-wor
 
 Ref: #671
 
-* 🩹 fix(sdk): use unique repo names per test to avoid API conflicts
+- 🩹 fix(sdk): use unique repo names per test to avoid API conflicts
 
 Each SDK integration test now uses its own isolated repo name to avoid
 409 "Parent commit validation failed" errors when tests run serially.
 
 Changes:
+
 - Added get_test_repo_name() helper to generate unique repo names
 - Updated ensure_repo_exists() to accept dynamic repo names
 - Each test now uses a unique suffix: push, roundtrip, function-calling
@@ -667,7 +717,7 @@ When multiple tests share a repo, each subsequent push would conflict.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(ci): clarify test-utils feature comment per review feedback
+- 🩹 fix(ci): clarify test-utils feature comment per review feedback
 
 Update comment to more accurately describe that test-utils is included
 for shared test infrastructure used by some SDK tests, rather than
@@ -677,7 +727,7 @@ implying all SDK integration tests require it.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: update implementation notes with successful fix
+- 📚 docs: update implementation notes with successful fix
 
 Document the final solution: using unique repo names per test to avoid
 409 "Parent commit validation failed" API conflicts.
@@ -686,13 +736,13 @@ Document the final solution: using unique repo names per test to avoid
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES to clarify pre-existing failure claims
+- 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES to clarify pre-existing failure claims
 
 Added a new guideline to specify that claims regarding CLI test timeouts being separate issues must be supported by verifiable proof. This enhances the clarity and rigor of the testing documentation.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
-* 📚 docs: accurate implementation notes - SDK tests still failing
+- 📚 docs: accurate implementation notes - SDK tests still failing
 
 Previous commit incorrectly claimed tests were fixed.
 Actual status: Tests pass locally but FAIL in CI because
@@ -702,7 +752,7 @@ repos persist across runs and trigger 409 conflicts.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(sdk): use UUID suffix for truly unique test repo names
+- 🩹 fix(sdk): use UUID suffix for truly unique test repo names
 
 Each test run now generates a unique repo name with UUID suffix, preventing
 409 "Parent commit validation failed" errors when CI runs encounter repos
@@ -715,7 +765,7 @@ a prompt first (since UUID makes each get_test_repo_name call unique).
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🔧 build(devcontainer): add cargo-nextest to post-create.sh
+- 🔧 build(devcontainer): add cargo-nextest to post-create.sh
 
 Install cargo-nextest alongside cargo-release and git-cliff during
 devcontainer setup. Remove install notices from docs since the tool
@@ -728,17 +778,17 @@ devcontainer auto-installation.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: update implementation notes to reflect passing CI
+- 📚 docs: update implementation notes to reflect passing CI
 
-- Updated status to show all CI checks passing
-- Documented the successful UUID-based fix
-- Added fallback install command for non-devcontainer users
+* Updated status to show all CI checks passing
+* Documented the successful UUID-based fix
+* Added fallback install command for non-devcontainer users
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -751,6 +801,7 @@ Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 * ✨ feat(cli): implement text output and column selection for prompt list
 
 Implements Phase 2 of AI-friendly CLI output (#584):
+
 - Add `--columns` flag for field selection (handle, likes, downloads, etc.)
 - Add `--show-columns` flag for column discovery
 - Implement `ColumnMetadata` trait for `Prompt` type
@@ -766,7 +817,7 @@ Fixes #587
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🧪 test: fix pre-existing SDK test and doctest failures
+- 🧪 test: fix pre-existing SDK test and doctest failures
 
 Fixes discovered while running pre-commit checks:
 
@@ -786,7 +837,7 @@ These were pre-existing issues on main that blocked CI.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: document design deviation in #587 implementation
+- 📚 docs: document design deviation in #587 implementation
 
 Records finding that implementation used `-f text` instead of `-o text`
 as specified in research (#581) and issue specification.
@@ -800,23 +851,23 @@ See reopened #581: https://github.com/codekiln/langstar/issues/581
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(cli): address Copilot review feedback on TSV output
+- 🩹 fix(cli): address Copilot review feedback on TSV output
 
-- Escape tabs and newlines in description and created_at fields to prevent TSV column structure corruption
-- Simplify boolean to string conversion using .to_string()
+* Escape tabs and newlines in description and created_at fields to prevent TSV column structure corruption
+* Simplify boolean to string conversion using .to_string()
 
 Addresses Copilot review comments from PR #651
 
-* 🩹 fix(ci): resolve clippy collapsible_str_replace warnings
+- 🩹 fix(ci): resolve clippy collapsible_str_replace warnings
 
 Use more efficient replace(['\t', '\n'], " ") syntax instead of
 consecutive .replace() calls as suggested by clippy.
 
-* 🩹 fix(ci): remove empty line after doc comment
+- 🩹 fix(ci): remove empty line after doc comment
 
 Remove empty line between doc comments to satisfy clippy::empty_line_after_doc_comments lint.
 
----------
+---
 
 Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
 
@@ -847,11 +898,13 @@ without these timestamp fields, causing deserialization failures.
 ## Changes
 
 **SDK (sdk/src/annotation_queues.rs):**
+
 - Made `AnnotationQueue.created_at` and `updated_at` optional fields
 - Updated deserializer to use `deserialize_flexible_datetime_opt`
 - Added test case for queues without timestamps
 
 **CLI (cli/src/commands/queue.rs):**
+
 - Updated `QueueRow::from()` to handle optional `created_at`
 - Updated `execute_create()` to conditionally print `created_at`
 - Updated `execute_get()` to conditionally print both timestamps
@@ -867,22 +920,26 @@ without these timestamp fields, causing deserialization failures.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - 🩹 fix(cli): add full_name display and UUID lookup support for prompts (#658)
 
 * 🩹 fix(cli): add full_name display and UUID lookup support for prompts
 
 Issue #625 reported two UX problems with prompt commands:
+
 1. List displays incomplete handles that fail when used with get
 2. Get doesn't accept UUID as input
 
 Changes:
 
 SDK (sdk/src/prompts.rs):
+
 - Add full_name and owner fields to Prompt struct
 - Add get_by_id() method for UUID-based prompt lookup
 - Both fields are optional to maintain backwards compatibility
 
 CLI (cli/src/commands/prompt.rs):
+
 - Update list display to show full_name (owner/repo format)
 - Fall back to constructing from owner + repo_handle if needed
 - Update get command to detect and handle UUID input
@@ -891,6 +948,7 @@ CLI (cli/src/commands/prompt.rs):
 - Update help text to document handle and UUID support
 
 Testing:
+
 - Manually verified list shows full handles (e.g., "hardkothari/prompt-maker")
 - Manually verified get works with full handles from list output
 - Manually verified get works with UUID input
@@ -902,7 +960,7 @@ Fixes #625
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(sdk): use pagination in get_by_id to search all prompts
+- 🩹 fix(sdk): use pagination in get_by_id to search all prompts
 
 The hardcoded limit of 100 could cause 404 errors for prompts that
 exist but aren't in the first 100 results. Now uses pagination to
@@ -910,18 +968,19 @@ search through all prompts until the matching ID is found.
 
 Addresses review feedback from Copilot on PR #658
 
-* 🩹 fix(cli): improve UUID detection and fix documentation
+- 🩹 fix(cli): improve UUID detection and fix documentation
 
-- Use uuid::Uuid::parse_str() for robust UUID validation instead of manual
+* Use uuid::Uuid::parse_str() for robust UUID validation instead of manual
   pattern checking (more reliable, handles edge cases correctly)
-- Fix owner field documentation to reflect actual API behavior
+* Fix owner field documentation to reflect actual API behavior
   (None for private prompts, not "-")
 
 Addresses Copilot review feedback on PR #658
 
-* 🧪 test: add coverage for UUID lookup functionality
+- 🧪 test: add coverage for UUID lookup functionality
 
 Addresses Copilot review feedback on PR #658:
+
 - Add SDK integration test for get_by_id() with pagination
 - Add CLI tests for UUID detection and routing:
   1. Valid UUIDs correctly routed to get_by_id()
@@ -929,6 +988,7 @@ Addresses Copilot review feedback on PR #658:
   3. Invalid UUID formats handled gracefully
 
 Tests verify issue #625 functionality:
+
 - UUID detection using uuid::Uuid::parse_str()
 - Routing to get_by_id() for UUIDs vs get() for handles
 - End-to-end CLI behavior with UUID input
@@ -937,7 +997,7 @@ Tests verify issue #625 functionality:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -970,6 +1030,7 @@ reduction in context usage per task.
 ## Testing
 
 All pre-commit checks passed:
+
 - ✅ cargo fmt --check
 - ✅ cargo check --workspace --all-features
 - ✅ cargo clippy --workspace --all-features
@@ -985,9 +1046,10 @@ Fixes #573
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct file counts and reconcile token metrics across documentation
+- 🩹 fix(docs): correct file counts and reconcile token metrics across documentation
 
 Addresses GitHub Copilot review feedback on numerical accuracy:
+
 - Updated file count: 9 → 10 markdown files (verified via ls)
 - Updated line count: ~1,573 → ~3,000 lines (verified via wc -l)
 - Recalculated token estimates based on corrected line counts
@@ -995,16 +1057,19 @@ Addresses GitHub Copilot review feedback on numerical accuracy:
 - Standardized approximations using ranges (~10-15 lines, ~24,000-30,000 tokens)
 
 Files updated:
+
 - docs/research/556-integration-validation-report.md
 - AGENTS.md
 - docs/dev/README.md
 
 Actual measurements (verified 2025-12-08):
+
 - 10 total markdown files in docs/dev/testing/
 - 3,079 total lines across all testing documentation
 - Approximated as "~3,000 lines" for consistency
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/645#discussion_r2598501205
 - https://github.com/codekiln/langstar/pull/645#discussion_r2598501239
 - https://github.com/codekiln/langstar/pull/645#discussion_r2598501264
@@ -1016,6 +1081,7 @@ Creates comprehensive standards for numeric approximations in documentation
 to balance accuracy with maintainability and reduce PR churn.
 
 Key guidelines:
+
 - Small numbers (< 20): Use ranges like ~10-15
 - Large numbers (> 100): Round to nearest hundred
 - Token estimates: Use ranges with round numbers
@@ -1023,6 +1089,7 @@ Key guidelines:
 - Update only when outside variance or structural changes
 
 Benefits:
+
 - Reduces churn from minor doc changes (14→15 lines)
 - Maintains credibility with consistent approximations
 - Clear guidance for when updates are needed vs optional
@@ -1031,23 +1098,26 @@ Benefits:
 Addresses: https://github.com/codekiln/langstar/pull/645#issuecomment-2590234567
 Issue: #573
 
-* 🔧 build(copilot): add GitHub Copilot custom instructions
+- 🔧 build(copilot): add GitHub Copilot custom instructions
 
 Configures Copilot to focus on functional correctness, security, and
 maintainability rather than minor documentation inconsistencies.
 
 Key directives:
+
 - Accept approximations in documentation (~15 vs 14 lines)
 - Prioritize security, bugs, tests, breaking changes
 - Skip nitpicking doc style variations and rounded numbers
 - Trust cargo fmt/clippy for Rust style enforcement
 
 Review priority tiers:
+
 - High: Security, bugs, breaking changes, test failures
 - Medium: Performance, error handling, code quality
 - Low: Doc inconsistencies, stylistic preferences
 
 References project standards:
+
 - docs/dev/documentation-approximation-standards.md
 - docs/dev/progressive-disclosure-docs-standards.md
 - docs/dev/github-workflow.md
@@ -1057,14 +1127,15 @@ while maintaining quality standards for actual code issues.
 
 Related: #573, PR #645 review feedback
 
-* docs: Apply suggestions from code review
+- docs: Apply suggestions from code review
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs: resolve -o flag conflict in CLI output research (#653)
 
 Fixes #581
@@ -1078,6 +1149,7 @@ design decision.
 ## Changes
 
 **Audit Results:**
+
 - 3 commands use `-o` for `--offset` (prompt, assistant, model-config)
 - 1 command uses `-o` for `--output` (runs query - special case)
 - 1 command has `--offset` without short flag (deployment)
@@ -1086,12 +1158,14 @@ design decision.
 Use existing `-f/--format` global flag instead of introducing `-o/--output`.
 
 **Rationale:**
+
 1. Minimize breaking changes (3 commands already use `-o` for offset)
 2. Leverage existing architecture (`-f` is global, has env var support)
 3. Maintain pagination consistency (`-l` limit, `-o` offset)
 4. Avoid user confusion between competing format flags
 
 **Documentation Updates:**
+
 - Added "Post-Implementation Finding" section with audit
 - Updated all examples from `-o text` to `-f text`
 - Added rationale and trade-offs
@@ -1114,16 +1188,19 @@ Use existing `-f/--format` global flag instead of introducing `-o/--output`.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - 📚 docs: update branch naming convention to milestone-parent-issue format (#654)
 
 * 📚 docs: update branch naming convention to milestone-parent-issue format
 
 Updates all documentation to reflect new branch naming standard:
+
 - Format: m<milestone>-p<parent>-i<issue>-<slug> (with variations)
 - Removes username prefix, adds milestone/parent context
 - Updates examples throughout codebase
 
 **Documentation updates:**
+
 - Core workflow: docs/dev/github-workflow.md
 - Claude commands: .claude/commands/gh-start-issue.md, pr-workflow.md
 - Skills: pr-lifecycle, git-worktrees
@@ -1141,9 +1218,10 @@ Fixes #649
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): update issue number extraction for new branch format
+- 🩹 fix(pr-workflow): update issue number extraction for new branch format
 
 Updated regex to match new branch naming convention:
+
 - Old: Expected username/issue-slug format with slash
 - New: Matches i<number> pattern or falls back to first number
 
@@ -1153,15 +1231,17 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/654#discussi
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): correct gh pr checks field names in documentation
+- 🩹 fix(pr-workflow): correct gh pr checks field names in documentation
 
 Fixed incorrect field references discovered during execution:
+
 - Changed .status and .conclusion to .state (actual field name)
 - Changed .workflowRun.id to extract from .link URL
 - Added comment documenting available fields
 - Updated check completion logic to use .completedAt == null
 
 These fields don't exist in gh pr checks JSON output:
+
 - .status (use .state instead)
 - .conclusion (use .state instead)
 - .workflowRun (run ID in .link URL instead)
@@ -1173,9 +1253,10 @@ link, name, startedAt, state, workflow
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 📚 docs(pr-lifecycle): clarify branch naming convention parameter meanings
+- 📚 docs(pr-lifecycle): clarify branch naming convention parameter meanings
 
 Made parameter names more explicit to provide better context:
+
 - m<milestone> → m<milestone_id>
 - p<parent> → p<parent_issue_id>
 - i<issue> → i<issue_num>
@@ -1189,28 +1270,33 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/654#discussi
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* ✨ feat(scripts): implement branch naming convention in automation scripts
+- ✨ feat(scripts): implement branch naming convention in automation scripts
 
 Implemented script support for new branch naming convention:
+
 - m<milestone_id>-p<parent_issue_id>-i<issue_num>-<slug>
 
 **scripts/cleanup-closed-issue-worktrees.sh:**
+
 - Updated regex to match i<number> pattern (new format)
 - Added fallback to old username/number format
 - Updated header comments with examples
 
 **scripts/gh-milestones/prep-next.py:**
+
 - Fetch milestone ID from issue metadata
 - Fetch parent issue ID via gh sub-issue extension
 - Generate branch name with appropriate m/p/i prefixes
 - Update worktree path generation
 
 **Implementation doc:**
+
 - Moved PROGRESS-649.md → docs/implementation/649-branch-naming-implementation.md
 - Updated to reflect complete implementation
 - Documents all changes and fixes from review
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/654#discussion_r2606381379
 - https://github.com/codekiln/langstar/pull/654#discussion_r2606382852
 
@@ -1218,9 +1304,10 @@ Addresses review comments:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🧪 test(scripts): add comprehensive tests for branch naming logic
+- 🧪 test(scripts): add comprehensive tests for branch naming logic
 
 Added test_branch_naming.py with 8 tests covering:
+
 - Branch name generation for all format variations
   - Standalone: i<num>-<slug>
   - With milestone: m<id>-i<num>-<slug>
@@ -1236,17 +1323,20 @@ All tests pass. Follows project pattern from test_leaf_traversal.py
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(scripts): address Copilot code review feedback
+- 🩹 fix(scripts): address Copilot code review feedback
 
 Improvements to prep-next.py:
+
 - Removed redundant inline `import json` (already imported at top)
 - Added explanatory comments to exception handlers
 
 Documentation fix:
+
 - Corrected testing notes to accurately describe functional code changes
   (not just documentation/comments)
 
 Addresses Copilot review comments:
+
 - https://github.com/codekiln/langstar/pull/654#discussion_r2606493017
 - https://github.com/codekiln/langstar/pull/654#discussion_r2606493040
 - https://github.com/codekiln/langstar/pull/654#discussion_r2606493057
@@ -1256,9 +1346,10 @@ Addresses Copilot review comments:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - 📚 docs: add Phase 7 (Test Planning) to milestone workflow (#657)
 
 * 📚 docs: add Phase 7 (Test Planning) to feature development process
@@ -1271,6 +1362,7 @@ Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 - Updated in-progress milestone testing tickets (#596, #600) with guidance
 
 Benefits:
+
 - Formalize test planning as dedicated phase
 - Automated test plan generation via /gh-milestones:test-plan
 - Ensures comprehensive test coverage before implementation
@@ -1282,7 +1374,7 @@ Fixes #634
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🧪 test: fix playground settings integration test for idempotent deletes
+- 🧪 test: fix playground settings integration test for idempotent deletes
 
 Update test_delete_nonexistent_setting to accept API's idempotent delete
 behavior (returns 200 for nonexistent resources).
@@ -1291,19 +1383,20 @@ This aligns the test with actual API behavior and improves test reliability.
 
 Part of #634
 
-* 🩹 fix(docs): update test case numbering to Phase 8
+- 🩹 fix(docs): update test case numbering to Phase 8
 
 Update test case numbers from 7.x.x to 8.x.x in the test plan example
 to reflect that Testing is now Phase 8 (after adding Phase 7: Test Planning).
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/657#discussion_r2606968736
 
-* 📚 docs: add Phase 9 (Test Audit) to milestone workflow
+- 📚 docs: add Phase 9 (Test Audit) to milestone workflow
 
 Addresses PR feedback requesting a test audit phase to catch common
 issues that slip through even well-intentioned test implementations.
 
 Changes:
+
 - Added Phase 9: Test Audit between Testing and Documentation phases
 - Created /gh-milestones:test-audit slash command for compliance verification
 - Renumbered phases: Documentation (9→10), Milestone Release (10→11)
@@ -1311,6 +1404,7 @@ Changes:
 - Total phases now 12 (0.0 through 11)
 
 The test audit phase catches:
+
 - Integration tests unconditionally #[ignored] instead of properly conditional
 - CI not configured with required environment variables
 - Anemic tests that only verify exit codes, not actual behavior
@@ -1323,7 +1417,7 @@ References: Issue #637 post-mortem, PR #646 compliance issues
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: fix phase count clarity and test comment accuracy
+- 📚 docs: fix phase count clarity and test comment accuracy
 
 Addresses Copilot PR review feedback:
 
@@ -1338,7 +1432,7 @@ Addresses Copilot PR review feedback:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -1356,20 +1450,23 @@ This commit enhances the testing framework and ensures robust verification of de
 
 Fixes #571
 
-* 🩹 fix(tests): add #[serial] to deployment tests using shared OnceLock
+- 🩹 fix(tests): add #[serial] to deployment tests using shared OnceLock
 
 Fixes deadlock in deployment_command_test.rs by marking tests that use
 the shared TEST_DEPLOYMENT OnceLock with #[serial] attribute.
 
 ## Problem
+
 Three tests called get_test_deployment() which initializes a shared
 OnceLock<TestDeployment>. When running in parallel, they:
+
 1. Concurrently attempted to initialize the same OnceLock
 2. Each created a new tokio runtime via Runtime::new().block_on()
 3. Blocked on long-running API calls (1-30 min for deployment creation)
 4. Deadlocked due to race conditions and resource contention
 
 ## Solution
+
 - Added 'use serial_test::serial;' import
 - Marked three tests with #[serial]:
   - test_deployment_get_basic
@@ -1380,6 +1477,7 @@ This ensures sequential execution, matching the pattern in
 assistant_command_test.rs which works correctly.
 
 ## Test Results
+
 ✅ 14 tests passed (including the 3 previously deadlocking tests)
 ✅ No deadlocks
 ✅ Follows established testing patterns from cli-integration-tests.md
@@ -1393,12 +1491,13 @@ Fixes #571
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 📚 docs: add deadlock analysis for issue #571
+- 📚 docs: add deadlock analysis for issue #571
 
 Documents the root cause, investigation findings, and solution for
 the test deadlocks in deployment_command_test.rs.
 
 This analysis file provides:
+
 - Problem summary and investigation findings
 - Root cause explanation (missing #[serial] attribute)
 - Evidence from working patterns (assistant_command_test.rs)
@@ -1411,9 +1510,10 @@ Relates to #571
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct line numbers and issue reference format
+- 🩹 fix(docs): correct line numbers and issue reference format
 
 Address review feedback from Copilot:
+
 - Fix issue reference format in test plan (remove "527.9-testing" prefix)
 - Correct file line count (654 → 658)
 - Update function line references to match actual code:
@@ -1422,6 +1522,7 @@ Address review feedback from Copilot:
   - test_deployment_secrets_redacted: 615 → 618
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/646#discussion_r2598917693
 - https://github.com/codekiln/langstar/pull/646#discussion_r2598917746
 - https://github.com/codekiln/langstar/pull/646#discussion_r2598917734
@@ -1430,12 +1531,13 @@ Addresses review comments:
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(tests): fail tests instead of skip when env vars missing
+- 🩹 fix(tests): fail tests instead of skip when env vars missing
 
 Address review feedback: tests should fail/error when required environment
 variables are not set, rather than silently skipping.
 
 Changes:
+
 - Modified check_env() to panic with clear error messages instead of returning false
 - Modified get_test_deployment() to return &'static TestDeployment instead of Option
 - Removed all early-return patterns that silently skipped tests
@@ -1451,18 +1553,18 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/646/files#r2
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 📚 docs: add test plan audit for PR #646
+- 📚 docs: add test plan audit for PR #646
 
-- Renamed test plan file to include issue number prefix (571-)
-- Added comprehensive audit findings section
-- Recommendation: GO for merge - tests meet repository standards
-- Note: Pre-existing prompt API test failure is unrelated to this PR
+* Renamed test plan file to include issue number prefix (571-)
+* Added comprehensive audit findings section
+* Recommendation: GO for merge - tests meet repository standards
+* Note: Pre-existing prompt API test failure is unrelated to this PR
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: add "pre-existing failure" anti-pattern to testing guidelines
+- 📚 docs: add "pre-existing failure" anti-pattern to testing guidelines
 
 Adds requirement to verify claims of pre-existing failures with CI proof.
 Never claim something is pre-existing without linking to a failing CI run
@@ -1472,7 +1574,7 @@ on main branch.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: correct false "pre-existing failure" claim in audit
+- 📚 docs: correct false "pre-existing failure" claim in audit
 
 The original audit incorrectly claimed a test failure was pre-existing
 without verifying CI status on main. All CI checks on main are green.
@@ -1484,7 +1586,7 @@ HIGH_LEVEL_TESTING_GUIDELINES.md.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(sdk): prepend -/ for private prompts in PromptClient::get()
+- 🩹 fix(sdk): prepend -/ for private prompts in PromptClient::get()
 
 The LangSmith API returns repo_handle without owner prefix (e.g.,
 "test-prompt-xyz"), but GET /api/v1/repos/{owner}/{repo} requires
@@ -1501,9 +1603,10 @@ not being passed to integration tests.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
+
 - 🧪 test: fix silent test skip patterns and CI env vars (#648)
 
 * 🧪 test: fix silent test skip patterns and CI env vars
@@ -1540,12 +1643,14 @@ returned early with println() when env vars missing. These counted as
 "passing" in CI exit code, but never actually tested anything.
 
 **Impact:**
+
 - Tests now fail loudly when misconfigured
 - No more false confidence from skipped tests
 - Clear error messages guide developers to fix env vars
 - Consistent pattern across ALL integration test files
 
 **Files Fixed:**
+
 - ✅ .github/workflows/ci.yml (CI env vars)
 - ✅ cli/tests/prompt_scoping_test.rs (13 skip sites)
 - ✅ cli/tests/assistant_command_test.rs (6 skip sites)
@@ -1560,7 +1665,7 @@ Fixes #647
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix: standardize error message wording for consistency
+- 🩹 fix: standardize error message wording for consistency
 
 Changed 'for this integration test' to 'for integration tests' in
 LANGSMITH_WORKSPACE_ID expect messages to match the pattern used
@@ -1568,7 +1673,7 @@ consistently throughout the codebase.
 
 Addresses review feedback from Copilot.
 
-* 🩹 fix: remove leftover silent skip pattern in assistant test
+- 🩹 fix: remove leftover silent skip pattern in assistant test
 
 Fixed test_error_handling_nonexistent_deployment which still had an
 is_none() check on get_test_deployment() after changing the function
@@ -1577,14 +1682,14 @@ to return a tuple instead of Option.
 Now the test will properly panic if env vars are missing, preventing
 silent skips.
 
-* 🩹 fix(naming): rename has_api_credentials to require_api_credentials
+- 🩹 fix(naming): rename has_api_credentials to require_api_credentials
 
 Renamed the function to better reflect its behavior - it requires credentials
 to be present and panics if they're missing, rather than returning a boolean.
 
 Addresses Copilot review feedback.
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -1621,11 +1726,11 @@ Fixes #572
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: add user-facing deployment and graph guides
+- 📚 docs: add user-facing deployment and graph guides
 
-- Add docs/deployments.md with complete langstar deployment reference
-- Add docs/graphs.md with complete langstar graph reference
-- Refactor docs/implementation/527-graph-deployment-separation.md:
+* Add docs/deployments.md with complete langstar deployment reference
+* Add docs/graphs.md with complete langstar graph reference
+* Refactor docs/implementation/527-graph-deployment-separation.md:
   - Add phase tracking table with status indicators
   - Remove duplicate command/migration content (now in user docs)
   - Add links to user documentation
@@ -1636,7 +1741,7 @@ Follows progressive disclosure pattern from docs/dev/progressive-disclosure-docs
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
 
@@ -1656,14 +1761,15 @@ files are modified.
 
 - Removed workflow-level `paths-ignore` filters (lines 8-12, 16-22)
 - Added new `changes` job that determines whether to run CI based on:
-  * Branch name pattern (always run for release/* branches)
-  * Changed files (skip for docs-only on regular PRs)
+  - Branch name pattern (always run for release/* branches)
+  - Changed files (skip for docs-only on regular PRs)
 - Made all CI jobs conditional on `changes` job output
 - Updated `all-jobs` aggregator to include `changes` dependency
 
 ## Implementation Details
 
 The `changes` job checks:
+
 1. If branch matches `release/*` pattern → always run CI
 2. If branch is regular PR → check changed files
    - Skip if only: *.md, docs/**, *.txt, .gitignore
@@ -1684,15 +1790,17 @@ modify CHANGELOG.md and Cargo.toml.
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(ci): address Copilot review feedback on error handling
+- 🩹 fix(ci): address Copilot review feedback on error handling
 
 Addresses review comments from PR #641:
+
 - Add error handling for gh pr view failures (safer default)
 - Add check for empty CHANGED_FILES
 - Fix .txt file pattern matching logic (use regex instead of glob)
 - Use == instead of = for consistency with double-bracket tests
 
 Changes:
+
 1. Line 60: Added 2>/dev/null error suppression and fallback
 2. Lines 61-65: Added empty check with safe default (run CI)
 3. Line 73: Fixed .txt pattern to use regex `! "$file" =~ /`
@@ -1701,12 +1809,13 @@ Changes:
 All changes improve robustness and follow bash best practices.
 
 Addresses:
+
 - https://github.com/codekiln/langstar/pull/641#discussion_r2595372498
 - https://github.com/codekiln/langstar/pull/641#discussion_r2595372504
 - https://github.com/codekiln/langstar/pull/641#discussion_r2595372512
 - https://github.com/codekiln/langstar/pull/641#discussion_r2595372518
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -1723,6 +1832,7 @@ Implements graph commands for listing and inspecting LangGraph graphs within dep
 ## Changes
 
 ### New Commands
+
 - `langstar graph list <deployment>` - Lists all unique graphs in a deployment
   - `--show-nodes` flag to include node details in output
   - Displays graph ID, assistants using the graph, and node names
@@ -1731,6 +1841,7 @@ Implements graph commands for listing and inspecting LangGraph graphs within dep
   - Displays nodes and edges with full topology
 
 ### Implementation Details
+
 - Created `cli/src/commands/graph.rs` with GraphCommands enum
 - Reuses `resolve_deployment_url()` pattern from assistant commands
 - Integrates with SDK's `client.graphs().list()` and `client.graphs().get()` methods
@@ -1738,11 +1849,13 @@ Implements graph commands for listing and inspecting LangGraph graphs within dep
 - Includes comprehensive unit tests for row conversion
 
 ### Tests
+
 - Added integration tests in `cli/tests/graph_command_test.rs`
 - Tests cover: basic list/get, show-nodes flag, xray flag, JSON output, error handling
 - Tests validate deployment name resolution and parameter handling
 
 ### CLI Integration
+
 - Updated `cli/src/main.rs` to properly describe graph commands
 - Changed from deprecated deployment alias to actual graph inspection commands
 
@@ -1752,16 +1865,17 @@ Fixes #569
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): address review feedback on graph commands
+- 🩹 fix(cli): address review feedback on graph commands
 
-- Rename "# Assists" → "# Assistants" for clarity
-- Improve resolve_deployment_url documentation with structured sections
-- Extract resolve_deployment_url to shared deployment_utils module
-- Fix TEST_DEPLOYMENT_URL → TEST_DEPLOYMENT_NAME in test docs
-- Implement TEST_GRAPH_ID env var support (defaults to "agent")
-- Add empty state message: "No graphs found in this deployment"
+* Rename "# Assists" → "# Assistants" for clarity
+* Improve resolve_deployment_url documentation with structured sections
+* Extract resolve_deployment_url to shared deployment_utils module
+* Fix TEST_DEPLOYMENT_URL → TEST_DEPLOYMENT_NAME in test docs
+* Implement TEST_GRAPH_ID env var support (defaults to "agent")
+* Add empty state message: "No graphs found in this deployment"
 
 Addresses review comments from PR #626:
+
 - Comment 2594274344: Table header clarity
 - Comment 2594274352: Function documentation
 - Comment 2594274358: DRY principle for shared code
@@ -1776,7 +1890,7 @@ Addresses review comments from PR #626:
 
 Fixes CI failures in Check and Clippy jobs on PR #626
 
-* 🧪 test(integration): mark graph API tests as integration-tests
+- 🧪 test(integration): mark graph API tests as integration-tests
 
 Mark all tests that call the LangGraph API with #[cfg_attr(not(feature = "integration-tests"), ignore)]
 to prevent them from running in CI without proper credentials and test deployments.
@@ -1785,7 +1899,7 @@ Only test_graph_commands_help() runs in regular CI since it only checks help tex
 
 Fixes integration test failures in CI
 
-* 🩹 fix(tests): use shared TestDeployment fixture for graph integration tests
+- 🩹 fix(tests): use shared TestDeployment fixture for graph integration tests
 
 Replace hardcoded "test-graph-deployment" with the shared TestDeployment::create()
 fixture that dynamically creates/reuses the "pr-integration-test" deployment.
@@ -1793,6 +1907,7 @@ fixture that dynamically creates/reuses the "pr-integration-test" deployment.
 This aligns graph tests with assistant tests and ensures they pass in CI.
 
 Changes:
+
 - Import TestDeployment fixture from common::fixtures
 - Replace test_deployment_name() with get_test_deployment()
 - Use TEST_DEPLOYMENT OnceLock for deployment reuse across tests
@@ -1800,38 +1915,38 @@ Changes:
 
 Fixes integration test failures in CI
 
-* 🩹 fix(tests): remove unused check_env_vars function
+- 🩹 fix(tests): remove unused check_env_vars function
 
-* 🩹 fix(cli): address review feedback on graph commands
+- 🩹 fix(cli): address review feedback on graph commands
 
-- Use formatter.info() instead of println!() for consistency
-- Fix doc comment formatting with blank line separator
-- Update fixture references to pr-integration-test
-- Clarify deployment resolution in test prerequisites
-- Remove unused _deployment variables in tests
+* Use formatter.info() instead of println!() for consistency
+* Fix doc comment formatting with blank line separator
+* Update fixture references to pr-integration-test
+* Clarify deployment resolution in test prerequisites
+* Remove unused _deployment variables in tests
 
 Addresses multiple review comments from PR #626
 
-* 🩹 fix(cli): remove incorrect ? operator on formatter.info()
+- 🩹 fix(cli): remove incorrect ? operator on formatter.info()
 
 formatter.info() returns () not Result, so the ? operator is invalid.
 This fixes the compilation error introduced in the previous commit.
 
-* 🩹 fix(ci): add LANGGRAPH_API_KEY and fix test error message
+- 🩹 fix(ci): add LANGGRAPH_API_KEY and fix test error message
 
-- Add LANGGRAPH_API_KEY to integration tests env (uses LANGSMITH_API_KEY value)
-- Fix test assertion message to say "graph-id" instead of "graph_id"
+* Add LANGGRAPH_API_KEY to integration tests env (uses LANGSMITH_API_KEY value)
+* Fix test assertion message to say "graph-id" instead of "graph_id"
 
 The graphs API requires LANGGRAPH_API_KEY when using custom deployment URLs.
 The test error message should match the actual clap parameter format (graph-id).
 
-* 🩹 fix(tests): update assistant test to use new graph list syntax
+- 🩹 fix(tests): update assistant test to use new graph list syntax
 
 The test_deployment_discovery_workflow was calling `graph list` without
 a deployment argument, which is now required. Updated to provide the
 deployment name.
 
-* 🩹 fix(tests): improve TEST_GRAPH_ID error message clarity
+- 🩹 fix(tests): improve TEST_GRAPH_ID error message clarity
 
 Changed error message from "Set TEST_GRAPH_ID={}" to
 "Set TEST_GRAPH_ID to a graph that exists in your test deployment (current: '{}')"
@@ -1839,16 +1954,16 @@ to avoid confusion about setting the env var to the same value that failed.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/626#discussion_r2594697923
 
-* 🩹 fix(tests): correct graph_id default and help assertion
+- 🩹 fix(tests): correct graph_id default and help assertion
 
-- Change default graph_id from "agent" to "test_graph" (matches test deployment)
-- Fix help assertion: "graph-id" → "GRAPH_ID" (matches actual CLI output)
+* Change default graph_id from "agent" to "test_graph" (matches test deployment)
+* Fix help assertion: "graph-id" → "GRAPH_ID" (matches actual CLI output)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(sdk): use LANGSMITH_API_KEY for all LangGraph API calls
+- 🩹 fix(sdk): use LANGSMITH_API_KEY for all LangGraph API calls
 
 The langgraph_get/post/patch/delete methods now use require_langsmith_key()
 instead of require_langgraph_key(). This is the correct behavior since
@@ -1861,7 +1976,7 @@ added to mask this bug.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* ♻️ refactor(cli): implement pagination for deployment resolution (#631)
+- ♻️ refactor(cli): implement pagination for deployment resolution (#631)
 
 Fixes #628
 
@@ -1873,7 +1988,7 @@ target deployment exists beyond the first page of results.
 
 Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
 
-* ♻️ refactor(auth): consolidate to single LANGSMITH_API_KEY (#632)
+- ♻️ refactor(auth): consolidate to single LANGSMITH_API_KEY (#632)
 
 ♻️ refactor(auth): consolidate to single LANGSMITH_API_KEY
 
@@ -1890,7 +2005,7 @@ Use LANGSMITH_API_KEY for all LangChain/LangGraph API calls.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(sdk): update AuthConfig::new() calls to use 3-arg signature
+- 🩹 fix(sdk): update AuthConfig::new() calls to use 3-arg signature
 
 Update all SDK test and doc examples to use the new 3-argument
 AuthConfig::new() signature after removing langgraph_api_key parameter.
@@ -1899,10 +2014,11 @@ AuthConfig::new() signature after removing langgraph_api_key parameter.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix: update remaining AuthConfig::new() calls to 3-arg signature
+- 🩹 fix: update remaining AuthConfig::new() calls to 3-arg signature
 
 Update all remaining test files to use the new 3-argument
 AuthConfig::new() signature:
+
 - sdk/tests/evaluations_test.rs
 - sdk/tests/dataset_test.rs
 - sdk/tests/runs_query_test.rs
@@ -1915,19 +2031,19 @@ AuthConfig::new() signature:
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🎨 style: apply rustfmt formatting
+- 🎨 style: apply rustfmt formatting
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix: update remaining 4-arg AuthConfig calls in prompt.rs tests
+- 🩹 fix: update remaining 4-arg AuthConfig calls in prompt.rs tests
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs: add implementation progress for #569 graph commands
+- 📚 docs: add implementation progress for #569 graph commands
 
 Documents current status, mistakes made, and next steps for PR #626.
 Not pushed - for context handoff.
@@ -1936,13 +2052,13 @@ Not pushed - for context handoff.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES with new testing requirements
+- 📝 docs: update HIGH_LEVEL_TESTING_GUIDELINES with new testing requirements
 
 Added clarifications to the testing guidelines, emphasizing that tests should run locally as they do in CI and that tests should not be limited to CI configurations.
 
-* wip: failed PR fixes
+- wip: failed PR fixes
 
-* 🩹 fix(test): handle empty TEST_GRAPH_ID env var in graph tests
+- 🩹 fix(test): handle empty TEST_GRAPH_ID env var in graph tests
 
 The test_graph_id() function now properly handles the case where
 TEST_GRAPH_ID is set to an empty string, falling back to "test_graph"
@@ -1952,12 +2068,13 @@ default instead of using the empty value.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs(skills): add --paginate to gh api PR comment fetching
+- 📚 docs(skills): add --paginate to gh api PR comment fetching
 
 The GitHub API returns at most 30 items per page by default. Without
 --paginate, PR comments beyond the first page are silently missed.
 
 Updated files:
+
 - .claude/commands/pr-workflow.md
 - .claude/skills/pr-lifecycle/SKILL.md
 - .claude/skills/resolve-pr-comments/SKILL.md
@@ -1966,7 +2083,7 @@ Updated files:
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🧪 test(graph): strengthen test_graph_list_basic assertion
+- 🧪 test(graph): strengthen test_graph_list_basic assertion
 
 Changed from checking for generic "Graph" header to verifying that
 "test_graph" from the test deployment fixture appears in the output.
@@ -1978,7 +2095,7 @@ UI chrome, per testing guidelines.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🧹 refactor(assistant): remove orphaned documentation block
+- 🧹 refactor(assistant): remove orphaned documentation block
 
 Removed documentation that was left behind when resolve_deployment_url
 was moved to deployment_utils.rs. The doc block was floating before
@@ -1989,7 +2106,7 @@ exists in this file.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 📚 docs(testing): fix grammatical error in testing guidelines
+- 📚 docs(testing): fix grammatical error in testing guidelines
 
 Changed "where the proper is configured" to "where the proper
 environment is configured".
@@ -1998,7 +2115,7 @@ environment is configured".
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🧹 chore: remove implementation progress tracking doc
+- 🧹 chore: remove implementation progress tracking doc
 
 This document was used for cross-session continuity during development.
 The relevant information has been captured in the PR description and
@@ -2008,9 +2125,10 @@ issue comments.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(commands): add /gh-milestones:test-plan slash command (#633)
 
 * ✨ feat(commands): add /gh-milestones:test-plan slash command
@@ -2018,17 +2136,20 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Create new slash command to generate comprehensive test plans for milestones using progressive disclosure pattern.
 
 Command features:
+
 - Analyzes milestone type (SDK/CLI/Infrastructure/Docs)
 - Loads only relevant testing docs (<5000 tokens)
 - Generates test plan at docs/implementation/<milestone>-test-plan.md
 - Ensures compliance with testing standards
 
 Files added:
+
 - .claude/commands/gh-milestones/test-plan.md (command spec)
 - .claude/commands/gh-milestones/README.md (namespace docs)
 - TESTING_CHECKLIST.md (post-merge validation steps)
 
 Files updated:
+
 - docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md (usage docs)
 
 Fixes #563
@@ -2037,13 +2158,13 @@ Fixes #563
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
-* docs: remove superfluous lines
+- docs: remove superfluous lines
 
 Removed references to loaded testing documentation and the created test plan. Updated key requirements for integration tests involving SDK and CLI.
 
-* docs: testing shouldn't require "large result sets"
+- docs: testing shouldn't require "large result sets"
 
----------
+---
 
 Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 
@@ -2056,6 +2177,7 @@ Fixes #611
 ## Problem
 
 The `build_hierarchy()` method in prep-next.py was using:
+
 ```bash
 gh sub-issue list <issue> --relation children --json number
 ```
@@ -2068,6 +2190,7 @@ first open issue (wrong behavior).
 ## Real-World Example
 
 Milestone: ls-cli-output-dx (#12)
+
 ```
 #529 (open, milestone parent)
   └── #584 (open, implementation parent)
@@ -2084,6 +2207,7 @@ Milestone: ls-cli-output-dx (#12)
 ## Solution
 
 Added --state all flag to include closed siblings in hierarchy:
+
 ```python
 result = self.run_command([
     "gh", "sub-issue", "list", str(issue_num),
@@ -2129,22 +2253,24 @@ Fixes #592
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address review feedback on validation report
+- 🩹 fix(docs): address review feedback on validation report
 
-- Add full path reference to Python SDK schema location
-- Add missing start_time and default_dataset_id to ProjectCreate
-- Add missing default_dataset_id to ProjectUpdate
+* Add full path reference to Python SDK schema location
+* Add missing start_time and default_dataset_id to ProjectCreate
+* Add missing default_dataset_id to ProjectUpdate
 
 Addresses Copilot review comments on PR #617
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(testing): add progressive disclosure standards and testing TOC (#618)
 
 * 📚 docs(testing): add progressive disclosure standards and testing TOC
 
 Establishes foundation for progressive disclosure documentation pattern:
+
 - Progressive disclosure standards doc with guidelines for AI agents
 - Testing documentation TOC with 15-line index
 - AGENTS.md updated with testing reference
@@ -2156,12 +2282,12 @@ Fixes #559
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address Copilot review feedback
+- 🩹 fix(docs): address Copilot review feedback
 
-- Consolidate testing TOC to 14 lines (was 17, requirement ≤15)
-- Remove specific line reference from example (line numbers change)
-- Update AGENTS.md to say "~15-line index" for accuracy
-- Use generic post-mortem filename format (NNN-issue-description.md)
+* Consolidate testing TOC to 14 lines (was 17, requirement ≤15)
+* Remove specific line reference from example (line numbers change)
+* Update AGENTS.md to say "~15-line index" for accuracy
+* Use generic post-mortem filename format (NNN-issue-description.md)
 
 Addresses review comments on PR #618
 
@@ -2169,9 +2295,10 @@ Addresses review comments on PR #618
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(testing): centralize testing docs to docs/dev/testing/ (#627)
 
 * 📚 docs(testing): centralize testing docs to docs/dev/testing/
@@ -2181,12 +2308,14 @@ following DRY principle. Moves content (not copies) and updates original
 locations with brief redirects.
 
 **New consolidated docs:**
+
 - docs/dev/testing/sdk-integration-tests.md (512 lines)
 - docs/dev/testing/cli-integration-tests.md (345 lines)
 - docs/dev/testing/devcontainer-feature-tests.md (374 lines)
 - docs/dev/testing/test-fixtures.md (358 lines)
 
 **Updated with redirects (<32 lines each):**
+
 - sdk/tests/README.md
 - cli/tests/README.md
 - .devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md
@@ -2194,6 +2323,7 @@ locations with brief redirects.
 - docs/dev/procedures.md (pre-commit section)
 
 **Benefits:**
+
 - Reduces context window pollution for AI agents
 - Follows progressive disclosure pattern established in #559
 - Eliminates content duplication across 9 files
@@ -2205,13 +2335,14 @@ Fixes #560
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): remove @ symbols and fix relative paths
+- 🩹 fix(docs): remove @ symbols and fix relative paths
 
-- Remove @ symbols from all docs (@ only for AGENTS.md imports)
-- Fix relative paths in sdk-integration-tests.md (use ../../../)
-- Ensures progressive disclosure pattern is correctly implemented
+* Remove @ symbols from all docs (@ only for AGENTS.md imports)
+* Fix relative paths in sdk-integration-tests.md (use ../../../)
+* Ensures progressive disclosure pattern is correctly implemented
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/627#discussion_r2594281893
 - https://github.com/codekiln/langstar/pull/627#discussion_r2594281897
 - https://github.com/codekiln/langstar/issues/556#issuecomment-3616973909
@@ -2226,9 +2357,10 @@ Addresses review comments:
 
 Addresses review comments from PR #627
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(testing): add high-level guidelines, CRUD lifecycle pattern, and debugging docs (#629)
 
 * 📚 docs(testing): add high-level guidelines, CRUD lifecycle pattern, mocking and debugging docs
@@ -2236,10 +2368,12 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #561
 
 ## Summary
+
 Implements Phase 5 of ls-test-improvement milestone by creating comprehensive
 testing standards documentation that would have prevented issue #536.
 
 ## Changes
+
 - HIGH_LEVEL_TESTING_GUIDELINES.md: Toyota Andon Cord principle, pre-merge
   requirements, test type selection guidance (~200 lines)
 - crud-lifecycle-pattern.md: CLI→SDK bidirectional verification pattern with
@@ -2248,6 +2382,7 @@ testing standards documentation that would have prevented issue #536.
 - debugging-tests.md: Common failure patterns and troubleshooting (~140 lines)
 
 ## Key Additions
+
 - Toyota Andon Cord: Never merge with failing tests, period
 - CRUD Lifecycle Pattern: Create→Verify→Read→Verify→Update→Verify→Delete→Verify
 - Anti-pattern documentation: Exit code only tests (the #536 bug)
@@ -2257,9 +2392,10 @@ testing standards documentation that would have prevented issue #536.
 
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
-* 🩹 fix(docs): use function names instead of line numbers in references
+- 🩹 fix(docs): use function names instead of line numbers in references
 
 Address Copilot review feedback by making code references more stable:
+
 - Replace specific line number ranges with function/struct names
 - Update SIZE LIMIT headers to reflect actual line counts
 - Use "search for X" or "function Y" patterns that won't require
@@ -2270,15 +2406,17 @@ development.
 
 Addresses review comments on PR #629
 
----------
+---
 
 Co-authored-by: Claude Opus 4.5 <noreply@anthropic.com>
+
 - 📚 docs(testing): document #536 post-mortem and audit recent milestones (#637)
 
 Create comprehensive post-mortem for issue #536 (prompt list bug) and audit
 recent milestones for similar anemic testing patterns.
 
 **Post-Mortem (docs/dev/testing/post-mortems/536-prompt-list-testing-gap.md):**
+
 - Executive summary of bug, impact, and resolution
 - Detailed root cause analysis with code examples
 - Why tests didn't catch it (exit-code-only pattern)
@@ -2287,6 +2425,7 @@ recent milestones for similar anemic testing patterns.
 - Lessons learned for test authors, reviewers, and process
 
 **Audit Report (docs/research/556-milestone-testing-audit.md):**
+
 - Analyzed 4 recent milestones for anemic testing patterns
 - Found 2 milestones with exit-code-only tests (ls-evals-basic, ls-runs-query)
 - Found 2 milestones with good CRUD patterns (structured prompts, assistants)
@@ -2294,6 +2433,7 @@ recent milestones for similar anemic testing patterns.
 - Documented testing gap patterns and recommendations
 
 **Tracking Issues Created:**
+
 - #635: Enhance eval command tests to verify actual API behavior
 - #636: Add integration tests for runs query with filter verification
 
@@ -2314,17 +2454,20 @@ Co-authored-by: Claude Sonnet 4.5 <noreply@anthropic.com>
 Implements GraphClient for interacting with graphs via Agent Server API.
 
 Key features:
+
 - list() - List all unique graphs by scanning assistants
 - get() - Get graph structure by graph_id with xray support
 - subgraphs() - Get subgraphs for a graph
 
 Algorithm for list():
+
 1. POST /assistants/search to get all assistants
 2. Extract unique graph_id values and group by graph
 3. Optionally fetch graph structure to populate node names
-4. Filter out __start__ and __end__ control nodes
+4. Filter out **start** and **end** control nodes
 
 Deliverables:
+
 - sdk/src/graph_client.rs with GraphClient implementation
 - Updated sdk/src/lib.rs to export graph_client module
 - Unit tests for client creation, filtering, and serialization
@@ -2335,13 +2478,14 @@ Fixes #566
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): address Copilot review feedback on graph client
+- 🩹 fix(sdk): address Copilot review feedback on graph client
 
-- Added performance note about N+1 queries when include_structure=true
-- Implemented pagination for assistants search (limit=100, offset-based)
-- Added error logging for failed graph structure fetches
+* Added performance note about N+1 queries when include_structure=true
+* Implemented pagination for assistants search (limit=100, offset-based)
+* Added error logging for failed graph structure fetches
 
 Addresses review comments on PR #607:
+
 - Comment 2593386966: Added performance warning documentation
 - Comment 2593386987: Implemented pagination to fetch all assistants
 - Comment 2593387011: Added eprintln! for debugging failed fetches
@@ -2354,23 +2498,26 @@ Addresses review comments on PR #607:
 
 Addresses follow-up review comments on PR #607
 
-* 🩹 fix(fmt): add missing trailing comma
+- 🩹 fix(fmt): add missing trailing comma
 
-* 📚 docs(sdk): remove misleading default value note from xray parameter
+- 📚 docs(sdk): remove misleading default value note from xray parameter
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add langstar deployment command (#614)
 
 * ✨ feat(cli): add langstar deployment command
 
 Create the `langstar deployment` command by renaming from `graph`:
+
 - Add deployment.rs with DeploymentCommands enum
 - Register deployment command in CLI with proper help text
 - Keep graph command as alias (deprecation handled in #527.8)
 
 Subcommands:
+
 - langstar deployment list - List all LangGraph deployments
 - langstar deployment get - Get a specific deployment by ID
 - langstar deployment create - Create a new deployment
@@ -2382,21 +2529,23 @@ Fixes #567
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): use ? operator for error handling in deployment delete confirmation
+- 🩹 fix(cli): use ? operator for error handling in deployment delete confirmation
 
 Replace .unwrap() calls with ? operator to properly propagate I/O errors,
 consistent with error handling patterns elsewhere in the codebase.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/614#discussion_r2593959619
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add Text output format and ColumnMetadata infrastructure (#613)
 
 * ✨ feat(cli): add Text output format and ColumnMetadata infrastructure
 
 Implements Phase 1 of AI-friendly CLI output (#584):
+
 - Add Text variant to OutputFormat enum for tab-separated output
 - Create ColumnMetadata trait for column selection and TSV rendering
 - Add print_text() method to OutputFormatter
@@ -2408,19 +2557,20 @@ ColumnMetadata for specific commands and add --columns/--show-columns flags.
 
 Fixes #585
 
-* 🩹 fix: add empty data message to print_text for consistency
+- 🩹 fix: add empty data message to print_text for consistency
 
 Addresses review comment requesting consistent empty data handling
 between print_text() and print_table_with_options(). Both methods
 now print 'No results found.' when given empty data.
 
-* 📚 docs(pr-workflow): emphasize using /gh-pr-comment-reply for review comments
+- 📚 docs(pr-workflow): emphasize using /gh-pr-comment-reply for review comments
 
 Clarifies that agents MUST use the dedicated /gh-pr-comment-reply slash command
 when responding to review comments, rather than gh pr comment (creates top-level
 comments) or manual gh api calls (error-prone).
 
 Changes:
+
 - Added CRITICAL section explaining how to reply in-thread using the slash command
 - Updated Option 2 (Defer) example to show slash command usage
 - Replaced Command Reference section to recommend slash command over manual methods
@@ -2429,7 +2579,7 @@ Changes:
 This prevents the mistake of creating top-level PR comments that can't be marked
 as resolved, which breaks the maintainer workflow.
 
-* 🧪 test: add integration test for text format fallback
+- 🧪 test: add integration test for text format fallback
 
 Adds test_model_config_list_text_format() to verify that --format text
 correctly falls back to JSON output in Phase 1 (infrastructure only).
@@ -2451,6 +2601,7 @@ catch SystemExit(0) and print "Unexpected error: 0" which was
 confusing to users.
 
 Changes:
+
 - Added explicit SystemExit handler that re-raises the exception
 - Enhanced generic exception handler to show exception type and full traceback
 - This provides much better debugging information when errors occur
@@ -2461,25 +2612,26 @@ Fixes #604
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: move traceback import to module level
+- 🩹 fix: move traceback import to module level
 
-- Moved traceback import from inline (line 452) to top-level imports
-- Follows Python conventions and avoids repeated import overhead
-- Improves code organization and readability
+* Moved traceback import from inline (line 452) to top-level imports
+* Follows Python conventions and avoids repeated import overhead
+* Improves code organization and readability
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/605#discussion_r2593364952
 
-* 🩹 fix: preserve exit codes from SystemExit
+- 🩹 fix: preserve exit codes from SystemExit
 
-- Changed SystemExit handler to return exit code instead of re-raising
-- Preserves intended control flow where methods use sys.exit(1) for errors
-- Prevents exception propagation while still avoiding "Unexpected error: 0"
+* Changed SystemExit handler to return exit code instead of re-raising
+* Preserves intended control flow where methods use sys.exit(1) for errors
+* Prevents exception propagation while still avoiding "Unexpected error: 0"
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/605#discussion_r2593381350
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix: correctly parse gh sub-issue JSON output in prep-next.py (#609)
 
 * 🩹 fix: correctly parse gh sub-issue JSON output in prep-next.py
@@ -2491,6 +2643,7 @@ Previously, the script incorrectly tried to index directly into the JSON
 response as if it were an array, causing KeyError: 0.
 
 This fix:
+
 - Correctly extracts the "subIssues" wrapper from JSON response
 - Handles None/null cases gracefully with .get() and safe checks
 - Adds TypeError to exception handling for robustness
@@ -2502,19 +2655,20 @@ Fixes #608
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback on variable naming and error handling
+- 🩹 fix: address Copilot review feedback on variable naming and error handling
 
-- Rename sub_issues → parent_issues in parent parsing for clarity
-- Rename sub_issues → child_issues in children parsing for clarity
-- Remove redundant len() > 0 check (more Pythonic)
-- Add explanatory comment to parent parsing except clause
-- Add error logging to children parsing except clause
+* Rename sub_issues → parent_issues in parent parsing for clarity
+* Rename sub_issues → child_issues in children parsing for clarity
+* Remove redundant len() > 0 check (more Pythonic)
+* Add explanatory comment to parent parsing except clause
+* Add error logging to children parsing except clause
 
 Addresses Copilot review comments in PR #609
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix: add leaf node traversal to prep-next.py issue selection (#612)
 
 * 🩹 fix: add leaf node traversal to prep-next.py issue selection
@@ -2522,13 +2676,16 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #611
 
 ## Problem
+
 The find_next_issue() method in prep-next.py would select parent issues
 instead of traversing down to their first workable leaf node (issue with
 no open children). This broke the automation promise of selecting the
 actual next issue to work on.
 
 ## Solution
+
 Added _find_first_leaf() helper method that:
+
 - Recursively traverses down the issue hierarchy
 - Finds the first open child at each level (sorted by issue number)
 - Returns the issue when no open children exist (leaf node)
@@ -2538,7 +2695,9 @@ The method is called after finding a candidate issue in find_next_issue(),
 ensuring both simple and intelligent traversal modes benefit from it.
 
 ## Testing
+
 Added test_leaf_traversal.py with 4 test cases:
+
 - Descends from parent to first leaf child
 - Handles multi-level nesting (grandparent -> parent -> child)
 - Returns issue itself when it has no children
@@ -2547,6 +2706,7 @@ Added test_leaf_traversal.py with 4 test cases:
 All tests pass.
 
 ## Example
+
 Before: Selects #586 (parent with 8 children)
 After: Selects #590 (first leaf child of #586)
 
@@ -2554,17 +2714,18 @@ After: Selects #590 (first leaf child of #586)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(prep-next): optimize performance with O(1) lookups and conditional traversal
+- 🩹 fix(prep-next): optimize performance with O(1) lookups and conditional traversal
 
-- Add issues_by_number dict for O(1) issue lookups (fixes linear search)
-- Only call _find_first_leaf() when not using simple ordering
-- Reduces unnecessary overhead in fallback mode
+* Add issues_by_number dict for O(1) issue lookups (fixes linear search)
+* Only call _find_first_leaf() when not using simple ordering
+* Reduces unnecessary overhead in fallback mode
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/612#discussion_r2593894069
 - https://github.com/codekiln/langstar/pull/612#discussion_r2593894076
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -2575,6 +2736,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 * 📚 docs(projects): add CLI design decisions for DX consistency
 
 Add comprehensive Section 9 to Phase 1 research report documenting:
+
 - Analysis of existing CLI patterns (datasets, queues, runs)
 - Three key inconsistencies identified across commands
 - Finalized design specifications for all 5 project commands
@@ -2583,6 +2745,7 @@ Add comprehensive Section 9 to Phase 1 research report documenting:
 - Files requiring changes with specific line numbers
 
 Key Design Decisions:
+
 - Use -o/--output with OutputFormat enum (extensible, aligns with ls-cli-output-dx)
 - Accept both name and UUID identifiers for user-friendliness
 - Use --force/-f for destructive operations (Unix convention)
@@ -2594,7 +2757,7 @@ Fixes #590
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(projects): add reference to CLI output research (#581)
+- 📚 docs(projects): add reference to CLI output research (#581)
 
 Update section 9.1.3 to explicitly cite CLI output research that backs
 the -o/--output recommendation.
@@ -2607,7 +2770,7 @@ AWS CLI) and explicitly recommended the -o/--output pattern over the
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -2638,6 +2801,7 @@ Implements enhanced configuration management requested in #555:
    - Format: "Run 'langstar config hide_workspace_and_org_id_message set true' or set ENV_VAR=1"
 
 Technical changes:
+
 - Add toml_edit dependency for config file editing
 - Create cli/src/commands/config.rs with ConfigCommands enum
 - Move config display logic from main.rs to config command
@@ -2649,7 +2813,7 @@ Fixes #555
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): address review feedback on config command UX
+- 🩹 fix(cli): address review feedback on config command UX
 
 Addresses 8 Copilot review comments on PR #576:
 
@@ -2672,15 +2836,17 @@ Addresses 8 Copilot review comments on PR #576:
 
 Fixes command structure bug that prevented documented commands from working.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat: add /gh-milestones:prep-next command (#601)
 
 * ✨ feat: add /gh-milestones:prep-next command
 
 Implements automated workflow for moving to next issue in milestone after
 completing current task. Handles:
+
 - Milestone detection (auto or explicit)
 - Last completed issue identification
 - Intelligent issue traversal (sibling-first depth-first)
@@ -2694,9 +2860,10 @@ Fixes #599
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor: convert gh-prep-next to Python script
+- ♻️ refactor: convert gh-prep-next to Python script
 
 Major refactor addressing Copilot review feedback (#2593206148):
+
 - Created scripts/gh-milestones/prep-next.py with all logic
 - Replaced inline shell scripts with clean Python implementation
 - Updated command file to delegate to Python script
@@ -2705,6 +2872,7 @@ Major refactor addressing Copilot review feedback (#2593206148):
 - Fixed gh-sub-issue extension URL per #2593200719
 
 Benefits:
+
 - Better error handling than shell scripts
 - Cleaner code organization with classes/functions
 - Easier testing and maintenance
@@ -2717,9 +2885,10 @@ Addresses all critical Copilot review comments.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add Graph, GraphNode, GraphEdge types (#602)
 
 * ✨ feat(sdk): add Graph, GraphNode, GraphEdge types
@@ -2748,6 +2917,7 @@ returned by the /assistants/{id}/graph endpoint.
 ## Testing
 
 All 5 tests pass:
+
 - test_graph_deserialize_simple
 - test_graph_deserialize_conditional_edges
 - test_graph_serialize
@@ -2760,7 +2930,7 @@ Fixes #565
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): replace assert_eq bool comparisons with assert
+- 🩹 fix(ci): replace assert_eq bool comparisons with assert
 
 Addresses clippy::bool_assert_comparison warnings by replacing
 `assert_eq!(bool, true/false)` with `assert!(bool)` or `assert!(!bool)`.
@@ -2769,15 +2939,15 @@ This is the idiomatic Rust way to assert boolean values.
 
 Fixed 5 occurrences in sdk/src/graph.rs test module.
 
-* 🩹 fix: address Copilot review feedback on graph types
+- 🩹 fix: address Copilot review feedback on graph types
 
 Addresses 6 Copilot review comments:
 
 1-4. Removed `#[serde(deny_unknown_fields)]` from all API response types
-     (Graph, GraphNode, GraphNodeData, GraphEdge) to allow forward
-     compatibility with future API evolution. This aligns with other
-     SDK modules (Assistant, Dataset, Deployment, Run) which don't
-     use strict validation.
+(Graph, GraphNode, GraphNodeData, GraphEdge) to allow forward
+compatibility with future API evolution. This aligns with other
+SDK modules (Assistant, Dataset, Deployment, Run) which don't
+use strict validation.
 
 5. Updated example code to clarify that `get_graph()` method will be
    implemented in a future PR, avoiding user confusion.
@@ -2785,7 +2955,7 @@ Addresses 6 Copilot review comments:
 6. Added Serialize/Deserialize derives to GraphSummary for consistency
    with other public types in the module.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -2802,6 +2972,7 @@ The extension installation now happens in setup-github-auth.sh after
 authentication completes, instead of in post-create.sh before auth.
 
 Changes:
+
 - Removed gh-sub-issue installation from post-create.sh (Step 6)
 - Added gh-sub-issue installation to setup-github-auth.sh (after auth)
 - Added clear comment in post-create.sh explaining the change
@@ -2812,15 +2983,17 @@ Fixes #550
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-feedback): ensure gh extensions install in all auth scenarios
+- 🩹 fix(pr-feedback): ensure gh extensions install in all auth scenarios
 
 Addresses Copilot review feedback about early exits preventing extension
 installation. Refactored to use helper function that installs extensions
 immediately after detecting gh authentication, handling both:
+
 - Codespaces (pre-authenticated, exits early)
 - Local devcontainer (authenticates with token)
 
 Changes:
+
 - Created install_gh_extensions() helper function
 - Call after detecting existing auth (line 48)
 - Call after token authentication (line 151)
@@ -2832,9 +3005,10 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/551#discussi
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(cli): improve table formatting for long prompt names (#577)
 
 * 🩹 fix(cli): improve table formatting for long prompt names
@@ -2847,6 +3021,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 - Truncate descriptions appropriately (40 chars for compact, 50 for full)
 
 Tables remain readable with prompt names up to 200 characters by:
+
 - Dynamically calculating first column width based on terminal size
 - Clamping width to sensible bounds (30-100 chars)
 - Adding "..." suffix to truncated values
@@ -2857,11 +3032,11 @@ Fixes #554
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): address review feedback - add tests and fix comment
+- 🩹 fix(cli): address review feedback - add tests and fix comment
 
-- Fixed comment mismatch in output.rs (said ~40, code used 45)
-- Added test for get_terminal_width function
-- Added 5 tests for truncate_description covering:
+* Fixed comment mismatch in output.rs (said ~40, code used 45)
+* Added test for get_terminal_width function
+* Added 5 tests for truncate_description covering:
   - Truncation when description exceeds max_len
   - No truncation when shorter than max_len
   - Handling of None
@@ -2869,6 +3044,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
   - Small max_len edge case
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/577#discussion_r2592766687
 - https://github.com/codekiln/langstar/pull/577#discussion_r2592766709
 - https://github.com/codekiln/langstar/pull/577#discussion_r2592766726
@@ -2879,9 +3055,10 @@ Fixed flawed assertion that would always pass. Now properly validates
 that width is at least DEFAULT_TERMINAL_WIDTH.
 
 Addresses review comment:
+
 - https://github.com/codekiln/langstar/pull/577#discussion_r2592819280
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -2892,6 +3069,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 * 📚 docs: add design document for graph/deployment separation
 
 Consolidates research findings from #528 and establishes:
+
 - DX consistency patterns with existing CLI commands
 - Configuration integration (no new env vars needed)
 - Command specifications for `deployment` and `graph`
@@ -2904,15 +3082,16 @@ Fixes #562
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): clarify column header from "# Assists" to "# Assistants"
+- 🩹 fix(docs): clarify column header from "# Assists" to "# Assistants"
 
 Addresses review feedback: the abbreviated header was ambiguous.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/578#discussion_r2592780438
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(research): audit testing documentation for centralization (#579)
 
 * 📚 docs(research): audit testing documentation for centralization
@@ -2921,12 +3100,14 @@ Comprehensive audit of 10 testing-related documentation files totaling
 ~3,667 lines (~27,500 tokens) to support the ls-test-improvement milestone.
 
 Key findings:
+
 - Significant DRY violations: pre-commit checklist duplicated 3x
 - Missing high-level principles: Toyota andon cord, CRUD lifecycle pattern
 - Heavy context window impact: Large docs loaded unnecessarily
 - Gap that caused #536: Missing guidance on verifying actual behavior
 
 Recommendations:
+
 - Create centralized docs/dev/testing/ with progressive disclosure
 - Extract high-level testing principles into standalone document
 - Consolidate duplicated content for DRY compliance
@@ -2938,16 +3119,17 @@ Fixes #557
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct line counts and references per Copilot review
+- 🩹 fix(docs): correct line counts and references per Copilot review
 
-- Fix docs/dev/procedures.md line count: 562→561, section 101-277→103-280
-- Fix docs/dev/README.md line count: ~133→179, section 90-133→123-140
-- Fix token table total: ~2,800→~3,667
-- Remove duplicate code fence backticks
+* Fix docs/dev/procedures.md line count: 562→561, section 101-277→103-280
+* Fix docs/dev/README.md line count: ~133→179, section 90-133→123-140
+* Fix token table total: ~2,800→~3,667
+* Remove duplicate code fence backticks
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: scout ls-projects feasibility (#575)
 
 * 📚 docs: scout ls-projects feasibility
@@ -2955,6 +3137,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Research support for LangSmith projects CRUD operations.
 
 Key findings:
+
 - Projects are called "sessions" at API level (/sessions endpoint)
 - Python SDK provides comprehensive CRUD methods
 - Medium complexity, similar to existing datasets/annotation_queues
@@ -2969,15 +3152,16 @@ Fixes #574
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* docs: Apply suggestions from code review
+- docs: Apply suggestions from code review
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* 📚 docs: add Python experiment for projects API
+- 📚 docs: add Python experiment for projects API
 
 Add empirical API testing to disambiguate projects vs sessions terminology.
 
 Experiment findings:
+
 - Python SDK returns TracerSessionResult objects
 - Methods use "projects" terminology (list_projects, read_project)
 - API uses "/sessions" endpoints internally
@@ -2993,9 +3177,10 @@ Related to #574
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add workspace-scale validation to projects experiment
+- 📚 docs: add workspace-scale validation to projects experiment
 
 Validate Python SDK can handle real-world workspace scale:
+
 - List all 162 projects successfully
 - Query specific project by name (test-deployment-cli-48499)
 - Retrieve project ID: 98e12dc6-2171-4bf3-80fb-1153041d6cbf
@@ -3003,6 +3188,7 @@ Validate Python SDK can handle real-world workspace scale:
 - Confirm pagination works for 162 > 100/page limit
 
 Key findings:
+
 - Pagination handles large project lists correctly
 - Project lookup by name is reliable
 - Full CRUD workflow validated at scale
@@ -3017,26 +3203,28 @@ Related to #574
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address Copilot review feedback
+- 🩹 fix(docs): address Copilot review feedback
 
-- Fixed datasets.rs line count estimate in scout doc
-- Added shebang to validate_projects.py for consistency
-- Added execute permissions comment to run_test.sh
-- Added validate_projects.py to README file list
-- Removed unused Optional import from test_projects.py
-- Added explanatory comment to empty except clause
+* Fixed datasets.rs line count estimate in scout doc
+* Added shebang to validate_projects.py for consistency
+* Added execute permissions comment to run_test.sh
+* Added validate_projects.py to README file list
+* Removed unused Optional import from test_projects.py
+* Added explanatory comment to empty except clause
 
-* 📚 docs(scout): add ecosystem triangulation for projects terminology
+- 📚 docs(scout): add ecosystem triangulation for projects terminology
 
 Added comprehensive research across LangChain ecosystem to understand
 why "projects" terminology was chosen over "sessions":
 
 **New Research Notes:**
+
 - langchain-ai/docs: Official definitions, API endpoint revelation
 - langsmith-cookbook: Real-world usage patterns in 50+ notebooks
 - langsmith-mcp-server: Production AI integration terminology choices
 
 **Scout Document Updates:**
+
 - Added Section 6: Additional Triangulation
 - Semantic analysis of why "session" doesn't fit
 - Developer learning journey analysis
@@ -3047,9 +3235,10 @@ why "projects" terminology was chosen over "sessions":
 
 Addresses PR feedback: https://github.com/codekiln/langstar/pull/575/files#r2592876275
 
-* 📚 docs(scout): clarify CLI intention to support project filtering by name
+- 📚 docs(scout): clarify CLI intention to support project filtering by name
 
 Added explicit "CLI Filtering Support" section showing intended usage:
+
 - langstar project list --name "exact-match"
 - langstar project list --name-contains "partial"
 
@@ -3057,10 +3246,11 @@ Makes it clear that CLI will expose API's name/name_contains query params.
 
 Addresses PR feedback: https://github.com/codekiln/langstar/pull/575/files#r2593016257
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs: validate Agent Server API OpenAPI spec for graph endpoints (#580)
 
 * 📚 docs: validate Agent Server API OpenAPI spec for graph endpoints
@@ -3095,19 +3285,22 @@ OpenAPI specification. All graph-related endpoints exist as documented:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: correct jq regex in graph-endpoint extraction
+- 🩹 fix: correct jq regex in graph-endpoint extraction
 
 Address PR review feedback:
-- Fix regex /assistants.*graph to /assistants.*/graph$ to exclude subgraphs
+
+- Fix regex /assistants._graph to /assistants._/graph$ to exclude subgraphs
 - Re-extract graph-endpoint.json with only /graph endpoint
 - Update size estimate in FRAGMENTS.md table
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: research --plain mode for AI-friendly CLI output (#583)
 
 Comprehensive research on scriptable CLI output approaches:
+
 - Survey of CLI precedents (gh, kubectl, AWS CLI)
 - Comparison of two design approaches
 - Recommendation: Extend -o/--output with text format and --columns
@@ -3119,6 +3312,7 @@ Closes #581
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(research): design AI agent DX for progressive disclosure testing docs (#582)
 
 * 📚 docs(research): design AI agent DX for progressive disclosure testing docs
@@ -3126,6 +3320,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #558
 
 Design document covering:
+
 - Progressive disclosure architecture for docs/dev/testing/
 - Agent reading workflow design for context window management
 - AGENTS.md integration pattern
@@ -3138,20 +3333,21 @@ Design document covering:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address review feedback on design document
+- 🩹 fix(docs): address review feedback on design document
 
-- Fixed token calculation consistency: Executive Summary now shows ~67%
+* Fixed token calculation consistency: Executive Summary now shows ~67%
   weighted average matching Section 6 analysis
-- Relaxed README TOC constraint from ~10 to ~15 lines to match actual
+* Relaxed README TOC constraint from ~10 to ~15 lines to match actual
   example content
-- Fixed nested markdown code block using 4-backtick fence
-- Clarified size limit template varies per file type
+* Fixed nested markdown code block using 4-backtick fence
+* Clarified size limit template varies per file type
 
 Addresses review comments on PR #582
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(research): document Python SDK projects precedent for Rust implementation (#603)
 
 Fixes #588
@@ -3166,6 +3362,7 @@ Add ability to suppress the warning that appears when both
 organization_id and workspace_id are set.
 
 Changes:
+
 - Add hide_workspace_and_org_id_message field to Config struct
 - Support LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE env var (accepts "1" or "true")
 - Update all three warning locations with suppression logic
@@ -3180,7 +3377,7 @@ Fixes #552
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(test): add env var parsing test coverage
+- 🩹 fix(test): add env var parsing test coverage
 
 Add comprehensive test for LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE
 environment variable parsing logic. Verifies parsing of both "1" and
@@ -3189,7 +3386,7 @@ as false.
 
 Addresses review feedback: https://github.com/codekiln/langstar/pull/553#discussion_r2590127677
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3207,6 +3404,7 @@ because the API only returned public prompts by default.
 
 Now properly passes `is_public` query parameter to the LangSmith API for
 server-side filtering:
+
 - is_public=true for Visibility::Public
 - is_public=false for Visibility::Private
 - No parameter for Visibility::Any (returns all)
@@ -3217,7 +3415,7 @@ Fixes #536
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): URL-encode query parameter in prompt search
+- 🩹 fix(sdk): URL-encode query parameter in prompt search
 
 Addresses review feedback to properly handle special characters
 in search queries by using urlencoding::encode().
@@ -3226,9 +3424,10 @@ in search queries by using urlencoding::encode().
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧪 test(cli): add CRUD lifecycle integration tests for prompt visibility
+- 🧪 test(cli): add CRUD lifecycle integration tests for prompt visibility
 
 Add integration tests that verify the issue #536 fix by:
+
 1. Using SDK to list private prompts and verify they exist
 2. Running CLI 'prompt list' without --public flag
 3. Verifying CLI returns the same prompts as SDK (non-zero count)
@@ -3242,15 +3441,16 @@ CLI + SDK Verification" described in issue #536.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style: format test file with cargo fmt
+- 🎨 style: format test file with cargo fmt
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧪 test(cli): rewrite CRUD lifecycle tests to follow proper C-R-U-D order
+- 🧪 test(cli): rewrite CRUD lifecycle tests to follow proper C-R-U-D order
 
 Address PR review feedback:
+
 - Tests now follow actual CRUD order: Create → Read → List → Delete
 - Tests create their own test prompts instead of relying on existing data
 - Removed user instructions - tests perform complete verification autonomously
@@ -3258,6 +3458,7 @@ Address PR review feedback:
 - Added CleanupGuard for proper test resource cleanup
 
 This properly validates the issue #536 fix by:
+
 1. Creating a private prompt via SDK
 2. Reading/verifying it exists via SDK
 3. Listing via CLI and asserting our prompt appears in private list
@@ -3265,7 +3466,7 @@ This properly validates the issue #536 fix by:
 
 Addresses PR review comments on test structure and CRUD lifecycle pattern.
 
-* 🩹 fix(test): skip CRUD lifecycle tests gracefully when env vars missing
+- 🩹 fix(test): skip CRUD lifecycle tests gracefully when env vars missing
 
 Tests now use `return` to skip instead of `panic!` when
 LANGSMITH_ORGANIZATION_ID is not set. This allows CI to pass
@@ -3273,6 +3474,7 @@ while still exercising the tests in environments with proper
 credentials configured.
 
 The key CRUD lifecycle pattern is preserved:
+
 - Create test prompt via SDK
 - Read/verify via SDK
 - List via CLI and assert prompt appears
@@ -3298,14 +3500,14 @@ Addresses PR #538 review feedback about test cleanup.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(tests): reduce API calls in CRUD lifecycle tests
+- ♻️ refactor(tests): reduce API calls in CRUD lifecycle tests
 
-- Step 3: Reduce --limit from 100 to 20 (new prompts at top of list)
-- Step 4: Reduce --limit from 100 to 5 (checking absence, small sample sufficient)
+* Step 3: Reduce --limit from 100 to 20 (new prompts at top of list)
+* Step 4: Reduce --limit from 100 to 5 (checking absence, small sample sufficient)
 
 Address PR comment: https://github.com/codekiln/langstar/pull/538#discussion_r2589424008
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3331,14 +3533,15 @@ Fixes #534
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): address review feedback on devcontainer version update
+- 🩹 fix(pr-workflow): address review feedback on devcontainer version update
 
-- Extract inline Python script to .github/scripts/update_devcontainer_version.py
-- Add comprehensive pytest tests (5 test cases covering success, errors, formatting)
-- Fix heredoc variable expansion issue by passing version as CLI arg
-- Add test step in workflow to run pytest before update
+* Extract inline Python script to .github/scripts/update_devcontainer_version.py
+* Add comprehensive pytest tests (5 test cases covering success, errors, formatting)
+* Fix heredoc variable expansion issue by passing version as CLI arg
+* Add test step in workflow to run pytest before update
 
 This addresses review comments:
+
 - Copilot: Fixed heredoc single-quote issue preventing $NEW_VERSION expansion
 - @codekiln: Extracted script to separate file with tests for better testability
 
@@ -3348,16 +3551,17 @@ Addresses review comments in PR #537
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔄 chore: trigger CI to test integration test status
+- 🔄 chore: trigger CI to test integration test status
 
 After documenting integration test issues in #524, triggering CI
 to verify current state.
 
 Related to #524
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ♻️ refactor(tests): consolidate test deployment naming to two types (#539)
 
 * 🩹 fix(tests): expand cleanup patterns and improve 409 error handling
@@ -3365,8 +3569,10 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #524
 
 ## Bug #1: Cleanup workflow misses test deployments
+
 The cleanup workflow only searched for `--name-contains "integration-test"`
 but missed other test deployment patterns:
+
 - `langstar-test-*` (SDK CLI testing workspace tests)
 - `cli-test-*` (CLI graph command tests)
 
@@ -3374,6 +3580,7 @@ Updated workflow to search multiple patterns and merge results with
 deduplication.
 
 ## Bug #2: Unhelpful 409 conflict errors
+
 When orphaned LangSmith tracing projects block deployment creation,
 the error was generic. Added detection for tracing project conflicts
 with actionable guidance on how to resolve by manually deleting the
@@ -3383,14 +3590,16 @@ orphaned project in LangSmith UI.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔄 chore: retrigger CI after manual cleanup of orphaned tracing project
+- 🔄 chore: retrigger CI after manual cleanup of orphaned tracing project
 
-* 📚 docs: research and implementation plan for test deployment naming consolidation
+- 📚 docs: research and implementation plan for test deployment naming consolidation
 
 Fixes #524 (documentation phase)
 
 ## Research Document
+
 `reference/research/524-integration-test-deployment-consolidation.md`
+
 - Inventories all testing documentation (8 files)
 - Documents CI workflows for integration testing
 - Catalogs all 8 current deployment naming patterns
@@ -3398,7 +3607,9 @@ Fixes #524 (documentation phase)
 - Documents the problem: inconsistent naming, cleanup gaps
 
 ## Implementation Plan
+
 `docs/implementation/524-test-deployment-naming-consolidation.md`
+
 - Consolidates to exactly 2 deployment types:
   - `pr-integration-test-{ts}` - shared via get-or-create by prefix
   - `release-integration-test-{ts}` - always fresh, self-deleting
@@ -3413,16 +3624,17 @@ Fixes #524 (documentation phase)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: fix prefix matching for backward compatibility
+- 📚 docs: fix prefix matching for backward compatibility
 
 Update implementation plan so prefix search matches both:
+
 - Old: `pr-integration-test` (no timestamp)
 - New: `pr-integration-test-{timestamp}`
 
 By using prefix without trailing hyphen, existing deployments
 will be found and reused during migration.
 
-* ♻️ refactor(tests): consolidate test deployment naming to two types
+- ♻️ refactor(tests): consolidate test deployment naming to two types
 
 Implements the deployment naming consolidation from #524:
 
@@ -3438,6 +3650,7 @@ Implements the deployment naming consolidation from #524:
 - Update sdk/tests/README.md and cli/tests/README.md documentation
 
 The two standardized deployment types are:
+
 - pr-integration-test-{ts}: Shared via get-or-create by prefix, cleaned by cron
 - release-integration-test-{ts}: Always fresh, self-deleting
 
@@ -3447,17 +3660,17 @@ Fixes #524
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): return actual deployment name from get_or_create_deployment
+- 🩹 fix(tests): return actual deployment name from get_or_create_deployment
 
-- Updated get_or_create_deployment() to return (id, revision_id, name)
-- CLI fixture now uses actual deployment name instead of config name
-- Fixes CI test failure when prefix-based reuse finds different name
-- Addressed review comments:
+* Updated get_or_create_deployment() to return (id, revision_id, name)
+* CLI fixture now uses actual deployment name instead of config name
+* Fixes CI test failure when prefix-based reuse finds different name
+* Addressed review comments:
   - Case-insensitive tracing project conflict check
   - Truncate long deployment names in diagnostic box
   - Remove stderr suppression in cleanup workflow
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3470,6 +3683,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #528
 
 Documents how to list LangGraph graphs within deployments:
+
 - Graphs discovered via assistants (no direct /graphs endpoint)
 - API endpoints and authentication patterns
 - Recommended SDK/CLI implementation approach
@@ -3478,14 +3692,15 @@ Documents how to list LangGraph graphs within deployments:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Apply suggestion from @Copilot
+- fix: Apply suggestion from @Copilot
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* 📚 docs: add implementation roadmap to graph API research
+- 📚 docs: add implementation roadmap to graph API research
 
 Replaces generic next steps with detailed phase analysis following
 the standard feature development process. Includes:
+
 - Phase status table mapping to 10-phase process
 - Recommended sub-issues with scope and deliverables
 - Special considerations for Agent Server API validation
@@ -3496,10 +3711,11 @@ the standard feature development process. Includes:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: clarify clean migration approach (no backward compat)
+- 📚 docs: clarify clean migration approach (no backward compat)
 
 Breaking change: `langstar graph` → `langstar deployment` for listing
 deployments. After migration:
+
 - `langstar deployment list` - Control Plane API (deployments)
 - `langstar graph list <deployment>` - Agent Server API (graphs)
 
@@ -3507,11 +3723,11 @@ deployments. After migration:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback on naming consistency
+- 🩹 fix: address Copilot review feedback on naming consistency
 
-- Standardized column name to "Count" across all tables
-- Fixed path reference to use consistent openapi location
-- Aligned table column widths
+* Standardized column name to "Count" across all tables
+* Fixed path reference to use consistent openapi location
+* Aligned table column widths
 
 Addresses review comments on PR #532
 
@@ -3519,7 +3735,7 @@ Addresses review comments on PR #532
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: use correct AssistantClient name (singular)
+- 🩹 fix: use correct AssistantClient name (singular)
 
 Fixes struct name to match actual codebase implementation.
 The SDK uses `AssistantClient` (singular), not `AssistantsClient`.
@@ -3528,10 +3744,11 @@ The SDK uses `AssistantClient` (singular), not `AssistantsClient`.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs(research): scout report for langstar auto-update feasibility (#540)
 
 * 📚 docs(research): scout report for langstar auto-update feasibility
@@ -3539,12 +3756,14 @@ Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 Fixes #535
 
 Research findings:
+
 - Self-update is feasible using `self_update` Rust crate
 - Existing GitHub releases infrastructure is compatible
 - Estimated scope: small (1-2 implementation phases)
 - Recommendation: GO
 
 Key findings:
+
 - self_update crate provides GitHub releases backend
 - Langstar asset naming already matches expected convention
 - SHA256 checksums already available for verification
@@ -3554,18 +3773,19 @@ Key findings:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update docs/research/535-langstar-auto-update-scout.md
+- fix: Update docs/research/535-langstar-auto-update-scout.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update docs/research/535-langstar-auto-update-scout.md
+- fix: Update docs/research/535-langstar-auto-update-scout.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs(research): Rust project self-update precedents addendum (#548)
 
 * 📚 docs(research): Rust project self-update precedents addendum
@@ -3584,9 +3804,10 @@ Fixes #542
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(research): add mise self-update implementation notes
+- 📚 docs(research): add mise self-update implementation notes
 
 Documents jdx/mise as a production reference for langstar auto-update:
+
 - Complete self_update crate v0.42 integration
 - Package manager detection via file-based markers
 - Binary signature verification with zipsign
@@ -3599,12 +3820,13 @@ Key patterns to adopt for langstar identified.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(research): add mise as production self-update reference
+- 📚 docs(research): add mise as production self-update reference
 
 Updates research addendum to include jdx/mise as Section 4,
 a production-proven implementation using self_update crate.
 
 Key patterns documented:
+
 - File-based package manager detection
 - Binary signature verification with zipsign
 - Feature-gated implementation
@@ -3614,7 +3836,7 @@ Key patterns documented:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: cite DeepWiki as source for mise research
+- 📚 docs: cite DeepWiki as source for mise research
 
 Adds citation to DeepWiki Q&A page that provided initial research
 on mise's self-update implementation.
@@ -3623,7 +3845,7 @@ on mise's self-update implementation.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3636,11 +3858,13 @@ Co-authored-by: Claude <noreply@anthropic.com>
 * ✨ feat(cli): implement workspace secrets CLI commands
 
 Implements three CLI commands for secure workspace secrets management:
+
 - langstar secrets list: Lists secret keys (values never displayed)
 - langstar secrets set: Creates/updates secrets with secure input methods
 - langstar secrets delete: Deletes secrets
 
 Security features (per Phase 1.5 requirements):
+
 - Multiple secure input methods: --from-file, --from-env, --interactive, stdin
 - NO --value flag (security violation per #488)
 - Never outputs secret values in any command output
@@ -3652,19 +3876,20 @@ Fixes #493
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback on secrets commands
+- 🩹 fix: address Copilot review feedback on secrets commands
 
-- Add mutual exclusivity enforcement for input method flags using
+* Add mutual exclusivity enforcement for input method flags using
   `conflicts_with_all` attributes. This prevents user confusion when
   multiple flags are provided.
-- Add comprehensive CLI test coverage in secrets_command_test.rs:
-  * Help text verification for all subcommands
-  * Argument parsing validation
-  * Security feature validation (no --value flag)
-  * Mutual exclusivity tests for input flags
-  * Output format option tests
+* Add comprehensive CLI test coverage in secrets_command_test.rs:
+  - Help text verification for all subcommands
+  - Argument parsing validation
+  - Security feature validation (no --value flag)
+  - Mutual exclusivity tests for input flags
+  - Output format option tests
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/523#discussion_r2584345745
 - https://github.com/codekiln/langstar/pull/523#discussion_r2584345766
 
@@ -3682,6 +3907,7 @@ correctly, without caring about command success/failure. This makes
 tests work in both unit and integration environments.
 
 Fixes:
+
 - test_secrets_list_accepts_format_flag
 - test_secrets_set_accepts_format_flag
 - test_secrets_delete_accepts_format_flag
@@ -3693,9 +3919,9 @@ version in Cargo.lock (7.4.0). This eliminates the version mismatch.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/523/files#r2584418901
 
-* 🔧 build: update Cargo.lock after rpassword version bump
+- 🔧 build: update Cargo.lock after rpassword version bump
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3731,6 +3957,7 @@ Key changes:
 4. **Net reduction of ~120 lines** by eliminating duplicated logic
 
 Benefits:
+
 - Single source of truth for test fixture logic
 - Proper handling of in-progress deployments (fixes race conditions)
 - Consistent behavior between SDK and CLI tests
@@ -3740,7 +3967,7 @@ Benefits:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): add #[allow(dead_code)] to unused fixture method
+- 🩹 fix(ci): add #[allow(dead_code)] to unused fixture method
 
 Addresses Clippy warning: `create_with_timestamp` is never used but is
 intentionally provided as part of the fixtures API for tests that need
@@ -3750,12 +3977,13 @@ unique timestamp-based deployment names.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): use DEPLOYED terminology consistently
+- 🩹 fix(docs): use DEPLOYED terminology consistently
 
 Addresses Copilot review comments - terminology should match
 `RevisionStatus::Deployed` enum variant, not "READY".
 
 Changes:
+
 - sdk/src/test_utils.rs: Updated doc comments and log messages
 - cli/tests/common/fixtures.rs: Updated doc comment
 
@@ -3763,7 +3991,7 @@ Changes:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): use constant deployment name for proper reuse
+- 🩹 fix(tests): use constant deployment name for proper reuse
 
 The get-or-create pattern requires a constant deployment name to
 find and reuse existing deployments. Using std::process::id() in
@@ -3777,13 +4005,15 @@ to enable the same behavior as the SDK's "langstar-integration-test".
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(tests): unify deployment naming for SDK/CLI tests
+- ♻️ refactor(tests): unify deployment naming for SDK/CLI tests
 
 Implement consistent naming convention for test deployments:
+
 - `pr-integration-test`: Constant name for PR/development testing (reused)
 - `release-integration-test-{timestamp}`: Unique name for release lifecycle tests
 
 Changes:
+
 - SDK: Default config uses "pr-integration-test" for deployment reuse
 - SDK: Add TestDeploymentConfig::for_release_tests() for lifecycle testing
 - CLI: Use SDK default config instead of custom naming
@@ -3797,13 +4027,15 @@ API quota usage and speeding up test execution.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add canonical deployment vs revision status documentation
+- 📚 docs: add canonical deployment vs revision status documentation
 
 Create single source of truth for LangGraph Cloud status terminology:
+
 - DeploymentStatus (terminal: Ready) - overall deployment state
 - RevisionStatus (terminal: Deployed) - build/deploy state of a revision
 
 Files:
+
 - docs/langgraph-deployments-and-revisions.md: canonical reference
 - sdk/tests/README.md: add key concepts section with link
 - sdk/src/test_utils.rs: update module and function docs
@@ -3816,34 +4048,38 @@ canonical documentation.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct factual inaccuracies in sdk/tests/README.md
+- 🩹 fix(docs): correct factual inaccuracies in sdk/tests/README.md
 
-- Fix link path: ../docs/ → ../../docs/ (relative to sdk/tests/)
-- Clarify deployment naming: document both pr-integration-test and
+* Fix link path: ../docs/ → ../../docs/ (relative to sdk/tests/)
+* Clarify deployment naming: document both pr-integration-test and
   langstar-integration-test are used by different test files
-- Update CI/CD section: tests DO run in CI (was incorrectly stated as not)
-- Update best practices example to use pr-integration-test
+* Update CI/CD section: tests DO run in CI (was incorrectly stated as not)
+* Update best practices example to use pr-integration-test
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr): address review feedback
+- 🩹 fix(pr): address review feedback
 
 Cleanup workflow:
+
 - Simplify to use --name-contains "integration-test" for all patterns
 - Remove legacy test-deployment-* section (already cleaned up)
 - Fix comments to clarify pr-integration-test IS cleaned up when stale
 
 Documentation:
+
 - Remove "single source of truth" phrasing (Rust files are canonical)
 - Remove "Test Fixtures Behavior" section from user-facing docs
 
 SDK test_utils:
+
 - Clarify disarm() doc: "suppress warning" not "prevent cleanup"
 - Fix Drop message prefix for consistency
 
 CLI fixtures:
+
 - Rename test_fixture_lifecycle → test_fixture_creation (accurate name)
 - Remove unused create_for_release() function (dead code)
 
@@ -3851,7 +4087,7 @@ CLI fixtures:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): remove obsolete LANGGRAPH_GITHUB_INTEGRATION_ID from required secrets
+- 🩹 fix(docs): remove obsolete LANGGRAPH_GITHUB_INTEGRATION_ID from required secrets
 
 The integration ID is now discovered via find_integration_for_repo() API,
 so the env var workaround is no longer required.
@@ -3860,7 +4096,7 @@ so the env var workaround is no longer required.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3875,6 +4111,7 @@ Closes #495
 ## Summary
 
 Comprehensive user documentation for workspace secrets management, covering:
+
 - CLI commands with secure input methods (interactive, file, env, stdin)
 - SDK usage with code examples
 - Security best practices and anti-patterns
@@ -3911,9 +4148,10 @@ Comprehensive user documentation for workspace secrets management, covering:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔒 security(docs): fix stdin piping example to avoid process exposure
+- 🔒 security(docs): fix stdin piping example to avoid process exposure
 
 Replace `echo "$MY_SECRET" | langstar secrets set` with safer alternatives:
+
 - Use `--from-env` flag for environment variables
 - Pipe from secure files with restricted permissions
 - Pipe from password managers
@@ -3926,7 +4164,7 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/525#discussi
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -3945,6 +4183,7 @@ Implement test runtime tracking using cargo-nextest for better CI visibility:
 - Update docs/dev/ci-cd.md with nextest usage documentation
 
 Benefits:
+
 - Per-test execution times visible in PR comments
 - JUnit XML reports for historical analysis
 - Up to 3x faster test execution through better parallelization
@@ -3956,14 +4195,14 @@ Fixes #516
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): add permissions and improve test result publishing
+- 🩹 fix(ci): add permissions and improve test result publishing
 
-- Add workflow permissions for publish-unit-test-result-action
+* Add workflow permissions for publish-unit-test-result-action
   - checks: write for creating check runs
   - pull-requests: write for PR comments
-- Add debug step to list nextest output files
-- Set action_fail_on_inconclusive: false to prevent failure on missing results
-- Add if-no-files-found: warn to artifact upload step
+* Add debug step to list nextest output files
+* Set action_fail_on_inconclusive: false to prevent failure on missing results
+* Add if-no-files-found: warn to artifact upload step
 
 Addresses CI failure in PR #521
 
@@ -3971,12 +4210,13 @@ Addresses CI failure in PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): correct JUnit XML output paths for nextest
+- 🩹 fix(ci): correct JUnit XML output paths for nextest
 
 The nextest junit path was incorrectly combining with the store directory,
 resulting in nested paths like `target/nextest/ci/target/nextest/ci/junit.xml`.
 
 Changed JUnit output paths to workspace root:
+
 - Unit tests: junit-ci.xml
 - Integration tests: junit-integration.xml
 
@@ -3986,12 +4226,13 @@ Updated CI workflow and documentation to use new paths.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): correct JUnit XML paths to include nextest store directory
+- 🩹 fix(ci): correct JUnit XML paths to include nextest store directory
 
 The nextest junit files are created inside the profile subdirectory
 of the store directory (target/nextest/<profile>/junit-<profile>.xml).
 
 Updated CI workflow and documentation to use correct paths:
+
 - Unit tests: target/nextest/ci/junit-ci.xml
 - Integration tests: target/nextest/integration/junit-integration.xml
 
@@ -3999,9 +4240,10 @@ Updated CI workflow and documentation to use correct paths:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: clarify slow-timeout comment in nextest config
+- 🩹 fix: clarify slow-timeout comment in nextest config
 
 The comment was misleading. Clarified that slow-timeout works in periods:
+
 - Warns after 60s (1 period)
 - Terminates after 2 periods (120s total)
 
@@ -4011,12 +4253,12 @@ Addresses Copilot review comment on PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback
+- 🩹 fix: address Copilot review feedback
 
-- Fix misleading comments in nextest.toml about JUnit XML paths
+* Fix misleading comments in nextest.toml about JUnit XML paths
   (paths are relative to store dir + profile subdir, not workspace root)
-- Update debug steps in CI workflow to check correct file locations
-- Clarify #[serial] comment: serial_test works with nextest because
+* Update debug steps in CI workflow to check correct file locations
+* Clarify #[serial] comment: serial_test works with nextest because
   each test runs in its own process
 
 Addresses Copilot review comments on PR #521
@@ -4025,9 +4267,10 @@ Addresses Copilot review comments on PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🧪 test(secrets): comprehensive testing for workspace secrets (#530)
 
 * 🧪 test(secrets): comprehensive testing for workspace secrets
@@ -4035,6 +4278,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Adds comprehensive test coverage for workspace secrets SDK and CLI per issue #494 requirements:
 
 **SDK Integration Tests** (sdk/tests/secrets_integration_test.rs):
+
 - List workspace secrets API validation
 - Create/update secret via upsert operation
 - Batch upsert of multiple secrets
@@ -4044,6 +4288,7 @@ Adds comprehensive test coverage for workspace secrets SDK and CLI per issue #49
 - Type serialization compatibility tests
 
 **CLI Security Validation Tests** (cli/tests/secrets_command_test.rs):
+
 - Verify no secret leakage in command output
 - Verify no secret leakage in error messages
 - Verify help text security messaging
@@ -4060,12 +4305,13 @@ Fixes #494
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): address Copilot review feedback
+- 🩹 fix(tests): address Copilot review feedback
 
-- Use unique env var name with PID and timestamp to avoid parallel test conflicts
-- Update section header to accurately reflect tests cover all input methods
+* Use unique env var name with PID and timestamp to avoid parallel test conflicts
+* Update section header to accurately reflect tests cover all input methods
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/530#discussion_r2585504645
 - https://github.com/codekiln/langstar/pull/530#discussion_r2585504675
 
@@ -4073,7 +4319,7 @@ Addresses review comments:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -4086,11 +4332,13 @@ Co-authored-by: Claude <noreply@anthropic.com>
 * ✨ feat(cli): implement workspace secrets CLI commands
 
 Implements three CLI commands for secure workspace secrets management:
+
 - langstar secrets list: Lists secret keys (values never displayed)
 - langstar secrets set: Creates/updates secrets with secure input methods
 - langstar secrets delete: Deletes secrets
 
 Security features (per Phase 1.5 requirements):
+
 - Multiple secure input methods: --from-file, --from-env, --interactive, stdin
 - NO --value flag (security violation per #488)
 - Never outputs secret values in any command output
@@ -4102,19 +4350,20 @@ Fixes #493
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback on secrets commands
+- 🩹 fix: address Copilot review feedback on secrets commands
 
-- Add mutual exclusivity enforcement for input method flags using
+* Add mutual exclusivity enforcement for input method flags using
   `conflicts_with_all` attributes. This prevents user confusion when
   multiple flags are provided.
-- Add comprehensive CLI test coverage in secrets_command_test.rs:
-  * Help text verification for all subcommands
-  * Argument parsing validation
-  * Security feature validation (no --value flag)
-  * Mutual exclusivity tests for input flags
-  * Output format option tests
+* Add comprehensive CLI test coverage in secrets_command_test.rs:
+  - Help text verification for all subcommands
+  - Argument parsing validation
+  - Security feature validation (no --value flag)
+  - Mutual exclusivity tests for input flags
+  - Output format option tests
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/523#discussion_r2584345745
 - https://github.com/codekiln/langstar/pull/523#discussion_r2584345766
 
@@ -4132,6 +4381,7 @@ correctly, without caring about command success/failure. This makes
 tests work in both unit and integration environments.
 
 Fixes:
+
 - test_secrets_list_accepts_format_flag
 - test_secrets_set_accepts_format_flag
 - test_secrets_delete_accepts_format_flag
@@ -4143,9 +4393,9 @@ version in Cargo.lock (7.4.0). This eliminates the version mismatch.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/523/files#r2584418901
 
-* 🔧 build: update Cargo.lock after rpassword version bump
+- 🔧 build: update Cargo.lock after rpassword version bump
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -4181,6 +4431,7 @@ Key changes:
 4. **Net reduction of ~120 lines** by eliminating duplicated logic
 
 Benefits:
+
 - Single source of truth for test fixture logic
 - Proper handling of in-progress deployments (fixes race conditions)
 - Consistent behavior between SDK and CLI tests
@@ -4190,7 +4441,7 @@ Benefits:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): add #[allow(dead_code)] to unused fixture method
+- 🩹 fix(ci): add #[allow(dead_code)] to unused fixture method
 
 Addresses Clippy warning: `create_with_timestamp` is never used but is
 intentionally provided as part of the fixtures API for tests that need
@@ -4200,12 +4451,13 @@ unique timestamp-based deployment names.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): use DEPLOYED terminology consistently
+- 🩹 fix(docs): use DEPLOYED terminology consistently
 
 Addresses Copilot review comments - terminology should match
 `RevisionStatus::Deployed` enum variant, not "READY".
 
 Changes:
+
 - sdk/src/test_utils.rs: Updated doc comments and log messages
 - cli/tests/common/fixtures.rs: Updated doc comment
 
@@ -4213,7 +4465,7 @@ Changes:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): use constant deployment name for proper reuse
+- 🩹 fix(tests): use constant deployment name for proper reuse
 
 The get-or-create pattern requires a constant deployment name to
 find and reuse existing deployments. Using std::process::id() in
@@ -4227,13 +4479,15 @@ to enable the same behavior as the SDK's "langstar-integration-test".
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(tests): unify deployment naming for SDK/CLI tests
+- ♻️ refactor(tests): unify deployment naming for SDK/CLI tests
 
 Implement consistent naming convention for test deployments:
+
 - `pr-integration-test`: Constant name for PR/development testing (reused)
 - `release-integration-test-{timestamp}`: Unique name for release lifecycle tests
 
 Changes:
+
 - SDK: Default config uses "pr-integration-test" for deployment reuse
 - SDK: Add TestDeploymentConfig::for_release_tests() for lifecycle testing
 - CLI: Use SDK default config instead of custom naming
@@ -4247,13 +4501,15 @@ API quota usage and speeding up test execution.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add canonical deployment vs revision status documentation
+- 📚 docs: add canonical deployment vs revision status documentation
 
 Create single source of truth for LangGraph Cloud status terminology:
+
 - DeploymentStatus (terminal: Ready) - overall deployment state
 - RevisionStatus (terminal: Deployed) - build/deploy state of a revision
 
 Files:
+
 - docs/langgraph-deployments-and-revisions.md: canonical reference
 - sdk/tests/README.md: add key concepts section with link
 - sdk/src/test_utils.rs: update module and function docs
@@ -4266,34 +4522,38 @@ canonical documentation.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct factual inaccuracies in sdk/tests/README.md
+- 🩹 fix(docs): correct factual inaccuracies in sdk/tests/README.md
 
-- Fix link path: ../docs/ → ../../docs/ (relative to sdk/tests/)
-- Clarify deployment naming: document both pr-integration-test and
+* Fix link path: ../docs/ → ../../docs/ (relative to sdk/tests/)
+* Clarify deployment naming: document both pr-integration-test and
   langstar-integration-test are used by different test files
-- Update CI/CD section: tests DO run in CI (was incorrectly stated as not)
-- Update best practices example to use pr-integration-test
+* Update CI/CD section: tests DO run in CI (was incorrectly stated as not)
+* Update best practices example to use pr-integration-test
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr): address review feedback
+- 🩹 fix(pr): address review feedback
 
 Cleanup workflow:
+
 - Simplify to use --name-contains "integration-test" for all patterns
 - Remove legacy test-deployment-* section (already cleaned up)
 - Fix comments to clarify pr-integration-test IS cleaned up when stale
 
 Documentation:
+
 - Remove "single source of truth" phrasing (Rust files are canonical)
 - Remove "Test Fixtures Behavior" section from user-facing docs
 
 SDK test_utils:
+
 - Clarify disarm() doc: "suppress warning" not "prevent cleanup"
 - Fix Drop message prefix for consistency
 
 CLI fixtures:
+
 - Rename test_fixture_lifecycle → test_fixture_creation (accurate name)
 - Remove unused create_for_release() function (dead code)
 
@@ -4301,7 +4561,7 @@ CLI fixtures:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): remove obsolete LANGGRAPH_GITHUB_INTEGRATION_ID from required secrets
+- 🩹 fix(docs): remove obsolete LANGGRAPH_GITHUB_INTEGRATION_ID from required secrets
 
 The integration ID is now discovered via find_integration_for_repo() API,
 so the env var workaround is no longer required.
@@ -4310,7 +4570,7 @@ so the env var workaround is no longer required.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -4325,6 +4585,7 @@ Closes #495
 ## Summary
 
 Comprehensive user documentation for workspace secrets management, covering:
+
 - CLI commands with secure input methods (interactive, file, env, stdin)
 - SDK usage with code examples
 - Security best practices and anti-patterns
@@ -4361,9 +4622,10 @@ Comprehensive user documentation for workspace secrets management, covering:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔒 security(docs): fix stdin piping example to avoid process exposure
+- 🔒 security(docs): fix stdin piping example to avoid process exposure
 
 Replace `echo "$MY_SECRET" | langstar secrets set` with safer alternatives:
+
 - Use `--from-env` flag for environment variables
 - Pipe from secure files with restricted permissions
 - Pipe from password managers
@@ -4376,7 +4638,7 @@ Addresses review comment: https://github.com/codekiln/langstar/pull/525#discussi
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -4395,6 +4657,7 @@ Implement test runtime tracking using cargo-nextest for better CI visibility:
 - Update docs/dev/ci-cd.md with nextest usage documentation
 
 Benefits:
+
 - Per-test execution times visible in PR comments
 - JUnit XML reports for historical analysis
 - Up to 3x faster test execution through better parallelization
@@ -4406,14 +4669,14 @@ Fixes #516
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): add permissions and improve test result publishing
+- 🩹 fix(ci): add permissions and improve test result publishing
 
-- Add workflow permissions for publish-unit-test-result-action
+* Add workflow permissions for publish-unit-test-result-action
   - checks: write for creating check runs
   - pull-requests: write for PR comments
-- Add debug step to list nextest output files
-- Set action_fail_on_inconclusive: false to prevent failure on missing results
-- Add if-no-files-found: warn to artifact upload step
+* Add debug step to list nextest output files
+* Set action_fail_on_inconclusive: false to prevent failure on missing results
+* Add if-no-files-found: warn to artifact upload step
 
 Addresses CI failure in PR #521
 
@@ -4421,12 +4684,13 @@ Addresses CI failure in PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): correct JUnit XML output paths for nextest
+- 🩹 fix(ci): correct JUnit XML output paths for nextest
 
 The nextest junit path was incorrectly combining with the store directory,
 resulting in nested paths like `target/nextest/ci/target/nextest/ci/junit.xml`.
 
 Changed JUnit output paths to workspace root:
+
 - Unit tests: junit-ci.xml
 - Integration tests: junit-integration.xml
 
@@ -4436,12 +4700,13 @@ Updated CI workflow and documentation to use new paths.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): correct JUnit XML paths to include nextest store directory
+- 🩹 fix(ci): correct JUnit XML paths to include nextest store directory
 
 The nextest junit files are created inside the profile subdirectory
 of the store directory (target/nextest/<profile>/junit-<profile>.xml).
 
 Updated CI workflow and documentation to use correct paths:
+
 - Unit tests: target/nextest/ci/junit-ci.xml
 - Integration tests: target/nextest/integration/junit-integration.xml
 
@@ -4449,9 +4714,10 @@ Updated CI workflow and documentation to use correct paths:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: clarify slow-timeout comment in nextest config
+- 🩹 fix: clarify slow-timeout comment in nextest config
 
 The comment was misleading. Clarified that slow-timeout works in periods:
+
 - Warns after 60s (1 period)
 - Terminates after 2 periods (120s total)
 
@@ -4461,12 +4727,12 @@ Addresses Copilot review comment on PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback
+- 🩹 fix: address Copilot review feedback
 
-- Fix misleading comments in nextest.toml about JUnit XML paths
+* Fix misleading comments in nextest.toml about JUnit XML paths
   (paths are relative to store dir + profile subdir, not workspace root)
-- Update debug steps in CI workflow to check correct file locations
-- Clarify #[serial] comment: serial_test works with nextest because
+* Update debug steps in CI workflow to check correct file locations
+* Clarify #[serial] comment: serial_test works with nextest because
   each test runs in its own process
 
 Addresses Copilot review comments on PR #521
@@ -4475,9 +4741,10 @@ Addresses Copilot review comments on PR #521
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🧪 test(secrets): comprehensive testing for workspace secrets (#530)
 
 * 🧪 test(secrets): comprehensive testing for workspace secrets
@@ -4485,6 +4752,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Adds comprehensive test coverage for workspace secrets SDK and CLI per issue #494 requirements:
 
 **SDK Integration Tests** (sdk/tests/secrets_integration_test.rs):
+
 - List workspace secrets API validation
 - Create/update secret via upsert operation
 - Batch upsert of multiple secrets
@@ -4494,6 +4762,7 @@ Adds comprehensive test coverage for workspace secrets SDK and CLI per issue #49
 - Type serialization compatibility tests
 
 **CLI Security Validation Tests** (cli/tests/secrets_command_test.rs):
+
 - Verify no secret leakage in command output
 - Verify no secret leakage in error messages
 - Verify help text security messaging
@@ -4510,12 +4779,13 @@ Fixes #494
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): address Copilot review feedback
+- 🩹 fix(tests): address Copilot review feedback
 
-- Use unique env var name with PID and timestamp to avoid parallel test conflicts
-- Update section header to accurately reflect tests cover all input methods
+* Use unique env var name with PID and timestamp to avoid parallel test conflicts
+* Update section header to accurately reflect tests cover all input methods
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/530#discussion_r2585504645
 - https://github.com/codekiln/langstar/pull/530#discussion_r2585504675
 
@@ -4523,7 +4793,7 @@ Addresses review comments:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -4545,24 +4815,25 @@ Co-authored-by: Claude <noreply@anthropic.com>
 
 Fixes #440
 
-* 🩹 fix(slash-command): address review feedback on ls-release-milestone
+- 🩹 fix(slash-command): address review feedback on ls-release-milestone
 
-- Reordered steps: repository detection now Step 1, argument parsing Step 2
-- Fixed argument parsing to handle milestone names with spaces using read -r
-- Updated gh-sub-issue extension URL from placeholder to actual URL
-- Simplified redundant release link text in milestone and issue comments
-- Optimized jq pipeline to avoid unnecessary expansion and re-slurping
-- Replaced interactive read prompt with FORCE_RELEASE environment variable
-- Fixed documentation placeholder from {owner}/{repo} to $OWNER/$REPO with example
+* Reordered steps: repository detection now Step 1, argument parsing Step 2
+* Fixed argument parsing to handle milestone names with spaces using read -r
+* Updated gh-sub-issue extension URL from placeholder to actual URL
+* Simplified redundant release link text in milestone and issue comments
+* Optimized jq pipeline to avoid unnecessary expansion and re-slurping
+* Replaced interactive read prompt with FORCE_RELEASE environment variable
+* Fixed documentation placeholder from {owner}/{repo} to $OWNER/$REPO with example
 
 Addresses review comments from GitHub Copilot on PR #442
 
-* 🩹 fix(slash-command): add argument hints to frontmatter
+- 🩹 fix(slash-command): add argument hints to frontmatter
 
 Added `args: <milestone> <version>` to frontmatter for better
 slash command autocomplete and documentation.
 
 Addresses review comment on PR #442
+
 - ✨ feat(slash-command): add /gh-start-issue command for automated issue workflow (#460)
 
 * ✨ feat(slash-command): add /gh-start-issue command for automated issue workflow
@@ -4581,34 +4852,38 @@ Fixes #458
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(slash-command): address review feedback on gh-start-issue
+- 🩹 fix(slash-command): address review feedback on gh-start-issue
 
-- Add frontmatter fields (argument-hint, allowed-tools) per best practices
-- Fix inconsistent terminology: use "tmux window" not "pane"
-- Add null handling for issue body display
-- Add validation for empty slug edge case
-- Improve error message to cover both local and remote branch deletion
+* Add frontmatter fields (argument-hint, allowed-tools) per best practices
+* Fix inconsistent terminology: use "tmux window" not "pane"
+* Add null handling for issue body display
+* Add validation for empty slug edge case
+* Improve error message to cover both local and remote branch deletion
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/460#discussion_r2573933540
 - https://github.com/codekiln/langstar/pull/460#discussion_r2573933566
 - https://github.com/codekiln/langstar/pull/460#discussion_r2573933579
 - https://github.com/codekiln/langstar/pull/460#discussion_r2573933619
 - https://github.com/codekiln/langstar/pull/460#discussion_r2573935274
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(tmux): add phase-aware status indicators with i/pr distinction (#486)
 
 * ✨ feat(tmux): add phase-based status indicators for issue workflow
 
 Improves tmux window naming to maximize information density:
+
 - Format: <emoji><issue_num> (e.g., 💻483, ⏳483, 🚀483)
 - First character: emoji status indicator (7 lifecycle phases)
 - Characters 2-5: GitHub issue number
 
 Phase emojis:
+
 - 🔍 gathering information
 - 💻 coding (set by /gh-start-issue)
 - ⏳ waiting for tests
@@ -4618,6 +4893,7 @@ Phase emojis:
 - 🧹 cleanup
 
 Changes:
+
 - .claude/commands/gh-start-issue.md: Set tmux to 💻<issue_num> on start
 - .claude/commands/pr-workflow.md: Add tmux status updates through workflow
 - .claude/skills/pr-lifecycle/SKILL.md: Document tmux naming convention
@@ -4628,9 +4904,10 @@ Fixes #483
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style(tmux): add visual highlighting for active window/pane
+- 🎨 style(tmux): add visual highlighting for active window/pane
 
 Enhances tmux visibility by highlighting the currently focused window:
+
 - Active window: blue background with white bold text
 - Inactive windows: default background
 - Active pane border: bright blue
@@ -4644,28 +4921,32 @@ context-switching errors.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♿ a11y(tmux): ensure WCAG 2.1 AAA compliance for all colors
+- ♿ a11y(tmux): ensure WCAG 2.1 AAA compliance for all colors
 
 Updates all tmux window and status bar colors to meet WCAG 2.1 Level AAA
 accessibility standards (7:1 contrast ratio minimum):
 
 Active window:
+
 - Background: colour17 (#00005f, navy blue)
 - Foreground: colour15 (white)
 - Contrast ratio: ~12:1 ✓ WCAG AAA
 
 Inactive windows:
+
 - Background: colour235 (#262626, dark grey)
 - Foreground: colour250 (#bcbcbc, light grey)
 - Contrast ratio: ~10:1 ✓ WCAG AAA
 
 Status bar:
+
 - Background: colour235 (dark grey)
 - Text: colour15 (white)
 - Session name: colour46 (bright green)
 - Contrast ratios: 9-10:1 ✓ WCAG AAA
 
 Pane borders:
+
 - Active: colour39 (#00afff, bright cyan-blue) for high visibility
 - Inactive: colour240 (dark grey) for subtle distinction
 
@@ -4677,16 +4958,18 @@ and in various lighting conditions.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(tmux): distinguish issues from PRs with i/pr prefixes
+- ✨ feat(tmux): distinguish issues from PRs with i/pr prefixes
 
 Enhances tmux window naming to clearly differentiate between issue
 work and PR work:
 
 Format change:
+
 - Old: 💻483 (ambiguous - issue or PR?)
 - New: 💻i483 (clearly issue #483) or 🔧pr485 (clearly PR #485)
 
 Prefix conventions:
+
 - i = issue number (e.g., 💻i483 = coding on issue #483)
 - pr = pull request number (e.g., 🔧pr485 = maintaining PR #485)
 
@@ -4694,6 +4977,7 @@ Workflow transition:
 💻i483 (coding) → 🚀i483 (submitting) → 🔧pr485 (PR created, now maintaining)
 
 Changes:
+
 - .claude/commands/gh-start-issue.md: Use 💻i<num> format
 - .claude/commands/pr-workflow.md: Update helper function, use pr<num> after PR created
 - .claude/skills/pr-lifecycle/SKILL.md: Document new convention with examples
@@ -4701,6 +4985,7 @@ Changes:
 - docs/dev/README.md: Link to new tmux conventions doc
 
 Benefits:
+
 - Instant clarity: know if working on issue or PR
 - Information density: 5-7 chars (💻i483) vs 50+ chars (full branch name)
 - Better mental model: tracks actual GitHub entity being worked on
@@ -4709,19 +4994,21 @@ Benefits:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .claude/commands/pr-workflow.md
+- fix: Update .claude/commands/pr-workflow.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - ✨ feat(sdk): add PlaygroundSettings types for model configuration API (#496)
 
 * ✨ feat(sdk): add PlaygroundSettings types for model configuration API
 
 Implements Rust types for the /api/v1/playground-settings endpoint:
+
 - PlaygroundSettingsResponse: response type with id, settings, options, name, description, timestamps
 - PlaygroundSavedOptions: rate limiting configuration
 - PlaygroundSettingsCreateRequest: request body for POST operations
@@ -4737,15 +5024,15 @@ Fixes #474
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): address Copilot review feedback on ListPlaygroundSettingsParams
+- 🩹 fix(sdk): address Copilot review feedback on ListPlaygroundSettingsParams
 
-- Add Serialize derive for query parameter conversion
-- Change limit/offset from u32 to i64 for consistency with ListDatasetsParams
-- Add skip_serializing_if for optional fields
+* Add Serialize derive for query parameter conversion
+* Change limit/offset from u32 to i64 for consistency with ListDatasetsParams
+* Add skip_serializing_if for optional fields
 
 Addresses review comments on PR #496
 
-* 🩹 fix(sdk): remove explicit i64 suffix in doc example
+- 🩹 fix(sdk): remove explicit i64 suffix in doc example
 
 Type inference handles the conversion automatically, making the
 explicit suffix unnecessary.
@@ -4754,14 +5041,16 @@ explicit suffix unnecessary.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add playground settings CRUD client methods (#500)
 
 Implements all CRUD client methods for playground settings API.
 
 Methods added to LangchainClient:
+
 - list_playground_settings() - GET /api/v1/playground-settings
 - create_playground_settings() - POST /api/v1/playground-settings
 - update_playground_settings() - PATCH /api/v1/playground-settings/{id}
@@ -4772,11 +5061,13 @@ Fixes #475
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add model-config commands for playground settings (#502)
 
 * ✨ feat(cli): add model-config commands for playground settings
 
 Implements CLI commands for managing LangSmith model configurations:
+
 - list: List all model configurations with table/JSON output
 - get: Get specific config by ID (uses list+filter for now)
 - create: Create new config from JSON file
@@ -4789,14 +5080,15 @@ Fixes #476
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): address review feedback on model-config commands
+- 🩹 fix(cli): address review feedback on model-config commands
 
-- Add pagination to Get command to handle >100 configurations
-- Add validation for Update command to require at least one field
-- Add unit tests for extract_provider_and_model helper (7 tests)
-- Add flush before reading delete confirmation input
+* Add pagination to Get command to handle >100 configurations
+* Add validation for Update command to require at least one field
+* Add unit tests for extract_provider_and_model helper (7 tests)
+* Add flush before reading delete confirmation input
 
 Addresses Copilot review comments:
+
 - https://github.com/codekiln/langstar/pull/502#discussion_r2577944531
 - https://github.com/codekiln/langstar/pull/502#discussion_r2577944553
 - https://github.com/codekiln/langstar/pull/502#discussion_r2577944567
@@ -4806,9 +5098,10 @@ Addresses Copilot review comments:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): implement workspace secrets types (#506)
 
 * ✨ feat(sdk): implement workspace secrets types
@@ -4830,30 +5123,33 @@ Fixes #491
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): ensure SecretUpsert serializes explicit null for deletes
+- 🩹 fix(sdk): ensure SecretUpsert serializes explicit null for deletes
 
-- Removed `skip_serializing_if` attribute that was omitting the value field
-- API requires explicit `{"key": "...", "value": null}` to delete secrets
-- Fixed documentation to accurately describe serialization behavior
-- Updated tests to verify explicit null serialization (not omitted field)
+* Removed `skip_serializing_if` attribute that was omitting the value field
+* API requires explicit `{"key": "...", "value": null}` to delete secrets
+* Fixed documentation to accurately describe serialization behavior
+* Updated tests to verify explicit null serialization (not omitted field)
 
 Addresses Copilot review feedback: The API expects explicit null for
 deletion, not an omitted field. Scout report (456-ls-secrets-scout.md:221)
 confirms: DELETE via POST with `value: null` → 200 OK.
 
 Fixes review comments:
+
 - https://github.com/codekiln/langstar/pull/506#discussion_r2581035376
 - https://github.com/codekiln/langstar/pull/506#discussion_r2581035397
 
 Co-Authored-By: GitHub Copilot <copilot@github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: GitHub Copilot <copilot@github.com>
+
 - ✨ feat(sdk): implement workspace secrets client methods (#515)
 
 Implements three client methods for workspace secrets management:
+
 - list_workspace_secrets() - Lists all secret keys
 - upsert_workspace_secrets() - Creates/updates secrets (batch)
 - delete_workspace_secret() - Deletes a secret (convenience wrapper)
@@ -4878,15 +5174,18 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #437
 
 ## Problem
+
 After rebuilding the devcontainer, mise fails to install Python 3.11
 with SSH authentication error because it tries to use SSH protocol
 instead of HTTPS.
 
 ## Root Cause
+
 VS Code Dev Containers copies host machine's ~/.gitconfig which may
 contain SSH URL rewrite rules (url.git@github.com:.insteadof).
 
 The timing issue:
+
 - postCreateCommand runs post-create.sh (calls mise install) BEFORE
 - postStartCommand runs setup-github-auth.sh (removes SSH rewrites)
 
@@ -4894,11 +5193,13 @@ So mise install runs before SSH URL rewrites are removed, causing
 the SSH authentication error.
 
 ## Solution
+
 Add SSH URL rewrite removal to post-create.sh Step 1 (matching
 setup-github-auth.sh:95-96), ensuring SSH rewrites are removed
 BEFORE mise install runs.
 
 ## Changes
+
 - Added git config commands to remove SSH URL rewrite rules
 - Added explanatory comments about why this is needed
 - Updated echo message to reflect both cleanups
@@ -4906,6 +5207,7 @@ BEFORE mise install runs.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(ci): add eval_command_test.rs to CI and fix test expectations (#503)
 
 * 🩹 fix(ci): add eval_command_test.rs to CI and fix test expectations
@@ -4913,11 +5215,13 @@ Co-authored-by: Claude <noreply@anthropic.com>
 The eval_command_test.rs file (39 tests) was not running in CI.
 
 **Root Cause:**
+
 1. The CI workflow manually specified individual test files
 2. Tests assumed API calls would fail without credentials, but eval
    commands are stub implementations that don't actually make API calls
 
 **Changes:**
+
 - Change CI to auto-discover tests: `cargo test -p langstar --features integration-tests`
   instead of manually listing `--test <file>` for each test file
 - Update tests to expect success instead of API key errors (stubs succeed)
@@ -4933,7 +5237,7 @@ Fixes #499
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): clarify comment about running all tests
+- 🩹 fix(ci): clarify comment about running all tests
 
 Addresses review feedback: The previous comment was misleading about
 "auto-discovery" when the actual behavior is running ALL tests in the
@@ -4941,7 +5245,7 @@ langstar package.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/503#discussion_r2578173342
 
-* 🩹 fix(ci): make prompt_scoping_test gracefully skip without LANGSMITH_ORGANIZATION_ID
+- 🩹 fix(ci): make prompt_scoping_test gracefully skip without LANGSMITH_ORGANIZATION_ID
 
 The prompt_scoping_test.rs was failing in CI because it required
 LANGSMITH_ORGANIZATION_ID environment variable, which is not configured
@@ -4953,13 +5257,14 @@ instead of panicking. This follows the same pattern used in other
 integration test files (graph_command_test.rs, prompt_structured_test.rs).
 
 Changes:
+
 - Added get_org_id_or_skip() helper function
 - Updated all 11 tests that require org ID to check and skip gracefully
 - Tests now print a clear message when skipped due to missing env var
 
 Fixes #499
 
-* 🩹 fix(ci): make prompt_structured_test skip when workspace-scoped (#505)
+- 🩹 fix(ci): make prompt_structured_test skip when workspace-scoped (#505)
 
 Tests use owner/repo format (codekiln/langstar-structured-test) which
 is incompatible with workspace scoping. When LANGSMITH_WORKSPACE_ID is
@@ -4974,9 +5279,10 @@ Fixes #504
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(ci): remove stderr redirection in cleanup-test-deployments workflow (#514)
 
 Fixes #511
@@ -4989,6 +5295,7 @@ langstar CLI correctly outputs info messages to stderr and JSON to stdout
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(sdk): resolve systemic DateTime deserialization failures (#518)
 
 * 🩹 fix(sdk): add flexible datetime deserializers for inconsistent API timestamps
@@ -5006,6 +5313,7 @@ Root cause: LangSmith API returns timestamps inconsistently - sometimes
 on the latter with "premature end of input".
 
 This systemic fix affects all endpoints returning DateTime fields:
+
 - datasets (Dataset, Example, DatasetVersion)
 - playground-settings (PlaygroundSettingsResponse)
 - runs (Run, QueryRunsRequest)
@@ -5016,10 +5324,10 @@ This systemic fix affects all endpoints returning DateTime fields:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): add missing DateTime fields to test fixtures
+- 🩹 fix(cli): add missing DateTime fields to test fixtures
 
-- Add start_time, end_time, first_token_time, last_queued_at to Run test fixtures
-- Add created_at, last_session_start_time to Dataset test fixtures
+* Add start_time, end_time, first_token_time, last_queued_at to Run test fixtures
+* Add created_at, last_session_start_time to Dataset test fixtures
 
 Test fixtures were missing DateTime fields after applying custom deserializers.
 Even optional fields need to be present in JSON (can be null).
@@ -5028,9 +5336,9 @@ Even optional fields need to be present in JSON (can be null).
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): add remaining DateTime trace fields to test fixtures
+- 🩹 fix(cli): add remaining DateTime trace fields to test fixtures
 
-- Add trace_first_received_at, trace_min_start_time, trace_max_start_time
+* Add trace_first_received_at, trace_min_start_time, trace_max_start_time
 
 All DateTime fields from Run struct must be present in test fixtures.
 
@@ -5038,7 +5346,7 @@ All DateTime fields from Run struct must be present in test fixtures.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): remove duplicate deserializer after rebase
+- 🩹 fix(sdk): remove duplicate deserializer after rebase
 
 After rebasing onto main (which includes PR #508), playground_settings.rs
 had both the centralized serde_utils import AND the local deserializer.
@@ -5051,7 +5359,7 @@ fields to allow field omission from JSON. This will be fixed before merge.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): add serde default to optional DateTime fields
+- 🩹 fix(sdk): add serde default to optional DateTime fields
 
 All optional DateTime fields with custom deserializers now include
 #[serde(default)] to properly handle missing fields in JSON. This is
@@ -5075,24 +5383,24 @@ proper handling of missing fields in JSON deserialization.
 
 Addresses Copilot review comments in PR #518.
 
-* 🩹 fix(sdk): combine duplicate serde attributes and add missing field test
+- 🩹 fix(sdk): combine duplicate serde attributes and add missing field test
 
-- Combined duplicate #[serde(...)] attributes at lines 199 and 203
-- Added test_deserialize_datetime_opt_missing_field to verify #[serde(default)] works
+* Combined duplicate #[serde(...)] attributes at lines 199 and 203
+* Added test_deserialize_datetime_opt_missing_field to verify #[serde(default)] works
   when fields are omitted from API responses
 
 Addresses Copilot review comments in PR #518.
 
-* 🎨 style: format serde attributes across multiple lines
+- 🎨 style: format serde attributes across multiple lines
 
 Applied cargo fmt to split long serde attribute lines for better readability.
 
-* 🩹 fix(test): add #[serde(default)] to TestStructOpt
+- 🩹 fix(test): add #[serde(default)] to TestStructOpt
 
 The test struct needs #[serde(default)] to properly handle missing fields,
 matching the pattern used in production code.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -5107,6 +5415,7 @@ serial_test crate. Most tests now run in parallel by default, while
 tests with shared resources are explicitly marked with #[serial].
 
 Changes:
+
 - Add serial_test = "3" to cli and sdk dev-dependencies
 - Enhance generate_test_name() with microsecond precision + UUID suffix
   to prevent name collisions during parallel execution
@@ -5133,6 +5442,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Consolidates milestone-related slash commands under the gh-milestones namespace for better organization and consistency.
 
 Changes:
+
 - Moved ls-release-milestone.md to gh-milestones/release.md
 - Updated command from /ls-release-milestone to /gh-milestones/release
 - Updated all documentation references:
@@ -5142,6 +5452,7 @@ Changes:
   - docs/research/448-milestone-lifecycle-review.md
 
 Benefits:
+
 - Consistent namespace with existing /gh-milestones/scout command
 - Better discoverability of milestone-related commands
 - Clearer grouping of related functionality
@@ -5153,18 +5464,19 @@ Fixes #457
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: use correct colon syntax for namespaced command
+- 🩹 fix: use correct colon syntax for namespaced command
 
 Changed /gh-milestones/release to /gh-milestones:release
 The correct syntax for namespaced commands is /namespace:commandname not /namespace/commandname
 
 Updated in:
+
 - .claude/commands/gh-milestones/release.md
 - docs/templates/milestone-release-checklist.md
 - docs/dev/feature-development-process.md
 - docs/research/448-milestone-lifecycle-review.md
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -5179,23 +5491,27 @@ Analyzed recent milestone implementations (especially #402/milestone #7)
 and codified two critical patterns that emerged:
 
 **Phase 0.0: Pre-Epic Scouting (Optional)**
+
 - Exploratory research BEFORE committing to full 8-phase milestone
 - Validates feasibility, reduces risk, informs parent issue scope
 - Example: Issue #398 (scout) created before #402 (parent)
 - PRs directly to main (no milestone dependency)
 
 **Phase 9: Milestone Release**
+
 - Automated cleanup via /ls-release-milestone slash command
 - Links milestone to GitHub release, closes parent issue
 - Ensures consistent audit trail: issue → milestone → release
 
 **Deliverables:**
+
 - Research report: docs/research/448-milestone-lifecycle-review.md
 - Updated process doc with Phase 0.0 and 9
 - Added "Milestone Lifecycle" section with decision trees
 - Templates: scout-issue-template.md, milestone-release-checklist.md
 
 **Key Findings from Milestone #7 Analysis:**
+
 - Scout issues (Phase 0.0) reduce risk for unclear API features
 - /ls-release-milestone (PR #442) automates milestone cleanup
 - 7 milestones closed successfully, demonstrating pattern maturity
@@ -5207,14 +5523,15 @@ Fixes #448
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address review feedback on milestone release checklist
+- 🩹 fix(docs): address review feedback on milestone release checklist
 
-- Simplified Phase 1 to just verify CI passed (CI handles all code quality checks)
-- Removed manual version bump section (automated via prepare-release workflow)
-- Clarified template usage - it's a reference doc, not a working document to copy
-- Updated timeline estimates to reflect automation
+* Simplified Phase 1 to just verify CI passed (CI handles all code quality checks)
+* Removed manual version bump section (automated via prepare-release workflow)
+* Clarified template usage - it's a reference doc, not a working document to copy
+* Updated timeline estimates to reflect automation
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/449#discussion_r2573634109
 - https://github.com/codekiln/langstar/pull/449#discussion_r2573634229
 - https://github.com/codekiln/langstar/pull/449#discussion_r2573635167
@@ -5224,6 +5541,7 @@ Addresses review comments:
 Created namespaced slash command to automate Phase 0.0 scout issue creation:
 
 **Features:**
+
 - Creates scout issue with proper template
 - Sets up research directory structure
 - Guides through SDK workspace setup
@@ -5231,19 +5549,21 @@ Created namespaced slash command to automate Phase 0.0 scout issue creation:
 - Provides comprehensive scout workflow guide
 
 **Usage:**
-  /ls-scout-milestone <feature-name>
+/ls-scout-milestone <feature-name>
 
 **Examples:**
-  /ls-scout-milestone dataset-management
-  /ls-scout-milestone structured-output-prompts
+/ls-scout-milestone dataset-management
+/ls-scout-milestone structured-output-prompts
 
 **Integration:**
+
 - References scout issue template from docs/templates/
 - Follows Phase 0.0 process from feature-development-process.md
 - Creates issues with research/scout labels
 - Generates research report skeleton at docs/research/{num}-{slug}-scout.md
 
 **Command behavior:**
+
 1. Parse feature name and create slug
 2. Load scout template from docs/templates/scout-issue-template.md
 3. Create GitHub issue (no milestone - scout happens before milestone)
@@ -5255,24 +5575,25 @@ Created namespaced slash command to automate Phase 0.0 scout issue creation:
 
 Addresses request for automated scouting workflow initiation.
 
-* ♻️ refactor: streamline scout command for AI automation
+- ♻️ refactor: streamline scout command for AI automation
 
-- Move scout command to gh-milestones/ namespace
-- Use correct frontmatter (argument-hint instead of args)
-- Remove human-oriented prompts and confirmations
-- Add automatic worktree creation (no asking)
-- Add experiments section to scout template
-- Simplify milestone-release-checklist to match CI workflows
-- Reduce repetition and "fluff" throughout
-- Use ls- prefix convention for milestone names
+* Move scout command to gh-milestones/ namespace
+* Use correct frontmatter (argument-hint instead of args)
+* Remove human-oriented prompts and confirmations
+* Add automatic worktree creation (no asking)
+* Add experiments section to scout template
+* Simplify milestone-release-checklist to match CI workflows
+* Reduce repetition and "fluff" throughout
+* Use ls- prefix convention for milestone names
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: document docs/ and reference/ directories in AGENTS.md (#454)
 
 * 📚 docs: document docs/ and reference/ directories in AGENTS.md
@@ -5282,9 +5603,10 @@ understand the codebase organization without loading excessive context.
 
 Fixes #450
 
-* docs: Revise repository structure documentation
+- docs: Revise repository structure documentation
 
 Updated repository structure section to include details on supporting repository structures, tests, and work in progress.
+
 - 📚 docs: scout ls-langsmith-model-providers feasibility (#455)
 
 Research and document the LangSmith playground-settings API for model provider
@@ -5300,6 +5622,7 @@ Fixes #453
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: design DX consistency for model-config feature (#479)
 
 * 📚 docs: design DX consistency for model-config feature
@@ -5309,6 +5632,7 @@ Completed Phase 2 design for model-providers milestone (#461).
 ## Design Decisions
 
 **Command name**: Use `model-config` (not `model-provider` or `playground-settings`)
+
 - Precedent: `eval` command uses `--model-config` flag
 - More semantic than API endpoint name
 - CLI-friendly and consistent with existing patterns
@@ -5316,27 +5640,32 @@ Completed Phase 2 design for model-providers milestone (#461).
 ## Key Findings
 
 ### DX Consistency
+
 - Analyzed `langstar prompt`, `langstar graph`, `langstar eval` commands
 - Documented standard patterns for flags, pagination, scoping, output
 - All patterns documented with code references (file:line)
 
 ### Flag Naming Conventions
+
 - Standard flags: `--limit`, `--offset`, `--organization-id`, `--workspace-id`
 - Resource flags: `--name`, `--provider`, `--model`, `--settings`, `--rate-limit`
 - Boolean flags: `--public`, `--yes` (simple names, no prefix)
 - Short flags: `-n`, `-p`, `-m`, `-d` (frequently used only)
 
 ### Output Formats
+
 - JSON: Direct passthrough of API response for programmatic use
 - Table: Simplified view with truncated IDs, extracted provider/model
 - Detailed view: Formatted human-readable output for Get operation
 
 ### Configuration Integration
+
 - Uses existing env vars (LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, etc.)
 - No new env vars needed (secrets are referenced, not stored)
 - Same scoping behavior as prompts (tenant → org → workspace)
 
 ### Business Purpose
+
 - UI: Interactive configuration for prompt playground
 - CLI: Version-controlled configs, CI/CD automation, bulk operations
 - Key use cases: list, inspect, create from templates, update, cleanup
@@ -5344,6 +5673,7 @@ Completed Phase 2 design for model-providers milestone (#461).
 ## Deliverable
 
 Created `docs/research/461-model-providers-design.md` with:
+
 - Complete command structure (Rust enum definition)
 - Flag conventions table with precedents
 - Output format specifications
@@ -5360,7 +5690,7 @@ Fixes #472
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct code references in design document
+- 🩹 fix(docs): correct code references in design document
 
 Addressed 6 Copilot review comments with accuracy fixes:
 
@@ -5375,6 +5705,7 @@ Addressed 6 Copilot review comments with accuracy fixes:
 All references now match actual code implementation.
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574051978
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574051988
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574051997
@@ -5385,6 +5716,7 @@ Addresses review comments:
 * 🩹 fix(docs): clarify provider value extensibility
 
 Expanded section 2.3 to explicitly state:
+
 - CLI accepts ANY string value for --provider (not restricted to list)
 - "Known providers" = first-class support (docs/examples), not restriction
 - Extensibility: users can specify custom/new provider values
@@ -5395,7 +5727,7 @@ This ensures future providers or custom configurations work without CLI changes.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/479#discussion_r2574085218
 
-* ✨ feat(docs): add search command and OpenAPI provider review
+- ✨ feat(docs): add search command and OpenAPI provider review
 
 Added two design improvements based on feedback:
 
@@ -5413,11 +5745,13 @@ Added two design improvements based on feedback:
    - Update provider values table if new providers discovered
 
 Implementation approach:
+
 - Search may use dedicated API endpoint or client-side filtering
 - Will verify during SDK implementation (Phase 7.5)
 - Follows precedent from langstar prompt search command
 
 Renumbered use cases:
+
 - Use Case 3: Search (new)
 - Use Case 4: Create (was 3)
 - Use Case 5: Update (was 4)
@@ -5453,6 +5787,7 @@ Fixed 5 clarity and consistency issues:
    - Added note "(hypothetical example)" for clarity
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574104119
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574104132
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574104146
@@ -5460,9 +5795,10 @@ Addresses review comments:
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574104158
 - https://github.com/codekiln/langstar/pull/479#discussion_r2574104183
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: scout ls-secrets feasibility (Phase 0.0) (#480)
 
 * 📚 docs: scout ls-secrets feasibility and API patterns
@@ -5470,9 +5806,11 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #456
 
 ## Summary
+
 Completed Phase 0.0 scout research for workspace secrets management.
 
 ## Key Findings
+
 - Simple API: GET /api/v1/workspaces/current/secrets (list), POST (upsert)
 - Security: Values never returned in responses (keys only)
 - No existing implementation in Langstar or Python SDK
@@ -5480,6 +5818,7 @@ Completed Phase 0.0 scout research for workspace secrets management.
 - Recommendation: Go
 
 ## Deliverables
+
 - Research report: docs/research/456-ls-secrets-scout.md
 - Experiment analysis: reference/experiments/456-ls-secrets/README.md
 - Proposed 8-phase milestone structure
@@ -5488,23 +5827,24 @@ Completed Phase 0.0 scout research for workspace secrets management.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(docs): align scout report with Phase 0.0 conventions
+- ♻️ refactor(docs): align scout report with Phase 0.0 conventions
 
-- Remove prescriptive 8-phase milestone structure (premature for scout)
-- Focus on Go/No-Go feasibility decision
-- Add "Proceed to Phase 0?" section with recommendation
-- Reframe scope considerations as input for future Phase 0
-- Clarify success criteria as Phase 0.0 deliverables
-- Emphasize scout merges directly to main (no milestone)
+* Remove prescriptive 8-phase milestone structure (premature for scout)
+* Focus on Go/No-Go feasibility decision
+* Add "Proceed to Phase 0?" section with recommendation
+* Reframe scope considerations as input for future Phase 0
+* Clarify success criteria as Phase 0.0 deliverables
+* Emphasize scout merges directly to main (no milestone)
 
 Follows docs/dev/feature-development-process.md Phase 0.0 guidelines.
 
-* 🔒 security: add mandatory LLM agent security review requirement
+- 🔒 security: add mandatory LLM agent security review requirement
 
 Critical finding: Langstar CLI will be wrapped in Claude Code skills and
 used by automated agents. Secret values must NEVER be exposed to LLMs.
 
 Changes:
+
 - Add dedicated "LLM Agent Security Considerations" section
 - Document insecure patterns (CLI flags) vs secure patterns (--from-file)
 - Upgrade complexity from Low-Medium to Medium due to security requirements
@@ -5514,6 +5854,7 @@ Changes:
 - Add security review to Phase 0 considerations
 
 Security requirements:
+
 - Secrets never in CLI arguments (visible to LLM, shell history, process lists)
 - Secrets never in command output (LLM reads stdout/stderr)
 - Multiple secure input methods required
@@ -5522,18 +5863,20 @@ Security requirements:
 
 Blocks: Phase 2 (Design) until security review complete
 
-* 🧪 test: add live API experiments for secrets endpoint
+- 🧪 test: add live API experiments for secrets endpoint
 
 Executed live API testing to validate OpenAPI spec findings and discover
 permission requirements.
 
 Critical Finding - Permission Requirements:
+
 - GET /api/v1/workspaces/current/secrets: Works with standard API key (200 OK)
 - POST /api/v1/workspaces/current/secrets: Requires 'workspaces:manage' permission (403 Forbidden)
 
 Error response confirms: "Permission denied, you do not have the required permission workspaces:manage"
 
 Experiment Artifacts:
+
 - test_secrets_api.py: Python script testing full CRUD lifecycle
 - experiment_output.log: Complete execution log with API responses
 - README.md: Updated with experiment results and permission findings
@@ -5553,7 +5896,7 @@ Open Questions (require elevated permissions):
 
 Deferred to Phase 3 (SDK Integration Tests) where elevated API key can be configured.
 
-* ✅ test: validate complete CRUD operations with elevated permissions
+- ✅ test: validate complete CRUD operations with elevated permissions
 
 Re-ran experiments with API key that has 'workspaces:manage' permission.
 
@@ -5564,6 +5907,7 @@ ALL CRUD OPERATIONS SUCCESSFUL:
 ✅ Delete: POST with value: null → 200 OK, secret removed
 
 Critical Findings:
+
 1. Deletion confirmed working - value: null successfully removes secrets
 2. Upsert pattern confirmed - same endpoint/response for create and update
 3. Immediate consistency - changes visible immediately in GET
@@ -5571,6 +5915,7 @@ Critical Findings:
 5. Security validated - values never returned, only keys
 
 Updated Documentation:
+
 - README.md: Complete test results table with all operations passing
 - README.md: Answered Questions section (deletion, upsert, consistency)
 - README.md: Remaining Open Questions (edge cases only)
@@ -5579,7 +5924,7 @@ Updated Documentation:
 
 Log files: Available locally but not committed per user request
 
-* 🩹 fix: address Copilot review feedback on consistency
+- 🩹 fix: address Copilot review feedback on consistency
 
 Fixed 4 documentation consistency issues identified by Copilot:
 
@@ -5589,10 +5934,12 @@ Fixed 4 documentation consistency issues identified by Copilot:
 4. Blocker status: Changed "Phase 2 (Design)" to "Phase 1.5 (before Phase 2 Design)"
 
 All changes maintain consistency with:
+
 - Section 5: "Overall Complexity: Medium (upgraded due to LLM security)"
 - Phase 0 considerations: "Phase 1.5 security review sub-issue BEFORE Phase 2"
 
 Addresses Copilot review comments at:
+
 - docs/research/456-ls-secrets-scout.md:11
 - docs/research/456-ls-secrets-scout.md:425
 - docs/research/456-ls-secrets-scout.md:333
@@ -5606,18 +5953,20 @@ Addresses Copilot review comments at:
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
 - 📚 docs: research langsmith-sdk playground settings patterns (#482)
 
 Researched SDK implementation patterns for playground-settings API:
+
 - Confirmed Python SDK has no playground settings implementation
 - Analyzed Rust SDK patterns from datasets and prompts modules
 - Documented method signatures for CRUD operations
@@ -5632,6 +5981,7 @@ Fixes #471
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: extract playground-settings OpenAPI schemas and validate (#485)
 
 Fixes #473
@@ -5648,6 +5998,7 @@ No discrepancies found - ready for SDK implementation.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: research SDK precedent for workspace secrets (#497)
 
 * 📚 docs: research SDK precedent for workspace secrets
@@ -5656,6 +6007,7 @@ Comprehensive analysis of existing Langstar SDK patterns to ensure consistency
 when implementing the workspace secrets SDK.
 
 Key findings:
+
 - Secrets use POST-based upsert pattern (not traditional CRUD)
 - API returns only keys, never values (security first)
 - Follows established patterns for type definitions and client methods
@@ -5669,18 +6021,19 @@ Fixes #487
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback on SDK precedent doc
+- 🩹 fix: address Copilot review feedback on SDK precedent doc
 
-- Fixed test assertion to only check for absence of "value" field (serde skip_serializing_if behavior)
-- Clarified API response format (returns empty object {} or null)
-- Made endpoint paths consistent in comparison table (include full /api/v1 prefix)
-- Fixed import path to show proper module structure (secrets::SecretUpsert)
+* Fixed test assertion to only check for absence of "value" field (serde skip_serializing_if behavior)
+* Clarified API response format (returns empty object {} or null)
+* Made endpoint paths consistent in comparison table (include full /api/v1 prefix)
+* Fixed import path to show proper module structure (secrets::SecretUpsert)
 
 Addresses review comments from Copilot in PR #497
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: design DX consistency for workspace secrets (#498)
 
 * 📚 docs: design DX consistency for workspace secrets
@@ -5689,6 +6042,7 @@ Design SDK and CLI interfaces ensuring consistency with langstar patterns
 while incorporating Phase 1.5 security requirements.
 
 Key decisions:
+
 - SDK: POST-based upsert pattern (SecretKey, SecretUpsert types)
 - CLI: langstar secrets {list,set,delete} with secure input methods
 - Security: No secret values in args/output (file, interactive, env, stdin)
@@ -5700,14 +6054,15 @@ Fixes #489
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔒 security: fix shell history leaks in code examples
+- 🔒 security: fix shell history leaks in code examples
 
-- Replace echo with heredoc in file input example (line 253)
-- Replace direct export with read -s in env var example (line 313)
-- Both changes prevent secrets from appearing in shell history
-- Addresses Copilot security feedback
+* Replace echo with heredoc in file input example (line 253)
+* Replace direct export with read -s in env var example (line 313)
+* Both changes prevent secrets from appearing in shell history
+* Addresses Copilot security feedback
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/498#discussion_r2577668114
 - https://github.com/codekiln/langstar/pull/498#discussion_r2577668136
 
@@ -5715,9 +6070,10 @@ Addresses review comments:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: validate OpenAPI spec for workspace secrets endpoints (#501)
 
 * 📚 docs: validate OpenAPI spec for workspace secrets endpoints
@@ -5745,7 +6101,7 @@ Fixes #490
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): clarify validation attribution in sign-off
+- 🩹 fix(docs): clarify validation attribution in sign-off
 
 Changed "Validated By: Claude Code" to "Validation Method: AI-assisted
 validation (Claude Code)" to clarify the nature of the validation
@@ -5753,9 +6109,10 @@ process.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/501#discussion_r2577866291
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add comprehensive model-config documentation (#507)
 
 * 📚 docs: add comprehensive model-config documentation
@@ -5763,6 +6120,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Add user and developer documentation for the model-config feature (playground settings).
 
 User documentation:
+
 - README: Added model-config command reference with examples
 - docs/usage/model-config.md: Comprehensive usage guide including:
   - Environment variables
@@ -5771,6 +6129,7 @@ User documentation:
   - Common workflows and troubleshooting
 
 Developer documentation:
+
 - docs/implementation/461-model-providers-implementation.md: Implementation notes covering:
   - Research and design decisions
   - SDK types and client methods
@@ -5784,9 +6143,10 @@ Fixes #478
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct Azure OpenAI and Bedrock API parameters
+- 🩹 fix(docs): correct Azure OpenAI and Bedrock API parameters
 
 Fix documentation examples to match actual LangSmith API format:
+
 - Azure OpenAI: use openai_api_version (not api_version)
 - Azure OpenAI: use openai_api_key (not azure_ad_token)
 - Bedrock: use 3-element id array (not 4)
@@ -5795,6 +6155,7 @@ Fix documentation examples to match actual LangSmith API format:
 Based on actual API data from reference/research/453-ls-langsmith-model-providers-playground-settings.json
 
 Addresses Copilot review comments:
+
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317859
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317882
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317900
@@ -5807,6 +6168,7 @@ Addresses Copilot review comments:
 - Remove redundant provider-specific troubleshooting section
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581663341
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581669613
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581670882
@@ -5819,7 +6181,7 @@ used by other providers.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/507#discussion_r2581818850
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -5832,6 +6194,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Implements Phase 7 testing requirements for model-config feature:
 
 ## SDK Tests (Unit - Mocked)
+
 - Added `sdk/tests/playground_settings_test.rs` with 12 unit tests
 - Tests all CRUD operations with mockito HTTP mocking
 - Tests validation, error handling, and round-trip workflows
@@ -5839,6 +6202,7 @@ Implements Phase 7 testing requirements for model-config feature:
 - All 12 tests passing
 
 ## SDK Tests (Integration - Live API)
+
 - Added `sdk/tests/playground_settings_integration_test.rs` with 7 integration tests
 - Tests against real LangSmith API (requires LANGSMITH_API_KEY)
 - Tests list, create, update, delete cycles with real data
@@ -5847,6 +6211,7 @@ Implements Phase 7 testing requirements for model-config feature:
 - Note: Currently failing due to API response truncation issues (not SDK bugs)
 
 ## CLI Tests
+
 - Added `cli/tests/model_config_command_test.rs` with 19 tests
 - 12 unit tests (no API required) - all passing
 - 7 integration tests (require API) - marked as #[ignore]
@@ -5855,11 +6220,13 @@ Implements Phase 7 testing requirements for model-config feature:
 - Tests JSON and table output formats
 
 ## Bug Fixes
+
 - Fixed CLI argument conflict: removed short `-f` from `--file` options
   in Create and Update commands to avoid conflict with global `--format`
   option (cli/src/commands/model_config.rs:38,48)
 
 ## Test Results
+
 - SDK unit tests: 12/12 passing
 - CLI unit tests: 12/12 passing
 - Integration tests: marked as #[ignore] for CI (require live API key)
@@ -5871,12 +6238,13 @@ Fixes #477
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(tests): remove #[ignore] attributes from all tests
+- ♻️ refactor(tests): remove #[ignore] attributes from all tests
 
 Removes all #[ignore] attributes from integration tests as per project
 policy - tests should always run, not be skipped.
 
 Changes:
+
 - Removed #[ignore] from all 7 SDK integration tests
 - Removed #[ignore] from all 7 CLI integration tests
 - Updated documentation comments to remove --ignored flag instructions
@@ -5890,7 +6258,7 @@ Fixes #477
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): correct CLI test flags and error assertions
+- 🩹 fix(tests): correct CLI test flags and error assertions
 
 Fixes Integration Tests CI failures:
 
@@ -5905,6 +6273,7 @@ Fixes Integration Tests CI failures:
    - Handles API decoding errors gracefully
 
 Fixes test failures:
+
 - test_model_config_list_integration
 - test_model_config_list_json_format
 - test_model_config_delete_nonexistent
@@ -5914,17 +6283,18 @@ Fixes test failures:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style: fix cargo fmt formatting in CLI tests
+- 🎨 style: fix cargo fmt formatting in CLI tests
 
-* 🩹 fix: handle timestamps without Z suffix in playground settings (#510)
+- 🩹 fix: handle timestamps without Z suffix in playground settings (#510)
 
-* 📚 docs: add comprehensive model-config documentation (#507)
+- 📚 docs: add comprehensive model-config documentation (#507)
 
-* 📚 docs: add comprehensive model-config documentation
+- 📚 docs: add comprehensive model-config documentation
 
 Add user and developer documentation for the model-config feature (playground settings).
 
 User documentation:
+
 - README: Added model-config command reference with examples
 - docs/usage/model-config.md: Comprehensive usage guide including:
   - Environment variables
@@ -5933,6 +6303,7 @@ User documentation:
   - Common workflows and troubleshooting
 
 Developer documentation:
+
 - docs/implementation/461-model-providers-implementation.md: Implementation notes covering:
   - Research and design decisions
   - SDK types and client methods
@@ -5946,9 +6317,10 @@ Fixes #478
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct Azure OpenAI and Bedrock API parameters
+- 🩹 fix(docs): correct Azure OpenAI and Bedrock API parameters
 
 Fix documentation examples to match actual LangSmith API format:
+
 - Azure OpenAI: use openai_api_version (not api_version)
 - Azure OpenAI: use openai_api_key (not azure_ad_token)
 - Bedrock: use 3-element id array (not 4)
@@ -5957,6 +6329,7 @@ Fix documentation examples to match actual LangSmith API format:
 Based on actual API data from reference/research/453-ls-langsmith-model-providers-playground-settings.json
 
 Addresses Copilot review comments:
+
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317859
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317882
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581317900
@@ -5969,6 +6342,7 @@ Addresses Copilot review comments:
 - Remove redundant provider-specific troubleshooting section
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581663341
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581669613
 - https://github.com/codekiln/langstar/pull/507#discussion_r2581670882
@@ -5981,15 +6355,16 @@ used by other providers.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/507#discussion_r2581818850
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* 🧪 test(model-config): add comprehensive tests for playground settings
+- 🧪 test(model-config): add comprehensive tests for playground settings
 
 Implements Phase 7 testing requirements for model-config feature:
 
 ## SDK Tests (Unit - Mocked)
+
 - Added `sdk/tests/playground_settings_test.rs` with 12 unit tests
 - Tests all CRUD operations with mockito HTTP mocking
 - Tests validation, error handling, and round-trip workflows
@@ -5997,6 +6372,7 @@ Implements Phase 7 testing requirements for model-config feature:
 - All 12 tests passing
 
 ## SDK Tests (Integration - Live API)
+
 - Added `sdk/tests/playground_settings_integration_test.rs` with 7 integration tests
 - Tests against real LangSmith API (requires LANGSMITH_API_KEY)
 - Tests list, create, update, delete cycles with real data
@@ -6005,6 +6381,7 @@ Implements Phase 7 testing requirements for model-config feature:
 - Note: Currently failing due to API response truncation issues (not SDK bugs)
 
 ## CLI Tests
+
 - Added `cli/tests/model_config_command_test.rs` with 19 tests
 - 12 unit tests (no API required) - all passing
 - 7 integration tests (require API) - marked as #[ignore]
@@ -6013,11 +6390,13 @@ Implements Phase 7 testing requirements for model-config feature:
 - Tests JSON and table output formats
 
 ## Bug Fixes
+
 - Fixed CLI argument conflict: removed short `-f` from `--file` options
   in Create and Update commands to avoid conflict with global `--format`
   option (cli/src/commands/model_config.rs:38,48)
 
 ## Test Results
+
 - SDK unit tests: 12/12 passing
 - CLI unit tests: 12/12 passing
 - Integration tests: marked as #[ignore] for CI (require live API key)
@@ -6029,12 +6408,13 @@ Fixes #477
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(tests): remove #[ignore] attributes from all tests
+- ♻️ refactor(tests): remove #[ignore] attributes from all tests
 
 Removes all #[ignore] attributes from integration tests as per project
 policy - tests should always run, not be skipped.
 
 Changes:
+
 - Removed #[ignore] from all 7 SDK integration tests
 - Removed #[ignore] from all 7 CLI integration tests
 - Updated documentation comments to remove --ignored flag instructions
@@ -6048,7 +6428,7 @@ Fixes #477
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): correct CLI test flags and error assertions
+- 🩹 fix(tests): correct CLI test flags and error assertions
 
 Fixes Integration Tests CI failures:
 
@@ -6063,6 +6443,7 @@ Fixes Integration Tests CI failures:
    - Handles API decoding errors gracefully
 
 Fixes test failures:
+
 - test_model_config_list_integration
 - test_model_config_list_json_format
 - test_model_config_delete_nonexistent
@@ -6072,9 +6453,9 @@ Fixes test failures:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style: fix cargo fmt formatting in CLI tests
+- 🎨 style: fix cargo fmt formatting in CLI tests
 
-* 🔍 investigate: playground-settings API response truncation
+- 🔍 investigate: playground-settings API response truncation
 
 Fixes #509
 
@@ -6130,7 +6511,7 @@ fails deserialization because it doesn't match the expected schema.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📊 research: peer review of #509 investigation findings
+- 📊 research: peer review of #509 investigation findings
 
 Adds comprehensive review of playground-settings API investigation.
 
@@ -6144,6 +6525,7 @@ Adds comprehensive review of playground-settings API investigation.
 ## Critical Discovery
 
 The error occurs during CREATE (POST), not GET:
+
 - Rust reqwest: Fails with "premature end of input" at byte 348
 - Python requests: Works perfectly on same endpoint
 - Root cause still unknown
@@ -6151,9 +6533,11 @@ The error occurs during CREATE (POST), not GET:
 ## Discrepancy Identified
 
 PR #510 README claims:
+
 > "There is NO API truncation issue" (wrong)
 
 But actual test shows:
+
 > CREATE fails with truncation error (correct observation)
 
 The 405 error from GET-by-ID endpoint is a red herring - not related
@@ -6176,7 +6560,7 @@ to this issue.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔍 discover: root cause is timestamp format, not truncation
+- 🔍 discover: root cause is timestamp format, not truncation
 
 Fixes #509 - Investigation complete
 
@@ -6188,16 +6572,19 @@ WITHOUT timezone suffix, but chrono::DateTime<Utc> REQUIRES the Z suffix.
 ## Evidence
 
 API returns:
+
 ```json
 "created_at": "2025-12-02T16:28:50.113929"
 ```
 
 chrono expects:
+
 ```json
 "created_at": "2025-12-02T16:28:50.113929Z"
 ```
 
 Test proof:
+
 ```rust
 "2025-12-02T16:28:50.113929".parse::<DateTime<Utc>>()
 // Error: premature end of input  ← EXACT SAME ERROR!
@@ -6227,18 +6614,20 @@ to accept timestamps with or without Z suffix.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: handle timestamps without Z suffix in playground settings
+- 🩹 fix: handle timestamps without Z suffix in playground settings
 
 LangSmith API returns timestamps WITHOUT timezone suffix (e.g., "2025-12-02T16:28:50.113929"),
 but chrono::DateTime<Utc> requires the Z suffix. This caused "premature end of input" errors
 at column 348 during deserialization.
 
 Solution:
+
 - Added custom deserialize_flexible_datetime function that tries parsing with and without Z
 - Applied to created_at and updated_at fields in PlaygroundSettingsResponse
 - Added comprehensive tests for both timestamp formats
 
 Tests:
+
 - test_timestamp_with_z_suffix: Verifies backward compatibility
 - test_timestamp_without_z_suffix: Verifies Issue #509 fix
 - test_timestamp_formats_produce_same_result: Verifies equivalence
@@ -6247,28 +6636,29 @@ Integration test test_create_update_delete_cycle now passes.
 
 Fixes #509
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): address review feedback on test quality
+- 🩹 fix(tests): address review feedback on test quality
 
-- Add assertion to verify at least one provider config created successfully
-- Make UUID error assertion more specific and testable
-- Verify update operation actually changes the name
+* Add assertion to verify at least one provider config created successfully
+* Make UUID error assertion more specific and testable
+* Verify update operation actually changes the name
 
 Addresses Copilot review comments in PR #508
 
-* 🎨 style: fix formatting from merged PR #510
+- 🎨 style: fix formatting from merged PR #510
 
 Apply cargo fmt to fix formatting issues introduced by the timestamp fix PR
 
-* 🩹 fix(tests): fix integration test failures in model-config
+- 🩹 fix(tests): fix integration test failures in model-config
 
-- Add --format json flag to create/update commands to get JSON output
-- Update delete test to reflect idempotent API behavior (succeeds for nonexistent UUIDs)
+* Add --format json flag to create/update commands to get JSON output
+* Update delete test to reflect idempotent API behavior (succeeds for nonexistent UUIDs)
 
 Fixes integration test failures:
+
 - test_model_config_create_update_delete_cycle: needed JSON format flag
 - test_model_config_delete_nonexistent: API supports idempotent deletes
 
@@ -6281,12 +6671,13 @@ This was causing integration tests to hang for 15 minutes and timeout.
 
 Fixes: test_model_config_get_nonexistent hanging
 
-* 🩹 fix(tests): fix JSON regex to handle multi-line output
+- 🩹 fix(tests): fix JSON regex to handle multi-line output
 
 Change regex from `\[.*\]` (single line) to simpler contains checks
 that work with pretty-printed JSON output.
 
 Fixes 3 test failures:
+
 - test_model_config_list_integration
 - test_model_config_list_json_format
 - test_model_config_list_with_pagination
@@ -6299,7 +6690,7 @@ Fixes 3 test failures:
 
 Addresses review comments on PR #508
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -6311,6 +6702,7 @@ Updates EDITOR and VISUAL environment variables in the devcontainer
 Dockerfile to use vim instead of nano as the default terminal editor.
 
 This affects:
+
 - Git operations (commit messages, rebase, etc.)
 - Claude Code memory commands (/memory)
 - Any tools that respect EDITOR/VISUAL environment variables
@@ -6329,6 +6721,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
 - ✨ feat(sdk): add StructuredPrompt types and LC-JSON serialization (#415)
 
 * ✨ feat(sdk): add StructuredPrompt types and LC-JSON serialization
@@ -6337,6 +6730,7 @@ Implements StructuredPrompt types and LC-JSON serialization in SDK to support
 structured output prompts matching the LC-JSON format validated in #404.
 
 Key deliverables:
+
 - LcJson<T> generic wrapper for LangChain object serialization
 - StructuredPrompt struct with messages, schema_, and structured_output_kwargs
 - Message template types (MessagePromptTemplateKwargs, PromptTemplateKwargs)
@@ -6345,6 +6739,7 @@ Key deliverables:
 - Verified types match LC-JSON format from research report
 
 Tests added:
+
 - test_lc_json_basic_serialization
 - test_lc_json_round_trip
 - test_prompt_template_kwargs_serialization
@@ -6362,21 +6757,22 @@ Fixes #405
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): export StructuredPrompt types from lib.rs
+- 🩹 fix(sdk): export StructuredPrompt types from lib.rs
 
-- Added LcJson<T> to public exports
-- Added StructuredPrompt to public exports
-- Added StructuredOutputKwargs to public exports
-- Added MessagePromptTemplateKwargs to public exports
-- Added PromptTemplateKwargs to public exports
+* Added LcJson<T> to public exports
+* Added StructuredPrompt to public exports
+* Added StructuredOutputKwargs to public exports
+* Added MessagePromptTemplateKwargs to public exports
+* Added PromptTemplateKwargs to public exports
 
 Makes new types accessible to SDK users.
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/415#discussion_r2573007663
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): implement eval CLI commands (#397)
 
 * ✨ feat(cli): implement eval CLI commands
@@ -6417,17 +6813,18 @@ Fixes #372
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(cli): address Copilot review feedback on eval commands
+- 🩹 fix(cli): address Copilot review feedback on eval commands
 
-- Added StringDistance variant to EvaluatorType for feature completeness
-- Replaced From trait with TryFrom for HeuristicEvaluator conversion
+* Added StringDistance variant to EvaluatorType for feature completeness
+* Replaced From trait with TryFrom for HeuristicEvaluator conversion
   - Eliminates panic! in favor of proper error handling
   - Returns Err for LlmJudge instead of panicking
-- Optimized display_option_string to avoid unnecessary clone
+* Optimized display_option_string to avoid unnecessary clone
   - Uses as_deref() for more efficient string conversion
-- Updated all tests to use TryFrom pattern
+* Updated all tests to use TryFrom pattern
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/397#discussion_r2572951929
 - https://github.com/codekiln/langstar/pull/397#discussion_r2572951934
 - https://github.com/codekiln/langstar/pull/397#discussion_r2572951937
@@ -6443,48 +6840,49 @@ Addresses review comments:
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* fix: [WIP] Implement eval CLI commands for LangSmith evaluations (#414)
+- fix: [WIP] Implement eval CLI commands for LangSmith evaluations (#414)
 
-* Initial plan
+- Initial plan
 
-* 🩹 fix(cli): address review feedback - UUID types, flag naming, validation
-
-Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
-
-* 🩹 fix(cli): revert score validation logic to use OR (correct behavior)
+- 🩹 fix(cli): address review feedback - UUID types, flag naming, validation
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 🩹 fix(cli): improve test robustness with UUID-based temp path
+- 🩹 fix(cli): revert score validation logic to use OR (correct behavior)
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 🎨 style: apply cargo fmt
+- 🩹 fix(cli): improve test robustness with UUID-based temp path
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 🩹 fix(cli): remove redundant UUID import in test
+- 🎨 style: apply cargo fmt
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+- 🩹 fix(cli): remove redundant UUID import in test
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 🩹 fix: standardize export format handling with ValueEnum
+- 🩹 fix: standardize export format handling with ValueEnum
 
-- Add ExportFormat enum to dataset export command for type-safe format selection
-- Update dataset export to use ValueEnum with default value (csv) for consistency with eval export
-- Remove obsolete test_dataset_export_requires_format test (format now has sensible default)
-- Add clarifying comment to eval.rs TryFrom implementation explaining future usage
+* Add ExportFormat enum to dataset export command for type-safe format selection
+* Update dataset export to use ValueEnum with default value (csv) for consistency with eval export
+* Remove obsolete test_dataset_export_requires_format test (format now has sensible default)
+* Add clarifying comment to eval.rs TryFrom implementation explaining future usage
 
 Addresses review feedback on PR #397:
+
 - Copilot comment 2573007414: Standardize file-format handling across export commands
 - Copilot comment 2573007417: Document TryFrom implementation usage
 
@@ -6492,10 +6890,11 @@ Addresses review feedback on PR #397:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
 - ✨ feat(sdk): implement structured prompt push/pull with schema validation (#420)
 
 * ✨ feat(sdk): implement structured prompt push/pull with schema validation
@@ -6507,14 +6906,17 @@ layer of the structured output prompts feature.
 ## Changes
 
 ### SDK Error Types (sdk/src/error.rs)
+
 - Add SchemaValidationError for schema validation failures
 - Add InvalidSchemaError for malformed JSON schemas
 - Add InvalidMethodError for invalid structured output methods
 
 ### SDK Dependencies (sdk/Cargo.toml)
+
 - Add jsonschema v0.18 for JSON Schema validation
 
 ### SDK Prompt Client Methods (sdk/src/prompts.rs)
+
 - Add push_structured_prompt() - Validates and pushes StructuredPrompt
 - Add pull() - Retrieves prompt commit manifest
 - Add pull_structured_prompt() - Pulls and deserializes StructuredPrompt
@@ -6522,6 +6924,7 @@ layer of the structured output prompts feature.
 - Add validate_method() - Validates structured output method
 
 ### Comprehensive Unit Tests
+
 - Schema validation tests (valid/invalid/malformed schemas)
 - Method validation tests (json_schema/function_calling/invalid)
 - Serialization tests for API compatibility
@@ -6548,13 +6951,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Fixes #406
 
-* 🩹 fix(sdk): remove unused SchemaValidationError variant
+- 🩹 fix(sdk): remove unused SchemaValidationError variant
 
 The SchemaValidationError variant was defined but never used in the
 codebase. InvalidSchemaError is used instead and is more descriptive
 for the actual use case.
 
 Addresses Copilot review feedback.
+
 - ✨ feat(cli): add structured prompt support with --schema flag (#431)
 
 * ✨ feat(cli): add structured prompt support with --schema flag
@@ -6577,6 +6981,7 @@ Implements CLI commands for structured output prompts with JSON schema support:
   - Method validation (json_schema/function_calling)
 
 Design follows DX consistency analysis from issue #403:
+
 - Uses --schema FILE pattern (matches dataset import)
 - Defaults to json_schema method
 - Backward compatible with existing prompt push
@@ -6587,13 +6992,14 @@ Fixes #407
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): address Copilot review feedback
+- 🩹 fix(pr-workflow): address Copilot review feedback
 
-- Use formatter.info() instead of println! for consistency
-- Refactor if-let chain to nested pattern for compatibility
-- Log parsing errors for better debugging visibility
+* Use formatter.info() instead of println! for consistency
+* Refactor if-let chain to nested pattern for compatibility
+* Log parsing errors for better debugging visibility
 
 Addresses review comments:
+
 - Comment 2573067236 (formatter consistency)
 - Comment 2573067239 (edition compatibility)
 - Comment 2573067241 (error logging)
@@ -6605,14 +7011,16 @@ Revert to collapsed pattern to satisfy clippy::collapsible-if lint.
 
 Note: Copilot's comment about edition compatibility was incorrect for this codebase.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(scripts): add automated worktree cleanup for closed issues (#428)
 
 * ✨ feat(scripts): add automated worktree cleanup for closed issues
 
 Adds cleanup-closed-issue-worktrees.sh script that:
+
 - Detects worktrees tied to closed GitHub issues
 - Safely removes worktrees with proper checks
 - Handles edge cases (uncommitted changes, locked worktrees)
@@ -6624,7 +7032,7 @@ kept 2 for open issues.
 
 Fixes #426
 
-* 🩹 fix(scripts): address Copilot review feedback on worktree cleanup script
+- 🩹 fix(scripts): address Copilot review feedback on worktree cleanup script
 
 Improvements for robustness and portability:
 
@@ -6644,12 +7052,12 @@ Addresses review comments: #2573063509, #2573063510, #2573063511,
 
 Tested successfully with existing worktrees.
 
-* 🩹 fix(scripts): address additional Copilot review feedback
+- 🩹 fix(scripts): address additional Copilot review feedback
 
-- Fixed regex to require dash: /([0-9]+)- for accurate extraction
-- Fixed path comparison logic: PWD/ == path/* for proper subdirectory detection
-- Added automatic --force retry for worktrees with uncommitted changes
-- Removed misleading comment about handling "123 -" format
+* Fixed regex to require dash: /([0-9]+)- for accurate extraction
+* Fixed path comparison logic: PWD/ == path/* for proper subdirectory detection
+* Added automatic --force retry for worktrees with uncommitted changes
+* Removed misleading comment about handling "123 -" format
 
 Addresses review comments: #2573067595, #2573067597, #2573067592, #2573067601
 
@@ -6671,22 +7079,26 @@ Fixes #400
 ## Root Cause
 
 The documented approaches had two issues:
+
 1. `gh pr comment --reply` flag does not exist in gh CLI
 2. API endpoint was missing PR number in path structure
 
 ## Verified Correct Approaches
 
 Both methods are now documented and match GitHub REST API docs:
+
 - Method 1: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments` with `in_reply_to` parameter
 - Method 2: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies` with `body`
 
 Other files already correct:
+
 - `.claude/commands/gh-pr-comment-reply.md` uses Method 1 ✓
 - `.claude/skills/resolve-pr-comments/SKILL.md` uses Method 1 ✓
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(pr-workflow): add session statelessness constraints and decision framework (#422)
 
 * 🩹 fix(pr-workflow): add session statelessness constraints and decision framework
@@ -6696,6 +7108,7 @@ Address issue where Claude Code makes inappropriate promises like
 track anything across sessions.
 
 Changes:
+
 - Add "Critical Constraints - Session Statelessness" section to all 4 files
 - Add "PR Comment Response Decision Framework" with 3 clear options:
   1. Implement Now (preferred) - fix and reply with commit SHA
@@ -6711,12 +7124,12 @@ Fixes #417
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): address Copilot review feedback
+- 🩹 fix(pr-workflow): address Copilot review feedback
 
-- Add missing "You MUST NOT say" section to resolve-pr-comments/SKILL.md
-- Fix inconsistent terminology: "Response Pattern" → "Option" in gh-pr-comment-reply.md
-- Add missing action steps to Option 1 in resolve-pr-comments/SKILL.md
-- Fix spelling: "nit-picky" → "nitpicky" in 4 files (standard dictionary spelling)
+* Add missing "You MUST NOT say" section to resolve-pr-comments/SKILL.md
+* Fix inconsistent terminology: "Response Pattern" → "Option" in gh-pr-comment-reply.md
+* Add missing action steps to Option 1 in resolve-pr-comments/SKILL.md
+* Fix spelling: "nit-picky" → "nitpicky" in 4 files (standard dictionary spelling)
 
 Addresses Copilot review comments on PR #422
 
@@ -6724,9 +7137,10 @@ Addresses Copilot review comments on PR #422
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(devcontainer): clear git credential helpers before mise install (#429)
 
 * 🩹 fix(devcontainer): clear git credential helpers before mise install
@@ -6734,6 +7148,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #423
 
 ## Problem
+
 mise install was failing when trying to install Python 3.11 because it
 encountered a configured git credential helper that didn't exist in the
 container environment. This happened because VS Code copies the host
@@ -6741,17 +7156,20 @@ machine's gitconfig into the container, which may reference credential
 helpers like docker-credential-desktop that aren't available.
 
 ## Solution
+
 Clear all git credential helpers at the start of post-create.sh, before
 running mise install. This ensures mise can download packages from git
 repositories without encountering credential helper errors.
 
 ## Changes
+
 - Added Step 1 to clear git credential helpers (global and local)
 - Moved existing steps to Step 2-6 for proper numbering
 - Added detailed comments explaining why this is necessary
 - Uses same credential helper clearing approach as setup-github-auth.sh
 
 ## Testing
+
 The fix prevents the error:
 "Failed to obtain credentials: An IO error occurred while communicating
 to the credentials helper: No such file or directory (os error 2)"
@@ -6760,16 +7178,17 @@ to the credentials helper: No such file or directory (os error 2)"
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: enhance credential helper comment for clarity
+- 🩹 fix: enhance credential helper comment for clarity
 
 Added clarifying line explaining that empty string overrides system
 config, matching the comment style in setup-github-auth.sh.
 
 Addresses Copilot review feedback
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(devcontainer): prevent zsh zle error in non-interactive mode (#432)
 
 Wrap mise activation in ~/.zshrc with interactive shell check to prevent
@@ -6783,6 +7202,7 @@ mode, any attempt to enable zle causes an error.
 Solution: Guard mise activation with [[ -o interactive ]] check.
 
 Fixes #424
+
 - 🩹 fix(devcontainer): remove duplicate Rust installation from mise (#433)
 
 Removes rust = "latest" from mise.toml to prevent duplicate Rust installations.
@@ -6790,6 +7210,7 @@ Rust is already installed by the devcontainer feature
 (ghcr.io/devcontainers/features/rust:1) during container build.
 
 This change:
+
 - Eliminates wasted build time from installing Rust twice
 - Reduces unnecessary disk usage
 - Prevents potential version conflicts
@@ -6811,6 +7232,7 @@ Eliminates duplication by extracting ExportFormat enum from both
 eval.rs and dataset.rs to cli/src/output.rs as a shared type.
 
 Benefits:
+
 - Single source of truth for export format types
 - Easier to maintain consistency across commands
 - Future export commands automatically have same format options
@@ -6821,15 +7243,15 @@ Fixes #418
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(output): add Display, PartialEq, Eq traits to ExportFormat
+- 🩹 fix(output): add Display, PartialEq, Eq traits to ExportFormat
 
-- Added PartialEq and Eq for comparisons and testing
-- Added Display trait for logging and error messages
-- Improves consistency with other CLI enum types like EvaluatorType
+* Added PartialEq and Eq for comparisons and testing
+* Added Display trait for logging and error messages
+* Improves consistency with other CLI enum types like EvaluatorType
 
 Addresses Copilot review feedback: https://github.com/codekiln/langstar/pull/430#discussion_r2573064665
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -6850,14 +7272,14 @@ Fixes #398
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add experimental findings to structured output research
+- 📚 docs: add experimental findings to structured output research
 
-- Update research report with Section 9: Experimental Findings
-- Document critical Pydantic serialization issue (classes become null)
-- Add validated manifest structure from actual LangSmith API
-- Answer open questions based on experimental evidence
-- Update experiment README with findings
-- Fix experiment scripts for proper API usage
+* Update research report with Section 9: Experimental Findings
+* Document critical Pydantic serialization issue (classes become null)
+* Add validated manifest structure from actual LangSmith API
+* Answer open questions based on experimental evidence
+* Update experiment README with findings
+* Fix experiment scripts for proper API usage
 
 Key finding: Use JSON schema dicts, not Pydantic classes, for schema_
 
@@ -6865,16 +7287,16 @@ Key finding: Use JSON schema dicts, not Pydantic classes, for schema_
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address PR review feedback
+- 🩹 fix: address PR review feedback
 
-- Add requests to prerequisites in README
-- Fix pull command example with required --name argument
-- Standardize LC-JSON capitalization throughout documentation
-- Fix Langstar capitalization consistency
-- Use safer env sourcing in run_test.sh (set -a/source instead of xargs)
-- Remove unused 'Any' import
-- Add URL encoding for prompt_name in API paths
-- Clarify API endpoint path documentation for default owner
+* Add requests to prerequisites in README
+* Fix pull command example with required --name argument
+* Standardize LC-JSON capitalization throughout documentation
+* Fix Langstar capitalization consistency
+* Use safer env sourcing in run_test.sh (set -a/source instead of xargs)
+* Remove unused 'Any' import
+* Add URL encoding for prompt_name in API paths
+* Clarify API endpoint path documentation for default owner
 
 Addresses review comments from Copilot on PR #399
 
@@ -6882,9 +7304,10 @@ Addresses review comments from Copilot on PR #399
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add design decisions for structured output prompts CLI (#411)
 
 * 📚 docs: add design decisions for structured output prompts CLI
@@ -6908,20 +7331,21 @@ milestone.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address Copilot review comments
+- 🩹 fix(docs): address Copilot review comments
 
-- Clarify "not frequent enough" to "not used frequently enough"
-- Change "Pulling" to "Getting" to match actual CLI command
-- Update `prompt pull` to `prompt get` (correct command)
-- Update implementation summary to use "getting" terminology
+* Clarify "not frequent enough" to "not used frequently enough"
+* Change "Pulling" to "Getting" to match actual CLI command
+* Update `prompt pull` to `prompt get` (correct command)
+* Update implementation summary to use "getting" terminology
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(prompts): validate structured output prompt design against OpenAPI spec (#413)
 
 - Fetch latest LangSmith OpenAPI spec (638K)
@@ -6938,6 +7362,7 @@ Fixes #404
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(eval): add comprehensive documentation for evals feature (#427)
 
 This commit adds complete documentation for the langstar eval commands:
@@ -6956,6 +7381,7 @@ Fixes #374
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add comprehensive structured output prompt documentation (#434)
 
 * 📚 docs: add comprehensive structured output prompt documentation
@@ -6971,15 +7397,15 @@ Fixes #409
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct file references and version numbers
+- 🩹 fix(docs): correct file references and version numbers
 
-- Fix jsonschema version: 0.18 (not 0.21)
-- Remove references to non-existent 402-structured-prompts-openapi-validation.md
-- Fix test file reference: integration_test.rs (not prompts_integration.rs)
+* Fix jsonschema version: 0.18 (not 0.21)
+* Remove references to non-existent 402-structured-prompts-openapi-validation.md
+* Fix test file reference: integration_test.rs (not prompts_integration.rs)
 
 Addresses Copilot review comments in PR #434
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -6995,6 +7421,7 @@ issue #373, including evaluator implementations, SDK tests, and CLI tests.
 ## Changes
 
 ### SDK Evaluator Implementations (sdk/src/evaluators.rs)
+
 - Add heuristic evaluator functions:
   - exact_match: String equality evaluation
   - contains: Substring presence check
@@ -7008,6 +7435,7 @@ issue #373, including evaluator implementations, SDK tests, and CLI tests.
 - Include 19 comprehensive unit tests covering all evaluators
 
 ### SDK Evaluation Tests (sdk/tests/evaluations_test.rs)
+
 - Add 11 mocked HTTP tests for feedback CRUD operations:
   - Create feedback (continuous and categorical)
   - Get feedback by ID
@@ -7018,6 +7446,7 @@ issue #373, including evaluator implementations, SDK tests, and CLI tests.
   - Evaluation result creation as feedback
 
 ### CLI Integration Tests (cli/tests/eval_command_test.rs)
+
 - Add 40+ comprehensive CLI tests covering:
   - Help text validation for all subcommands
   - Required argument validation
@@ -7033,35 +7462,41 @@ issue #373, including evaluator implementations, SDK tests, and CLI tests.
   - Edge cases and error handling
 
 ### Dependencies
+
 - Add regex = "1.11" to sdk/Cargo.toml for regex_match evaluator
 
 ## Test Results
+
 - SDK evaluator tests: 19 passed ✓
 - SDK evaluation tests: 11 passed ✓
 - All tests compile cleanly
 - Passes cargo fmt and cargo clippy
 
 ## Related Issues
+
 Fixes #373
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(workflow): add milestone requirement to PR workflow
+- 📚 docs(workflow): add milestone requirement to PR workflow
 
 Documents the requirement to add milestones to PRs when the related issue
 has a milestone. This ensures consistency with the issue hierarchy and
 enables proper progress tracking.
 
 ## Changes
+
 - Added "IMPORTANT: Always Add Milestone" section to PR Best Practices
 - Explains why milestones matter for project management
 - Provides GitHub CLI example for adding milestone to PR
 - Uses this PR (#421) as a concrete example
 
 ## Context
+
 Milestones must be attached to PRs (not just issues) for:
+
 - Progress tracking across epics
 - Filtering all work related to a milestone
 - Project management and burndown charts
@@ -7074,13 +7509,14 @@ have the milestone attached" (from Issue #258).
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tests): address Copilot review feedback
+- 🩹 fix(tests): address Copilot review feedback
 
-- Simplified string concatenation in test assertion
-- Use assert_eq! instead of assert! for floating-point comparison
-- Renamed test function for accuracy
+* Simplified string concatenation in test assertion
+* Use assert_eq! instead of assert! for floating-point comparison
+* Renamed test function for accuracy
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/421#discussion_r2573041900
 - https://github.com/codekiln/langstar/pull/421#discussion_r2573041902
 - https://github.com/codekiln/langstar/pull/421#discussion_r2573041905
@@ -7091,9 +7527,10 @@ Addresses cargo fmt check failure in CI by formatting .match_query() call to sin
 
 Fixes formatting detected in CI run 19785321638.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🧪 test: add comprehensive tests for structured output prompt support (#435)
 
 * 🧪 test: add comprehensive tests for structured output prompt support
@@ -7101,6 +7538,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Implements tests for structured prompt push/pull functionality:
 
 SDK Mocked Tests (sdk/tests/structured_prompts_test.rs):
+
 - Test push_structured_prompt with mocked HTTP responses
 - Test pull_structured_prompt deserialization
 - Test schema validation (valid and invalid schemas)
@@ -7109,6 +7547,7 @@ SDK Mocked Tests (sdk/tests/structured_prompts_test.rs):
 - 7 test cases using mockito for HTTP mocking
 
 SDK Integration Tests (sdk/tests/structured_prompts_integration_test.rs):
+
 - Test push/pull against real LangSmith API
 - Test round-trip with real API (push then pull)
 - Test both json_schema and function_calling methods
@@ -7116,6 +7555,7 @@ SDK Integration Tests (sdk/tests/structured_prompts_integration_test.rs):
 - 4 test cases (marked with #[ignore] for opt-in execution)
 
 CLI Integration Tests (cli/tests/prompt_structured_test.rs):
+
 - Test CLI commands with --schema flag
 - Test invalid schema file handling
 - Test missing schema file error
@@ -7125,6 +7565,7 @@ CLI Integration Tests (cli/tests/prompt_structured_test.rs):
 - 9 test cases using assert_cmd and tempfile
 
 All tests follow project conventions:
+
 - SDK integration tests use #[ignore] attribute
 - CLI tests use #[cfg_attr(not(feature = "integration-tests"), ignore)]
 - Tests verify both json_schema and function_calling methods
@@ -7136,13 +7577,14 @@ Fixes #408
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: address review feedback on test prerequisites
+- 📚 docs: address review feedback on test prerequisites
 
-- Updated SDK integration test docs to clarify repository auto-creation
-- Clarified WORKSPACE_ID requirement follows CLI test pattern
-- Added auto-creation note to CLI test docs for consistency
+* Updated SDK integration test docs to clarify repository auto-creation
+* Clarified WORKSPACE_ID requirement follows CLI test pattern
+* Added auto-creation note to CLI test docs for consistency
 
 Addresses review comments:
+
 - https://github.com/codekiln/langstar/pull/435#discussion_r2573078296
 - https://github.com/codekiln/langstar/pull/435#discussion_r2573078297
 
@@ -7155,7 +7597,7 @@ Addresses review comments:
 
 Addresses CI failure in clippy check.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -7193,9 +7635,11 @@ Fixes #337
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): implement annotation queue client methods (#356)
 
 Implements 8 client methods for LangSmith annotation queues API:
+
 - list_annotation_queues: List queues with filtering
 - create_annotation_queue: Create new queue
 - read_annotation_queue: Get queue by ID
@@ -7214,6 +7658,7 @@ Fixes #338
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add annotation queue CLI commands (#360)
 
 Implement `langstar queue` subcommand group for managing LangSmith
@@ -7235,6 +7680,7 @@ Fixes #339
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add Dataset and Example types for LangSmith datasets API (#365)
 
 Implements SDK types for the LangSmith datasets API per validation report
@@ -7242,6 +7688,7 @@ Section 6.2 from #350. Types follow OpenAPI spec with corrected field names
 (inputs_schema_definition, path as Vec<String>) and required/optional fields.
 
 Types implemented:
+
 - DataType enum (kv, llm, chat)
 - Dataset, DatasetCreate, DatasetUpdate (response/request types)
 - DatasetTransformation, DatasetTransformationType
@@ -7254,15 +7701,18 @@ Fixes #351
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add dataset and example client methods (#375)
 
 Implements SDK client methods for LangSmith datasets and examples API:
 
 Dataset methods:
+
 - create_dataset, list_datasets (with pagination), get_dataset
 - update_dataset, delete_dataset
 
 Example methods:
+
 - create_example, list_examples (with pagination/filtering)
 - get_example, update_example, delete_example, bulk_create_examples
 
@@ -7274,6 +7724,7 @@ Fixes #352
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add dataset management commands (#380)
 
 * ✨ feat(cli): add dataset management commands
@@ -7298,27 +7749,29 @@ Fixes #353
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(dataset): address PR review comments
+- ♻️ refactor(dataset): address PR review comments
 
-- Fix ExampleRow::from double serialization - serialize once and reuse
-- Add "..." suffix for truncated outputs and names for consistency
-- Extract parse_data_type() helper to reduce code duplication
-- Use if let instead of unwrap in export function
-- Handle id column in CSV import (parse as UUID)
-- Handle metadata column in CSV import (parse as JSON)
+* Fix ExampleRow::from double serialization - serialize once and reuse
+* Add "..." suffix for truncated outputs and names for consistency
+* Extract parse_data_type() helper to reduce code duplication
+* Use if let instead of unwrap in export function
+* Handle id column in CSV import (parse as UUID)
+* Handle metadata column in CSV import (parse as JSON)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add evaluation types (#388)
 
 * ✨ feat(sdk): add evaluation types
 
 Implements comprehensive evaluation types for LangSmith SDK:
+
 - Feedback types (FeedbackConfig, FeedbackCreate, Feedback)
 - Evaluator types (Heuristic, LLM Judge, Code Evaluator)
 - Evaluation result types (EvaluationResult, EvaluatorType)
@@ -7330,15 +7783,15 @@ Fixes #370
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(sdk): address Copilot review feedback
+- ♻️ refactor(sdk): address Copilot review feedback
 
-- Add Deserialize trait to FeedbackCreate and FeedbackUpdate
-- Fix capitalization: Javascript -> JavaScript
-- Update test to use correct enum variant name
+* Add Deserialize trait to FeedbackCreate and FeedbackUpdate
+* Fix capitalization: Javascript -> JavaScript
+* Update test to use correct enum variant name
 
 Addresses Copilot review comments on PR #388
 
-* 🧪 test(sdk): add deserialization tests for evaluation types
+- 🧪 test(sdk): add deserialization tests for evaluation types
 
 Address Copilot review feedback by adding comprehensive deserialization
 tests for round-trip verification:
@@ -7356,9 +7809,10 @@ and maintain consistency with the serialization tests.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(slash-command): create /pr-workflow command for guided PR creation and management (#385)
 
 * ✨ feat(slash-command): create /pr-workflow command for guided PR creation and management
@@ -7367,6 +7821,7 @@ Implements a comprehensive slash command that guides Claude agents through the
 complete pull request lifecycle from pre-PR validation through to successful merge.
 
 Changes:
+
 - Created .claude/commands/pr-workflow.md with autonomous PR workflow
   - Phase 1: Pre-PR validation (worktree, branch naming, issue linking)
   - Phase 2: PR creation preparation (commit analysis, draft generation)
@@ -7382,9 +7837,10 @@ Fixes #377
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): address all Copilot review feedback
+- 🩹 fix(pr-workflow): address all Copilot review feedback
 
 Substantive improvements:
+
 - Fixed PR number capture by extracting from gh pr create output
 - Added explicit sleep command in CI monitoring loop
 - Fixed run ID extraction with proper JSON query
@@ -7393,6 +7849,7 @@ Substantive improvements:
 - Added validation to prevent empty PRs (check commit count)
 
 Documentation/formatting improvements:
+
 - Added clarifying comment for three-dot diff usage
 - Added concrete commit examples (not placeholders)
 - Clarified template placeholder replacement
@@ -7407,9 +7864,10 @@ Fixes review comments from @Copilot in PR #385
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): add PR existence check and prioritize review comments
+- 🩹 fix(pr-workflow): add PR existence check and prioritize review comments
 
 **Changes:**
+
 - Added step 7 to Phase 1: Check if PR already exists before attempting creation
 - If PR exists and is OPEN, skip directly to Phase 4 monitoring
 - Restructured Phase 4 to prioritize review comments FIRST (before CI checks)
@@ -7419,12 +7877,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - Removed interactive prompts for review comments - now fully autonomous
 
 **Phase 4 new order:**
+
 1. Review comments (highest priority - human feedback)
 2. Rebase check (ensure up-to-date with base)
 3. CI/CD checks (code quality)
 4. Stability monitoring (5-7 minutes)
 
 **Goal:** Run `/pr-workflow`, walk away, come back to ready PR with:
+
 - All review comments addressed and replied to
 - Branch rebased to main (no conflicts)
 - All CI checks passing
@@ -7434,15 +7894,17 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(pr-workflow): address all Copilot review feedback
+- 🩹 fix(pr-workflow): address all Copilot review feedback
 
 Critical fixes:
+
 - Fixed review comment detection: use .resolved == null (not false)
 - Fixed PR number extraction from gh pr create output
 - Added explicit sleep command in CI check loop
 - Fixed gh pr checks to document run ID extraction with --json
 
 Documentation improvements:
+
 - Clarified git diff three-dot usage with explanatory comment
 - Clarified commit message template with interpolation note
 - Fixed bash code block formatting in cleanup sections
@@ -7452,18 +7914,19 @@ All 30 review comments addressed (15 Copilot + 15 user acknowledgments)
 
 Fixes #377
 
-* fix: Apply suggestions from code review
+- fix: Apply suggestions from code review
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: check true - Update .claude/commands/pr-workflow.md
+- fix: check true - Update .claude/commands/pr-workflow.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - ✨ feat(sdk): add feedback CRUD methods for evaluations (#389)
 
 * ✨ feat(sdk): add feedback CRUD methods for evaluations
@@ -7487,15 +7950,15 @@ Fixes #371
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): use execute_status_only_request for delete_feedback
+- 🩹 fix(sdk): use execute_status_only_request for delete_feedback
 
-- Changed delete_feedback to use execute_status_only_request instead of execute
-- Follows the pattern used by other delete methods (delete_dataset, delete_annotation_queue)
-- DELETE endpoints return no body, so status-only execution is appropriate
+* Changed delete_feedback to use execute_status_only_request instead of execute
+* Follows the pattern used by other delete methods (delete_dataset, delete_annotation_queue)
+* DELETE endpoints return no body, so status-only execution is appropriate
 
 Addresses review comment: https://github.com/codekiln/langstar/pull/389#discussion_r2572329947
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -7506,17 +7969,20 @@ Co-authored-by: Claude <noreply@anthropic.com>
 * 🩹 fix(dataset): fix CLI export flag conflict and update response decoding
 
 Bug 1: Export format flag conflict
+
 - Renamed `--format` to `--file-format` in dataset export command
 - Resolves conflict with global output format flag (-f, --format)
 - Updated all tests to use new `--file-format` flag
 
 Bug 2: Update response decoding failure
+
 - Made `example_count`, `session_count`, and `modified_at` fields optional in Dataset struct
 - API PATCH endpoint returns DatasetSchemaForUpdate which omits these computed fields
 - Added proper Option handling in CLI display code
 - Updated SDK test mocks to match actual API response format
 
 Tests:
+
 - Un-ignored integration tests: test_dataset_crud_lifecycle and test_dataset_import_export_roundtrip
 - All workspace tests passing
 
@@ -7526,12 +7992,13 @@ Fixes #387
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(dataset): use Option<i64> for example_count and session_count
+- 🩹 fix(dataset): use Option<i64> for example_count and session_count
 
 Address Copilot review feedback to properly distinguish between
 "field not present" and "actually 0" for computed fields.
 
 Changes:
+
 - Changed example_count and session_count from i64 with #[serde(default)]
   to Option<i64> with #[serde(skip_serializing_if = "Option::is_none")]
 - Updated all usage sites in CLI to handle Option with .unwrap_or(0)
@@ -7546,7 +8013,7 @@ Addresses review comments: #391 (comment 2572502483, comment 2572502490)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(test): update SDK doc test assertions for Option fields
+- 🩹 fix(test): update SDK doc test assertions for Option fields
 
 Fixed missed assertions in SDK unit tests that were checking
 example_count and session_count as integers instead of Option<i64>.
@@ -7555,13 +8022,13 @@ example_count and session_count as integers instead of Option<i64>.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style: run cargo fmt
+- 🎨 style: run cargo fmt
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -7573,6 +8040,7 @@ Extract duplicated error handling logic from four annotation queue methods
 into a reusable execute_status_only_request() helper method.
 
 Changes:
+
 - Add execute_status_only_request() helper method (client.rs:387-414)
 - Refactor update_annotation_queue to use helper (reduced 18→3 lines)
 - Refactor delete_annotation_queue to use helper (reduced 35→27 lines)
@@ -7580,11 +8048,13 @@ Changes:
 - Refactor delete_run_from_annotation_queue to use helper (reduced 35→27 lines)
 
 Impact:
+
 - Eliminated ~48 lines of duplicated code
 - Improved maintainability - error handling logic now in one place
 - No functional changes - refactor only
 
 Tests: All 173 tests pass
+
 - cargo fmt ✓
 - cargo check ✓
 - cargo clippy ✓
@@ -7606,6 +8076,7 @@ Analyzes LangSmith Python SDK annotation queue implementation to
 establish recommendations for implementing langstar queue commands.
 
 Key findings:
+
 - Documented all 8 annotation queue API endpoints
 - Analyzed data structures (AnnotationQueue, RunWithAnnotationQueueInfo)
 - Provided concrete Rust implementation recommendations
@@ -7617,19 +8088,20 @@ Fixes #335
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: address PR feedback on annotation queues research
+- 📚 docs: address PR feedback on annotation queues research
 
-- Rename AddRun to AddRuns for consistency with SDK method
-- Fix CLI example: add-run → add-runs (plural)
-- Add note to Items command about SDK limitation (no list endpoint)
+* Rename AddRun to AddRuns for consistency with SDK method
+* Fix CLI example: add-run → add-runs (plural)
+* Add note to Items command about SDK limitation (no list endpoint)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add pr-lifecycle skill for project hygiene (#333)
 
 * 📚 docs: add pr-lifecycle skill for project hygiene
@@ -7650,36 +8122,36 @@ automated reviews (Copilot) and replying with commit references.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address Copilot review feedback
+- 🩹 fix: address Copilot review feedback
 
-- Use POSIX-compliant [0-9]+ instead of \d+ for grep portability
-- Fix Claude Code URL consistency (claude.com/claude-code)
-- Add dynamic REPO variable for API commands instead of {owner}/{repo}
-- Simplify worktree check to use pwd | grep wip/
-- Improve cleanup verification to filter main/master branches
-- Escape pipe characters in markdown table using HTML entities
+* Use POSIX-compliant [0-9]+ instead of \d+ for grep portability
+* Fix Claude Code URL consistency (claude.com/claude-code)
+* Add dynamic REPO variable for API commands instead of {owner}/{repo}
+* Simplify worktree check to use pwd | grep wip/
+* Improve cleanup verification to filter main/master branches
+* Escape pipe characters in markdown table using HTML entities
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* docs: Revise PR hygiene guidelines and add template
+- docs: Revise PR hygiene guidelines and add template
 
 Updated the PR hygiene guidelines to clarify requirements and added a PR body template section.
 
-* 🩹 fix: address second round of Copilot review feedback
+- 🩹 fix: address second round of Copilot review feedback
 
-- Fix duplicate "main" in "origin main main" (line 15)
-- Rename duplicate "PR Body Template" to "Adding PR to Milestone" (line 160)
-- Add missing closing parenthesis (line 321)
-- Fix inconsistent path reference workspace/wip/ -> wip/ (line 321)
-- Change "* NOTE:" to "**Note:**" for consistent formatting (line 230)
+* Fix duplicate "main" in "origin main main" (line 15)
+* Rename duplicate "PR Body Template" to "Adding PR to Milestone" (line 160)
+* Add missing closing parenthesis (line 321)
+* Fix inconsistent path reference workspace/wip/ -> wip/ (line 321)
+* Change "* NOTE:" to "**Note:**" for consistent formatting (line 230)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: add missing PR_NUM definition in reply snippet
+- 🩹 fix: add missing PR_NUM definition in reply snippet
 
 Address Copilot feedback: PR_NUM variable was undefined in the
 "Reply to Review Comments" code snippet.
@@ -7688,9 +8160,10 @@ Address Copilot feedback: PR_NUM variable was undefined in the
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add OpenAPI validation report for annotation queues (#342)
 
 * 📚 docs: add OpenAPI validation report for annotation queues
@@ -7698,6 +8171,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Validates research report #335 against LangSmith OpenAPI specification.
 
 Key findings:
+
 - Confirmed all 8 documented endpoints with correct HTTP methods
 - Confirmed add_runs body is JSON array (not object)
 - CORRECTION: GET /runs endpoint EXISTS for listing runs in queue
@@ -7706,6 +8180,7 @@ Key findings:
 - Discovered 10+ additional schema fields
 
 Includes:
+
 - reference/research/334-openapi-validation.md - Full validation report
 - reference/api-specs/annotation-queue-endpoints.json - All 21 endpoints
 - reference/api-specs/annotation-queue-schemas.json - All 22 schemas
@@ -7716,10 +8191,10 @@ Fixes #341
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: address PR review comments
+- 🩹 fix: address PR review comments
 
-- Fix path parameter name: run_id → queue_run_id (line 36)
-- Add proper context to Rust enum variant example (line 271)
+* Fix path parameter name: run_id → queue_run_id (line 36)
+* Add proper context to Rust enum variant example (line 271)
 
 Note: Endpoint counts (21 endpoints, 13 additional) are correct.
 Copilot reviewer miscounted - JSON file has 21 entries, not 20.
@@ -7728,15 +8203,17 @@ Copilot reviewer miscounted - JSON file has 21 entries, not 20.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add standard feature development process guide (#345)
 
 Fixes #343
 
 Adds comprehensive documentation for implementing new LangSmith/LangGraph API
 features as CLI commands, covering the 7-phase development process:
+
 - Phase 0: Epic setup with milestone and sub-issues
 - Phase 1: Research SDK precedent
 - Phase 2: OpenAPI validation
@@ -7751,6 +8228,7 @@ Also updates docs/dev/README.md to include link to the new guide.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add dataset API research report (#357)
 
 * 📚 docs: add dataset API research report
@@ -7759,6 +8237,7 @@ Research findings on LangSmith SDK dataset management to inform
 langstar's Rust-based dataset CLI implementation.
 
 Key findings:
+
 - Comprehensive API for dataset CRUD and example management
 - Point-in-time versioning with timestamp-based snapshots
 - Native JSONL/CSV export endpoints
@@ -7771,35 +8250,37 @@ Fixes #348
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: address PR review feedback on dataset research
+- 📚 docs: address PR review feedback on dataset research
 
-- Add serde attributes (#[derive], #[serde(rename_all)]) to DataType enum
-- Define DatasetTransformation type with documentation
-- Add serde attributes to all structs with skip_serializing_if for optional fields
-- Add std::collections::HashMap import to Example schema
-- Define StringOrVec enum with #[serde(untagged)] for split field flexibility
-- Fix snake_case to camelCase in implementation recommendations
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-* 📚 docs: add data sources and jq citations to research report
-
-- Add Data Sources section referencing local OpenAPI spec file
-- Add Citation (jq query) column to all API endpoint tables
-- Queries verify against reference/api-specs/langsmith-openapi.json
+* Add serde attributes (#[derive], #[serde(rename_all)]) to DataType enum
+* Define DatasetTransformation type with documentation
+* Add serde attributes to all structs with skip_serializing_if for optional fields
+* Add std::collections::HashMap import to Example schema
+* Define StringOrVec enum with #[serde(untagged)] for split field flexibility
+* Fix snake_case to camelCase in implementation recommendations
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: address PR review feedback - add API catalog and code fixes
+- 📚 docs: add data sources and jq citations to research report
+
+* Add Data Sources section referencing local OpenAPI spec file
+* Add Citation (jq query) column to all API endpoint tables
+* Queries verify against reference/api-specs/langsmith-openapi.json
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+- 📚 docs: address PR review feedback - add API catalog and code fixes
 
 New files:
+
 - reference/LANGSMITH_APIS.md: Catalog of all LangSmith/LangGraph OpenAPI specs
 
 Code fixes in research document:
+
 - Add prominent TODO/WARNING to DatasetTransformation placeholder
 - Add serde attributes to DatasetVersion, DatasetDiffInfo, DatasetShareSchema, AttachmentInfo
 - Define AttachmentData enum with Bytes/File variants
@@ -7811,14 +8292,16 @@ Code fixes in research document:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: reorganize LangSmith API documentation structure
+- 📚 docs: reorganize LangSmith API documentation structure
 
 Restructure API specification documentation for clarity:
+
 - Move LANGSMITH_APIS.md → api-specs/LANGSMITH_APIS_DETAILS.md (expanded)
 - Create api-specs/LANGSMITH_API_OVERVIEW.md (quick reference table)
 - Simplify AGENTS.md to reference new overview document
 
 The new structure provides:
+
 1. Quick reference: LANGSMITH_API_OVERVIEW.md for fast lookup of base URLs
 2. Detailed catalog: LANGSMITH_APIS_DETAILS.md for comprehensive info
 3. Cleaner project overview: AGENTS.md now concise with pointer to API docs
@@ -7827,7 +8310,7 @@ The new structure provides:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor: reorganize OpenAPI specs with canonical/fragment separation
+- ♻️ refactor: reorganize OpenAPI specs with canonical/fragment separation
 
 Implement the "canonical source + derived fragments" pattern inspired by
 setup-remote-repo-notes-dir skill:
@@ -7876,9 +8359,10 @@ reference/
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add OpenAPI spec management pattern to feature dev process
+- 📚 docs: add OpenAPI spec management pattern to feature dev process
 
 Update feature-development-process.md Phase 3 with:
+
 - Canonical source + derived fragments pattern structure
 - MANIFEST.md for spec provenance tracking
 - FRAGMENTS.md for reproducible jq extractions
@@ -7886,6 +8370,7 @@ Update feature-development-process.md Phase 3 with:
 - Updated Documentation Consistency checklist
 
 This pattern is inspired by setup-remote-repo-notes-dir and provides:
+
 - Clear separation of canonical specs vs AI-friendly fragments
 - Reproducible extraction via documented jq queries
 - Provenance tracking for when/how specs were fetched
@@ -7894,14 +8379,15 @@ This pattern is inspired by setup-remote-repo-notes-dir and provides:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update sdk/src/runs.rs
+- fix: Update sdk/src/runs.rs
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs(dataset): add design decisions for #349 (#359)
 
 * 📚 docs(dataset): add design decisions section for #349
@@ -7924,22 +8410,23 @@ Fixes #349
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address PR review comments
+- 🩹 fix(docs): address PR review comments
 
-- Remove unnecessary pipe escaping in markdown tables
-- Improve table column headers for CLI/UI comparison clarity
+* Remove unnecessary pipe escaping in markdown tables
+* Improve table column headers for CLI/UI comparison clarity
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* docs: Revise dataset command descriptions and purpose
+- docs: Revise dataset command descriptions and purpose
 
 Updated command descriptions and added business purpose section for datasets.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(dataset): validate design against OpenAPI spec for #350 (#362)
 
 Validates dataset research findings from #348/#349 against live LangSmith
@@ -7955,6 +8442,7 @@ Fixes #350
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add LangSmith reference repos to notes setup (#363)
 
 Fixes #361
@@ -7962,12 +8450,14 @@ Fixes #361
 ## Summary
 
 Added two LangSmith reference repositories to our notes setup:
+
 - langsmith-cookbook: Usage patterns and real-world examples
 - langsmith-mcp-server: Production reference implementation
 
 ## Structure
 
 **Worktree-aware setup:**
+
 - Code (shared): /workspace/reference/repo/langchain-ai/*/code/
 - Notes (local): reference/repo/langchain-ai/*/notes/
 
@@ -7998,6 +8488,7 @@ Added two LangSmith reference repositories to our notes setup:
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(queue): add annotation queue documentation (#364)
 
 * 📚 docs(queue): add annotation queue documentation
@@ -8014,23 +8505,25 @@ Fixes #340
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(queue): add rubrics documentation section
+- 📚 docs(queue): add rubrics documentation section
 
-- Add dedicated Rubrics section explaining --rubric flag usage
-- Include rubric best practices
-- Document structured rubric items (SDK-only feature)
-- Clarify CLI vs SDK rubric capabilities
+* Add dedicated Rubrics section explaining --rubric flag usage
+* Include rubric best practices
+* Document structured rubric items (SDK-only feature)
+* Clarify CLI vs SDK rubric capabilities
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(evals): research langsmith-sdk evaluation patterns (#376)
 
 Document Python SDK evaluation implementation including:
+
 - Heuristic evaluators (exact_match, regex_match, string_distance)
 - LLM-as-judge evaluators (LLMEvaluator, CategoricalScoreConfig, ContinuousScoreConfig)
 - FeedbackConfig types (continuous, categorical, freeform)
@@ -8042,6 +8535,7 @@ Fixes #367
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(research): validate evals design against OpenAPI spec (#378)
 
 * 📚 docs(research): validate evals design against OpenAPI spec
@@ -8052,6 +8546,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 - Created comprehensive validation report with findings
 
 Key Discoveries:
+
 - Two evaluator types: Structured (LLM-as-judge) and Code (heuristic)
 - Three feedback types: continuous, categorical, freeform
 - Four feedback sources: app, api, model, auto_eval
@@ -8064,7 +8559,7 @@ Fixes #369
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): correct FeedbackFormula schema documentation
+- 🩹 fix(docs): correct FeedbackFormula schema documentation
 
 Copilot review identified several schema errors in the validation report:
 
@@ -8079,36 +8574,38 @@ Copilot review identified several schema errors in the validation report:
 
 Co-Authored-By: Copilot <noreply@github.com>
 
-* 📚 docs(evals): add online vs offline evaluation section
+- 📚 docs(evals): add online vs offline evaluation section
 
-- Clarify distinction between client-side (offline) and server-side (online) evaluation
-- Document CodeEvaluatorTopLevel for custom code evaluators
-- Document EvaluatorStructuredOutput for LLM-as-judge
-- Explain automation rules and the auto_eval feedback source
-- Update #367 status to merged
-- Add implications for Langstar implementation
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-* 📚 docs(evals): link new online evaluation research issue #381
-
-- Add #381 to next steps as blocking #370 (SDK types)
-- Update related issues section
-- #381 created as follow-up for deep-dive on code evaluators and automation rules
+* Clarify distinction between client-side (offline) and server-side (online) evaluation
+* Document CodeEvaluatorTopLevel for custom code evaluators
+* Document EvaluatorStructuredOutput for LLM-as-judge
+* Explain automation rules and the auto_eval feedback source
+* Update #367 status to merged
+* Add implications for Langstar implementation
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+- 📚 docs(evals): link new online evaluation research issue #381
+
+* Add #381 to next steps as blocking #370 (SDK types)
+* Update related issues section
+* #381 created as follow-up for deep-dive on code evaluators and automation rules
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <noreply@github.com>
+
 - 📚 docs(evals): deep-dive online evaluation research (#382)
 
 Adds comprehensive Section 7 on Online Evaluation (Server-Side Evaluators):
+
 - Documents automation rules (RunRules) API endpoints and schemas
 - Details code evaluator execution environment (Python/JavaScript)
 - Provides example code evaluators (exact_match, contains, json_valid, regex)
@@ -8122,6 +8619,7 @@ Research conducted for Issue #381.
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(evals): design DX consistency and configuration integration (#383)
 
 * 📚 docs(evals): design DX consistency and configuration integration
@@ -8129,6 +8627,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #368
 
 Adds Section 8 to the evals precedent research report covering:
+
 - DX consistency analysis with existing langstar commands (runs, datasets)
 - Evaluator configuration patterns for heuristic and LLM-as-judge evaluators
 - CLI flag conventions following existing patterns (kebab-case, ValueEnum)
@@ -8137,6 +8636,7 @@ Adds Section 8 to the evals precedent research report covering:
 - Error handling and user feedback patterns
 
 Key design decisions:
+
 - Use `--evaluator <TYPE>` pattern consistent with `--run-type`
 - LLM judge config via `--judge-model`, `--judge-provider`
 - Rubric input via `--rubric` (inline) or `--rubric-file`
@@ -8147,7 +8647,7 @@ Key design decisions:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(evals): fix run ID pattern consistency
+- 📚 docs(evals): fix run ID pattern consistency
 
 Use positional <id> for single-run examples to match the design
 in section 8.3.1 (`langstar eval run <RUN_ID>`). The `--run-id`
@@ -8157,15 +8657,16 @@ flag form is reserved for multi-run scenarios per section 8.3.2.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(evals): remove trailing whitespace in regex_match example
+- 📚 docs(evals): remove trailing whitespace in regex_match example
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(datasets): add comprehensive dataset feature documentation (#390)
 
 * 📚 docs(datasets): add comprehensive dataset feature documentation
@@ -8185,13 +8686,13 @@ Fixes #355
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(docs): address review feedback on dataset documentation
+- 🩹 fix(docs): address review feedback on dataset documentation
 
-- Replaced "comprehensive" with "complete" per style guide
-- Fixed CSV auto-mapping example to correctly show all columns map to inputs
-- Clarified --format parameter is optional (inferred from extension)
-- Removed redundant CSV format example with explicit format on standard extension
-- Added use case context to create command examples
+* Replaced "comprehensive" with "complete" per style guide
+* Fixed CSV auto-mapping example to correctly show all columns map to inputs
+* Clarified --format parameter is optional (inferred from extension)
+* Removed redundant CSV format example with explicit format on standard extension
+* Added use case context to create command examples
 
 Addresses review comments from PR #390
 
@@ -8199,10 +8700,10 @@ Addresses review comments from PR #390
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style(docs): use Rust field initialization shorthand
+- 🎨 style(docs): use Rust field initialization shorthand
 
-- Changed `dataset_id: dataset_id` to `dataset_id` for idiomatic Rust
-- Applies to ExampleCreate struct initialization in code examples
+* Changed `dataset_id: dataset_id` to `dataset_id` for idiomatic Rust
+* Applies to ExampleCreate struct initialization in code examples
 
 Addresses Copilot review comments
 
@@ -8210,7 +8711,7 @@ Addresses Copilot review comments
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8223,6 +8724,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Add tests for dataset CRUD operations and CLI commands:
 
 **CLI Tests (cli/tests/dataset_command_test.rs)**:
+
 - Help text tests for all 8 dataset subcommands
 - Argument validation tests (required args, invalid UUIDs)
 - Valid argument combination tests
@@ -8231,6 +8733,7 @@ Add tests for dataset CRUD operations and CLI commands:
 - Integration tests (feature-gated, 2 ignored due to known bugs)
 
 **SDK Tests (sdk/tests/dataset_test.rs)**:
+
 - Mocked HTTP tests for dataset CRUD (create, list, get, update, delete)
 - Mocked HTTP tests for example CRUD (create, list, get, update, delete)
 - Bulk create examples test
@@ -8238,11 +8741,13 @@ Add tests for dataset CRUD operations and CLI commands:
 - Live API integration tests (ignored by default)
 
 **Test Results**:
+
 - 33 CLI tests pass + 2 ignored (integration with known CLI bugs)
 - 18 SDK tests pass + 2 ignored (live API tests)
 - Existing 12 serialization tests in datasets.rs continue to pass
 
 **Bugs Discovered**:
+
 - CLI: `dataset export --format` conflicts with global `-f, --format` flag
 - CLI: `dataset update` fails to decode response body
 
@@ -8254,10 +8759,11 @@ Closes #354
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧪 test(datasets): reference issue #387 in ignored integration tests
+- 🧪 test(datasets): reference issue #387 in ignored integration tests
 
 Update ignore annotations to reference the follow-up issue tracking
 the CLI bugs discovered during testing:
+
 - Bug 1: export --format conflicts with global output format flag
 - Bug 2: update command fails to decode response body
 
@@ -8267,7 +8773,7 @@ TODO(#387): Un-ignore these tests when the bugs are fixed.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style(tests): fix clippy redundant to_string in format args
+- 🎨 style(tests): fix clippy redundant to_string in format args
 
 Remove unnecessary .to_string() calls inside format! macros
 where the slice &str already implements Display.
@@ -8276,7 +8782,7 @@ where the slice &str already implements Display.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8291,6 +8797,7 @@ when only documentation or non-code files are modified. This reduces
 CI resource usage and speeds up feedback for docs-only changes.
 
 Files ignored:
+
 - Markdown files (**/*.md, .github/**/*.md)
 - Documentation directory (docs/**)
 - Text files (*.txt)
@@ -8298,14 +8805,14 @@ Files ignored:
 
 Fixes #379
 
-* 🔧 build(ci): address Copilot review feedback
+- 🔧 build(ci): address Copilot review feedback
 
-- Remove redundant .github/**/*.md pattern (already covered by **/*.md)
-- Clarify *.txt comment (only matches root directory text files)
+* Remove redundant .github/**/_.md pattern (already covered by **/_.md)
+* Clarify *.txt comment (only matches root directory text files)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8320,6 +8827,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Adds user-configurable timezone support for CLI timestamp output.
 
 Changes:
+
 - Add `timezone` field to Config struct (defaults to "local")
 - Add `LANGSTAR_TIMEZONE` environment variable support
 - Create ConfiguredTimezone utility with IANA timezone parsing
@@ -8327,6 +8835,7 @@ Changes:
 - Display timezone in `langstar config` output
 
 Supported timezone values:
+
 - "local" or "system" - use system timezone
 - "UTC" or "GMT" - use UTC
 - IANA names - e.g., "America/New_York", "Europe/London"
@@ -8339,29 +8848,30 @@ Fixes #329
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor: address PR review feedback for timezone config
+- ♻️ refactor: address PR review feedback for timezone config
 
-- Change doc test from `ignore` to `rust,no_run` in time.rs
-- Remove `From<&Run>` impl that hardcoded UTC timezone
-- Update tests to use explicit `from_run_with_timezone` with UTC
-- Add comment explaining why timezone parsing isn't cached in Config
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-* 🧪 test: add timezone formatting verification test
-
-- Add test verifying different timezones produce different time outputs
-- Tests UTC, America/New_York, and Asia/Tokyo formatting
+* Change doc test from `ignore` to `rust,no_run` in time.rs
+* Remove `From<&Run>` impl that hardcoded UTC timezone
+* Update tests to use explicit `from_run_with_timezone` with UTC
+* Add comment explaining why timezone parsing isn't cached in Config
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+- 🧪 test: add timezone formatting verification test
+
+* Add test verifying different timezones produce different time outputs
+* Tests UTC, America/New_York, and Asia/Tokyo formatting
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(runs): add relative time filters and sensible defaults (#331)
 
 * ✨ feat(runs): add relative time filters and sensible defaults
@@ -8378,12 +8888,12 @@ Fixes #327
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(runs): address Copilot review feedback
+- 🩹 fix(runs): address Copilot review feedback
 
-- Clarify --until is ISO 8601 only (intentional design decision)
-- Fix is_relative_duration() to avoid false positives by exactly matching
+* Clarify --until is ISO 8601 only (intentional design decision)
+* Fix is_relative_duration() to avoid false positives by exactly matching
   valid unit strings instead of using ends_with() checks
-- Add comprehensive unit tests for resolve_time_filters():
+* Add comprehensive unit tests for resolve_time_filters():
   - Default 7-day behavior
   - --no-time-filter flag
   - --preset flag
@@ -8396,7 +8906,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8411,6 +8921,7 @@ from YAML frontmatter - the tools: field is documentation only. This caused
 the do-gh-pr-comment-reply subagent to have (Tools: ) - empty tool access.
 
 Changes:
+
 - Update resolve-pr-comments skill to use general-purpose subagent
 - Remove non-functional .claude/agents/do-gh-pr-comment-reply.md
 - Add documentation explaining why general-purpose is required
@@ -8426,7 +8937,7 @@ Fixes #318
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🎨 style(skills): use consistent placeholder format {owner}/{repo}
+- 🎨 style(skills): use consistent placeholder format {owner}/{repo}
 
 Address Copilot review feedback: standardize placeholder format to use
 `{owner}/{repo}` (lowercase with braces) throughout the document for
@@ -8436,9 +8947,10 @@ consistency with the Command Reference section.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(devcontainer): fix postStartCommand failures in Codespaces (#322)
 
 * 🩹 fix(devcontainer): fix postStartCommand failures in Codespaces
@@ -8464,37 +8976,37 @@ Fixes #321
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(devcontainer): export GITHUB_PAT when using GITHUB_TOKEN (#324)
+- 🩹 fix(devcontainer): export GITHUB_PAT when using GITHUB_TOKEN (#324)
 
-* Initial plan
+- Initial plan
 
-* 🩹 fix(devcontainer): export GITHUB_PAT for consistency when using GITHUB_TOKEN
+- 🩹 fix(devcontainer): export GITHUB_PAT for consistency when using GITHUB_TOKEN
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 🩹 fix(devcontainer): configure git credentials when gh already authenticated (#328)
+- 🩹 fix(devcontainer): configure git credentials when gh already authenticated (#328)
 
-* Initial plan
+- Initial plan
 
-* 🩹 fix(devcontainer): ensure git credentials configured even when gh authenticated
-
-Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
-
-* 📝 docs: fix misleading comment about token extraction
+- 🩹 fix(devcontainer): ensure git credentials configured even when gh authenticated
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+- 📝 docs: fix misleading comment about token extraction
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
@@ -8528,7 +9040,7 @@ Fixes #308
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: remove unused mod common import
+- 🩹 fix: remove unused mod common import
 
 Address Copilot review feedback.
 
@@ -8536,7 +9048,7 @@ Address Copilot review feedback.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8556,6 +9068,7 @@ Implements Phase 1 (298.3-sdk-runs-types) of the ls-runs-query milestone:
 - Export all types from sdk/src/lib.rs
 
 Key implementation details:
+
 - Required fields per OpenAPI: id, name, run_type, trace_id, dotted_order,
   status, session_id, app_path
 - Token fields use #[serde(default)] for OpenAPI defaults
@@ -8567,6 +9080,7 @@ Fixes #305
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat: add PR comment reply system (slash command, subagent, skill) (#310)
 
 Implements a complete system for replying to GitHub PR review comments:
@@ -8589,6 +9103,7 @@ Implements a complete system for replying to GitHub PR review comments:
    - Collects and reports results
 
 Additional Changes:
+
 - Created .claude/agents/ directory for subagent definitions
 - Added permissions to .claude/settings.local.json for gh api access
   (Note: settings.local.json is gitignored and not committed)
@@ -8598,6 +9113,7 @@ Fixes #302
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(sdk): add query_runs client method with pagination (#312)
 
 * ✨ feat(sdk): add query_runs client method with pagination
@@ -8608,6 +9124,7 @@ Implements LangchainClient methods to query LangSmith runs/traces:
 - query_runs_paginated(): Auto-paginating stream iterator
 
 Features:
+
 - Cursor-based pagination (max 100 per page per OpenAPI spec)
 - async-stream for streaming pagination results
 - Full support for QueryRunsRequest filters
@@ -8619,18 +9136,19 @@ Fixes #306
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor: address PR #312 review feedback
+- ♻️ refactor: address PR #312 review feedback
 
-- Remove variable shadowing in query_runs_paginated by using mut parameter
-- Clarify mockito matching comment explaining LIFO behavior
+* Remove variable shadowing in query_runs_paginated by using mut parameter
+* Clarify mockito matching comment explaining LIFO behavior
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(ci): add automated test deployment cleanup workflow (#316)
 
 * ✨ feat(ci): add automated test deployment cleanup workflow
@@ -8639,6 +9157,7 @@ Implements scheduled cleanup of stale test deployments to avoid
 overnight/weekend resource consumption.
 
 Safety features:
+
 - Checks for in-progress CI runs before deleting
 - Only targets deployments matching `test-deployment-*` pattern
 - Only deletes deployments older than 4 hours
@@ -8652,32 +9171,32 @@ Fixes #209
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(ci): address Copilot PR review feedback
+- ♻️ refactor(ci): address Copilot PR review feedback
 
-- Add explicit permissions block (actions: read, contents: read)
-- Change schedule from twice daily to every 4 hours for better coverage
-- Add tool validation for jq and gh CLI
-- Add error handling for langstar graph list command
-- Fix subshell variable scope issue using process substitution
-- Add set +e/set -e around while loop to allow individual deletions to fail
-- Add per-delete error handling with continue on failure
-- Add deletion count to completion message
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-* 🩹 fix(ci): simplify date parsing for GNU date on Ubuntu
-
-- Remove unnecessary BSD date fallback (workflow runs on Ubuntu)
-- Add fallback for clean timestamp without fractional seconds
-- Better handles ISO 8601 timestamps with timezone suffixes
+* Add explicit permissions block (actions: read, contents: read)
+* Change schedule from twice daily to every 4 hours for better coverage
+* Add tool validation for jq and gh CLI
+* Add error handling for langstar graph list command
+* Fix subshell variable scope issue using process substitution
+* Add set +e/set -e around while loop to allow individual deletions to fail
+* Add per-delete error handling with continue on failure
+* Add deletion count to completion message
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): use -ge for 4+ hour threshold comparison
+- 🩹 fix(ci): simplify date parsing for GNU date on Ubuntu
+
+* Remove unnecessary BSD date fallback (workflow runs on Ubuntu)
+* Add fallback for clean timestamp without fractional seconds
+* Better handles ISO 8601 timestamps with timezone suffixes
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+- 🩹 fix(ci): use -ge for 4+ hour threshold comparison
 
 Changed from -gt 4 (>4, meaning 5+ hours) to -ge 4 (>=4, meaning 4+ hours)
 to match the intended behavior of deleting deployments 4 hours or older.
@@ -8686,20 +9205,21 @@ to match the intended behavior of deleting deployments 4 hours or older.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): exclude cli-test-deployment-* and simplify date parsing
+- 🩹 fix(ci): exclude cli-test-deployment-* and simplify date parsing
 
-- Exclude cli-test-deployment-* deployments from cleanup to avoid
+* Exclude cli-test-deployment-* deployments from cleanup to avoid
   affecting integration test deployments
-- Simplify date parsing to always use cleaned timestamp (fractional
+* Simplify date parsing to always use cleaned timestamp (fractional
   seconds removed) since that's the known issue with GNU date
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(ci): add devcontainer feature publish staleness checks (#319)
 
 Adds CI safeguards to warn when devcontainer feature files have changed
@@ -8707,6 +9227,7 @@ since the last publish to GHCR, preventing bugs from being fixed in
 source but never republished.
 
 Changes:
+
 - Add check-feature-publish-status job to ci.yml that warns (not fails)
   when feature files are stale vs published version
 - Add devcontainer feature status check to prepare-release.yml that
@@ -8720,6 +9241,7 @@ Fixes #317
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(cli): add langstar runs query command (#314)
 
 * ✨ feat(cli): add langstar runs query command
@@ -8728,6 +9250,7 @@ Implements the CLI command for querying LangSmith runs/traces with filtering
 and pagination support as per Phase 2 of #298 milestone.
 
 Features:
+
 - Filter expression builder for convenience flags (--tag, --meta, --status)
 - Pagination support using SDK's query_runs_paginated()
 - Output formats: table (default), json, json-pretty
@@ -8741,49 +9264,51 @@ Fixes #307
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: use unicode-safe string slicing in runs command
+- 🩹 fix: use unicode-safe string slicing in runs command
 
 Fixes PR review comments from Copilot PR reviewer:
+
 - Use char().take() instead of byte indices for name truncation
 - Use char().take() instead of byte indices for UUID shortening
 
 Both operations now handle multi-byte UTF-8 characters correctly.
 
-* 🩹 fix: address PR #314 review feedback
+- 🩹 fix: address PR #314 review feedback
 
-- Add warning when project identifier is not a valid UUID (comment 2566456607)
-- Add warning when --since/--until datetime parsing fails (comment 2566456685)
-- Suppress info messages in JSON output modes for clean JSON output (comment 2566456651)
-- Rename has_error() to errors_only() to match CLI flag name (comment 2566456674)
-- Change doc example to `ignore` since FilterBuilder isn't exported (comment 2566456661)
-- Remove unnecessary clone of combined_filter by reordering code (comment 2566456713)
-- Add RunRow::from tests for truncation, duration, and tokens (comment 2566456706)
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-* 🩹 fix: address additional PR #314 review feedback
-
-- Add warning when both organization ID and workspace ID are specified (comment 2566510345)
-- Use formatter.warning() instead of formatter.info() for invalid metadata (comment 2566510360)
-- Remove redundant error field from request (handled via filter) (comment 2566510368)
-- Use formatter.error() instead of eprintln! for consistency (comment 2566510379)
+* Add warning when project identifier is not a valid UUID (comment 2566456607)
+* Add warning when --since/--until datetime parsing fails (comment 2566456685)
+* Suppress info messages in JSON output modes for clean JSON output (comment 2566456651)
+* Rename has_error() to errors_only() to match CLI flag name (comment 2566456674)
+* Change doc example to `ignore` since FilterBuilder isn't exported (comment 2566456661)
+* Remove unnecessary clone of combined_filter by reordering code (comment 2566456713)
+* Add RunRow::from tests for truncation, duration, and tokens (comment 2566456706)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧪 test(runs): add pagination limit tests
+- 🩹 fix: address additional PR #314 review feedback
+
+* Add warning when both organization ID and workspace ID are specified (comment 2566510345)
+* Use formatter.warning() instead of formatter.info() for invalid metadata (comment 2566510360)
+* Remove redundant error field from request (handled via filter) (comment 2566510368)
+* Use formatter.error() instead of eprintln! for consistency (comment 2566510379)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+- 🧪 test(runs): add pagination limit tests
 
 Add tests for per-page limit clamping logic:
+
 - test_per_page_limit_below_max: verify user limits < 100 pass through
 - test_per_page_limit_at_max: verify limit == 100 works
 - test_per_page_limit_above_max: verify limits > 100 clamp to API max
 
 Addresses PR #314 review comment about pagination test coverage.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8796,6 +9321,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Addresses all 12 review comments from PR #310:
 
 **gh-pr-comment-reply.md (5 fixes):**
+
 - Add parsing rules section to document argument count handling
 - Update step 3 with complete parsing algorithm
 - Add security notes about body parameter handling
@@ -8803,10 +9329,12 @@ Addresses all 12 review comments from PR #310:
 - Clarify 422 error description
 
 **do-gh-pr-comment-reply.md (2 fixes):**
+
 - Change reply_body to body for consistency with slash command
 - Update example to use consistent parameter names
 
 **resolve-pr-comments/SKILL.md (5 fixes):**
+
 - Clarify unresolved comment detection logic (two-step process)
 - Add note that pseudo-code is conceptual
 - Add algorithmic detail to Scenario 1 workflow
@@ -8819,7 +9347,7 @@ Fixes #302
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: use COMMENT_ID without braces in jq placeholder
+- 🩹 fix: use COMMENT_ID without braces in jq placeholder
 
 The jq expression `{comment_id}` is invalid jq syntax since curly
 braces have special meaning in jq. Using `COMMENT_ID` without braces
@@ -8829,9 +9357,10 @@ makes it clearer this is a documentation placeholder to be replaced.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(devcontainer-feature): fix PATH configuration for langstar binary (#315)
 
 * 🩹 fix(devcontainer-feature): fix PATH configuration for langstar binary
@@ -8839,6 +9368,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Fixes #313
 
 ## Problem
+
 The langstar devcontainer feature failed in GitHub Codespaces because
 the `command -v langstar` verification check failed during container build.
 During the Docker build phase, PATH may not be fully configured yet,
@@ -8846,6 +9376,7 @@ causing the installed binary to be inaccessible even though it was
 successfully installed.
 
 ## Solution
+
 1. **install.sh**: Replaced `command -v langstar` verification with
    direct file existence check using `[ -x "${BINARY_PATH}" ]`. This
    ensures verification works regardless of PATH configuration during
@@ -8866,14 +9397,14 @@ successfully installed.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(devcontainer): simplify PATH configuration per review
+- ♻️ refactor(devcontainer): simplify PATH configuration per review
 
 Remove redundant /usr/local/bin from containerEnv PATH since it's
 already in the default PATH. Only append ${HOME}/.local/bin to
 ensure user-local bin directory is accessible without risking
 shadowing system binaries.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -8891,11 +9422,11 @@ Co-authored-by: Claude <noreply@anthropic.com>
 
 Closes #299
 
-* 📚 docs: fix Rust code examples in research report
+- 📚 docs: fix Rust code examples in research report
 
-- Rename `to_string` to `to_filter_string` to avoid shadowing the
+* Rename `to_string` to `to_filter_string` to avoid shadowing the
   standard library's ToString trait method
-- Add missing `format()` method implementation to FilterValue enum
+* Add missing `format()` method implementation to FilterValue enum
   for proper value serialization in filter expressions
 
 Addresses PR review comments.
@@ -8904,38 +9435,40 @@ Addresses PR review comments.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Result/Option type mismatch in build_filter function (#301)
+- fix: Result/Option type mismatch in build_filter function (#301)
 
-* Initial plan
+- Initial plan
 
-* 🐛 fix: change build_filter return type to Result<Option<String>>
-
-Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
-
-* 🐛 fix: remove extra closing parenthesis in format string
+- 🐛 fix: change build_filter return type to Result<Option<String>>
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+- 🐛 fix: remove extra closing parenthesis in format string
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* fix: Apply suggestion from @Copilot
+- fix: Apply suggestion from @Copilot
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs: add OpenAPI validation report and implementation plan for runs query (#304)
 
 Validates #299 research report against official LangSmith OpenAPI spec and creates
 comprehensive implementation plan for milestone #298.
 
 Key findings:
+
 - Core design confirmed (POST /api/v1/runs/query)
 - 8 additional request parameters discovered
 - 29 additional Run fields beyond research scope
@@ -8943,6 +9476,7 @@ Key findings:
 - Filter query language not in OpenAPI (research report authoritative)
 
 Artifacts added:
+
 - reference/api-specs/langsmith-openapi.json - Full OpenAPI spec
 - reference/api-specs/run*.json - Extracted schemas
 - reference/research/298-openapi-validation.md - Validation report
@@ -8970,20 +9504,22 @@ Before: VERSION=latest resulted in 404 error
 After: VERSION=latest resolves to actual version (e.g., 0.6.0)
 
 Tested scenarios:
+
 - --version latest: ✅ Works (resolves to 0.6.0)
 - Default (no flag): ✅ Works (defaults to latest)
 - --version 0.5.0: ✅ Works (specific version)
 
 Fixes #200
 
-* 📚 docs: add comprehensive devcontainer feature testing guide
+- 📚 docs: add comprehensive devcontainer feature testing guide
 
-- Added README.md for devcontainer feature usage documentation
-- Added TESTING-GITHUB-ACTIONS.md with detailed testing procedures
-- Updated workflows README with feature workflow references
-- Removed NOTES.md (superseded by new documentation)
+* Added README.md for devcontainer feature usage documentation
+* Added TESTING-GITHUB-ACTIONS.md with detailed testing procedures
+* Updated workflows README with feature workflow references
+* Removed NOTES.md (superseded by new documentation)
 
 New documentation covers:
+
 - Feature usage examples and configuration
 - GitHub Actions testing workflow details
 - Pre-commit and post-commit testing procedures
@@ -8992,7 +9528,7 @@ New documentation covers:
 
 Relates to #200
 
-* 🔧 chore: trigger CI after API key rotation
+- 🔧 chore: trigger CI after API key rotation
 
 Re-run integration tests with rotated LangSmith API key.
 
@@ -9012,6 +9548,7 @@ Establishes foundational CI workflow structure for automated devcontainer
 feature testing following production best practices from research (#241).
 
 Changes:
+
 - Created .github/workflows/test-features.yml
 - Configured triggers:
   - Push to main (paths: .devcontainer/features/**)
@@ -9026,6 +9563,7 @@ Changes:
 Implementation Notes:
 This workflow establishes the CI structure and triggers. Subsequent tasks
 from parent issue #240 will implement the actual testing:
+
 - #248: Dev Container CLI-based feature installation testing
 - #249: OS distribution matrix testing (already scaffolded)
 - #250: Smoke tests to verify langstar command
@@ -9042,11 +9580,11 @@ Fixes #247
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): address Copilot PR review comments
+- 🩹 fix(ci): address Copilot PR review comments
 
-- Separate tag trigger from branch trigger to fix path filter issue
-- Add documentation comment explaining unused features output
-- Add error handling for missing/empty features directory
+* Separate tag trigger from branch trigger to fix path filter issue
+* Add documentation comment explaining unused features output
+* Add error handling for missing/empty features directory
 
 Addresses Copilot review comments in PR #260
 
@@ -9054,19 +9592,20 @@ Addresses Copilot review comments in PR #260
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* ✨ feat(ci): implement Dev Container CLI testing for features (#263)
+- ✨ feat(ci): implement Dev Container CLI testing for features (#263)
 
-* ✨ feat(ci): implement Dev Container CLI testing for features
+- ✨ feat(ci): implement Dev Container CLI testing for features
 
 Implements headless, automated testing of devcontainer features using the
 official Dev Container CLI, following production best practices from
 devcontainers/features repository.
 
 Changes:
+
 - Replace TODO placeholder with full Dev Container CLI test implementation
 - Use 'devcontainer up' to build and start test containers with features
 - Use 'devcontainer exec' to verify feature installation (command presence and version)
@@ -9077,6 +9616,7 @@ Changes:
 - Clean up test directories after each feature test
 
 Testing approach:
+
 - For each feature, create temporary test workspace
 - Generate devcontainer.json referencing local feature by absolute path
 - Build container from base image (Ubuntu 22.04 or 24.04) with feature
@@ -9097,20 +9637,20 @@ Milestone: devcontainer-feature
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* ✨ feat(ci): expand OS distribution matrix testing (#266)
+- ✨ feat(ci): expand OS distribution matrix testing (#266)
 
 Extends the test-features.yml workflow matrix to test devcontainer features
 across multiple Linux distributions beyond Ubuntu:
@@ -9132,11 +9672,12 @@ Fixes #249
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* 🧪 test(devcontainer): add smoke tests for langstar feature (#267)
+- 🧪 test(devcontainer): add smoke tests for langstar feature (#267)
 
-* 🧪 test(devcontainer): add smoke tests for langstar feature
+- 🧪 test(devcontainer): add smoke tests for langstar feature
 
 Creates automated smoke test script that verifies:
+
 - langstar binary is in PATH
 - langstar --version command works
 - langstar --help command works
@@ -9151,24 +9692,25 @@ Fixes #250
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .devcontainer/features/langstar/test.sh
+- fix: Update .devcontainer/features/langstar/test.sh
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .devcontainer/features/langstar/test.sh
+- fix: Update .devcontainer/features/langstar/test.sh
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* ✨ feat(ci): add feature metadata validation to CI workflow (#270)
+- ✨ feat(ci): add feature metadata validation to CI workflow (#270)
 
-* ✨ feat(ci): add feature metadata validation to CI workflow
+- ✨ feat(ci): add feature metadata validation to CI workflow
 
 Add comprehensive validation for devcontainer-feature.json files:
+
 - Validate JSON syntax using jq
 - Check required fields (id, version, name, description)
 - Verify option definitions have type and description
@@ -9181,56 +9723,59 @@ Fixes #251
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .github/workflows/test-features.yml
+- fix: Update .github/workflows/test-features.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* Fix duplicate failed_features entries in option validation (#271)
+- Fix duplicate failed_features entries in option validation (#271)
 
-* Initial plan
+- Initial plan
 
-* fix: prevent duplicate entries in failed_features list during option validation
+- fix: prevent duplicate entries in failed_features list during option validation
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
 
-* 🧪 test(ci): add explicit container cleanup for test isolation (#273)
+- 🧪 test(ci): add explicit container cleanup for test isolation (#273)
 
 Ensures complete test isolation by explicitly stopping and removing
 Docker containers after each feature test. This prevents:
+
 - Container accumulation during test runs
 - Resource conflicts between tests
 - Shared state contamination
 
 Changes:
+
 - Add container cleanup in success path using Docker labels
 - Add container cleanup in both error paths (build and exec failures)
 - Add test isolation guarantees documentation in workflow output
 - Create comprehensive TEST-ISOLATION.md documentation
 
 Container identification uses Dev Container CLI labels:
+
 - devcontainer.local_folder=${TEST_DIR} (primary)
 - devcontainer.config_file=${TEST_DIR}/.devcontainer.json (fallback)
 
@@ -9243,15 +9788,16 @@ Fixes #252
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* 🔧 build(ci): enable strict mode for required status checks (#275)
+- 🔧 build(ci): enable strict mode for required status checks (#275)
 
-* 🔧 build(ci): enable strict mode for required status checks
+- 🔧 build(ci): enable strict mode for required status checks
 
 Configures the main branch ruleset to require branches to be up-to-date
 before merging. This ensures all CI tests run on the final code that will
 be merged, preventing integration issues and merge conflicts.
 
 Changes:
+
 - Updated main ruleset (ID: 9196293) via GitHub API
 - Set strict_required_status_checks_policy to true
 - Added comprehensive documentation in docs/dev/procedures.md
@@ -9267,78 +9813,85 @@ Fixes #253
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update scripts/enable-strict-status-checks.sh
+- fix: Update scripts/enable-strict-status-checks.sh
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update scripts/enable-strict-status-checks.sh
+- fix: Update scripts/enable-strict-status-checks.sh
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* ♻️ refactor: improve enable-strict-status-checks.sh error handling and temp file usage
+- ♻️ refactor: improve enable-strict-status-checks.sh error handling and temp file usage
 
-- Replace /tmp hardcoded paths with mktemp for unique temporary files
-- Capture and display stderr instead of silencing with 2>/dev/null
-- Remove unnecessary use of 'cat' when piping to jq
-- Add proper cleanup of temporary files in all code paths
+* Replace /tmp hardcoded paths with mktemp for unique temporary files
+* Capture and display stderr instead of silencing with 2>/dev/null
+* Remove unnecessary use of 'cat' when piping to jq
+* Add proper cleanup of temporary files in all code paths
 
 This addresses PR review feedback about security, debugging, and best practices.
 
-* 📚 docs: fix git command pattern in procedures.md
+- 📚 docs: fix git command pattern in procedures.md
 
 Replace 'git pull origin main' with more explicit pattern:
+
 - git fetch origin
 - git merge origin/main (or git rebase origin/main)
 
 This matches the workflow example from the PR description and provides
 clearer guidance on updating branches.
 
-* 📚 docs: fix invalid JSON comment in procedures.md
+- 📚 docs: fix invalid JSON comment in procedures.md
 
 Move inline comment outside JSON block to maintain valid JSON syntax.
 Comments are not valid in JSON.
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* ✨ feat(ci): add comprehensive logging infrastructure to test workflow
+- ✨ feat(ci): add comprehensive logging infrastructure to test workflow
 
 Implements detailed logging for CI test runs as specified in issue #254:
 
 ## Changes
 
 ### Environment Information
+
 - Added dedicated step to log environment details
 - Includes OS, architecture, Docker version, Node.js, npm, and Dev Container CLI versions
 - Uses GitHub Actions groups for collapsible output
 
 ### Test Execution Logging
+
 - Created structured log files for each test run
 - Logs saved to `logs/test-<image-name>.log` with all test output
 - Individual feature logs saved separately for build and execution phases
 - All output uses `tee` to write to both console and log files
 
 ### GitHub Actions Step Summaries
+
 - Generate markdown summaries for each test run
 - Display test results in GitHub Actions UI
 - Include metrics table with pass/fail counts
 - List failed features with failure reasons
 
 ### Error Handling & Tracking
+
 - Track test failures with counters (total, passed, failed)
 - Continue testing after individual feature failures
 - Collect failed feature names with failure reasons
 - Exit with error only after all tests complete
 
 ### Log Artifact Upload
+
 - Upload logs as artifacts on both success and failure
 - Failure logs retained for 30 days
 - Success logs retained for 7 days
 - Separate artifact names by base image for easy identification
 
 ### Structured Output
+
 - All test phases wrapped in GitHub Actions groups
 - Clear section headers for build, test, and cleanup phases
 - Consistent log formatting across all steps
@@ -9356,44 +9909,50 @@ Fixes #254
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(ci): add comprehensive logging infrastructure to test workflow (#276)
+- ✨ feat(ci): add comprehensive logging infrastructure to test workflow (#276)
 
-* ✨ feat(ci): add comprehensive logging infrastructure to test workflow
+- ✨ feat(ci): add comprehensive logging infrastructure to test workflow
 
 Implements detailed logging for CI test runs as specified in issue #254:
 
 ## Changes
 
 ### Environment Information
+
 - Added dedicated step to log environment details
 - Includes OS, architecture, Docker version, Node.js, npm, and Dev Container CLI versions
 - Uses GitHub Actions groups for collapsible output
 
 ### Test Execution Logging
+
 - Created structured log files for each test run
 - Logs saved to `logs/test-<image-name>.log` with all test output
 - Individual feature logs saved separately for build and execution phases
 - All output uses `tee` to write to both console and log files
 
 ### GitHub Actions Step Summaries
+
 - Generate markdown summaries for each test run
 - Display test results in GitHub Actions UI
 - Include metrics table with pass/fail counts
 - List failed features with failure reasons
 
 ### Error Handling & Tracking
+
 - Track test failures with counters (total, passed, failed)
 - Continue testing after individual feature failures
 - Collect failed feature names with failure reasons
 - Exit with error only after all tests complete
 
 ### Log Artifact Upload
+
 - Upload logs as artifacts on both success and failure
 - Failure logs retained for 30 days
 - Success logs retained for 7 days
 - Separate artifact names by base image for easy identification
 
 ### Structured Output
+
 - All test phases wrapped in GitHub Actions groups
 - Clear section headers for build, test, and cleanup phases
 - Consistent log formatting across all steps
@@ -9411,7 +9970,7 @@ Fixes #254
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): sanitize base image name in artifact names
+- 🩹 fix(ci): sanitize base image name in artifact names
 
 Fixes artifact upload failures caused by invalid characters in artifact names.
 
@@ -9430,11 +9989,13 @@ This would cause artifact uploads to fail.
 ## Solution
 
 The SAFE_IMAGE_NAME variable is now:
+
 1. Computed in bash: `sed 's/[\/:]/-/g'`
 2. Exported as step output: `echo "safe_image_name=${SAFE_IMAGE_NAME}" >> $GITHUB_OUTPUT`
 3. Used in YAML context: `${{ steps.test-features.outputs.safe_image_name }}`
 
 This ensures artifact names like:
+
 - `test-logs-failure-mcr.microsoft.com-devcontainers-base-ubuntu-22.04`
 - `test-logs-success-mcr.microsoft.com-devcontainers-base-debian-12`
 
@@ -9442,24 +10003,24 @@ This ensures artifact names like:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* refactor: deduplicate tee calls
+- refactor: deduplicate tee calls
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* style: small change in formatting
+- style: small change in formatting
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* style: remove double hyphen
+- style: remove double hyphen
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* 🩹 fix(ci): resolve merge conflict in artifact naming
+- 🩹 fix(ci): resolve merge conflict in artifact naming
 
 Resolved conflict between HEAD and remote in test-features.yml.
 Used safe_image_name (sanitized) instead of matrix.baseImage for
@@ -9469,64 +10030,65 @@ artifact names to avoid invalid characters (/, :) in filenames.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): address Copilot PR review comments
+- 🩹 fix(ci): address Copilot PR review comments
 
-- Combine duplicate push triggers in test-features.yml workflow
-- Support pre-release versions in langstar test.sh version regex
-- Remove unreachable validation code in enable-strict-status-checks.sh
-- Remove outdated comment referencing completed issues
-- Fix string trimming inconsistency in test summary output
+* Combine duplicate push triggers in test-features.yml workflow
+* Support pre-release versions in langstar test.sh version regex
+* Remove unreachable validation code in enable-strict-status-checks.sh
+* Remove outdated comment referencing completed issues
+* Fix string trimming inconsistency in test summary output
 
 All fixes improve code quality and maintainability. Note: workspace
 tests fail due to pre-existing bug on main (cli/src/commands/prompt.rs:183)
 
-* 📚 docs(skill): clarify pre-commit checks require environment sourcing
+- 📚 docs(skill): clarify pre-commit checks require environment sourcing
 
-- Explicitly mention pre-commit checks in critical first step warning
-- Add 'Quick Start for Pre-Commit Checks' one-liner at top
-- Add Mistake #1 specifically about pre-commit checks without sourcing
-- Include exact error symptoms encountered (byte index 8 out of bounds)
-- Update Key Takeaways to emphasize pre-commit checks require sourcing
-- Make it crystal clear that ALL cargo commands may need environment vars
+* Explicitly mention pre-commit checks in critical first step warning
+* Add 'Quick Start for Pre-Commit Checks' one-liner at top
+* Add Mistake #1 specifically about pre-commit checks without sourcing
+* Include exact error symptoms encountered (byte index 8 out of bounds)
+* Update Key Takeaways to emphasize pre-commit checks require sourcing
+* Make it crystal clear that ALL cargo commands may need environment vars
 
 This would have prevented the churn where pre-commit checks failed with
 cryptic panics due to missing LANGSMITH_API_KEY in worktree environment.
 
-* fix: incomplete backtick formatting in md
+- fix: incomplete backtick formatting in md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* 🩹 fix(tests): handle empty workspace IDs and improve CI error logging
+- 🩹 fix(tests): handle empty workspace IDs and improve CI error logging
 
-- Fix panic when slicing empty workspace_id/org_id strings in print_scope_info
-- Add length check before slicing to handle IDs shorter than 8 chars
-- Capture and display Dev Container CLI validation errors in CI workflow
-- All 13 prompt_scoping_test tests now pass
+* Fix panic when slicing empty workspace_id/org_id strings in print_scope_info
+* Add length check before slicing to handle IDs shorter than 8 chars
+* Capture and display Dev Container CLI validation errors in CI workflow
+* All 13 prompt_scoping_test tests now pass
 
 Fixes string slice panic: 'byte index 8 is out of bounds of ``'
 Improves CI debugging by showing actual validation errors
 
-* 🩹 fix(ci): disable exit-on-error during validation to capture output
+- 🩹 fix(ci): disable exit-on-error during validation to capture output
 
-- Add set +e before devcontainer validate command
-- Re-enable set -e after capturing exit code and output
-- Fixes issue where bash -e would exit before error output could be displayed
-- Now validation errors will be properly captured and shown in logs
+* Add set +e before devcontainer validate command
+* Re-enable set -e after capturing exit code and output
+* Fixes issue where bash -e would exit before error output could be displayed
+* Now validation errors will be properly captured and shown in logs
 
-* 🩹 fix(ci): remove invalid devcontainer validate command
+- 🩹 fix(ci): remove invalid devcontainer validate command
 
-- Remove step 4 'Dev Container CLI validation' entirely
-- 'devcontainer features validate' command does not exist
-- Dev Container CLI only supports: test, package, publish, info, resolve-dependencies, generate-docs
-- Manual JSON validation in steps 1-3 is sufficient for metadata validation
+* Remove step 4 'Dev Container CLI validation' entirely
+* 'devcontainer features validate' command does not exist
+* Dev Container CLI only supports: test, package, publish, info, resolve-dependencies, generate-docs
+* Manual JSON validation in steps 1-3 is sufficient for metadata validation
 
 Root cause identified: Unknown arguments: validate, .devcontainer/features/langstar
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
 - ✨ feat: import tmux skill for interactive CLI control (#281)
 
 * ✨ feat: import tmux skill for interactive CLI control
@@ -9535,6 +10097,7 @@ Imported tmux skill from mitsuhiko/agent-commands to enable remote control
 of tmux sessions for interactive command-line work.
 
 Changes:
+
 - Added .claude/skills/tmux/ directory with SKILL.md and tools/
 - Updated Dockerfile to install tmux package
 - Added CLAUDE_TMUX_SOCKET_DIR environment variable to docker-compose.yml
@@ -9549,7 +10112,7 @@ Fixes #280
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(tmux): correct tmux flag usage and quote variables
+- 🩹 fix(tmux): correct tmux flag usage and quote variables
 
 Fixed inconsistencies in tmux skill documentation and scripts:
 
@@ -9564,9 +10127,10 @@ throughout the skill documentation.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat: use langstar devcontainer feature in own devcontainer (#290)
 
 Installs the published langstar devcontainer feature (ghcr.io/codekiln/langstar/langstar:1)
@@ -9580,6 +10144,7 @@ Fixes #287
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(ci): add workflow_dispatch trigger to release workflow (#289)
 
 * ✨ feat(ci): add workflow_dispatch trigger to release workflow
@@ -9593,6 +10158,7 @@ testing, and administrative scenarios. This enables:
 - Administrative control for edge cases
 
 Changes:
+
 - Add workflow_dispatch trigger with tag input parameter
 - Update version extraction logic to handle both push and manual triggers
 - Modify checkout step to use correct ref for manual triggers
@@ -9608,11 +10174,11 @@ Fixes #283
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .github/workflows/release.yml
+- fix: Update .github/workflows/release.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* ♻️ refactor(ci): extract tag_name to step output for DRY
+- ♻️ refactor(ci): extract tag_name to step output for DRY
 
 Refactor the release workflow to eliminate duplication of the tag name
 ternary expression. Changes:
@@ -9628,7 +10194,7 @@ This improves maintainability and follows shell scripting best practices.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
@@ -9649,6 +10215,7 @@ leading to a new deployment being created on every test run even
 when existing READY deployments were available.
 
 Changes:
+
 - Fixed JSON parsing to access json["resources"] instead of json
 - Added comprehensive error logging to replace silent .ok()?failures
 - All error paths now log warnings to aid future debugging
@@ -9659,22 +10226,24 @@ Fixes #208
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔒 security: sanitize error logs to prevent sensitive data exposure
+- 🔒 security: sanitize error logs to prevent sensitive data exposure
 
 Replace full JSON/deployment object logging with field keys only to
 prevent potential exposure of sensitive information (API keys, tokens,
 credentials) in CI/CD logs and test output.
 
 Changes:
+
 - Log JSON keys instead of full JSON response
 - Log deployment field names instead of full deployment objects
 - Reduces risk of credential exposure in error messages
 
 Addresses Copilot PR review comments on #277
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(devcontainer): source cargo env before cargo install in postCreateCommand (#288)
 
 * 🩹 fix(devcontainer): source cargo env before cargo install in postCreateCommand
@@ -9689,13 +10258,15 @@ Fixes #164
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(devcontainer): extract postCreateCommand to dedicated script
+- 🩹 fix(devcontainer): extract postCreateCommand to dedicated script
 
 Addresses feedback to:
+
 1. Check if ~/.cargo/env exists before sourcing it
 2. Use a dedicated script instead of inline command chain
 
 Changes:
+
 - Created .devcontainer/post-create.sh with proper error handling
 - Script checks for cargo availability and sources ~/.cargo/env if it exists
 - Updated devcontainer.json to call the script
@@ -9706,12 +10277,13 @@ Changes:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔧 build(devcontainer): add gh-sub-issue extension installation
+- 🔧 build(devcontainer): add gh-sub-issue extension installation
 
 Adds automatic installation of gh-sub-issue extension in postCreateCommand
 to support issue hierarchy management via .claude/skills/gh-sub-issue.
 
 Changes:
+
 - Added Step 5 to post-create.sh for gh CLI extensions
 - Installs yahsan2/gh-sub-issue with error handling
 - Includes check for gh CLI availability before installation
@@ -9721,9 +10293,10 @@ Changes:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(cli): use stderr for info messages in JSON mode (#291)
 
 * 🩹 fix(cli): use stderr for info messages in JSON mode
@@ -9733,6 +10306,7 @@ to stderr instead of stdout. This keeps stdout clean for machine-readable
 JSON, following the Unix/CLI convention used by cargo, git, curl, etc.
 
 Previously, `langstar graph list --format json` would output:
+
 ```
 ℹ Fetching deployments (limit: 20, offset: 0)...
 {"resources": [...]}
@@ -9747,35 +10321,36 @@ Fixes #208
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* Refactor: OutputFormatter to eliminate code duplication with helper methods (#292)
+- Refactor: OutputFormatter to eliminate code duplication with helper methods (#292)
 
-* Initial plan
+- Initial plan
 
-* ♻️ refactor(cli): extract duplicate code into print_message helper
-
-Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
-
-* ✨ feat(cli): improve print_message to use Display trait
+- ♻️ refactor(cli): extract duplicate code into print_message helper
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* ♻️ refactor(cli): simplify error() by removing print_message_stderr
+- ✨ feat(cli): improve print_message to use Display trait
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
-* 📝 docs: add documentation for error() stderr behavior
+- ♻️ refactor(cli): simplify error() by removing print_message_stderr
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+- 📝 docs: add documentation for error() stderr behavior
+
+Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
+
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
 - 🩹 fix(devcontainer): support non-root user in langstar feature install (#293)
 
 * 🩹 fix(devcontainer): support non-root user in langstar feature install
@@ -9784,6 +10359,7 @@ Fixes GitHub Codespaces regression where feature installation failed during
 Docker build due to hardcoded /usr/local prefix requiring sudo.
 
 Changes:
+
 - Detect if running as root or have write access to /usr/local/bin
 - Use /usr/local prefix for root/privileged builds (local devcontainers)
 - Use $HOME/.local prefix for non-root builds (GitHub Codespaces)
@@ -9799,19 +10375,19 @@ Fixes #287
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .devcontainer/features/langstar/install.sh
+- fix: Update .devcontainer/features/langstar/install.sh
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: array expansion in echo with quotes
+- fix: array expansion in echo with quotes
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: ensure path is correct
+- fix: ensure path is correct
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
@@ -9844,6 +10420,7 @@ Completes Phase 4 (final phase) of devcontainer-feature milestone (#201).
 ## Coverage
 
 The documentation provides comprehensive coverage of:
+
 - Installation: 3 methods (feature, install script, build from source)
 - Configuration: Multiple approaches (env vars, secrets, config files)
 - Examples: 20+ real-world scenarios
@@ -9855,6 +10432,7 @@ The documentation provides comprehensive coverage of:
 ## Milestone Complete
 
 This completes all 4 phases of the devcontainer-feature milestone:
+
 - ✅ Phase 1 (#202): Feature implementation
 - ✅ Phase 2 (#203): Publishing to GHCR
 - ✅ Phase 3 (#240): Comprehensive CI testing (PR #278)
@@ -9870,6 +10448,7 @@ Fixes #204
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: add note about optional DevContainers index submission (#286)
 
 Adds a note to the README mentioning the planned submission to the official
@@ -9880,6 +10459,7 @@ This references the newly created issue #285, which is Phase 5 (optional)
 of the devcontainer-feature milestone (#201).
 
 Benefits of index submission:
+
 - Shows up in VS Code 'Add Dev Container Features' UI
 - Listed on official containers.dev/features site
 - Discoverable in GitHub Codespaces feature picker
@@ -9914,6 +10494,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
   - Feature published to: `ghcr.io/codekiln/langstar/langstar:1`
 
 **Milestone Complete:** This completes Phase 4 (final phase) of the devcontainer-feature milestone (#201):
+
 - ✅ Phase 1 (#202): Feature implementation
 - ✅ Phase 2 (#203): Publishing to GHCR
 - ✅ Phase 3 (#240): Comprehensive CI testing across 6 OS distributions
@@ -9938,18 +10519,21 @@ Implements Phase 3 (final phase) of automated release pipeline (#199).
 ## Changes
 
 ### Version Validation (release.yml:77-92)
+
 - Validates git tag matches Cargo.toml version before creating release
 - Fails fast with clear error message if mismatch detected
 - Prevents confusing releases (learned from PR #239)
 - Pattern from ripgrep's battle-tested release workflow
 
 ### Draft Releases (release.yml:115)
+
 - Changed `draft: false` to `draft: true`
 - Enables human review before publishing releases
 - Allows artifact verification and testing before public release
 - Two-phase release: create → build → review → publish
 
 ### Documentation (.github/workflows/README.md)
+
 - Added "Release Workflow: Draft Releases" section
 - Documents complete release flow from PR to published release
 - Explains version validation and troubleshooting
@@ -9958,6 +10542,7 @@ Implements Phase 3 (final phase) of automated release pipeline (#199).
 ## Testing
 
 All tests pass with proper environment sourcing:
+
 - cargo fmt: ✓
 - cargo check --workspace --all-features: ✓
 - cargo clippy --workspace --all-features: ✓
@@ -9978,7 +10563,7 @@ Fixes #232
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs(skill): emphasize environment sourcing in test-runner-worktree
+- 📚 docs(skill): emphasize environment sourcing in test-runner-worktree
 
 Updates test-runner-worktree skill to prevent test failures from missing
 environment variables in worktrees.
@@ -9986,23 +10571,27 @@ environment variables in worktrees.
 ## Changes
 
 ### Updated Description (YAML frontmatter)
+
 - More specific trigger terms: "cargo test fails", "authentication errors"
 - Explicitly mentions LANGSMITH_API_KEY and ANTHROPIC_API_KEY requirements
 - Better matches when Claude should activate this skill
 
 ### Added Critical First Step Section
+
 - Prominent warning at the top of the skill
 - Clear command: `source /workspace/.devcontainer/.env`
 - Explains why this is necessary (worktrees don't inherit env vars)
 - References issue #232 where missing env vars caused test failures
 
 ### Updated All Workflows and Templates
+
 - Workflow 1 (Run Tests in Worktree): Sources env vars as step 2
 - Workflow 3 (Pre-Commit Testing): Added env sourcing before tests
 - Template 1-3: All include `source /workspace/.devcontainer/.env` first
 - Complete Test Flow: Env sourcing is step 2 (after cd)
 
 ### Enhanced Key Takeaways
+
 - #1 takeaway now emphasizes environment sourcing FIRST
 - Added note: "The #1 cause of test failures in worktrees is missing
   environment variables"
@@ -10021,6 +10610,7 @@ critical step prominent enough. These changes ensure:
 ## Best Practices Followed
 
 Per https://code.claude.com/docs/en/skills.md:
+
 - ✅ Specific description with trigger terms users would mention
 - ✅ Focused on single capability (test running in worktrees)
 - ✅ Clear, actionable instructions
@@ -10032,21 +10622,21 @@ Related: #232
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update .claude/skills/test-runner-worktree/SKILL.md
+- fix: Update .claude/skills/test-runner-worktree/SKILL.md
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-* fix: Update .github/workflows/release.yml
+- fix: Update .github/workflows/release.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
-* fix: Update .github/workflows/release.yml
+- fix: Update .github/workflows/release.yml
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
@@ -10063,6 +10653,7 @@ the complete deployment workflow (create, update, delete) works
 correctly before publishing releases.
 
 Changes:
+
 - Add pre-release-validation job to release.yml
 - Run test_deployment_workflow_full_lifecycle before release creation
 - Configure 45-minute timeout (test takes ~20-30 minutes)
@@ -10071,6 +10662,7 @@ Changes:
 - Update CI/CD documentation with new workflow step
 
 The test validates:
+
 - Creating fresh deployment with unique name
 - Waiting for deployment to be READY
 - Patching deployment (triggers new revision)
@@ -10088,11 +10680,13 @@ Co-authored-by: Claude <noreply@anthropic.com>
 - 🩹 fix(install): redirect output functions to stderr to prevent command substitution capture (#265)
 
 ## Problem
+
 When using the installer with automatic version detection (no --version flag), the
 info() messages were being captured in command substitutions, corrupting the version
 string and causing URL construction to fail.
 
 Example error:
+
 ```
 https://github.com/codekiln/langstar/releases/download/v[INFO] Fetching latest version...
 0.4.3/langstar-[INFO] Fetching latest version...
@@ -10100,11 +10694,13 @@ https://github.com/codekiln/langstar/releases/download/v[INFO] Fetching latest v
 ```
 
 ## Solution
+
 Redirect info(), warn(), and success() functions to stderr (>&2) to match error()
 function behavior. This prevents their output from being captured when the function
 is called within a command substitution like $(get_latest_version).
 
 ## Changes
+
 - scripts/install.sh: Redirect info(), warn(), success() to stderr
 - scripts/install.sh: Update usage comment to use bash instead of sh (script requires bash syntax)
 - README.md: Update install command to use bash instead of sh
@@ -10112,7 +10708,9 @@ is called within a command substitution like $(get_latest_version).
 - README.md: Add aarch64 to supported Linux architectures
 
 ## Testing
+
 Tested on Linux aarch64:
+
 - ✅ Default install (latest version with automatic detection)
 - ✅ Version-specific install (--version 0.4.3)
 - ✅ Custom prefix install (--prefix)
@@ -10145,13 +10743,13 @@ Fixes #255
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ♻️ refactor(docs): move detailed procedures out of README to reduce context
+- ♻️ refactor(docs): move detailed procedures out of README to reduce context
 
-- Created docs/dev/procedures.md for detailed step-by-step procedures
-- Reduced README.md from ~413 lines to 177 lines (~236 line reduction)
-- Moved "Working with Phased/Sub-Task Issues" details to procedures.md
-- Moved "Pre-Commit Checklist" details to procedures.md
-- Kept high-level summaries in README with links to procedures.md
+* Created docs/dev/procedures.md for detailed step-by-step procedures
+* Reduced README.md from ~413 lines to 177 lines (~236 line reduction)
+* Moved "Working with Phased/Sub-Task Issues" details to procedures.md
+* Moved "Pre-Commit Checklist" details to procedures.md
+* Kept high-level summaries in README with links to procedures.md
 
 This reduces Claude's context load by ~236 lines while maintaining
 accessibility through markdown links.
@@ -10162,9 +10760,10 @@ Fixes #255
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs: analyze CI testing patterns for devcontainer features (#257)
 
 * 📚 docs: analyze CI testing patterns for devcontainer features
@@ -10173,6 +10772,7 @@ Complete analysis of devcontainers/features and devcontainers/templates
 repositories to inform implementation of automated CI testing for langstar.
 
 Key deliverables:
+
 - Detailed analysis of devcontainers/features CI workflows
 - Comparison of features vs templates testing approaches
 - 3-phase implementation plan with ready-to-use workflow files
@@ -10184,17 +10784,19 @@ Fixes #246
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* fix: Update reference/repo/devcontainers/templates/notes/README.md
+- fix: Update reference/repo/devcontainers/templates/notes/README.md
 
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
 - 📚 docs: add epic and sub-issue naming conventions (#259)
 
 Documents hierarchical naming convention for multi-phase features:
+
 - Three-level hierarchy (Epic → Phase → Task)
 - Naming format: {parent}.{sequence}-{slug} {description}
 - Milestone requirement for all levels
@@ -10218,6 +10820,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 **Reason**: Tags v0.4.1 and v0.4.2 were manually created during workflow development (Nov 21) before the automated release workflow was operational. To avoid conflicts with these pre-existing tags and releases, the version was incremented to v0.4.3.
 
 **Changes**:
+
 - Update workspace version in Cargo.toml: 0.4.1 → 0.4.3
 - Update Cargo.lock to reflect new version
 
@@ -10237,12 +10840,14 @@ on Apple Silicon, ARM servers, Raspberry Pi, etc.).
 ## Changes
 
 **Release Workflow:**
+
 - Add aarch64-unknown-linux-musl build target
 - Install cross-compilation tools (gcc-aarch64-linux-gnu, musl-tools)
 - Configure cargo linker for ARM64 cross-compilation
 - Build and publish ARM64 Linux binaries in releases
 
 **Install Script:**
+
 - Detect aarch64/arm64 architecture on Linux
 - Download aarch64-linux-musl binaries for ARM64
 - Update error message to indicate both x86_64 and aarch64 support
@@ -10250,6 +10855,7 @@ on Apple Silicon, ARM servers, Raspberry Pi, etc.).
 ## Testing
 
 After next release (v0.4.2):
+
 - ✅ Works on x86_64 Linux
 - ✅ Works on ARM64 macOS (via Docker Desktop Linux VM)
 - ✅ Works on ARM64 Linux servers
@@ -10267,7 +10873,7 @@ Fixes #218
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): use aarch64-linux-gnu-strip for ARM64 cross-compiled binaries
+- 🩹 fix(ci): use aarch64-linux-gnu-strip for ARM64 cross-compiled binaries
 
 Addresses Copilot review comment about incorrect strip command for
 cross-compiled ARM64 binaries.
@@ -10286,9 +10892,10 @@ build process.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(ci): add workflow_dispatch to automate release PR generation (#217)
 
 * ✨ feat(ci): add workflow_dispatch to automate release PR generation
@@ -10296,6 +10903,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Implements Phase 3 of release epic (#195) - automated release PR creation.
 
 Creates .github/workflows/prepare-release.yml that:
+
 - Analyzes commits since last release using Conventional Emoji Commits
 - Determines version bump (MAJOR/MINOR/PATCH or auto)
 - Updates all workspace Cargo.toml files
@@ -10318,7 +10926,7 @@ Fixes #199
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): address code review comments for prepare-release workflow
+- 🩹 fix(ci): address code review comments for prepare-release workflow
 
 Addresses all Copilot review suggestions:
 
@@ -10351,7 +10959,7 @@ and the workflow is more robust against edge cases.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): address second round of code review comments
+- 🩹 fix(ci): address second round of code review comments
 
 Addresses all review comments from PR review #3494454207:
 
@@ -10385,7 +10993,7 @@ and to support all bump type options.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -10414,7 +11022,7 @@ https://github.com/codekiln/langstar/actions/runs/19584495703
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): add robust verification for version update
+- 🩹 fix(ci): add robust verification for version update
 
 Addresses Copilot review comments:
 
@@ -10430,14 +11038,16 @@ for the exact version string and exits with error if not found.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🩹 fix(ci): add --unreleased flag to git-cliff command (#224)
 
 Fixes workflow failure where git-cliff was missing required flag.
 
 Error:
+
 ```
 ERROR git_cliff > Argument error: `'-u' or '-l' is not specified`
 ```
@@ -10483,6 +11093,7 @@ Creates a Claude Code skill that facilitates studying remote GitHub repositories
 by setting up structured directories with committed notes and gitignored code.
 
 Features:
+
 - Bash script to automate repository setup
 - Creates reference/repo/<org>/<repo>/ directory structure
 - Clones remote repo into gitignored code/ subdirectory
@@ -10497,29 +11108,31 @@ Fixes #34
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: restore anthropics/skills notes as README.md
+- 📚 docs: restore anthropics/skills notes as README.md
 
-* Initial plan
+- Initial plan
 
-* 📚 docs: restore anthropics/skills notes as README.md
+- 📚 docs: restore anthropics/skills notes as README.md
 
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>
 Co-authored-by: codekiln <140930+codekiln@users.noreply.github.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 Co-authored-by: Copilot <198982749+Copilot@users.noreply.github.com>
+
 - ✨ feat(skills): add git worktree support to setup-remote-repo-notes-dir (#175)
 
 * 📚 docs: add notes for LangSmith Control Plane API deployment
 
 Document Method 2 (Control Plane API) from langchain-ai/docs CI/CD
 pipeline example, covering:
+
 - Cloud vs Self-Hosted deployment approaches
 - Docker image building and container registry options
 - API endpoint distinctions (Control Plane vs LangSmith API)
@@ -10530,7 +11143,7 @@ pipeline example, covering:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add container registry options for LangSmith deployments
+- 📚 docs: add container registry options for LangSmith deployments
 
 Document comprehensive container registry support including GitHub Container
 Registry (GHCR) as an alternative to Docker Hub for LangSmith deployments:
@@ -10551,7 +11164,7 @@ needed) and has no rate limits, making it ideal for GitHub-based CI/CD.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(skills): add git worktree support to setup-remote-repo-notes-dir
+- ✨ feat(skills): add git worktree support to setup-remote-repo-notes-dir
 
 Fixes #173
 
@@ -10566,11 +11179,13 @@ Fixes #173
 ## Benefits
 
 **Shared code directory:**
+
 - Saves disk space (no duplicate clones per worktree)
 - Reference repos persist after worktree deletion
 - Single clone shared across all worktrees
 
 **Worktree-local notes:**
+
 - Notes can be committed with branch work
 - Different branches can have different notes
 - Follows git-worktrees best practice
@@ -10586,15 +11201,17 @@ Fixes #173
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(ci): add GitHub Action to build test Docker image (#176)
 
 * 📚 docs: add notes for LangSmith Control Plane API deployment
 
 Document Method 2 (Control Plane API) from langchain-ai/docs CI/CD
 pipeline example, covering:
+
 - Cloud vs Self-Hosted deployment approaches
 - Docker image building and container registry options
 - API endpoint distinctions (Control Plane vs LangSmith API)
@@ -10605,7 +11222,7 @@ pipeline example, covering:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: add container registry options for LangSmith deployments
+- 📚 docs: add container registry options for LangSmith deployments
 
 Document comprehensive container registry support including GitHub Container
 Registry (GHCR) as an alternative to Docker Hub for LangSmith deployments:
@@ -10626,16 +11243,18 @@ needed) and has no rate limits, making it ideal for GitHub-based CI/CD.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(ci): add GitHub Action to build test Docker image
+- ✨ feat(ci): add GitHub Action to build test Docker image
 
 Creates workflow to build and push test fixture Docker image to GHCR.
 
 Security Controls:
+
 - Only runs for repository owner (github.repository_owner == 'codekiln')
 - Only triggers on push to main or manual workflow_dispatch
 - Prevents forks from pushing to GHCR or accessing secrets
 
 Features:
+
 - Builds from cli/tests/fixtures/test-graph-deployment/
 - Pushes to ghcr.io/codekiln/langstar:test-latest
 - Uses built-in GITHUB_TOKEN (no secrets needed)
@@ -10644,9 +11263,10 @@ Features:
 
 Fixes #172
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat(skill): add deployment management skill for cleanup operations (#191)
 
 Create deployment-management skill to guide LangGraph Cloud deployment
@@ -10654,12 +11274,14 @@ operations through the Langstar CLI. Focuses on test deployment cleanup,
 filtering, and proper environment variable handling.
 
 Features:
+
 - List/filter deployments by name, status, type
 - Batch cleanup workflows with interactive confirmation
 - Environment credential sourcing (check first, never expose)
 - Common use cases and troubleshooting
 
 Follows skill best practices:
+
 - Under 500 lines (415 lines)
 - Concise workflows with quick reference templates
 - Third-person description with usage triggers
@@ -10680,9 +11302,10 @@ Co-authored-by: Claude <noreply@anthropic.com>
 Changed from cli/tests/fixtures/test-graph-deployment
 to tests/fixtures/test-graph-deployment to match actual location.
 
-* ♻️ refactor(ci): use langgraph build CLI instead of custom Dockerfile
+- ♻️ refactor(ci): use langgraph build CLI instead of custom Dockerfile
 
 Changes:
+
 - Added Python setup step (required for langgraph-cli)
 - Install langgraph-cli via pip
 - Use 'langgraph build' command (official recommended approach)
@@ -10690,6 +11313,7 @@ Changes:
 - Build from langgraph.json automatically (no Dockerfile required)
 
 Benefits:
+
 - Official LangChain recommended approach
 - Auto-generates Dockerfile from langgraph.json
 - Simpler maintenance (no custom Dockerfile)
@@ -10708,6 +11332,7 @@ Fixes #165
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(api): add Control Plane API experiment and OpenAPI spec (#182)
 
 Adds comprehensive experiment documentation and reference materials for
@@ -10723,12 +11348,14 @@ Fixes #178
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 📚 docs(skills): create test-runner-worktree skill for proper test execution (#189)
 
 Add comprehensive Claude Code skill for running integration tests in worktrees
 with proper environment variable handling and context awareness.
 
 Key Features:
+
 - Environment variable checking patterns (check before asking)
 - Worktree vs main repo guidance (SDK version differences)
 - Common mistakes documentation (exposing secrets, wrong directory)
@@ -10762,6 +11389,7 @@ Implements SDK and CLI support for creating and deleting LangGraph deployments
 via the Control Plane API.
 
 ## SDK Changes
+
 - Add CreateDeploymentRequest struct with builder pattern
 - Add DeploymentClient::create() method for creating deployments
 - Add DeploymentClient::delete() method for deleting deployments
@@ -10769,6 +11397,7 @@ via the Control Plane API.
 - Export CreateDeploymentRequest in public API
 
 ## CLI Changes
+
 - Add 'langstar graph create' command with GitHub source support
 - Add 'langstar graph delete' command with confirmation prompt
 - Support for environment variables via --env KEY=VALUE flag
@@ -10776,11 +11405,13 @@ via the Control Plane API.
 - Input validation for required fields and source types
 
 ## Testing
+
 - Add integration tests for deployment lifecycle
 - Tests for create/delete with various configurations
 - Tests for validation and error handling
 
 ## Documentation
+
 - Update README with usage examples for graph commands
 - Update CHANGELOG with detailed feature descriptions
 
@@ -10790,7 +11421,7 @@ Fixes #160
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat: add --wait flag for deployment status polling
+- ✨ feat: add --wait flag for deployment status polling
 
 Implements adaptive polling and comprehensive integration tests to
 complete Phase 3 of issue #160.
@@ -10798,6 +11429,7 @@ complete Phase 3 of issue #160.
 ## Changes
 
 ### CLI Enhancements
+
 - Add `--wait` flag to `graph create` command
 - Implement adaptive polling strategy:
   - First 30 seconds: poll every 10 seconds
@@ -10806,12 +11438,14 @@ complete Phase 3 of issue #160.
 - Display total wait time when deployment is ready
 
 ### Integration Tests
+
 - Add `test_graph_create_with_wait()` for --wait flag
 - Add `test_deployment_full_lifecycle()` for complete workflow
 - Tests verify create → list → delete → verify cycle
 - All tests properly structured with timestamps
 
 ### Documentation
+
 - Update README with --wait flag example
 - Update CHANGELOG with polling feature details
 - Document adaptive polling intervals
@@ -10819,6 +11453,7 @@ complete Phase 3 of issue #160.
 ## Resolves Open Questions (Issue #160)
 
 Per user feedback:
+
 - Deployment sources: GitHub only (for now)
 - Environment variables: inline --env KEY=VALUE (implemented)
 - Polling interval: 10s for first 30s, then 30s (implemented)
@@ -10830,13 +11465,14 @@ Fixes #160
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧪 test: add self-sufficient integration test infrastructure
+- 🧪 test: add self-sufficient integration test infrastructure
 
 Implements automated test deployment lifecycle management for integration tests.
 
 ## Changes
 
 ### Test Infrastructure
+
 - **Created test fixture module** (`cli/tests/common/fixtures.rs`)
   - `TestDeployment` struct manages deployment lifecycle
   - Automatically creates unique test deployments with timestamp-based names
@@ -10845,6 +11481,7 @@ Implements automated test deployment lifecycle management for integration tests.
   - Detailed progress logging
 
 ### Assistant Tests (`cli/tests/assistant_command_test.rs`)
+
 - **Removed manual TEST_GRAPH_ID dependency**
 - Uses `OnceLock<TestDeployment>` for shared deployment across tests
 - `get_test_deployment()` creates deployment on first access
@@ -10853,11 +11490,13 @@ Implements automated test deployment lifecycle management for integration tests.
 - Updated `test_deployment_discovery_workflow` to verify test deployment
 
 ### Graph Tests (`cli/tests/graph_command_test.rs`)
+
 - Added `integration-tests` feature flag to `test_deployment_full_lifecycle`
 - Test runs in CI with proper feature flag
 - Already self-contained (creates and deletes its own deployment)
 
 ### CI/CD
+
 - **Split test job into unit and integration tests**
   - `test` job: runs unit tests only (`--lib`)
   - `integration-tests` job: runs integration tests with `--features integration-tests`
@@ -10867,10 +11506,12 @@ Implements automated test deployment lifecycle management for integration tests.
   - 15-minute timeout for deployment creation
 
 ### Configuration
+
 - Added `integration-tests` feature flag to `cli/Cargo.toml`
 - Feature enables integration tests that require API access
 
 ### Documentation
+
 - **Created comprehensive test README** (`cli/tests/README.md`)
   - Documents test infrastructure design
   - Running tests locally and in CI
@@ -10879,6 +11520,7 @@ Implements automated test deployment lifecycle management for integration tests.
 - Updated test docstrings with new prerequisites
 
 ## Benefits
+
 ✅ Integration tests run in CI without manual setup
 ✅ Tests create and clean up their own deployments
 ✅ No orphaned test deployments
@@ -10887,6 +11529,7 @@ Implements automated test deployment lifecycle management for integration tests.
 ✅ Reduced API calls via shared test deployment for assistant tests
 
 ## Testing
+
 - Unit tests pass: `cargo test --workspace --lib`
 - Code formatting and linting pass
 - Integration tests will run in CI on PR
@@ -10897,7 +11540,7 @@ Fixes #160 (Phase 3 - Integration Testing)
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: remove unused Duration import from test fixtures
+- 🩹 fix: remove unused Duration import from test fixtures
 
 Fixes clippy warning in integration test fixtures.
 
@@ -10905,22 +11548,26 @@ Fixes clippy warning in integration test fixtures.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): add required fields for deployment creation API
+- 🩹 fix(sdk): add required fields for deployment creation API
 
 Fixes deployment creation to include all required fields per LangGraph Control Plane API.
 
 ## Root Cause
+
 The API requires additional fields in CreateDeploymentRequest:
+
 1. `source_revision_config` - Source revision configuration
 2. `secrets` - Environment variable secrets list
 
 For GitHub sources, `source_revision_config` must contain:
+
 - `repo_ref`: Branch/commit reference
 - `langgraph_config_path`: Path to langgraph.json config
 
 ## Changes
 
 ### SDK (sdk/src/deployments.rs)
+
 - Added `source_revision_config: serde_json::Value` field to CreateDeploymentRequest
 - Added `secrets: Vec<DeploymentSecret>` field to CreateDeploymentRequest
 - Updated `new()` to initialize with empty defaults:
@@ -10931,12 +11578,14 @@ For GitHub sources, `source_revision_config` must contain:
   - `with_source_revision_config()` - Set source revision config
 
 ### CLI (cli/src/commands/graph.rs)
+
 - Build `source_revision_config` based on source type:
   - GitHub: Includes `repo_ref` (branch) and `langgraph_config_path` ("langgraph.json")
   - Other sources: `null`
 - Call `with_source_revision_config()` when creating deployment
 
 ## API Error Evolution
+
 1. **422 Unprocessable Entity**: Missing required fields
    ```json
    {"detail":[
@@ -10956,6 +11605,7 @@ For GitHub sources, `source_revision_config` must contain:
    ```
 
 ## Testing
+
 - ✅ Unit tests pass
 - ✅ Compiles successfully
 - ✅ Clippy checks pass
@@ -10965,7 +11615,7 @@ For GitHub sources, `source_revision_config` must contain:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix: auto-discover GitHub integration_id from existing deployments
+- 🩹 fix: auto-discover GitHub integration_id from existing deployments
 
 Resolves the 400 error 'integration_id is required for github source'.
 
@@ -10974,6 +11624,7 @@ authorize the 'hosted-langserve' GitHub app through LangSmith UI.
 There is no public API to list/query integrations.
 
 Solution: Auto-discover integration_id by:
+
 1. Querying existing deployments when creating a new GitHub deployment
 2. Finding first GitHub deployment with source_config
 3. Extracting integration_id from its source_config
@@ -10981,27 +11632,31 @@ Solution: Auto-discover integration_id by:
 5. Providing helpful error if no GitHub deployments exist
 
 Benefits:
+
 - Works for users who created first deployment via UI
 - No manual integration_id lookup required
 - Graceful fallback with setup instructions
 - Includes all required fields in source_config per API spec
 
 Changes:
+
 - cli/src/commands/graph.rs: Add integration_id auto-discovery logic
 - cli/tests/common/fixtures.rs: Update docs to mention prerequisite
 
 References:
+
 - LangGraph Cloud Deployment: https://langchain-ai.github.io/langgraph/cloud/deployment/cloud/
 - Control Plane API: /tmp/langgraph/docs/docs/cloud/reference/api/api_ref_control_plane.md
 
 Fixes #160
 
-* ✨ feat(config): add LANGGRAPH_GITHUB_INTEGRATION_ID config support
+- ✨ feat(config): add LANGGRAPH_GITHUB_INTEGRATION_ID config support
 
 Add support for GitHub integration ID via environment variable, config file,
 and CLI flag with proper precedence chain.
 
 Changes:
+
 - Add github_integration_id field to Config struct
 - Load LANGGRAPH_GITHUB_INTEGRATION_ID environment variable
 - Add --integration-id CLI flag to graph create command
@@ -11010,18 +11665,21 @@ Changes:
 - Update test fixture documentation
 
 Precedence chain for GitHub deployments:
+
 1. --integration-id flag (highest priority, for one-off overrides)
 2. LANGGRAPH_GITHUB_INTEGRATION_ID env var or config file
 3. Auto-discovery from existing deployments (backward compatibility)
 4. Error with helpful setup instructions (if all above fail)
 
 Benefits:
+
 - One-time setup via config/env instead of requiring existing deployments
 - Flexible override via CLI flag for testing/special cases
 - Backward compatible with auto-discovery fallback
 - Clear error messages with multiple resolution paths
 
 Files changed:
+
 - cli/src/config.rs: Add field, env loading, tests
 - cli/src/commands/graph.rs: Add flag, implement precedence logic
 - .devcontainer/.env.default: Document new environment variable
@@ -11031,13 +11689,14 @@ Files changed:
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(test): implement deployment reuse across integration test runs
+- ✨ feat(test): implement deployment reuse across integration test runs
 
 Add logic to reuse existing test deployments instead of creating new ones
 for each test run. This significantly reduces API quota usage and speeds up
 test startup time.
 
 Changes:
+
 - Add find_active_test_deployment() method to query existing deployments
 - Update TestDeployment::create() to check for existing deployments first
 - Reuse most recent READY deployment matching "test-deployment-*" pattern
@@ -11046,6 +11705,7 @@ Changes:
 - Rename old create() logic to create_new_deployment() for clarity
 
 Test Flow (NEW):
+
 1. Check for existing test deployment (langstar graph list)
 2. If found → Reuse (fast path, no API calls) ♻️
 3. If not found → Create new (uses env var integration_id) 🚀
@@ -11054,6 +11714,7 @@ Test Flow (NEW):
 6. Keep deployment for next run (no cleanup)
 
 Benefits:
+
 - ✅ Faster test startup (reuses existing deployments)
 - ✅ Reduced API quota usage (no duplicate deployments)
 - ✅ Works across CI workflow runs and local test runs
@@ -11061,6 +11722,7 @@ Benefits:
 - ✅ Uses LANGGRAPH_GITHUB_INTEGRATION_ID from environment
 
 Files changed:
+
 - cli/tests/common/fixtures.rs: Add reuse logic, disable auto-cleanup
 - progress.md: Document implementation and test flow
 
@@ -11071,38 +11733,39 @@ across runs to save quota and speed up tests.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* ✨ feat(graph): add --config-path parameter for langgraph.json location
+- ✨ feat(graph): add --config-path parameter for langgraph.json location
 
-- Add --config-path CLI parameter (defaults to 'langgraph.json')
-- Use parameter in source_revision_config.langgraph_config_path
-- Update test fixture to use langstar repo instead of langgraph-example
-- Update test fixture to specify config path: tests/fixtures/test-graph-deployment/langgraph.json
+* Add --config-path CLI parameter (defaults to 'langgraph.json')
+* Use parameter in source_revision_config.langgraph_config_path
+* Update test fixture to use langstar repo instead of langgraph-example
+* Update test fixture to specify config path: tests/fixtures/test-graph-deployment/langgraph.json
 
 This allows deployments to specify custom paths to langgraph.json
 configuration files within the repository, matching the 'LangGraph API
 config file' field in the LangSmith UI.
 
-* 📚 docs: update progress.md with testing status and quota blocker
+- 📚 docs: update progress.md with testing status and quota blocker
 
-* 🔧 test: change deployment type from dev_free to dev
+- 🔧 test: change deployment type from dev_free to dev
 
-- Changes test fixture deployment type from `dev_free` to `dev`
-- Works around organization quota limit for free tier
-- Deployment creation now succeeds but exposes new issue
+* Changes test fixture deployment type from `dev_free` to `dev`
+* Works around organization quota limit for free tier
+* Deployment creation now succeeds but exposes new issue
 
 **New Issue Discovered:**
 GitHub deployments don't have `custom_url` in source_config.
 The `custom_url` field is for external_docker deployments only.
 For GitHub/Platform deployments, we need to either:
+
 - Get URL from API (not currently available in response)
 - Construct URL from deployment ID/name (format unknown)
 - Use different SDK method to connect by deployment ID
 
 This blocks assistant commands from working with GitHub deployments.
 
-* 📚 docs: update progress.md with custom_url blocker for GitHub deployments
+- 📚 docs: update progress.md with custom_url blocker for GitHub deployments
 
-* ✨ feat(graph): add get command to fetch single deployment
+- ✨ feat(graph): add get command to fetch single deployment
 
 Adds 'langstar graph get <deployment-id>' command to retrieve
 detailed information about a specific deployment by ID.
@@ -11111,22 +11774,25 @@ This was added to investigate whether the Control Plane API returns
 a URL field for GitHub deployments. Result: both LIST and GET endpoints
 return the same fields, and custom_url is null for GitHub deployments.
 
-* 📚 docs: document deployment URL discovery and solution
+- 📚 docs: document deployment URL discovery and solution
 
 **Key Finding:**
 GitHub deployment URLs are constructed from revision's resource.id.name field.
 
 **URL Pattern:**
+
 - Fetch revision: GET /v2/deployments/{id}/revisions/{revision_id}
 - Extract: resource.id.name (format: <name>-<hash>-<suffix>)
 - Remove last segment: <name>-<hash>
 - Construct URL: https://<name>-<hash>.us.langgraph.app
 
 **Example:**
+
 - resource.id.name: test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc-c89ccf8cf
 - URL: https://test-url-investigation-d8d85c683e6a519c8c66cfc8b7053bbc.us.langgraph.app
 
 **Implementation Plan:**
+
 1. Add revisions endpoint to SDK
 2. Parse resource.id.name from revision response
 3. Extract hostname (remove last hyphen-segment)
@@ -11134,40 +11800,41 @@ GitHub deployment URLs are constructed from revision's resource.id.name field.
 
 This unblocks assistant commands for GitHub deployments.
 
-* 📚 docs: document deployment URL investigation findings
+- 📚 docs: document deployment URL investigation findings
 
-- v2 API does not return deployment URLs for GitHub deployments
-- v1 projects API has resource.url but requires session auth
-- Found ResourceService schema with url and id.name fields
-- Identified three possible solutions for URL resolution
+* v2 API does not return deployment URLs for GitHub deployments
+* v1 projects API has resource.url but requires session auth
+* Found ResourceService schema with url and id.name fields
+* Identified three possible solutions for URL resolution
 
-* 📚 docs: document GitHub deployment URL blocker
+- 📚 docs: document GitHub deployment URL blocker
 
-- v2 API does not return deployment URLs
-- v1 API has URLs but requires session auth (not API keys)
-- GitHub deployments use hash-based URL pattern
-- No programmatic way to obtain URLs currently
-- Identified 4 potential solutions to investigate
+* v2 API does not return deployment URLs
+* v1 API has URLs but requires session auth (not API keys)
+* GitHub deployments use hash-based URL pattern
+* No programmatic way to obtain URLs currently
+* Identified 4 potential solutions to investigate
 
-* 📚 docs: document solution to switch to external_docker deployments
+- 📚 docs: document solution to switch to external_docker deployments
 
-- Simple URL pattern: https://{name}.langchain.dev
-- Uses GitHub Container Registry (ghcr.io) with GITHUB_TOKEN
-- No Docker Hub secrets needed, no rate limits, free
-- Reference: langchain-ai/cicd-pipeline-example
-- Implementation plan includes 4 steps
-- Will create sub-issue for GitHub Action using gh-sub-issue
+* Simple URL pattern: https://{name}.langchain.dev
+* Uses GitHub Container Registry (ghcr.io) with GITHUB_TOKEN
+* No Docker Hub secrets needed, no rate limits, free
+* Reference: langchain-ai/cicd-pipeline-example
+* Implementation plan includes 4 steps
+* Will create sub-issue for GitHub Action using gh-sub-issue
 
-* 📚 docs: add reference notes for deployment investigation
+- 📚 docs: add reference notes for deployment investigation
 
-- cicd-pipeline-example: container registry options, README
-- docs: control plane API deployment, README
-- Documents GHCR integration and external_docker patterns
-- Supports decision to use external_docker deployments
+* cicd-pipeline-example: container registry options, README
+* docs: control plane API deployment, README
+* Documents GHCR integration and external_docker patterns
+* Supports decision to use external_docker deployments
 
-* 🧪 test(sdk): add deployment workflow integration test
+- 🧪 test(sdk): add deployment workflow integration test
 
 Implements complete deployment lifecycle integration test validating:
+
 - GitHub integration discovery
 - Deployment creation via Control Plane API
 - Revision status polling (60s interval, 30min timeout)
@@ -11175,12 +11842,14 @@ Implements complete deployment lifecycle integration test validating:
 - Deployment deletion (cleanup)
 
 SDK enhancements:
+
 - New integrations module for GitHub integration discovery
 - Extended deployments module with Revision types and CRUD methods
 - Added Control Plane POST/PATCH/DELETE request builders
 - Updated CLI to use new CreateDeploymentRequest struct API
 
 Test execution:
+
 - Full workflow test passes in ~22 minutes
 - Validates both initial and updated revision deployment
 - Uses timestamp-based unique names for idempotency
@@ -11191,16 +11860,18 @@ Closes #183
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): resolve Clippy dead code warning and mark blocked test as ignored
+- 🩹 fix(ci): resolve Clippy dead code warning and mark blocked test as ignored
 
 ## Changes
 
 **Fixed Clippy warning:**
+
 - Add `#[allow(dead_code)]` to `TestDeployment::cleanup()` method
 - Method kept for future use/manual cleanup but not currently called
 - Deployment reuse strategy intentionally avoids automatic cleanup
 
 **Fixed integration test failure:**
+
 - Mark `test_assistant_create_basic` as `#[ignore]`
 - GitHub deployments don't expose custom_url via v2 API
 - Blocked until URL discovery is implemented for GitHub Cloud deployments
@@ -11215,11 +11886,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(ci): mark test_deployment_full_lifecycle as ignored due to permissions
+- 🩹 fix(ci): mark test_deployment_full_lifecycle as ignored due to permissions
 
 ## Issue
 
 Integration test `test_deployment_full_lifecycle` fails in CI with:
+
 ```
 Error: API error: 400 - LangSmith Deployment does not have permission on your repo
 ```
@@ -11228,6 +11900,7 @@ Error: API error: 400 - LangSmith Deployment does not have permission on your re
 
 Test tries to create new deployments but GitHub integration lacks repo access permissions.
 This happens when:
+
 - No existing test deployments to reuse
 - GitHub App not configured with proper repository access
 
@@ -11244,11 +11917,12 @@ Mark test as `#[ignore]` until GitHub integration permissions are properly confi
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🩹 fix(sdk): add missing AWAITING_DEPLOY revision status
+- 🩹 fix(sdk): add missing AWAITING_DEPLOY revision status
 
 ## Issue
 
 Integration test `test_deployment_workflow` fails after 16 minutes with:
+
 ```
 Error: unknown variant `AWAITING_DEPLOY`, expected one of `QUEUED`, `BUILDING`, ...
 ```
@@ -11262,6 +11936,7 @@ this variant.
 ## Fix
 
 Add `AwaitingDeploy` variant to `RevisionStatus` enum in logical position:
+
 - After: `BuildSucceeded` / `BuildFailed`
 - Before: `Deploying`
 
@@ -11284,7 +11959,7 @@ Queued → Building → BuildSucceeded → **AwaitingDeploy** → Deploying → 
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🧹 chore: remove progress.md investigation notes
+- 🧹 chore: remove progress.md investigation notes
 
 ## Reason
 
@@ -11296,11 +11971,13 @@ notes are no longer needed.
 ## Context
 
 The file contained detailed notes about:
+
 - API behavior discoveries (custom_url for GitHub deployments)
 - Troubleshooting deployment URL resolution
 - Test fixture design decisions
 
 All relevant information has been incorporated into:
+
 - Code comments
 - Test documentation
 - PR description
@@ -11313,9 +11990,10 @@ Closes #183
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - 🧪 test: add deployment workflow test helpers and reusable test deployment (#190)
 
 * 🧪 test: add deployment workflow test helpers and reusable test deployment
@@ -11332,13 +12010,13 @@ Fixes #186
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 📚 docs: address PR review comments for test helpers
+- 📚 docs: address PR review comments for test helpers
 
-- Remove unused _client parameter from DeploymentGuard::new
-- Fix test_deployment_workflow description (persistent deployment, not timestamp-based)
-- Add documentation for test_deployment_workflow_full_lifecycle
-- Add command example for running full lifecycle test
-- Fix Drop implementation docs (only eprintln!, no blocking runtime)
+* Remove unused _client parameter from DeploymentGuard::new
+* Fix test_deployment_workflow description (persistent deployment, not timestamp-based)
+* Add documentation for test_deployment_workflow_full_lifecycle
+* Add command example for running full lifecycle test
+* Fix Drop implementation docs (only eprintln!, no blocking runtime)
 
 Addresses review comments from PR #190
 
@@ -11346,7 +12024,7 @@ Addresses review comments from PR #190
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
@@ -11404,6 +12082,7 @@ Implements industry best-practice release workflow following the research from i
 ## Changes
 
 ### GitHub Actions Workflows
+
 - Add release.yml workflow triggered by version tags (v*)
 - Builds cross-platform binaries: Linux (musl/gnu), macOS (Intel/ARM), Windows
 - Generates changelogs using git-cliff
@@ -11411,6 +12090,7 @@ Implements industry best-practice release workflow following the research from i
 - Automatic pre-release detection (alpha/beta/rc versions)
 
 ### Configuration Files
+
 - cliff.toml: git-cliff configuration for Conventional Emoji Commits
   - Parses emoji and conventional commit formats
   - Groups changes by type (Breaking Changes, Features, Bug Fixes, etc.)
@@ -11422,6 +12102,7 @@ Implements industry best-practice release workflow following the research from i
   - Disables crates.io publishing (GitHub releases only)
 
 ### Documentation
+
 - docs/dev/ci-cd.md: Comprehensive CI/CD pipeline documentation
   - Release process guide (automated and manual)
   - Semantic versioning rules based on commit types
@@ -11429,6 +12110,7 @@ Implements industry best-practice release workflow following the research from i
   - Best practices and security considerations
 
 ### Claude Code Skill
+
 - .claude/skills/bump-release/: Local release management skill
   - Custom scripts for commit analysis and version bumping
   - Alternative to cargo-release for manual control
@@ -11437,6 +12119,7 @@ Implements industry best-practice release workflow following the research from i
 ## Release Process
 
 Using cargo-release (recommended):
+
 ```bash
 cargo install cargo-release git-cliff
 cargo release patch --execute  # Bug fixes
@@ -11445,6 +12128,7 @@ cargo release major --execute  # Breaking changes
 ```
 
 Manual process:
+
 ```bash
 git tag -a v1.2.3 -m "Release v1.2.3"
 git push origin v1.2.3
@@ -11454,6 +12138,7 @@ git push origin v1.2.3
 ## Implementation Details
 
 Follows research recommendations from issue #9:
+
 - ✅ Validate on PR, release on tag pattern
 - ✅ Uses Rust ecosystem tools (cargo-release, git-cliff)
 - ✅ Strong provenance with checksums and tagged releases
@@ -11467,12 +12152,13 @@ Fixes #9
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
-* 🔧 build: install cargo-release and git-cliff in devcontainer
+- 🔧 build: install cargo-release and git-cliff in devcontainer
 
 Adds cargo-release and git-cliff to devcontainer postCreateCommand so they
 are automatically available to all developers and maintainers.
 
 Changes:
+
 - .devcontainer/devcontainer.json: Add cargo install commands to postCreateCommand
 - docs/dev/ci-cd.md: Update prerequisites to note tools are pre-installed
 
@@ -11483,9 +12169,10 @@ and removes the manual installation step from the release process.
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 
----------
+---
 
 Co-authored-by: Claude <noreply@anthropic.com>
+
 - ✨ feat: add official installer script for langstar CLI (#149)
 
 Implements end-user installer script with comprehensive features:
@@ -11501,6 +12188,7 @@ Implements end-user installer script with comprehensive features:
 - Comprehensive help documentation
 
 Changes:
+
 - Added scripts/install.sh (executable installer script)
 - Updated README.md with quick install instructions
 - Created docs/installation.md (comprehensive guide)
@@ -11521,6 +12209,7 @@ Co-authored-by: Claude <noreply@anthropic.com>
 
 Replace npm installation with official native installer method as
 recommended in Claude Code documentation. This provides:
+
 - Self-contained executable without Node.js dependency
 - Improved auto-updater stability
 - Follows official best practices

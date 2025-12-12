@@ -19,6 +19,7 @@ During implementation of #587, a constraint was discovered: **`-o` is already us
 ### Audit of `-o` Short Flag Usage
 
 **Commands using `-o` for `--offset` (pagination):**
+
 1. **`prompt list`** (`cli/src/commands/prompt.rs:24`)
    - `#[arg(short, long, default_value = "0")]`
    - Pagination parameter: number of prompts to skip
@@ -31,21 +32,25 @@ During implementation of #587, a constraint was discovered: **`-o` is already us
 
 **Commands using `-o` for `--output` (format selection):**
 4. **`runs query`** (`cli/src/commands/runs.rs:136`)
-   - `#[arg(short = 'o', long = "output", default_value = "table", value_enum)]`
-   - Note: Intentionally uses `-o` to avoid conflict with global `-f/--format` flag
-   - Has its own `RunsOutputFormat` enum (Table, Json, JsonPretty)
+
+- `#[arg(short = 'o', long = "output", default_value = "table", value_enum)]`
+- Note: Intentionally uses `-o` to avoid conflict with global `-f/--format` flag
+- Has its own `RunsOutputFormat` enum (Table, Json, JsonPretty)
 
 **Commands with `--offset` but NO short flag:**
 5. **`deployment list`** (`cli/src/commands/deployment.rs:29`)
-   - `#[arg(long, default_value = "0")]`
-   - Only long form, no short flag
+
+- `#[arg(long, default_value = "0")]`
+- Only long form, no short flag
 
 **Global format flag:**
+
 - **`main.rs:27`**: `-f/--format` is global for all commands
 - Environment variable: `LANGSTAR_OUTPUT_FORMAT`
 - Current formats: `json`, `table`
 
 **Summary:**
+
 - **3 commands** use `-o` for `--offset`
 - **1 command** uses `-o` for `--output` (special case for `runs query`)
 - **1 command** has `--offset` with no short flag
@@ -82,6 +87,7 @@ During implementation of #587, a constraint was discovered: **`-o` is already us
    - Consistency within langstar > mimicking kubectl exactly
 
 **Trade-offs Accepted:**
+
 - ❌ Not as terse as `-o` for output format
 - ✅ Maintains backward compatibility
 - ✅ Avoids flag conflicts and user confusion
@@ -105,12 +111,14 @@ gh issue list --json number,title --jq '.[] | [.number, .title] | @tsv'
 ```
 
 **Key characteristics**:
+
 - `--json <fields>` takes comma-separated field list
 - `--jq <expr>` for filtering/transforming output
 - `--template <tmpl>` for Go template formatting
 - Fields are discoverable via help text
 
 **Example output**:
+
 ```
 581	529.1-cli-output-research Research: --plain mode for AI-friendly CLI output
 573	556.8-integration Update AGENTS.md/CLAUDE.md and validate progressive disclosure
@@ -134,6 +142,7 @@ kubectl get pods -o jsonpath='{.items[*].metadata.name}'
 ```
 
 **Key characteristics**:
+
 - `-o/--output` flag controls format (json, yaml, wide, custom-columns, jsonpath, go-template)
 - `custom-columns` format: `NAME:FIELD_PATH,NAME2:FIELD_PATH2`
 - JSONPath provides powerful field selection
@@ -155,6 +164,7 @@ aws iam list-users --query 'Users[*].{Name:UserName,ID:UserId}'
 ```
 
 **Key characteristics**:
+
 - `--output` flag: json (default), yaml, yaml-stream, text, table
 - **`text` format is tab-separated** - closest to scriptable output
 - `--query` parameter uses JMESPath for field selection
@@ -162,25 +172,28 @@ aws iam list-users --query 'Users[*].{Name:UserName,ID:UserId}'
 - Columns are alphabetically sorted in text format
 
 **Example output** (text format):
+
 ```
 Admin    arn:aws:iam::123456789012:user/Admin    2014-10-16T16:03:09+00:00
 ```
 
 ### Summary of Patterns
 
-| Tool | Format Flag | Field Selection | Delimiter | Notable Features |
-|------|-------------|-----------------|-----------|------------------|
-| gh | `--json <fields>` | Comma-separated list in flag | newline/tsv via jq | JSON-first, post-process |
-| kubectl | `-o <format>` | `custom-columns='COL:PATH'` | table/custom | Rich format ecosystem |
-| aws | `--output <format>` | `--query 'JMESPath'` | tabs (text mode) | Text format + query recommended |
+| Tool    | Format Flag         | Field Selection              | Delimiter          | Notable Features                |
+| ------- | ------------------- | ---------------------------- | ------------------ | ------------------------------- |
+| gh      | `--json <fields>`   | Comma-separated list in flag | newline/tsv via jq | JSON-first, post-process        |
+| kubectl | `-o <format>`       | `custom-columns='COL:PATH'`  | table/custom       | Rich format ecosystem           |
+| aws     | `--output <format>` | `--query 'JMESPath'`         | tabs (text mode)   | Text format + query recommended |
 
 **Common patterns**:
+
 - Format selection via dedicated flag (`-o`, `--output`, `--json`)
 - Field selection separate from format selection
 - Tab-separated or structured delimiters for scripting
 - Field names discoverable via help/docs
 
 **No major CLI uses**:
+
 - Individual `--<field-name>` boolean flags
 - A single `--plain` flag for format switching
 
@@ -198,6 +211,7 @@ pub enum OutputFormat {
 ```
 
 **Usage** in `cli/src/main.rs`:
+
 ```rust
 /// Output format (json or table)
 #[arg(short = 'f', long, global = true, env = "LANGSTAR_OUTPUT_FORMAT")]
@@ -205,6 +219,7 @@ format: Option<String>,
 ```
 
 **Current state**:
+
 - `-f/--format` flag (short form available)
 - Global flag inherited by all commands
 - Environment variable support: `LANGSTAR_OUTPUT_FORMAT`
@@ -214,15 +229,16 @@ format: Option<String>,
 
 **Available columns** (from `cli/src/commands/prompt.rs:145-168`):
 
-| Column | Field | Type | Notes |
-|--------|-------|------|-------|
-| Handle | `repo_handle` | String | First column, truncated |
-| Likes | `num_likes` | u32 | Only in --full mode |
-| Downloads | `num_downloads` | u32 | Always shown |
-| Public | `is_public` | String | Only in --full mode |
-| Description | `description` | String | Truncated to fit |
+| Column      | Field           | Type   | Notes                   |
+| ----------- | --------------- | ------ | ----------------------- |
+| Handle      | `repo_handle`   | String | First column, truncated |
+| Likes       | `num_likes`     | u32    | Only in --full mode     |
+| Downloads   | `num_downloads` | u32    | Always shown            |
+| Public      | `is_public`     | String | Only in --full mode     |
+| Description | `description`   | String | Truncated to fit        |
 
 **Current behavior**:
+
 - Default view: Handle, Downloads, Description
 - `--full` flag: All columns including Likes and Public
 - No column customization beyond --full toggle
@@ -242,6 +258,7 @@ All list commands in langstar (from `cli/src/main.rs:33-72`):
 9. ✅ **`model-config list`** - Model configurations
 
 **Priority candidates**:
+
 - `prompt list` - Most mature, good starting point
 - `runs query` - Large datasets, most scriptability benefit
 - `secrets list` - Security-sensitive, minimal output critical
@@ -296,17 +313,17 @@ pub struct ColumnMetadata {
 
 ### Comparison: Approach A vs Approach B
 
-| Aspect | Approach A: `-f text --columns` | Approach B: `--plain --<col>` |
-|--------|----------------------------------|-------------------------------|
-| **Precedent** | ✅ Similar to Docker --format | ❌ No major CLI uses this |
-| **Extensibility** | ✅ Easy to add formats | ⚠️ Plain is terminal state |
-| **Integration** | ✅ Uses existing `-f` flag | ⚠️ New parallel system |
-| **Flag count** | ✅ Minimal (2 flags) | ⚠️ O(n) flags per command |
-| **Discovery** | ✅ `--show-columns` clear | ⚠️ `--help` gets cluttered |
-| **AI-friendliness** | ✅ Single introspection point | ⚠️ Must parse help text |
-| **Consistency** | ✅ Uniform across commands | ⚠️ Hard to maintain |
-| **Delimiter** | ✅ Configurable/standard | ⚠️ Unspecified in proposal |
-| **Compatibility** | ✅ No pagination conflicts | ❌ Would need to reclaim `-o` |
+| Aspect              | Approach A: `-f text --columns` | Approach B: `--plain --<col>` |
+| ------------------- | ------------------------------- | ----------------------------- |
+| **Precedent**       | ✅ Similar to Docker --format   | ❌ No major CLI uses this     |
+| **Extensibility**   | ✅ Easy to add formats          | ⚠️ Plain is terminal state     |
+| **Integration**     | ✅ Uses existing `-f` flag      | ⚠️ New parallel system         |
+| **Flag count**      | ✅ Minimal (2 flags)            | ⚠️ O(n) flags per command      |
+| **Discovery**       | ✅ `--show-columns` clear       | ⚠️ `--help` gets cluttered     |
+| **AI-friendliness** | ✅ Single introspection point   | ⚠️ Must parse help text        |
+| **Consistency**     | ✅ Uniform across commands      | ⚠️ Hard to maintain            |
+| **Delimiter**       | ✅ Configurable/standard        | ⚠️ Unspecified in proposal     |
+| **Compatibility**   | ✅ No pagination conflicts      | ❌ Would need to reclaim `-o` |
 
 ### Why Not `--plain` with `--<column>` Flags?
 
@@ -344,6 +361,7 @@ While creative, this approach has significant drawbacks:
 **Effort**: ~6 hours, 1 PR
 
 **Example**:
+
 ```bash
 # Before
 langstar prompt list --full

@@ -7,6 +7,7 @@
 ## Executive Summary
 
 This research documents SDK implementation patterns for the playground-settings API based on:
+
 1. Analysis of Python SDK patterns for similar CRUD operations
 2. Analysis of existing Langstar Rust SDK patterns (datasets, prompts)
 3. OpenAPI spec from scout report #453
@@ -18,6 +19,7 @@ This research documents SDK implementation patterns for the playground-settings 
 ### 1.1 Confirmation of No Implementation
 
 As documented in scout report #453, the Python SDK (`langsmith-sdk`) does **not** provide methods for managing playground settings:
+
 - No `list_playground_settings()` method
 - No `create_playground_settings()` method
 - No `update_playground_settings()` method
@@ -26,6 +28,7 @@ As documented in scout report #453, the Python SDK (`langsmith-sdk`) does **not*
 ### 1.2 General Python SDK Patterns (from WebFetch analysis)
 
 **Method Naming Conventions:**
+
 - Create: `create_*()` (e.g., `create_run()`, `create_dataset()`)
 - Read single: `get_*()` (e.g., `get_dataset()`)
 - Read multiple: `list_*()` or paginated helpers
@@ -33,15 +36,18 @@ As documented in scout report #453, the Python SDK (`langsmith-sdk`) does **not*
 - Delete: `delete_*()` (implied pattern)
 
 **Pagination Patterns:**
+
 - **Offset-based**: `_get_paginated_list(path, params)` - iterates until fewer items than limit
 - **Cursor-based**: `_get_cursor_paginated_list(path, body, request_method, data_key)` - uses cursor tokens
 
 **Error Handling:**
+
 - Hierarchical custom exceptions: `LangSmithUserError`, `LangSmithConnectionError`, `LangSmithAPIError`
 - HTTP-specific mappings: 401→AuthError, 404→NotFoundError, 429→RateLimitError
 - Retry logic with exponential backoff
 
 **Method Signature Patterns:**
+
 - Required parameters: positional
 - Optional parameters: keyword-only with `*,` separator
 - Explicit type hints for returns
@@ -66,6 +72,7 @@ pub async fn create_dataset(
 ```
 
 **Characteristics:**
+
 - Takes structured request type (e.g., `DatasetCreate`)
 - Returns structured response type (e.g., `Dataset`)
 - Uses `langsmith_post()` helper for authentication
@@ -99,6 +106,7 @@ pub async fn list_datasets(
 ```
 
 **Characteristics:**
+
 - Takes structured params type with all optional fields
 - Returns `Vec<T>` of items
 - Conditionally adds query parameters for non-None values
@@ -116,6 +124,7 @@ pub async fn get_dataset(&self, dataset_id: uuid::Uuid) -> Result<crate::dataset
 ```
 
 **Characteristics:**
+
 - Takes ID as parameter (UUID)
 - Returns single item
 - Simple path interpolation
@@ -135,6 +144,7 @@ pub async fn update_dataset(
 ```
 
 **Characteristics:**
+
 - Takes ID + structured update request
 - Returns updated item
 - Uses `langsmith_patch()` for PATCH requests
@@ -151,6 +161,7 @@ pub async fn delete_dataset(&self, dataset_id: uuid::Uuid) -> Result<()> {
 ```
 
 **Characteristics:**
+
 - Takes only ID parameter
 - Returns `Result<()>` (no content on success)
 - Uses `execute_status_only_request()` helper
@@ -195,6 +206,7 @@ pub async fn list(
 ```
 
 **Characteristics:**
+
 - Parameters are `Option<T>` with defaults
 - Uses inline response struct for deserialization
 - Performs client-side filtering (visibility filter not supported by API)
@@ -219,6 +231,7 @@ pub async fn get(&self, handle: &str) -> Result<Prompt> {
 ```
 
 **Characteristics:**
+
 - Uses string identifier (handle) instead of UUID
 - Unwraps response from wrapper field
 - Inline response struct
@@ -262,6 +275,7 @@ pub enum LangstarError {
 ```
 
 **Characteristics:**
+
 - Uses `thiserror` for error definitions
 - Custom `Result<T>` type alias
 - Structured errors with context
@@ -404,6 +418,7 @@ pub async fn list_datasets(params: ListDatasetsParams) -> Result<Vec<Dataset>>
 ```
 
 **Rationale:**
+
 - Explicit control over pagination
 - Predictable memory usage
 - Allows caller to implement custom pagination logic
@@ -411,12 +426,14 @@ pub async fn list_datasets(params: ListDatasetsParams) -> Result<Vec<Dataset>>
 ### 4.2 Playground Settings Pagination
 
 The `/api/v1/playground-settings` endpoint uses offset/limit pagination:
+
 - `limit`: Max items per page (default: unspecified in OpenAPI, recommend 20)
 - `offset`: Starting position (default: 0)
 
 **Recommendation**: Follow existing Langstar pattern - no auto-pagination.
 
 **Example client usage:**
+
 ```rust
 // Get first page
 let page1 = client.list_playground_settings(ListPlaygroundSettingsParams {
@@ -440,10 +457,12 @@ if page1.len() == 20 {
 The `settings` field is a dynamic JSON object with LangChain serialization format. Two options:
 
 **Option A: Keep as `serde_json::Value` (Recommended)**
+
 - Pros: Flexible, forward-compatible, minimal validation burden
 - Cons: No compile-time type safety for provider-specific fields
 
 **Option B: Typed enum with variants per provider**
+
 - Pros: Type-safe, autocomplete, validation
 - Cons: Brittle, requires updates when providers change, complex
 
@@ -452,6 +471,7 @@ The `settings` field is a dynamic JSON object with LangChain serialization forma
 ### 5.2 Error Handling
 
 Reuse existing `LangstarError`:
+
 - `ApiError` for HTTP errors (404, 400, etc.)
 - `JsonError` for deserialization issues
 - `ConfigError` for invalid settings format (if we add validation)
@@ -471,13 +491,13 @@ Therefore, no wrapper struct needed for list method.
 
 ## 6. Comparison with Python SDK
 
-| Aspect | Python SDK | Langstar Rust SDK |
-|--------|-----------|-------------------|
-| Pagination | Auto-paginate with generators | Manual pagination via params |
-| Optional params | Keyword-only (`*,`) | Struct with `Option<T>` fields |
-| Error handling | Exception hierarchy | `Result<T, LangstarError>` enum |
-| Type safety | Runtime via Pydantic | Compile-time via structs |
-| Async | Native async/await | Tokio async/await |
+| Aspect          | Python SDK                    | Langstar Rust SDK               |
+| --------------- | ----------------------------- | ------------------------------- |
+| Pagination      | Auto-paginate with generators | Manual pagination via params    |
+| Optional params | Keyword-only (`*,`)           | Struct with `Option<T>` fields  |
+| Error handling  | Exception hierarchy           | `Result<T, LangstarError>` enum |
+| Type safety     | Runtime via Pydantic          | Compile-time via structs        |
+| Async           | Native async/await            | Tokio async/await               |
 
 ## 7. Implementation Phases (from Scout #453)
 

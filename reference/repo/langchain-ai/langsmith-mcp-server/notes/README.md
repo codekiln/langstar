@@ -10,12 +10,14 @@
 ## Purpose
 
 This repository provides a **production-ready reference implementation** of LangSmith API integration in Python. It's our reference for understanding:
+
 - How to **implement** LangSmith API clients
 - Proper error handling and validation patterns
 - API parameter structures and filtering logic
 - Tool/CLI interface design patterns
 
 Use this MCP server to:
+
 1. **Study implementation patterns** before writing Rust SDK equivalents
 2. **Understand API behavior** through working Python code
 3. **Identify edge cases** handled in production code
@@ -26,6 +28,7 @@ Use this MCP server to:
 **Model Context Protocol (MCP) Server** = A standardized way for AI assistants to access external tools and data.
 
 This specific MCP server exposes LangSmith platform features as tools that can be called by AI models. While we're not building an MCP server ourselves, this codebase is valuable because:
+
 - It's a **complete client implementation** of the LangSmith API
 - It's **actively maintained** by the LangChain team
 - It shows **production-quality** error handling and validation
@@ -58,9 +61,11 @@ langsmith-mcp-server/
 ### For `ls-runs-query` (Milestone 3)
 
 **Must-read file:**
+
 - `langsmith_mcp_server/services/tools/traces.py` - Complete traces/runs implementation
 
 **Key tools defined:**
+
 ```python
 fetch_runs(          # Primary run querying tool
     project_name: str,
@@ -90,6 +95,7 @@ get_project_runs_stats(  # Aggregate statistics
 ```
 
 **Implementation insights:**
+
 - How to handle flexible filtering (see `filter_query` usage)
 - Project name format variations ("owner/project" vs "project")
 - Pagination patterns
@@ -98,9 +104,11 @@ get_project_runs_stats(  # Aggregate statistics
 ### For `ls-datasets` (Milestone 5)
 
 **Must-read file:**
+
 - `langsmith_mcp_server/services/tools/datasets.py` - Complete dataset CRUD
 
 **Key tools defined:**
+
 ```python
 list_datasets(       # Dataset discovery
     dataset_ids: List[str],
@@ -135,6 +143,7 @@ read_example(        # Fetch single example
 ```
 
 **Implementation insights:**
+
 - Flexible filtering by multiple criteria
 - Pagination with limit/offset
 - Versioning support via `as_of` parameter
@@ -146,6 +155,7 @@ read_example(        # Fetch single example
 **Current status**: Not explicitly implemented in MCP server yet (marked as "under development")
 
 **Related patterns to study:**
+
 - Project and workspace management patterns
 - Feedback/annotation conceptual relationship
 - How to structure queue-based operations
@@ -168,6 +178,7 @@ class LangSmithClient:
 ### 2. Service Layer Pattern (`services/tools/*.py`)
 
 Each service module:
+
 - Defines related tools together
 - Uses `@mcp.tool()` decorators (analogous to CLI commands)
 - Validates parameters before SDK calls
@@ -210,12 +221,14 @@ def list_examples(
 ### Build System
 
 **From `pyproject.toml`:**
+
 - Modern Python packaging with `pdm-backend`
 - Explicit dependencies with version constraints
 - Development dependencies separated (`[tool.pdm.dev-dependencies]`)
 - Entry points for CLI commands
 
 **Translation to Rust:**
+
 - `Cargo.toml` workspace structure
 - Feature flags for optional dependencies
 - Binary entry points in `[[bin]]` sections
@@ -223,6 +236,7 @@ def list_examples(
 ### Testing
 
 **From `tests/` and `pyproject.toml`:**
+
 ```toml
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -230,6 +244,7 @@ addopts = "--disable-socket"  # Security: no network in tests
 ```
 
 **Lesson**:
+
 - Async test support (important for API clients)
 - Disable network in unit tests (use mocks)
 - Integration tests separate from unit tests
@@ -237,6 +252,7 @@ addopts = "--disable-socket"  # Security: no network in tests
 ### Development Workflow
 
 **From `Makefile`:**
+
 ```makefile
 lint:    # Run linting
 format:  # Auto-format code
@@ -273,6 +289,7 @@ test:    # Run test suite
 ### Example: Translating `list_datasets` to Rust
 
 **Python (MCP Server):**
+
 ```python
 def list_datasets(
     dataset_ids: List[str] = None,
@@ -296,6 +313,7 @@ def list_datasets(
 ```
 
 **Rust (Our SDK - conceptual):**
+
 ```rust
 pub struct ListDatasetsRequest {
     pub dataset_ids: Option<Vec<String>>,
@@ -330,6 +348,7 @@ impl Client {
 ### Finding: Documentation-Only Tools
 
 Some tools (`create_dataset`, `update_examples`, `push_prompt`, `run_experiment`) are marked as "documentation-only":
+
 ```python
 return {
     "message": "This is a documentation-only tool...",
@@ -342,6 +361,7 @@ return {
 ### Finding: Workspace vs Organization
 
 The MCP server accepts `workspace_id` in configuration but it's optional:
+
 ```python
 def __init__(self, api_key: str, workspace_id: Optional[str] = None):
 ```
@@ -351,6 +371,7 @@ def __init__(self, api_key: str, workspace_id: Optional[str] = None):
 ### Finding: Query Language Support
 
 `fetch_runs` accepts `filter_query` parameter - a query language for complex filtering:
+
 ```python
 filter_query: str  # e.g., 'eq(name, "my-run") and gt(latency, 100)'
 ```
@@ -360,6 +381,7 @@ filter_query: str  # e.g., 'eq(name, "my-run") and gt(latency, 100)'
 ### Finding: Project Name Formats
 
 The code handles multiple project name formats:
+
 - `"owner/project"` - Fully qualified
 - `"project"` - Implicit owner (current user/org)
 
@@ -370,4 +392,3 @@ The code handles multiple project name formats:
 - **FastMCP Framework**: The MCP server uses this - not relevant for us, but shows modern Python async patterns
 - **LangSmith Python SDK**: The underlying SDK this wraps - our conceptual equivalent
 - **MCP Specification**: https://modelcontextprotocol.io/ - Interesting for understanding tool-based interfaces
-

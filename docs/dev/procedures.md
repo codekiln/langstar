@@ -52,12 +52,14 @@ When assigned a "Phase N" issue:
 ### Why This Matters
 
 **Example**: Phase 1 (Research) might discover that:
+
 - An API behaves differently than documented
 - Two headers should be used together (not either/or)
 - Validation is unnecessary (API doesn't validate)
 - A simpler approach is recommended
 
 Starting Phase 2 (Implementation) without this knowledge leads to:
+
 - ❌ Implementing the wrong approach
 - ❌ Wasted effort that needs to be redone
 - ❌ Missing critical context for design decisions
@@ -71,6 +73,7 @@ When creating a "Phase N+1" issue that depends on "Phase N":
    ## Prerequisites
 
    ⚠️ **Before starting this phase, review findings from:**
+
    - [ ] #XX - Phase N: [Title]
    - [ ] Read all comments and research findings
    - [ ] Verify recommendations for this phase
@@ -105,6 +108,7 @@ Before starting any Phase N work:
 For pre-commit testing requirements, see `docs/dev/testing/cli-integration-tests.md`.
 
 **Quick reference:**
+
 ```bash
 cargo fmt && \
 cargo check --workspace --all-features && \
@@ -142,6 +146,7 @@ When making **breaking changes** to SDK APIs (changing function signatures, remo
 ### Common Mistakes to Avoid
 
 ❌ **Testing only one crate**: `cargo test` or `cargo test --lib`
+
 - Misses issues in dependent crates (CLI depends on SDK)
 
 ✅ **Test entire workspace**: `cargo test --workspace`
@@ -149,6 +154,7 @@ When making **breaking changes** to SDK APIs (changing function signatures, remo
 ---
 
 ❌ **Checking only one crate**: `cargo check` in SDK directory
+
 - Misses compilation errors in CLI that uses SDK
 
 ✅ **Check entire workspace**: `cargo check --workspace`
@@ -156,6 +162,7 @@ When making **breaking changes** to SDK APIs (changing function signatures, remo
 ---
 
 ❌ **Skipping cargo fmt**: "I'll format it later"
+
 - CI will fail on formatting issues
 
 ✅ **Format before committing**: `cargo fmt` (takes 1 second)
@@ -163,6 +170,7 @@ When making **breaking changes** to SDK APIs (changing function signatures, remo
 ---
 
 ❌ **Changing API without searching for usages**: "I know where it's used"
+
 - Easy to miss usages in tests, examples, or other crates
 
 ✅ **Search first, change second**: `grep -r "function_name" --include="*.rs"`
@@ -170,6 +178,7 @@ When making **breaking changes** to SDK APIs (changing function signatures, remo
 ### Time Investment
 
 Running all checks locally takes ~30-60 seconds total:
+
 - `cargo fmt`: <1 second
 - `cargo check --workspace`: ~5-15 seconds (cached)
 - `cargo clippy --workspace`: ~5-15 seconds (cached)
@@ -177,6 +186,7 @@ Running all checks locally takes ~30-60 seconds total:
 - `cargo fmt --check`: <1 second
 
 **Compare to**:
+
 - Waiting for CI to fail: 2-5 minutes
 - Fixing issue: 5-10 minutes
 - Pushing fix: 1 minute
@@ -220,6 +230,79 @@ Make it executable: `chmod +x .git/hooks/pre-commit`
 
 ---
 
+## Markdown Formatting with dprint
+
+This project uses **dprint** for automatic Markdown formatting to ensure consistency and readability across all documentation.
+
+### Manual Formatting
+
+To manually format Markdown files:
+
+```bash
+# Check if files need formatting
+dprint check
+
+# Format all Markdown files
+dprint fmt
+
+# Format a specific file
+dprint fmt path/to/file.md
+```
+
+### Pre-commit Hook
+
+A pre-commit hook is available to automatically format Markdown files before commits. To install:
+
+```bash
+# Copy the script to .git/hooks
+cp scripts/pre-commit-dprint .git/hooks/pre-commit
+
+# Make it executable
+chmod +x .git/hooks/pre-commit
+```
+
+The hook will:
+
+1. Detect staged Markdown files (`*.md`)
+2. Run `dprint fmt` on them
+3. Re-stage the formatted files
+4. Allow the commit to proceed
+
+### CI Integration
+
+The CI pipeline includes a `dprint-check` job that verifies all Markdown files are properly formatted. If any files are not formatted, the CI will fail.
+
+To fix CI failures:
+
+```bash
+# Format all Markdown files
+dprint fmt
+
+# Stage and commit the changes
+git add -u
+git commit -m "🔧 build: format markdown files with dprint"
+```
+
+### Configuration
+
+dprint is configured via `dprint.json` in the repository root. The current configuration:
+
+- Formats all `*.md` files in the repository
+- Uses the official dprint markdown plugin
+- Default formatting rules apply (see [dprint markdown documentation](https://dprint.dev/plugins/markdown))
+
+### Devcontainer Integration
+
+dprint is automatically installed in the devcontainer during the post-create phase. If you need to install it manually:
+
+```bash
+curl -fsSL https://dprint.dev/install.sh | sh
+export DPRINT_INSTALL="$HOME/.dprint"
+export PATH="$DPRINT_INSTALL/bin:$PATH"
+```
+
+---
+
 ## Configuring Repository Rulesets for Mandatory CI Tests
 
 This repository uses **GitHub Repository Rulesets** (not classic branch protection rules) to enforce CI test requirements before merging. This ensures that broken features cannot be merged accidentally.
@@ -227,18 +310,21 @@ This repository uses **GitHub Repository Rulesets** (not classic branch protecti
 ### Overview
 
 **What are Repository Rulesets?**
+
 - Named lists of rules that apply to repository branches or tags
 - Modern replacement for classic branch protection rules
 - Multiple rulesets can apply simultaneously (most restrictive rule wins)
 - Support flexible enforcement modes (active, disabled, evaluate)
 
 **Key Benefits:**
+
 - ✅ Multiple rulesets can target the same branch
 - ✅ Anyone with read access can view active rulesets
 - ✅ More granular control than classic branch protection
 - ✅ Support for advanced features (commit message validation, email validation, etc.)
 
 **References:**
+
 - [GitHub Rulesets Documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets)
 - [GitHub Rulesets API](https://docs.github.com/en/rest/repos/rules)
 
@@ -264,17 +350,20 @@ The repository has three active rulesets:
 ### How Required Status Checks Work
 
 **Required Status Checks:**
+
 - The "main" ruleset requires "All Jobs" (integration_id: 15368) to pass
 - "All Jobs" is a GitHub Actions integration that requires all workflow jobs to succeed
 - This includes the `test-features` workflow when it runs
 
 **Workflow Path Filtering:**
+
 - The `test-features` workflow has path filters: `.devcontainer/features/**`
 - It only runs when files in that path are modified
 - If the workflow runs, it MUST pass before merging (enforced by "All Jobs")
 - If the workflow doesn't run (no relevant files changed), it's not required
 
 **Strict Mode:**
+
 - `strict_required_status_checks_policy: true` (enabled)
 - Requires branches to be up-to-date with the base branch before merging
 - Prevents merge conflicts and integration issues
@@ -283,16 +372,19 @@ The repository has three active rulesets:
 ### Viewing Current Rulesets
 
 **List all rulesets:**
+
 ```bash
 gh api repos/codekiln/langstar/rulesets | jq '.[] | {id: .id, name: .name, enforcement: .enforcement}'
 ```
 
 **View a specific ruleset:**
+
 ```bash
 gh api repos/codekiln/langstar/rulesets/9196293 | jq .
 ```
 
 **View in GitHub UI:**
+
 - Go to: Settings → Rules → Rulesets
 - URL: https://github.com/codekiln/langstar/rules
 
@@ -303,11 +395,13 @@ gh api repos/codekiln/langstar/rulesets/9196293 | jq .
 #### Using the GitHub API
 
 **1. Fetch current ruleset:**
+
 ```bash
 gh api repos/codekiln/langstar/rulesets/<RULESET_ID> > ruleset.json
 ```
 
 **2. Prepare update payload (keep only updatable fields):**
+
 ```bash
 cat ruleset.json | jq '{
   name: .name,
@@ -320,6 +414,7 @@ cat ruleset.json | jq '{
 ```
 
 **3. Modify the JSON as needed (e.g., enable strict mode):**
+
 ```bash
 # Example: Enable strict required status checks
 cat updated-ruleset.json | jq '
@@ -333,6 +428,7 @@ cat updated-ruleset.json | jq '
 ```
 
 **4. Apply the update:**
+
 ```bash
 gh api -X PUT repos/codekiln/langstar/rulesets/<RULESET_ID> \
   --input final-ruleset.json
@@ -345,9 +441,10 @@ gh api -X PUT repos/codekiln/langstar/rulesets/<RULESET_ID> \
 **2. Click on the ruleset to edit (e.g., "main")**
 
 **3. Modify settings:**
-   - Status checks: Add/remove required checks
-   - Strict mode: Toggle "Require branches to be up to date before merging"
-   - Review requirements: Change approval count or code owner requirement
+
+- Status checks: Add/remove required checks
+- Strict mode: Toggle "Require branches to be up to date before merging"
+- Review requirements: Change approval count or code owner requirement
 
 **4. Save changes**
 
@@ -360,6 +457,7 @@ gh api -X PUT repos/codekiln/langstar/rulesets/<RULESET_ID> \
 **Why:** Prevents merge conflicts and ensures status checks run on final code.
 
 **How:**
+
 ```bash
 # Fetch ruleset
 gh api repos/codekiln/langstar/rulesets/9196293 > main-ruleset.json
@@ -391,6 +489,7 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **Why:** More explicit control over which checks are mandatory.
 
 **How:**
+
 ```bash
 # Modify the required_status_checks in the JSON:
 {
@@ -419,6 +518,7 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **What it does:** Increases required approval count before merging.
 
 **How:**
+
 ```bash
 # Modify the pull_request rule in the JSON:
 # Change required_approving_review_count from 1 to 2
@@ -445,6 +545,7 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **Cause:** Either the workflow isn't required, or it has path filters that exclude the changes.
 
 **Fix:**
+
 - Check if "All Jobs" is required in the ruleset
 - Verify workflow path filters match changed files
 - Consider adding explicit status check requirements
@@ -454,6 +555,7 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 **Cause:** Strict mode is enabled, requiring branches to be up-to-date.
 
 **Fix:**
+
 1. Update your branch from base:
    ```bash
    git fetch origin
@@ -466,27 +568,33 @@ gh api -X PUT repos/codekiln/langstar/rulesets/9196293 \
 ### Best Practices
 
 ✅ **Use "All Jobs" for simplicity**
+
 - Automatically includes all workflow jobs
 - No need to update ruleset when adding new workflows
 
 ✅ **Enable strict mode**
+
 - Prevents merge conflicts
 - Ensures tests run on final code
 - Slight inconvenience (need to update branches) is worth it
 
 ✅ **Keep rulesets minimal**
+
 - Only add rules that are truly necessary
 - Too many rules can slow down development
 
 ✅ **Document changes**
+
 - When updating rulesets, document why in commit message
 - Consider adding issue/PR references
 
 ❌ **Don't disable rulesets casually**
+
 - Rulesets exist to prevent broken code from merging
 - If tests are failing, fix the tests (don't disable protection)
 
 ❌ **Don't add every workflow as required**
+
 - Some workflows are optional (e.g., release automation)
 - Only require workflows that validate code quality
 

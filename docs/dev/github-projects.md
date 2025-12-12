@@ -30,28 +30,28 @@ gh api graphql -f query='...'
 
 The langstar project includes the following fields:
 
-| Field Name | Data Type | Field ID | Description |
-|------------|-----------|----------|-------------|
-| Title | TITLE | `PVTF_lAHOAAImgs4BGe4Bzg3g-NI` | Issue/PR title |
-| Assignees | ASSIGNEES | `PVTF_lAHOAAImgs4BGe4Bzg3g-NM` | Who is working on this |
-| **Status** | SINGLE_SELECT | `PVTSSF_lAHOAAImgs4BGe4Bzg3g-NQ` | Current work status |
-| Labels | LABELS | `PVTF_lAHOAAImgs4BGe4Bzg3g-NU` | Issue labels |
-| Linked pull requests | LINKED_PULL_REQUESTS | `PVTF_lAHOAAImgs4BGe4Bzg3g-NY` | Associated PRs |
-| Milestone | MILESTONE | `PVTF_lAHOAAImgs4BGe4Bzg3g-Nc` | Release milestone |
-| Repository | REPOSITORY | `PVTF_lAHOAAImgs4BGe4Bzg3g-Ng` | Source repository |
-| Reviewers | REVIEWERS | `PVTF_lAHOAAImgs4BGe4Bzg3g-Nk` | PR reviewers |
-| Parent issue | PARENT_ISSUE | `PVTF_lAHOAAImgs4BGe4Bzg3g-No` | Parent issue link |
-| Sub-issues progress | SUB_ISSUES_PROGRESS | `PVTF_lAHOAAImgs4BGe4Bzg3g-Ns` | Child issue tracking |
+| Field Name           | Data Type            | Field ID                         | Description            |
+| -------------------- | -------------------- | -------------------------------- | ---------------------- |
+| Title                | TITLE                | `PVTF_lAHOAAImgs4BGe4Bzg3g-NI`   | Issue/PR title         |
+| Assignees            | ASSIGNEES            | `PVTF_lAHOAAImgs4BGe4Bzg3g-NM`   | Who is working on this |
+| **Status**           | SINGLE_SELECT        | `PVTSSF_lAHOAAImgs4BGe4Bzg3g-NQ` | Current work status    |
+| Labels               | LABELS               | `PVTF_lAHOAAImgs4BGe4Bzg3g-NU`   | Issue labels           |
+| Linked pull requests | LINKED_PULL_REQUESTS | `PVTF_lAHOAAImgs4BGe4Bzg3g-NY`   | Associated PRs         |
+| Milestone            | MILESTONE            | `PVTF_lAHOAAImgs4BGe4Bzg3g-Nc`   | Release milestone      |
+| Repository           | REPOSITORY           | `PVTF_lAHOAAImgs4BGe4Bzg3g-Ng`   | Source repository      |
+| Reviewers            | REVIEWERS            | `PVTF_lAHOAAImgs4BGe4Bzg3g-Nk`   | PR reviewers           |
+| Parent issue         | PARENT_ISSUE         | `PVTF_lAHOAAImgs4BGe4Bzg3g-No`   | Parent issue link      |
+| Sub-issues progress  | SUB_ISSUES_PROGRESS  | `PVTF_lAHOAAImgs4BGe4Bzg3g-Ns`   | Child issue tracking   |
 
 ## Status Field Configuration
 
 The **Status** field is the primary workflow field with three states:
 
-| Status Name | Option ID | Description |
-|-------------|-----------|-------------|
-| **Todo** | `f75ad846` | This item hasn't been started |
+| Status Name     | Option ID  | Description                      |
+| --------------- | ---------- | -------------------------------- |
+| **Todo**        | `f75ad846` | This item hasn't been started    |
 | **In Progress** | `47fc9ee4` | This is actively being worked on |
-| **Done** | `98236657` | This has been completed |
+| **Done**        | `98236657` | This has been completed          |
 
 ### Status Workflow
 
@@ -117,6 +117,7 @@ gh issue view <issue-number> --json projectItems
 ```
 
 Example output:
+
 ```json
 {
   "projectItems": [
@@ -182,6 +183,7 @@ Use the update-github-issue-project-status skill to set issue #42 to "in_progres
 ```
 
 The skill supports:
+
 - Single or batch issue updates (comma-separated)
 - All three status values: "todo", "in_progress", "done"
 - Automatic project item creation if needed
@@ -195,6 +197,7 @@ See Issue #38 for ongoing research into native GitHub Projects V2 automations th
 ### PAT Permissions
 
 If you encounter "Resource not accessible" errors, ensure the PAT has these scopes:
+
 - `project` - Read/write access to projects
 - `repo` - Access to repository issues and PRs
 

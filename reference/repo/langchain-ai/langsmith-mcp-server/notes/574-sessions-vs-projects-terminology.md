@@ -47,11 +47,13 @@ def fetch_trace_tool(
 ```
 
 **Observations**:
+
 - MCP tool uses `project_name`, not `session_name`
 - Docstring explicitly refers to "project"
 - AI models calling this tool will use "project" vocabulary
 
 **Impact**:
+
 - When Claude or other AI assistants use this tool, they say "fetching trace from project X"
 - Reinforces "project" in natural language interactions between humans and AI
 - Creates consistent terminology across human-AI-LangSmith interactions
@@ -83,6 +85,7 @@ runs = client.list_runs(
 ```
 
 **Observations**:
+
 - MCP server calls `client.list_runs(project_name=...)`
 - Consistent with Python SDK's public API
 - No translation layer needed (MCP uses same terminology as SDK)
@@ -99,6 +102,7 @@ def get_project_runs_stats(client, project_name, is_last_run)  # Named with "pro
 ```
 
 **Observations**:
+
 - Function names include "project" (e.g., `get_project_runs_stats`)
 - Parameters consistently use `project_name`
 - No `get_session_runs_stats` or similar
@@ -122,6 +126,7 @@ def get_thread_history(thread_id: str, project_name: str) -> Dict[str, Any]:
 ```
 
 **Observations**:
+
 - Documentation uses "project" in natural language
 - Clear semantic: thread exists within a project
 - No ambiguity or need to explain "session" terminology
@@ -136,6 +141,7 @@ if not runs or len(runs) == 0:
 ```
 
 **Observations**:
+
 - Error messages refer to "project_name"
 - Users see "project" when things go wrong
 - Consistent messaging throughout error paths
@@ -154,6 +160,7 @@ MCP tools form the "API" that AI models use. The terminology in tool names and p
 ### Hypothetical Comparison
 
 **If MCP Used "Session"**:
+
 ```python
 def fetch_trace_tool(client, session_name: str = None, trace_id: str = None):
     """Fetch the trace content for a specific session"""
@@ -161,12 +168,14 @@ def fetch_trace_tool(client, session_name: str = None, trace_id: str = None):
 ```
 
 **Problems**:
+
 - Mismatch between MCP parameter (`session_name`) and SDK parameter (`project_name`)
 - Translation layer needed to convert terminology
 - User says "session" but SDK docs say "project"
 - Confusion when debugging or reading SDK docs
 
 **Actual Implementation**:
+
 ```python
 def fetch_trace_tool(client, project_name: str = None, trace_id: str = None):
     """Fetch the trace content for a specific project"""
@@ -174,6 +183,7 @@ def fetch_trace_tool(client, project_name: str = None, trace_id: str = None):
 ```
 
 **Benefits**:
+
 - One-to-one mapping between MCP and SDK terminology
 - No translation needed
 - Users can reference SDK docs directly
@@ -189,11 +199,13 @@ def get_thread_history(thread_id: str, project_name: str):
 ```
 
 **Hierarchical Relationship**:
+
 - Threads exist **within** projects
 - Projects **contain** threads (conversations)
 - Natural semantic hierarchy
 
 **Reinforces "Project" as Container**:
+
 - Projects are the organizational unit
 - Threads are a feature within projects
 - Aligns with "project = collection of traces" definition
@@ -205,11 +217,13 @@ def get_thread_history(thread_id: str, project_name: str):
 ### Where This MCP Server Is Used
 
 **Integration Examples** (from smithery.yml and README):
+
 - **Claude Desktop**: Official Anthropic AI assistant
 - **Cursor**: AI-powered code editor
 - **Custom AI Agents**: Any MCP-compatible AI system
 
 **User Interaction Pattern**:
+
 ```
 User: "Show me the stats for my chatbot project"
       ↓
@@ -228,12 +242,14 @@ User → "project" → AI Model → "project" → MCP → "project" → SDK → 
 ## No "Session" Terminology Found
 
 **Comprehensive Search Results**:
+
 - ❌ No `session_name` parameters in any tools
 - ❌ No `get_session_*` function names
 - ❌ No "session" in tool docstrings (except `thread_id`/`session_id` metadata)
 - ❌ No session-related error messages
 
 **Only "Project" References**:
+
 - ✅ `project_name` parameters throughout
 - ✅ `get_project_runs_stats` function name
 - ✅ "project" in all docstrings and comments
@@ -255,6 +271,7 @@ The MCP server provides unique validation because:
 ### Tool Design Philosophy
 
 **From MCP Tool Signatures**:
+
 ```python
 fetch_trace_tool(project_name: str, trace_id: str)
 get_thread_history(thread_id: str, project_name: str)
@@ -262,6 +279,7 @@ get_project_runs_stats(project_name: str, is_last_run: str)
 ```
 
 **Design Principles Evident**:
+
 1. **Consistency**: All tools use `project_name`
 2. **Clarity**: Parameter names match concepts
 3. **User-Centric**: Names chosen for user understanding, not API accuracy
@@ -272,15 +290,18 @@ get_project_runs_stats(project_name: str, is_last_run: str)
 ### Rust SDK as CLI Backend
 
 The langstar CLI will be similar to the MCP server:
+
 - **Layer**: Sits between users and LangSmith API
 - **Purpose**: Provide user-friendly interface to LangSmith
 - **Users**: Developers and automation scripts
 
 **Parallel to MCP**:
+
 - MCP: AI models → MCP tools → LangSmith SDK → LangSmith API
 - Langstar: Users → CLI commands → Rust SDK → LangSmith API
 
 **Lesson from MCP**:
+
 - MCP chose "project" for tool parameters
 - Langstar should choose "project" for CLI flags and SDK methods
 - Same reasoning applies: user-facing terminology should be user-friendly
@@ -288,6 +309,7 @@ The langstar CLI will be similar to the MCP server:
 ### Consistency Across Interfaces
 
 **Human Interfaces**:
+
 - Python SDK: `client.list_projects()`
 - JS SDK: `client.listProjects()`
 - MCP Tools: `get_project_runs_stats(project_name=...)`

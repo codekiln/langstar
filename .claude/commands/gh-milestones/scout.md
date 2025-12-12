@@ -178,6 +178,7 @@ gh pr create --title "docs: scout $FEATURE_NAME research" --body "$PR_BODY"
 ## After Scout Completion
 
 Use research findings to:
+
 - Author the milestone's Phase 0 parent issue with informed scope and technical context
 - Create initial sub-issues based on discovered patterns
 - Structure the implementation plan around the knowledge gathered

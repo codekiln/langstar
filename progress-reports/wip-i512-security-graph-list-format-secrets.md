@@ -20,6 +20,7 @@ Fixed critical security vulnerability where `langstar graph` commands exposed de
 **File:** `sdk/src/deployments.rs`
 
 **Lines 139-171:** Added `Deployment::sanitize_secrets()` method
+
 ```rust
 pub fn sanitize_secrets(&self) -> Self {
     let mut sanitized = self.clone();
@@ -33,6 +34,7 @@ pub fn sanitize_secrets(&self) -> Self {
 ```
 
 **Purpose:**
+
 - Creates sanitized copy of deployment with redacted secret values
 - Preserves secret names for reference
 - Does not modify original deployment object
@@ -45,6 +47,7 @@ pub fn sanitize_secrets(&self) -> Self {
 **File:** `cli/src/commands/graph.rs`
 
 #### Location 1: List Command JSON Output (lines 232-241)
+
 ```rust
 // Sanitize secrets before outputting
 let sanitized_resources: Vec<Deployment> = deployments_list
@@ -59,6 +62,7 @@ formatter.print(&json!({
 ```
 
 #### Location 2: Get Command (lines 266-268)
+
 ```rust
 // Sanitize secrets before outputting
 let sanitized = deployment.sanitize_secrets();
@@ -66,19 +70,23 @@ formatter.print(&serde_json::to_value(&sanitized)?)?;
 ```
 
 #### Location 3: Create Command - Immediate Output (line 431)
+
 ```rust
 // Sanitize secrets before outputting
 formatter.print(&deployment.sanitize_secrets())?;
 ```
 
 #### Location 4: Create Command - Wait Mode (line 479)
+
 ```rust
 // Sanitize secrets before outputting
 formatter.print(&deployment.sanitize_secrets())?;
 ```
 
 #### Documentation Updates (lines 12-17, 22, 47, 55)
+
 Added security notes to command documentation explaining:
+
 - Secret values are automatically redacted for security
 - Applies to all output formats (JSON and table)
 - Rationale: prevent exposure in logs, screenshots, shared output
@@ -90,6 +98,7 @@ Added security notes to command documentation explaining:
 **File:** `sdk/src/deployments.rs`
 
 #### Test 1: Secret Sanitization (lines 568-624)
+
 ```rust
 #[test]
 fn test_sanitize_secrets() {
@@ -101,6 +110,7 @@ fn test_sanitize_secrets() {
 ```
 
 #### Test 2: No Secrets Field (lines 626-643)
+
 ```rust
 #[test]
 fn test_sanitize_secrets_with_no_secrets() {
@@ -110,6 +120,7 @@ fn test_sanitize_secrets_with_no_secrets() {
 ```
 
 #### Test 3: Empty Secrets Array (lines 645-666)
+
 ```rust
 #[test]
 fn test_sanitize_secrets_with_empty_secrets() {
@@ -130,11 +141,13 @@ fn test_sanitize_secrets_with_empty_secrets() {
 **Problem:** Integration tests failing after #519 (parallelization) when `LANGGRAPH_GITHUB_INTEGRATION_ID` not set and no existing deployments available.
 
 **Root Cause:**
+
 - Test fixture relied on CLI's auto-discovery happening inside `graph create`
 - Auto-discovery requires existing deployments to query
 - Created chicken-and-egg problem in fresh environments
 
 **Solution (lines 186-260):** Added `query_github_integration_id()` helper
+
 ```rust
 fn query_github_integration_id() -> Option<String> {
     // 1. Query `graph list --limit 100 --format json`
@@ -146,6 +159,7 @@ fn query_github_integration_id() -> Option<String> {
 ```
 
 **Modified (lines 278-293):** Enhanced `create_new_deployment()` with 3-tier discovery
+
 ```rust
 let integration_id = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID")
     .ok()
@@ -158,11 +172,13 @@ let integration_id = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID")
 ```
 
 **Discovery Order:**
+
 1. **Environment variable** (LANGGRAPH_GITHUB_INTEGRATION_ID) - highest priority
 2. **API query fallback** - Query existing deployments (NEW)
 3. **Fail with helpful message** - Clear setup instructions
 
 **Updated (lines 315-317):** Pass `--integration-id` explicitly to graph create
+
 ```rust
 "--integration-id",
 &integration_id,
@@ -175,32 +191,41 @@ let integration_id = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID")
 ## Testing Performed
 
 ### Unit Tests
+
 ```bash
 cargo test --workspace --all-features
 ```
+
 **Results:**
+
 - ✅ 85/85 unit tests passed
 - ✅ 3/3 new secret sanitization tests passed
 - ✅ All graph command tests passed
 - ✅ All deployment tests passed
 
 ### Pre-commit Checks
+
 ```bash
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings
 ```
+
 **Results:**
+
 - ✅ cargo fmt - no formatting issues
 - ✅ cargo check - compiles without errors
 - ✅ cargo clippy - no warnings
 
 ### Integration Tests Status
+
 **Before fix:**
+
 - ❌ 2 tests failing: `test_deployment_discovery_workflow`, `test_error_handling_nonexistent_deployment`
 - Error: "GitHub integration ID not found"
 
 **After fix:**
+
 - Expected: ✅ Tests should pass in CI (existing deployments provide integration ID)
 - Local: Cannot verify without LANGGRAPH_GITHUB_INTEGRATION_ID or existing deployments
 - **Note:** 6 tests marked `#[ignore]` for other blocking issues (#127, #128)
@@ -212,6 +237,7 @@ cargo clippy --workspace --all-features -- -D warnings
 ### Obstacle 1: Integration Test Failures
 
 **Issue:** After implementing security fix, discovered integration tests failing with:
+
 ```
 Error: Configuration error: GitHub integration ID not found
 ```
@@ -221,6 +247,7 @@ Error: Configuration error: GitHub integration ID not found
 **Reality Check:** User correctly pointed out: "test failures are always the responsibility of the engineer"
 
 **Root Cause Analysis:**
+
 1. Recent commit #519 introduced test parallelization
 2. Tests switched from creating individual deployments to sharing via `OnceLock`
 3. Fixture creation relied on CLI's internal auto-discovery
@@ -228,6 +255,7 @@ Error: Configuration error: GitHub integration ID not found
 5. In v0.10.0, tests worked because CI had existing deployments
 
 **Investigation Process:**
+
 1. Checked recent commits: `git log --oneline --since="2 days ago" --grep="parallel"`
 2. Found commit ef2c528: "⚡️ perf(tests): parallelize integration tests"
 3. Examined test fixture code in `cli/tests/common/fixtures.rs`
@@ -243,6 +271,7 @@ Error: Configuration error: GitHub integration ID not found
 **Challenge:** Needed to understand how CI environments differ from local
 
 **Learning:**
+
 - CI environments have existing deployments from previous test runs
 - These provide integration IDs via auto-discovery
 - Fresh/local environments may not have any deployments
@@ -255,6 +284,7 @@ Error: Configuration error: GitHub integration ID not found
 ## Security Impact
 
 ### Before Fix
+
 ```json
 {
   "secrets": {
@@ -265,6 +295,7 @@ Error: Configuration error: GitHub integration ID not found
 ```
 
 ### After Fix
+
 ```json
 {
   "secrets": {
@@ -275,6 +306,7 @@ Error: Configuration error: GitHub integration ID not found
 ```
 
 ### Attack Vectors Mitigated
+
 1. **Terminal logging** - Secrets no longer captured in tmux/screen logs
 2. **Screenshots** - Cannot accidentally expose credentials in screenshots
 3. **LLM context** - LLMs processing terminal output won't read secrets
@@ -286,6 +318,7 @@ Error: Configuration error: GitHub integration ID not found
 ## Commits
 
 ### Commit 1: Security Fix (6ab11c8)
+
 ```
 🔒 security: sanitize secrets in graph command output
 
@@ -295,18 +328,21 @@ output, logs, or screenshots.
 ```
 
 **Changes:**
+
 - SDK: Added `Deployment::sanitize_secrets()` method
 - CLI: Applied sanitization to all 4 output locations
 - Tests: Added 3 comprehensive unit tests
 - Docs: Updated command help text
 
 **Files changed:** 2
+
 - `cli/src/commands/graph.rs` (+47, -5)
 - `sdk/src/deployments.rs` (+110, -0)
 
 ---
 
 ### Commit 2: Test Infrastructure Fix (ec09c40)
+
 ```
 🩹 fix(tests): improve GitHub integration ID discovery in test fixtures
 
@@ -315,12 +351,14 @@ not set and test environment has no existing deployments.
 ```
 
 **Changes:**
+
 - Added `query_github_integration_id()` helper function
 - Enhanced `create_new_deployment()` with 3-tier discovery
 - Updated documentation with discovery strategy
 - Pass `--integration-id` explicitly to graph create
 
 **Files changed:** 1
+
 - `cli/tests/common/fixtures.rs` (+120, -9)
 
 ---
@@ -354,6 +392,7 @@ not set and test environment has no existing deployments.
 ## Commands to Test Locally
 
 ### Build and test
+
 ```bash
 cd /workspace/wip/node-512-issue
 
@@ -369,6 +408,7 @@ cargo clippy --workspace --all-features -- -D warnings
 ```
 
 ### Test secret sanitization manually
+
 ```bash
 # Build CLI
 cargo build --release
@@ -403,10 +443,12 @@ cargo build --release
 ## Files Modified
 
 ### Security Fix
+
 - `sdk/src/deployments.rs` (lines 139-171, 568-666)
 - `cli/src/commands/graph.rs` (lines 12-17, 22, 47, 55, 232-241, 266-268, 431, 479)
 
 ### Test Infrastructure
+
 - `cli/tests/common/fixtures.rs` (lines 27-53, 186-260, 278-293, 315-317)
 
 ---
@@ -418,6 +460,7 @@ cargo build --release
 **PR URL:** https://github.com/codekiln/langstar/pull/new/node/512-issue
 
 **Suggested PR Title:**
+
 ```
 🔒 security: sanitize secrets in graph command output (#512)
 ```
@@ -451,12 +494,14 @@ cargo build --release
 **Commits `ec09c40` and `a8edd7c` were reverted** - removed 118 lines of temporary workarounds from `cli/tests/common/fixtures.rs`.
 
 **Why:**
+
 - CI has `LANGGRAPH_GITHUB_INTEGRATION_ID` env var set - tests work without workarounds
 - The workarounds used CLI shelling (wrong approach per research)
 - Issue #524 tracks proper refactor: consolidate CLI fixtures to use SDK directly
 - PR #522 should stay focused on security fix
 
 **This PR now contains:**
+
 1. ✅ Security fix: `sanitize_secrets()` method and application to graph commands
 2. ✅ Research document: `docs/research/i512-integration-test-get-or-create-status-v0.11.0.md`
 3. ✅ Progress report: This file
@@ -477,6 +522,7 @@ The original progress report stated:
 > Tests switched from creating individual deployments to sharing via `OnceLock`
 
 **Correction:** PR #519 did NOT change how deployments are created or shared. The `OnceLock` pattern for shared deployments existed before #519. PR #519 only:
+
 1. Added `#[serial]` attributes to tests using shared deployments
 2. Changed test name generation to use microseconds + UUID
 3. Removed `--test-threads=1` from CI workflow
@@ -484,6 +530,7 @@ The original progress report stated:
 ### Actual Root Cause
 
 The integration test failures in fresh environments were caused by:
+
 - The test fixture **always** relied on CLI's internal auto-discovery for GitHub integration ID
 - Auto-discovery requires existing deployments to query for `integration_id` in `source_config`
 - In fresh environments with no deployments, auto-discovery fails
@@ -501,18 +548,19 @@ The integration test failures in fresh environments were caused by:
 
 ### Key Difference: v0.10.0 vs v0.11.0 (with PR #522)
 
-| Aspect | v0.10.0 | v0.11.0 + PR #522 |
-|--------|---------|-------------------|
-| Integration ID from env var | Yes | Yes |
-| Integration ID from fixture API query | No | **Yes** |
-| Explicit `--integration-id` flag | Only if env var set | **Always** |
-| Works in fresh environment | No | **Yes** (with env var or existing deployments) |
+| Aspect                                | v0.10.0             | v0.11.0 + PR #522                              |
+| ------------------------------------- | ------------------- | ---------------------------------------------- |
+| Integration ID from env var           | Yes                 | Yes                                            |
+| Integration ID from fixture API query | No                  | **Yes**                                        |
+| Explicit `--integration-id` flag      | Only if env var set | **Always**                                     |
+| Works in fresh environment            | No                  | **Yes** (with env var or existing deployments) |
 
 The fix makes the test fixture self-sufficient for integration ID discovery, rather than relying on the CLI's internal auto-discovery mechanism.
 
 ### Related: PR #503 CI Auto-Discovery (Issue #499)
 
 PR #503 changed CI from hard-coded test files to auto-discovery:
+
 ```yaml
 # Before: cargo test --features integration-tests --test assistant_command_test --test graph_command_test
 # After:  cargo test -p langstar --features integration-tests

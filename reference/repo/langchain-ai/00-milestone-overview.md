@@ -5,11 +5,13 @@ This document maps project milestones to relevant resources from the LangSmith r
 ## Reference Repositories
 
 ### langsmith-cookbook
+
 **Location**: `reference/repo/langchain-ai/langsmith-cookbook/`
 **Repository**: https://github.com/langchain-ai/langsmith-cookbook
 **Description**: Collection of practical tutorials and examples for LangSmith platform features
 
 ### langsmith-mcp-server
+
 **Location**: `reference/repo/langchain-ai/langsmith-mcp-server/`
 **Repository**: https://github.com/langchain-ai/langsmith-mcp-server
 **Description**: Model Context Protocol (MCP) server for LangSmith integration
@@ -26,17 +28,20 @@ This document maps project milestones to relevant resources from the LangSmith r
 #### Relevant Resources
 
 **MCP Server Integration:**
+
 - **Tool**: `langsmith-mcp-server/` - Full MCP server implementation for LangSmith
 - **Architecture**: Study `langsmith_mcp_server/server.py` for FastMCP patterns
 - **Configuration**: Review `smithery.yml` for deployment patterns
 - **Dockerfile**: Alpine-based containerization in `Dockerfile` (useful for devcontainer setup)
 
 **Development Environment Patterns:**
+
 - **Setup Scripts**: `langsmith-mcp-server/Makefile` - development workflow automation
 - **Dependencies**: `pyproject.toml` - modern Python packaging with uv/pdm-backend
 - **Testing**: `tests/` directory structure for pytest integration
 
 #### Why These Matter
+
 The MCP server demonstrates production-ready containerization and development environment setup that can inform our devcontainer feature design.
 
 ---
@@ -49,15 +54,18 @@ The MCP server demonstrates production-ready containerization and development en
 #### Relevant Resources
 
 **CI/CD Patterns:**
+
 - **GitHub Actions**: `langsmith-mcp-server/.github/workflows/` - CI automation examples
 - **Testing Automation**: `Makefile` commands for lint, format, test workflows
 - **Release Management**: Check for release workflow patterns
 
 **Package Management:**
+
 - **PyPI Publishing**: `pyproject.toml` configuration for package distribution
 - **Version Management**: Python packaging standards for semantic versioning
 
 #### Why These Matter
+
 Both repositories demonstrate modern CI/CD practices that can inform our release automation strategy.
 
 ---
@@ -70,11 +78,13 @@ Both repositories demonstrate modern CI/CD practices that can inform our release
 #### Relevant Resources
 
 **Cookbook Examples:**
+
 - **Tracing Basics**: `tracing-examples/traceable/tracing_without_langchain.ipynb` - Core tracing concepts
 - **REST API**: `tracing-examples/rest/rest.ipynb` - REST API patterns for runs/traces
 - **Nested Runs**: `tracing-examples/nesting-tools/nest_runs_within_tools.ipynb` - Understanding run hierarchies
 
 **MCP Server Implementation:**
+
 - **Traces Module**: `langsmith_mcp_server/services/tools/traces.py` - Production trace querying
 - **Tools Available**:
   - `fetch_runs()` - Flexible run fetching with filters and query language
@@ -83,10 +93,12 @@ Both repositories demonstrate modern CI/CD practices that can inform our release
   - `fetch_trace()` - Individual trace retrieval by ID
 
 **Key Code References:**
+
 - API client wrapper: `langsmith_mcp_server/langsmith_client.py`
 - Trace data structures and filtering logic in services/tools/traces.py
 
 #### Why These Matter
+
 The MCP server provides a production-ready implementation of trace/run querying that directly maps to our SDK requirements. The cookbook examples demonstrate real-world usage patterns.
 
 ---
@@ -99,6 +111,7 @@ The MCP server provides a production-ready implementation of trace/run querying 
 #### Relevant Resources
 
 **Cookbook Examples:**
+
 - **Feedback Systems**: `feedback-examples/` directory
   - `algorithmic-feedback/algorithmic_feedback.ipynb` - Automated feedback pipelines
   - `realtime-algorithmic-feedback/realtime_feedback.ipynb` - Real-time feedback collection
@@ -107,16 +120,19 @@ The MCP server provides a production-ready implementation of trace/run querying 
 
 **MCP Server Capabilities:**
 While annotation queues aren't explicitly listed in current MCP tools, related functionality includes:
+
 - **Feedback Systems**: Integration patterns for user and automated feedback
 - **Project Management**: `list_projects()` for organizing annotation work
 - **Data Flow**: Understanding how feedback connects to evaluation workflows
 
 **Related Concepts:**
+
 - Annotation queues are used for human review and labeling of LLM outputs
 - Connected to feedback collection and evaluation pipelines
 - See cookbook feedback examples for end-to-end workflows
 
 #### Why These Matter
+
 Understanding feedback collection patterns helps design annotation queue APIs. The cookbook shows how annotation fits into the evaluation lifecycle.
 
 ---
@@ -129,6 +145,7 @@ Understanding feedback collection patterns helps design annotation queue APIs. T
 #### Relevant Resources
 
 **Cookbook Examples:**
+
 - **Dataset Creation**: `testing-examples/` - Creating datasets for evaluation
 - **Using Fixed Sources**: `testing-examples/using-fixed-sources/using_fixed_sources.ipynb` - Dataset-driven testing
 - **Dynamic Data**: `testing-examples/dynamic-data/testing_dynamic_data.ipynb` - Datasets with changing data
@@ -136,6 +153,7 @@ Understanding feedback collection patterns helps design annotation queue APIs. T
 - **Export/Import**: `testing-examples/export-test-to-csv/export-test-to-csv.ipynb` - Dataset export patterns
 
 **MCP Server Implementation:**
+
 - **Datasets Module**: `langsmith_mcp_server/services/tools/datasets.py` - Full dataset CRUD
 - **Tools Available**:
   - `list_datasets()` - Flexible dataset discovery with filtering
@@ -146,6 +164,7 @@ Understanding feedback collection patterns helps design annotation queue APIs. T
   - `update_examples()` - Documentation for example updates (doc-only tool)
 
 **Key Features to Study:**
+
 - **Filtering**: By ID, name, type, metadata, creation date
 - **Pagination**: Handling large datasets efficiently
 - **Versioning**: `as_of` parameter for historical access
@@ -153,6 +172,7 @@ Understanding feedback collection patterns helps design annotation queue APIs. T
 - **Examples Management**: CRUD operations on dataset examples
 
 **Reference Implementation:**
+
 ```python
 # From langsmith_mcp_server/services/tools/datasets.py
 @mcp.tool()
@@ -165,6 +185,7 @@ def list_datasets(
 ```
 
 #### Why These Matter
+
 The MCP server provides a complete reference implementation for dataset operations. The cookbook examples demonstrate real-world usage patterns and data flows for testing and evaluation.
 
 ---
@@ -172,25 +193,31 @@ The MCP server provides a complete reference implementation for dataset operatio
 ## Cross-Cutting Resources
 
 ### API Specifications
+
 - **OpenAPI Spec**: Mentioned in cookbook (LangSmith SDK openapi.yaml)
 - **REST API Examples**: `tracing-examples/rest/rest.ipynb` demonstrates direct API usage
 - **See also**: `reference/api-specs/LANGSMITH_API_OVERVIEW.md` in this project
 
 ### SDK Architecture Patterns
+
 **From MCP Server:**
+
 - **Client Wrapper**: `langsmith_client.py` - thin abstraction over LangSmith Python SDK
 - **Service Layer**: Modular organization (tools/, prompts/, resources/)
 - **Error Handling**: Graceful degradation, validation, timeout management
 - **Type Safety**: Full type hints and mypy checking
 
 ### Testing & Quality
+
 **From MCP Server:**
+
 - **Test Structure**: `tests/` directory organization
 - **Pytest Configuration**: `pyproject.toml` test settings
 - **Socket Restrictions**: Security-focused testing
 - **MCP Inspector**: Interactive testing tool (`mcp dev server.py`)
 
 **From Cookbook:**
+
 - **Example Notebooks**: Extensive testing and evaluation examples
 - **Real-world Patterns**: Production-proven testing strategies
 
@@ -221,6 +248,7 @@ The MCP server provides a complete reference implementation for dataset operatio
 ### For SDK Development
 
 When implementing SDK features:
+
 1. **Check cookbook** for usage patterns and examples
 2. **Review MCP server** for implementation reference
 3. **Consult OpenAPI specs** for authoritative API contracts
@@ -229,6 +257,7 @@ When implementing SDK features:
 ### For CLI Development
 
 When building CLI commands:
+
 1. **Study MCP tool definitions** for parameter patterns
 2. **Review cookbook examples** for user workflows
 3. **Consider output formats** shown in both repos
@@ -254,6 +283,7 @@ reference/repo/langchain-ai/
 ```
 
 **Notes Directory Usage:**
+
 - Add research findings and insights to notes/
 - Keep code/ as read-only reference (can be re-cloned anytime)
 - Create additional markdown files as needed
@@ -264,6 +294,7 @@ reference/repo/langchain-ai/
 ## Maintenance
 
 This overview should be updated:
+
 - When new milestones are created
 - When discovering particularly relevant examples in the reference repos
 - When reference repos are updated with new features

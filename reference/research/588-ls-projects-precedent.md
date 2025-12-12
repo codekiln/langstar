@@ -10,6 +10,7 @@
 This document provides detailed analysis of the Python langsmith-sdk project methods to guide Rust SDK implementation. All methods operate on the `/sessions` API endpoint but expose "project" terminology to users.
 
 **Key Findings**:
+
 - 6 core methods: `list_projects`, `read_project`, `create_project`, `update_project`, `delete_project`, `has_project`
 - Pagination: Offset-based, 100 items per page
 - Error handling: Rich exception hierarchy with specific error types
@@ -22,6 +23,7 @@ This document provides detailed analysis of the Python langsmith-sdk project met
 **Location**: `client.py:3704-3778`
 
 **Signature**:
+
 ```python
 def list_projects(
     self,
@@ -41,6 +43,7 @@ def list_projects(
 **API Endpoint**: `GET /sessions`
 
 **Query Parameters**:
+
 - `limit`: Max 100 per page (hardcoded: `min(limit, 100) if limit else 100`)
 - `offset`: Managed by `_get_paginated_list()` helper
 - `id`: Project IDs filter (list)
@@ -55,6 +58,7 @@ def list_projects(
 **Return Type**: Iterator yielding `TracerSessionResult` objects
 
 **Special Logic**:
+
 - Mutual exclusivity: `reference_dataset_id` XOR `reference_dataset_name`
 - If `reference_dataset_name` provided, resolves to ID via `read_dataset()`
 - Metadata dict is JSON-encoded before sending: `json.dumps(metadata)`
@@ -67,6 +71,7 @@ def list_projects(
 **Location**: `client.py:3531-3570`
 
 **Signature**:
+
 ```python
 @ls_utils.xor_args(("project_id", "project_name"))
 def read_project(
@@ -79,20 +84,24 @@ def read_project(
 ```
 
 **API Endpoint**:
+
 - By ID: `GET /sessions/{uuid}`
 - By name: `GET /sessions?name={name}&limit=1`
 
 **Query Parameters**:
+
 - `include_stats`: Boolean (default: False)
 - `limit`: Always 1 when searching by name
 
 **Return Type**: Single `TracerSessionResult` object
 
 **Error Handling**:
+
 - Raises `LangSmithNotFoundError` if project not found
 - Uses `@xor_args` decorator to enforce exactly one of `project_id` or `project_name`
 
 **Special Logic**:
+
 - Name-based lookup returns list, extracts first item
 - Empty list triggers `LangSmithNotFoundError` with message: `"Project {project_name} not found"`
 - ID-based lookup returns single object directly
@@ -102,6 +111,7 @@ def read_project(
 **Location**: `client.py:3408-3453`
 
 **Signature**:
+
 ```python
 def create_project(
     self,
@@ -118,6 +128,7 @@ def create_project(
 **API Endpoint**: `POST /sessions?upsert={bool}`
 
 **Request Body**:
+
 ```python
 {
     "name": str,              # Required
@@ -131,12 +142,14 @@ def create_project(
 **Return Type**: `TracerSession` (base schema, not Result variant)
 
 **Special Logic**:
+
 - Auto-generates UUID for new project: `str(uuid.uuid4())`
 - Metadata merged into `extra` field: `{"metadata": metadata, ...extra}`
 - `upsert` parameter passed as query param, not in body
 - Returns basic `TracerSession`, not `TracerSessionResult` (no stats)
 
 **Error Handling**:
+
 - Uses `raise_for_status_with_text()` to include response body in exceptions
 
 ### 1.4 update_project()
@@ -144,6 +157,7 @@ def create_project(
 **Location**: `client.py:3455-3502`
 
 **Signature**:
+
 ```python
 def update_project(
     self,
@@ -160,6 +174,7 @@ def update_project(
 **API Endpoint**: `PATCH /sessions/{uuid}`
 
 **Request Body**:
+
 ```python
 {
     "name": Optional[str],
@@ -172,12 +187,14 @@ def update_project(
 **Return Type**: `TracerSession`
 
 **Special Logic**:
+
 - Name change only allowed if project has `end_time` (closed project)
 - `end_time` converted to ISO8601: `end_time.isoformat()`
 - Metadata merged into `extra` like in create
 - Uses `_as_uuid()` helper to validate project_id
 
 **Important Constraint** (from docstring line 3471-3472):
+
 > "The new name to give the project. This is only valid if the project has been assigned an end_time, meaning it has been completed/closed."
 
 ### 1.5 delete_project()
@@ -185,6 +202,7 @@ def update_project(
 **Location**: `client.py:3780-3806`
 
 **Signature**:
+
 ```python
 @ls_utils.xor_args(("project_name", "project_id"))
 def delete_project(
@@ -200,11 +218,13 @@ def delete_project(
 **Return Type**: `None`
 
 **Special Logic**:
+
 - If `project_name` provided, resolves to ID via `read_project()`
 - Uses `@xor_args` decorator for mutual exclusivity
 - No response body expected (successful delete returns nothing)
 
 **Error Handling**:
+
 - `read_project()` will raise `LangSmithNotFoundError` if name doesn't exist
 - DELETE endpoint uses `raise_for_status_with_text()` for error responses
 
@@ -213,6 +233,7 @@ def delete_project(
 **Location**: `client.py:3572-3590`
 
 **Signature**:
+
 ```python
 def has_project(
     self,
@@ -243,6 +264,7 @@ return True
 **Type**: Offset-based pagination (not cursor-based as initially expected)
 
 **Mechanism**:
+
 ```python
 def _get_paginated_list(
     self, path: str, *, params: Optional[dict] = None
@@ -275,6 +297,7 @@ def _get_paginated_list(
 ### 2.3 Rust Implementation Implications
 
 **Recommended approach**:
+
 ```rust
 pub struct ProjectListParams {
     pub limit: Option<u32>,  // Max 100, default 100
@@ -324,6 +347,7 @@ pub async fn list_projects(
 **Location**: `utils.py:41-78`
 
 **Base exception**:
+
 ```python
 class LangSmithError(Exception):
     """An error occurred while communicating with the LangSmith API."""
@@ -331,16 +355,16 @@ class LangSmithError(Exception):
 
 **Specific exceptions** (all inherit from `LangSmithError`):
 
-| Exception | Status Code | Usage |
-|-----------|-------------|-------|
-| `LangSmithAPIError` | 500+ | Internal server errors |
-| `LangSmithUserError` | 400-499 | Client-side errors (invalid params) |
-| `LangSmithNotFoundError` | 404 | Resource not found |
-| `LangSmithConflictError` | 409 | Resource already exists |
-| `LangSmithAuthError` | 401, 403 | Authentication/authorization failures |
-| `LangSmithRateLimitError` | 429 | Rate limit exceeded |
-| `LangSmithConnectionError` | - | Network connection failures |
-| `LangSmithRequestTimeout` | 408 | Request timeout |
+| Exception                  | Status Code | Usage                                 |
+| -------------------------- | ----------- | ------------------------------------- |
+| `LangSmithAPIError`        | 500+        | Internal server errors                |
+| `LangSmithUserError`       | 400-499     | Client-side errors (invalid params)   |
+| `LangSmithNotFoundError`   | 404         | Resource not found                    |
+| `LangSmithConflictError`   | 409         | Resource already exists               |
+| `LangSmithAuthError`       | 401, 403    | Authentication/authorization failures |
+| `LangSmithRateLimitError`  | 429         | Rate limit exceeded                   |
+| `LangSmithConnectionError` | -           | Network connection failures           |
+| `LangSmithRequestTimeout`  | 408         | Request timeout                       |
 
 ### 3.2 Error Raising Pattern
 
@@ -361,6 +385,7 @@ def raise_for_status_with_text(response: Union[requests.Response, httpx.Response
 ```
 
 **Usage pattern in project methods**:
+
 ```python
 response = self.request_with_retries("POST", endpoint, ...)
 ls_utils.raise_for_status_with_text(response)  # Throws on HTTP error
@@ -372,12 +397,14 @@ return ls_schemas.TracerSession(**response.json(), ...)
 **Location**: `request_with_retries()` (`client.py:1070-1134`)
 
 **Retry configuration**:
+
 - Default attempts: 3 (configurable via `retry_config`)
 - Rate limit backoff: Exponential (`retry_after * 2^idx + random`)
 - Rate limit header: Uses `retry-after` from response, defaults to 30s
 - General backoff: `2^idx + (random * 0.5)`
 
 **Retryable exceptions**:
+
 - `LangSmithRateLimitError` (429 status)
 - `LangSmithConnectionError`
 - `requests.ConnectionError`
@@ -433,6 +460,7 @@ fn handle_response_status(status: StatusCode, body: &str) -> Result<()> {
 **Location**: `schemas.py:729-781`
 
 **Fields**:
+
 ```python
 class TracerSession(BaseModel):
     id: UUID
@@ -446,11 +474,13 @@ class TracerSession(BaseModel):
 ```
 
 **Properties**:
+
 - `url`: Computed property returning UI URL: `f"{host}/o/{tenant_id}/projects/p/{id}"`
 - `metadata`: Extracts `extra["metadata"]` if present, else `{}`
 - `tags`: Extracts `extra["tags"]` if present, else `[]`
 
 **Important comment** (line 732):
+
 > "Sessions are also referred to as 'Projects' in the UI."
 
 ### 4.2 TracerSessionResult (Extended)
@@ -458,6 +488,7 @@ class TracerSession(BaseModel):
 **Location**: `schemas.py:783-821`
 
 **Additional fields** (all optional):
+
 ```python
 class TracerSessionResult(TracerSession):
     run_count: Optional[int]
@@ -479,10 +510,12 @@ class TracerSessionResult(TracerSession):
 ```
 
 **Usage**:
+
 - Returned by `list_projects()` and `read_project()`
 - Includes aggregate statistics when `include_stats=True`
 
 **Rust mapping**:
+
 ```rust
 // Base project type
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -524,6 +557,7 @@ pub struct ProjectResult {
 **Location**: `utils.py:128-151`
 
 **Implementation**:
+
 ```python
 def xor_args(*arg_groups: tuple[str, ...]) -> Callable:
     """Validate specified keyword args are mutually exclusive."""
@@ -548,6 +582,7 @@ def xor_args(*arg_groups: tuple[str, ...]) -> Callable:
 ```
 
 **Usage examples**:
+
 ```python
 @ls_utils.xor_args(("project_id", "project_name"))
 def read_project(self, *, project_id=None, project_name=None): ...
@@ -572,6 +607,7 @@ def _as_uuid(value: ID_TYPE, var: Optional[str] = None) -> uuid.UUID:
 ```
 
 **Rust equivalent**:
+
 ```rust
 fn as_uuid(value: &str, param_name: &str) -> Result<Uuid, LangSmithError> {
     Uuid::parse_str(value)
@@ -608,6 +644,7 @@ sdk/src/projects.rs
 ### 6.2 API Design Patterns
 
 **Prefer builder pattern for complex params**:
+
 ```rust
 let projects = client
     .list_projects()
@@ -619,6 +656,7 @@ let projects = client
 ```
 
 **Or use struct params**:
+
 ```rust
 let params = ListProjectsParams {
     name_contains: Some("test".to_string()),
@@ -630,6 +668,7 @@ let projects = client.list_projects(&params).await?;
 ```
 
 **Enforce mutual exclusivity at type level**:
+
 ```rust
 pub enum ProjectIdentifier {
     Id(Uuid),
@@ -646,16 +685,19 @@ pub async fn get_project(
 ### 6.3 Pagination Handling
 
 **Option 1: Return Vec (auto-paginate)**:
+
 ```rust
 pub async fn list_projects(&self, params: &ListProjectsParams) -> Result<Vec<ProjectResult>>
 ```
 
 **Option 2: Return Stream (lazy pagination)**:
+
 ```rust
 pub fn list_projects(&self, params: ListProjectsParams) -> impl Stream<Item = Result<ProjectResult>>
 ```
 
 **Option 3: Manual pagination**:
+
 ```rust
 pub async fn list_projects_page(
     &self,
@@ -668,6 +710,7 @@ pub async fn list_projects_page(
 ### 6.4 Error Handling
 
 **Use thiserror for ergonomics**:
+
 ```rust
 use thiserror::Error;
 
@@ -688,6 +731,7 @@ pub enum LangSmithError {
 ```
 
 **Implement From for common conversions**:
+
 ```rust
 impl From<uuid::Error> for LangSmithError {
     fn from(e: uuid::Error) -> Self {
@@ -699,6 +743,7 @@ impl From<uuid::Error> for LangSmithError {
 ### 6.5 Metadata Handling
 
 **Use serde_json::Value for flexibility**:
+
 ```rust
 use serde_json::Value;
 
@@ -720,18 +765,21 @@ pub fn with_metadata(metadata: HashMap<String, Value>) -> Value {
 ### 6.6 Testing Strategy
 
 **Unit tests** (no network):
+
 - UUID validation
 - Parameter validation
 - Request serialization
 - Response deserialization
 
 **Integration tests** (real API):
+
 - CRUD operations against test project
 - Pagination with >100 items
 - Error handling (404, 400, etc.)
 - Filter combinations
 
 **Test fixture pattern**:
+
 ```rust
 #[tokio::test]
 async fn test_project_crud() {
@@ -787,6 +835,7 @@ Not included in core CRUD operations. This is a separate method for accessing sh
 #### 9.1.1 Command Structure Patterns
 
 **Established Pattern Across All Commands** (dataset.rs:24-43, queue.rs:24-43, runs.rs:21-26):
+
 ```rust
 #[derive(Debug, Subcommand)]
 pub enum XxxCommands {
@@ -800,11 +849,13 @@ pub enum XxxCommands {
 ```
 
 **User Advocate Assessment**: ✅ **Excellent**
+
 - Verb-first naming (list, get, create) matches Unix conventions
 - Consistent ordering across all resource types
 - Resource-specific operations grouped logically
 
 **Application to Projects**:
+
 ```rust
 pub enum ProjectCommands {
     List(ListArgs),
@@ -818,21 +869,25 @@ pub enum ProjectCommands {
 #### 9.1.2 Flag Naming Conventions
 
 **Filtering Flags** (dataset.rs:68-74, queue.rs:48-54):
+
 - `--name`: Exact name match
 - `--name-contains`: Substring match
 - Data type filters vary by resource (e.g., `--data-type` for datasets)
 
 **Pagination Flags** (dataset.rs:80-82, queue.rs:56-58, runs.rs:126-127):
+
 - `-l, --limit`: Maximum results (default: 100)
 - Datasets use `i64`, queues use `u32`, runs use `usize`
 
 **INCONSISTENCY DETECTED** ⚠️:
+
 - Type mismatch for `--limit` across commands
 - Datasets: `i64` (can be negative!)
 - Queues: `u32` (unsigned)
 - Runs: `usize` (platform-dependent)
 
 **User Advocate Recommendation**:
+
 ```rust
 /// Maximum number of projects to return
 #[arg(short, long, default_value = "100")]
@@ -842,12 +897,14 @@ pub limit: u32,  // ✅ Use u32 for consistency with queues
 **Rationale**: Pagination limits cannot be negative. `u32` is more semantically correct than `i64` and more portable than `usize`.
 
 **FILES REQUIRING CHANGE**:
+
 - `cli/src/commands/dataset.rs:82` - Change `i64` to `u32`
 - `cli/src/commands/runs.rs:127` - Change `usize` to `u32`
 
 #### 9.1.3 Output Format Handling
 
 **Pattern 1: Per-Command JSON Flag** (dataset.rs:61-62, 85-86, 96-97, queue.rs:61-62):
+
 ```rust
 /// Output as JSON
 #[arg(long)]
@@ -855,12 +912,14 @@ pub json: bool,
 ```
 
 **Pattern 2: Output Format Enum** (runs.rs:136-137):
+
 ```rust
 #[arg(short = 'o', long = "output", default_value = "table", value_enum)]
 pub output: RunsOutputFormat,
 ```
 
 **INCONSISTENCY DETECTED** ⚠️:
+
 - Datasets/queues use `--json` flag (boolean)
 - Runs use `-o/--output` with enum (json/table/...)
 - Different implementations create different user experiences
@@ -868,20 +927,24 @@ pub output: RunsOutputFormat,
 **User Advocate Analysis**:
 
 **Pattern 1 Pros**:
+
 - Simple boolean flag
 - Familiar to users (`--json` is common)
 
 **Pattern 1 Cons**:
+
 - Cannot extend to other formats (YAML, CSV) without breaking changes
 - Requires conditional logic: `if args.json { OutputFormat::Json } else { OutputFormat::Table }`
 - No way to explicitly request table format
 
 **Pattern 2 Pros**:
+
 - Extensible to multiple formats
 - Explicit format selection
 - Matches global `-f/--format` pattern (if it exists)
 
 **Pattern 2 Cons**:
+
 - Slightly more verbose for common case
 - Different from datasets/queues (consistency issue)
 
@@ -894,6 +957,7 @@ pub output: OutputFormat,
 ```
 
 **Rationale**:
+
 1. **Extensibility**: Supports future formats (text, records) without breaking changes
 2. **Explicitness**: Users can request `--output table` or `--output json` explicitly
 3. **Consistency**: One pattern across the entire CLI
@@ -901,6 +965,7 @@ pub output: OutputFormat,
 5. **Ecosystem alignment**: Matches kubectl `-o`, AWS CLI `--output`, standard CLI conventions
 
 **FILES REQUIRING CHANGE**:
+
 - `cli/src/commands/dataset.rs:61-62, 85-86, 96-97, 115-116` - Replace `pub json: bool` with `pub output: OutputFormat`
 - `cli/src/commands/queue.rs:61-62, 97-98, 119-120` - Replace `pub json: bool` with `pub output: OutputFormat`
 - Update all execute() methods to use `args.output` instead of `if args.json`
@@ -908,6 +973,7 @@ pub output: OutputFormat,
 #### 9.1.4 Destructive Operation Safety
 
 **Pattern 1: Yes Flag** (dataset.rs:125-127):
+
 ```rust
 /// Skip confirmation prompt
 #[arg(long, short = 'y')]
@@ -915,6 +981,7 @@ pub yes: bool,
 ```
 
 **Pattern 2: Force Flag** (queue.rs:129-131):
+
 ```rust
 /// Skip confirmation prompt
 #[arg(long)]
@@ -922,6 +989,7 @@ pub force: bool,
 ```
 
 **INCONSISTENCY DETECTED** ⚠️:
+
 - Datasets use `--yes` / `-y`
 - Queues use `--force` (no short flag)
 - Same semantic meaning, different names
@@ -929,11 +997,13 @@ pub force: bool,
 **User Advocate Analysis**:
 
 **`--yes` / `-y` Precedents**:
+
 - apt-get, npm, cargo (all use `-y/--yes`)
 - Semantic: "Answer yes to prompts"
 - Common in package managers
 
 **`--force` Precedents**:
+
 - git, rm (use `--force` or `-f`)
 - Semantic: "Override safety checks"
 - Common in system tools
@@ -947,24 +1017,28 @@ pub force: bool,
 ```
 
 **Rationale**:
+
 1. **Semantic Precision**: "force" conveys danger better than "yes"
 2. **Unix Convention**: `rm -f`, `git push --force`
 3. **Short Flag**: `-f` is mnemonic and standard
 4. **Clear Intent**: `langstar project delete <id> --force` reads better than `--yes`
 
 **FILES REQUIRING CHANGE**:
+
 - `cli/src/commands/dataset.rs:126-127` - Rename `yes` to `force`, change short flag to `-f`
 - Update execute() method in dataset.rs to use `args.force`
 
 #### 9.1.5 Resource Identification Patterns
 
 **Pattern 1: UUID Only** (dataset.rs:92-93, queue.rs:91-93):
+
 ```rust
 /// Dataset ID (UUID)
 pub dataset_id: Uuid,
 ```
 
 **Pattern 2: Name or UUID** (runs.rs:31-35):
+
 ```rust
 /// Project name or UUID to query runs from
 #[arg(short, long = "project", value_name = "PROJECT")]
@@ -974,6 +1048,7 @@ pub projects: Vec<String>,
 **User Advocate Analysis**:
 
 For `get/update/delete` operations, UUIDs are unambiguous but user-hostile:
+
 - Users remember names ("production-bot"), not UUIDs (`98e12dc6-2171-4bf3-80fb-1153041d6cbf`)
 - Python SDK supports both: `read_project(project_name="foo")` or `read_project(project_id=uuid)`
 - Forcing UUIDs requires users to `list` first, copy UUID, then operate
@@ -986,11 +1061,13 @@ pub identifier: String,
 ```
 
 **Implementation Strategy** (from Python SDK pattern):
+
 1. Try parsing as UUID
 2. If parse fails, treat as name
 3. SDK method resolves name to ID internally
 
 **Rust SDK Design** (recommended in precedent report section 6.2):
+
 ```rust
 pub enum ProjectIdentifier {
     Id(Uuid),
@@ -1007,6 +1084,7 @@ impl FromStr for ProjectIdentifier {
 ```
 
 **FILES REQUIRING CONSIDERATION** (for future improvement):
+
 - All `*_id: Uuid` fields in dataset.rs, queue.rs should accept `String` and parse
 - Affects: dataset.rs:93, 104, 123, 134, 149, queue.rs:92, 104, 127, 137, 152, 163
 
@@ -1015,15 +1093,18 @@ impl FromStr for ProjectIdentifier {
 #### 9.1.6 Configuration Integration
 
 **Pattern** (all commands pass `config: &Config` to execute):
+
 - config.rs:67-113 shows available config fields
 - Commands access API keys, scoping IDs, output format preferences
 
 **Configuration Priority Order** (established):
+
 1. Command-line flags (highest priority)
 2. Environment variables
 3. Config file settings (lowest priority)
 
 **For Projects Commands**:
+
 - API key: `config.langsmith_api_key` (required)
 - Output format: `args.output` (overrides config)
 - Scoping: `args.organization_id` / `args.workspace_id` (if added)
@@ -1076,6 +1157,7 @@ pub struct ListArgs {
 ```
 
 **Deferred Filters** (not in MVP):
+
 - `--reference-dataset-id`: Complex, low priority
 - `--metadata`: JSON filtering, complex UX
 
@@ -1147,6 +1229,7 @@ pub struct UpdateArgs {
 ```
 
 **Important Constraint**: Name changes require project to be closed (has `end_time`)
+
 - Python SDK raises error if attempted on open project
 - CLI should surface this error clearly
 
@@ -1165,6 +1248,7 @@ pub struct DeleteArgs {
 ```
 
 **Safety Behavior**:
+
 - Without `--force`: Prompt "Delete project '<name>' (ID: <uuid>)? [y/N]"
 - With `--force`: Delete immediately, no prompt
 - Print confirmation: "✓ Deleted project '<name>'"
@@ -1172,15 +1256,18 @@ pub struct DeleteArgs {
 #### 9.2.7 Output Format Support
 
 **Table Output** (for `list`):
+
 - Columns: Name, ID (truncated), Created, Run Count (if --include-stats)
 - Uses `tabled` with automatic width adjustment
 - Pattern: output.rs:124-161
 
 **JSON Output** (for `list`, `get`, `create`, `update`):
+
 - Pretty-printed JSON via serde_json
 - Pattern: output.rs:116-121
 
 **Text Output** (deferred):
+
 - Tab-separated values for scripting
 - Requires ColumnMetadata trait implementation
 
@@ -1191,10 +1278,12 @@ These improvements enhance consistency but break existing usage:
 #### 9.3.1 BREAKING: Standardize --limit Type
 
 **Files**:
+
 - `cli/src/commands/dataset.rs:82`
 - `cli/src/commands/runs.rs:127`
 
 **Change**:
+
 ```diff
 - pub limit: i64,  // datasets.rs
 + pub limit: u32,
@@ -1209,10 +1298,12 @@ These improvements enhance consistency but break existing usage:
 #### 9.3.2 BREAKING: Standardize --json to --output
 
 **Files**:
+
 - `cli/src/commands/dataset.rs` (multiple locations)
 - `cli/src/commands/queue.rs` (multiple locations)
 
 **Change**:
+
 ```diff
 - /// Output as JSON
 - #[arg(long)]
@@ -1229,9 +1320,11 @@ These improvements enhance consistency but break existing usage:
 #### 9.3.3 BREAKING: Standardize --yes to --force
 
 **Files**:
+
 - `cli/src/commands/dataset.rs:126-127`
 
 **Change**:
+
 ```diff
 - #[arg(long, short = 'y')]
 - pub yes: bool,
@@ -1246,18 +1339,22 @@ These improvements enhance consistency but break existing usage:
 ### 9.4 Implementation Phases
 
 **Phase 1: Implement Projects with New Patterns** (#590)
+
 - Build `project` commands with consistent patterns from day one
 - Reference implementation for future commands
 
 **Phase 2: Align Datasets** (future issue)
+
 - Update dataset.rs to match project patterns
 - Breaking changes with version bump
 
 **Phase 3: Align Queues** (future issue)
+
 - Update queue.rs to match project patterns
 - Breaking changes with version bump
 
 **Phase 4: Align Runs** (future issue)
+
 - Update runs.rs `--limit` type
 - Breaking changes with version bump
 
@@ -1268,12 +1365,14 @@ These improvements enhance consistency but break existing usage:
 **Decision for ls-projects**: Implement projects commands with `-o/--output` pattern
 
 **Rationale**:
+
 - More extensible (supports future text/records formats without breaking changes)
 - Runs command already uses this pattern (partial precedent)
 - Aligns with ls-cli-output-dx milestone direction (#529)
 - Better to build right from the start than retrofit later
 
 **Note on Existing Inconsistency**:
+
 - Datasets/queues currently use `--json` boolean
 - This creates temporary inconsistency, but:
   - ls-cli-output-dx milestone (#529, #589) will eventually retrofit all commands
@@ -1281,6 +1380,7 @@ These improvements enhance consistency but break existing usage:
   - New commands should use the future-proof pattern
 
 **Related Future Work** (not blocking ls-projects):
+
 - ls-cli-output-dx will need to update datasets/queues to use `-o/--output`
 - Would also be good time to standardize `--yes` → `--force` for datasets
 
@@ -1289,12 +1389,14 @@ These improvements enhance consistency but break existing usage:
 **Status**: Approved for implementation, not blocking any milestone
 
 **Scope**: Retrofit all resource commands to accept name OR UUID identifiers
+
 - Datasets: get, update, delete by name or UUID
 - Queues: get, update, delete by name or UUID
 - Graphs: similar patterns
 - Projects: implement from day one ✅
 
 **Recommended Action**: Create issue under ls-cli-output-dx milestone
+
 ```
 Title: "Standardize resource identifiers: Accept name or UUID for all commands"
 Milestone: ls-cli-output-dx
@@ -1307,6 +1409,7 @@ Pattern: Use ProjectIdentifier enum approach from projects implementation
 **Status**: Architecture already finalized in milestone #529
 
 **Established Pattern**:
+
 - Per-command flag: `-o/--output table|json|records|text`
 - Config file default: `~/.config/langstar/config.toml`
   ```toml
@@ -1316,6 +1419,7 @@ Pattern: Use ProjectIdentifier enum approach from projects implementation
 - No global CLI flag needed
 
 **Priority Order**:
+
 1. CLI flag `-o/--output` (highest)
 2. Config file `[output].format`
 3. Built-in default (typically "table")
@@ -1327,35 +1431,41 @@ Pattern: Use ProjectIdentifier enum approach from projects implementation
 From scout report (docs/research/574-ls-projects-scout.md:227-430):
 
 **Confirmed Decision**: Use "project" terminology throughout CLI
+
 - Python SDK: `list_projects()`, `create_project()`
 - LangSmith UI: `/projects/p/{id}`
 - Environment: `LANGSMITH_PROJECT` (never `LANGSMITH_SESSION`)
 - MCP Server: `project_name` parameters
 
 **Internal Mapping**: CLI "project" → API "/sessions"
+
 - Transparent to users
 - Matches Python SDK design
 
 ## 10. Next Steps
 
 **Phase 2: OpenAPI Schema Analysis** (#587)
+
 - Extract TracerSession schema from OpenAPI spec
 - Validate field types match Python SDK
 - Identify any additional fields or constraints
 
 **Phase 3: Rust SDK Implementation**
+
 - Implement `Project` and `ProjectResult` types
 - Implement 6 core methods with `ProjectIdentifier` enum
 - Add pagination helper
 - Add error types
 
 **Phase 4: CLI Implementation**
+
 - `langstar project list` with table output
 - `langstar project get` with JSON/YAML output
 - `langstar project create/update/delete`
 - Use finalized design specifications from section 9.2
 
 **Phase 5: Integration Testing**
+
 - Test against real LangSmith API
 - Validate all CRUD operations
 - Test pagination with large project counts

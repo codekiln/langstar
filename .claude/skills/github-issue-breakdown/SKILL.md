@@ -16,6 +16,7 @@ This skill automates breaking down GitHub issues into official GitHub sub-issues
 **DO NOT manually create sub-issues** - they won't have proper GitHub parent-child relationships and won't show in the sub-issue UI.
 
 Use this skill when:
+
 - **Right after creating an Epic** - Run this immediately to create official sub-issues ⭐ **MOST IMPORTANT**
 - User requests breaking down an issue into sub-tasks (e.g., "break down issue #47 into sub-issues")
 - User mentions converting a task list into sub-issues
@@ -23,6 +24,7 @@ Use this skill when:
 - User needs to create multiple related child issues from a parent issue
 
 **Invocation patterns:**
+
 - "Break down issue #42 into sub-tasks"
 - "Create sub-issues from issue 47"
 - "Convert the task list in issue #42 to sub-issues"
@@ -31,6 +33,7 @@ Use this skill when:
 **⚠️ Common Mistake to Avoid:**
 
 ❌ **WRONG - Creates informal sub-tasks WITHOUT parent-child links:**
+
 ```bash
 # Create epic
 gh issue create --title "Epic: Feature X"
@@ -42,6 +45,7 @@ gh issue create --title "Phase 2" --body "Sub-task of #42"
 ```
 
 ✅ **CORRECT - Creates official sub-issues WITH parent-child links:**
+
 ```bash
 # Create epic with task list
 gh issue create --title "Epic: Feature X" --body "## Tasks
@@ -54,6 +58,7 @@ python scripts/create_subissues.py --issue 42 --yes
 ```
 
 **Why this matters:**
+
 - Manual issues only have informal text links ("Sub-task of #X")
 - They don't show in GitHub's sub-issue UI
 - No automatic tracking of parent-child relationships
@@ -178,25 +183,27 @@ When user wants to see what would be created without actually creating:
 
 ### Arguments
 
-| Argument | Required | Description | Example |
-|----------|----------|-------------|---------|
-| --issue | Yes | Issue number to break down | `--issue 42` or `--issue 47` |
-| --repo | No | Repository (auto-detected if not provided) | `--repo codekiln/langstar` |
-| --dry-run | No | Preview mode without creating | `--dry-run` |
-| --inherit-labels | No | Inherit labels from parent (default: true) | `--inherit-labels` |
-| --inherit-assignees | No | Inherit assignees from parent (default: true) | `--inherit-assignees` |
-| --section | No | Only parse under this section header | `--section "Implementation Tasks"` |
-| --checkbox-only | No | Only parse checkboxes `- [ ]`, ignore bullets/numbers | `--checkbox-only` |
-| --max-depth | No | Maximum indentation depth (0 = top-level, default: 0) | `--max-depth 1` |
-| --all-bullets | No | Disable section filtering (legacy behavior) | `--all-bullets` |
-| --yes, -y | No | Auto-confirm creation without prompting | `--yes` |
+| Argument            | Required | Description                                           | Example                            |
+| ------------------- | -------- | ----------------------------------------------------- | ---------------------------------- |
+| --issue             | Yes      | Issue number to break down                            | `--issue 42` or `--issue 47`       |
+| --repo              | No       | Repository (auto-detected if not provided)            | `--repo codekiln/langstar`         |
+| --dry-run           | No       | Preview mode without creating                         | `--dry-run`                        |
+| --inherit-labels    | No       | Inherit labels from parent (default: true)            | `--inherit-labels`                 |
+| --inherit-assignees | No       | Inherit assignees from parent (default: true)         | `--inherit-assignees`              |
+| --section           | No       | Only parse under this section header                  | `--section "Implementation Tasks"` |
+| --checkbox-only     | No       | Only parse checkboxes `- [ ]`, ignore bullets/numbers | `--checkbox-only`                  |
+| --max-depth         | No       | Maximum indentation depth (0 = top-level, default: 0) | `--max-depth 1`                    |
+| --all-bullets       | No       | Disable section filtering (legacy behavior)           | `--all-bullets`                    |
+| --yes, -y           | No       | Auto-confirm creation without prompting               | `--yes`                            |
 
 ### Environment Variables
 
 **Required:**
+
 - `GITHUB_TOKEN` - Fine-grained or classic PAT with `repo` scope
 
 **Optional:**
+
 - `GH_TOKEN` - Alternative name for GitHub token (fallback)
 
 ### What the Script Does
@@ -228,6 +235,7 @@ Place your tasks under a dedicated section header:
 
 ```markdown
 ## Overview
+
 Detailed description of the feature...
 
 ## Implementation Tasks
@@ -238,14 +246,17 @@ Detailed description of the feature...
 - [ ] Phase 4: Testing
 
 ## Background
+
 Any explanatory content here won't be parsed as tasks.
 
 ## Configuration Details
+
 - **Environment variables**: FOO_BAR (won't be parsed - not under Tasks section)
 - **Config file**: settings.toml (won't be parsed)
 ```
 
 **Why this works:**
+
 - Tasks are clearly separated under `## Implementation Tasks` header
 - Explanatory bullets elsewhere are ignored
 - Section headers like "Tasks", "Sub-Issues", "Implementation Tasks", "Sub-Tasks" are auto-detected
@@ -256,22 +267,26 @@ Don't use bullets for non-task content throughout your issue:
 
 ```markdown
 ## Configuration Methods
+
 - **Environment variables**: FOO (this will be parsed as a task!)
 - **Config file**: bar.toml (this will be parsed as a task!)
 - **CLI flags**: --flag (this will be parsed as a task!)
 
 ## Behavior
+
 - When condition X happens (this will be parsed as a task!)
 - Need explicit flag Y (this will be parsed as a task!)
 ```
 
 **Why this fails:**
+
 - Without section filtering, ALL bullets become tasks
 - Configuration options become "sub-issues"
 - Explanatory text becomes "sub-issues"
 - Results in 50+ unwanted sub-issues
 
 **How to fix:**
+
 - Use paragraphs for explanatory content instead of bullets
 - Or use `--section "Tasks"` to explicitly specify which section contains actual tasks
 - Or restructure to have a dedicated "Tasks" section
@@ -285,6 +300,7 @@ Don't use bullets for non-task content throughout your issue:
 **Symptom:** Script finds 50+ tasks when you only want 5-10.
 
 **Solution:**
+
 1. Use `--dry-run` first to preview what will be parsed
 2. Add a dedicated `## Tasks` or `## Implementation Tasks` section
 3. Or use `--section "Phase Tasks"` to target specific section
@@ -297,17 +313,19 @@ Don't use bullets for non-task content throughout your issue:
 **Symptom:** All nested items become separate sub-issues.
 
 **Solution:**
+
 - By default, only top-level items (indent 0) are parsed
 - Nested items are automatically skipped
 - Use `--max-depth 1` if you want one level of nesting
 
 ### Pitfall 3: Using Bullets for Everything
 
-**Problem:** Using `- ` for all content (explanations, options, tasks).
+**Problem:** Using `-` for all content (explanations, options, tasks).
 
 **Symptom:** Everything becomes a task.
 
 **Solution:**
+
 - Reserve bullets for actual tasks only
 - Use prose paragraphs for explanations
 - Structure issue with dedicated task section
@@ -322,6 +340,7 @@ Don't use bullets for non-task content throughout your issue:
 **Diagnosis:** The parser is picking up explanatory bullets, configuration options, or nested details.
 
 **Solutions:**
+
 1. **Preview first:** `--dry-run` to see what's being parsed
 2. **Add task section:** Restructure issue with `## Tasks` header
 3. **Target specific section:** Use `--section "Implementation Tasks"`
@@ -329,6 +348,7 @@ Don't use bullets for non-task content throughout your issue:
 5. **Check for nesting:** Verify indented items aren't being parsed (they shouldn't be by default)
 
 **Example:**
+
 ```bash
 # Preview what will be created
 python scripts/create_subissues.py --issue 46 --dry-run
@@ -347,12 +367,14 @@ python scripts/create_subissues.py --issue 46 --checkbox-only
 **Diagnosis:** Tasks aren't under a recognized section header.
 
 **Solutions:**
+
 1. **Check section header:** Ensure tasks are under `## Tasks`, `## Sub-Issues`, or similar
 2. **Specify section explicitly:** Use `--section "Your Custom Header"`
 3. **Disable filtering:** Use `--all-bullets` to parse all bullets (legacy behavior)
 4. **Verify format:** Ensure using supported formats (`- [ ]`, `1.`, `*`, `-`)
 
 **Example:**
+
 ```bash
 # Parse under custom section header
 python scripts/create_subissues.py --issue 46 --section "Phase List"
@@ -368,6 +390,7 @@ python scripts/create_subissues.py --issue 46 --all-bullets
 **Diagnosis:** Likely over-parsing explanatory content.
 
 **What to do:**
+
 1. Run `--dry-run` to review what's being parsed
 2. Restructure issue to have clear task section
 3. Use `--section` or `--checkbox-only` for stricter parsing
@@ -399,6 +422,7 @@ The skill supports multiple task list formats. For detailed documentation, load 
 User says: "Break down issue #42 (Add authentication) into sub-tasks"
 
 Execute:
+
 ```bash
 python scripts/create_subissues.py --issue 42
 ```
@@ -410,6 +434,7 @@ Result: Creates sub-issues for each task in the parent issue description.
 User says: "Show me what sub-issues would be created from issue #47"
 
 Execute:
+
 ```bash
 python scripts/create_subissues.py --issue 47 --dry-run
 ```
@@ -421,6 +446,7 @@ Result: Shows preview without creating anything.
 User says: "Create sub-issues from issue #10 in my other-repo"
 
 Execute:
+
 ```bash
 python scripts/create_subissues.py --issue 10 --repo username/other-repo
 ```
@@ -443,6 +469,7 @@ Result: Creates sub-issues in specified repository.
 This skill enhances the project's GitHub issue-driven development workflow:
 
 **Standard Workflow:**
+
 1. Create parent issue (existing)
 2. **NEW: Use this skill to break down into sub-issues**
 3. Create branch for sub-issue work (existing)

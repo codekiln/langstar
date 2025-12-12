@@ -1,6 +1,7 @@
 # Container Registry Options for LangSmith Deployments
 
 **Sources**:
+
 - `langchain-ai/docs`: `src/langsmith/deploy-with-control-plane.mdx`
 - `langchain-ai/cicd-pipeline-example`: `.github/workflows/preview-deployment.yml`
 
@@ -11,6 +12,7 @@ LangSmith deployments work with **any container registry accessible by your Kube
 ## Supported Container Registries
 
 LangSmith documentation explicitly mentions:
+
 - ✅ **AWS ECR** (Elastic Container Registry)
 - ✅ **Azure ACR** (Azure Container Registry)
 - ✅ **GCP Artifact Registry** (Google Cloud)
@@ -29,16 +31,20 @@ LangSmith documentation explicitly mentions:
 ## Authentication Requirements
 
 ### Public Registries (No Auth Required)
+
 If your images are public, no special configuration is needed.
 
 ### Private Registries (Auth Required)
+
 For private registries, you must configure **Kubernetes image pull secrets** as part of infrastructure setup:
 
 **Self-Hosted LangSmith:**
+
 - Configure `imagePullSecrets` in Helm chart's `values.yaml`
 - See: [Enable LangSmith Deployment guide](/langsmith/deploy-self-hosted-full-platform#setup)
 
 **Hybrid LangSmith:**
+
 - Configure `imagePullSecrets` in `langgraph-dataplane-values.yaml`
 
 **Reference**: [Kubernetes docs on pulling from private registries](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
@@ -56,6 +62,7 @@ For private registries, you must configure **Kubernetes image pull secrets** as 
 ### Why Use GHCR?
 
 **Benefits:**
+
 1. **Free for public repositories** - Unlimited bandwidth
 2. **Integrated with GitHub Actions** - No separate credentials needed
 3. **Native authentication** - Uses `GITHUB_TOKEN` automatically
@@ -65,14 +72,14 @@ For private registries, you must configure **Kubernetes image pull secrets** as 
 
 ### GHCR vs Docker Hub
 
-| Feature | Docker Hub | GitHub Container Registry |
-|---------|-----------|---------------------------|
-| **Public images** | Free | Free |
-| **Private images** | Limited free tier | Free with GitHub account |
-| **Pull rate limits** | 200 pulls/6hrs (anonymous), 100/6hrs (free auth) | Unlimited |
-| **Integration** | Separate credentials | Built into GitHub |
-| **URL format** | `docker.io/username/image` | `ghcr.io/username/image` |
-| **GitHub Actions auth** | Requires secrets | Uses `GITHUB_TOKEN` |
+| Feature                 | Docker Hub                                       | GitHub Container Registry |
+| ----------------------- | ------------------------------------------------ | ------------------------- |
+| **Public images**       | Free                                             | Free                      |
+| **Private images**      | Limited free tier                                | Free with GitHub account  |
+| **Pull rate limits**    | 200 pulls/6hrs (anonymous), 100/6hrs (free auth) | Unlimited                 |
+| **Integration**         | Separate credentials                             | Built into GitHub         |
+| **URL format**          | `docker.io/username/image`                       | `ghcr.io/username/image`  |
+| **GitHub Actions auth** | Requires secrets                                 | Uses `GITHUB_TOKEN`       |
 
 ## Example: Using Docker Hub (Current cicd-pipeline-example)
 
@@ -100,6 +107,7 @@ steps:
 ```
 
 **Required GitHub Secrets:**
+
 - `DOCKER_USERNAME`
 - `DOCKER_PASSWORD`
 
@@ -141,16 +149,19 @@ steps:
 ### Image Naming Convention
 
 **Docker Hub:**
+
 ```
 docker.io/username/image-name:tag
 ```
 
 **GHCR:**
+
 ```
 ghcr.io/owner/repo-name:tag
 ```
 
 Example:
+
 - Docker Hub: `docker.io/perinim98/text2sql-agent:latest`
 - GHCR: `ghcr.io/langchain-ai/cicd-pipeline-example:latest`
 
@@ -209,6 +220,7 @@ kubectl create secret docker-registry ghcr-secret \
 **For Self-Hosted:**
 
 In `values.yaml`:
+
 ```yaml
 deployment:
   enabled: true
@@ -219,6 +231,7 @@ deployment:
 **For Hybrid:**
 
 In `langgraph-dataplane-values.yaml`:
+
 ```yaml
 imagePullSecrets:
   - name: ghcr-secret
@@ -260,11 +273,13 @@ cache-to: type=gha,mode=max
 ### 4. Public vs Private Images
 
 **Public GHCR images:**
+
 - No authentication needed for pulls
 - Free bandwidth
 - Suitable for open-source projects
 
 **Private GHCR images:**
+
 - Requires PAT for pulls (via image pull secrets)
 - Better for proprietary code
 - Same performance as public
@@ -272,6 +287,7 @@ cache-to: type=gha,mode=max
 ### 5. Image Visibility
 
 Make GHCR packages public after first push:
+
 1. Go to GitHub → Packages → Select your package
 2. Click "Package settings"
 3. Change visibility to "Public"
@@ -281,11 +297,13 @@ Make GHCR packages public after first push:
 ### Issue: "Failed to pull image from ghcr.io"
 
 **Causes:**
+
 1. Image doesn't exist at that URL
 2. Image is private and no image pull secret configured
 3. PAT has insufficient permissions
 
 **Solutions:**
+
 - Verify image URL: `docker pull ghcr.io/owner/repo:tag`
 - Check image visibility in GitHub Packages
 - Ensure PAT has `read:packages` scope
@@ -305,13 +323,13 @@ Make GHCR packages public after first push:
 
 ## Comparison Table
 
-| Registry | URL Format | Auth in GHA | Rate Limits | Cost (Private) |
-|----------|-----------|-------------|-------------|----------------|
-| **Docker Hub** | `docker.io/user/image` | Secrets required | 200/6h (anon), 100/6h (free) | $5/month (1 private repo) |
-| **GHCR** | `ghcr.io/owner/repo` | Built-in `GITHUB_TOKEN` | Unlimited | Free |
-| **AWS ECR** | `<account>.dkr.ecr.<region>.amazonaws.com/repo` | AWS credentials | Unlimited | $0.10/GB storage |
-| **Azure ACR** | `<registry>.azurecr.io/repo` | Azure credentials | Unlimited | $5/month (Basic) |
-| **GCP Artifact Registry** | `<region>-docker.pkg.dev/<project>/<repo>` | GCP credentials | Unlimited | $0.10/GB storage |
+| Registry                  | URL Format                                      | Auth in GHA             | Rate Limits                  | Cost (Private)            |
+| ------------------------- | ----------------------------------------------- | ----------------------- | ---------------------------- | ------------------------- |
+| **Docker Hub**            | `docker.io/user/image`                          | Secrets required        | 200/6h (anon), 100/6h (free) | $5/month (1 private repo) |
+| **GHCR**                  | `ghcr.io/owner/repo`                            | Built-in `GITHUB_TOKEN` | Unlimited                    | Free                      |
+| **AWS ECR**               | `<account>.dkr.ecr.<region>.amazonaws.com/repo` | AWS credentials         | Unlimited                    | $0.10/GB storage          |
+| **Azure ACR**             | `<registry>.azurecr.io/repo`                    | Azure credentials       | Unlimited                    | $5/month (Basic)          |
+| **GCP Artifact Registry** | `<region>-docker.pkg.dev/<project>/<repo>`      | GCP credentials         | Unlimited                    | $0.10/GB storage          |
 
 ## Conclusion
 

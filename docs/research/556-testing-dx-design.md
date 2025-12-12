@@ -19,22 +19,22 @@
 
 ### Design Principles
 
-| Principle | Rationale |
-|-----------|-----------|
-| **TOC-first navigation** | Agents read TOC (~15 lines) to identify relevant docs, not all 3,667 lines |
-| **Clear file naming** | Names like `crud-lifecycle-pattern.md` are grep-able and self-descriptive |
-| **Size limits** | Each doc <500 lines ensures focused, loadable content |
-| **AGENTS.md integration** | Single reference point that auto-loads on every task |
-| **DRY consolidation** | One source of truth for each concept reduces drift |
+| Principle                 | Rationale                                                                  |
+| ------------------------- | -------------------------------------------------------------------------- |
+| **TOC-first navigation**  | Agents read TOC (~15 lines) to identify relevant docs, not all 3,667 lines |
+| **Clear file naming**     | Names like `crud-lifecycle-pattern.md` are grep-able and self-descriptive  |
+| **Size limits**           | Each doc <500 lines ensures focused, loadable content                      |
+| **AGENTS.md integration** | Single reference point that auto-loads on every task                       |
+| **DRY consolidation**     | One source of truth for each concept reduces drift                         |
 
 ### Projected Impact
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Lines loaded for typical task | ~1,500 | ~300 | 80% reduction |
-| Token usage for test writing | ~11,000 | ~3,600 | ~67% reduction |
-| DRY violations | 4 major | 0 | Eliminated |
-| #536-type bug prevention | None | CRUD pattern | +1 safeguard |
+| Metric                        | Before  | After        | Improvement    |
+| ----------------------------- | ------- | ------------ | -------------- |
+| Lines loaded for typical task | ~1,500  | ~300         | 80% reduction  |
+| Token usage for test writing  | ~11,000 | ~3,600       | ~67% reduction |
+| DRY violations                | 4 major | 0            | Eliminated     |
+| #536-type bug prevention      | None    | CRUD pattern | +1 safeguard   |
 
 ---
 
@@ -66,24 +66,26 @@ docs/dev/testing/
 **Purpose:** Minimal TOC that agents auto-load via AGENTS.md reference
 
 **Design constraints:**
+
 - MUST be ≤15 lines (excluding blank lines and table formatting)
 - MUST list all files with one-line descriptions
 - MUST NOT contain substantive content (only links)
 
 **Example content:**
+
 ```markdown
 # Testing Documentation
 
-| Doc | Purpose |
-|-----|---------|
+| Doc                                                                    | Purpose                                                   |
+| ---------------------------------------------------------------------- | --------------------------------------------------------- |
 | [HIGH_LEVEL_TESTING_GUIDELINES.md](./HIGH_LEVEL_TESTING_GUIDELINES.md) | Core principles, Toyota andon cord, test design checklist |
-| [crud-lifecycle-pattern.md](./crud-lifecycle-pattern.md) | CLI→SDK verification pattern that prevents #536-type bugs |
-| [sdk-integration-tests.md](./sdk-integration-tests.md) | SDK test patterns, deployment guards, naming conventions |
-| [cli-integration-tests.md](./cli-integration-tests.md) | CLI test patterns, fixtures, serialization |
-| [test-fixtures.md](./test-fixtures.md) | Test deployment setup, environment variables |
-| [mocking-patterns.md](./mocking-patterns.md) | When and how to use httpmock |
-| [troubleshooting.md](./troubleshooting.md) | Common failures and debugging steps |
-| [post-mortems/](./post-mortems/) | Bug case studies and lessons learned |
+| [crud-lifecycle-pattern.md](./crud-lifecycle-pattern.md)               | CLI→SDK verification pattern that prevents #536-type bugs |
+| [sdk-integration-tests.md](./sdk-integration-tests.md)                 | SDK test patterns, deployment guards, naming conventions  |
+| [cli-integration-tests.md](./cli-integration-tests.md)                 | CLI test patterns, fixtures, serialization                |
+| [test-fixtures.md](./test-fixtures.md)                                 | Test deployment setup, environment variables              |
+| [mocking-patterns.md](./mocking-patterns.md)                           | When and how to use httpmock                              |
+| [troubleshooting.md](./troubleshooting.md)                             | Common failures and debugging steps                       |
+| [post-mortems/](./post-mortems/)                                       | Bug case studies and lessons learned                      |
 ```
 
 #### HIGH_LEVEL_TESTING_GUIDELINES.md (<200 lines)
@@ -91,6 +93,7 @@ docs/dev/testing/
 **Purpose:** Universal principles that apply to ALL tests
 
 **Content requirements:**
+
 - Toyota andon cord principle (never bypass failing tests)
 - Test design review checklist
 - Exit code vs output verification (anti-pattern)
@@ -104,6 +107,7 @@ docs/dev/testing/
 **Purpose:** The pattern that would have prevented #536
 
 **Content requirements:**
+
 - CRUD verification workflow (Create→Verify→Read→Verify→Update→Verify→Delete→Verify)
 - Code examples for both good and bad patterns
 - Integration with CLI→SDK verification
@@ -116,6 +120,7 @@ docs/dev/testing/
 **Purpose:** SDK-specific testing patterns
 
 **Content requirements:**
+
 - Deployment vs Revision status concepts
 - TestDeploymentConfig patterns
 - DeploymentGuard RAII cleanup
@@ -128,6 +133,7 @@ docs/dev/testing/
 **Purpose:** CLI-specific testing patterns
 
 **Content requirements:**
+
 - TestDeployment fixture pattern
 - serial_test usage for resource contention
 - Output parsing and verification
@@ -140,6 +146,7 @@ docs/dev/testing/
 **Purpose:** Consolidated environment and deployment setup
 
 **Content requirements:**
+
 - All required environment variables (consolidate from 4 locations)
 - Test deployment naming patterns (PR/Dev vs Release)
 - Test graph deployment reference
@@ -152,6 +159,7 @@ docs/dev/testing/
 **Purpose:** Guidance on when and how to mock
 
 **Content requirements:**
+
 - When to use httpmock vs real API
 - Mock server setup patterns
 - Test isolation with mocks
@@ -164,6 +172,7 @@ docs/dev/testing/
 **Purpose:** Consolidated debugging guide
 
 **Content requirements:**
+
 - Common failure patterns and solutions
 - Auth and environment issues
 - CI vs local differences
@@ -206,6 +215,7 @@ graph TD
 ```
 
 **Token usage:**
+
 - TOC: ~100 tokens
 - Relevant guide: ~1,500 tokens
 - CRUD pattern: ~2,000 tokens
@@ -226,6 +236,7 @@ graph TD
 ```
 
 **Token usage:**
+
 - TOC: ~100 tokens
 - Troubleshooting: ~1,500 tokens
 - One additional doc: ~1,500 tokens
@@ -243,6 +254,7 @@ graph TD
 ```
 
 **Token usage:**
+
 - AGENTS.md already loaded: 0 additional
 - If details needed: ~1,500 tokens
 - **Total: ~0-1,500 tokens** (vs ~4,200 from procedures.md)
@@ -292,6 +304,7 @@ graph TD
 ## Supporting Repository Structures
 
 ### `docs/` - Project Documentation
+
 - `dev/` - Development guidelines, workflow docs, ADRs (see @docs/dev/README.md)
 ```
 
@@ -307,6 +320,7 @@ Testing docs use progressive disclosure to minimize context window usage.
 **Always-loaded reference:** `@docs/dev/testing/README.md` (~15-line TOC)
 
 **Load on demand:**
+
 - Writing tests? Load the relevant guide from TOC
 - Debugging tests? Load `troubleshooting.md`
 - CRUD operations? Load `crud-lifecycle-pattern.md`
@@ -314,6 +328,7 @@ Testing docs use progressive disclosure to minimize context window usage.
 **Do NOT load all testing docs by default.** Each doc is <500 lines and self-contained.
 
 **Quick pre-commit:**
+
 ```bash
 cargo fmt && cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
@@ -330,6 +345,7 @@ cargo test --workspace --all-features && cargo fmt --check
 ### Auto-Load Behavior
 
 When AGENTS.md is loaded:
+
 - Agent sees reference to `@docs/dev/testing/README.md`
 - Agent can optionally load TOC (~15 lines, ~100 tokens)
 - Agent does NOT auto-load all testing docs
@@ -347,7 +363,7 @@ When AGENTS.md is loaded:
 
 ### Command Behavior
 
-```markdown
+````markdown
 # Test Plan Generator for Milestone
 
 ## Step 1: Load Testing TOC
@@ -363,18 +379,18 @@ What type of feature(s) does this milestone implement?
 - [ ] **CLI feature** - New commands, command options
 - [ ] **Infrastructure** - DevContainer, CI/CD, tooling
 - [ ] **Documentation only** - No code changes requiring tests
-</questions>
+      </questions>
 
 ## Step 3: Load Relevant Docs
 
 Based on selection, load these docs:
 
-| Selection | Load |
-|-----------|------|
-| SDK feature | `sdk-integration-tests.md`, `mocking-patterns.md` |
-| CLI feature | `cli-integration-tests.md`, `crud-lifecycle-pattern.md` |
-| Infrastructure | `devcontainer-feature-tests.md`, `test-fixtures.md` |
-| Documentation only | None (skip test plan) |
+| Selection          | Load                                                    |
+| ------------------ | ------------------------------------------------------- |
+| SDK feature        | `sdk-integration-tests.md`, `mocking-patterns.md`       |
+| CLI feature        | `cli-integration-tests.md`, `crud-lifecycle-pattern.md` |
+| Infrastructure     | `devcontainer-feature-tests.md`, `test-fixtures.md`     |
+| Documentation only | None (skip test plan)                                   |
 
 **Always load:** `HIGH_LEVEL_TESTING_GUIDELINES.md` (unless documentation only)
 
@@ -394,35 +410,41 @@ Using the loaded documentation, generate a test plan that includes:
 # Test Plan: [Milestone Name]
 
 ## Overview
+
 - Feature type: [SDK/CLI/Infrastructure]
 - Test categories: [list]
 
 ## Test Cases
 
 ### [Feature 1]
+
 - [ ] Test case 1: [description]
 - [ ] Test case 2: [description]
 
 ### CRUD Verification (if applicable)
+
 - [ ] Create via CLI → Verify via SDK
 - [ ] Read via CLI → Verify output matches SDK state
 - [ ] Update via CLI → Verify via SDK
 - [ ] Delete via CLI → Verify via SDK
 
 ## Environment Requirements
+
 - [ ] LANGSMITH_API_KEY set
 - [ ] LANGSMITH_WORKSPACE_ID set
 - [ ] [other requirements]
 
 ## Pre-Commit Checklist
+
 - [ ] cargo fmt
 - [ ] cargo check --workspace --all-features
 - [ ] cargo clippy --workspace --all-features -- -D warnings
 - [ ] cargo test --workspace --all-features
 - [ ] cargo fmt --check
 ```
-```
+````
 
+````
 ### Dependencies
 
 - Requires `docs/dev/testing/README.md` to exist
@@ -458,7 +480,7 @@ Each original location gets a redirect notice pointing to centralized docs.
 ---
 
 *This file is retained for backwards compatibility. Updates go to centralized location.*
-```
+````
 
 ### Specific Updates
 
@@ -480,7 +502,7 @@ Each original location gets a redirect notice pointing to centralized docs.
 
 ---
 
-*Retained for backwards compatibility. See centralized docs above.*
+_Retained for backwards compatibility. See centralized docs above._
 ```
 
 #### `sdk/tests/README.md`
@@ -501,7 +523,7 @@ Each original location gets a redirect notice pointing to centralized docs.
 
 ---
 
-*Retained for backwards compatibility. See centralized docs above.*
+_Retained for backwards compatibility. See centralized docs above._
 ```
 
 #### `docs/dev/procedures.md`
@@ -511,19 +533,22 @@ Each original location gets a redirect notice pointing to centralized docs.
 **Keep:** Non-testing procedures (phased issue workflow, etc.)
 
 **Add redirect:**
-```markdown
+
+````markdown
 ## Pre-Commit Checklist
 
 > **See:** `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` for the complete pre-commit checklist with explanations.
 
 Quick reference:
+
 ```bash
 cargo fmt && cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
 cargo test --workspace --all-features && cargo fmt --check
 ```
-```
+````
 
+````
 #### `docs/dev/README.md`
 
 **Update line 123-140** to reference centralized location:
@@ -538,9 +563,9 @@ Quick reference:
 cargo fmt && cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
 cargo test --workspace --all-features && cargo fmt --check
-```
-```
+````
 
+````
 #### `docs/dev/ci-cd.md`
 
 **Remove:** Duplicate pre-commit checklist (lines 321-331)
@@ -744,11 +769,11 @@ cargo test --workspace --all-features && cargo fmt --check
 | [mocking-patterns.md](./mocking-patterns.md) | When and how to use httpmock |
 | [troubleshooting.md](./troubleshooting.md) | Common failures and debugging |
 | [post-mortems/](./post-mortems/) | Bug case studies |
-```
+````
 
 ### docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md (excerpt)
 
-```markdown
+````markdown
 <!-- SIZE LIMIT: 200 lines max | Current: ~180 | Last checked: 2025-12-05 -->
 
 # High-Level Testing Guidelines
@@ -758,6 +783,7 @@ cargo test --workspace --all-features && cargo fmt --check
 > Any worker can stop the production line when detecting a defect.
 
 **For Langstar:**
+
 - Failing tests MUST block merges
 - Never bypass tests "just this once"
 - If tests are flaky, fix them - don't ignore them
@@ -775,11 +801,14 @@ Before marking a test as complete:
 ## Anti-Pattern: Exit Code Only Tests
 
 ❌ **Insufficient:**
+
 ```rust
 cmd.assert().success();  // Only checks exit code 0
 ```
+````
 
 ✅ **Proper:**
+
 ```rust
 let output = cmd.output()?;
 assert!(output.status.success());
@@ -798,8 +827,8 @@ cargo fmt --check
 ```
 
 [Additional content: why each check matters, common mistakes, time investment analysis]
-```
 
+```
 ---
 
 ## Appendix B: Success Criteria
@@ -813,3 +842,4 @@ cargo fmt --check
 - [ ] Token usage reduced by ≥50% for typical tasks
 - [ ] CRUD lifecycle pattern documented and discoverable
 - [ ] #536 post-mortem written and linked
+```

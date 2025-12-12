@@ -4,27 +4,30 @@ This document provides an overview of the various HTTP/REST APIs in the LangChai
 
 ## API Summary Table
 
-| API Name | Base URL (US) | Base URL (EU) | OpenAPI Spec | Purpose |
-|----------|---------------|---------------|--------------|---------|
-| LangSmith API | `https://api.smith.langchain.com` | `https://eu.api.smith.langchain.com` | [/openapi.json](https://api.smith.langchain.com/openapi.json) | Tracing, evaluation, datasets, org management |
-| Control Plane API | `https://api.host.langchain.com` | `https://eu.api.host.langchain.com` | [/openapi.json](https://api.host.langchain.com/openapi.json) | Deployment management for LangGraph Server |
-| LangGraph Server API | Per-deployment | Per-deployment | `/docs` on each deployment | Runtime API for assistants, threads, runs |
-| SCIM API | `https://api.smith.langchain.com/scim/v2` | `https://eu.api.smith.langchain.com/scim/v2` | SCIM 2.0 compliant | User provisioning (Enterprise) |
+| API Name             | Base URL (US)                             | Base URL (EU)                                | OpenAPI Spec                                                  | Purpose                                       |
+| -------------------- | ----------------------------------------- | -------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------- |
+| LangSmith API        | `https://api.smith.langchain.com`         | `https://eu.api.smith.langchain.com`         | [/openapi.json](https://api.smith.langchain.com/openapi.json) | Tracing, evaluation, datasets, org management |
+| Control Plane API    | `https://api.host.langchain.com`          | `https://eu.api.host.langchain.com`          | [/openapi.json](https://api.host.langchain.com/openapi.json)  | Deployment management for LangGraph Server    |
+| LangGraph Server API | Per-deployment                            | Per-deployment                               | `/docs` on each deployment                                    | Runtime API for assistants, threads, runs     |
+| SCIM API             | `https://api.smith.langchain.com/scim/v2` | `https://eu.api.smith.langchain.com/scim/v2` | SCIM 2.0 compliant                                            | User provisioning (Enterprise)                |
 
 ---
 
 ## 1. LangSmith API
 
 **Base URLs:**
+
 - US: `https://api.smith.langchain.com`
 - EU: `https://eu.api.smith.langchain.com`
 - Self-hosted: `http(s)://<langsmith-url>/api/v1`
 
 **OpenAPI Specification:**
+
 - JSON: `https://api.smith.langchain.com/openapi.json`
 - Interactive docs: `https://api.smith.langchain.com/redoc`
 
 **Authentication:**
+
 - Header: `X-Api-Key` with LangSmith API key
 
 **Purpose:**
@@ -33,6 +36,7 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 **Main Capabilities:**
 
 ### Tracing & Observability
+
 - **Tracer Sessions** (Projects): Create, read, update, delete tracing sessions
 - **Runs**: Log and query execution traces
 - **Feedback**: Attach evaluations and annotations to runs
@@ -40,6 +44,7 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 - Insights/clustering for pattern analysis
 
 ### Datasets & Evaluation
+
 - **Datasets**: Create and manage test datasets
 - **Examples**: CRUD operations on test cases
 - Upload via CSV or programmatic API
@@ -47,6 +52,7 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 - Download in multiple formats (CSV, JSONL, OpenAI format)
 
 ### Organization Management
+
 - **Organizations**: Org settings, billing, usage tracking
 - **Workspaces**: Multi-tenant workspace management
 - **Members & Roles**: User management and RBAC
@@ -54,6 +60,7 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 - **API Keys**: Service key generation and management
 
 ### Additional Features
+
 - Prompt management and versioning
 - Webhooks for event notifications
 - Data export (bulk exports to S3, GCS, etc.)
@@ -61,6 +68,7 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 - Comparative experiments
 
 **Use Cases:**
+
 - Logging LLM application traces
 - Running evaluations on datasets
 - Managing users and permissions
@@ -72,15 +80,18 @@ The LangSmith API is the primary API for LangSmith platform operations. It provi
 ## 2. Control Plane API
 
 **Base URLs:**
+
 - US: `https://api.host.langchain.com`
 - EU: `https://eu.api.host.langchain.com`
 - Self-hosted: `http(s)://<host>/api-host`
 
 **OpenAPI Specification:**
+
 - JSON: `https://api.host.langchain.com/openapi.json`
 - Interactive docs: `https://api.host.langchain.com/docs`
 
 **Authentication:**
+
 - Headers: `X-Api-Key` (LangSmith API key) and `X-Tenant-Id` (workspace ID)
 
 **Purpose:**
@@ -89,6 +100,7 @@ The Control Plane API manages LangGraph Server deployments. It provides programm
 **Main Capabilities:**
 
 ### Deployments (`/v2/deployments`)
+
 - **Create**: Initialize new deployments from GitHub repos or Docker images
 - **List**: Query deployments with filtering (name, status, type, tags)
 - **Get**: Retrieve deployment details
@@ -96,30 +108,36 @@ The Control Plane API manages LangGraph Server deployments. It provides programm
 - **Delete**: Remove deployments
 
 **Deployment Types:**
+
 - `dev` / `dev_free`: Development environments (preemptible infrastructure)
 - `prod`: Production environments (HA, autoscaling, backups)
 
 ### Revisions (`/v2/deployments/{id}/revisions`)
+
 - **List**: View deployment history
 - **Get**: Check revision status and details
 - **Redeploy**: Rollback to previous revision
 
 **Revision Statuses:**
+
 - `CREATING`, `QUEUED`, `AWAITING_BUILD`, `BUILDING`
 - `AWAITING_DEPLOY`, `DEPLOYING`, `DEPLOYED`
 - `BUILD_FAILED`, `DEPLOY_FAILED`, `CREATE_FAILED`
 - `SKIPPED`, `INTERRUPTED`, `UNKNOWN`
 
 ### Integrations
+
 - GitHub integration metadata
 - Docker registry configuration
 
 ### Monitoring
+
 - Deployment health status
 - Metrics collection endpoints
 - Build and server logs
 
 **Use Cases:**
+
 - Automated CI/CD deployment pipelines
 - Infrastructure-as-code deployment management
 - Blue-green or canary deployments
@@ -127,6 +145,7 @@ The Control Plane API manages LangGraph Server deployments. It provides programm
 - Multi-environment management (dev, staging, prod)
 
 **Example Workflow:**
+
 1. `POST /v2/deployments` - Create deployment
 2. `GET /v2/deployments/{id}/revisions/{revision_id}` - Poll until status is `DEPLOYED`
 3. `PATCH /v2/deployments/{id}` - Update deployment (creates new revision)
@@ -137,14 +156,17 @@ The Control Plane API manages LangGraph Server deployments. It provides programm
 ## 3. LangGraph Server API
 
 **Base URL:**
+
 - Per-deployment: `http(s)://<deployment-url>`
 - Local dev: `http://localhost:8124`
 
 **OpenAPI Specification:**
+
 - Available at `/docs` on each deployment
 - Reference docs: [LangGraph Platform API Reference](https://langchain-ai.github.io/langgraph/cloud/reference/api/api_ref.html)
 
 **Authentication:**
+
 - Header: `X-Api-Key` (LangSmith API key for the organization)
 
 **Purpose:**
@@ -153,17 +175,20 @@ The LangGraph Server API is the runtime API for deployed LangGraph applications.
 **Main Capabilities:**
 
 ### Assistants
+
 - **Create/List/Get/Update/Delete**: Manage assistant configurations
 - **Search**: Find assistants by metadata
 - Assistants are graphs with specific configuration settings
 - Multiple assistants per graph with different configs
 
 ### Threads
+
 - **Create/List/Get/Update/Delete**: Manage conversation threads
 - Thread state management and persistence
 - Thread history and checkpoints
 
 ### Runs
+
 - **Create**: Execute assistant on a thread
 - **Stream**: Real-time execution with streaming responses
 - **Wait**: Synchronous execution
@@ -171,18 +196,22 @@ The LangGraph Server API is the runtime API for deployed LangGraph applications.
 - Background and interactive execution modes
 
 ### Cron Jobs
+
 - Schedule recurring assistant executions
 - Time-based automation
 
 ### Webhooks
+
 - Event-driven notifications
 - Integration with external systems
 
 ### Store Operations
+
 - Key-value storage within threads
 - Persistent state management
 
 **Use Cases:**
+
 - Deploying agentic applications
 - Managing conversational AI state
 - Background task processing
@@ -191,6 +220,7 @@ The LangGraph Server API is the runtime API for deployed LangGraph applications.
 - Integration with external systems via webhooks
 
 **Architecture:**
+
 - Built on PostgreSQL (persistence/checkpoints)
 - Redis task queue for background runs
 - Supports both streaming and batch execution
@@ -200,14 +230,17 @@ The LangGraph Server API is the runtime API for deployed LangGraph applications.
 ## 4. SCIM API (Enterprise)
 
 **Base URLs:**
+
 - US: `https://api.smith.langchain.com/scim/v2`
 - EU: `https://eu.api.smith.langchain.com/scim/v2`
 - Self-hosted: `http(s)://<langsmith-url>/scim/v2`
 
 **OpenAPI Specification:**
+
 - SCIM 2.0 compliant (RFC 7644)
 
 **Authentication:**
+
 - Bearer token authentication
 - Token generated via `POST /v1/platform/orgs/current/scim/tokens`
 
@@ -217,33 +250,39 @@ The SCIM API enables automated user provisioning and deprovisioning between iden
 **Main Capabilities:**
 
 ### User Management
+
 - **Create**: Provision users from IdP
 - **Read**: Query user details
 - **Update**: Sync user attribute changes
 - **Delete**: Deprovision users
 
 ### Group Management
+
 - **Create**: Create groups mapped to workspace roles
 - **Read**: Query group membership
 - **Update**: Modify group assignments
 - **Delete**: Remove groups
 
 **Supported Attributes:**
+
 - User: `userName`, `name.givenName`, `name.familyName`, `emails`, `active`
 - Group: `displayName`, `members`
 
 **Use Cases:**
+
 - Automated user onboarding/offboarding
 - Syncing org structure from IdP
 - RBAC enforcement via group membership
 - Compliance and audit requirements
 
 **Requirements:**
+
 - Enterprise plan
 - SAML SSO configured (Cloud) or OAuth with Client Secret (Self-hosted)
 - IdP must support SCIM 2.0 (Okta, Azure AD, etc.)
 
 **Token Management Endpoints:**
+
 - `POST /v1/platform/orgs/current/scim/tokens` - Generate token
 - `GET /v1/platform/orgs/current/scim/tokens` - List tokens
 - `DELETE /v1/platform/orgs/current/scim/tokens/{id}` - Revoke token
@@ -255,11 +294,13 @@ The SCIM API enables automated user provisioning and deprovisioning between iden
 ### OpenTelemetry (OTLP) Ingestion
 
 **Base URLs:**
+
 - Traces: `https://api.smith.langchain.com/otel/v1/traces`
 - Logs: `https://api.smith.langchain.com/otel/v1/logs`
 - Claude Code: `https://api.smith.langchain.com/otel/v1/claude_code`
 
 **Purpose:**
+
 - Ingest traces and logs using OpenTelemetry Protocol (OTLP)
 - Alternative to native LangSmith tracing APIs
 - Enables integration with OTLP-compatible tools
@@ -267,10 +308,12 @@ The SCIM API enables automated user provisioning and deprovisioning between iden
 ### Public JSON Schemas
 
 **URLs:**
+
 - Messages: `https://api.smith.langchain.com/public/schemas/v1/message.json`
 - Tool definitions: `https://api.smith.langchain.com/public/schemas/v1/tooldef.json`
 
 **Purpose:**
+
 - JSON Schema definitions for standard formats
 - OpenAI-compatible message and tool schemas
 
@@ -279,18 +322,21 @@ The SCIM API enables automated user provisioning and deprovisioning between iden
 ## Regional Differences
 
 ### US Region
+
 - LangSmith: `api.smith.langchain.com`
 - Control Plane: `api.host.langchain.com`
 - UI: `smith.langchain.com`
 - Auth: `auth.langchain.com`
 
 ### EU Region
+
 - LangSmith: `eu.api.smith.langchain.com`
 - Control Plane: `eu.api.host.langchain.com`
 - UI: `eu.smith.langchain.com`
 - Auth: `eu.auth.langchain.com`
 
 ### Self-Hosted
+
 - All APIs available at custom host
 - Control Plane at `/api-host` path
 - LangSmith API typically at `/api/v1` path
@@ -303,13 +349,17 @@ The SCIM API enables automated user provisioning and deprovisioning between iden
 Based on the scope of issue #92 and common use cases, here are recommended priorities:
 
 ### Phase 1: Control Plane API (Current)
+
 **Status:** In progress (issue #92)
+
 - Deployments: List, Get, Create, Update, Delete
 - Revisions: List, Get, Redeploy
 - Essential for CI/CD workflows
 
 ### Phase 2: LangSmith API (Tracing & Datasets)
+
 **High Value Operations:**
+
 - Runs: Create, List, Query
 - Feedback: Create, List
 - Datasets: Create, List, Get
@@ -317,20 +367,25 @@ Based on the scope of issue #92 and common use cases, here are recommended prior
 - Tracer Sessions: Create, List, Get
 
 ### Phase 3: LangGraph Server API (Runtime)
+
 **Core Operations:**
+
 - Assistants: List, Get, Search
 - Threads: Create, Get, List
 - Runs: Create, Stream, Wait
 - Store: Get, Put, List
 
 ### Phase 4: Organization Management
+
 **Admin Operations:**
+
 - Workspaces: List, Create, Update
 - Members: List, Invite, Remove
 - Roles: List, Assign
 - API Keys: Create, List, Delete
 
 ### Phase 5: Advanced Features
+
 - SCIM integration (Enterprise customers)
 - Bulk exports
 - Webhooks

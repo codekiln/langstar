@@ -16,6 +16,7 @@ This guide demonstrates how to use both LangSmith prompts and LangGraph assistan
 ### LangSmith Prompts
 
 **Purpose:** Prompt management and versioning
+
 - **Scope:** Organization/workspace hierarchical model
 - **Use for:** Storing, versioning, and sharing prompt templates
 - **Key feature:** Multi-tenancy support
@@ -23,19 +24,20 @@ This guide demonstrates how to use both LangSmith prompts and LangGraph assistan
 ### LangGraph Assistants
 
 **Purpose:** Graph-based agent deployment and execution
+
 - **Scope:** Deployment-level resources
 - **Use for:** Running deployed LangGraph applications
 - **Key feature:** Simple, deployment-focused model
 
 ### Architectural Differences
 
-| Aspect | LangSmith Prompts | LangGraph Assistants |
-|--------|-------------------|----------------------|
-| **Scoping** | Org/Workspace | Deployment |
-| **Headers** | `x-organization-id`, `X-Tenant-Id` | `x-api-key` only |
-| **Configuration** | Optional scoping IDs | API key only |
-| **Multi-tenancy** | Yes | No |
-| **Typical use** | Prompt development | Agent execution |
+| Aspect            | LangSmith Prompts                  | LangGraph Assistants |
+| ----------------- | ---------------------------------- | -------------------- |
+| **Scoping**       | Org/Workspace                      | Deployment           |
+| **Headers**       | `x-organization-id`, `X-Tenant-Id` | `x-api-key` only     |
+| **Configuration** | Optional scoping IDs               | API key only         |
+| **Multi-tenancy** | Yes                                | No                   |
+| **Typical use**   | Prompt development                 | Agent execution      |
 
 ## Configuration for Both Services
 
@@ -117,6 +119,7 @@ LangGraph Configuration (for 'assistant' commands):
 - ✅ Need hierarchical access control
 
 **Example scenarios:**
+
 - Storing reusable prompt templates for your team
 - Managing prompt versions across dev/staging/prod workspaces
 - Collaborating on prompt engineering across an organization
@@ -130,6 +133,7 @@ LangGraph Configuration (for 'assistant' commands):
 - ✅ Executing conversational workflows
 
 **Example scenarios:**
+
 - Deploying a customer support chatbot
 - Running a multi-step research assistant
 - Managing production agent configurations
@@ -141,6 +145,7 @@ LangGraph Configuration (for 'assistant' commands):
 - ✅ Need both prompt management and agent execution
 
 **Example scenarios:**
+
 - Develop customer service prompts in LangSmith, deploy as LangGraph assistant
 - Store prompt templates in LangSmith workspace, reference in deployed agents
 - Iterate on prompts in one service, use in production agents in the other
@@ -431,6 +436,7 @@ export LANGSMITH_API_KEY="<shared-key>"
 ```
 
 **Benefits:**
+
 - Better security (principle of least privilege)
 - Easier key rotation
 - Clear separation of concerns
@@ -448,6 +454,7 @@ export LANGSMITH_API_KEY="<prod-deployment>"
 ```
 
 **Benefits:**
+
 - Consistent environment behavior
 - Easier promotion pipeline
 - Reduced configuration errors
@@ -462,6 +469,7 @@ Keep a registry file:
 ## Prompt to Assistant Mappings
 
 ### Customer Service Bot (asst_abc123)
+
 - Graph: graph_customer_service_v2
 - Deployment: production
 - Prompts used:
@@ -470,6 +478,7 @@ Keep a registry file:
   - `team/customer-closing-v1` (LangSmith)
 
 ### Sales Assistant (asst_def456)
+
 - Graph: graph_sales_v1
 - Deployment: production
 - Prompts used:
@@ -596,6 +605,7 @@ export LANGSMITH_API_KEY="<dev-deployment>"
 ### Issue: Commands using wrong API key
 
 **Symptoms:**
+
 - Assistant commands return unexpected results
 - Authentication errors despite having API key set
 
@@ -617,15 +627,18 @@ export LANGSMITH_API_KEY="<langgraph-key>"
 ### Issue: Can't find resources in one service
 
 **Symptoms:**
+
 - Prompts found in LangSmith but not reflected in assistants
 - Assistants exist but prompts missing
 
 **Remember:**
+
 - These are **separate services**
 - Prompts in LangSmith don't automatically appear in LangGraph
 - Manual synchronization required
 
 **Solution:**
+
 - Document mappings between services
 - Use scripts to sync configurations
 - Keep registry of prompt-to-assistant relationships
@@ -633,6 +646,7 @@ export LANGSMITH_API_KEY="<langgraph-key>"
 ### Issue: Configuration conflicts
 
 **Symptoms:**
+
 - Unexpected scoping behavior
 - Resources from wrong environment
 

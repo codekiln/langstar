@@ -14,6 +14,7 @@ This command verifies that implemented tests comply with both the test plan (Pha
 ```
 
 **Examples:**
+
 - `/gh-milestones:test-audit ls-runs-query`
 - `/gh-milestones:test-audit 14`
 - `/gh-milestones:test-audit https://github.com/codekiln/langstar/milestone/14`
@@ -37,17 +38,20 @@ When this command runs, you should:
 ### Step 1: Load Testing Documentation
 
 Load the high-level testing guidelines (always required):
+
 - `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md`
 
 ### Step 2: Locate Test Plan
 
 Find the test plan from Phase 7:
+
 ```bash
 # Check common locations
 ls docs/implementation/*test-plan*.md
 ```
 
 Or search for test plan in milestone issues:
+
 ```bash
 gh issue list --milestone "<milestone-name>" --json number,title,body | jq '.[] | select(.title | contains("test"))'
 ```
@@ -55,6 +59,7 @@ gh issue list --milestone "<milestone-name>" --json number,title,body | jq '.[] 
 ### Step 3: Fetch Implemented Tests
 
 Identify test files for the milestone feature:
+
 ```bash
 # SDK tests
 find sdk/tests -name "*<feature>*_test.rs"
@@ -86,6 +91,7 @@ grep -n "#\[cfg(test)\]" <test-file>
 #### 4.2 Test Quality Checks (Manual Review)
 
 Review each test for:
+
 - [ ] **Behavior verification**: Does test verify actual behavior, not just exit codes?
 - [ ] **Round-trip assertions**: Are SDK operations verified through assertions?
 - [ ] **Error type checking**: Do error tests verify specific error types?
@@ -94,6 +100,7 @@ Review each test for:
 #### 4.3 CRUD Lifecycle Checks
 
 For integration tests, verify:
+
 - [ ] Resources created via SDK (not just CLI)
 - [ ] Operations use CLI or SDK under test
 - [ ] Results verified via SDK (not just CLI output)
@@ -118,6 +125,7 @@ Create a markdown report with this structure:
 # Test Audit Report: [Milestone Name]
 
 ## Summary
+
 - **Tests Planned**: [count from test plan]
 - **Tests Implemented**: [count found]
 - **Compliance Rate**: [percentage]
@@ -127,6 +135,7 @@ Create a markdown report with this structure:
 ## Critical Issues (Must Fix Before Merge)
 
 ### Issue 1: [Title]
+
 - **Location**: `file:line`
 - **Problem**: [specific issue]
 - **Remediation**: [exact fix needed]
@@ -136,16 +145,17 @@ Create a markdown report with this structure:
 ## Warnings (Should Address)
 
 ### Warning 1: [Title]
+
 - **Location**: `file:line`
 - **Suggestion**: [improvement]
 
 ## Test Plan Coverage Matrix
 
-| Test Case (from plan) | Implemented? | File:Line | Notes |
-|----------------------|--------------|-----------|-------|
-| test_create_run | ✅ Yes | sdk/tests/runs_test.rs:45 | |
-| test_query_runs_empty | ❌ No | - | Missing |
-| test_query_runs_pagination | ⚠️ Partial | sdk/tests/runs_test.rs:100 | Only tests first page |
+| Test Case (from plan)      | Implemented? | File:Line                  | Notes                 |
+| -------------------------- | ------------ | -------------------------- | --------------------- |
+| test_create_run            | ✅ Yes       | sdk/tests/runs_test.rs:45  |                       |
+| test_query_runs_empty      | ❌ No        | -                          | Missing               |
+| test_query_runs_pagination | ⚠️ Partial    | sdk/tests/runs_test.rs:100 | Only tests first page |
 
 ## CI Configuration Status
 
@@ -156,12 +166,12 @@ Create a markdown report with this structure:
 
 ## Anti-Pattern Detection
 
-| Pattern | Found? | Location |
-|---------|--------|----------|
-| Unconditional `#[ignore]` | ❌ No | - |
-| Exit-code-only assertions | ⚠️ Yes | cli/tests/runs_command_test.rs:55 |
-| Missing cleanup | ❌ No | - |
-| Hardcoded test data | ⚠️ Yes | sdk/tests/runs_test.rs:20 |
+| Pattern                   | Found? | Location                          |
+| ------------------------- | ------ | --------------------------------- |
+| Unconditional `#[ignore]` | ❌ No  | -                                 |
+| Exit-code-only assertions | ⚠️ Yes  | cli/tests/runs_command_test.rs:55 |
+| Missing cleanup           | ❌ No  | -                                 |
+| Hardcoded test data       | ⚠️ Yes  | sdk/tests/runs_test.rs:20         |
 
 ## Recommendations
 
@@ -171,11 +181,13 @@ Create a markdown report with this structure:
 ## Next Steps
 
 If critical issues found:
+
 1. Fix all critical issues
 2. Re-run audit: `/gh-milestones:test-audit <milestone>`
 3. Update test plan if gaps discovered
 
 If all checks pass:
+
 1. Proceed to Phase 10 (Documentation)
 2. Ensure tests run in CI before merge
 ```
@@ -183,6 +195,7 @@ If all checks pass:
 ### Step 6: Present Results
 
 Output the compliance report with:
+
 - Summary of findings
 - Clear distinction between critical issues and warnings
 - Actionable remediation steps
@@ -195,6 +208,7 @@ Output the compliance report with:
 **Problem**: Tests marked with `#[ignore]` won't run in CI.
 
 **Remediation**: Use conditional ignore:
+
 ```rust
 // WRONG
 #[ignore]
@@ -212,6 +226,7 @@ async fn test_integration() { ... }
 **Problem**: Test only checks `assert!(result.status.success())`.
 
 **Remediation**: Verify actual behavior:
+
 ```rust
 // WRONG
 assert!(result.status.success());
@@ -230,6 +245,7 @@ assert_eq!(runs.len(), expected_count);
 **Problem**: Test creates resources but doesn't clean up.
 
 **Remediation**: Use cleanup in all paths:
+
 ```rust
 let project_id = client.create_project(&request).await?;
 
@@ -247,6 +263,7 @@ let _cleanup = scopeguard::guard((), |_| {
 **Problem**: Integration tests need API keys not configured in CI.
 
 **Remediation**: Update `.github/workflows/test.yml`:
+
 ```yaml
 integration-tests:
   env:

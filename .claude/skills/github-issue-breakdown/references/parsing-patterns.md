@@ -11,11 +11,13 @@ The skill parses various common task list formats found in GitHub issue descript
 ### 1. Markdown Checkboxes (Unchecked)
 
 **Format:**
+
 ```markdown
 - [ ] Task description here
 ```
 
 **Behavior:**
+
 - Parses unchecked checkboxes only (by default)
 - Skips already-checked items `- [x]` to avoid creating sub-issues for completed tasks
 - The `- [ ]` prefix is removed, and the remaining text becomes the sub-issue title
@@ -23,6 +25,7 @@ The skill parses various common task list formats found in GitHub issue descript
 **Example:**
 
 Parent issue body:
+
 ```markdown
 ## Tasks
 
@@ -33,6 +36,7 @@ Parent issue body:
 ```
 
 Parsed tasks:
+
 1. Create login endpoint
 2. Create registration endpoint
 3. Add authentication middleware
@@ -42,6 +46,7 @@ Note: "Set up database schema" is skipped because it's already checked.
 ### 2. Numbered Lists
 
 **Format:**
+
 ```markdown
 1. First task
 2. Second task
@@ -49,6 +54,7 @@ Note: "Set up database schema" is skipped because it's already checked.
 ```
 
 **Behavior:**
+
 - Parses any line starting with a number followed by a period
 - Number is removed, remaining text becomes sub-issue title
 - Order is preserved but numbers are not significant for parsing
@@ -56,6 +62,7 @@ Note: "Set up database schema" is skipped because it's already checked.
 **Example:**
 
 Parent issue body:
+
 ```markdown
 Implementation Steps:
 
@@ -66,6 +73,7 @@ Implementation Steps:
 ```
 
 Parsed tasks:
+
 1. Design API schema
 2. Implement database models
 3. Create REST endpoints
@@ -74,12 +82,15 @@ Parsed tasks:
 ### 3. Bullet Points
 
 **Format:**
+
 ```markdown
-* Task with asterisk
-- Task with hyphen
+- Task with asterisk
+
+* Task with hyphen
 ```
 
 **Behavior:**
+
 - Parses lines starting with `*` or `-` (excluding checkboxes)
 - Bullet character is removed, remaining text becomes sub-issue title
 - Both asterisk and hyphen bullets are supported
@@ -87,15 +98,17 @@ Parsed tasks:
 **Example:**
 
 Parent issue body:
+
 ```markdown
 Development Tasks:
 
-* Implement user authentication
-* Add error handling
-* Update documentation
+- Implement user authentication
+- Add error handling
+- Update documentation
 ```
 
 Parsed tasks:
+
 1. Implement user authentication
 2. Add error handling
 3. Update documentation
@@ -103,6 +116,7 @@ Parsed tasks:
 ### 4. Mixed Formats
 
 **Behavior:**
+
 - The parser supports multiple formats in the same issue
 - Each recognized format is parsed independently
 - Duplicate detection is not performed (be mindful of mixed formats)
@@ -110,6 +124,7 @@ Parsed tasks:
 **Example:**
 
 Parent issue body:
+
 ```markdown
 ## Backend Tasks
 
@@ -123,11 +138,12 @@ Parent issue body:
 
 ## DevOps
 
-* Configure CI/CD
-* Set up monitoring
+- Configure CI/CD
+- Set up monitoring
 ```
 
 Parsed tasks:
+
 1. Create API endpoints
 2. Add validation
 3. Update login form
@@ -163,17 +179,20 @@ r'^[\*-]\s+(?!\[)'
 ### Edge Cases
 
 **Nested lists** - Not supported. Only top-level items are parsed:
+
 ```markdown
 - [ ] Main task
   - [ ] Subtask (ignored)
 ```
 
 **Indented lists** - Indentation is stripped, so indented items are treated as top-level:
+
 ```markdown
-    - [ ] Indented task (parsed as top-level)
+- [ ] Indented task (parsed as top-level)
 ```
 
 **Code blocks** - Tasks inside code blocks are parsed (be careful):
+
 ````markdown
 ```
 - [ ] This will be parsed
@@ -183,9 +202,11 @@ r'^[\*-]\s+(?!\[)'
 To avoid this, ensure code blocks don't contain task-like patterns.
 
 **Inline markdown** - Task titles can contain inline markdown:
+
 ```markdown
 - [ ] Add **authentication** with `JWT` tokens
 ```
+
 Result: "Add **authentication** with `JWT` tokens"
 
 ## Customization
@@ -251,16 +272,19 @@ This shows what tasks were parsed without creating sub-issues.
 ### Common Issues
 
 **No tasks found:**
+
 - Check that task list uses supported formats
 - Verify there are no extra characters before task markers
 - Ensure lines are not within code blocks
 
 **Unexpected tasks parsed:**
+
 - Review issue body for patterns that match regex
 - Consider using more specific task formats
 - Edit parent issue to clarify task list section
 
 **Duplicate tasks:**
+
 - Avoid mixing formats that create duplicates
 - Example: `- [ ] Task` and `- Task` will create two items
 
@@ -270,6 +294,7 @@ This shows what tasks were parsed without creating sub-issues.
 
 ```markdown
 ## Overview
+
 This feature adds user authentication.
 
 ## Implementation Tasks
@@ -281,6 +306,7 @@ This feature adds user authentication.
 - [ ] Write integration tests
 
 ## Acceptance Criteria
+
 Users can register, login, and access protected resources.
 ```
 
@@ -290,9 +316,11 @@ Result: 5 sub-issues created
 
 ```markdown
 ## Background
+
 We need to improve our authentication system.
 
 ## Technical Approach
+
 Use JWT tokens for stateless authentication.
 
 ## Implementation Steps
@@ -304,6 +332,7 @@ Use JWT tokens for stateless authentication.
 5. Add token refresh mechanism
 
 ## Testing Plan
+
 - Unit tests for token service
 - Integration tests for auth flow
 ```
@@ -316,10 +345,12 @@ Result: 5 sub-issues created (only numbered items)
 ## Tasks
 
 Backend:
+
 - [ ] API endpoints
 - [ ] Database models
 
 Frontend:
+
 - Update forms
 - Add loading states
 ```

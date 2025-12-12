@@ -12,6 +12,7 @@
 This report analyzes the LangSmith Python SDK's annotation queue implementation to establish recommendations for implementing `langstar queue` commands in Rust. The Python SDK provides a well-designed reference with paginated listing, CRUD operations for queues, and run management within queues.
 
 **Key Recommendations:**
+
 1. Create `sdk/src/annotation_queues.rs` with `AnnotationQueue` and related types
 2. Add annotation queue client methods to `sdk/src/client.rs` following existing patterns
 3. Implement CLI commands under `langstar queue` subcommand group
@@ -28,16 +29,16 @@ This report analyzes the LangSmith Python SDK's annotation queue implementation 
 
 The Python SDK provides the following annotation queue methods:
 
-| Method | Return Type | Description |
-|--------|-------------|-------------|
-| `list_annotation_queues()` | `Iterator[AnnotationQueue]` | List queues with pagination |
-| `create_annotation_queue()` | `AnnotationQueueWithDetails` | Create a new queue |
-| `read_annotation_queue()` | `AnnotationQueueWithDetails` | Get queue by ID |
-| `update_annotation_queue()` | `None` | Update queue metadata |
-| `delete_annotation_queue()` | `None` | Delete a queue |
-| `add_runs_to_annotation_queue()` | `None` | Add runs to a queue |
-| `delete_run_from_annotation_queue()` | `None` | Remove a run from queue |
-| `get_run_from_annotation_queue()` | `RunWithAnnotationQueueInfo` | Get run at index |
+| Method                               | Return Type                  | Description                 |
+| ------------------------------------ | ---------------------------- | --------------------------- |
+| `list_annotation_queues()`           | `Iterator[AnnotationQueue]`  | List queues with pagination |
+| `create_annotation_queue()`          | `AnnotationQueueWithDetails` | Create a new queue          |
+| `read_annotation_queue()`            | `AnnotationQueueWithDetails` | Get queue by ID             |
+| `update_annotation_queue()`          | `None`                       | Update queue metadata       |
+| `delete_annotation_queue()`          | `None`                       | Delete a queue              |
+| `add_runs_to_annotation_queue()`     | `None`                       | Add runs to a queue         |
+| `delete_run_from_annotation_queue()` | `None`                       | Remove a run from queue     |
+| `get_run_from_annotation_queue()`    | `RunWithAnnotationQueueInfo` | Get run at index            |
 
 ### 1.2 Method Signatures
 
@@ -55,6 +56,7 @@ def list_annotation_queues(
 ```
 
 **Request Parameters** (query string):
+
 - `ids`: List of UUIDs to filter by
 - `name`: Exact name match
 - `name_contains`: Substring match on name
@@ -76,6 +78,7 @@ def create_annotation_queue(
 ```
 
 **Request Body** (JSON):
+
 ```json
 {
   "name": "My Queue",
@@ -113,6 +116,7 @@ def update_annotation_queue(
 ```
 
 **Request Body** (JSON):
+
 ```json
 {
   "name": "Required new name",
@@ -142,6 +146,7 @@ def add_runs_to_annotation_queue(
 ```
 
 **Request Body** (JSON array of UUIDs):
+
 ```json
 ["uuid-1", "uuid-2", "uuid-3"]
 ```
@@ -228,20 +233,21 @@ class RunWithAnnotationQueueInfo(RunBase):
 
 ## 3. API Endpoints Summary
 
-| Operation | Method | Endpoint | Request Body | Response |
-|-----------|--------|----------|--------------|----------|
-| List queues | GET | `/annotation-queues` | - | Paginated list |
-| Create queue | POST | `/annotation-queues` | Queue create payload | Created queue |
-| Read queue | GET | `/annotation-queues/{queue_id}` | - | Queue with details |
-| Update queue | PATCH | `/annotation-queues/{queue_id}` | Queue update payload | - |
-| Delete queue | DELETE | `/annotation-queues/{queue_id}` | - | - |
-| Add runs | POST | `/annotation-queues/{queue_id}/runs` | Array of run UUIDs | - |
-| Remove run | DELETE | `/annotation-queues/{queue_id}/runs/{run_id}` | - | - |
-| Get run at index | GET | `/annotation-queues/{queue_id}/run/{index}` | - | Run with queue info |
+| Operation        | Method | Endpoint                                      | Request Body         | Response            |
+| ---------------- | ------ | --------------------------------------------- | -------------------- | ------------------- |
+| List queues      | GET    | `/annotation-queues`                          | -                    | Paginated list      |
+| Create queue     | POST   | `/annotation-queues`                          | Queue create payload | Created queue       |
+| Read queue       | GET    | `/annotation-queues/{queue_id}`               | -                    | Queue with details  |
+| Update queue     | PATCH  | `/annotation-queues/{queue_id}`               | Queue update payload | -                   |
+| Delete queue     | DELETE | `/annotation-queues/{queue_id}`               | -                    | -                   |
+| Add runs         | POST   | `/annotation-queues/{queue_id}/runs`          | Array of run UUIDs   | -                   |
+| Remove run       | DELETE | `/annotation-queues/{queue_id}/runs/{run_id}` | -                    | -                   |
+| Get run at index | GET    | `/annotation-queues/{queue_id}/run/{index}`   | -                    | Run with queue info |
 
 ### 3.1 Pagination
 
 List operations use offset-based pagination via `_get_paginated_list`:
+
 - Query params: `limit`, `offset`
 - Default limit: 100 (capped at 100)
 - SDK yields items and fetches next page automatically
@@ -369,7 +375,7 @@ pub struct RunWithAnnotationQueueInfo {
 
 ### 4.2 Client Methods (`sdk/src/client.rs`)
 
-```rust
+````rust
 impl LangchainClient {
     // ═══════════════════════════════════════════════════════════════════════
     // Annotation Queue API
@@ -466,7 +472,7 @@ impl LangchainClient {
         // GET /api/v1/annotation-queues/{queue_id}/run/{index}
     }
 }
-```
+````
 
 ### 4.3 CLI Commands (`cli/src/commands/queue.rs`)
 
@@ -620,22 +626,26 @@ Deleted queue 12345678-...
 ## 5. Implementation Phases
 
 ### Phase 1: SDK Types
+
 - [ ] Create `sdk/src/annotation_queues.rs` with type definitions
 - [ ] Add `pub mod annotation_queues;` to `sdk/src/lib.rs`
 - [ ] Add unit tests for serialization/deserialization
 
 ### Phase 2: Client Methods
+
 - [ ] Add annotation queue methods to `sdk/src/client.rs`
 - [ ] Implement pagination for `list_annotation_queues`
 - [ ] Add integration tests with httpmock
 
 ### Phase 3: CLI Commands
+
 - [ ] Create `cli/src/commands/queue.rs` with subcommands
 - [ ] Register `queue` subcommand in CLI main
 - [ ] Implement table and JSON output formats
 - [ ] Add CLI tests with assert_cmd
 
 ### Phase 4: Documentation
+
 - [ ] Add doc comments with examples
 - [ ] Update CLI help text
 - [ ] Create docs/queues.md with usage examples
@@ -646,11 +656,11 @@ Deleted queue 12345678-...
 
 The original issue #334 spec proposed some endpoints that don't match the actual SDK:
 
-| Original Spec | Actual API | Notes |
-|--------------|------------|-------|
-| `POST .../items` with `run_ids` object | `POST .../runs` with array body | Body is JSON array, not object |
-| `GET .../items` | `GET .../run/{index}` | Gets single run by index, not list |
-| `DELETE .../items/{item_id}` | `DELETE .../runs/{run_id}` | Uses run_id, not item_id |
+| Original Spec                          | Actual API                      | Notes                              |
+| -------------------------------------- | ------------------------------- | ---------------------------------- |
+| `POST .../items` with `run_ids` object | `POST .../runs` with array body | Body is JSON array, not object     |
+| `GET .../items`                        | `GET .../run/{index}`           | Gets single run by index, not list |
+| `DELETE .../items/{item_id}`           | `DELETE .../runs/{run_id}`      | Uses run_id, not item_id           |
 
 **Recommendation**: Follow the actual SDK implementation rather than the original spec.
 
@@ -659,16 +669,19 @@ The original issue #334 spec proposed some endpoints that don't match the actual
 ## 7. Testing Strategy
 
 ### Unit Tests
+
 - Serialization/deserialization of all types
 - Request body generation
 - Query parameter serialization
 
 ### Integration Tests (httpmock)
+
 - Mock all annotation queue endpoints
 - Test pagination for list operations
 - Test error handling (404, 400, etc.)
 
 ### CLI Tests (assert_cmd)
+
 - Test all subcommands with valid inputs
 - Test JSON output format
 - Test error messages

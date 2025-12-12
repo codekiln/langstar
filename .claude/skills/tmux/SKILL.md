@@ -31,7 +31,7 @@ Or to capture the output once:
   tmux -S "$SOCKET" capture-pane -p -J -t claude-lldb:0.0 -S -200
 ```
 
-This must ALWAYS be printed right after a session was started and once again at the end of the tool loop.  But the earlier you send it, the happier the user will be.
+This must ALWAYS be printed right after a session was started and once again at the end of the tool loop. But the earlier you send it, the happier the user will be.
 
 ## Socket convention
 

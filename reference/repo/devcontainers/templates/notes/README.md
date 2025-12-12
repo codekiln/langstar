@@ -26,6 +26,7 @@ The repository uses **one main test workflow**:
 ### Test Workflow Differences from Features
 
 **Templates are more complex**:
+
 1. **Template Configuration** - Must handle `devcontainer-template.json` options
 2. **Smoke Tests** - More involved than feature tests
 3. **Extension Stubbing** - Fakes the VS Code Server for validation
@@ -83,6 +84,7 @@ Each template has:
 ### VS Code Extension Stubbing
 
 Templates test extension validation by:
+
 1. Creating fake `~/.vscode-server` directory structure
 2. Extracting extensions from devcontainer.json
 3. Creating dummy extension directories
@@ -103,6 +105,7 @@ jobs:
 ### Change Detection Job
 
 Same as features:
+
 - Uses `dorny/paths-filter@v3`
 - Outputs JSON array of changed templates
 
@@ -120,15 +123,15 @@ Same as features:
 
 ## Comparison: Features vs Templates Testing
 
-| Aspect | Features | Templates |
-|--------|----------|-----------|
-| **Test command** | `devcontainer features test` | `devcontainer up` + `devcontainer exec` |
-| **Configuration** | Not needed | Must replace option placeholders |
-| **Test complexity** | Simple smoke tests | Full project tests |
-| **Extension handling** | Not validated | Stubbed and validated |
-| **Matrix testing** | 7 base images | Single image per template |
-| **Test directory** | test/feature/test.sh | test/template/ (project files) |
-| **Test library** | dev-container-features-test-lib | Manual bash scripts |
+| Aspect                 | Features                        | Templates                               |
+| ---------------------- | ------------------------------- | --------------------------------------- |
+| **Test command**       | `devcontainer features test`    | `devcontainer up` + `devcontainer exec` |
+| **Configuration**      | Not needed                      | Must replace option placeholders        |
+| **Test complexity**    | Simple smoke tests              | Full project tests                      |
+| **Extension handling** | Not validated                   | Stubbed and validated                   |
+| **Matrix testing**     | 7 base images                   | Single image per template               |
+| **Test directory**     | test/feature/test.sh            | test/template/ (project files)          |
+| **Test library**       | dev-container-features-test-lib | Manual bash scripts                     |
 
 ## Actionable Insights for Langstar
 
@@ -137,11 +140,13 @@ Same as features:
 **Nothing** - Langstar is a **feature**, not a template.
 
 Template testing is more complex because:
+
 - Templates create entire project scaffolds
 - Templates have configurable options with placeholders
 - Templates need to validate project functionality
 
 Features (like langstar) are simpler:
+
 - Install tools/dependencies
 - Configure environment
 - Run version checks

@@ -13,11 +13,13 @@ The "error decoding response body" with "premature end of input at line 1, colum
 ## Investigation Timeline
 
 ### Initial Hypothesis (INCORRECT)
+
 - Assumed GET-by-ID endpoint was being called
 - Thought 405 error was causing the issue
 - Believed HTTP response was truncated
 
 ### Actual Discovery
+
 1. Error occurs during CREATE (POST), not GET
 2. HTTP response is complete (465 bytes, matches Content-Length)
 3. JSON is valid (jq can parse it)
@@ -27,6 +29,7 @@ The "error decoding response body" with "premature end of input at line 1, colum
 ## The Smoking Gun
 
 ### API Response
+
 ```json
 {
   "created_at": "2025-12-02T16:28:50.113929",
@@ -35,6 +38,7 @@ The "error decoding response body" with "premature end of input at line 1, colum
 ```
 
 ### What chrono Expects
+
 ```json
 {
   "created_at": "2025-12-02T16:28:50.113929Z",
@@ -43,6 +47,7 @@ The "error decoding response body" with "premature end of input at line 1, colum
 ```
 
 ### Test Result
+
 ```rust
 let timestamp_no_z = "2025-12-02T16:28:50.113929";
 timestamp_no_z.parse::<DateTime<Utc>>()
@@ -65,6 +70,7 @@ Python json.loads: ✓ SUCCEEDS
 ### 2. Error Location Analysis
 
 Position 348 in the response:
+
 ```
 ..."updated_at":"2025-12-02T16:28:50.113929","descr...
                                            ^
@@ -76,6 +82,7 @@ This is right where `created_at` field ends and before `description` begins.
 ### 3. Standalone Reproduction
 
 Created `sdk/examples/test_json_parse.rs` that reproduces the error:
+
 - Input: Valid 465-byte JSON from `/tmp/langstar_debug_response.json`
 - Result: `premature end of input at line 1 column 348`
 - Confirms issue is in serde deserialization, not HTTP layer
@@ -83,6 +90,7 @@ Created `sdk/examples/test_json_parse.rs` that reproduces the error:
 ### 4. DateTime Parsing Test
 
 Created `sdk/examples/test_datetime_parse.rs`:
+
 ```
 Without Z: 2025-12-02T16:28:50.113929
   ERR: premature end of input
@@ -96,11 +104,13 @@ With Z: 2025-12-02T16:28:50.113929Z
 ## Why Python Worked
 
 Python's `requests` library and `json` module are more lenient:
+
 - `datetime.fromisoformat("2025-12-02T16:28:50.113929")` ✓ works
 - Python assumes local time or naive datetime
 - No strict timezone requirement
 
 Rust's `chrono::DateTime<Utc>` is strict:
+
 - Requires explicit timezone in the string
 - Fails with "premature end of input" when Z is missing
 - This is by design for type safety
@@ -134,6 +144,7 @@ where
 ```
 
 Then use it in the struct:
+
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PlaygroundSettingsResponse {
@@ -158,25 +169,27 @@ File an issue with LangChain to have the API return RFC 3339 compliant timestamp
 ## Impact Assessment
 
 ### What Was Affected
+
 - ✅ `POST /api/v1/playground-settings` (create)
 - ✅ `PATCH /api/v1/playground-settings/{id}` (update)
 - ✅ Any endpoint returning `PlaygroundSettingsResponse`
 - ✅ List endpoint returns array of responses - also affected
 
 ### What Was NOT Affected
+
 - SDK methods that don't use `PlaygroundSettingsResponse`
 - CLI commands (they call SDK methods, so equally affected)
 - Python clients (work fine due to lenient parsing)
 
 ## Corrected Understanding
 
-| Original Hypothesis | Reality |
-|---------------------|---------|
-| HTTP response truncated | ✗ Response complete, 465 bytes |
-| GET-by-ID endpoint missing | ✓ True but unrelated to this issue |
-| 405 error causing problem | ✗ Red herring, not related |
-| API sends bad JSON | ✗ JSON is valid, timestamps just lack Z |
-| reqwest has a bug | ✗ reqwest works correctly |
+| Original Hypothesis        | Reality                                 |
+| -------------------------- | --------------------------------------- |
+| HTTP response truncated    | ✗ Response complete, 465 bytes          |
+| GET-by-ID endpoint missing | ✓ True but unrelated to this issue      |
+| 405 error causing problem  | ✗ Red herring, not related              |
+| API sends bad JSON         | ✗ JSON is valid, timestamps just lack Z |
+| reqwest has a bug          | ✗ reqwest works correctly               |
 
 ## Lessons Learned
 

@@ -34,13 +34,13 @@ langstar eval
 
 Deterministic evaluators that run locally without API calls:
 
-| Evaluator | Function | Use Case | Score Range |
-|-----------|----------|----------|-------------|
-| **exact_match** | Exact string equality | Validation of exact outputs | 0.0 or 1.0 |
-| **contains** | Substring presence check | Keyword/phrase verification | 0.0 or 1.0 |
-| **regex_match** | Regex pattern matching | Format validation | 0.0 or 1.0 |
-| **json_valid** | JSON syntax validation | JSON output verification | 0.0 or 1.0 |
-| **string_distance** | Levenshtein distance | Fuzzy matching, typo detection | Continuous |
+| Evaluator           | Function                 | Use Case                       | Score Range |
+| ------------------- | ------------------------ | ------------------------------ | ----------- |
+| **exact_match**     | Exact string equality    | Validation of exact outputs    | 0.0 or 1.0  |
+| **contains**        | Substring presence check | Keyword/phrase verification    | 0.0 or 1.0  |
+| **regex_match**     | Regex pattern matching   | Format validation              | 0.0 or 1.0  |
+| **json_valid**      | JSON syntax validation   | JSON output verification       | 0.0 or 1.0  |
+| **string_distance** | Levenshtein distance     | Fuzzy matching, typo detection | Continuous  |
 
 **Implementation**: Located in `sdk/src/evaluators.rs`
 
@@ -49,6 +49,7 @@ Deterministic evaluators that run locally without API calls:
 Model-based evaluators that use LLM to score outputs:
 
 **Configuration**:
+
 - `judge_model`: Model name (e.g., "claude-3-5-sonnet-20241022")
 - `judge_provider`: Provider (e.g., "anthropic", "openai")
 - `judge_prompt_file`: Path to rubric/prompt file
@@ -57,10 +58,10 @@ Model-based evaluators that use LLM to score outputs:
 
 **Score Types**:
 
-| Type | Score Field | Value Field | Example Use Cases |
-|------|-------------|-------------|-------------------|
-| **Categorical** | Optional numeric | String from enum | Pass/Fail, Y/N, Rating scales (A/B/C) |
-| **Continuous** | Float in [min, max] | Optional string | Numeric scores (0-1, 1-10, 0-100) |
+| Type            | Score Field         | Value Field      | Example Use Cases                     |
+| --------------- | ------------------- | ---------------- | ------------------------------------- |
+| **Categorical** | Optional numeric    | String from enum | Pass/Fail, Y/N, Rating scales (A/B/C) |
+| **Continuous**  | Float in [min, max] | Optional string  | Numeric scores (0-1, 1-10, 0-100)     |
 
 **Implementation**: Located in `sdk/src/evaluations.rs`
 
@@ -71,11 +72,13 @@ Model-based evaluators that use LLM to score outputs:
 Create a new evaluation configuration.
 
 **Required Arguments**:
+
 - `--name <STRING>` - Evaluation name
 - `--dataset <STRING>` - Dataset ID or name
 - `--evaluator <TYPE>` - Evaluator type (exact-match, contains, regex-match, json-valid, string-distance, llm-judge)
 
 **LLM Judge Arguments** (required when `--evaluator llm-judge`):
+
 - `--judge-model <STRING>` - Judge model name
 - `--judge-provider <STRING>` - Judge model provider
 - `--judge-prompt-file <PATH>` - Path to judge prompt/rubric file
@@ -86,9 +89,11 @@ Create a new evaluation configuration.
 - `--include-reasoning` - Include reasoning in output
 
 **Output Options**:
+
 - `--json` - Output as JSON
 
 **Example - Heuristic Evaluator**:
+
 ```bash
 langstar eval create \
   --name "exact-match-validation" \
@@ -97,6 +102,7 @@ langstar eval create \
 ```
 
 **Example - LLM Judge with Categorical Scoring**:
+
 ```bash
 langstar eval create \
   --name "response-quality-judge" \
@@ -111,6 +117,7 @@ langstar eval create \
 ```
 
 **Example - LLM Judge with Continuous Scoring**:
+
 ```bash
 langstar eval create \
   --name "relevance-score" \
@@ -129,14 +136,17 @@ langstar eval create \
 Execute an evaluation on a dataset.
 
 **Required Arguments**:
+
 - `<EVAL_ID>` - UUID of evaluation to run
 
 **Optional Arguments**:
+
 - `--preview <N>` - Preview mode: only run on first N examples
 - `--dry-run` - Validate configuration without executing
 - `--json` - Output as JSON
 
 **Example**:
+
 ```bash
 # Full evaluation run
 langstar eval run 550e8400-e29b-41d4-a716-446655440000
@@ -153,6 +163,7 @@ langstar eval run 550e8400-e29b-41d4-a716-446655440000 --dry-run
 List evaluations with optional filtering.
 
 **Optional Arguments**:
+
 - `--name <STRING>` - Filter by evaluation name
 - `--dataset <UUID>` - Filter by dataset ID
 - `--limit <N>` - Maximum number of results
@@ -160,6 +171,7 @@ List evaluations with optional filtering.
 - `--json` - Output as JSON
 
 **Example**:
+
 ```bash
 # List all evaluations
 langstar eval list
@@ -179,12 +191,15 @@ langstar eval list --limit 20 --offset 40
 Get detailed information about a specific evaluation.
 
 **Required Arguments**:
+
 - `<EVAL_ID>` - UUID of evaluation
 
 **Optional Arguments**:
+
 - `--json` - Output as JSON
 
 **Example**:
+
 ```bash
 langstar eval get 550e8400-e29b-41d4-a716-446655440000
 ```
@@ -194,14 +209,17 @@ langstar eval get 550e8400-e29b-41d4-a716-446655440000
 Export evaluation results to file.
 
 **Required Arguments**:
+
 - `<EVAL_ID>` - UUID of evaluation
 
 **Optional Arguments**:
+
 - `--format <csv|json|jsonl>` - Export format (default: jsonl)
 - `--output <PATH>` - Output file path (default: stdout)
 - `--include-metadata` - Include run metadata in export
 
 **Example**:
+
 ```bash
 # Export to JSONL (default)
 langstar eval export 550e8400-e29b-41d4-a716-446655440000
@@ -220,14 +238,15 @@ langstar eval export 550e8400-e29b-41d4-a716-446655440000 \
 
 ## Environment Variables
 
-| Variable | Required | Used By | Description |
-|----------|----------|---------|-------------|
-| `LANGSMITH_API_KEY` | Yes | All commands | LangSmith API authentication key |
-| `LANGSMITH_API_URL` | No | All commands | LangSmith API base URL (default: `https://api.smith.langchain.com`) |
-| `ANTHROPIC_API_KEY` | Conditional | LLM judge (Anthropic) | Required for Anthropic judge models |
-| `OPENAI_API_KEY` | Conditional | LLM judge (OpenAI) | Required for OpenAI judge models |
+| Variable            | Required    | Used By               | Description                                                         |
+| ------------------- | ----------- | --------------------- | ------------------------------------------------------------------- |
+| `LANGSMITH_API_KEY` | Yes         | All commands          | LangSmith API authentication key                                    |
+| `LANGSMITH_API_URL` | No          | All commands          | LangSmith API base URL (default: `https://api.smith.langchain.com`) |
+| `ANTHROPIC_API_KEY` | Conditional | LLM judge (Anthropic) | Required for Anthropic judge models                                 |
+| `OPENAI_API_KEY`    | Conditional | LLM judge (OpenAI)    | Required for OpenAI judge models                                    |
 
 **Configuration Priority** (highest to lowest):
+
 1. Command-line flags
 2. Environment variables
 3. Configuration file (`~/.langstar/config.toml`)
@@ -238,6 +257,7 @@ langstar eval export 550e8400-e29b-41d4-a716-446655440000 \
 ### Module: `langstar_sdk::evaluations`
 
 **Types**:
+
 ```rust
 pub enum FeedbackType {
     Continuous,
@@ -280,6 +300,7 @@ pub struct EvaluationResult {
 ### Module: `langstar_sdk::evaluators`
 
 **Heuristic Evaluator Functions**:
+
 ```rust
 /// Returns 1.0 if exact match, 0.0 otherwise
 pub fn exact_match(output: &str, expected: &str) -> f64
@@ -302,6 +323,7 @@ pub fn string_distance(output: &str, expected: &str) -> f64
 ### Unit Tests
 
 Located in:
+
 - `cli/tests/eval_command_test.rs` - CLI argument parsing and help text
 - `sdk/tests/evaluations_test.rs` - SDK type serialization and logic
 
@@ -318,6 +340,7 @@ Require `LANGSMITH_API_KEY` environment variable.
 ### 1. README.md Updates
 
 Add `## Evaluations` section with:
+
 - Overview of eval feature
 - Quick start examples
 - Links to detailed docs
@@ -325,22 +348,25 @@ Add `## Evaluations` section with:
 ### 2. Inline Rustdoc Comments
 
 All public items in:
+
 - `sdk/src/evaluations.rs`
 - `sdk/src/evaluators.rs`
 - `cli/src/commands/eval.rs`
 
 **Requirements**:
+
 - Module-level documentation with examples
 - Function/type documentation with:
   - Purpose and use cases
   - Arguments/fields with types
   - Return values/errors
-  - Usage examples (with `#[doc = "```"]` blocks)
+  - Usage examples (with ``#[doc = "```"]`` blocks)
   - API reference links where applicable
 
 ### 3. Configuration Documentation
 
 Document in `docs/configuration.md`:
+
 - Required environment variables per evaluator type
 - Configuration file format for evals
 - Precedence rules
@@ -348,6 +374,7 @@ Document in `docs/configuration.md`:
 ### 4. Examples and Recipes
 
 Create `docs/examples/evaluations.md` with:
+
 - End-to-end evaluation workflow
 - Heuristic evaluator examples for each type
 - LLM judge examples (categorical and continuous)
@@ -357,6 +384,7 @@ Create `docs/examples/evaluations.md` with:
 ## Implementation Status
 
 ✅ **Completed**:
+
 - CLI command structure and argument parsing (cli/src/commands/eval.rs:1-400)
 - SDK evaluation types (sdk/src/evaluations.rs:1-250)
 - Heuristic evaluator implementations (sdk/src/evaluators.rs:1-150)
@@ -365,6 +393,7 @@ Create `docs/examples/evaluations.md` with:
 - SDK tests (sdk/tests/evaluations_test.rs:1-200)
 
 🚧 **In Progress** (Issue #374):
+
 - Documentation updates
 - Rustdoc comments for all public APIs
 - README eval section

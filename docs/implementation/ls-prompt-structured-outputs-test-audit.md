@@ -10,6 +10,7 @@
 This milestone implemented structured output prompt support for the langstar CLI and SDK. The implementation was completed before the test-plan workflow existed, making this a retroactive audit.
 
 **Key Findings:**
+
 - ✅ 22 tests implemented with good functional coverage
 - ❌ 4 critical issues preventing tests from running in CI
 - ⚠️ 3 warnings about test quality and patterns
@@ -40,6 +41,7 @@ This milestone implemented structured output prompt support for the langstar CLI
 **Toyota Andon Cord**: ✅ VIOLATION
 
 **Location**: `sdk/tests/structured_prompts_integration_test.rs`
+
 - Line 138: `test_push_structured_prompt_integration`
 - Line 193: `test_pull_structured_prompt_integration`
 - Line 246: `test_structured_prompt_round_trip_integration`
@@ -50,6 +52,7 @@ This milestone implemented structured output prompt support for the langstar CLI
 **Impact**: These 4 integration tests NEVER run in CI, even with `--features integration-tests` enabled. The tests exist and appear to provide coverage, but they create false confidence because they don't execute.
 
 **Current Code (WRONG)**:
+
 ```rust
 #[tokio::test]
 #[ignore] // Only run with --ignored flag
@@ -57,6 +60,7 @@ async fn test_push_structured_prompt_integration() { ... }
 ```
 
 **Required Fix (CORRECT)**:
+
 ```rust
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -64,6 +68,7 @@ async fn test_push_structured_prompt_integration() { ... }
 ```
 
 **Remediation**:
+
 ```bash
 # Replace all 4 unconditional #[ignore] with conditional version
 # Lines: 138, 193, 246, 303
@@ -85,6 +90,7 @@ async fn test_push_structured_prompt_integration() { ... }
 **Impact**: The 4 SDK integration tests with real API calls never execute in CI. Combined with Issue #1, this creates a complete blind spot in CI coverage.
 
 **Current CI Command**:
+
 ```yaml
 run: cargo nextest run --profile integration -p langstar --features integration-tests
 ```
@@ -94,6 +100,7 @@ run: cargo nextest run --profile integration -p langstar --features integration-
 **Remediation Options**:
 
 **Option A (Recommended)**: Add separate SDK integration test job:
+
 ```yaml
 integration-tests-sdk:
   name: SDK Integration Tests
@@ -117,6 +124,7 @@ integration-tests-sdk:
 ```
 
 **Option B**: Extend existing integration test job to include SDK:
+
 ```yaml
 run: cargo nextest run --profile integration --workspace --features integration-tests
 ```
@@ -137,6 +145,7 @@ run: cargo nextest run --profile integration --workspace --features integration-
 **Impact**: Cannot catch bugs like issue #536 where CLI command succeeds and produces output, but the wrong data is sent to or retrieved from the API.
 
 **Current Pattern (Insufficient)**:
+
 ```rust
 // Test: test_cli_structured_prompt_round_trip (line 313)
 
@@ -150,6 +159,7 @@ pull_cmd.assert().success().stdout(contains("json_schema"));
 ```
 
 **Required Pattern**:
+
 ```rust
 // 1. CREATE via CLI
 let push_output = push_cmd.output()?;
@@ -171,16 +181,19 @@ client.prompts().delete(&repo_handle).await?;
 ```
 
 **Files Needing Updates**:
+
 - `cli/tests/prompt_structured_test.rs:313` - `test_cli_structured_prompt_round_trip`
 - `cli/tests/prompt_structured_test.rs:119` - `test_cli_push_structured_prompt`
 - `cli/tests/prompt_structured_test.rs:290` - `test_cli_pull_structured_prompt`
 
 **Why This Matters**:
+
 - Issue #536 post-mortem: `langstar prompt list` returned zero results for private prompts despite tests passing
 - Tests only checked exit codes, not actual API state
 - CRUD lifecycle pattern would have caught the bug
 
 **Reference**:
+
 - `docs/dev/testing/crud-lifecycle-pattern.md:57-72`
 - `docs/dev/testing/post-mortems/536-prompt-list-testing-gap.md`
 
@@ -192,17 +205,20 @@ client.prompts().delete(&repo_handle).await?;
 **Toyota Andon Cord**: ⚠️ VIOLATION (Issue #647 pattern)
 
 **Location**: `cli/tests/prompt_structured_test.rs`
+
 - Line 48: `check_env_vars()` helper function
 - Lines 120-123: Example usage in `test_cli_push_structured_prompt`
 
 **Problem**: Tests use early return pattern instead of failing explicitly when required environment variables are missing.
 
 **Impact**:
+
 - Creates false confidence in test counts ("289 tests passing" may include silently skipped tests)
 - Violates Issue #647 resolution: integration tests MUST fail explicitly when env vars missing
 - Makes it unclear whether tests actually ran or just skipped
 
 **Current Code (WRONG)**:
+
 ```rust
 fn check_env_vars() -> bool {
     let has_api_key = std::env::var("LANGSMITH_API_KEY").is_ok();
@@ -230,6 +246,7 @@ fn test_cli_push_structured_prompt() {
 ```
 
 **Required Fix (CORRECT)**:
+
 ```rust
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -250,11 +267,13 @@ fn test_cli_push_structured_prompt() {
 ```
 
 **Remediation**:
+
 1. Remove `check_env_vars()` helper function entirely
 2. Use `.expect()` with clear error messages in each test
 3. Follow pattern from `HIGH_LEVEL_TESTING_GUIDELINES.md:99-112`
 
 **Reference**:
+
 - `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md:96-114`
 - Issue #647: Silent skip anti-pattern resolution
 
@@ -271,6 +290,7 @@ fn test_cli_push_structured_prompt() {
 **Suggestion**: Add test that creates via SDK, verifies via CLI, confirms via SDK. This provides the strongest guarantee that CLI and SDK are in sync.
 
 **Recommended Test Structure**:
+
 ```rust
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -331,12 +351,14 @@ fn test_structured_prompt_full_lifecycle_sdk_cli_sdk() {
 **Severity**: LOW
 
 **Location**:
+
 - `sdk/tests/structured_prompts_test.rs:131-133` - `test_push_structured_prompt_invalid_schema`
 - `sdk/tests/structured_prompts_test.rs:151-153` - `test_push_structured_prompt_invalid_method`
 
 **Problem**: Error tests check for string content in debug output instead of verifying specific error types.
 
 **Current Pattern**:
+
 ```rust
 assert!(result.is_err());
 let err_str = format!("{:?}", result.unwrap_err());
@@ -344,6 +366,7 @@ assert!(err_str.contains("InvalidSchemaError"));
 ```
 
 **Better Pattern**:
+
 ```rust
 let err = result.unwrap_err();
 assert!(matches!(err, LangchainError::InvalidSchemaError(_)),
@@ -359,6 +382,7 @@ assert!(matches!(err, LangchainError::InvalidSchemaError(_)),
 **Severity**: LOW
 
 **Location**: Multiple test files use:
+
 - `TEST_OWNER = "codekiln"`
 - `TEST_REPO = "langstar-structured-test"`
 
@@ -367,6 +391,7 @@ assert!(matches!(err, LangchainError::InvalidSchemaError(_)),
 **Current Approach**: Works fine if tests are serialized and cleanup is reliable.
 
 **Better Approach**: Generate unique repository names per test run:
+
 ```rust
 fn generate_test_repo_name() -> String {
     let timestamp = std::time::SystemTime::now()
@@ -385,34 +410,35 @@ fn generate_test_repo_name() -> String {
 
 ## Test Plan Coverage Matrix
 
-| Test Case (from issue #408) | Implemented? | File:Line | Status |
-|------------------------------|--------------|-----------|--------|
-| **Unit Tests** |
-| StructuredPrompt serialization | ✅ Yes | sdk/src/prompts.rs:838-933 | ✅ Working |
-| Schema validation | ✅ Yes | sdk/tests/structured_prompts_test.rs:116-133 | ✅ Working |
-| **Mocked HTTP Tests** |
-| Client push method | ✅ Yes | sdk/tests/structured_prompts_test.rs:78-113 | ✅ Working |
-| Client pull method | ✅ Yes | sdk/tests/structured_prompts_test.rs:193-270 | ✅ Working |
-| Error cases (invalid schema) | ✅ Yes | sdk/tests/structured_prompts_test.rs:116-133 | ✅ Working |
-| Error cases (invalid method) | ✅ Yes | sdk/tests/structured_prompts_test.rs:136-153 | ✅ Working |
-| Both method types | ✅ Yes | sdk/tests/structured_prompts_test.rs:156-190 | ✅ Working |
-| Round-trip (mock) | ✅ Yes | sdk/tests/structured_prompts_test.rs:309-379 | ✅ Working |
-| **SDK Integration Tests** |
-| Push to LangSmith | ✅ Yes | sdk/tests/structured_prompts_integration_test.rs:139 | ❌ Not in CI (Issue #1, #2) |
-| Pull from LangSmith | ✅ Yes | sdk/tests/structured_prompts_integration_test.rs:194 | ❌ Not in CI (Issue #1, #2) |
-| Round-trip (real API) | ✅ Yes | sdk/tests/structured_prompts_integration_test.rs:247 | ❌ Not in CI (Issue #1, #2) |
-| Function_calling method | ✅ Yes | sdk/tests/structured_prompts_integration_test.rs:304 | ❌ Not in CI (Issue #1, #2) |
-| **CLI Integration Tests** |
-| CLI push command | ✅ Yes | cli/tests/prompt_structured_test.rs:119 | ⚠️ No SDK verification (Issue #3) |
-| CLI pull command | ✅ Yes | cli/tests/prompt_structured_test.rs:290 | ⚠️ No SDK verification (Issue #3) |
-| CLI round-trip | ✅ Yes | cli/tests/prompt_structured_test.rs:313 | ⚠️ No SDK verification (Issue #3) |
-| Error: invalid schema file | ✅ Yes | cli/tests/prompt_structured_test.rs:160 | ✅ Working |
-| Error: missing schema file | ✅ Yes | cli/tests/prompt_structured_test.rs:191 | ✅ Working |
-| Error: invalid method | ✅ Yes | cli/tests/prompt_structured_test.rs:221 | ✅ Working |
-| Function_calling method | ✅ Yes | cli/tests/prompt_structured_test.rs:255 | ✅ Working |
-| JSON output format | ✅ Yes | cli/tests/prompt_structured_test.rs:376,422 | ✅ Working |
+| Test Case (from issue #408)    | Implemented? | File:Line                                            | Status                           |
+| ------------------------------ | ------------ | ---------------------------------------------------- | -------------------------------- |
+| **Unit Tests**                 |              |                                                      |                                  |
+| StructuredPrompt serialization | ✅ Yes       | sdk/src/prompts.rs:838-933                           | ✅ Working                       |
+| Schema validation              | ✅ Yes       | sdk/tests/structured_prompts_test.rs:116-133         | ✅ Working                       |
+| **Mocked HTTP Tests**          |              |                                                      |                                  |
+| Client push method             | ✅ Yes       | sdk/tests/structured_prompts_test.rs:78-113          | ✅ Working                       |
+| Client pull method             | ✅ Yes       | sdk/tests/structured_prompts_test.rs:193-270         | ✅ Working                       |
+| Error cases (invalid schema)   | ✅ Yes       | sdk/tests/structured_prompts_test.rs:116-133         | ✅ Working                       |
+| Error cases (invalid method)   | ✅ Yes       | sdk/tests/structured_prompts_test.rs:136-153         | ✅ Working                       |
+| Both method types              | ✅ Yes       | sdk/tests/structured_prompts_test.rs:156-190         | ✅ Working                       |
+| Round-trip (mock)              | ✅ Yes       | sdk/tests/structured_prompts_test.rs:309-379         | ✅ Working                       |
+| **SDK Integration Tests**      |              |                                                      |                                  |
+| Push to LangSmith              | ✅ Yes       | sdk/tests/structured_prompts_integration_test.rs:139 | ❌ Not in CI (Issue #1, #2)      |
+| Pull from LangSmith            | ✅ Yes       | sdk/tests/structured_prompts_integration_test.rs:194 | ❌ Not in CI (Issue #1, #2)      |
+| Round-trip (real API)          | ✅ Yes       | sdk/tests/structured_prompts_integration_test.rs:247 | ❌ Not in CI (Issue #1, #2)      |
+| Function_calling method        | ✅ Yes       | sdk/tests/structured_prompts_integration_test.rs:304 | ❌ Not in CI (Issue #1, #2)      |
+| **CLI Integration Tests**      |              |                                                      |                                  |
+| CLI push command               | ✅ Yes       | cli/tests/prompt_structured_test.rs:119              | ⚠️ No SDK verification (Issue #3) |
+| CLI pull command               | ✅ Yes       | cli/tests/prompt_structured_test.rs:290              | ⚠️ No SDK verification (Issue #3) |
+| CLI round-trip                 | ✅ Yes       | cli/tests/prompt_structured_test.rs:313              | ⚠️ No SDK verification (Issue #3) |
+| Error: invalid schema file     | ✅ Yes       | cli/tests/prompt_structured_test.rs:160              | ✅ Working                       |
+| Error: missing schema file     | ✅ Yes       | cli/tests/prompt_structured_test.rs:191              | ✅ Working                       |
+| Error: invalid method          | ✅ Yes       | cli/tests/prompt_structured_test.rs:221              | ✅ Working                       |
+| Function_calling method        | ✅ Yes       | cli/tests/prompt_structured_test.rs:255              | ✅ Working                       |
+| JSON output format             | ✅ Yes       | cli/tests/prompt_structured_test.rs:376,422          | ✅ Working                       |
 
 **Legend**:
+
 - ✅ Working: Test implemented and runs correctly
 - ❌ Not in CI: Test exists but doesn't run in CI (critical)
 - ⚠️ No SDK verification: Test runs but missing CRUD lifecycle verification (critical)
@@ -424,6 +450,7 @@ fn generate_test_repo_name() -> String {
 **Integration Test Job**: `.github/workflows/ci.yml:185-230`
 
 Checklist:
+
 - [x] LANGSMITH_API_KEY in workflow secrets (line 201)
 - [x] LANGSMITH_ORGANIZATION_ID in workflow secrets (line 202)
 - [x] LANGSMITH_WORKSPACE_ID in workflow secrets (line 203)
@@ -432,6 +459,7 @@ Checklist:
 - [ ] **MISSING**: SDK integration tests in CI job
 
 **Current Command**:
+
 ```yaml
 run: cargo nextest run --profile integration -p langstar --features integration-tests
 ```
@@ -442,16 +470,17 @@ run: cargo nextest run --profile integration -p langstar --features integration-
 
 ## Anti-Pattern Detection
 
-| Pattern | Found? | Location | Severity |
-|---------|--------|----------|----------|
-| Unconditional `#[ignore]` | ❌ Yes | sdk/tests/structured_prompts_integration_test.rs (all 4 tests) | CRITICAL |
-| Exit-code-only assertions | ✅ No | - | - |
-| Missing cleanup | ⚠️ Partial | CLI tests don't clean up created prompts | MEDIUM |
-| Hardcoded test data | ⚠️ Yes | All tests use same owner/repo | LOW |
-| Silent skip pattern | ❌ Yes | cli/tests/prompt_structured_test.rs:48 | CRITICAL |
-| No SDK verification | ❌ Yes | All CLI tests (9 tests) | CRITICAL |
+| Pattern                   | Found?    | Location                                                       | Severity |
+| ------------------------- | --------- | -------------------------------------------------------------- | -------- |
+| Unconditional `#[ignore]` | ❌ Yes    | sdk/tests/structured_prompts_integration_test.rs (all 4 tests) | CRITICAL |
+| Exit-code-only assertions | ✅ No     | -                                                              | -        |
+| Missing cleanup           | ⚠️ Partial | CLI tests don't clean up created prompts                       | MEDIUM   |
+| Hardcoded test data       | ⚠️ Yes     | All tests use same owner/repo                                  | LOW      |
+| Silent skip pattern       | ❌ Yes    | cli/tests/prompt_structured_test.rs:48                         | CRITICAL |
+| No SDK verification       | ❌ Yes    | All CLI tests (9 tests)                                        | CRITICAL |
 
 **Legend**:
+
 - ✅ No: Pattern not found (good)
 - ❌ Yes: Pattern found (needs fixing)
 - ⚠️ Partial: Pattern partially present or low-risk variant

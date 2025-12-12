@@ -14,22 +14,22 @@ This document provides a quick reference for Conventional Emoji Commits format a
 
 ## Semantic Versioning Rules
 
-| Commit Type | Example | Version Bump | Description |
-|-------------|---------|--------------|-------------|
-| **BREAKING CHANGE** | `🚨 BREAKING CHANGE: remove legacy API` | **MAJOR** (1.0.0 → 2.0.0) | API-breaking modifications |
-| **Breaking footer** | Commit body contains `BREAKING CHANGE:` | **MAJOR** (1.0.0 → 2.0.0) | Breaking change in footer |
-| **Breaking indicator** | `feat!:` or `fix!:` with `!` before `:` | **MAJOR** (1.0.0 → 2.0.0) | Breaking change indicator |
-| **✨ feat** | `✨ feat: add user authentication` | **MINOR** (1.0.0 → 1.1.0) | New feature |
-| **🩹 fix** | `🩹 fix: resolve memory leak` | **PATCH** (1.0.0 → 1.0.1) | Bug fix |
-| **⚡️ perf** | `⚡️ perf: optimize query performance` | **PATCH** (1.0.0 → 1.0.1) | Performance improvement |
-| **🔄 revert** | `🔄 revert: revert previous commit` | **PATCH** (1.0.0 → 1.0.1) | Revert previous changes |
-| **📚 docs** | `📚 docs: update README` | **NONE** | Documentation only |
-| **🎨 style** | `🎨 style: fix formatting` | **NONE** | Code formatting only |
-| **♻️ refactor** | `♻️ refactor: simplify function` | **NONE** | Code refactoring without functional changes |
-| **🧪 test** | `🧪 test: add unit tests` | **NONE** | Adding or modifying tests |
-| **🔧 build** | `🔧 build: update dependencies` | **NONE** | Build system or dependency changes |
-| **🤖 ci** | `🤖 ci: update GitHub Actions` | **NONE** | CI/CD configuration changes |
-| **📦 chore** | `📦 chore: update gitignore` | **NONE** | Maintenance tasks |
+| Commit Type            | Example                                 | Version Bump              | Description                                 |
+| ---------------------- | --------------------------------------- | ------------------------- | ------------------------------------------- |
+| **BREAKING CHANGE**    | `🚨 BREAKING CHANGE: remove legacy API` | **MAJOR** (1.0.0 → 2.0.0) | API-breaking modifications                  |
+| **Breaking footer**    | Commit body contains `BREAKING CHANGE:` | **MAJOR** (1.0.0 → 2.0.0) | Breaking change in footer                   |
+| **Breaking indicator** | `feat!:` or `fix!:` with `!` before `:` | **MAJOR** (1.0.0 → 2.0.0) | Breaking change indicator                   |
+| **✨ feat**            | `✨ feat: add user authentication`      | **MINOR** (1.0.0 → 1.1.0) | New feature                                 |
+| **🩹 fix**             | `🩹 fix: resolve memory leak`           | **PATCH** (1.0.0 → 1.0.1) | Bug fix                                     |
+| **⚡️ perf**            | `⚡️ perf: optimize query performance`   | **PATCH** (1.0.0 → 1.0.1) | Performance improvement                     |
+| **🔄 revert**          | `🔄 revert: revert previous commit`     | **PATCH** (1.0.0 → 1.0.1) | Revert previous changes                     |
+| **📚 docs**            | `📚 docs: update README`                | **NONE**                  | Documentation only                          |
+| **🎨 style**           | `🎨 style: fix formatting`              | **NONE**                  | Code formatting only                        |
+| **♻️ refactor**         | `♻️ refactor: simplify function`         | **NONE**                  | Code refactoring without functional changes |
+| **🧪 test**            | `🧪 test: add unit tests`               | **NONE**                  | Adding or modifying tests                   |
+| **🔧 build**           | `🔧 build: update dependencies`         | **NONE**                  | Build system or dependency changes          |
+| **🤖 ci**              | `🤖 ci: update GitHub Actions`          | **NONE**                  | CI/CD configuration changes                 |
+| **📦 chore**           | `📦 chore: update gitignore`            | **NONE**                  | Maintenance tasks                           |
 
 ## Commit Type Details
 
@@ -107,6 +107,7 @@ Scopes provide additional context about which part of the codebase is affected:
 ```
 
 Common scopes:
+
 - `(auth)` - Authentication/authorization
 - `(ui)` - User interface
 - `(api)` - API endpoints
@@ -121,12 +122,14 @@ When multiple commits are included in a release, the **highest priority bump** i
 **Priority order:** MAJOR > MINOR > PATCH > NONE
 
 **Example:**
+
 ```
 📚 docs: update README        (NONE)
 🩹 fix: resolve crash         (PATCH)
 ✨ feat: add new feature      (MINOR)
 🚨 BREAKING CHANGE: remove API (MAJOR)
 ```
+
 **Result:** MAJOR version bump (1.0.0 → 2.0.0)
 
 ## Examples
@@ -187,6 +190,7 @@ feat add new feature (missing ":")
 **Starting version:** 1.2.3
 
 **Commits:**
+
 ```
 🚨 BREAKING CHANGE: remove deprecated endpoints
 ✨ feat: add new API v2
@@ -202,6 +206,7 @@ feat add new feature (missing ":")
 **Starting version:** 1.2.3
 
 **Commits:**
+
 ```
 ✨ feat: add user profile page
 ✨ feat: implement search functionality
@@ -218,6 +223,7 @@ feat add new feature (missing ":")
 **Starting version:** 1.2.3
 
 **Commits:**
+
 ```
 🩹 fix: resolve memory leak
 ⚡️ perf: optimize query
@@ -234,6 +240,7 @@ feat add new feature (missing ":")
 **Starting version:** 1.2.3
 
 **Commits:**
+
 ```
 📚 docs: update README
 🎨 style: fix formatting

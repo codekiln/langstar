@@ -1,7 +1,7 @@
 # SDK Generation Strategy - Phase 1 Summary
 
-**Status:** ✅ Complete  
-**Date:** 2025-11-13  
+**Status:** ✅ Complete\
+**Date:** 2025-11-13\
 **Issue:** #115 (Phase 1 of #106)
 
 ## Overview
@@ -23,6 +23,7 @@ Generated SDK Layer (OpenAPI Generated)
 ```
 
 **Rationale:**
+
 - **Generated layer** ensures 100% API coverage automatically
 - **Manual layer** provides idiomatic Rust experience for common operations
 - **CLI layer** offers excellent user experience
@@ -35,12 +36,14 @@ Generated SDK Layer (OpenAPI Generated)
 **Decision:** Track OpenAPI spec versions using `tools/specs/versions.json` manifest file.
 
 **Key Features:**
+
 - SHA-256 checksums for drift detection
 - Metadata: fetch date, source URL, spec version, generation details
 - Links to git commits for traceability
 - Human-readable JSON format
 
 **Example:**
+
 ```json
 {
   "format_version": "1.0",
@@ -58,6 +61,7 @@ Generated SDK Layer (OpenAPI Generated)
 ```
 
 **Rationale:**
+
 - Enables drift detection by comparing checksums
 - Provides full audit trail of spec updates
 - Supports both manual (Phase 2) and automated (Phase 3) workflows
@@ -77,6 +81,7 @@ tools/specs/CHANGELOG.md      # API changes (maintainers)
 ```
 
 **Rationale:**
+
 - Separates concerns for different audiences
 - End users see CLI changes without API details
 - Maintainers can trace changes from API → SDK → CLI
@@ -89,11 +94,13 @@ tools/specs/CHANGELOG.md      # API changes (maintainers)
 **Decision:** Manual drift detection workflow with supporting scripts.
 
 **Tools:**
+
 - `tools/check_spec_drift.sh` - Detect when upstream APIs changed
 - `tools/fetch_specs.sh` - Fetch latest specs
 - `docs/dev/runbooks/update-openapi-specs.md` - Comprehensive runbook
 
 **Workflow:**
+
 1. Check for drift (`./tools/check_spec_drift.sh`)
 2. Fetch latest specs (`./tools/fetch_specs.sh`)
 3. Review changes (`git diff tools/specs/`)
@@ -103,6 +110,7 @@ tools/specs/CHANGELOG.md      # API changes (maintainers)
 7. Test and commit
 
 **Rationale:**
+
 - Phase 2 focuses on manual workflow (simpler to implement)
 - Phase 3 will automate (CI/CD, scheduled checks)
 - Manual review ensures breaking changes are handled carefully
@@ -189,12 +197,14 @@ Each layer has its own CHANGELOG tracking changes
 ## Alternatives Considered
 
 ### SDK Architecture
+
 - ❌ **Pure Generated SDK**: Non-idiomatic, poor DX
 - ❌ **Pure Manual SDK**: Doesn't scale, high maintenance
 - ❌ **Hybrid (Cherry-Pick)**: No clear guidelines, inconsistent
 - ✅ **Layered Manual-Over-Generated**: Best of both worlds
 
 ### Version Tracking
+
 - ❌ **Embedded in Code**: Hard to query, no central view
 - ❌ **Separate Files Per Spec**: More files to manage
 - ❌ **Git Tags**: Lacks metadata
@@ -202,6 +212,7 @@ Each layer has its own CHANGELOG tracking changes
 - ✅ **JSON Manifest**: Simple, human-readable, VCS-friendly
 
 ### Changelog Structure
+
 - ❌ **Single Unified**: Mixes concerns, cluttered
 - ❌ **No Upstream Changelog**: Loses traceability
 - ❌ **Auto-Only**: Lacks curation and context
@@ -209,6 +220,7 @@ Each layer has its own CHANGELOG tracking changes
 - ✅ **Hierarchical**: Clear separation, appropriate detail per audience
 
 ### Drift Detection
+
 - 🔮 **Automated Polling** (Phase 3): Future automation goal
 - ❌ **Webhook Notifications**: Not available from upstream
 - ❌ **Manual Visual Inspection**: Too time-consuming
@@ -218,18 +230,21 @@ Each layer has its own CHANGELOG tracking changes
 ## Benefits
 
 ### For End Users
+
 - ✅ Ergonomic CLI commands with sensible defaults
 - ✅ Comprehensive coverage of all LangChain APIs
 - ✅ Fast updates when new features are released
 - ✅ Clear changelog of user-visible changes
 
 ### For SDK Consumers (if published separately)
+
 - ✅ Idiomatic Rust APIs following best practices
 - ✅ Type-safe client with compile-time guarantees
 - ✅ Rich documentation and examples
 - ✅ Fallback to low-level generated API when needed
 
 ### For Maintainers
+
 - ✅ Automated SDK generation reduces manual work
 - ✅ Clear process for handling upstream changes
 - ✅ Full traceability from API → SDK → CLI
@@ -239,6 +254,7 @@ Each layer has its own CHANGELOG tracking changes
 ## Implementation Roadmap
 
 ### Phase 1: Research & Design ✅ COMPLETE
+
 - [x] Research SDK architecture options
 - [x] Design version tracking system
 - [x] Design changelog structure
@@ -246,9 +262,11 @@ Each layer has its own CHANGELOG tracking changes
 - [x] Document all decisions in ADRs
 
 ### Phase 2: Implementation (Issue #116) - NEXT
+
 **Goal:** Working SDK generation with version tracking
 
 **Tasks:**
+
 1. Create `tools/specs/versions.json` with initial structure
 2. Update `tools/generate_sdk.sh` to read/write `versions.json`
 3. Create `tools/check_spec_drift.sh` script
@@ -261,6 +279,7 @@ Each layer has its own CHANGELOG tracking changes
 10. Document developer workflow
 
 **Acceptance Criteria:**
+
 - [ ] SDK generation working with both LangSmith and LangGraph specs
 - [ ] Version tracking operational
 - [ ] Drift detection scripts functional
@@ -270,9 +289,11 @@ Each layer has its own CHANGELOG tracking changes
 - [ ] Changelogs established and documented
 
 ### Phase 3: Automation (Issue #117) - FUTURE
+
 **Goal:** Automated drift detection and updates
 
 **Tasks (deferred, low priority):**
+
 1. CI/CD workflow to fetch latest specs weekly
 2. Automated drift detection (compare checksums)
 3. Automated PR creation for spec updates
@@ -281,6 +302,7 @@ Each layer has its own CHANGELOG tracking changes
 6. Integration with semantic diff tools
 
 **Acceptance Criteria:**
+
 - [ ] Weekly CI job checks for drift
 - [ ] Automated PRs created when drift detected
 - [ ] Breaking changes flagged automatically
@@ -305,12 +327,14 @@ docs/dev/adr/
 ## References
 
 ### Related Issues
+
 - [#106](https://github.com/codekiln/langstar/issues/106) - Parent: SDK Generation Strategy
 - [#115](https://github.com/codekiln/langstar/issues/115) - This Phase: Research & Design
 - [#116](https://github.com/codekiln/langstar/issues/116) - Next: Implementation
 - [#117](https://github.com/codekiln/langstar/issues/117) - Future: Automation
 
 ### External Resources
+
 - [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
 - [OpenAPI Generator - Rust](https://openapi-generator.tech/docs/generators/rust/)
 - [Progenitor](https://github.com/oxidecomputer/progenitor) - Alternative Rust OpenAPI generator
@@ -321,6 +345,7 @@ docs/dev/adr/
 - [git-cliff](https://git-cliff.org/) - Changelog generator
 
 ### Existing Langstar Documentation
+
 - [Architecture Documentation](../architecture.md)
 - [GitHub Workflow](./github-workflow.md)
 - [Git Commit Conventions](./git-scm-conventions.md)
@@ -359,6 +384,6 @@ Before starting Phase 2 implementation, consider:
 
 ---
 
-*Last Updated: 2025-11-13*  
-*Prepared by: Langstar Development Team*  
-*Status: Approved and Ready for Implementation*
+_Last Updated: 2025-11-13_\
+_Prepared by: Langstar Development Team_\
+_Status: Approved and Ready for Implementation_

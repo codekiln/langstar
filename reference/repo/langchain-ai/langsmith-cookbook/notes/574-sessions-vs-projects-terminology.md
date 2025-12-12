@@ -31,6 +31,7 @@ os.environ["LANGCHAIN_PROJECT"] = "Test"  # ← Uses "PROJECT"
 ```
 
 **Observations**:
+
 - Every notebook that sets project context uses `LANGCHAIN_PROJECT` or `LANGSMITH_PROJECT`
 - No instances of `LANGCHAIN_SESSION` or `LANGSMITH_SESSION`
 - This is the first thing users see when learning LangSmith
@@ -81,6 +82,7 @@ def rag(question: str, documents):
 ```
 
 **Observations**:
+
 - SDK methods consistently use `project_name` parameter
 - No method signatures with `session_name` or similar
 - Developers learning from cookbook examples internalize "project" terminology
@@ -106,6 +108,7 @@ os.environ["LANGCHAIN_PROJECT"] = "DBRX"
 ```
 
 **Observations**:
+
 - Comments refer to creating "projects", not "sessions"
 - Natural language explanations use "project" terminology
 - No disambiguation needed because "project" is the only term used
@@ -123,12 +126,14 @@ os.environ["LANGCHAIN_PROJECT"] = "RAG_repititions"
 ```
 
 **Project Naming Conventions**:
+
 - Descriptive names: `"Test"`, `"DBRX"`, `"RAG_online_eval"`
 - Application/feature-oriented naming
 - Persistent identifiers for long-running experiments
 - No temporary "session" style naming (no timestamps, UUIDs, etc.)
 
 **Observations**:
+
 - Projects are treated as persistent organizational units
 - Named after applications or experiment types
 - Used for long-term trace organization, not ephemeral sessions
@@ -136,12 +141,14 @@ os.environ["LANGCHAIN_PROJECT"] = "RAG_repititions"
 ### 5. No "Session" References
 
 **Searched Patterns**:
+
 - ❌ `session_name`
 - ❌ `LANGCHAIN_SESSION`
 - ❌ `create_session()`
 - ❌ `TracerSession` (in user code)
 
 **Only "Project" References**:
+
 - ✅ `project_name`
 - ✅ `LANGCHAIN_PROJECT`
 - ✅ `create_project()` (for datasets)
@@ -174,6 +181,7 @@ experiment_results = evaluate(
 ```
 
 **Key Observations**:
+
 1. **Project as Container**: All traces from evaluation go to "DBRX" project
 2. **Persistent Organization**: Project persists across multiple experiment runs
 3. **No Session Concept**: No notion of starting/stopping a "session"
@@ -232,6 +240,7 @@ os.environ["LANGCHAIN_PROJECT"] = "RAG_online_eval"  # Online eval feature
 4. **No Confusion**: Zero exposure to "session" terminology
 
 **Impact on Rust SDK**:
+
 - Developers expect `project_name` in Rust SDK
 - Using "session" would create confusion and require relearning
 - "Project" is the vocabulary developers bring from cookbook examples
@@ -247,6 +256,7 @@ session = client.create_session(session_name="RAG_online_eval")  # Confusing
 ```
 
 **Problems**:
+
 - "DBRX" is a feature name, not a session identifier
 - "RAG_online_eval" implies long-running experiments, not sessions
 - Creates cognitive dissonance with session semantics
@@ -260,6 +270,7 @@ project = client.create_dataset(..., project=...)  # Clear: project scope
 ```
 
 **Benefits**:
+
 - Feature/application names work naturally as project names
 - No temporal implications (start/end session)
 - Matches developer mental models
@@ -276,11 +287,13 @@ from langsmith.schemas import Run, Example
 ```
 
 **No Imports Of**:
+
 - ❌ `from langsmith.schemas import TracerSession` (never imported by users)
 - ❌ `from langsmith.sessions import ...` (doesn't exist)
 - ❌ Any session-related modules
 
 **Observation**:
+
 - Even though `TracerSession` exists internally, users never interact with it
 - Complete abstraction from internal "session" terminology
 

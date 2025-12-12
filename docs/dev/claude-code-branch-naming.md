@@ -8,10 +8,10 @@ The Claude Code GitHub Action creates branches with a different naming conventio
 
 ## Branch Naming Comparison
 
-| Format | Pattern | Example |
-|--------|---------|---------|
+| Format                 | Pattern                                                | Example                         |
+| ---------------------- | ------------------------------------------------------ | ------------------------------- |
 | **Project Convention** | `i<issue_num>-<issue_slug>` (or with `m`/`p` prefixes) | `i11-branch-naming-conventions` |
-| **Claude Code Actual** | `<prefix>issue-<num>-<timestamp>` | `claude/issue-11-20251026-1529` |
+| **Claude Code Actual** | `<prefix>issue-<num>-<timestamp>`                      | `claude/issue-11-20251026-1529` |
 
 ### Key Differences
 
@@ -55,12 +55,14 @@ The `.github/workflows/claude.yml` file currently has no branch naming configura
 ### Option 1: Accept Current Behavior (Recommended)
 
 **Pros:**
+
 - No changes required
 - Timestamp-based naming ensures uniqueness
 - Avoids potential branch name conflicts
 - Clear indication that Claude created the branch
 
 **Cons:**
+
 - Inconsistent with manual branch naming
 - Timestamps less readable than slugs
 - Violates documented project convention
@@ -75,9 +77,11 @@ Modify the project's branch naming convention to officially support both pattern
 ## Branch Naming Convention
 
 ### Manual Branches
+
 <username>/<issue_num>-<issue_slug>
 
 ### Automated (Claude Code)
+
 claude/issue-<issue_num>-<timestamp>
 ```
 
@@ -86,11 +90,13 @@ claude/issue-<issue_num>-<timestamp>
 Request the Claude Code Action team to add support for custom branch naming patterns.
 
 **Suggested Feature:**
+
 ```yaml
 branch_name_pattern: "{prefix}{issue_num}-{issue_slug}"
 ```
 
 **Available Variables:**
+
 - `{prefix}` - Configurable prefix (default: claude/)
 - `{issue_num}` - GitHub issue number
 - `{issue_slug}` - Kebab-case slug from issue title
@@ -112,6 +118,7 @@ While we could add `branch_prefix` to the workflow:
 ```
 
 This would **NOT** solve the problem because:
+
 - It only changes the prefix
 - The suffix pattern remains `issue-<num>-<timestamp>`
 - Still doesn't match project convention
@@ -135,17 +142,18 @@ git push -u origin i11-branch-naming-conventions
 
 ## Decision Matrix
 
-| Option | Effort | Impact | Maintains Automation | Recommendation |
-|--------|--------|--------|---------------------|----------------|
-| Accept Current | Low | Low | ✅ Yes | ⭐ **Recommended** |
-| Update Convention | Low | Medium | ✅ Yes | ⭐ **Recommended** |
-| Feature Request | Medium | High (long-term) | ✅ Yes | ✓ Suggested |
-| Modify Workflow | Low | None | ✅ Yes | ✗ Not effective |
-| Manual Creation | High | High | ❌ No | ✗ Defeats purpose |
+| Option            | Effort | Impact           | Maintains Automation | Recommendation     |
+| ----------------- | ------ | ---------------- | -------------------- | ------------------ |
+| Accept Current    | Low    | Low              | ✅ Yes               | ⭐ **Recommended** |
+| Update Convention | Low    | Medium           | ✅ Yes               | ⭐ **Recommended** |
+| Feature Request   | Medium | High (long-term) | ✅ Yes               | ✓ Suggested        |
+| Modify Workflow   | Low    | None             | ✅ Yes               | ✗ Not effective    |
+| Manual Creation   | High   | High             | ❌ No                | ✗ Defeats purpose  |
 
 ## Proposed Solution
 
 **Immediate (v1):**
+
 1. ✅ Update documentation to reflect actual Claude Code behavior
 2. Update project convention to explicitly allow both naming patterns
 3. Document the difference and when each is used
@@ -174,20 +182,25 @@ Update `docs/dev/github-workflow.md` to officially support both formats:
 Branches should follow one of these formats:
 
 ### Manual Branch Creation
+
 Formats vary based on milestone/parent:
+
 - `m<milestone>-p<parent>-i<issue>-<slug>` (with milestone & parent)
 - `p<parent>-i<issue>-<slug>` (with parent only)
 - `i<issue>-<slug>` (standalone)
 
 Examples:
+
 - `m8-p123-i234-add-authentication`
 - `p42-i99-fix-database-connection`
 - `i7-add-user-authentication`
 
 ### Automated (Claude Code)
+
 claude/issue-<issue_num>-<timestamp>
 
 Examples:
+
 - `claude/issue-11-20251026-1529`
 - `claude/issue-6-20251026-1344`
 

@@ -57,11 +57,13 @@ All referenced testing documentation verified to exist:
 ### Context Window Analysis
 
 **Before progressive disclosure (hypothetical full load):**
+
 - All 10 testing docs loaded: ~3,000 lines
 - Estimated token usage: ~24,000-30,000 tokens
 - Relevance: Low (20-30% applicable to specific task)
 
 **After progressive disclosure (actual implementation):**
+
 - TOC auto-loaded: ~10-15 lines (~100 tokens)
 - Typical task loads 2-3 docs: ~500 lines (~3,900-4,900 tokens)
 - Total per task: TOC (~100 tokens) + specific docs (~3,900-4,900 tokens) = ~4,000-5,000 tokens
@@ -73,14 +75,15 @@ All referenced testing documentation verified to exist:
 
 **Correct usage verified:**
 
-| File | Import Method | Status |
-|------|--------------|--------|
-| AGENTS.md | `@docs/dev/testing/README.md` | ✅ Correct (only @ usage) |
-| TOC content | Plain paths (no `@`) | ✅ Correct |
-| CLAUDE.md | Plain paths (no `@`) | ✅ Correct |
-| docs/dev/README.md | Plain paths (no `@`) | ✅ Correct |
+| File               | Import Method                 | Status                    |
+| ------------------ | ----------------------------- | ------------------------- |
+| AGENTS.md          | `@docs/dev/testing/README.md` | ✅ Correct (only @ usage) |
+| TOC content        | Plain paths (no `@`)          | ✅ Correct                |
+| CLAUDE.md          | Plain paths (no `@`)          | ✅ Correct                |
+| docs/dev/README.md | Plain paths (no `@`)          | ✅ Correct                |
 
 **Pattern rationale:**
+
 - `@` prefix triggers immediate full import
 - Only TOC should auto-load (small, always needed)
 - Specific docs loaded on-demand via Read tool (no `@`)
@@ -93,6 +96,7 @@ All referenced testing documentation verified to exist:
 **Scenario:** "Write integration tests for new SDK method `list_datasets()`"
 
 **Expected agent workflow:**
+
 1. ✅ Session starts with AGENTS.md loaded (which auto-imports TOC via @ prefix)
 2. ✅ Agent sees 14-line TOC in context
 3. ✅ Agent identifies relevant docs: HIGH_LEVEL_TESTING_GUIDELINES.md, sdk-integration-tests.md
@@ -104,6 +108,7 @@ All referenced testing documentation verified to exist:
 **Scenario:** "Write integration tests for CLI command `langstar dataset list`"
 
 **Expected agent workflow:**
+
 1. ✅ Session starts with TOC in context
 2. ✅ Agent identifies: HIGH_LEVEL_TESTING_GUIDELINES.md, cli-integration-tests.md, crud-lifecycle-pattern.md
 3. ✅ Agent loads 3 docs on-demand
@@ -114,6 +119,7 @@ All referenced testing documentation verified to exist:
 **Command:** `/gh-milestones:test-plan <milestone-name>`
 
 **Validation:**
+
 - ✅ Command documented in AGENTS.md
 - ✅ Progressive disclosure pattern applies
 - ✅ Command automatically loads relevant docs based on feature type

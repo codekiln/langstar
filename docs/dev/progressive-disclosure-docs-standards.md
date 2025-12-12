@@ -51,12 +51,14 @@ This helps identify whether a document contains what you need before committing 
 **Task:** "Add integration tests for new `deployment list` command"
 
 **Efficient approach:**
+
 1. Load `AGENTS.md` → find testing reference
 2. Load `docs/dev/testing/README.md` (TOC, ~15 lines)
 3. Identify relevant docs: `cli-integration-tests.md`, `crud-lifecycle-pattern.md`
 4. Load only those 2 docs (~400 lines total)
 
 **Inefficient approach:**
+
 - Load all 8 testing docs (~2000 lines)
 - 75% of content irrelevant to CLI testing
 
@@ -66,11 +68,11 @@ When creating or updating docs, follow these principles:
 
 ### File Size Limits
 
-| Document Type | Target Size | Maximum |
-|--------------|-------------|---------|
-| TOC/Index    | 10-15 lines | 20 lines |
-| Standard doc | 200-300 lines | 500 lines |
-| Reference    | 300-500 lines | 800 lines |
+| Document Type | Target Size   | Maximum   |
+| ------------- | ------------- | --------- |
+| TOC/Index     | 10-15 lines   | 20 lines  |
+| Standard doc  | 200-300 lines | 500 lines |
+| Reference     | 300-500 lines | 800 lines |
 
 ### Heading Structure
 
@@ -79,12 +81,17 @@ Use clear, descriptive headings that enable grep scanning:
 ```markdown
 # Document Title
 
-## Overview           <- What this doc covers
-## Prerequisites      <- What you need first
-## Quick Reference    <- TL;DR for experienced users
-## Detailed Guide     <- Step-by-step instructions
-## Troubleshooting    <- Common problems and solutions
-## References         <- Links to related docs
+## Overview <- What this doc covers
+
+## Prerequisites <- What you need first
+
+## Quick Reference <- TL;DR for experienced users
+
+## Detailed Guide <- Step-by-step instructions
+
+## Troubleshooting <- Common problems and solutions
+
+## References <- Links to related docs
 ```
 
 ### One Topic Per File
@@ -177,11 +184,15 @@ debugging, and historical lessons all in one file]
 
 ```markdown
 # File: sdk-integration-tests.md
+
 ## Prerequisites
+
 Set LANGSMITH_API_KEY and ensure test deployment exists...
 
 # File: cli-integration-tests.md
+
 ## Prerequisites
+
 Set LANGSMITH_API_KEY and ensure test deployment exists...
 ```
 
@@ -191,6 +202,7 @@ Set LANGSMITH_API_KEY and ensure test deployment exists...
 
 ```markdown
 ## Prerequisites
+
 See `test-fixtures.md` for required environment setup.
 ```
 
@@ -227,10 +239,12 @@ cargo test --features integration-tests
 # CLI Integration Tests
 
 ## Prerequisites
+
 - `LANGSMITH_API_KEY` environment variable set
 - Test deployment created (see `test-fixtures.md`)
 
 ## Running Tests
+
 ...
 ```
 

@@ -16,11 +16,13 @@ Analyzing bat's combined CICD pipeline for #199. bat is another major Rust CLI t
 ### Combined CICD Workflow (.github/workflows/CICD.yml)
 
 **Single Workflow Philosophy:**
+
 - Unlike ripgrep (separate ci.yml and release.yml), bat combines both in one file
 - Conditional execution: builds artifacts on every push, but only publishes on tag
 - Benefits: DRY (don't repeat yourself), consistent builds between CI and release
 
 **Triggers:**
+
 ```yaml
 on:
   workflow_dispatch:    # Manual trigger
@@ -29,12 +31,14 @@ on:
     branches: [master]  # CI on master
     tags: ['*']         # Release on any tag
 ```
+
 - More flexible than ripgrep: includes workflow_dispatch for manual runs
 - Release on any tag (not just vX.Y.Z pattern like ripgrep)
 
 ### All-Jobs Gate Pattern
 
 **Critical Innovation:**
+
 ```yaml
 all-jobs:
   if: always() # Otherwise this job is skipped if the matrix job fails
@@ -46,6 +50,7 @@ all-jobs:
 ```
 
 **Why this matters:**
+
 - Branch protection rules need a single status check to gate merges
 - Matrix jobs create multiple status checks (build-linux, build-windows, etc.)
 - `all-jobs` aggregates all results into single checkable gate
@@ -57,6 +62,7 @@ all-jobs:
 ### Crate Metadata Extraction
 
 **DRY Principle:**
+
 ```yaml
 crate_metadata:
   steps:
@@ -71,6 +77,7 @@ crate_metadata:
 ```
 
 **Benefits:**
+
 - Single source of truth (Cargo.toml)
 - No hardcoded versions in workflow
 - Extracts name, version, maintainer, homepage, MSRV
@@ -81,12 +88,14 @@ crate_metadata:
 ### CI Quality Gates
 
 **1. lint Job:**
+
 ```yaml
 lint:
   steps:
     - run: cargo fmt -- --check
     - run: cargo clippy --locked --all-targets --all-features -- -D warnings
 ```
+
 - **Both rustfmt AND clippy** (ripgrep missing clippy!)
 - `--locked`: Ensures Cargo.lock is up-to-date
 - `--all-targets`: Checks bins, libs, tests, benches, examples
@@ -94,6 +103,7 @@ lint:
 - `-D warnings`: Treat warnings as errors
 
 **2. min_version Job:**
+
 ```yaml
 min_version:
   needs: crate_metadata
@@ -103,11 +113,13 @@ min_version:
         toolchain: ${{ needs.crate_metadata.outputs.msrv }}
     - run: cargo test --locked ${{ env.MSRV_FEATURES }}
 ```
+
 - Tests MSRV (minimum supported Rust version) from `rust-version` in Cargo.toml
 - Ensures package works on oldest advertised Rust version
 - Uses minimal feature set for MSRV compatibility
 
 **3. license_checks Job:**
+
 ```yaml
 license_checks:
   steps:
@@ -116,21 +128,25 @@ license_checks:
         submodules: true # check submodules too
     - run: tests/scripts/license-checks.sh
 ```
+
 - Custom script for license validation
 - Includes submodules (important for syntax highlighting assets)
 
 **4. cargo-audit Job:**
+
 ```yaml
 cargo-audit:
   steps:
     - run: cargo install cargo-audit --locked
     - run: cargo audit
 ```
+
 - **Security vulnerability scanning** (ripgrep doesn't have this!)
 - Checks dependencies for known CVEs
 - Essential for production-grade tools
 
 **5. documentation Job:**
+
 ```yaml
 documentation:
   steps:
@@ -138,19 +154,23 @@ documentation:
       run: cargo doc --locked --no-deps --document-private-items --all-features
     - run: man $(find . -name bat.1)
 ```
+
 - Validates all documentation compiles without warnings
 - Checks man page generation
 
 **6. test_with_new_syntaxes_and_themes Job:**
+
 - bat-specific: tests with updated syntax highlighting assets
 - Ensures new syntaxes don't break existing functionality
 
 **7. test_with_system_config Job:**
+
 - bat-specific: tests system-wide configuration loading
 
 ### Build and Release Strategy
 
 **Build Matrix:**
+
 ```yaml
 matrix:
   job:
@@ -160,11 +180,13 @@ matrix:
     - { target: x86_64-pc-windows-msvc, os: windows-2025 }
     # ... 12 targets total
 ```
+
 - 12 targets (fewer than ripgrep's 14)
 - Includes dpkg_arch for Debian package naming
 - `use-cross` flag controls cross-compilation
 
 **Cross Installation:**
+
 ```yaml
 - name: Install cross
   if: matrix.job.use-cross
@@ -172,11 +194,13 @@ matrix:
   with:
     tool: cross
 ```
+
 - **Better approach than ripgrep**: uses GitHub Action instead of manual curl/tar
 - `taiki-e/install-action` handles cross installation cleanly
 - Automatically pins stable version
 
 **Build Command Abstraction:**
+
 ```yaml
 env:
   BUILD_CMD: cargo
@@ -186,10 +210,12 @@ steps:
     run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
   - run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
 ```
+
 - Uses `BUILD_CMD` env variable (cargo vs cross)
 - All build/test commands use `$BUILD_CMD` for consistency
 
 **Testing Strategy:**
+
 ```yaml
 - name: Run tests
   run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
@@ -198,17 +224,20 @@ steps:
 - name: Show diagnostics (bat --diagnostic)
   run: $BUILD_CMD run --locked --target=${{ matrix.job.target }} -- ... --diagnostic
 ```
+
 - Tests run for each target
 - Smoke test: actually runs bat on sample files
 - Diagnostics: ensures --diagnostic flag works
 
 **Feature Flag Testing:**
+
 ```yaml
 - name: "Feature check: regex-onig"
   run: $BUILD_CMD check --locked --target=${{ matrix.job.target }} --verbose --lib --no-default-features --features regex-onig
 - name: "Feature check: minimal-application"
   run: $BUILD_CMD check --locked --target=${{ matrix.job.target }} --verbose --no-default-features --features minimal-application
 ```
+
 - Tests multiple feature combinations
 - Ensures features compile independently
 - Validates minimal builds for embedded use cases
@@ -216,6 +245,7 @@ steps:
 ### Artifact Packaging
 
 **Tarball Creation:**
+
 ```yaml
 PKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ matrix.job.target }}
 PKG_NAME=${PKG_BASENAME}.tar.gz  # or .zip for Windows
@@ -226,11 +256,13 @@ cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
 cp 'target/.../bat.1' "$ARCHIVE_DIR"  # man page
 cp 'target/.../bat.bash' "$ARCHIVE_DIR/autocomplete/"  # shell completions
 ```
+
 - Uses cargo build.rs generated assets (man page, completions)
 - Consistent naming: `bat-v0.24.0-x86_64-unknown-linux-gnu.tar.gz`
 - Includes all documentation
 
 **Debian Package Creation:**
+
 ```yaml
 - name: Create Debian package
   if: startsWith(matrix.job.os, 'ubuntu')
@@ -248,6 +280,7 @@ cp 'target/.../bat.bash' "$ARCHIVE_DIR/autocomplete/"  # shell completions
 
     fakeroot dpkg-deb --build "${DPKG_DIR}" "${DPKG_PATH}"
 ```
+
 - **Manual dpkg creation** (not cargo-deb like ripgrep)
 - Separate packages for musl vs glibc (bat vs bat-musl)
 - Conflict declaration prevents both from being installed
@@ -258,6 +291,7 @@ cp 'target/.../bat.bash' "$ARCHIVE_DIR/autocomplete/"  # shell completions
 ### Release Publishing
 
 **Conditional Upload:**
+
 ```yaml
 - name: Check for release
   id: is-release
@@ -280,12 +314,14 @@ cp 'target/.../bat.bash' "$ARCHIVE_DIR/autocomplete/"  # shell completions
 ```
 
 **Key differences from ripgrep:**
+
 1. Uses `softprops/action-gh-release` (ripgrep uses gh CLI)
 2. Single step uploads all files (ripgrep uploads per-job)
 3. No draft release - published immediately
 4. No separate create-release job
 
 **Winget Publishing:**
+
 ```yaml
 winget:
   needs: build
@@ -297,6 +333,7 @@ winget:
         installers-regex: '-pc-windows-msvc\.zip$'
         token: ${{ secrets.WINGET_TOKEN }}
 ```
+
 - Automatically publishes to Windows Package Manager
 - Requires separate PAT token (WINGET_TOKEN)
 - Regex filter selects correct Windows artifact
@@ -304,6 +341,7 @@ winget:
 ### Changelog Requirement (.github/workflows/require-changelog-for-PRs.yml)
 
 **Pre-merge Check:**
+
 ```yaml
 check-changelog:
   if: github.actor != 'dependabot[bot]'
@@ -318,12 +356,14 @@ check-changelog:
 ```
 
 **Why this matters:**
+
 - Enforces manual CHANGELOG.md updates for all PRs
 - Checks format: must include PR number and submitter
 - Example: `- Fix bug in parser (#123, @username)`
 - Skips dependabot PRs (automerged)
 
 **Trade-off:**
+
 - Manual changelog vs automated (git-cliff)
 - Ensures quality descriptions, but adds developer burden
 - bat prefers human-written changelogs
@@ -331,6 +371,7 @@ check-changelog:
 ### Token Handling
 
 **Uses:** `GITHUB_TOKEN` (standard) + `WINGET_TOKEN` (PAT for Winget)
+
 - GITHUB_TOKEN sufficient for GitHub releases
 - WINGET_TOKEN is PAT with repo scope for Winget PRs
 - No GitHub App needed
@@ -338,6 +379,7 @@ check-changelog:
 ### Version Management
 
 **No version validation job!**
+
 - Unlike ripgrep's explicit tag-vs-Cargo.toml check
 - Relies on developers to keep versions in sync
 - Cargo metadata job reads version from Cargo.toml, but doesn't validate against tag
@@ -468,6 +510,7 @@ Winget job: Publish to Windows Package Manager
 ### All-Jobs Gate Pattern
 
 From `CICD.yml:17-32`:
+
 ```yaml
 all-jobs:
   if: always() # Run even if dependencies fail
@@ -484,12 +527,14 @@ all-jobs:
 ```
 
 **Why this matters:**
+
 - Matrix jobs create many status checks (build-linux, build-windows, etc.)
 - Branch protection can only check one status
 - This aggregates all into single `all-jobs` check
 - Use `if: always()` so it runs even if some jobs fail
 
 **How to use:**
+
 1. Add `all-jobs` job that needs all other jobs
 2. Use jq to check all succeeded
 3. In branch protection, require only `all-jobs` status check
@@ -497,6 +542,7 @@ all-jobs:
 ### Cargo Metadata Extraction
 
 From `CICD.yml:34-52`:
+
 ```yaml
 crate_metadata:
   steps:
@@ -511,11 +557,13 @@ crate_metadata:
 ```
 
 **Why this matters:**
+
 - Single source of truth (Cargo.toml)
 - No hardcoded versions in workflow
 - Automatically extracts MSRV for testing
 
 **How to use:**
+
 1. First job extracts metadata
 2. Other jobs use `needs: crate_metadata`
 3. Reference via `${{ needs.crate_metadata.outputs.version }}`
@@ -523,6 +571,7 @@ crate_metadata:
 ### Changelog Enforcement
 
 From `require-changelog-for-PRs.yml:25-33`:
+
 ```yaml
 - name: Search for added line in changelog
   run: |
@@ -534,6 +583,7 @@ From `require-changelog-for-PRs.yml:25-33`:
 ```
 
 **Why this matters:**
+
 - Enforces human-written changelogs
 - Ensures PR number and author in changelog entry
 - Example format: `- Fix parser bug (#123, @username)`
@@ -543,6 +593,7 @@ From `require-changelog-for-PRs.yml:25-33`:
 ### Cross Installation with taiki-e
 
 From `CICD.yml:196-200`:
+
 ```yaml
 - name: Install cross
   if: matrix.job.use-cross
@@ -552,6 +603,7 @@ From `CICD.yml:196-200`:
 ```
 
 **vs ripgrep's approach:**
+
 ```yaml
 # ripgrep: manual curl + tar
 - run: |
@@ -560,32 +612,34 @@ From `CICD.yml:196-200`:
 ```
 
 **Why bat's approach is better:**
+
 - Cleaner, more maintainable
 - Action handles version pinning
 - No manual URL construction
 
 ## Comparison: bat vs ripgrep
 
-| Feature | bat | ripgrep |
-|---------|-----|---------|
-| Workflow structure | Combined CICD | Separate ci.yml + release.yml |
-| Quality gates | rustfmt, clippy, audit, docs | rustfmt, docs (no clippy/audit) |
-| Clippy | ✅ Yes | ❌ No |
-| cargo-audit | ✅ Yes | ❌ No |
-| MSRV testing | ✅ Yes | ❌ No |
-| Version validation | ❌ No | ✅ Yes (tag vs Cargo.toml) |
-| Draft releases | ❌ No (immediate) | ✅ Yes |
-| SHA256 checksums | ❌ No | ✅ Yes |
-| Changelog | Manual (enforced by CI) | Manual (not enforced) |
-| All-jobs gate | ✅ Yes | ❌ No |
-| Cross installation | taiki-e action | curl + tar |
-| Release action | softprops/action-gh-release | gh CLI |
-| Debian packages | Manual dpkg | cargo-deb |
-| Winget | ✅ Yes | ❌ No |
-| Smoke tests | ✅ Yes (runs binary) | ❌ No |
-| Feature flag testing | ✅ Yes | ❌ No |
+| Feature              | bat                          | ripgrep                         |
+| -------------------- | ---------------------------- | ------------------------------- |
+| Workflow structure   | Combined CICD                | Separate ci.yml + release.yml   |
+| Quality gates        | rustfmt, clippy, audit, docs | rustfmt, docs (no clippy/audit) |
+| Clippy               | ✅ Yes                       | ❌ No                           |
+| cargo-audit          | ✅ Yes                       | ❌ No                           |
+| MSRV testing         | ✅ Yes                       | ❌ No                           |
+| Version validation   | ❌ No                        | ✅ Yes (tag vs Cargo.toml)      |
+| Draft releases       | ❌ No (immediate)            | ✅ Yes                          |
+| SHA256 checksums     | ❌ No                        | ✅ Yes                          |
+| Changelog            | Manual (enforced by CI)      | Manual (not enforced)           |
+| All-jobs gate        | ✅ Yes                       | ❌ No                           |
+| Cross installation   | taiki-e action               | curl + tar                      |
+| Release action       | softprops/action-gh-release  | gh CLI                          |
+| Debian packages      | Manual dpkg                  | cargo-deb                       |
+| Winget               | ✅ Yes                       | ❌ No                           |
+| Smoke tests          | ✅ Yes (runs binary)         | ❌ No                           |
+| Feature flag testing | ✅ Yes                       | ❌ No                           |
 
 **Summary:**
+
 - bat: More comprehensive CI checks, better dev experience
 - ripgrep: Better release validation, draft releases, checksums
 

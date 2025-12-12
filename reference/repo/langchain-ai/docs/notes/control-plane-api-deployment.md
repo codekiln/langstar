@@ -11,12 +11,14 @@ Method 2 uses the **Control Plane API** to programmatically deploy LangGraph age
 ### Cloud LangSmith Deployment
 
 **Characteristics:**
+
 - Uses Control Plane API to create deployments
 - Points directly to GitHub repository
 - **No Docker image building required**
 - Simplest programmatic deployment option
 
 **Workflow:**
+
 ```
 GitHub Repository → Control Plane API → LangSmith Deployment
 ```
@@ -26,11 +28,13 @@ GitHub Repository → Control Plane API → LangSmith Deployment
 ### Self-Hosted/Hybrid LangSmith Deployment
 
 **Characteristics:**
+
 - Requires manual Docker image building
 - Uses container registry for image distribution
 - Control Plane API pulls from registry
 
 **Workflow:**
+
 ```bash
 # 1. Build Docker image locally
 langgraph build -t my-agent:latest
@@ -43,6 +47,7 @@ docker push my-agent:latest
 ```
 
 **Supported Container Registries:**
+
 - Docker Hub
 - AWS ECR (Elastic Container Registry)
 - Azure ACR (Azure Container Registry)
@@ -54,6 +59,7 @@ docker push my-agent:latest
 **API Documentation**: [/langsmith/api-ref-control-plane](/langsmith/api-ref-control-plane)
 
 **Helper Script Example**:
+
 - Repository: https://github.com/langchain-ai/cicd-pipeline-example
 - Location: `.github/scripts/langgraph_api.py`
 - Purpose: Manages API interactions and deployments in GitHub Actions
@@ -75,6 +81,7 @@ The Control Plane API supports two deployment types:
 ## Deployment Flow
 
 ### New Agent Deployment
+
 ```mermaid
 graph LR
     A[PR Opened] --> B[Tests Pass]
@@ -83,6 +90,7 @@ graph LR
 ```
 
 ### Agent Revision
+
 ```mermaid
 graph LR
     A[Existing Deployment ID Found] --> B[Control Plane API]
@@ -94,14 +102,14 @@ graph LR
 
 ## Key Differences from Method 1 (UI Deployment)
 
-| Aspect | Method 1: UI | Method 2: Control Plane API |
-|--------|-------------|----------------------------|
-| **Interface** | Web UI | Programmatic API |
-| **Automation** | Manual | Fully automated |
-| **CI/CD Integration** | No | Yes |
-| **GitHub Actions** | Not supported | Fully supported |
-| **Flexibility** | Limited | High |
-| **Use Case** | Quick manual deploys | Production CI/CD pipelines |
+| Aspect                | Method 1: UI         | Method 2: Control Plane API |
+| --------------------- | -------------------- | --------------------------- |
+| **Interface**         | Web UI               | Programmatic API            |
+| **Automation**        | Manual               | Fully automated             |
+| **CI/CD Integration** | No                   | Yes                         |
+| **GitHub Actions**    | Not supported        | Fully supported             |
+| **Flexibility**       | Limited              | High                        |
+| **Use Case**          | Quick manual deploys | Production CI/CD pipelines  |
 
 ## Environment Configuration
 
@@ -121,13 +129,14 @@ export REDIS_URI_CUSTOM="redis://host:6379/0"
 
 ### Control Plane API (Deployments)
 
-| Region | Endpoint |
-|--------|----------|
-| US | `https://api.host.langchain.com` |
-| EU | `https://eu.api.host.langchain.com` |
+| Region      | Endpoint                             |
+| ----------- | ------------------------------------ |
+| US          | `https://api.host.langchain.com`     |
+| EU          | `https://eu.api.host.langchain.com`  |
 | Self-Hosted | `http(s)://<langsmith-url>/api-host` |
 
 **Critical**: This is different from the LangSmith API (traces, evaluations):
+
 - LangSmith API: `https://api.smith.langchain.com`
 - Control Plane API: `https://api.host.langchain.com`
 
@@ -145,6 +154,7 @@ export REDIS_URI_CUSTOM="redis://host:6379/0"
 6. **Control Plane API creates production deployment**
 
 **Benefits:**
+
 - Zero manual intervention
 - Consistent deployment process
 - Quality gates enforced
@@ -162,14 +172,17 @@ Before using Control Plane API:
 ## Common Pitfalls
 
 ### Wrong Endpoint
+
 - ❌ Using `api.smith.langchain.com` for deployments
 - ✅ Using `api.host.langchain.com` for deployments
 
 ### Missing API Key
+
 - Control Plane API requires proper authentication
 - Set `LANGSMITH_API_KEY` in GitHub Secrets
 
 ### Self-Hosted: Registry Access
+
 - Deployment environment must have access to container registry
 - Configure registry credentials in deployment environment
 

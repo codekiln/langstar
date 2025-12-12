@@ -77,6 +77,7 @@ langstar prompt pull team/movie-reviewer
 Extract structured invoice data from documents.
 
 **Schema** (`invoice-schema.json`):
+
 ```json
 {
   "type": "object",
@@ -111,6 +112,7 @@ Extract structured invoice data from documents.
 ```
 
 **Push Command**:
+
 ```bash
 langstar prompt push \
   -o acme -r invoice-extractor \
@@ -124,6 +126,7 @@ langstar prompt push \
 Analyze sentiment with categorical classification.
 
 **Schema** (`sentiment-schema.json`):
+
 ```json
 {
   "type": "object",
@@ -157,6 +160,7 @@ Analyze sentiment with categorical classification.
 ```
 
 **Push Command**:
+
 ```bash
 langstar prompt push \
   -o team -r sentiment-analyzer \
@@ -170,6 +174,7 @@ langstar prompt push \
 Extract contact details from business cards or emails.
 
 **Schema** (`contact-schema.json`):
+
 ```json
 {
   "type": "object",
@@ -203,6 +208,7 @@ Extract contact details from business cards or emails.
 ```
 
 **Push Command**:
+
 ```bash
 langstar prompt push \
   -o team -r contact-extractor \
@@ -228,6 +234,7 @@ langstar prompt push \
 ```
 
 **When to use:**
+
 - General-purpose structured output
 - Most common use case
 - Supported by most modern LLMs
@@ -245,6 +252,7 @@ langstar prompt push \
 ```
 
 **When to use:**
+
 - When using models optimized for function calling
 - Tool/agent workflows
 - OpenAI models with function calling support
@@ -263,15 +271,18 @@ langstar prompt push \
 ```
 
 **Required Arguments:**
+
 - `-o, --owner` - Prompt owner (username or organization)
 - `-r, --repo` - Prompt repository name
 - `-t, --template` - Prompt template text
 
 **Structured Output Arguments:**
+
 - `--schema <FILE>` - Path to JSON Schema file
 - `--schema-method <METHOD>` - Method: `json_schema` or `function_calling` (default: `json_schema`)
 
 **Optional Arguments:**
+
 - `-i, --input-variables` - Comma-separated input variables
 - `--template-format` - Template format (default: `f-string`)
 - `--organization-id` - Organization scope
@@ -284,6 +295,7 @@ langstar prompt pull <handle> [--commit <COMMIT>]
 ```
 
 **Arguments:**
+
 - `<handle>` - Prompt handle (e.g., `owner/prompt-name`)
 - `--commit` - Commit hash or tag (default: `latest`)
 
@@ -302,6 +314,7 @@ Shows full prompt details including schema and metadata.
 ### Basic Structure
 
 Every JSON Schema must have:
+
 - `"type": "object"` at the top level
 - `properties` object defining fields
 - `required` array (optional but recommended)
@@ -340,6 +353,7 @@ Every JSON Schema must have:
 ### Validation Constraints
 
 **Strings:**
+
 ```json
 {
   "type": "string",
@@ -352,6 +366,7 @@ Every JSON Schema must have:
 ```
 
 **Numbers:**
+
 ```json
 {
   "type": "number",
@@ -362,6 +377,7 @@ Every JSON Schema must have:
 ```
 
 **Arrays:**
+
 ```json
 {
   "type": "array",
@@ -464,22 +480,26 @@ Always add descriptions to help the LLM understand field meanings:
 ### Schema Validation Errors
 
 **Error**: `Schema file contains invalid JSON`
+
 - **Cause**: Syntax error in JSON file
 - **Fix**: Validate JSON with a linter or `jq < schema.json`
 
 **Error**: `Schema file is not a valid JSON Schema`
+
 - **Cause**: Missing required fields or invalid schema structure
 - **Fix**: Ensure schema has `"type": "object"` at root level
 
 ### Method Errors
 
 **Error**: `Invalid schema method`
+
 - **Cause**: Typo in `--schema-method` value
 - **Fix**: Use `json_schema` or `function_calling`
 
 ### File Not Found
 
 **Error**: `Schema file not found`
+
 - **Cause**: Incorrect path to schema file
 - **Fix**: Verify file path is correct and file exists
 

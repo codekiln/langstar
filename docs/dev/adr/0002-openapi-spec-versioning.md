@@ -1,8 +1,8 @@
 # ADR-0002: OpenAPI Spec Versioning
 
-**Status:** Accepted  
-**Date:** 2025-11-13  
-**Decision Makers:** Langstar Development Team  
+**Status:** Accepted\
+**Date:** 2025-11-13\
+**Decision Makers:** Langstar Development Team\
 **Related Issues:** #106, #115
 
 ## Context
@@ -39,6 +39,7 @@ We implement a **JSON-based version tracking system** with a `versions.json` man
 ### File Location
 
 **Primary manifest:**
+
 ```
 tools/specs/versions.json
 ```
@@ -101,11 +102,13 @@ This file is version-controlled and commits alongside spec updates.
 ### Field Definitions
 
 #### Root Level
+
 - `format_version`: Version of this manifest format (for future evolution)
 - `last_updated`: Timestamp of last change to this file
 - `specs`: Map of service name to spec metadata
 
 #### Per-Spec Metadata
+
 - `spec_version`: API version from spec (if available in OpenAPI), otherwise "unknown"
 - `spec_file`: Filename of the saved spec
 - `spec_url`: Source URL where spec was fetched
@@ -139,6 +142,7 @@ openssl dgst -sha256 tools/specs/langsmith-openapi.json
 ### Version Tracking Workflow
 
 #### 1. Initial Setup (Phase 2)
+
 ```bash
 # Create versions.json with initial structure
 ./tools/generate_sdk.sh  # Script updated to create/update versions.json
@@ -147,6 +151,7 @@ git commit -m "🔧 chore(sdk): add OpenAPI spec version tracking"
 ```
 
 #### 2. Manual Spec Update (Developer Workflow)
+
 ```bash
 # 1. Fetch latest specs
 ./tools/fetch_specs.sh  # New script (Phase 2)
@@ -167,12 +172,14 @@ git commit -m "⬆️ upgrade(sdk): update OpenAPI specs from upstream"
 ```
 
 #### 3. Checking for Drift
+
 ```bash
 # Compare local spec checksum with upstream
 ./tools/check_spec_drift.sh  # New script (Phase 2)
 ```
 
 Example output:
+
 ```
 Checking for API drift...
 
@@ -203,6 +210,7 @@ The `tools/generate_sdk.sh` script will be updated to:
 8. Print summary of changes
 
 Example enhanced output:
+
 ```
 OpenAPI SDK Generation for Langstar
 
@@ -275,11 +283,13 @@ pub mod langsmith_client {
 ```
 
 **Pros:**
+
 - Version info travels with generated code
 - No separate manifest file needed
 - Easy to see version in IDE
 
 **Cons:**
+
 - Harder to query version info programmatically
 - No centralized view of all spec versions
 - Difficult to track history
@@ -300,11 +310,13 @@ tools/specs/
 ```
 
 **Pros:**
+
 - One version file per spec
 - No merge conflicts between specs
 - Easy to see version alongside spec
 
 **Cons:**
+
 - Multiple files to manage
 - Harder to get overview of all versions
 - More files to commit and track
@@ -322,11 +334,13 @@ git tag langgraph-spec-2025-11-13
 ```
 
 **Pros:**
+
 - Uses existing git infrastructure
 - Clear versioning in git history
 - Easy to check out specific version
 
 **Cons:**
+
 - No checksum tracking
 - No generation metadata
 - Clutters git tag namespace
@@ -340,11 +354,13 @@ git tag langgraph-spec-2025-11-13
 **Description:** Store version info in SQLite database.
 
 **Pros:**
+
 - Easy to query
 - Efficient storage
 - Relational structure
 
 **Cons:**
+
 - Binary format (not human-readable)
 - Not version-controlled (or conflicts on every update)
 - Requires database tooling
@@ -362,11 +378,13 @@ https://api.smith.langchain.com/openapi.json?version=2025-11-13
 ```
 
 **Pros:**
+
 - Explicit version in URL
 - Could fetch specific versions
 - Upstream-controlled versioning
 
 **Cons:**
+
 - LangChain APIs don't currently support versioned specs
 - Still need local version tracking
 - Assumes upstream versioning system

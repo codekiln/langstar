@@ -49,11 +49,13 @@ cargo test --features integration-tests -- --ignored
 ### Pattern 1: Missing Environment Variables
 
 **Symptom:**
+
 ```
 LANGSMITH_API_KEY environment variable must be set
 ```
 
 **Solution:**
+
 ```bash
 # Set required variables
 export LANGSMITH_API_KEY=<your-api-key>
@@ -70,6 +72,7 @@ export LANGSMITH_ORGANIZATION_ID=<your-org-id>
 **Symptom:** Test shows as passing but didn't run
 
 **Cause:** Test has graceful skip for missing env vars:
+
 ```rust
 let org_id = match get_org_id_or_skip() {
     Some(id) => id,
@@ -82,16 +85,19 @@ let org_id = match get_org_id_or_skip() {
 ### Pattern 3: Authentication Errors
 
 **Symptom:**
+
 ```
 Error: AuthenticationError: Invalid API key
 ```
 
 **Causes:**
+
 1. Expired or revoked API key
 2. Key lacks required permissions
 3. Wrong workspace/org ID
 
 **Solution:**
+
 1. Verify key at https://smith.langchain.com/settings
 2. Check workspace ID matches the key's permissions
 3. Generate new key if expired
@@ -99,16 +105,19 @@ Error: AuthenticationError: Invalid API key
 ### Pattern 4: Resource Not Found
 
 **Symptom:**
+
 ```
 Error: NotFoundError: Prompt 'test-prompt' not found
 ```
 
 **Causes:**
+
 1. Previous test didn't clean up
 2. Test ran against wrong workspace
 3. Resource was deleted externally
 
 **Solution:**
+
 1. Ensure tests use unique names with timestamps
 2. Verify `LANGSMITH_WORKSPACE_ID` is correct
 3. Clean up orphaned test resources
@@ -116,11 +125,13 @@ Error: NotFoundError: Prompt 'test-prompt' not found
 ### Pattern 5: Rate Limiting
 
 **Symptom:**
+
 ```
 Error: RateLimited: Too many requests
 ```
 
 **Solution:**
+
 1. Wait and retry
 2. Run fewer tests in parallel: `cargo test -- --test-threads=1`
 3. Add delays between tests if needed
@@ -128,11 +139,13 @@ Error: RateLimited: Too many requests
 ### Pattern 6: CI Passes, Local Fails
 
 **Causes:**
+
 1. Different environment variables
 2. Different Rust version
 3. Cached test data
 
 **Debug steps:**
+
 ```bash
 # Match CI Rust version
 rustup default stable
@@ -149,11 +162,13 @@ cargo test --workspace --all-features
 ### Pattern 7: Local Passes, CI Fails
 
 **Causes:**
+
 1. Hard-coded local paths
 2. Local test data not available in CI
 3. Timing-dependent tests
 
 **Debug steps:**
+
 1. Check for hard-coded paths
 2. Verify test creates its own data
 3. Add explicit waits for async operations

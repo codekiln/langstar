@@ -15,6 +15,7 @@ The OpenAPI specification at `reference/openapi/langchain/langsmith/openapi.json
 ## Validation Methodology
 
 This validation compared the OpenAPI specification against:
+
 1. Live API testing results from issue #456 experiments
 2. Python SDK precedent research
 3. Documented API behaviors from scout phase
@@ -24,12 +25,14 @@ This validation compared the OpenAPI specification against:
 ### ✅ GET `/api/v1/workspaces/current/secrets`
 
 **OpenAPI Spec**:
+
 - **Operation ID**: `list_current_workspace_secrets_api_v1_workspaces_current_secrets_get`
 - **Summary**: "List Current Workspace Secrets"
 - **Response**: `200` → Array of `SecretKey` objects
 - **Security**: API Key, Tenant ID, Bearer Auth
 
 **Scout Findings**: ✅ MATCH
+
 - GET endpoint confirmed working
 - Returns array of `{"key": "..."}` objects
 - Values never included (security confirmed)
@@ -40,6 +43,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ POST `/api/v1/workspaces/current/secrets`
 
 **OpenAPI Spec**:
+
 - **Operation ID**: `upsert_current_workspace_secrets_api_v1_workspaces_current_secrets_post`
 - **Summary**: "Upsert Current Workspace Secrets"
 - **Request Body**: Array of `SecretUpsert` objects (required)
@@ -48,6 +52,7 @@ This validation compared the OpenAPI specification against:
 - **Security**: API Key, Tenant ID, Bearer Auth
 
 **Scout Findings**: ✅ MATCH
+
 - POST confirmed for both create and update (upsert pattern)
 - Accepts array of `{key, value}` objects
 - Returns `null` on success (matches empty object in spec)
@@ -61,6 +66,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ GET `/api/v1/workspaces/current/secrets/encrypted`
 
 **OpenAPI Spec**:
+
 - **Operation ID**: `get_current_workspace_encrypted_secrets_api_v1_workspaces_current_secrets_encrypted_get`
 - **Summary**: "Get Current Workspace Encrypted Secrets"
 - **Description**: "Get encrypted workspace secrets for use with Agent Builder and external services."
@@ -71,6 +77,7 @@ This validation compared the OpenAPI specification against:
 - **Security**: API Key, Tenant ID, Bearer Auth
 
 **Scout Findings**: ✅ MATCH
+
 - Endpoint identified as internal use only
 - Marked as OUT OF SCOPE for initial implementation
 - Purpose confirmed: Agent Builder and external services
@@ -82,6 +89,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ SecretKey (Response Schema)
 
 **OpenAPI Spec**:
+
 ```json
 {
   "properties": {
@@ -97,6 +105,7 @@ This validation compared the OpenAPI specification against:
 ```
 
 **Scout Findings**: ✅ MATCH
+
 - GET returns `[{"key": "..."}]`
 - Values never included
 - Single field object with required "key"
@@ -106,6 +115,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ SecretUpsert (Request Schema)
 
 **OpenAPI Spec**:
+
 ```json
 {
   "properties": {
@@ -132,6 +142,7 @@ This validation compared the OpenAPI specification against:
 ```
 
 **Scout Findings**: ✅ MATCH
+
 - POST accepts `{key, value}` objects
 - `value` can be `null` (deletion confirmed)
 - Both fields required
@@ -144,6 +155,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ InternalSecretsResponse (Encrypted Endpoint)
 
 **OpenAPI Spec**:
+
 ```json
 {
   "properties": {
@@ -159,6 +171,7 @@ This validation compared the OpenAPI specification against:
 ```
 
 **Scout Findings**: ✅ MATCH
+
 - Returns base64 encoded encrypted data
 - Single field: `encrypted_secrets`
 - Used by Agent Builder
@@ -168,6 +181,7 @@ This validation compared the OpenAPI specification against:
 ### ✅ HTTPValidationError
 
 **OpenAPI Spec**:
+
 ```json
 {
   "properties": {
@@ -185,6 +199,7 @@ This validation compared the OpenAPI specification against:
 ```
 
 **Scout Findings**: ✅ COMPATIBLE
+
 - Experiments showed 403 permission errors with different format:
   ```json
   {
@@ -201,11 +216,13 @@ This validation compared the OpenAPI specification against:
 
 **OpenAPI Spec**:
 All endpoints support:
+
 - API Key
 - Tenant ID
 - Bearer Auth
 
 **Scout Findings**: ✅ MATCH
+
 - Standard authentication confirmed
 - Same patterns as existing Langstar SDK
 - Permission model validated (`workspaces:manage` required for mutations)
@@ -215,11 +232,13 @@ All endpoints support:
 ### ✅ Value Masking
 
 **OpenAPI Spec**:
+
 - GET endpoint returns `SecretKey[]` (no value field)
 - POST endpoint accepts `SecretUpsert[]` (with value field)
 - Response from POST is empty object
 
 **Scout Findings**: ✅ MATCH
+
 - Values NEVER returned in any response
 - Security confirmed through experiments
 - Only keys exposed in GET responses
@@ -231,11 +250,13 @@ All endpoints support:
 ### ✅ Upsert Pattern
 
 **OpenAPI Spec**:
+
 - POST operation named "Upsert Current Workspace Secrets"
 - No separate PUT or PATCH endpoints
 - No distinction in schema between create and update
 
 **Scout Findings**: ✅ MATCH
+
 - POST works for both create and update
 - Idempotent behavior confirmed
 - No errors when posting existing keys
@@ -246,11 +267,13 @@ All endpoints support:
 ### ✅ Deletion Pattern
 
 **OpenAPI Spec**:
+
 - No DELETE endpoint
 - `SecretUpsert.value` allows `null` type via `anyOf`
 - No explicit documentation of deletion behavior
 
 **Scout Findings**: ✅ MATCH
+
 - POST with `value: null` successfully deletes secrets
 - Deletion confirmed through experiments
 - Secret disappears from GET list after deletion
@@ -262,10 +285,12 @@ All endpoints support:
 ### ✅ Batch Operations
 
 **OpenAPI Spec**:
+
 - POST accepts `array` of `SecretUpsert` objects
 - Response is empty object (not array)
 
 **Scout Findings**: ✅ MATCH
+
 - Single secret tested in experiments
 - Array input confirmed in spec
 - Batch behavior noted for future testing
@@ -345,12 +370,14 @@ pub struct InternalSecretsResponse {
 ### ✅ Proceed with SDK Implementation (Phase 4)
 
 The OpenAPI spec is accurate and complete for implementing:
+
 - `list_secrets()` → `GET /api/v1/workspaces/current/secrets`
 - `upsert_secrets(secrets: Vec<SecretUpsert>)` → `POST /api/v1/workspaces/current/secrets`
 
 ### Defer Encrypted Endpoint
 
 The `/api/v1/workspaces/current/secrets/encrypted` endpoint should remain **OUT OF SCOPE** for initial implementation:
+
 - Internal use only (Agent Builder)
 - No user-facing CLI use case
 - Can be added later if needed
@@ -358,6 +385,7 @@ The `/api/v1/workspaces/current/secrets/encrypted` endpoint should remain **OUT 
 ### Document Permission Requirements
 
 SDK and CLI documentation should clearly state:
+
 - GET operations: Standard API key (read permission)
 - POST operations: Requires `workspaces:manage` permission
 - Provide clear error message for 403 responses
@@ -365,6 +393,7 @@ SDK and CLI documentation should clearly state:
 ### Integration Tests (Phase 5)
 
 When writing SDK integration tests, validate:
+
 - ✅ GET returns array of SecretKey objects
 - ✅ POST with value creates/updates secret
 - ✅ POST with null deletes secret

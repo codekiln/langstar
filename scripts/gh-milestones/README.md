@@ -9,6 +9,7 @@ Python scripts for automating GitHub milestone workflows.
 Automates moving to the next issue in an active milestone after completing the current task.
 
 **Usage:**
+
 ```bash
 # Auto-detect milestone from current branch
 python3 scripts/gh-milestones/prep-next.py
@@ -21,6 +22,7 @@ python3 scripts/gh-milestones/prep-next.py 10
 ```
 
 **Features:**
+
 - Finds last completed issue in milestone
 - Removes `wip` label from completed issue
 - Uses intelligent traversal to find next issue (sibling-first depth-first)
@@ -29,6 +31,7 @@ python3 scripts/gh-milestones/prep-next.py 10
 - Displays comprehensive issue context
 
 **Requirements:**
+
 - Python 3.6+
 - GitHub CLI (`gh`)
 - Git
@@ -39,6 +42,7 @@ python3 scripts/gh-milestones/prep-next.py 10
 ## Development
 
 When adding new scripts:
+
 1. Use Python 3.6+ for compatibility
 2. Include proper error handling
 3. Add comprehensive docstrings
@@ -49,6 +53,7 @@ When adding new scripts:
 ## Testing
 
 Test scripts individually:
+
 ```bash
 # Check syntax
 python3 -m py_compile scripts/gh-milestones/prep-next.py

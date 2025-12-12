@@ -25,6 +25,7 @@ Test the complete CRUD (Create, Read, Update, Delete) lifecycle of LangSmith dep
 ```
 
 This URL is the LangGraph Agent API endpoint that enables:
+
 - ✅ Interaction with the deployed agent
 - ✅ Running integration tests against the deployment
 - ✅ Validation of deployment functionality
@@ -32,12 +33,14 @@ This URL is the LangGraph Agent API endpoint that enables:
 ## Resources
 
 ### Documentation
+
 - **Control Plane API Reference**: [LangSmith Deployment API Docs](https://docs.langchain.com/langsmith/api-ref-control-plane)
 - **FastAPI Interactive Docs**: https://api.host.langchain.com/docs
 - **OpenAPI Specification**: https://api.host.langchain.com/openapi.json
 - **Example CI/CD Repository**: https://github.com/langchain-ai/cicd-pipeline-example
 
 ### Related Work
+
 - **Issue #160**: Deployment create/delete functionality (initial implementation)
 - **Issue #170**: Investigation of external_docker deployment type (NOT part of this experiment)
 - **Test Fixture**: `tests/fixtures/test-graph-deployment/langgraph.json`
@@ -59,6 +62,7 @@ This was a **research-only experiment** with no production code changes:
 Created `test_deployment_workflow.py` - Python implementation of the official documentation example with enhancements:
 
 **Core Functions** (from documentation):
+
 - `create_deployment()` - POST /v2/deployments
 - `get_deployment(deployment_id)` - GET /v2/deployments/{id}
 - `list_revisions(deployment_id)` - GET /v2/deployments/{id}/revisions
@@ -68,12 +72,14 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 - `wait_for_deployment()` - Poll until revision status reaches DEPLOYED
 
 **Added Functions** (for investigation):
+
 - `list_deployments(name_contains)` - GET /v2/deployments
 - `list_github_integrations()` - GET /v1/integrations/github/install
 - `list_github_repositories(integration_id)` - GET /v1/integrations/github/{id}/repos
 - `find_integration_for_repo(owner, repo)` - Dynamically discover integration ID
 
 **CLI Interface**:
+
 ```bash
 ./run_test.sh list                           # List all deployments
 ./run_test.sh list --name-contains <pattern> # Filter by name
@@ -87,6 +93,7 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 ### 1. Deployment Creation Requirements
 
 **Required Fields**:
+
 - `name` - Must be alphanumeric with dashes, starting with letter
 - `source` - "github" or "external_docker"
 - `source_config` - Integration ID, repo URL, deployment type
@@ -94,6 +101,7 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 - `secrets` - **Required field** (can be empty array `[]`)
 
 **Naming Restrictions**:
+
 - ❌ Underscores not allowed
 - ✅ Dashes allowed
 - ⚠️ Must start with alphabetic character
@@ -102,10 +110,12 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 ### 2. GitHub Integration Discovery
 
 **Repository API Format**:
+
 - Returns separate `owner` and `name` fields
 - Does NOT return `full_name` field (contrary to expectations)
 
 **Sample Response**:
+
 ```json
 {
   "owner": "<repository-owner>",
@@ -129,6 +139,7 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 ### 4. Accessing the Agent API
 
 **Deployment Response Structure**:
+
 ```json
 {
   "id": "<deployment-uuid>",
@@ -144,6 +155,7 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 ```
 
 **Implementation Pattern**:
+
 1. Create deployment via POST
 2. Poll until revision reaches DEPLOYED
 3. GET deployment details
@@ -152,12 +164,12 @@ Created `test_deployment_workflow.py` - Python implementation of the official do
 
 ### 5. Issues Resolved During Testing
 
-| Issue | Problem | Solution |
-|-------|---------|----------|
-| Repository field format | Expected `full_name` | Use separate `owner` and `name` fields |
-| Missing required field | API rejected without `secrets` | Add `"secrets": []` to request |
-| Name validation | Underscores rejected | Use dashes only: `langstar-test` |
-| Duplicate names | Project already exists | Add timestamp: `langstar-test-{timestamp}` |
+| Issue                   | Problem                        | Solution                                   |
+| ----------------------- | ------------------------------ | ------------------------------------------ |
+| Repository field format | Expected `full_name`           | Use separate `owner` and `name` fields     |
+| Missing required field  | API rejected without `secrets` | Add `"secrets": []` to request             |
+| Name validation         | Underscores rejected           | Use dashes only: `langstar-test`           |
+| Duplicate names         | Project already exists         | Add timestamp: `langstar-test-{timestamp}` |
 
 ## Workflow Validation
 
@@ -205,6 +217,7 @@ delete_deployment(deployment.id).await?;
 ### Required Headers
 
 All API calls must include:
+
 ```
 X-Api-Key: <langsmith-api-key>
 X-Tenant-Id: <workspace-id>
@@ -214,6 +227,7 @@ Content-Type: application/json
 ## Limitations
 
 ### Not Tested
+
 - ❌ External Docker deployments
 - ❌ Custom resource specifications
 - ❌ Production deployment type
@@ -221,6 +235,7 @@ Content-Type: application/json
 - ❌ Listener configurations
 
 ### Important Gotchas
+
 - ⚠️ Deployment names create matching LangSmith projects (must be unique)
 - ⚠️ Build times: 10-15 minutes for initial deployment
 - ⚠️ `secrets` field required (use `[]` if no secrets needed)
@@ -234,6 +249,7 @@ Content-Type: application/json
 **Key Achievement**: The `custom_url` field provides the LangGraph Agent API endpoint, enabling programmatic testing and interaction with deployed agents.
 
 **Next Steps**:
+
 1. Implement deployment management in Langstar CLI
 2. Add integration tests using ephemeral deployments
 3. Document Control Plane API integration in SDK

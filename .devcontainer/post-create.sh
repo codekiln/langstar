@@ -93,6 +93,53 @@ echo "[post-create] cargo version: $(cargo --version)"
 # Install cargo tools
 cargo install cargo-release git-cliff cargo-nextest --locked
 
+# Step 5: Install dprint (Markdown formatter)
+echo "[post-create] Installing dprint (Markdown formatter)..."
+if ! command -v dprint >/dev/null 2>&1; then
+  curl -fsSL https://dprint.dev/install.sh | sh
+  echo "[post-create] dprint installed successfully"
+else
+  echo "[post-create] dprint already installed at: $(command -v dprint)"
+fi
+
+# Add dprint to PATH in zshrc if not already present
+if ! grep -q 'DPRINT_INSTALL' ~/.zshrc 2>/dev/null; then
+  cat >> ~/.zshrc << 'EOF'
+# dprint installation directory
+export DPRINT_INSTALL="$HOME/.dprint"
+export PATH="$DPRINT_INSTALL/bin:$PATH"
+EOF
+  echo "[post-create] Added dprint PATH to ~/.zshrc"
+else
+  echo "[post-create] dprint PATH already configured in ~/.zshrc"
+fi
+
+# Verify dprint is available
+if command -v dprint >/dev/null 2>&1; then
+  echo "[post-create] dprint found at: $(command -v dprint)"
+  echo "[post-create] dprint version: $(dprint --version)"
+else
+  # If not in PATH yet, try to source it
+  export DPRINT_INSTALL="$HOME/.dprint"
+  export PATH="$DPRINT_INSTALL/bin:$PATH"
+  if command -v dprint >/dev/null 2>&1; then
+    echo "[post-create] dprint found at: $(command -v dprint)"
+    echo "[post-create] dprint version: $(dprint --version)"
+  else
+    echo "[post-create] WARNING: dprint installation may have failed"
+  fi
+fi
+
+# Install dprint pre-commit hook
+echo "[post-create] Installing dprint pre-commit hook..."
+if [ -f /workspace/scripts/pre-commit-dprint ]; then
+  cp /workspace/scripts/pre-commit-dprint /workspace/.git/hooks/pre-commit
+  chmod +x /workspace/.git/hooks/pre-commit
+  echo "[post-create] dprint pre-commit hook installed to .git/hooks/pre-commit"
+else
+  echo "[post-create] WARNING: scripts/pre-commit-dprint not found, hook not installed"
+fi
+
 # Step 6: gh CLI extensions
 # NOTE: gh CLI extensions requiring authentication are installed in setup-github-auth.sh
 # (which runs via postStartCommand after gh auth is configured)

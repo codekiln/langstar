@@ -21,17 +21,17 @@ Deployments in LangGraph Cloud represent hosted instances of your LangGraph appl
 
 ### Deployment Types
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `dev_free` | Free development deployment | Testing and development |
-| `dev` | Paid development deployment | Team development with more resources |
-| `prod` | Production deployment | Production workloads with HA and autoscaling |
+| Type       | Description                 | Use Case                                     |
+| ---------- | --------------------------- | -------------------------------------------- |
+| `dev_free` | Free development deployment | Testing and development                      |
+| `dev`      | Paid development deployment | Team development with more resources         |
+| `prod`     | Production deployment       | Production workloads with HA and autoscaling |
 
 ### Deployment Sources
 
-| Source | Description |
-|--------|-------------|
-| `github` | Deploy from a GitHub repository |
+| Source            | Description                          |
+| ----------------- | ------------------------------------ |
+| `github`          | Deploy from a GitHub repository      |
 | `external_docker` | Deploy from an external Docker image |
 
 ## Prerequisites
@@ -54,6 +54,7 @@ langstar deployment list
 ```
 
 Output:
+
 ```
 ╭──────────────────────────────────────┬─────────────────────┬──────────┬───────────╮
 │ ID                                   │ Name                │ Status   │ Type      │
@@ -109,6 +110,7 @@ langstar deployment list [OPTIONS]
 | `-f, --format <FORMAT>` | Output format: `table`, `json` |
 
 **Examples:**
+
 ```bash
 # List all deployments
 langstar deployment list
@@ -132,9 +134,11 @@ langstar deployment get <DEPLOYMENT_ID>
 ```
 
 **Arguments:**
+
 - `<DEPLOYMENT_ID>` - The deployment UUID
 
 **Examples:**
+
 ```bash
 langstar deployment get 47599969-47ab-49d5-878e-cc6dbcbed059
 ```
@@ -161,6 +165,7 @@ langstar deployment create [OPTIONS]
 | `-w, --wait` | Wait for deployment to reach READY status |
 
 **Examples:**
+
 ```bash
 # Basic deployment
 langstar deployment create \
@@ -198,6 +203,7 @@ langstar deployment delete <DEPLOYMENT_ID> [OPTIONS]
 ```
 
 **Arguments:**
+
 - `<DEPLOYMENT_ID>` - The deployment UUID to delete
 
 **Options:**
@@ -206,6 +212,7 @@ langstar deployment delete <DEPLOYMENT_ID> [OPTIONS]
 | `-y, --yes` | Skip confirmation prompt |
 
 **Examples:**
+
 ```bash
 # Delete with confirmation prompt
 langstar deployment delete 47599969-47ab-49d5-878e-cc6dbcbed059

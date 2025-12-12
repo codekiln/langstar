@@ -5,6 +5,7 @@ Manage LangSmith model provider configurations (playground settings) for use in 
 ## Overview
 
 Model configurations store model provider settings including:
+
 - Model selection (e.g., `claude-3-5-sonnet-20241022`, `gpt-4-turbo`)
 - Model parameters (temperature, max_tokens, etc.)
 - API key references (stored as secrets)
@@ -207,6 +208,7 @@ langstar model-config create --file anthropic-config.json
 ```
 
 **Available Claude Models:**
+
 - `claude-3-5-sonnet-20241022` - Latest Claude 3.5 Sonnet
 - `claude-3-5-haiku-20241022` - Latest Claude 3.5 Haiku
 - `claude-3-opus-20240229` - Claude 3 Opus
@@ -247,6 +249,7 @@ langstar model-config create --file openai-config.json
 ```
 
 **Available OpenAI Models:**
+
 - `gpt-4-turbo` - GPT-4 Turbo
 - `gpt-4` - GPT-4
 - `gpt-3.5-turbo` - GPT-3.5 Turbo
@@ -324,6 +327,7 @@ langstar model-config create --file bedrock-config.json
 **Note:** AWS credentials are managed through standard AWS authentication (IAM roles, environment variables, or AWS config files), not through LangSmith secrets.
 
 **Available Bedrock Models:**
+
 - `anthropic.claude-3-5-sonnet-20241022-v2:0` - Claude 3.5 Sonnet
 - `anthropic.claude-3-haiku-20240307-v1:0` - Claude 3 Haiku
 - `meta.llama3-70b-instruct-v1:0` - Llama 3 70B
@@ -414,11 +418,13 @@ langstar model-config create --file config.json
 ### Naming Conventions
 
 Use descriptive names that indicate:
+
 - Provider (Anthropic, OpenAI, etc.)
 - Model (Claude 3.5, GPT-4, etc.)
 - Purpose (Production, Testing, Evaluation)
 
 **Examples:**
+
 - `Production Claude 3.5 Sonnet`
 - `Testing GPT-4 Turbo Low Temp`
 - `Evaluation Bedrock Claude`
@@ -426,11 +432,13 @@ Use descriptive names that indicate:
 ### Rate Limiting
 
 Set appropriate `requests_per_second` based on:
+
 - Provider rate limits
 - Billing tier
 - Use case (testing vs production)
 
 **Common values:**
+
 - `3-5` - Conservative for testing
 - `10-20` - Moderate for evaluations
 - `50+` - High volume (ensure provider supports it)
@@ -451,6 +459,7 @@ Set appropriate `requests_per_second` based on:
 ### JSON Validation
 
 Before creating a config:
+
 1. Validate JSON syntax
 2. Ensure required fields are present
 3. Check secret references match existing secrets
@@ -466,6 +475,7 @@ jq empty < config.json && echo "Valid JSON" || echo "Invalid JSON"
 ### Error: "Model configuration with ID X not found"
 
 The `get` command searches through all configurations. If pagination is needed:
+
 - Large workspaces may have many configs
 - The get command automatically handles pagination
 - If still not found, verify the ID is correct
@@ -473,6 +483,7 @@ The `get` command searches through all configurations. If pagination is needed:
 ### Error: "At least one of --file, --name, or --description must be provided"
 
 The `update` command requires something to update:
+
 - Use `--file` for full updates
 - Use `--name` and/or `--description` for metadata updates
 - Cannot use `--file` with `--name`/`--description`
@@ -480,6 +491,7 @@ The `update` command requires something to update:
 ### Error: Secret not found
 
 Secrets must exist before being referenced in configs:
+
 1. Create the secret in workspace secrets first
 2. Then reference it in the model config
 3. Secret names in configs must match exactly
@@ -487,6 +499,7 @@ Secrets must exist before being referenced in configs:
 ## API Reference
 
 For SDK usage and implementation details, see:
+
 - SDK types: `sdk/src/playground_settings.rs`
 - CLI implementation: `cli/src/commands/model_config.rs`
 - OpenAPI spec: `reference/openapi/langchain/langsmith/openapi.json`

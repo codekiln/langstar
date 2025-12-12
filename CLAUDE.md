@@ -5,6 +5,7 @@
 This project enforces the **Toyota Andon Cord principle** for testing: any failing test stops the merge process. No exceptions.
 
 **Pre-commit requirements:**
+
 ```bash
 cargo fmt && \
 cargo check --workspace --all-features && \
@@ -13,11 +14,13 @@ cargo nextest run --profile ci --all-features --workspace
 ```
 
 **For comprehensive testing guidelines:**
+
 - The TOC is auto-loaded via AGENTS.md (`docs/dev/testing/README.md`)
 - Always follow `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (load explicitly)
 - Use CRUD lifecycle pattern for integration tests (see `docs/dev/testing/crud-lifecycle-pattern.md`)
 
 **Never acceptable:**
+
 - "My changes didn't introduce this failure" ❌
 - Merging with failing tests ❌
 - Exit-code-only tests (must verify actual behavior) ❌
@@ -29,6 +32,7 @@ See milestone #556 and issue #536 case study for context.
 EXTREMELY IMPORTANT - before you begin any task, check the value of the `CLAUDE_CODE_MAX_OUTPUT_TOKENS` environment variable and avoid going over that limit in your output. This helps manage API costs and ensures responses stay within configured limits.
 
 **Default behavior when not set:**
+
 - If `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is not set or empty, there is no explicit token limit
 - However, always aim for concise, focused responses regardless of limits
 - Typical values range from 4000-16000 tokens depending on task complexity
@@ -36,12 +40,14 @@ EXTREMELY IMPORTANT - before you begin any task, check the value of the `CLAUDE_
 - **Recommended default:** 8000 tokens for most tasks, 16000 for complex analysis
 
 When working on complex tasks:
+
 - Break work into smaller chunks if needed
 - Use tools efficiently to gather information
 - Summarize findings rather than dumping raw data
 - Prioritize actionable information over exhaustive detail
 
 **Handling tasks that exceed token limits:**
+
 - For large file reviews: process in sections or use focused analysis
 - For extensive code changes: break into multiple commits
 - For comprehensive reports: create summary first, offer detailed sections on request

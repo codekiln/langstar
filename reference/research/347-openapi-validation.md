@@ -12,6 +12,7 @@
 Validation of LangSmith's evaluation system against the OpenAPI specification. This report documents the feedback/evaluation API endpoints and schemas discovered through analysis of `reference/openapi/langchain/langsmith/openapi.json`.
 
 **Key Findings:**
+
 1. ✅ LangSmith uses "Feedback" as the primary concept for evaluations
 2. ✅ 11 feedback/evaluation endpoints discovered
 3. ✅ 36 schemas related to feedback/evaluation
@@ -26,39 +27,39 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 
 ### 1.1 Core Feedback Endpoints
 
-| Endpoint | Methods | Description |
-|----------|---------|-------------|
-| `/api/v1/feedback` | GET, POST | List and create feedback |
-| `/api/v1/feedback/{feedback_id}` | GET, PATCH, DELETE | Read, update, delete feedback |
-| `/api/v1/feedback/eager` | POST | Create feedback with immediate evaluation |
-| `/feedback/batch` | POST | Batch create feedback |
+| Endpoint                         | Methods            | Description                               |
+| -------------------------------- | ------------------ | ----------------------------------------- |
+| `/api/v1/feedback`               | GET, POST          | List and create feedback                  |
+| `/api/v1/feedback/{feedback_id}` | GET, PATCH, DELETE | Read, update, delete feedback             |
+| `/api/v1/feedback/eager`         | POST               | Create feedback with immediate evaluation |
+| `/feedback/batch`                | POST               | Batch create feedback                     |
 
 ### 1.2 Feedback Configuration Endpoints
 
-| Endpoint | Methods | Description |
-|----------|---------|-------------|
+| Endpoint                   | Methods          | Description                                            |
+| -------------------------- | ---------------- | ------------------------------------------------------ |
 | `/api/v1/feedback-configs` | GET, POST, PATCH | Manage feedback configurations (evaluator definitions) |
 
 ### 1.3 Feedback Formula Endpoints
 
-| Endpoint | Methods | Description |
-|----------|---------|-------------|
-| `/api/v1/feedback/formulas` | GET, POST | List and create feedback formulas |
-| `/api/v1/feedback/formulas/{feedback_formula_id}` | GET, PUT, DELETE | Read, update, delete formulas |
+| Endpoint                                          | Methods          | Description                       |
+| ------------------------------------------------- | ---------------- | --------------------------------- |
+| `/api/v1/feedback/formulas`                       | GET, POST        | List and create feedback formulas |
+| `/api/v1/feedback/formulas/{feedback_formula_id}` | GET, PUT, DELETE | Read, update, delete formulas     |
 
 ### 1.4 Token-Based Feedback Endpoints
 
-| Endpoint | Methods | Description |
-|----------|---------|-------------|
-| `/api/v1/feedback/tokens` | GET, POST | Manage feedback tokens |
+| Endpoint                          | Methods   | Description                  |
+| --------------------------------- | --------- | ---------------------------- |
+| `/api/v1/feedback/tokens`         | GET, POST | Manage feedback tokens       |
 | `/api/v1/feedback/tokens/{token}` | GET, POST | Use token to submit feedback |
 
 ### 1.5 Public Sharing Endpoints
 
-| Endpoint | Methods | Description |
-|----------|---------|-------------|
-| `/api/v1/public/{share_token}/feedbacks` | GET | Get feedback via share token |
-| `/api/v1/public/{share_token}/datasets/feedback` | GET | Get dataset feedback via share token |
+| Endpoint                                         | Methods | Description                          |
+| ------------------------------------------------ | ------- | ------------------------------------ |
+| `/api/v1/public/{share_token}/feedbacks`         | GET     | Get feedback via share token         |
+| `/api/v1/public/{share_token}/datasets/feedback` | GET     | Get dataset feedback via share token |
 
 **Total**: 11 endpoints across 5 categories
 
@@ -90,6 +91,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 ```
 
 **Key Fields:**
+
 - `key`: Feedback/evaluator identifier (e.g., "correctness", "helpfulness")
 - `score`: Numeric, boolean, or null score
 - `value`: More flexible value field (can be structured data)
@@ -116,11 +118,13 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 ```
 
 **Feedback Types:**
+
 1. **continuous**: Numeric score with min/max bounds (e.g., 0.0 to 1.0)
 2. **categorical**: Multiple choice from predefined categories
 3. **freeform**: Unstructured text feedback
 
 **FeedbackCategory** - For categorical feedback:
+
 ```json
 {
   "required": ["value"],
@@ -136,6 +140,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 #### 2.3.1 Structured Evaluator (LLM-as-Judge)
 
 **EvaluatorTopLevel** - Wraps structured output evaluator:
+
 ```json
 {
   "required": ["structured"],
@@ -146,6 +151,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 ```
 
 **EvaluatorStructuredOutput** - LLM-based evaluator configuration:
+
 ```json
 {
   "properties": {
@@ -160,6 +166,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 ```
 
 **Key Fields:**
+
 - `hub_ref`: Reference to prompt in LangChain Hub
 - `prompt`: Array of role/content tuples for judge prompt
 - `template_format`: Format of prompt template (e.g., "f-string", "mustache")
@@ -170,6 +177,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 #### 2.3.2 Code Evaluator (Heuristic)
 
 **CodeEvaluatorTopLevel** - Code-based evaluator:
+
 ```json
 {
   "required": ["code"],
@@ -181,6 +189,7 @@ Validation of LangSmith's evaluation system against the OpenAPI specification. T
 ```
 
 **Use Cases:**
+
 - Exact match
 - String contains
 - Regex matching
@@ -197,6 +206,7 @@ Four types of feedback sources (discriminated union):
 4. **AutoEvalFeedbackSource** - Automated evaluation results
 
 **AutoEvalFeedbackSource** (most relevant for evals):
+
 ```json
 {
   "properties": {
@@ -209,6 +219,7 @@ Four types of feedback sources (discriminated union):
 ### 2.5 Feedback Formulas
 
 **FeedbackFormula** - Composite metrics using weighted aggregation:
+
 ```json
 {
   "required": ["feedback_key", "aggregation_type", "formula_parts", "id", "created_at", "modified_at"],
@@ -226,6 +237,7 @@ Four types of feedback sources (discriminated union):
 ```
 
 **FeedbackFormulaWeightedVariable**:
+
 ```json
 {
   "required": ["part_type", "key", "weight"],
@@ -239,6 +251,7 @@ Four types of feedback sources (discriminated union):
 
 **Example Use Case:**
 Combine "correctness", "helpfulness", and "toxicity" scores using weighted sum:
+
 ```json
 {
   "feedback_key": "quality",
@@ -258,20 +271,22 @@ Combine "correctness", "helpfulness", and "toxicity" scores using weighted sum:
 ### 3.1 Terminology: "Feedback" = "Evaluation"
 
 LangSmith uses "feedback" as the umbrella term for evaluations. This includes:
+
 - Manual human feedback
 - Automated evaluations (heuristic or LLM-based)
 - Model-generated scores
 
 ### 3.2 Two Evaluator Paradigms
 
-| Type | Schema | Use Case | Execution |
-|------|--------|----------|-----------|
+| Type           | Schema                      | Use Case                 | Execution                      |
+| -------------- | --------------------------- | ------------------------ | ------------------------------ |
 | **Structured** | `EvaluatorStructuredOutput` | LLM-as-judge evaluations | Calls LLM with prompt + schema |
-| **Code** | `CodeEvaluatorTopLevel` | Heuristic evaluations | Executes Python/JS code |
+| **Code**       | `CodeEvaluatorTopLevel`     | Heuristic evaluations    | Executes Python/JS code        |
 
 ### 3.3 Feedback Configuration Flexibility
 
 Feedback configs define:
+
 - **Type**: continuous (numeric), categorical (enum), freeform (text)
 - **Bounds**: min/max for continuous scores
 - **Categories**: Predefined options for categorical
@@ -281,30 +296,33 @@ This allows both simple pass/fail (boolean) and nuanced Likert-scale (0-5) evalu
 ### 3.4 Feedback Formulas for Composite Metrics
 
 Formulas enable:
+
 - Weighted combinations of multiple evaluations (sum or average)
 - Simple aggregation types: "sum" (weighted sum) or "avg" (weighted average)
 - Each formula can combine 1-50 feedback keys with specific weights
 
 ### 3.5 Four Feedback Sources
 
-| Source | Type | Description |
-|--------|------|-------------|
-| `app` | Manual | Human annotation in UI |
-| `api` | Programmatic | Direct API calls |
-| `model` | LLM-generated | Model's own evaluation |
-| `auto_eval` | Automated | Heuristic or LLM judge |
+| Source      | Type          | Description            |
+| ----------- | ------------- | ---------------------- |
+| `app`       | Manual        | Human annotation in UI |
+| `api`       | Programmatic  | Direct API calls       |
+| `model`     | LLM-generated | Model's own evaluation |
+| `auto_eval` | Automated     | Heuristic or LLM judge |
 
 ---
 
 ## 4. jq Queries Used
 
 ### 4.1 List All Feedback/Eval Endpoints
+
 ```bash
 jq '.paths | keys | map(select(. | test("feedback|evaluator"; "i")))' \
   reference/openapi/langchain/langsmith/openapi.json
 ```
 
 ### 4.2 Extract Feedback Endpoints to File
+
 ```bash
 jq '.paths | with_entries(select(.key | test("feedback|evaluator"; "i")))' \
   reference/openapi/langchain/langsmith/openapi.json \
@@ -312,6 +330,7 @@ jq '.paths | with_entries(select(.key | test("feedback|evaluator"; "i")))' \
 ```
 
 ### 4.3 Extract Feedback/Eval Schemas
+
 ```bash
 jq '.components.schemas | with_entries(select(.key | test("feedback|evaluator|eval"; "i")))' \
   reference/openapi/langchain/langsmith/openapi.json \
@@ -319,6 +338,7 @@ jq '.components.schemas | with_entries(select(.key | test("feedback|evaluator|ev
 ```
 
 ### 4.4 Get Specific Schema
+
 ```bash
 jq '.components.schemas.EvaluatorStructuredOutput' \
   reference/openapi/langchain/langsmith/openapi.json
@@ -328,12 +348,14 @@ jq '.components.schemas.CodeEvaluatorTopLevel' \
 ```
 
 ### 4.5 List Endpoint Methods
+
 ```bash
 jq 'to_entries | map({path: .key, methods: (.value | keys)})' \
   reference/api-specs/langsmith/evals-endpoints.json
 ```
 
 ### 4.6 Get Feedback Type Enum
+
 ```bash
 jq '.components.schemas.FeedbackType' \
   reference/api-specs/langsmith/evals-schemas.json
@@ -346,6 +368,7 @@ jq '.components.schemas.FeedbackType' \
 ### 5.1 SDK Type Definitions (Phase: SDK Types)
 
 **Core Feedback Types:**
+
 ```rust
 // In sdk/src/types/feedback.rs
 
@@ -412,6 +435,7 @@ pub enum FeedbackSource {
 ```
 
 **Evaluator Types:**
+
 ```rust
 // In sdk/src/types/evaluators.rs
 
@@ -631,16 +655,19 @@ pub enum FormulaCommand {
 ### 5.4 Priority Guidance
 
 **Phase 1 (MVP)**: Basic Feedback CRUD
+
 - Implement `FeedbackCreate`, `FeedbackConfig`, `FeedbackSource`
 - SDK methods: `create_feedback`, `list_feedback`, `get_feedback`
 - CLI: `langstar evals create`, `langstar evals list`
 
 **Phase 2**: Feedback Configs
+
 - Implement feedback config types (continuous, categorical, freeform)
 - SDK methods: feedback config CRUD
 - CLI: `langstar evals config create/list`
 
 **Phase 3**: Advanced Features
+
 - Feedback formulas
 - Batch operations
 - Code evaluators
@@ -686,14 +713,14 @@ The following files were saved to `reference/api-specs/langsmith/`:
 
 ## 7. Summary
 
-| Category | Count | Details |
-|----------|-------|---------|
-| Endpoints Discovered | 11 | Feedback CRUD, configs, formulas, tokens |
-| Schemas Discovered | 36 | Feedback types, evaluators, sources, formulas |
-| Evaluator Types | 2 | Structured (LLM), Code (heuristic) |
-| Feedback Types | 3 | Continuous, categorical, freeform |
-| Feedback Sources | 4 | App, API, model, auto_eval |
-| Composite Metric Support | Yes | Via feedback formulas |
+| Category                 | Count | Details                                       |
+| ------------------------ | ----- | --------------------------------------------- |
+| Endpoints Discovered     | 11    | Feedback CRUD, configs, formulas, tokens      |
+| Schemas Discovered       | 36    | Feedback types, evaluators, sources, formulas |
+| Evaluator Types          | 2     | Structured (LLM), Code (heuristic)            |
+| Feedback Types           | 3     | Continuous, categorical, freeform             |
+| Feedback Sources         | 4     | App, API, model, auto_eval                    |
+| Composite Metric Support | Yes   | Via feedback formulas                         |
 
 **Recommendation**: Implement basic feedback CRUD first (Phase 1), then configs (Phase 2), then advanced features (Phase 3). Complete research issue #367 to understand Python SDK patterns before implementing evaluator execution logic.
 
@@ -714,14 +741,15 @@ This section clarifies a key architectural distinction in LangSmith evaluations.
 
 ### 9.1 Terminology
 
-| Term | Also Known As | Where Runs | Trigger | Data Source |
-|------|---------------|------------|---------|-------------|
-| **Offline Evaluation** | Dataset-based, batch | Client-side | Manual / CI | Datasets |
-| **Online Evaluation** | Production, real-time | Server-side | Automatic | Production traces |
+| Term                   | Also Known As         | Where Runs  | Trigger     | Data Source       |
+| ---------------------- | --------------------- | ----------- | ----------- | ----------------- |
+| **Offline Evaluation** | Dataset-based, batch  | Client-side | Manual / CI | Datasets          |
+| **Online Evaluation**  | Production, real-time | Server-side | Automatic   | Production traces |
 
 ### 9.2 Offline Evaluation (Client-Side)
 
 Covered in Python SDK research (#367):
+
 - Uses `evaluate()` function from `langsmith.evaluation`
 - Evaluators run locally in your Python/JS environment
 - Triggered manually or via CI pipelines
@@ -754,12 +782,14 @@ Custom Python or JavaScript code executed server-side:
 ```
 
 **Use cases:**
+
 - Exact match checks
 - Regex validation
 - JSON schema validation
 - Custom business logic
 
 **Key constraints:**
+
 - Sandboxed execution environment
 - Limited library availability
 - No network access from evaluator code
@@ -790,11 +820,11 @@ The `evaluator_rules` field in dataset schemas (array of UUIDs) links datasets t
 
 ### 9.5 Feedback Source Distinction
 
-| Source Type | Constant | Description |
-|-------------|----------|-------------|
-| `app` | Manual UI | Human annotation via LangSmith UI |
-| `api` | Programmatic | Direct API calls |
-| `model` | LLM-generated | Model's own evaluation |
+| Source Type     | Constant      | Description                                |
+| --------------- | ------------- | ------------------------------------------ |
+| `app`           | Manual UI     | Human annotation via LangSmith UI          |
+| `api`           | Programmatic  | Direct API calls                           |
+| `model`         | LLM-generated | Model's own evaluation                     |
 | **`auto_eval`** | **Automated** | **Online evaluators (code or structured)** |
 
 The `auto_eval` source type indicates feedback generated by online evaluation.

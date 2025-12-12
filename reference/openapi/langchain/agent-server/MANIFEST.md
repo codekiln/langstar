@@ -12,6 +12,7 @@
 Unlike the Control Plane and LangSmith APIs which have centralized endpoints, the Agent Server API is served **per-deployment**. Each LangGraph deployment hosts its own Agent Server API at the deployment's runtime URL.
 
 Key characteristics:
+
 - OpenAPI spec is at `/openapi.json` on each deployment
 - Interactive docs at `/docs`
 - Core API structure is consistent across deployments
@@ -20,6 +21,7 @@ Key characteristics:
 ## Authentication
 
 Same as other LangSmith APIs:
+
 ```bash
 curl -H "x-api-key: $LANGSMITH_API_KEY" "https://<deployment-url>/openapi.json"
 ```

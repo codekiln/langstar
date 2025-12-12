@@ -14,11 +14,13 @@ This audit examined integration tests across 4 recent milestones to identify ane
 ### Key Findings
 
 **Milestones with anemic testing patterns:**
+
 - ✅ **ls-evals-basic** (#6): Exit-code-only tests, no output verification
 - ✅ **ls-runs-query** (#3): CLI parsing tests only, no end-to-end verification
 - ⚠️ **devcontainer-feature** (#1): Feature testing (non-Rust), not applicable
 
 **Milestones with good testing patterns:**
+
 - ✅ **ls-prompt-structured-outputs** (#7): Uses CRUD lifecycle, verifies data integrity
 - ✅ **assistants** (SDK tests): Excellent CRUD lifecycle pattern
 
@@ -97,6 +99,7 @@ fn test_eval_create_accepts_all_heuristic_evaluators() {
 ```
 
 **Problem:** This test would pass even if:
+
 - The evaluation was never created in the API
 - The evaluator type was stored incorrectly
 - The command returned empty output
@@ -158,6 +161,7 @@ async fn test_eval_create_and_verify_lifecycle() {
 **Priority:** High (same bug class as #536)
 
 **Implementation:**
+
 1. Add CRUD lifecycle test for `eval create`
 2. Verify CLI output contains evaluation ID and details
 3. Use SDK to confirm evaluation exists in API
@@ -232,6 +236,7 @@ fn test_runs_query_accepts_multiple_tags() {
 ```
 
 **Problem:** This test only verifies that the CLI parser accepts multiple `--tag` flags. It doesn't verify:
+
 - Tags are actually sent to the API
 - Results are filtered by those tags
 - Output contains runs with those tags
@@ -299,6 +304,7 @@ async fn test_runs_query_with_tag_filter_lifecycle() {
 **Priority:** High (same bug class as #536)
 
 **Implementation:**
+
 1. Create test runs with known tags/metadata
 2. Query via CLI with filters
 3. Parse output and verify correct runs returned
@@ -486,6 +492,7 @@ This is the **platinum standard** for integration tests.
 ### Recommendation
 
 **Document as gold standard example** in:
+
 - `docs/dev/testing/crud-lifecycle-pattern.md`
 - `docs/dev/testing/integration-test-examples.md`
 
@@ -493,13 +500,13 @@ This is the **platinum standard** for integration tests.
 
 ## Summary Table
 
-| Milestone | Status | Test File | Pattern | Issues Found |
-|-----------|--------|-----------|---------|--------------|
-| **ls-evals-basic** (#6) | Closed | `cli/tests/eval_command_test.rs` | ❌ Anemic (exit codes only) | No output verification, stub placeholders |
-| **ls-runs-query** (#3) | Closed | `cli/tests/runs_command_test.rs` | ❌ Anemic (parsing only) | No query verification, no filter tests |
-| **ls-prompt-structured-outputs** (#7) | Open | `sdk/tests/structured_prompts_integration_test.rs` | ✅ Good (CRUD lifecycle) | None - good example |
-| **devcontainer-feature** (#1) | Closed | GitHub Actions | N/A | Not applicable |
-| **assistants** (SDK) | N/A | `sdk/tests/assistant_integration_test.rs` | ✅ Excellent (full CRUD) | None - gold standard |
+| Milestone                             | Status | Test File                                          | Pattern                     | Issues Found                              |
+| ------------------------------------- | ------ | -------------------------------------------------- | --------------------------- | ----------------------------------------- |
+| **ls-evals-basic** (#6)               | Closed | `cli/tests/eval_command_test.rs`                   | ❌ Anemic (exit codes only) | No output verification, stub placeholders |
+| **ls-runs-query** (#3)                | Closed | `cli/tests/runs_command_test.rs`                   | ❌ Anemic (parsing only)    | No query verification, no filter tests    |
+| **ls-prompt-structured-outputs** (#7) | Open   | `sdk/tests/structured_prompts_integration_test.rs` | ✅ Good (CRUD lifecycle)    | None - good example                       |
+| **devcontainer-feature** (#1)         | Closed | GitHub Actions                                     | N/A                         | Not applicable                            |
+| **assistants** (SDK)                  | N/A    | `sdk/tests/assistant_integration_test.rs`          | ✅ Excellent (full CRUD)    | None - gold standard                      |
 
 ---
 
@@ -510,6 +517,7 @@ This is the **platinum standard** for integration tests.
 **Found in:** ls-evals-basic, ls-runs-query, prompt-scoping (pre-fix)
 
 **Characteristics:**
+
 - Tests use `.assert().success()` without output verification
 - Comments say "stub implementation" or "placeholder data"
 - No parsing of command output
@@ -522,6 +530,7 @@ This is the **platinum standard** for integration tests.
 **Found in:** ls-runs-query
 
 **Characteristics:**
+
 - Tests verify CLI accepts arguments
 - No end-to-end API verification
 - Tests pass even if feature doesn't work
@@ -534,6 +543,7 @@ This is the **platinum standard** for integration tests.
 **Found in:** ls-prompt-structured-outputs, assistants
 
 **Characteristics:**
+
 - Create deterministic test data
 - Execute command/SDK method
 - Verify data exists in API

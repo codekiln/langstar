@@ -7,6 +7,7 @@
 ## Overview
 
 Integration tests verify that the Langstar CLI works correctly end-to-end by:
+
 - Creating real deployments via the LangGraph Control Plane API
 - Running CLI commands against those deployments
 - Validating output and behavior
@@ -34,6 +35,7 @@ let deployment = TestDeployment::create();
 ```
 
 Features:
+
 - Creates unique deployments with timestamp-based names
 - Polls deployment until READY status
 - Automatic cleanup on drop (RAII pattern)
@@ -53,16 +55,19 @@ export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 ### Running Locally
 
 **Unit tests only** (fast, no API calls):
+
 ```bash
 cargo test --workspace --lib
 ```
 
 **Integration tests** (requires API access, creates real deployments):
+
 ```bash
 cargo test --features integration-tests --test assistant_command_test --test graph_command_test -- --nocapture
 ```
 
 **Specific test**:
+
 ```bash
 cargo test --features integration-tests --test assistant_command_test test_assistant_create_basic -- --nocapture
 ```
@@ -78,6 +83,7 @@ Integration tests support **selective parallelization** using the `serial_test` 
 **Which tests are marked `#[serial]`?**
 
 Tests in `assistant_command_test.rs` that use the shared `TEST_DEPLOYMENT` via `OnceLock`:
+
 - `test_assistant_create_basic`
 - `test_assistant_lifecycle`
 - `test_assistant_output_formats`
@@ -87,6 +93,7 @@ Tests in `assistant_command_test.rs` that use the shared `TEST_DEPLOYMENT` via `
 - `test_assistant_search`
 
 **Why these tests need to be serial:**
+
 - They share a single `TestDeployment` via `OnceLock<TestDeployment>`
 - Parallel execution could cause resource conflicts on the shared deployment
 - The `#[serial]` attribute ensures only one of these tests runs at a time
@@ -94,6 +101,7 @@ Tests in `assistant_command_test.rs` that use the shared `TEST_DEPLOYMENT` via `
 **Unique naming for parallel safety:**
 
 Test resources use microsecond timestamps + UUID suffix for uniqueness:
+
 ```rust
 fn generate_test_name(prefix: &str) -> String {
     let timestamp = SystemTime::now()
@@ -109,6 +117,7 @@ This prevents name collisions even when tests run concurrently.
 ### Running in CI
 
 Integration tests run automatically in GitHub Actions on:
+
 - Pull requests to `main`
 - Pushes to `main` branch
 
@@ -117,19 +126,24 @@ See `.github/workflows/ci.yml` for configuration.
 ## Test Organization
 
 ### `assistant_command_test.rs`
+
 Tests for `langstar assistant` commands:
+
 - Create, get, update, delete assistants
 - Deployment discovery workflow
 - Error handling (missing deployment, invalid inputs)
 - Output formats (JSON, table)
 
 **Test Deployment**: Shared across all tests via `OnceLock` pattern
+
 - Created once on first test
 - Reused by all subsequent tests
 - Cleaned up automatically when test process exits
 
 ### `graph_command_test.rs`
+
 Tests for `langstar graph` commands:
+
 - List deployments with filters
 - Create deployments (basic and with --wait)
 - Delete deployments
@@ -137,6 +151,7 @@ Tests for `langstar graph` commands:
 - Validation tests (invalid inputs, missing parameters)
 
 **Test Deployments**: Uses standardized `TestDeploymentConfig` naming
+
 - All graph command tests use `TestDeploymentConfig::for_release_tests()` for naming
 - Creates `release-integration-test-{timestamp}` deployments
 - Each test creates/deletes its own deployment (full lifecycle)
@@ -147,43 +162,53 @@ Tests for `langstar graph` commands:
 
 All CLI tests use the SDK's `TestDeploymentConfig` for consistent naming:
 
-| Type | Pattern | Usage |
-|------|---------|-------|
+| Type        | Pattern                                | Usage                                |
+| ----------- | -------------------------------------- | ------------------------------------ |
 | **Release** | `release-integration-test-{timestamp}` | Graph command tests (full lifecycle) |
 
 The `TestDeploymentConfig::for_release_tests()` creates deployments that:
+
 - Have unique timestamp-based names
 - Are self-cleaning (deleted after test completion)
 - Are captured by the periodic cleanup workflow (4hr threshold)
 
 ### `prompt_scoping_test.rs`
+
 Tests for LangSmith prompt scoping (org/workspace):
+
 - These are unit tests and don't require test deployments
 - Test configuration and scoping behavior
 
 ## Design Principles
 
 ### 1. Self-Sufficiency
+
 Tests create and clean up their own resources. No manual setup required.
 
 ### 2. Isolation
+
 Tests use unique deployment names (microsecond timestamp + UUID) to avoid collisions.
 
 ### 3. Idempotency
+
 Tests can be run multiple times without side effects.
 
 ### 4. Cleanup
+
 All test deployments are automatically deleted:
+
 - Via `Drop` implementation on `TestDeployment`
 - Via explicit cleanup in lifecycle tests
 
 ### 5. Performance
+
 - Unit tests run without API calls (fast feedback)
 - Integration tests run in CI only on PRs/main (avoid excessive API usage)
 - Shared deployments reduce API calls and test time
 - Most tests run in parallel for faster CI execution
 
 ### 6. Selective Serialization
+
 - Tests with shared resources use `#[serial]` attribute
 - Parallel-safe tests run concurrently by default
 - No global `--test-threads=1` required
@@ -195,6 +220,7 @@ All test deployments are automatically deleted:
 **Cause**: Missing `LANGSMITH_API_KEY` or `LANGSMITH_WORKSPACE_ID`
 
 **Solution**: Set environment variables:
+
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
@@ -203,12 +229,14 @@ export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 ### "Failed to create test deployment"
 
 **Causes**:
+
 - Invalid API key
 - No access to workspace
 - Rate limiting
 - Network issues
 
 **Solution**:
+
 - Verify API key is valid
 - Check workspace ID is correct
 - Wait a few minutes if rate limited
@@ -219,6 +247,7 @@ export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 **Cause**: Test deployment creation failed in `get_test_deployment()`
 
 **Solution**:
+
 - Check prior error messages for deployment creation failure
 - Verify environment variables are set correctly
 - Ensure API key has permission to create deployments
@@ -228,6 +257,7 @@ export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 **Cause**: Deployments take 1-3 minutes to reach READY status
 
 **Solution**:
+
 - Tests with shared resources are marked `#[serial]` and run sequentially automatically
 - Most tests run in parallel, improving overall execution time
 - Consider running only specific tests during development
@@ -261,11 +291,13 @@ cargo fmt --check
 ### Why Each Check Matters
 
 **1. `cargo fmt`** (Auto-format)
+
 - Fixes code formatting to match project style
 - **Prevents**: "Check" CI job failures
 - **Lesson from #75**: Forgot to run this, had to add formatting commit
 
 **2. `cargo check --workspace`** (Compile check)
+
 - Verifies code compiles across **entire workspace** (not just one crate)
 - Much faster than full build
 - **Prevents**: Build CI job failures
@@ -273,16 +305,19 @@ cargo fmt --check
 - **Critical**: When making breaking changes to SDK, this catches all usages in CLI
 
 **3. `cargo clippy`** (Linting)
+
 - Catches common mistakes and non-idiomatic code
 - **Prevents**: Clippy CI job failures
 - Use `-- -D warnings` to treat warnings as errors (matches CI)
 
 **4. `cargo test --workspace`** (All tests)
+
 - Runs tests for **all crates** (SDK + CLI)
 - **Prevents**: Test CI job failures
 - **Lesson from #75**: Only ran `cargo test --lib` in SDK directory, missed workspace-level issues
 
 **5. `cargo fmt --check`** (Verify formatting)
+
 - Confirms formatting is correct (doesn't auto-fix)
 - **Prevents**: CI formatting check failures
 - Should pass after running `cargo fmt` in step 1
@@ -309,11 +344,13 @@ cargo fmt --check
 ### Special Considerations
 
 **Working in Git Worktrees:**
+
 - Some tests require environment variable sourcing
 - Use the `test-runner-worktree` skill for proper test execution
 - See `.claude/skills/test-runner-worktree/SKILL.md`
 
 **Integration Tests:**
+
 - Integration tests are slower (require API calls)
 - Consider running unit tests only during rapid iteration:
   ```bash

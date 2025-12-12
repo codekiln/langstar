@@ -26,11 +26,11 @@ This is the field ID for the "Status" field in the project.
 
 The Status field has three possible values:
 
-| Status | Option ID | Description |
-|--------|-----------|-------------|
-| Todo | `f75ad846` | Initial status for new issues |
+| Status      | Option ID  | Description                                |
+| ----------- | ---------- | ------------------------------------------ |
+| Todo        | `f75ad846` | Initial status for new issues              |
 | In Progress | `47fc9ee4` | Status for issues being actively worked on |
-| Done | `98236657` | Status for completed issues |
+| Done        | `98236657` | Status for completed issues                |
 
 ## How to Update These IDs
 
@@ -101,11 +101,13 @@ This skill uses **two separate tokens** because GitHub doesn't provide a single 
 ### Token Scopes
 
 **GITHUB_PROJECT_PAT (required):**
+
 - Type: Classic Personal Access Token
 - Required scope: `project`
 - Used for: All project operations (querying, adding issues, updating status)
 
 **GITHUB_PAT (optional):**
+
 - Type: Fine-grained Personal Access Token
 - Required scope: `repo` (or `public_repo` for public repos)
 - Used for: Issue assignment only
@@ -114,10 +116,12 @@ This skill uses **two separate tokens** because GitHub doesn't provide a single 
 ### Token Environment Variables
 
 **For Project Operations:**
+
 1. `GITHUB_PROJECT_PAT` - Primary choice
 2. `GH_PROJECT_PAT` - Alternative name
 
 **For Issue Operations:**
+
 - `GITHUB_PAT` - Required only for issue assignment
 
 ### Setting Up Local Tokens

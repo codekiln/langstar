@@ -8,35 +8,36 @@
 ## Purpose
 
 These fragments are extracted subsets of the full OpenAPI spec, optimized for:
+
 - AI context window efficiency (small file sizes)
 - Focused reference for specific features
 - Quick lookup without loading 635K+ of JSON
 
 ## Fragments
 
-| File | Size | Purpose | jq Query | Last Updated |
-|------|------|---------|----------|--------------|
-| `annotation-queue-endpoints.json` | 2.3K | Annotation queue API endpoints | See below | 2025-11-26 |
-| `annotation-queue-schemas.json` | 45K | Annotation queue data types | See below | 2025-11-26 |
-| `run-schema.json` | 9.8K | Run/trace data structures | See below | 2025-11-26 |
-| `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | See below | 2025-11-26 |
-| `runs-query-request-schema.json` | 5.5K | Runs query request payload | See below | 2025-11-26 |
-| `runs-query-response-schema.json` | 1.1K | Runs query response format | See below | 2025-11-26 |
-| `dataset-endpoints.json` | 61K | Dataset API endpoints | See below | 2025-11-28 |
-| `dataset-schemas.json` | 43K | Dataset data types | See below | 2025-11-28 |
-| `example-endpoints.json` | 30K | Example API endpoints | See below | 2025-11-28 |
-| `example-schemas.json` | 29K | Example data types | See below | 2025-11-28 |
-| `evals-endpoints.json` | 45K | Evaluation/feedback API endpoints | See below | 2025-11-28 |
-| `evals-schemas.json` | 38K | Evaluation/feedback data types | See below | 2025-11-28 |
-| `prompt-endpoints.json` | 45K | Prompt repository/commit API endpoints | See below | 2025-11-29 |
-| `prompt-schemas.json` | 37K | Prompt/commit/manifest data types | See below | 2025-11-29 |
-| `playground-settings-endpoints.json` | 4.9K | Playground settings CRUD API endpoints | See below | 2025-12-01 |
-| `playground-settings-response.json` | 1.1K | PlaygroundSettingsResponse schema | See below | 2025-12-01 |
-| `playground-settings-create-request.json` | 0.8K | PlaygroundSettingsCreateRequest schema | See below | 2025-12-01 |
-| `playground-settings-update-request.json` | 0.8K | PlaygroundSettingsUpdateRequest schema | See below | 2025-12-01 |
-| `playground-saved-options.json` | 0.3K | PlaygroundSavedOptions schema | See below | 2025-12-01 |
-| `sessions-endpoints.json` | 15K | Sessions (Projects) CRUD API endpoints | See below | 2025-12-05 |
-| `sessions-schemas.json` | 12K | TracerSession and related data types | See below | 2025-12-05 |
+| File                                      | Size | Purpose                                | jq Query  | Last Updated |
+| ----------------------------------------- | ---- | -------------------------------------- | --------- | ------------ |
+| `annotation-queue-endpoints.json`         | 2.3K | Annotation queue API endpoints         | See below | 2025-11-26   |
+| `annotation-queue-schemas.json`           | 45K  | Annotation queue data types            | See below | 2025-11-26   |
+| `run-schema.json`                         | 9.8K | Run/trace data structures              | See below | 2025-11-26   |
+| `runs-query-endpoint.json`                | 1.0K | POST /runs/query endpoint              | See below | 2025-11-26   |
+| `runs-query-request-schema.json`          | 5.5K | Runs query request payload             | See below | 2025-11-26   |
+| `runs-query-response-schema.json`         | 1.1K | Runs query response format             | See below | 2025-11-26   |
+| `dataset-endpoints.json`                  | 61K  | Dataset API endpoints                  | See below | 2025-11-28   |
+| `dataset-schemas.json`                    | 43K  | Dataset data types                     | See below | 2025-11-28   |
+| `example-endpoints.json`                  | 30K  | Example API endpoints                  | See below | 2025-11-28   |
+| `example-schemas.json`                    | 29K  | Example data types                     | See below | 2025-11-28   |
+| `evals-endpoints.json`                    | 45K  | Evaluation/feedback API endpoints      | See below | 2025-11-28   |
+| `evals-schemas.json`                      | 38K  | Evaluation/feedback data types         | See below | 2025-11-28   |
+| `prompt-endpoints.json`                   | 45K  | Prompt repository/commit API endpoints | See below | 2025-11-29   |
+| `prompt-schemas.json`                     | 37K  | Prompt/commit/manifest data types      | See below | 2025-11-29   |
+| `playground-settings-endpoints.json`      | 4.9K | Playground settings CRUD API endpoints | See below | 2025-12-01   |
+| `playground-settings-response.json`       | 1.1K | PlaygroundSettingsResponse schema      | See below | 2025-12-01   |
+| `playground-settings-create-request.json` | 0.8K | PlaygroundSettingsCreateRequest schema | See below | 2025-12-01   |
+| `playground-settings-update-request.json` | 0.8K | PlaygroundSettingsUpdateRequest schema | See below | 2025-12-01   |
+| `playground-saved-options.json`           | 0.3K | PlaygroundSavedOptions schema          | See below | 2025-12-01   |
+| `sessions-endpoints.json`                 | 15K  | Sessions (Projects) CRUD API endpoints | See below | 2025-12-05   |
+| `sessions-schemas.json`                   | 12K  | TracerSession and related data types   | See below | 2025-12-05   |
 
 ## Extraction Commands
 

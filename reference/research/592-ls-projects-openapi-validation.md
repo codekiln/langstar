@@ -14,20 +14,21 @@ The OpenAPI specification for sessions (projects) endpoints confirms the scout f
 
 ### OpenAPI Spec vs Scout Findings
 
-| Endpoint | Method | OpenAPI | Scout | Match |
-|----------|--------|---------|-------|-------|
-| `/api/v1/sessions` | GET | `read_tracer_sessions_api_v1_sessions_get` | List all sessions | ✅ |
-| `/api/v1/sessions` | POST | `create_tracer_session_api_v1_sessions_post` | Create new session | ✅ |
-| `/api/v1/sessions` | DELETE | `delete_tracer_sessions_api_v1_sessions_delete` | Batch delete | ⚠️ Not in scout |
-| `/api/v1/sessions/{session_id}` | GET | `read_tracer_session_api_v1_sessions__session_id__get` | Get single session | ✅ |
-| `/api/v1/sessions/{session_id}` | PATCH | `update_tracer_session_api_v1_sessions__session_id__patch` | Update session | ✅ |
-| `/api/v1/sessions/{session_id}` | DELETE | `delete_tracer_session_api_v1_sessions__session_id__delete` | Delete single session | ✅ |
+| Endpoint                        | Method | OpenAPI                                                     | Scout                 | Match          |
+| ------------------------------- | ------ | ----------------------------------------------------------- | --------------------- | -------------- |
+| `/api/v1/sessions`              | GET    | `read_tracer_sessions_api_v1_sessions_get`                  | List all sessions     | ✅             |
+| `/api/v1/sessions`              | POST   | `create_tracer_session_api_v1_sessions_post`                | Create new session    | ✅             |
+| `/api/v1/sessions`              | DELETE | `delete_tracer_sessions_api_v1_sessions_delete`             | Batch delete          | ⚠️ Not in scout |
+| `/api/v1/sessions/{session_id}` | GET    | `read_tracer_session_api_v1_sessions__session_id__get`      | Get single session    | ✅             |
+| `/api/v1/sessions/{session_id}` | PATCH  | `update_tracer_session_api_v1_sessions__session_id__patch`  | Update session        | ✅             |
+| `/api/v1/sessions/{session_id}` | DELETE | `delete_tracer_session_api_v1_sessions__session_id__delete` | Delete single session | ✅             |
 
 **Note**: The batch DELETE at `/api/v1/sessions` accepts `session_ids` as a required query parameter (array of UUIDs).
 
 ### Authentication
 
 All endpoints support the same authentication methods:
+
 - API Key
 - Tenant ID
 - Bearer Auth
@@ -35,6 +36,7 @@ All endpoints support the same authentication methods:
 ### Additional Endpoints (Not in SDK Scope)
 
 The OpenAPI spec includes additional session-related endpoints not in the initial SDK scope:
+
 - `/sessions/{session_id}/dashboard` - Dashboard data
 - `/sessions/{session_id}/insights/*` - Insights and clustering
 - `/sessions/{session_id}/metadata` - Metadata operations
@@ -48,66 +50,66 @@ These can be added in future phases as needed.
 
 **OpenAPI Schema** (from `sessions-schemas.json`):
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | string (uuid) | ✅ Yes | Session/Project ID |
-| `tenant_id` | string (uuid) | ✅ Yes | Organization ID |
-| `name` | string | No | Project name |
-| `description` | string \| null | No | Project description |
-| `start_time` | string (date-time) | No | When project started |
-| `end_time` | string (date-time) \| null | No | When project ended (closed) |
-| `extra` | object \| null | No | Metadata/tags container |
-| `default_dataset_id` | string (uuid) \| null | No | Default dataset reference |
-| `reference_dataset_id` | string (uuid) \| null | No | Reference dataset |
-| `trace_tier` | TraceTier \| null | No | `longlived` or `shortlived` |
-| `run_count` | integer \| null | No | Total runs (stats) |
-| `latency_p50` | number \| null | No | 50th percentile latency |
-| `latency_p99` | number \| null | No | 99th percentile latency |
-| `first_token_p50` | number \| null | No | Time to first token p50 |
-| `first_token_p99` | number \| null | No | Time to first token p99 |
-| `total_tokens` | integer \| null | No | Total token count |
-| `prompt_tokens` | integer \| null | No | Input token count |
-| `completion_tokens` | integer \| null | No | Output token count |
-| `total_cost` | string \| null | No | Total cost (decimal string) |
-| `prompt_cost` | string \| null | No | Prompt cost |
-| `completion_cost` | string \| null | No | Completion cost |
-| `last_run_start_time` | string (date-time) \| null | No | Last run timestamp |
-| `last_run_start_time_live` | string (date-time) \| null | No | Live last run timestamp |
-| `feedback_stats` | object \| null | No | Aggregated feedback stats |
-| `session_feedback_stats` | object \| null | No | Session-level feedback |
-| `run_facets` | array \| null | No | Run facet data |
-| `error_rate` | number \| null | No | Error percentage |
-| `streaming_rate` | number \| null | No | Streaming run percentage |
-| `test_run_number` | integer \| null | No | Test run sequence number |
+| Field                      | Type                       | Required | Notes                       |
+| -------------------------- | -------------------------- | -------- | --------------------------- |
+| `id`                       | string (uuid)              | ✅ Yes   | Session/Project ID          |
+| `tenant_id`                | string (uuid)              | ✅ Yes   | Organization ID             |
+| `name`                     | string                     | No       | Project name                |
+| `description`              | string \| null             | No       | Project description         |
+| `start_time`               | string (date-time)         | No       | When project started        |
+| `end_time`                 | string (date-time) \| null | No       | When project ended (closed) |
+| `extra`                    | object \| null             | No       | Metadata/tags container     |
+| `default_dataset_id`       | string (uuid) \| null      | No       | Default dataset reference   |
+| `reference_dataset_id`     | string (uuid) \| null      | No       | Reference dataset           |
+| `trace_tier`               | TraceTier \| null          | No       | `longlived` or `shortlived` |
+| `run_count`                | integer \| null            | No       | Total runs (stats)          |
+| `latency_p50`              | number \| null             | No       | 50th percentile latency     |
+| `latency_p99`              | number \| null             | No       | 99th percentile latency     |
+| `first_token_p50`          | number \| null             | No       | Time to first token p50     |
+| `first_token_p99`          | number \| null             | No       | Time to first token p99     |
+| `total_tokens`             | integer \| null            | No       | Total token count           |
+| `prompt_tokens`            | integer \| null            | No       | Input token count           |
+| `completion_tokens`        | integer \| null            | No       | Output token count          |
+| `total_cost`               | string \| null             | No       | Total cost (decimal string) |
+| `prompt_cost`              | string \| null             | No       | Prompt cost                 |
+| `completion_cost`          | string \| null             | No       | Completion cost             |
+| `last_run_start_time`      | string (date-time) \| null | No       | Last run timestamp          |
+| `last_run_start_time_live` | string (date-time) \| null | No       | Live last run timestamp     |
+| `feedback_stats`           | object \| null             | No       | Aggregated feedback stats   |
+| `session_feedback_stats`   | object \| null             | No       | Session-level feedback      |
+| `run_facets`               | array \| null              | No       | Run facet data              |
+| `error_rate`               | number \| null             | No       | Error percentage            |
+| `streaming_rate`           | number \| null             | No       | Streaming run percentage    |
+| `test_run_number`          | integer \| null            | No       | Test run sequence number    |
 
 **Comparison with Python SDK TracerSession**: ✅ Fields align with Python SDK schema (`reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/schemas.py:729-788`).
 
 ### TracerSessionCreate (Request)
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `name` | string | No | Project name |
-| `description` | string \| null | No | Optional description |
-| `start_time` | string (date-time) | No | Auto-set if not provided |
-| `end_time` | string (date-time) \| null | No | For closed projects |
-| `extra` | object \| null | No | Metadata/tags |
-| `default_dataset_id` | string (uuid) \| null | No | Default dataset |
-| `reference_dataset_id` | string (uuid) \| null | No | Reference dataset |
-| `trace_tier` | TraceTier \| null | No | Trace retention tier |
-| `id` | string (uuid) \| null | No | Client-specified ID |
+| Field                  | Type                       | Required | Notes                    |
+| ---------------------- | -------------------------- | -------- | ------------------------ |
+| `name`                 | string                     | No       | Project name             |
+| `description`          | string \| null             | No       | Optional description     |
+| `start_time`           | string (date-time)         | No       | Auto-set if not provided |
+| `end_time`             | string (date-time) \| null | No       | For closed projects      |
+| `extra`                | object \| null             | No       | Metadata/tags            |
+| `default_dataset_id`   | string (uuid) \| null      | No       | Default dataset          |
+| `reference_dataset_id` | string (uuid) \| null      | No       | Reference dataset        |
+| `trace_tier`           | TraceTier \| null          | No       | Trace retention tier     |
+| `id`                   | string (uuid) \| null      | No       | Client-specified ID      |
 
 **Key Finding**: No fields are strictly required. The API will auto-generate ID and use defaults.
 
 ### TracerSessionUpdate (Request)
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `name` | string \| null | No | Update name |
-| `description` | string \| null | No | Update description |
-| `default_dataset_id` | string (uuid) \| null | No | Update default dataset |
-| `end_time` | string (date-time) \| null | No | Close the project |
-| `extra` | object \| null | No | Update metadata |
-| `trace_tier` | TraceTier \| null | No | Update trace tier |
+| Field                | Type                       | Required | Notes                  |
+| -------------------- | -------------------------- | -------- | ---------------------- |
+| `name`               | string \| null             | No       | Update name            |
+| `description`        | string \| null             | No       | Update description     |
+| `default_dataset_id` | string (uuid) \| null      | No       | Update default dataset |
+| `end_time`           | string (date-time) \| null | No       | Close the project      |
+| `extra`              | object \| null             | No       | Update metadata        |
+| `trace_tier`         | TraceTier \| null          | No       | Update trace tier      |
 
 **Key Finding**: All fields optional - supports partial updates via PATCH.
 
@@ -115,19 +117,19 @@ These can be added in future phases as needed.
 
 Simplified response returned from POST and PATCH operations:
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | string (uuid) | ✅ Yes | Session ID |
-| `tenant_id` | string (uuid) | ✅ Yes | Organization ID |
-| `name` | string | No | Project name |
-| `description` | string \| null | No | Description |
-| `start_time` | string (date-time) | No | Start time |
-| `end_time` | string (date-time) \| null | No | End time |
-| `extra` | object \| null | No | Metadata |
-| `default_dataset_id` | string (uuid) \| null | No | Default dataset |
-| `reference_dataset_id` | string (uuid) \| null | No | Reference dataset |
-| `trace_tier` | TraceTier \| null | No | Trace tier |
-| `last_run_start_time_live` | string (date-time) \| null | No | Last run time |
+| Field                      | Type                       | Required | Notes             |
+| -------------------------- | -------------------------- | -------- | ----------------- |
+| `id`                       | string (uuid)              | ✅ Yes   | Session ID        |
+| `tenant_id`                | string (uuid)              | ✅ Yes   | Organization ID   |
+| `name`                     | string                     | No       | Project name      |
+| `description`              | string \| null             | No       | Description       |
+| `start_time`               | string (date-time)         | No       | Start time        |
+| `end_time`                 | string (date-time) \| null | No       | End time          |
+| `extra`                    | object \| null             | No       | Metadata          |
+| `default_dataset_id`       | string (uuid) \| null      | No       | Default dataset   |
+| `reference_dataset_id`     | string (uuid) \| null      | No       | Reference dataset |
+| `trace_tier`               | TraceTier \| null          | No       | Trace tier        |
+| `last_run_start_time_live` | string (date-time) \| null | No       | Last run time     |
 
 **Key Finding**: Excludes computed/stats fields like `run_count`, `latency_p*`, `*_cost`, etc.
 
@@ -145,26 +147,26 @@ longlived, shortlived
 
 ## 3. Query Parameters (List Endpoint)
 
-| Parameter | Type | Default | Notes |
-|-----------|------|---------|-------|
-| `reference_free` | boolean \| null | - | Filter by no reference dataset |
-| `reference_dataset` | array[uuid] \| null | - | Filter by reference datasets |
-| `id` | array[uuid] \| null | - | Filter by specific IDs |
-| `name` | string \| null | - | Exact name match |
-| `name_contains` | string \| null | - | Partial name match |
-| `dataset_version` | string \| null | - | Filter by dataset version |
-| `sort_by` | SessionSortableColumns | `start_time` | Sort field |
-| `sort_by_desc` | boolean | `true` | Descending order |
-| `metadata` | string \| null | - | Metadata filter (JSON) |
-| `sort_by_feedback_key` | string \| null | - | Sort by feedback key |
-| `offset` | integer | `0` | Pagination offset |
-| `limit` | integer | `100` | Max 100 |
-| `tag_value_id` | array[uuid] \| null | - | Filter by tags |
-| `facets` | boolean | `false` | Include facet data |
-| `filter` | string \| null | - | Generic filter string |
-| `include_stats` | boolean | `false` | Include statistics |
-| `use_approx_stats` | boolean | `false` | Use approximate stats |
-| `stats_start_time` | string (date-time) \| null | - | Stats time window |
+| Parameter              | Type                       | Default      | Notes                          |
+| ---------------------- | -------------------------- | ------------ | ------------------------------ |
+| `reference_free`       | boolean \| null            | -            | Filter by no reference dataset |
+| `reference_dataset`    | array[uuid] \| null        | -            | Filter by reference datasets   |
+| `id`                   | array[uuid] \| null        | -            | Filter by specific IDs         |
+| `name`                 | string \| null             | -            | Exact name match               |
+| `name_contains`        | string \| null             | -            | Partial name match             |
+| `dataset_version`      | string \| null             | -            | Filter by dataset version      |
+| `sort_by`              | SessionSortableColumns     | `start_time` | Sort field                     |
+| `sort_by_desc`         | boolean                    | `true`       | Descending order               |
+| `metadata`             | string \| null             | -            | Metadata filter (JSON)         |
+| `sort_by_feedback_key` | string \| null             | -            | Sort by feedback key           |
+| `offset`               | integer                    | `0`          | Pagination offset              |
+| `limit`                | integer                    | `100`        | Max 100                        |
+| `tag_value_id`         | array[uuid] \| null        | -            | Filter by tags                 |
+| `facets`               | boolean                    | `false`      | Include facet data             |
+| `filter`               | string \| null             | -            | Generic filter string          |
+| `include_stats`        | boolean                    | `false`      | Include statistics             |
+| `use_approx_stats`     | boolean                    | `false`      | Use approximate stats          |
+| `stats_start_time`     | string (date-time) \| null | -            | Stats time window              |
 
 ## 4. Discrepancies
 
@@ -194,14 +196,14 @@ longlived, shortlived
 
 ### Rust Type Mapping
 
-| OpenAPI Type | Rust Type |
-|--------------|-----------|
-| `string (uuid)` | `uuid::Uuid` |
-| `string (date-time)` | `chrono::DateTime<Utc>` |
-| `string \| null` | `Option<String>` |
-| `integer \| null` | `Option<i64>` |
-| `number \| null` | `Option<f64>` |
-| `object (additionalProperties)` | `serde_json::Value` |
+| OpenAPI Type                    | Rust Type               |
+| ------------------------------- | ----------------------- |
+| `string (uuid)`                 | `uuid::Uuid`            |
+| `string (date-time)`            | `chrono::DateTime<Utc>` |
+| `string \| null`                | `Option<String>`        |
+| `integer \| null`               | `Option<i64>`           |
+| `number \| null`                | `Option<f64>`           |
+| `object (additionalProperties)` | `serde_json::Value`     |
 
 ### Recommended Struct Definitions
 
@@ -318,10 +320,10 @@ pub enum SessionSortableColumn {
 
 The following OpenAPI fragments were extracted and added to `reference/api-specs/langsmith/`:
 
-| File | Size | Content |
-|------|------|---------|
-| `sessions-endpoints.json` | 15K | Core CRUD endpoint definitions |
-| `sessions-schemas.json` | 12K | TracerSession, Create, Update, related types |
+| File                      | Size | Content                                      |
+| ------------------------- | ---- | -------------------------------------------- |
+| `sessions-endpoints.json` | 15K  | Core CRUD endpoint definitions               |
+| `sessions-schemas.json`   | 12K  | TracerSession, Create, Update, related types |
 
 **jq extraction commands** added to `reference/api-specs/langsmith/FRAGMENTS.md`.
 

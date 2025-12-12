@@ -5,14 +5,16 @@
 Langstar is a tool for interacting with LangSmith and LangGraph REST APIs.
 See @/reference/api-specs/LANGSMITH_API_OVERVIEW.md for overview of APIs.
 At a high level, the key deliverables are:
-* `./sdk` - a set of rust-based SDKs for calling the LangSmith REST endpoints
-* `./cli` - a unified CLI calling the langstar rust SDKs 
-* `.devcontainer/features/langstar` - a Devcontainer feature with the CLI installed
+
+- `./sdk` - a set of rust-based SDKs for calling the LangSmith REST endpoints
+- `./cli` - a unified CLI calling the langstar rust SDKs
+- `.devcontainer/features/langstar` - a Devcontainer feature with the CLI installed
 
 ## Dev Setup
-* see .devcontainer
-* git access is provided via a github fine-grained personal access token
-  * it's locked down to this repo
+
+- see .devcontainer
+- git access is provided via a github fine-grained personal access token
+  - it's locked down to this repo
 
 This project prefers **Rust-based tools** wherever that is practical.
 
@@ -21,6 +23,7 @@ This project prefers **Rust-based tools** wherever that is practical.
 This project follows a GitHub issue-driven development workflow. For complete details, see @docs/dev/github-workflow.md
 
 Key points:
+
 - Create GitHub issues for all work
 - Use branch naming convention: `m<milestone>-p<parent>-i<issue>-<slug>` (with appropriate variations)
 - Follow Conventional Emoji Commits for commit messages
@@ -33,6 +36,7 @@ Key points:
 This project uses git worktrees for parallel development. Keep `/workspace` clean and synchronized with origin main by doing your work in `wip/` directory worktrees.
 
 **Standard workflow:**
+
 1. When starting work on an issue, use the `git-worktrees` skill or `/gh-start-issue <issue_number>` command
 2. Work in the created worktree at `wip/<branch-name>/`
 3. Keep `/workspace` reserved for:
@@ -41,12 +45,14 @@ This project uses git worktrees for parallel development. Keep `/workspace` clea
    - Reading documentation
 
 **Benefits:**
+
 - Parallel development on multiple issues
 - Clean separation between branches
 - No branch-switching conflicts
 - Easy context switching
 
 **Related resources:**
+
 - `.claude/skills/git-worktrees/SKILL.md` - Worktree management skill
 - `docs/dev/github-workflow.md` - Issue-driven workflow
 - `scripts/cleanup-closed-issue-worktrees.sh` - Cleanup automation
@@ -62,11 +68,12 @@ For commit message formatting, please follow @docs/dev/git-scm-conventions.md
 ## Supporting Repository Structures
 
 ### `docs/` - Project Documentation
+
 - `dev/` - Development guidelines, workflow docs, ADRs (see @docs/dev/README.md)
 - `examples/` - Example code and usage patterns
 - `implementation/` - Implementation plans and specifications
 - `research/` - Research reports and findings for specific internal issues
-- `templates/` - templates for milestone tickets and checklists 
+- `templates/` - templates for milestone tickets and checklists
 - `usage/` - Usage documentation and guides
 
 #### Testing Standards (Progressive Disclosure)
@@ -78,24 +85,29 @@ The TOC above is auto-loaded (~15 lines). From there, load specific docs on dema
 **Example workflows:**
 
 **Writing SDK integration tests:**
+
 1. See available docs in auto-loaded TOC
 2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always relevant)
 3. Load `docs/dev/testing/sdk-integration-tests.md` (SDK-specific)
 4. Load `docs/dev/testing/mocking-patterns.md` (if using mocks)
 
 **Writing CLI integration tests:**
+
 1. See available docs in auto-loaded TOC
 2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (principles)
 3. Load `docs/dev/testing/cli-integration-tests.md` (CLI-specific)
 4. Load `docs/dev/testing/crud-lifecycle-pattern.md` (if CRUD operations)
 
 **Using test planning automation:**
+
 ```
 /gh-milestones:test-plan <milestone-name>
 ```
+
 This command automatically loads relevant docs and generates a test plan.
 
 **Why progressive disclosure matters:**
+
 - Testing docs total ~3,000 lines (~24,000-30,000 tokens)
 - Most tasks need only 2-3 docs (~500 lines, ~4,000 tokens)
 - Saves ~20,000-25,000 tokens per testing task (~83% context efficiency gain)
@@ -109,6 +121,7 @@ See `docs/dev/progressive-disclosure-docs-standards.md` for detailed patterns.
 Canonical reference for LangSmith environment variables and their mapping to API authentication headers. Essential for understanding which variables are required for different APIs and why tests require all three variables.
 
 ### `reference/` - External Resources & Experiments
+
 - `api-specs/` - API specifications (LangSmith, control-plane)
 - `experiments/` - Python experiments for API interaction
 - `openapi/langchain/` - OpenAPI JSON specifications
@@ -116,9 +129,11 @@ Canonical reference for LangSmith environment variables and their mapping to API
 - `research/` - Research reports on external codebases
 
 ### `tests/` - root-level fixtures for integration tests
+
 - see `tests/fixtures/test-graph-deployment/README.md` info about langsmith test deployment for integration tests
 
 ### `wip/` - work in progress
+
 - gitignored
 - includes git worktrees for active in dev issues. `scripts/cleanup-closed-issue-worktrees.sh` and .claude/skills/git-worktrees creates and cleans up.
 - some txt files with debugging for active issues

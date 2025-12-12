@@ -1,8 +1,8 @@
 # ADR-0004: Drift Detection Workflow
 
-**Status:** Accepted  
-**Date:** 2025-11-13  
-**Decision Makers:** Langstar Development Team  
+**Status:** Accepted\
+**Date:** 2025-11-13\
+**Decision Makers:** Langstar Development Team\
 **Related Issues:** #106, #115
 
 ## Context
@@ -15,6 +15,7 @@
 - **Security issues**: Missing security patches or deprecation of vulnerable endpoints
 
 We need a systematic way to:
+
 1. **Detect drift** - Know when upstream APIs have changed
 2. **Respond to drift** - Clear workflow for updating our SDK
 3. **Prevent surprises** - Catch breaking changes before users do
@@ -46,6 +47,7 @@ We implement a **manual drift detection workflow** with supporting tools and doc
 **Purpose:** Compare local OpenAPI specs with upstream to detect changes
 
 **Implementation:**
+
 ```bash
 #!/usr/bin/env bash
 # Check for drift between local OpenAPI specs and upstream APIs
@@ -181,6 +183,7 @@ fi
 **Purpose:** Fetch latest OpenAPI specs from upstream and update `versions.json`
 
 **Implementation:**
+
 ```bash
 #!/usr/bin/env bash
 # Fetch latest OpenAPI specifications from LangChain services
@@ -299,7 +302,7 @@ echo "  4. Test changes: 'cargo test'"
 
 **Content:**
 
-```markdown
+````markdown
 # Runbook: Updating OpenAPI Specifications
 
 This runbook guides you through updating Langstar's OpenAPI specifications
@@ -325,6 +328,7 @@ when upstream LangChain APIs change.
 ```bash
 ./tools/check_spec_drift.sh
 ```
+````
 
 **If no drift detected:** You're done! ✓
 
@@ -337,6 +341,7 @@ when upstream LangChain APIs change.
 ```
 
 This fetches the latest OpenAPI specs from:
+
 - LangSmith: https://api.smith.langchain.com/openapi.json
 - LangGraph Cloud: https://api.langgraph.cloud/openapi.json
 
@@ -348,6 +353,7 @@ git diff tools/specs/langgraph-openapi.json
 ```
 
 **Look for:**
+
 - ✅ New endpoints (additions)
 - ⚠️ Removed endpoints (deletions)
 - ⚠️ Changed parameters (modifications to existing endpoints)
@@ -355,6 +361,7 @@ git diff tools/specs/langgraph-openapi.json
 - 🚨 Breaking changes (required parameters added, types changed)
 
 **Use tools:**
+
 ```bash
 # Count endpoints
 jq '.paths | keys | length' tools/specs/langsmith-openapi.json
@@ -378,22 +385,27 @@ Edit `tools/specs/CHANGELOG.md`:
 ### YYYY-MM-DD (Checksum: [new checksum])
 
 **Added:**
+
 - New endpoint: `POST /api/v1/new-feature`
   - Description of what it does
   - Parameters: ...
 
 **Changed:**
+
 - `GET /api/v1/existing`: Added optional parameter `new_param`
   - Impact: Existing calls still work
 
 **Breaking Changes:**
+
 - `POST /api/v1/thing`: Parameter `old_param` renamed to `new_param`
   - Migration: Update all callers to use `new_param`
 
 **Deprecated:**
+
 - `GET /api/v1/old-endpoint`: Use `/api/v1/new-endpoint` instead
 
 **Notes:**
+
 - Spec fetched from: [URL]
 - Previous checksum: [old checksum]
 ```
@@ -405,6 +417,7 @@ Edit `tools/specs/CHANGELOG.md`:
 ```
 
 This will:
+
 - Update `versions.json` with new checksums and metadata
 - Regenerate SDK code in `sdk/src/generated/`
 - Show summary of changes
@@ -416,6 +429,7 @@ git diff sdk/src/generated/
 ```
 
 **Check for:**
+
 - New API methods
 - Changed method signatures
 - New models or changed model fields
@@ -434,6 +448,7 @@ cargo test
 ```
 
 **Common updates needed:**
+
 - Add new methods to wrapper clients
 - Update existing methods if signatures changed
 - Add migration helpers for breaking changes
@@ -447,6 +462,7 @@ Edit `sdk/CHANGELOG.md`:
 ## [Unreleased]
 
 ### Changed
+
 - ⬆️ Updated generated SDK from langsmith-openapi.json (checksum: abc123...)
   - New endpoint: `DeploymentClient::get_status()`
   - Breaking: `Prompt.repo_handle` now required
@@ -454,6 +470,7 @@ Edit `sdk/CHANGELOG.md`:
   - Migration: Update all `Prompt` constructors to include `repo_handle`
 
 ### Added
+
 - ✨ New `DeploymentClient::get_status()` method
   - Wrapper for new `/deployments/{id}/status` endpoint
 ```
@@ -478,6 +495,7 @@ If CLI changes made, update `CHANGELOG.md` (or let git-cliff generate it):
 ## [Unreleased]
 
 ### Added
+
 - ✨ feat(cli): new `langstar deployments status` command
   - Shows real-time deployment health
   - Uses new upstream API endpoint
@@ -551,6 +569,7 @@ Use this checklist when updating specs:
 **Problem:** `./tools/fetch_specs.sh` fails to fetch specs
 
 **Solutions:**
+
 - Check internet connection
 - Try fetching manually: `curl https://api.smith.langchain.com/openapi.json`
 - Check if LangChain services are down
@@ -561,6 +580,7 @@ Use this checklist when updating specs:
 **Problem:** `./tools/generate_sdk.sh` fails
 
 **Solutions:**
+
 - Check if OpenAPI generator is installed
 - Try with Docker: `docker pull openapitools/openapi-generator-cli`
 - Check spec validity: Upload to https://editor.swagger.io/
@@ -571,6 +591,7 @@ Use this checklist when updating specs:
 **Problem:** Tests fail after regenerating SDK
 
 **Solutions:**
+
 - Check for breaking changes in upstream API
 - Update test fixtures and mocks
 - Update manual wrapper code
@@ -581,6 +602,7 @@ Use this checklist when updating specs:
 **Problem:** Merge conflicts in spec files or generated code
 
 **Solutions:**
+
 - **Spec files:** Accept upstream version, re-fetch if needed
 - **Generated code:** Delete and regenerate
 - **versions.json:** Manually merge, preserve all metadata
@@ -589,17 +611,19 @@ Use this checklist when updating specs:
 ## Schedule
 
 **Monthly Check:** 1st of each month
+
 - Assign to rotating maintainer
 - Run drift check
 - Update if needed
 - Create PR for review
 
 **Quarterly Review:** Every 3 months
+
 - Review all changelogs
 - Update documentation
 - Plan major SDK refactorings if needed
-```
 
+```
 ## Consequences
 
 ### Positive
@@ -727,3 +751,4 @@ Use this checklist when updating specs:
 6. Add CI check for uncommitted spec changes
 7. Add monthly calendar reminder for spec check
 8. Document workflow in team README
+```

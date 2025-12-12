@@ -17,6 +17,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 - **Gap that caused #536**: Missing guidance on verifying actual behavior vs just exit codes
 
 **Recommendations for Phase 2:**
+
 1. Create centralized `docs/dev/testing/` directory with progressive disclosure
 2. Extract high-level testing principles into standalone document
 3. Consolidate duplicated content (DRY)
@@ -26,18 +27,18 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 
 ## 1. File-by-File Inventory
 
-| File Path | Line Count | Topics Covered | Should Centralize? | Missing Content |
-|-----------|-----------|----------------|-------------------|-----------------|
-| `.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md` | 371 | DevContainer feature testing, workflow files, publishing process | Partial | No link to main testing docs |
-| `cli/tests/README.md` | 252 | CLI integration tests, fixtures, parallelization, troubleshooting | Yes | Missing CRUD lifecycle pattern |
-| `sdk/tests/README.md` | 453 | SDK integration tests, deployment naming, assistant tests, deployment workflow | Yes | Missing high-level principles |
-| `tests/fixtures/test-graph-deployment/README.md` | 272 | Test deployment setup, graph implementation, env vars | Keep but reference | N/A |
-| `tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md` | 423 | Step-by-step deployment instructions | Keep but reference | N/A |
-| `.github/workflows/ci.yml` | 302 | CI jobs, test configuration, artifact upload | N/A (workflow) | N/A |
-| `.github/workflows/test-features.yml` | 568 | DevContainer feature testing matrix | N/A (workflow) | N/A |
-| `docs/dev/ci-cd.md` | 464 | Release process, nextest, test profiles | Partial | Pre-commit checklist duplicated |
-| `docs/dev/procedures.md` | 561 | Pre-commit checklist (lines 103-280), rulesets | Yes (extract) | Only covers pre-commit, not test design |
-| `docs/dev/README.md` | 179 | Pre-commit section (lines 123-140) | DRY violation | Points to procedures.md |
+| File Path                                                   | Line Count | Topics Covered                                                                 | Should Centralize? | Missing Content                         |
+| ----------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------ | ------------------ | --------------------------------------- |
+| `.devcontainer/features/langstar/TESTING-GITHUB-ACTIONS.md` | 371        | DevContainer feature testing, workflow files, publishing process               | Partial            | No link to main testing docs            |
+| `cli/tests/README.md`                                       | 252        | CLI integration tests, fixtures, parallelization, troubleshooting              | Yes                | Missing CRUD lifecycle pattern          |
+| `sdk/tests/README.md`                                       | 453        | SDK integration tests, deployment naming, assistant tests, deployment workflow | Yes                | Missing high-level principles           |
+| `tests/fixtures/test-graph-deployment/README.md`            | 272        | Test deployment setup, graph implementation, env vars                          | Keep but reference | N/A                                     |
+| `tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md`  | 423        | Step-by-step deployment instructions                                           | Keep but reference | N/A                                     |
+| `.github/workflows/ci.yml`                                  | 302        | CI jobs, test configuration, artifact upload                                   | N/A (workflow)     | N/A                                     |
+| `.github/workflows/test-features.yml`                       | 568        | DevContainer feature testing matrix                                            | N/A (workflow)     | N/A                                     |
+| `docs/dev/ci-cd.md`                                         | 464        | Release process, nextest, test profiles                                        | Partial            | Pre-commit checklist duplicated         |
+| `docs/dev/procedures.md`                                    | 561        | Pre-commit checklist (lines 103-280), rulesets                                 | Yes (extract)      | Only covers pre-commit, not test design |
+| `docs/dev/README.md`                                        | 179        | Pre-commit section (lines 123-140)                                             | DRY violation      | Points to procedures.md                 |
 
 **Total: ~3,667 lines across 10 files**
 
@@ -48,6 +49,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Purpose:** Documents GitHub Actions workflows for testing DevContainer features
 
 **Topics Covered:**
+
 - Feature information and workflow files
 - validate-metadata and test-features job details
 - Test process and verification commands
@@ -65,6 +67,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Purpose:** Documents CLI integration test infrastructure
 
 **Topics Covered:**
+
 - Test infrastructure overview (self-sufficient tests)
 - Test fixtures (`TestDeployment` RAII pattern)
 - Running tests locally and in CI
@@ -76,11 +79,13 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Should Centralize?** Yes - contains patterns applicable to all tests
 
 **Key Gaps:**
+
 - Missing CRUD lifecycle pattern (CLI -> SDK verification)
 - No mention of verifying actual output (just exit codes)
 - Missing link to high-level testing principles
 
 **Design Principles Present (lines 162-188):**
+
 1. Self-Sufficiency
 2. Isolation
 3. Idempotency
@@ -95,6 +100,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Purpose:** Documents SDK integration test patterns
 
 **Topics Covered:**
+
 - Deployment vs Revision status concepts
 - Test deployment naming (PR/Dev vs Release patterns)
 - Running integration tests with `--ignored`
@@ -105,11 +111,13 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Should Centralize?** Yes - overlaps significantly with cli/tests/README.md
 
 **Key Gaps:**
+
 - No CRUD lifecycle pattern documentation
 - Missing guidance on verifying actual API responses
 - No Toyota andon cord principle
 
 **Unique Content Worth Preserving:**
+
 - Deployment vs Revision status explanation (lines 8-14)
 - TestDeploymentConfig patterns (lines 18-32)
 - DeploymentGuard RAII pattern (lines 390-414)
@@ -121,6 +129,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Purpose:** Documents the minimal LangGraph test deployment
 
 **Topics Covered:**
+
 - Test deployment structure and purpose
 - Graph implementation (echo node)
 - Quick start guide
@@ -138,6 +147,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Purpose:** Step-by-step deployment instructions
 
 **Topics Covered:**
+
 - Prerequisites for deployment
 - GitHub Integration deployment method
 - Manual File Upload method
@@ -153,6 +163,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 #### `.github/workflows/ci.yml` (302 lines)
 
 **Testing-Related Sections:**
+
 - **test job** (lines 54-105): Unit tests with cargo-nextest, JUnit output
 - **integration-tests job** (lines 106-163): Integration tests with features flag
 - Environment variables: `LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`, `LANGGRAPH_GITHUB_INTEGRATION_ID`
@@ -166,6 +177,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 #### `.github/workflows/test-features.yml` (568 lines)
 
 **Testing-Related Sections:**
+
 - Feature metadata validation (lines 19-180)
 - Test matrix across 6 base images (lines 182-568)
 - Test isolation guarantees documented in workflow
@@ -178,18 +190,20 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 #### `docs/dev/ci-cd.md` (464 lines, ~3,500 tokens)
 
 **Testing-Related Sections:**
+
 - Test job description (lines 15-25)
 - cargo-nextest documentation (lines 399-461)
 - Test profiles table (lines 429-437)
 - Running tests locally (lines 410-427)
 
 **Key Testing Content:**
+
 ```markdown
-| Profile | Use Case | Timeout | Output |
-|---------|----------|---------|--------|
-| `default` | Local development | 60s | Failed tests only |
-| `ci` | CI unit tests | 60s | JUnit XML |
-| `integration` | Integration tests | 180s | JUnit XML |
+| Profile       | Use Case          | Timeout | Output            |
+| ------------- | ----------------- | ------- | ----------------- |
+| `default`     | Local development | 60s     | Failed tests only |
+| `ci`          | CI unit tests     | 60s     | JUnit XML         |
+| `integration` | Integration tests | 180s    | JUnit XML         |
 ```
 
 **Should Centralize?** Yes - extract test-specific content to testing docs
@@ -201,6 +215,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 #### `docs/dev/procedures.md` (561 lines, ~4,200 tokens)
 
 **Testing-Related Sections:**
+
 - Pre-commit checklist (lines 103-280)
 - Why each check matters (lines 129-157)
 - Breaking changes checklist (lines 176-198)
@@ -210,8 +225,10 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Should Centralize?** Extract pre-commit to testing docs, keep procedures for non-testing content
 
 **Key Content:**
+
 ```markdown
 ### Essential Checks (Run Every Time)
+
 cargo fmt
 cargo check --workspace --all-features
 cargo clippy --workspace --all-features -- -D warnings
@@ -224,6 +241,7 @@ cargo fmt --check
 #### `docs/dev/README.md` (Lines 123-140, ~18 lines, ~130 tokens)
 
 **Testing-Related Sections:**
+
 - Pre-commit checklist reference (points to procedures.md)
 - Brief command summary
 
@@ -235,18 +253,18 @@ cargo fmt --check
 
 ### Missing High-Level Testing Principles
 
-| Topic | Status | Impact |
-|-------|--------|--------|
-| Toyota andon cord principle | **MISSING** | Developers don't understand "never merge with failing tests" philosophy |
-| CRUD lifecycle pattern (CLI -> SDK verification) | **MISSING** | Tests only check exit codes, not actual behavior (#536) |
-| When to use unit vs integration tests | **MISSING** | No guidance on test type selection |
-| Test naming conventions | **MISSING** | Inconsistent test names across codebase |
-| Test fixture management standards | **PARTIAL** | sdk/tests/README mentions patterns, not centralized |
-| Mocking patterns and when to use them | **MISSING** | No guidance on mocking strategies |
-| Integration test prerequisites checklist | **PARTIAL** | Scattered across multiple READMEs |
-| Test data cleanup requirements | **PARTIAL** | Mentioned but not standardized |
-| How to debug failing tests | **PARTIAL** | Some troubleshooting in READMEs |
-| Performance testing guidelines | **MISSING** | No performance testing guidance |
+| Topic                                            | Status      | Impact                                                                  |
+| ------------------------------------------------ | ----------- | ----------------------------------------------------------------------- |
+| Toyota andon cord principle                      | **MISSING** | Developers don't understand "never merge with failing tests" philosophy |
+| CRUD lifecycle pattern (CLI -> SDK verification) | **MISSING** | Tests only check exit codes, not actual behavior (#536)                 |
+| When to use unit vs integration tests            | **MISSING** | No guidance on test type selection                                      |
+| Test naming conventions                          | **MISSING** | Inconsistent test names across codebase                                 |
+| Test fixture management standards                | **PARTIAL** | sdk/tests/README mentions patterns, not centralized                     |
+| Mocking patterns and when to use them            | **MISSING** | No guidance on mocking strategies                                       |
+| Integration test prerequisites checklist         | **PARTIAL** | Scattered across multiple READMEs                                       |
+| Test data cleanup requirements                   | **PARTIAL** | Mentioned but not standardized                                          |
+| How to debug failing tests                       | **PARTIAL** | Some troubleshooting in READMEs                                         |
+| Performance testing guidelines                   | **MISSING** | No performance testing guidance                                         |
 
 ### Critical Gap: CRUD Lifecycle Pattern
 
@@ -254,7 +272,7 @@ cargo fmt --check
 
 The #536 bug occurred because tests verified exit codes but not actual behavior. Documentation should include:
 
-```markdown
+````markdown
 ## CRUD Lifecycle Testing Pattern
 
 Integration tests MUST verify complete behavior, not just command success.
@@ -273,19 +291,22 @@ Integration tests MUST verify complete behavior, not just command success.
 ### Why This Matters
 
 ❌ **Bad test** (what #536 did):
+
 ```rust
 cmd.assert().success();  // Only checks exit code
 ```
+````
 
 ✅ **Good test** (what #536 needed):
+
 ```rust
 cmd.assert().success();
 let output = cmd.output()?;
 let json: Vec<Prompt> = serde_json::from_slice(&output.stdout)?;
 assert!(json.iter().any(|p| p.is_private));  // Verify actual data
 ```
-```
 
+````
 ### Missing: Toyota Andon Cord Principle
 
 **What's Missing:**
@@ -310,7 +331,7 @@ No documentation explaining the philosophy of treating failing tests as blockers
 3. FIX - Either fix the code or fix the test
 4. VERIFY - Ensure all tests pass
 5. THEN merge
-```
+````
 
 ---
 
@@ -319,23 +340,27 @@ No documentation explaining the philosophy of treating failing tests as blockers
 ### Duplication 1: Pre-Commit Checklist
 
 **Locations:**
+
 1. `docs/dev/procedures.md:103-280` (177 lines) - Full detailed version
 2. `docs/dev/README.md:123-140` (18 lines) - Summary version
 3. `docs/dev/ci-cd.md:321-331` (11 lines) - Brief mention
 
 **Consolidation Recommendation:**
+
 - Keep detailed version in ONE location: `docs/dev/testing/pre-commit.md`
 - Other locations should reference with single line: "See `docs/dev/testing/pre-commit.md`"
 
 ### Duplication 2: Environment Variable Requirements
 
 **Locations:**
+
 1. `sdk/tests/README.md:37-44` - Lists `LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`
 2. `cli/tests/README.md:44-49` - Lists same environment variables
 3. `tests/fixtures/test-graph-deployment/README.md:119-132` - Lists with `TEST_GRAPH_ID`
 4. `tests/fixtures/test-graph-deployment/DEPLOYMENT_GUIDE.md:206-229` - Lists again
 
 **Consolidation Recommendation:**
+
 - Single source of truth: `docs/dev/testing/integration-test-prereqs.md`
 - Include all required env vars in one place
 - Other locations reference the central doc
@@ -343,16 +368,19 @@ No documentation explaining the philosophy of treating failing tests as blockers
 ### Duplication 3: Test Deployment Naming Patterns
 
 **Locations:**
+
 1. `sdk/tests/README.md:16-32` - PR/Dev vs Release patterns
 2. `cli/tests/README.md:144-156` - Similar table
 
 **Consolidation Recommendation:**
+
 - Single doc: `docs/dev/testing/test-deployment-patterns.md`
 - Define naming conventions once
 
 ### Duplication 4: Troubleshooting Sections
 
 **Locations:**
+
 1. `cli/tests/README.md:189-233`
 2. `sdk/tests/README.md:415-437`
 3. `tests/fixtures/test-graph-deployment/README.md:204-258`
@@ -360,6 +388,7 @@ No documentation explaining the philosophy of treating failing tests as blockers
 **Partial Overlap:** Similar issues (missing env vars, auth failures)
 
 **Consolidation Recommendation:**
+
 - Central troubleshooting: `docs/dev/testing/troubleshooting.md`
 - File-specific issues remain in respective READMEs
 
@@ -369,16 +398,16 @@ No documentation explaining the philosophy of treating failing tests as blockers
 
 ### Token Usage Estimates
 
-| File | Lines | Est. Tokens | Current Usage | Optimal Usage |
-|------|-------|-------------|---------------|---------------|
-| `sdk/tests/README.md` | 453 | ~3,500 | Every SDK test task | Only SDK integration tests |
-| `cli/tests/README.md` | 252 | ~1,900 | Every CLI test task | Only CLI integration tests |
-| `docs/dev/ci-cd.md` | 464 | ~3,500 | Every CI-related task | Only release/CI tasks |
-| `docs/dev/procedures.md` | 561 | ~4,200 | Pre-commit tasks | Only pre-commit (extract) |
-| `.devcontainer/.../TESTING-GITHUB-ACTIONS.md` | 371 | ~2,800 | DevContainer tasks | Only feature testing |
-| `tests/fixtures/.../README.md` | 272 | ~2,000 | Fixture setup | Only deployment setup |
-| `tests/fixtures/.../DEPLOYMENT_GUIDE.md` | 423 | ~3,200 | Fixture setup | Only initial deployment |
-| **Total** | **~3,667** | **~21,100** | - | - |
+| File                                          | Lines      | Est. Tokens | Current Usage         | Optimal Usage              |
+| --------------------------------------------- | ---------- | ----------- | --------------------- | -------------------------- |
+| `sdk/tests/README.md`                         | 453        | ~3,500      | Every SDK test task   | Only SDK integration tests |
+| `cli/tests/README.md`                         | 252        | ~1,900      | Every CLI test task   | Only CLI integration tests |
+| `docs/dev/ci-cd.md`                           | 464        | ~3,500      | Every CI-related task | Only release/CI tasks      |
+| `docs/dev/procedures.md`                      | 561        | ~4,200      | Pre-commit tasks      | Only pre-commit (extract)  |
+| `.devcontainer/.../TESTING-GITHUB-ACTIONS.md` | 371        | ~2,800      | DevContainer tasks    | Only feature testing       |
+| `tests/fixtures/.../README.md`                | 272        | ~2,000      | Fixture setup         | Only deployment setup      |
+| `tests/fixtures/.../DEPLOYMENT_GUIDE.md`      | 423        | ~3,200      | Fixture setup         | Only initial deployment    |
+| **Total**                                     | **~3,667** | **~21,100** | -                     | -                          |
 
 ### Progressive Disclosure Analysis
 
@@ -387,6 +416,7 @@ No documentation explaining the philosophy of treating failing tests as blockers
 **Current usage:** Loaded every time agent works on SDK tests
 
 **Should be:** Loaded only when agent is:
+
 - Designing SDK integration tests
 - Debugging SDK test failures
 - Setting up test deployments
@@ -398,6 +428,7 @@ No documentation explaining the philosophy of treating failing tests as blockers
 **Current usage:** Loaded every time agent works on CLI tests
 
 **Should be:** Loaded only when agent is:
+
 - Designing CLI integration tests
 - Debugging CLI test failures
 - Understanding test parallelization
@@ -432,6 +463,7 @@ docs/dev/testing/
 ```
 
 **Estimated token savings per task:**
+
 - Simple bug fix: Save ~5,000 tokens (no test docs loaded)
 - Unit test writing: Save ~3,000 tokens (only load relevant section)
 - Integration test writing: Load ~500-1,000 tokens (specific section)
@@ -444,6 +476,7 @@ docs/dev/testing/
 ### What Documentation Would Have Prevented #536
 
 The bug: `langstar prompt list` returned zero results for private prompts because:
+
 1. SDK did client-side filtering instead of passing `is_public` to API
 2. Integration tests only checked exit codes, not actual output content
 
@@ -452,6 +485,7 @@ The bug: `langstar prompt list` returned zero results for private prompts becaus
 #### Missing: CRUD Lifecycle Pattern
 
 If documented, developers would know to:
+
 1. Create a private prompt via CLI
 2. **Verify via SDK** that prompt exists with `is_public=false`
 3. Run `langstar prompt list` (no `--public` flag)
@@ -460,6 +494,7 @@ If documented, developers would know to:
 6. **Verify** private prompt is NOT in output
 
 The test that existed only did:
+
 ```rust
 cmd.assert().success();  // Bug passed this check!
 ```
@@ -467,21 +502,26 @@ cmd.assert().success();  // Bug passed this check!
 #### Missing: "Verify Actual Behavior, Not Just Exit Codes"
 
 Explicit guidance needed:
-```markdown
+
+````markdown
 ## Anti-Pattern: Exit Code Only Tests
 
 ❌ **Insufficient test:**
+
 ```rust
 let assert = cmd.assert();
 assert.success();  // Only checks exit code 0
 ```
+````
 
 **Why this is dangerous:**
+
 - Command can succeed with wrong/empty output
 - Bug can hide behind "successful" execution
 - No verification of actual functionality
 
 ✅ **Proper test:**
+
 ```rust
 let output = cmd.output()?;
 assert!(output.status.success());
@@ -491,8 +531,8 @@ let json: Vec<Resource> = serde_json::from_slice(&output.stdout)?;
 assert!(!json.is_empty(), "Expected non-empty results");
 assert!(json.iter().any(|r| r.expected_field == expected_value));
 ```
-```
 
+````
 #### Missing: Test Design Review Checklist
 
 ```markdown
@@ -505,7 +545,7 @@ Before marking a test as complete:
 - [ ] Does the test clean up created resources?
 - [ ] Does the test cover error cases?
 - [ ] Would this test catch the bug if the implementation was wrong?
-```
+````
 
 ### Present But Not Followed
 
@@ -521,12 +561,12 @@ Some principles were documented but not applied:
 
 ### Root Cause Summary
 
-| Factor | Status | Fix |
-|--------|--------|-----|
-| CRUD lifecycle pattern | Not documented | Document in testing guidelines |
-| Exit code vs output verification | Not documented | Add explicit anti-pattern section |
-| Test design review checklist | Not documented | Create checklist for PR reviews |
-| Toyota andon cord culture | Not documented | Document philosophy and expectations |
+| Factor                           | Status         | Fix                                  |
+| -------------------------------- | -------------- | ------------------------------------ |
+| CRUD lifecycle pattern           | Not documented | Document in testing guidelines       |
+| Exit code vs output verification | Not documented | Add explicit anti-pattern section    |
+| Test design review checklist     | Not documented | Create checklist for PR reviews      |
+| Toyota andon cord culture        | Not documented | Document philosophy and expectations |
 
 ---
 
@@ -535,6 +575,7 @@ Some principles were documented but not applied:
 ### Priority 1: Create High-Level Testing Guidelines
 
 Create `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` containing:
+
 - Toyota andon cord principle
 - CRUD lifecycle pattern
 - Exit code vs output verification guidance
@@ -558,6 +599,7 @@ Create `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` containing:
 ### Priority 4: Update Original Locations
 
 Add redirect notes to original READMEs:
+
 ```markdown
 # Integration Tests
 
@@ -571,6 +613,7 @@ This file remains for backwards compatibility but should not be expanded.
 ### Priority 5: Document #536 as Post-Mortem
 
 Create `docs/dev/testing/post-mortems/536-prompt-list-testing-gap.md`:
+
 - What happened
 - Root cause
 - What tests should have caught it
@@ -598,6 +641,7 @@ Create `docs/dev/testing/post-mortems/536-prompt-list-testing-gap.md`:
 ### Success Metrics
 
 After Phase 2 completion:
+
 - [ ] Testing TOC is ~15 lines (auto-loaded)
 - [ ] High-level principles documented separately
 - [ ] No duplicate content across files

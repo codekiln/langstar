@@ -7,6 +7,7 @@
 ## Quick Reference
 
 **Test locally:**
+
 ```bash
 # Create test directory
 TEST_DIR=$(mktemp -d)

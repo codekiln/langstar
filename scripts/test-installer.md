@@ -19,12 +19,14 @@ Before merging the installer script, it must be tested across all supported plat
 ### Linux (Debian/Ubuntu) - x86_64
 
 **Environment:**
+
 - [ ] Ubuntu 22.04 LTS
 - [ ] Ubuntu 20.04 LTS
 - [ ] Debian 12 (Bookworm)
 - [ ] Debian 11 (Bullseye)
 
 **Test cases:**
+
 - [ ] Fresh installation (no existing langstar)
 - [ ] Update existing installation (older version → latest)
 - [ ] Re-install same version (idempotency check)
@@ -37,6 +39,7 @@ Before merging the installer script, it must be tested across all supported plat
 - [ ] Check PATH warnings (for `~/.local/bin`)
 
 **Commands:**
+
 ```bash
 # Fresh install
 curl --proto '=https' --tlsv1.2 -LsSf https://raw.githubusercontent.com/codekiln/langstar/main/scripts/install.sh | sh
@@ -64,11 +67,13 @@ langstar --version
 ### macOS (Intel) - x86_64
 
 **Environment:**
+
 - [ ] macOS Ventura (13.x)
 - [ ] macOS Monterey (12.x)
 - [ ] macOS Big Sur (11.x)
 
 **Test cases:**
+
 - [ ] Fresh installation
 - [ ] Update existing installation
 - [ ] Re-install same version
@@ -81,6 +86,7 @@ langstar --version
 - [ ] Check PATH warnings
 
 **Commands:**
+
 ```bash
 # Same as Linux testing commands above
 ```
@@ -90,11 +96,13 @@ langstar --version
 ### macOS (Apple Silicon) - aarch64
 
 **Environment:**
+
 - [ ] macOS Sonoma (14.x) - M1/M2/M3
 - [ ] macOS Ventura (13.x) - M1/M2/M3
 - [ ] macOS Monterey (12.x) - M1/M2
 
 **Test cases:**
+
 - [ ] Fresh installation (native ARM64 binary)
 - [ ] Update existing installation
 - [ ] Re-install same version
@@ -108,6 +116,7 @@ langstar --version
 - [ ] Check PATH warnings
 
 **Commands:**
+
 ```bash
 # Same as Linux testing commands above
 

@@ -11,7 +11,7 @@ Manage LangGraph Cloud deployments using the Langstar CLI with focus on test dep
 ## Core Capabilities
 
 - List deployments with filtering by name, status, or type
-- Filter test deployments by pattern (test-*, langstar-test-*)
+- Filter test deployments by pattern (test-_, langstar-test-_)
 - Delete deployments individually or in batch
 - Handle environment variables automatically (check first, source if needed)
 - Interactive confirmation for destructive operations
@@ -30,6 +30,7 @@ Manage LangGraph Cloud deployments using the Langstar CLI with focus on test dep
 ### Required Credentials
 
 **LangSmith API:**
+
 - `LANGSMITH_API_KEY` - API key for Control Plane authentication
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID (optional if using organization)
 
@@ -38,6 +39,7 @@ Manage LangGraph Cloud deployments using the Langstar CLI with focus on test dep
 ### CLI Tool
 
 All operations use `langstar graph` commands:
+
 - `langstar graph list` - List with filtering
 - `langstar graph get <id>` - Get details
 - `langstar graph delete <id>` - Delete deployment
@@ -84,6 +86,7 @@ langstar graph list --limit 20
 ```
 
 **Output:**
+
 ```
 ┌────────────────────────────────┬──────────────────────┬────────┐
 │ Name                           │ ID                   │ Status │
@@ -156,6 +159,7 @@ See [examples/batch-cleanup.md](references/batch-cleanup.md) for non-interactive
 ### Workflow 5: Filter by Status or Type
 
 **Available filters:**
+
 - **Status:** `READY`, `AWAITING_DATABASE`, `UNUSED`, `AWAITING_DELETE`
 - **Type:** `dev_free`, `dev`, `prod`
 
@@ -214,6 +218,7 @@ Options:
 ### Environment Variables
 
 ✅ **Check before sourcing**
+
 ```bash
 if [ -z "$LANGSMITH_API_KEY" ]; then
     source /workspace/.devcontainer/.env
@@ -221,6 +226,7 @@ fi
 ```
 
 ✅ **Never expose values**
+
 ```bash
 [ -n "$LANGSMITH_API_KEY" ] && echo "✓ Set" || echo "✗ Not set"
 ```
@@ -228,6 +234,7 @@ fi
 ### Deployment Deletion
 
 ✅ **Review before deleting**
+
 ```bash
 # List first, verify, then delete
 langstar graph list --name-contains "test"
@@ -235,6 +242,7 @@ langstar graph delete <id> --yes
 ```
 
 ✅ **Interactive confirmation for batch**
+
 ```bash
 # Confirm each deletion
 for id in $ids; do
@@ -246,12 +254,14 @@ done
 ### Filtering
 
 ✅ **Use specific patterns**
+
 ```bash
 # Specific reduces false matches
 langstar graph list --name-contains "langstar-test-"
 ```
 
 ✅ **Combine filters for precision**
+
 ```bash
 langstar graph list --name-contains "test" --status READY --deployment-type dev_free
 ```
@@ -304,12 +314,14 @@ langstar graph list --name-contains "pr-"
 ### "Authentication failed"
 
 **Diagnosis:**
+
 ```bash
 [ -n "$LANGSMITH_API_KEY" ] && echo "Set" || echo "Not set"
 [ -n "$LANGSMITH_WORKSPACE_ID" ] && echo "Set" || echo "Not set"
 ```
 
 **Solution:**
+
 ```bash
 source /workspace/.devcontainer/.env
 # Verify
@@ -321,6 +333,7 @@ source /workspace/.devcontainer/.env
 **Cause:** Deployment deleted or incorrect ID.
 
 **Solution:**
+
 ```bash
 # Verify ID from list
 langstar graph list --limit 100
@@ -330,6 +343,7 @@ langstar graph list --name-contains "<name-fragment>"
 ### No Deployments Returned
 
 **Solution:**
+
 ```bash
 # Try without filters
 langstar graph list --limit 100

@@ -9,10 +9,12 @@
 This experiment runs the example Python code from the LangSmith Control Plane API documentation to understand the basic deployment workflow via the API.
 
 **Primary Documentation**:
+
 - https://docs.langchain.com/langsmith/api-ref-control-plane
 - https://api.host.langchain.com/docs (FastAPI interactive docs)
 
 **Related Issues**:
+
 - Parent: #171 (LangSmith Deployments support)
 - Related: #160 feature branches (for context only)
 - NOT related to: #170 (switching to external_docker)
@@ -53,11 +55,13 @@ The example code tests the 4-step deployment workflow:
 **Function**: `create_deployment()`
 
 **Request**:
+
 - Endpoint: `{CONTROL_PLANE_HOST}/v2/deployments`
 - Method: POST
 - Headers: `X-Api-Key`, `X-Tenant-Id`, `Content-Type`
 
 **Request Body**:
+
 ```python
 {
     "name": "my_deployment",
@@ -90,6 +94,7 @@ The example code tests the 4-step deployment workflow:
 **Function**: `get_deployment(deployment_id)`
 
 **Request**:
+
 - Endpoint: `{CONTROL_PLANE_HOST}/v2/deployments/{deployment_id}`
 - Method: GET
 - Headers: `X-Api-Key`, `X-Tenant-Id`
@@ -103,12 +108,14 @@ The example code tests the 4-step deployment workflow:
 **Function**: `wait_for_deployment(deployment_id, revision_id)`
 
 **Polling Strategy**:
+
 - Interval: 60 seconds
 - Timeout: 1800 seconds (30 minutes)
 - Success: status == "DEPLOYED"
 - Failure: "FAILED" in status
 
 **Request**:
+
 - Endpoint: `{CONTROL_PLANE_HOST}/v2/deployments/{deployment_id}/revisions/{revision_id}`
 - Method: GET
 - Headers: `X-Api-Key`, `X-Tenant-Id`
@@ -116,6 +123,7 @@ The example code tests the 4-step deployment workflow:
 **Expected Response**: Status 200, returns revision object with `status` field
 
 **Possible Status Values**:
+
 - CREATING, QUEUED, AWAITING_BUILD, BUILDING
 - AWAITING_DEPLOY, DEPLOYING, DEPLOYED
 - CREATE_FAILED, BUILD_FAILED, DEPLOY_FAILED
@@ -126,11 +134,13 @@ The example code tests the 4-step deployment workflow:
 **Function**: `patch_deployment(deployment_id)`
 
 **Request**:
+
 - Endpoint: `{CONTROL_PLANE_HOST}/v2/deployments/{deployment_id}`
 - Method: PATCH
 - Headers: `X-Api-Key`, `X-Tenant-Id`, `Content-Type`
 
 **Request Body**:
+
 ```python
 {
     "source_config": {
@@ -152,6 +162,7 @@ The example code tests the 4-step deployment workflow:
 **Function**: `delete_deployment(deployment_id)`
 
 **Request**:
+
 - Endpoint: `{CONTROL_PLANE_HOST}/v2/deployments/{deployment_id}`
 - Method: DELETE
 - Headers: `X-Api-Key`, `X-Tenant-Id`
@@ -190,6 +201,7 @@ delete_deployment(deployment_id)
 **Status**: IN PROGRESS
 
 **Command**:
+
 ```bash
 cd experiments
 ./run_test.sh
@@ -277,6 +289,7 @@ The workflow polls `/v2/deployments/{id}/revisions/{revision_id}` every 60 secon
 ### Example Helper Script
 
 The langchain-ai/cicd-pipeline-example repository contains a similar helper script:
+
 - Location: `/workspace/reference/repo/langchain-ai/cicd-pipeline-example/code/.github/scripts/langgraph_api.py`
 - Notable differences from documentation example:
   - Uses `external_docker` source type

@@ -9,6 +9,7 @@ This directory is a placeholder from an earlier architectural approach that expl
 ## Why LLM-Assisted Implementation?
 
 The project switched to LLM-assisted implementation for:
+
 - **Better ergonomics** - APIs designed specifically for Rust idioms
 - **Flexibility** - Easier to adapt to API changes and quirks
 - **Maintainability** - Clearer code that's easier to understand and modify
@@ -17,6 +18,7 @@ The project switched to LLM-assisted implementation for:
 ## Where is the SDK?
 
 The Rust SDK modules are in `sdk/src/`:
+
 - `client.rs` - HTTP client with authentication
 - `prompts.rs` - LangSmith Prompts API
 - `assistants.rs` - LangGraph Assistants API
@@ -29,6 +31,7 @@ The Rust SDK modules are in `sdk/src/`:
 ## Historical Context
 
 This directory remains as a historical marker. The decision to abandon code generation is documented in:
+
 - [#114](https://github.com/codekiln/langstar/issues/114) - Architecture planning (closed, wontfix)
 - [#115](https://github.com/codekiln/langstar/issues/115) - Research & Design (closed)
 - [#116](https://github.com/codekiln/langstar/issues/116) - Implementation (closed)

@@ -12,6 +12,7 @@
 Validation of research report #335 against the LangSmith OpenAPI specification at `reference/api-specs/langsmith-openapi.json` using jq queries. This report documents confirmations, corrections, and additional API capabilities discovered.
 
 **Key Findings:**
+
 1. ✅ All 8 documented endpoints confirmed with correct HTTP methods
 2. ✅ `add_runs_to_annotation_queue` body format confirmed as JSON array (not object)
 3. ⚠️ **Correction**: `GET /annotation-queues/{queue_id}/runs` EXISTS - answers open question 8.1
@@ -25,27 +26,29 @@ Validation of research report #335 against the LangSmith OpenAPI specification a
 
 ### 1.1 Documented Endpoints (All Confirmed ✅)
 
-| Endpoint | Method | Research Report | OpenAPI Spec | Status |
-|----------|--------|-----------------|--------------|--------|
-| `/annotation-queues` | GET | List queues | ✅ Returns `AnnotationQueueSchemaWithSize[]` | Confirmed |
-| `/annotation-queues` | POST | Create queue | ✅ Accepts `AnnotationQueueCreateSchema` | Confirmed |
-| `/annotation-queues/{queue_id}` | GET | Read queue | ✅ | Confirmed |
-| `/annotation-queues/{queue_id}` | PATCH | Update queue | ✅ | Confirmed |
-| `/annotation-queues/{queue_id}` | DELETE | Delete queue | ✅ | Confirmed |
-| `/annotation-queues/{queue_id}/runs` | POST | Add runs | ✅ Body: `array[uuid]` | Confirmed |
-| `/annotation-queues/{queue_id}/runs/{queue_run_id}` | DELETE | Remove run | ✅ | Confirmed |
-| `/annotation-queues/{queue_id}/run/{index}` | GET | Get run at index | ✅ | Confirmed |
+| Endpoint                                            | Method | Research Report  | OpenAPI Spec                                 | Status    |
+| --------------------------------------------------- | ------ | ---------------- | -------------------------------------------- | --------- |
+| `/annotation-queues`                                | GET    | List queues      | ✅ Returns `AnnotationQueueSchemaWithSize[]` | Confirmed |
+| `/annotation-queues`                                | POST   | Create queue     | ✅ Accepts `AnnotationQueueCreateSchema`     | Confirmed |
+| `/annotation-queues/{queue_id}`                     | GET    | Read queue       | ✅                                           | Confirmed |
+| `/annotation-queues/{queue_id}`                     | PATCH  | Update queue     | ✅                                           | Confirmed |
+| `/annotation-queues/{queue_id}`                     | DELETE | Delete queue     | ✅                                           | Confirmed |
+| `/annotation-queues/{queue_id}/runs`                | POST   | Add runs         | ✅ Body: `array[uuid]`                       | Confirmed |
+| `/annotation-queues/{queue_id}/runs/{queue_run_id}` | DELETE | Remove run       | ✅                                           | Confirmed |
+| `/annotation-queues/{queue_id}/run/{index}`         | GET    | Get run at index | ✅                                           | Confirmed |
 
 ### 1.2 Critical Validation: Add Runs Request Body
 
 **Research report claimed**: Body is JSON array of UUIDs, not object with `run_ids` field.
 
 **OpenAPI spec confirms** (jq query):
+
 ```bash
 jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].post.requestBody.content["application/json"].schema' reference/api-specs/langsmith-openapi.json
 ```
 
 **Result**:
+
 ```json
 {
   "type": "array",
@@ -70,6 +73,7 @@ jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"].get.parameters' referenc
 ```
 
 **Parameters**:
+
 - `offset`: integer (default: 0)
 - `limit`: integer (min: 1, max: 100, default: 100)
 - `archived`: boolean (optional)
@@ -96,32 +100,32 @@ jq '.paths["/api/v1/annotation-queues"].get.responses["200"].content["applicatio
 
 ### 2.1 Standard Queue Endpoints (Not in Python SDK)
 
-| Endpoint | Method | Description | Priority |
-|----------|--------|-------------|----------|
-| `/annotation-queues/{queue_id}/runs` | GET | **List runs with pagination** | High |
-| `/annotation-queues/{queue_id}/size` | GET | Get queue size | Medium |
-| `/annotation-queues/{queue_id}/total_size` | GET | Get total size | Low |
-| `/annotation-queues/{queue_id}/total_archived` | GET | Get archived count | Low |
-| `/annotation-queues/{queue_id}/export` | POST | Export queue runs | Medium |
-| `/annotation-queues/{queue_id}/runs/delete` | POST | Bulk delete runs | Medium |
-| `/annotation-queues/populate` | POST | Populate queue | Medium |
-| `/annotation-queues/status/{annotation_queue_run_id}` | POST | Update run status | Low |
-| `/annotation-queues/{run_id}/queues` | GET | Get queues for a run | Low |
+| Endpoint                                              | Method | Description                   | Priority |
+| ----------------------------------------------------- | ------ | ----------------------------- | -------- |
+| `/annotation-queues/{queue_id}/runs`                  | GET    | **List runs with pagination** | High     |
+| `/annotation-queues/{queue_id}/size`                  | GET    | Get queue size                | Medium   |
+| `/annotation-queues/{queue_id}/total_size`            | GET    | Get total size                | Low      |
+| `/annotation-queues/{queue_id}/total_archived`        | GET    | Get archived count            | Low      |
+| `/annotation-queues/{queue_id}/export`                | POST   | Export queue runs             | Medium   |
+| `/annotation-queues/{queue_id}/runs/delete`           | POST   | Bulk delete runs              | Medium   |
+| `/annotation-queues/populate`                         | POST   | Populate queue                | Medium   |
+| `/annotation-queues/status/{annotation_queue_run_id}` | POST   | Update run status             | Low      |
+| `/annotation-queues/{run_id}/queues`                  | GET    | Get queues for a run          | Low      |
 
 ### 2.2 Pairwise Queue Endpoints (Entirely Undocumented)
 
 The OpenAPI spec reveals a complete "pairwise" queue type for A/B comparison:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/annotation-queues/pairwise` | GET, POST | List/create pairwise queues |
-| `/annotation-queues/pairwise/{queue_id}` | GET, PATCH | Read/update pairwise queue |
-| `/annotation-queues/pairwise/{queue_id}/entries` | GET | List comparison entries |
-| `/annotation-queues/pairwise/{queue_id}/entries/delete` | POST | Bulk delete entries |
-| `/annotation-queues/pairwise/{queue_id}/populate` | POST | Populate pairwise queue |
-| `/annotation-queues/pairwise/populate` | POST | Populate any pairwise queue |
-| `/annotation-queues/pairwise/{queue_id}/size` | GET | Get pairwise queue size |
-| `/annotation-queues/pairwise/status/{queue_entry_id}` | POST | Update entry status |
+| Endpoint                                                | Method     | Description                 |
+| ------------------------------------------------------- | ---------- | --------------------------- |
+| `/annotation-queues/pairwise`                           | GET, POST  | List/create pairwise queues |
+| `/annotation-queues/pairwise/{queue_id}`                | GET, PATCH | Read/update pairwise queue  |
+| `/annotation-queues/pairwise/{queue_id}/entries`        | GET        | List comparison entries     |
+| `/annotation-queues/pairwise/{queue_id}/entries/delete` | POST       | Bulk delete entries         |
+| `/annotation-queues/pairwise/{queue_id}/populate`       | POST       | Populate pairwise queue     |
+| `/annotation-queues/pairwise/populate`                  | POST       | Populate any pairwise queue |
+| `/annotation-queues/pairwise/{queue_id}/size`           | GET        | Get pairwise queue size     |
+| `/annotation-queues/pairwise/status/{queue_entry_id}`   | POST       | Update entry status         |
 
 ---
 
@@ -130,6 +134,7 @@ The OpenAPI spec reveals a complete "pairwise" queue type for A/B comparison:
 ### 3.1 AnnotationQueueCreateSchema
 
 **Research report** documented:
+
 - `name` (required)
 - `description` (optional)
 - `id` (optional)
@@ -141,26 +146,26 @@ The OpenAPI spec reveals a complete "pairwise" queue type for A/B comparison:
 jq '.components.schemas.AnnotationQueueCreateSchema.properties | keys' reference/api-specs/langsmith-openapi.json
 ```
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `num_reviewers_per_item` | integer | 1 | Number of reviewers per item |
-| `enable_reservations` | boolean | true | Enable item reservations |
-| `reservation_minutes` | integer | 1 | Reservation timeout |
-| `default_dataset` | uuid | null | Linked dataset for corrections |
-| `rubric_items` | array | null | Structured rubric items |
-| `session_ids` | uuid[] | null | Linked project sessions |
-| `metadata` | object | null | Arbitrary metadata |
+| Field                    | Type    | Default | Description                    |
+| ------------------------ | ------- | ------- | ------------------------------ |
+| `num_reviewers_per_item` | integer | 1       | Number of reviewers per item   |
+| `enable_reservations`    | boolean | true    | Enable item reservations       |
+| `reservation_minutes`    | integer | 1       | Reservation timeout            |
+| `default_dataset`        | uuid    | null    | Linked dataset for corrections |
+| `rubric_items`           | array   | null    | Structured rubric items        |
+| `session_ids`            | uuid[]  | null    | Linked project sessions        |
+| `metadata`               | object  | null    | Arbitrary metadata             |
 
 ### 3.2 AnnotationQueueSchema (Response)
 
 **Additional fields in queue responses**:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `queue_type` | enum | Yes | `"single"` or `"pairwise"` |
-| `source_rule_id` | uuid | No | Automation source rule |
-| `run_rule_id` | uuid | No | Automation run rule |
-| `total_runs` | integer | Yes* | Queue size (*in WithSize variant) |
+| Field            | Type    | Required | Description                       |
+| ---------------- | ------- | -------- | --------------------------------- |
+| `queue_type`     | enum    | Yes      | `"single"` or `"pairwise"`        |
+| `source_rule_id` | uuid    | No       | Automation source rule            |
+| `run_rule_id`    | uuid    | No       | Automation run rule               |
+| `total_runs`     | integer | Yes*     | Queue size (*in WithSize variant) |
 
 ### 3.3 AnnotationQueueRubricItemSchema
 
@@ -180,21 +185,25 @@ jq '.components.schemas.AnnotationQueueCreateSchema.properties | keys' reference
 ## 4. jq Queries Used
 
 ### List all annotation-queue endpoints:
+
 ```bash
 jq '[.paths | to_entries[] | select(.key | contains("annotation-queue")) | {path: .key, methods: (.value | keys)}]' reference/api-specs/langsmith-openapi.json
 ```
 
 ### Extract all annotation queue schemas:
+
 ```bash
 jq '.components.schemas | to_entries | map(select(.key | test("AnnotationQueue|QueueRun"; "i"))) | from_entries' reference/api-specs/langsmith-openapi.json
 ```
 
 ### Get specific endpoint details:
+
 ```bash
 jq '.paths["/api/v1/annotation-queues/{queue_id}/runs"]' reference/api-specs/langsmith-openapi.json
 ```
 
 ### Get schema by name:
+
 ```bash
 jq '.components.schemas.AnnotationQueueCreateSchema' reference/api-specs/langsmith-openapi.json
 ```
@@ -305,13 +314,13 @@ The following files were saved to `reference/api-specs/`:
 
 ## 7. Summary
 
-| Category | Count | Details |
-|----------|-------|---------|
-| Endpoints Validated | 8 | All confirmed correct |
-| Critical Findings Confirmed | 1 | Array body format |
-| Corrections to Research | 2 | List runs endpoint exists, size in list response |
-| Additional Endpoints | 13 | Standard queues (9) + Pairwise (8, overlapping) |
-| Additional Schema Fields | 10+ | Reviewer settings, rubric items, metadata |
-| New Queue Type Discovered | 1 | Pairwise (A/B comparison) |
+| Category                    | Count | Details                                          |
+| --------------------------- | ----- | ------------------------------------------------ |
+| Endpoints Validated         | 8     | All confirmed correct                            |
+| Critical Findings Confirmed | 1     | Array body format                                |
+| Corrections to Research     | 2     | List runs endpoint exists, size in list response |
+| Additional Endpoints        | 13    | Standard queues (9) + Pairwise (8, overlapping)  |
+| Additional Schema Fields    | 10+   | Reviewer settings, rubric items, metadata        |
+| New Queue Type Discovered   | 1     | Pairwise (A/B comparison)                        |
 
 **Recommendation**: Update implementation issues #337, #338, #339 with findings before starting implementation.

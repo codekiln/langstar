@@ -17,6 +17,7 @@ source /workspace/.devcontainer/.env
 ```
 
 **Why this matters:**
+
 - Integration tests require `LANGSMITH_API_KEY` and other credentials
 - **Pre-commit checks** (`cargo test`, `cargo clippy`, etc.) will fail without proper environment
 - Worktrees do NOT automatically inherit environment variables from the main workspace
@@ -24,6 +25,7 @@ source /workspace/.devcontainer/.env
 - This was the root cause of test failures in issue #232
 
 **This applies to:**
+
 - ✅ `cargo test` - Any test command
 - ✅ **Pre-commit checks** - The full `cargo fmt && cargo check && cargo clippy && cargo test` suite
 - ✅ `cargo clippy` - Linting may trigger tests
@@ -31,12 +33,14 @@ source /workspace/.devcontainer/.env
 - ✅ Any cargo command that might run tests or build scripts
 
 **Quick Check:**
+
 ```bash
 # Verify environment variables are set
 [ -n "$LANGSMITH_API_KEY" ] && echo "✓ Ready to test" || echo "✗ Run: source /workspace/.devcontainer/.env"
 ```
 
 **Quick Start for Pre-Commit Checks:**
+
 ```bash
 # One command to source and run full pre-commit suite
 source /workspace/.devcontainer/.env && cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
@@ -45,6 +49,7 @@ source /workspace/.devcontainer/.env && cargo fmt && cargo check --workspace --a
 ## Overview
 
 During development in git worktrees, running tests requires careful attention to:
+
 1. **Environment variables** - MUST be sourced from `/workspace/.devcontainer/.env` before testing
 2. **Working directory** - Tests may behave differently in main vs worktree due to SDK version differences
 3. **Context awareness** - Understanding whether you're in main workspace or a feature branch worktree
@@ -66,6 +71,7 @@ This skill codifies the lessons learned from issues #186 and #232 to prevent fut
 ```
 
 **If not set, source from devcontainer:**
+
 ```bash
 # Source devcontainer environment file
 source /workspace/.devcontainer/.env
@@ -75,6 +81,7 @@ source /workspace/.devcontainer/.env
 ```
 
 **Never expose actual values:**
+
 ```bash
 # ❌ WRONG: Exposes sensitive data
 echo "LANGSMITH_API_KEY=$LANGSMITH_API_KEY"
@@ -90,6 +97,7 @@ echo "LANGSMITH_API_KEY=$LANGSMITH_API_KEY"
 **Key Difference:** Tests run from worktrees use the feature branch SDK, while tests from main workspace use the main branch SDK.
 
 **Example from #186:**
+
 - Background tests ran from `/workspace` (main branch) → **FAILED** (old SDK without `Queued` enum)
 - Worktree tests ran from `/workspace/wip/codekiln-186-test-helpers` → **PASSED** (new SDK with `Queued` from PR #185)
 
@@ -109,12 +117,14 @@ cargo test --test integration_test -- --ignored --nocapture
 Different tests have different requirements and durations:
 
 **Unit Tests (No API Required):**
+
 ```bash
 # Fast (<1 second), no credentials needed
 cargo test --test integration_deployment_workflow test_deployment_url_extraction -- --nocapture
 ```
 
 **Helper Tests (API Required, 1-5 seconds):**
+
 ```bash
 # Require credentials, fast feedback
 cargo test --test integration_deployment_workflow test_list_github_integrations -- --ignored --nocapture
@@ -123,6 +133,7 @@ cargo test --test integration_deployment_workflow test_find_integration_for_repo
 ```
 
 **Full Workflow Tests (5-30 minutes):**
+
 ```bash
 # Long-running, creates real resources
 cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture
@@ -162,6 +173,7 @@ cargo test --test integration_deployment_workflow test_deployment_workflow -- --
 ```
 
 **Why this matters:**
+
 - Worktree has the feature branch code
 - Feature branch may have SDK changes not in main
 - Tests will use the correct SDK version
@@ -209,6 +221,7 @@ cargo fmt --check
 ```
 
 **Why from worktree:**
+
 - Tests your feature branch changes
 - Catches issues before CI
 - Prevents wasted CI cycles
@@ -218,6 +231,7 @@ cargo fmt --check
 ### ❌ Mistake 1: Running Pre-Commit Checks Without Sourcing Environment
 
 **Wrong approach:**
+
 ```bash
 # Running pre-commit checks immediately in worktree without sourcing
 cd /workspace/wip/<worktree-name>
@@ -226,11 +240,13 @@ cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace 
 ```
 
 **Symptom:** Tests fail with cryptic errors like:
+
 - `byte index 8 is out of bounds of \`\``
 - `thread 'main' panicked at cli/src/commands/prompt.rs:183:52`
 - Authentication failures in integration tests
 
 **Correct approach:**
+
 ```bash
 # ALWAYS source environment variables FIRST in worktrees
 cd /workspace/wip/<worktree-name>
@@ -239,6 +255,7 @@ cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace 
 ```
 
 **Why this happens:**
+
 - Worktrees don't inherit environment variables from main workspace
 - Tests that require credentials fail without `LANGSMITH_API_KEY`
 - Some tests read empty environment variables and panic on string operations
@@ -247,12 +264,14 @@ cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace 
 ### ❌ Mistake 2: Asking User for Credentials When Already Set
 
 **Wrong approach:**
+
 ```bash
 # Don't ask user to provide credentials without checking first
 echo "Please provide your LANGSMITH_API_KEY"
 ```
 
 **Correct approach:**
+
 ```bash
 # Check first
 if [ -z "$LANGSMITH_API_KEY" ]; then
@@ -269,6 +288,7 @@ fi
 ### ❌ Mistake 3: Running Tests from Wrong Directory
 
 **Wrong approach:**
+
 ```bash
 # Running from main workspace when working on feature branch
 cd /workspace
@@ -277,6 +297,7 @@ cargo test --test integration_deployment_workflow -- --ignored
 ```
 
 **Correct approach:**
+
 ```bash
 # Always verify pwd first
 pwd
@@ -287,6 +308,7 @@ cargo test --test integration_deployment_workflow -- --ignored
 ### ❌ Mistake 4: Exposing Sensitive Environment Variables
 
 **Wrong approach:**
+
 ```bash
 # Never expose actual values
 echo "LANGSMITH_API_KEY=$LANGSMITH_API_KEY"
@@ -294,6 +316,7 @@ echo "Using key: ${LANGSMITH_API_KEY}"
 ```
 
 **Correct approach:**
+
 ```bash
 # Only check if set, never show value
 [ -n "$LANGSMITH_API_KEY" ] && echo "LANGSMITH_API_KEY is set" || echo "LANGSMITH_API_KEY not set"
@@ -302,6 +325,7 @@ echo "Using key: ${LANGSMITH_API_KEY}"
 ### ❌ Mistake 5: Not Understanding Test Context
 
 **Wrong approach:**
+
 ```bash
 # Running background tests from main workspace while developing in worktree
 cd /workspace
@@ -310,6 +334,7 @@ cargo test --test integration_test -- --ignored &
 ```
 
 **Correct approach:**
+
 ```bash
 # Run from worktree to test your changes
 cd /workspace/wip/<worktree-name>
@@ -321,10 +346,12 @@ cargo test --test integration_test -- --ignored
 ### Required Variables for Integration Tests
 
 **LangSmith API:**
+
 - `LANGSMITH_API_KEY` - API key for LangSmith authentication
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID (optional, auto-detected)
 
 **Anthropic API:**
+
 - `ANTHROPIC_API_KEY` - API key for Claude models
 
 ### Checking Variables (Template)
@@ -403,12 +430,14 @@ tail -f test_output.log
 **Symptom:** Tests fail immediately with authentication errors.
 
 **Diagnosis:**
+
 ```bash
 # Check if env vars are set
 [ -n "$LANGSMITH_API_KEY" ] && echo "Set" || echo "Not set"
 ```
 
 **Solution:**
+
 ```bash
 # Source from devcontainer
 source /workspace/.devcontainer/.env
@@ -422,6 +451,7 @@ source /workspace/.devcontainer/.env
 **Symptom:** Tests fail with compilation errors about missing types or enum variants.
 
 **Diagnosis:**
+
 ```bash
 # Check current location
 pwd
@@ -429,6 +459,7 @@ pwd
 ```
 
 **Solution:**
+
 ```bash
 # Navigate to worktree with feature branch
 cd /workspace/wip/<worktree-name>
@@ -442,10 +473,12 @@ cargo test --test integration_test -- --ignored --nocapture
 **Symptom:** Tests work locally in worktree but fail when pushed to CI.
 
 **Common Causes:**
+
 1. Feature branch depends on another PR not yet merged
 2. SDK changes in worktree not compatible with main branch
 
 **Diagnosis:**
+
 ```bash
 # Test from main workspace to simulate CI environment
 cd /workspace
@@ -455,6 +488,7 @@ cargo test --workspace --all-features
 ```
 
 **Solution:**
+
 - Ensure prerequisite PRs are merged first
 - Update feature branch to include necessary changes
 
@@ -465,6 +499,7 @@ cargo test --workspace --all-features
 **Cause:** Background tests are using main branch SDK, not feature branch SDK.
 
 **Solution:**
+
 ```bash
 # Always run from worktree when testing feature branch
 cd /workspace/wip/<worktree-name>
@@ -476,6 +511,7 @@ cargo test --test integration_test -- --ignored --nocapture
 ### Never Expose Credentials
 
 **✅ CORRECT:**
+
 ```bash
 # Check without exposing
 [ -n "$LANGSMITH_API_KEY" ] && echo "Set" || echo "Not set"
@@ -485,6 +521,7 @@ cargo test --test integration_test -- --ignored --nocapture
 ```
 
 **❌ WRONG:**
+
 ```bash
 # Never do these
 echo $LANGSMITH_API_KEY
@@ -495,6 +532,7 @@ env | grep LANGSMITH
 ### Store Credentials Securely
 
 **Best practices:**
+
 - Store in `/workspace/.devcontainer/.env` (gitignored)
 - Never commit `.env` files
 - Use placeholders in documentation: `<your-api-key>`

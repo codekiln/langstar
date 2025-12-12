@@ -27,22 +27,22 @@ LangGraph graphs are **not a first-class API resource**. There is no `/graphs` e
 
 ### APIs Investigated
 
-| API | Has Graph Endpoints? | Notes |
-|-----|---------------------|-------|
-| Control Plane API | ❌ No | Only deployment management |
-| LangSmith API | ❌ No | Tracing, datasets, evaluations |
-| Agent Server API | ✅ Yes | Per-deployment, graph structure endpoints |
+| API               | Has Graph Endpoints? | Notes                                     |
+| ----------------- | -------------------- | ----------------------------------------- |
+| Control Plane API | ❌ No                | Only deployment management                |
+| LangSmith API     | ❌ No                | Tracing, datasets, evaluations            |
+| Agent Server API  | ✅ Yes               | Per-deployment, graph structure endpoints |
 
 ### Agent Server API Graph Endpoints
 
 The Agent Server API is deployed per-deployment at the deployment's runtime URL.
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/assistants/{id}/graph` | GET | Get graph structure (accepts assistant_id OR graph_id) |
-| `/assistants/{id}/graph?xray=true` | GET | Include subgraph representation |
-| `/assistants/{id}/subgraphs` | GET | List subgraphs |
-| `/assistants/{id}/schemas` | GET | Get graph input/output schemas |
+| Endpoint                           | Method | Description                                            |
+| ---------------------------------- | ------ | ------------------------------------------------------ |
+| `/assistants/{id}/graph`           | GET    | Get graph structure (accepts assistant_id OR graph_id) |
+| `/assistants/{id}/graph?xray=true` | GET    | Include subgraph representation                        |
+| `/assistants/{id}/subgraphs`       | GET    | List subgraphs                                         |
+| `/assistants/{id}/schemas`         | GET    | Get graph input/output schemas                         |
 
 ### Authentication
 
@@ -76,6 +76,7 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 ```
 
 **Key elements:**
+
 - `__start__` and `__end__` are special control flow nodes (should be hidden in CLI output)
 - Node `id` and `data.name` identify graph steps
 - Edges show transitions, with `conditional: true` for branching logic
@@ -85,6 +86,7 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 ### `langstar graph list <deployment-name-or-id>`
 
 **Algorithm:**
+
 1. Resolve deployment name to ID (if name provided instead of UUID)
 2. Get deployment details to obtain runtime URL
 3. Call `POST /assistants/search` on deployment's Agent Server API
@@ -94,14 +96,15 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 
 **Output columns:**
 
-| Column | Source |
-|--------|--------|
-| Graph ID | `assistant.graph_id` (deduplicated) |
-| Assistant Names | Comma-separated list of assistants using this graph |
-| Count | Count of assistants using this graph |
-| Nodes | Node names from `/graph?xray=true` (excluding control nodes) |
+| Column          | Source                                                       |
+| --------------- | ------------------------------------------------------------ |
+| Graph ID        | `assistant.graph_id` (deduplicated)                          |
+| Assistant Names | Comma-separated list of assistants using this graph          |
+| Count           | Count of assistants using this graph                         |
+| Nodes           | Node names from `/graph?xray=true` (excluding control nodes) |
 
 **Example output:**
+
 ```
 ╭──────────────┬─────────────────────┬───────┬─────────────────────╮
 │ Graph ID     │ Assistants          │ Count │ Nodes               │
@@ -114,11 +117,13 @@ The `/assistants/{id}/graph?xray=true` endpoint returns graph topology:
 ### `langstar graph get <graph_id> --deployment <name-or-id>`
 
 **Algorithm:**
+
 1. Resolve deployment name to ID (if needed)
 2. Call `GET /assistants/{graph_id}/graph?xray=true`
 3. Return formatted graph structure
 
 **Output options:**
+
 - Default: Formatted node list with edges
 - `--json`: Raw JSON response
 - `--xray`: Include subgraph details (default: true)
@@ -136,6 +141,7 @@ langstar graph list 47599969-47ab-49d5-878e-cc6dbcbed059
 ```
 
 **Resolution logic:**
+
 1. Check if argument matches UUID format
 2. If not UUID, call deployment list API with name filter
 3. If exactly one match, use that deployment's ID
@@ -161,6 +167,7 @@ impl AssistantClient {
 ```
 
 **Pros:**
+
 - Uses existing client infrastructure
 - Graph endpoints are under `/assistants/` path
 - Consistent authentication handling
@@ -170,10 +177,12 @@ impl AssistantClient {
 Create dedicated `GraphClient` for graph operations.
 
 **Pros:**
+
 - Cleaner separation of concerns
 - Can add graph-specific logic
 
 **Cons:**
+
 - Duplicates deployment URL resolution
 - Graph endpoints are still `/assistants/{id}/graph`
 
@@ -253,19 +262,19 @@ This research completes **Phase 1** of the `ls-graph-deployments-separation` mil
 
 ### Phase Status
 
-| Phase | Name | Status | Notes |
-|-------|------|--------|-------|
-| 0.0 | Pre-Epic Scout | N/A | Would use `/gh-milestones:scout graph-commands` for new features |
-| 0 | Epic Setup | ✅ Complete | Parent #527, milestone created |
-| 1 | Research | ✅ Complete | This report (#528) |
-| 2 | Design | 🔲 Needed | DX consistency, configuration |
-| 3 | OpenAPI Validation | ⚠️ Special | Agent Server API is per-deployment |
-| 4 | SDK Types | 🔲 Needed | Graph structure types |
-| 5 | SDK Client | 🔲 Needed | Extend AssistantClient |
-| 6 | CLI Commands | 🔲 Needed | `graph list`, `graph get` |
-| 7 | Testing | 🔲 Needed | Unit + integration tests |
-| 8 | Documentation | 🔲 Needed | README, usage docs |
-| 9 | Milestone Release | 🔲 Final | `/gh-milestones:release` |
+| Phase | Name               | Status      | Notes                                                            |
+| ----- | ------------------ | ----------- | ---------------------------------------------------------------- |
+| 0.0   | Pre-Epic Scout     | N/A         | Would use `/gh-milestones:scout graph-commands` for new features |
+| 0     | Epic Setup         | ✅ Complete | Parent #527, milestone created                                   |
+| 1     | Research           | ✅ Complete | This report (#528)                                               |
+| 2     | Design             | 🔲 Needed   | DX consistency, configuration                                    |
+| 3     | OpenAPI Validation | ⚠️ Special   | Agent Server API is per-deployment                               |
+| 4     | SDK Types          | 🔲 Needed   | Graph structure types                                            |
+| 5     | SDK Client         | 🔲 Needed   | Extend AssistantClient                                           |
+| 6     | CLI Commands       | 🔲 Needed   | `graph list`, `graph get`                                        |
+| 7     | Testing            | 🔲 Needed   | Unit + integration tests                                         |
+| 8     | Documentation      | 🔲 Needed   | README, usage docs                                               |
+| 9     | Milestone Release  | 🔲 Final    | `/gh-milestones:release`                                         |
 
 ### Recommended Sub-Issues
 
@@ -274,6 +283,7 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.2-design: Design DX consistency for graph commands
 
 **Scope:**
+
 - Analyze existing `langstar assistant` commands for consistency patterns
 - Define flag conventions (`--deployment`, `--xray`, `--format`)
 - Document configuration integration (env vars, precedence)
@@ -284,18 +294,21 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.3-refactor: Rename graph.rs to deployment.rs
 
 **Scope:**
+
 - Rename `cli/src/commands/graph.rs` → `cli/src/commands/deployment.rs`
 - Change CLI command from `langstar graph` → `langstar deployment`
 - Update `cli/src/commands/mod.rs` exports
 - Update all documentation to reference new command names
 
 **Rationale:** Current `langstar graph list` actually lists deployments. This is a breaking change that establishes correct semantics:
+
 - `langstar deployment list` - list deployments (Control Plane API)
 - `langstar graph list <deployment>` - list graphs within a deployment (Agent Server API)
 
 #### 527.4-sdk-types: Implement graph structure types in SDK
 
 **Scope:**
+
 - Create `sdk/src/types/graph.rs` with `GraphStructure`, `GraphNode`, `GraphEdge`
 - Add `GraphInfo` for list aggregation
 - Register in `sdk/src/lib.rs`
@@ -305,6 +318,7 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.5-sdk-client: Add graph methods to AssistantClient
 
 **Scope:**
+
 - `get_graph(id: &str, xray: bool) -> Result<GraphStructure>`
 - `list_graphs() -> Result<Vec<GraphInfo>>` (aggregates from assistants)
 - Handle per-deployment API URL resolution
@@ -314,12 +328,14 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.6-cli-graph: Implement graph list and get CLI commands
 
 **Scope:**
+
 - `langstar graph list <deployment-name-or-id>`
 - `langstar graph get <graph_id> --deployment <name-or-id>`
 - Support deployment name resolution (reuse pattern from assistant.rs)
 - Output formats: table (default), json
 
 **Example output:**
+
 ```
 ╭──────────────┬─────────────────────┬───────┬─────────────────────╮
 │ Graph ID     │ Assistants          │ Count │ Nodes               │
@@ -331,6 +347,7 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.7-testing: Add tests for graph commands
 
 **Scope:**
+
 - Unit tests with httpmock for SDK methods
 - CLI integration tests (requires test deployment)
 - Test deployment name resolution edge cases
@@ -338,6 +355,7 @@ Following the `{parent}.{phase}-{slug}` naming convention:
 #### 527.8-docs: Documentation for graph commands
 
 **Scope:**
+
 - Update CLI README with graph command examples
 - Add to usage documentation
 - Document relationship between graphs, assistants, and deployments

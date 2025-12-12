@@ -10,10 +10,12 @@
 ### Milestone Summary
 
 This milestone introduces semantic separation between `langstar deployment` and `langstar graph` commands:
+
 - **`langstar deployment`**: Operations on LangGraph Cloud deployments (list, get, create, delete)
 - **`langstar graph`**: Operations on LangGraph graphs within deployments (list, get)
 
 The separation requires testing at both SDK and CLI layers to verify:
+
 1. SDK types deserialize correctly from API responses
 2. SDK methods return expected data structures
 3. CLI commands produce correct output formats
@@ -22,18 +24,19 @@ The separation requires testing at both SDK and CLI layers to verify:
 
 ### Testing Approach
 
-| Layer | Test Type | Location | Purpose |
-|-------|-----------|----------|---------|
-| SDK | Unit tests (mocked) | `sdk/tests/graph_test.rs` | Verify deserialization, error handling |
-| SDK | Integration tests | `sdk/tests/graph_integration_test.rs` | Verify real API behavior |
-| CLI | Unit tests | `cli/tests/deployment_command_test.rs` | Verify help, output parsing |
-| CLI | Integration tests | `cli/tests/graph_command_test.rs` | CRUD lifecycle verification |
+| Layer | Test Type           | Location                               | Purpose                                |
+| ----- | ------------------- | -------------------------------------- | -------------------------------------- |
+| SDK   | Unit tests (mocked) | `sdk/tests/graph_test.rs`              | Verify deserialization, error handling |
+| SDK   | Integration tests   | `sdk/tests/graph_integration_test.rs`  | Verify real API behavior               |
+| CLI   | Unit tests          | `cli/tests/deployment_command_test.rs` | Verify help, output parsing            |
+| CLI   | Integration tests   | `cli/tests/graph_command_test.rs`      | CRUD lifecycle verification            |
 
 ## Existing WIP Review
 
 ### ✅ Already Implemented
 
 #### SDK Unit Tests (`sdk/tests/graph_test.rs`)
+
 - [x] `test_list_graphs_returns_unique_graph_ids` - Graph deduplication
 - [x] `test_list_graphs_with_structure_fetches_nodes` - Node fetching
 - [x] `test_list_graphs_empty_deployment` - Empty results handling
@@ -48,6 +51,7 @@ The separation requires testing at both SDK and CLI layers to verify:
 - [x] `test_get_subgraphs_empty` - Empty subgraphs
 
 #### CLI Tests (`cli/tests/deployment_command_test.rs`)
+
 - [x] `test_deployment_list_basic` - Basic list command
 - [x] `test_deployment_list_with_limit` - Limit parameter
 - [x] `test_deployment_list_json_output` - JSON output format
@@ -66,11 +70,13 @@ The separation requires testing at both SDK and CLI layers to verify:
 ### ❌ Missing Tests (To Be Implemented)
 
 #### SDK Integration Tests (`sdk/tests/graph_integration_test.rs`)
+
 - [ ] `test_graph_list_real_deployment` - List graphs from real deployment
 - [ ] `test_graph_get_real_deployment` - Get specific graph from real deployment
 - [ ] `test_graph_list_with_structure` - List with node names populated
 
 #### CLI Graph Tests (`cli/tests/graph_command_test.rs`)
+
 - [ ] `test_graph_list_basic` - Basic graph list command
 - [ ] `test_graph_list_with_deployment` - List graphs for specific deployment
 - [ ] `test_graph_list_json_output` - JSON output verification
@@ -81,6 +87,7 @@ The separation requires testing at both SDK and CLI layers to verify:
 - [ ] `test_graph_workflow_crud` - Full CRUD lifecycle
 
 #### Deprecation Warning Tests
+
 - [ ] `test_old_graph_list_shows_deprecation` - Old `graph list` warns about `deployment list`
 - [ ] Verify deprecation messages in stderr
 
@@ -93,6 +100,7 @@ The separation requires testing at both SDK and CLI layers to verify:
 **Status:** ✅ Complete - Uses mockito for HTTP mocking
 
 **Coverage:**
+
 - Graph deserialization from JSON
 - GraphNode/GraphEdge parsing
 - Pagination handling
@@ -104,6 +112,7 @@ The separation requires testing at both SDK and CLI layers to verify:
 **Location:** `sdk/tests/graph_integration_test.rs`
 
 **Prerequisites:**
+
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
 export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
@@ -136,6 +145,7 @@ fn test_graph_get_real_deployment() {
 **Location:** `cli/tests/graph_command_test.rs`
 
 **Prerequisites:**
+
 - Same as SDK integration tests
 - Test deployment with known graph structure
 
@@ -252,14 +262,15 @@ fn test_old_graph_list_shows_deprecation() {
 ### Test Deployment
 
 Tests use the shared test deployment from `tests/fixtures/test-graph-deployment/`:
+
 - Minimal echo graph for fast deployment
 - Known graph structure: `START → echo → END`
 
 ### Naming Conventions
 
-| Type | Pattern | Usage |
-|------|---------|-------|
-| PR/Dev | `pr-integration-test-{timestamp}` | Shared deployment for faster tests |
+| Type    | Pattern                                | Usage                               |
+| ------- | -------------------------------------- | ----------------------------------- |
+| PR/Dev  | `pr-integration-test-{timestamp}`      | Shared deployment for faster tests  |
 | Release | `release-integration-test-{timestamp}` | Fresh deployment for full lifecycle |
 
 ### Test Resource Cleanup
@@ -306,12 +317,14 @@ cargo fmt --check
 From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 
 ### Never Acceptable
+
 - ❌ "My changes didn't introduce this failure"
 - ❌ "It's a flaky test, we can ignore it"
 - ❌ "The test is wrong, not the code"
 - ❌ "We'll fix it in a follow-up PR"
 
 ### Always Required
+
 - ✅ Fix the failure before merge
 - ✅ If test is wrong, fix test then verify code
 - ✅ All CI checks must be green before merge
@@ -319,12 +332,14 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 ## Implementation Checklist
 
 ### Immediate Actions
+
 - [x] SDK unit tests with mockito (graph_test.rs) - Complete
 - [x] CLI deployment tests (deployment_command_test.rs) - Complete
 - [ ] CLI graph tests (graph_command_test.rs) - To create
 - [ ] SDK integration tests (graph_integration_test.rs) - To create
 
 ### Before PR
+
 - [ ] All tests pass locally
 - [ ] `cargo fmt && cargo clippy` clean
 - [ ] Integration tests run successfully with env vars
@@ -333,6 +348,7 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 ## References
 
 ### Testing Documentation
+
 - `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` - Core principles
 - `docs/dev/testing/crud-lifecycle-pattern.md` - CLI→SDK verification
 - `docs/dev/testing/cli-integration-tests.md` - CLI patterns
@@ -340,6 +356,7 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 - `docs/dev/testing/mocking-patterns.md` - When to mock
 
 ### Related Issues
+
 - #571 - This testing issue
 - #527 - Parent milestone issue
 - #569 - CLI graph commands implementation
@@ -347,6 +364,7 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 - #566 - SDK graph client implementation
 
 ### Test File Examples
+
 - `cli/tests/assistant_command_test.rs` - CLI test patterns
 - `sdk/tests/integration_deployment_workflow.rs` - SDK integration patterns
 - `cli/tests/prompt_scoping_test.rs` - CRUD lifecycle example
@@ -367,53 +385,53 @@ The tests in PR #646 are a **good representation of this repository's testing st
 
 ### Test Plan Compliance
 
-| Criterion | Status | Notes |
-|-----------|--------|-------|
-| References HIGH_LEVEL_TESTING_GUIDELINES.md | ✅ Pass | Correctly cites Toyota Andon Cord principle |
-| Follows Progressive Disclosure pattern | ✅ Pass | Plan structure matches template |
-| Test type coverage (Unit + Integration) | ✅ Pass | Both SDK mocked tests and CLI integration tests |
-| CRUD Lifecycle pattern documented | ✅ Pass | SDK graph_integration_test.rs includes lifecycle test |
-| Pre-commit checklist included | ✅ Pass | CI Requirements section present |
-| Error handling coverage | ✅ Pass | 404/500 error tests included |
-| Test fixture/cleanup documented | ✅ Pass | TestDeployment RAII pattern documented |
+| Criterion                                   | Status  | Notes                                                 |
+| ------------------------------------------- | ------- | ----------------------------------------------------- |
+| References HIGH_LEVEL_TESTING_GUIDELINES.md | ✅ Pass | Correctly cites Toyota Andon Cord principle           |
+| Follows Progressive Disclosure pattern      | ✅ Pass | Plan structure matches template                       |
+| Test type coverage (Unit + Integration)     | ✅ Pass | Both SDK mocked tests and CLI integration tests       |
+| CRUD Lifecycle pattern documented           | ✅ Pass | SDK graph_integration_test.rs includes lifecycle test |
+| Pre-commit checklist included               | ✅ Pass | CI Requirements section present                       |
+| Error handling coverage                     | ✅ Pass | 404/500 error tests included                          |
+| Test fixture/cleanup documented             | ✅ Pass | TestDeployment RAII pattern documented                |
 
 ### Test Implementation Audit
 
 #### SDK Unit Tests (`sdk/tests/graph_test.rs`) - 579 lines
 
-| Standard | Compliance | Evidence |
-|----------|------------|----------|
-| Uses mocking (mockito) | ✅ | Lines 13-28: `use mockito::{Matcher, Server}` |
-| Tests deserialization | ✅ | `test_list_graphs_returns_unique_graph_ids` |
-| Tests error handling | ✅ | `test_get_graph_not_found`, `test_list_graphs_api_error` |
-| Tests edge cases | ✅ | `test_list_graphs_empty_deployment`, pagination test |
-| Async tests properly annotated | ✅ | Uses `#[tokio::test]` |
-| Tests graceful degradation | ✅ | `test_list_graphs_structure_fetch_failure_graceful` |
+| Standard                       | Compliance | Evidence                                                 |
+| ------------------------------ | ---------- | -------------------------------------------------------- |
+| Uses mocking (mockito)         | ✅         | Lines 13-28: `use mockito::{Matcher, Server}`            |
+| Tests deserialization          | ✅         | `test_list_graphs_returns_unique_graph_ids`              |
+| Tests error handling           | ✅         | `test_get_graph_not_found`, `test_list_graphs_api_error` |
+| Tests edge cases               | ✅         | `test_list_graphs_empty_deployment`, pagination test     |
+| Async tests properly annotated | ✅         | Uses `#[tokio::test]`                                    |
+| Tests graceful degradation     | ✅         | `test_list_graphs_structure_fetch_failure_graceful`      |
 
 **Assessment:** Excellent unit test coverage. Follows `mocking-patterns.md` guidance.
 
 #### CLI Integration Tests (`cli/tests/deployment_command_test.rs`) - 624 lines
 
-| Standard | Compliance | Evidence |
-|----------|------------|----------|
-| Uses `#[serial]` for shared resources | ✅ | Lines 20, 292, 327, 585: proper serialization |
-| Uses `#[cfg_attr(not(feature = "integration-tests"), ignore)]` | ✅ | All integration tests marked |
-| Verifies actual behavior (not just exit codes) | ✅ | JSON parsing, field assertions |
-| Uses TestDeployment fixture | ✅ | Lines 24-27, 60-67 |
-| Help tests (non-integration) | ✅ | `test_deployment_commands_help` runs without env vars |
-| Documents prerequisites | ✅ | Header comments lines 1-16 |
+| Standard                                                       | Compliance | Evidence                                              |
+| -------------------------------------------------------------- | ---------- | ----------------------------------------------------- |
+| Uses `#[serial]` for shared resources                          | ✅         | Lines 20, 292, 327, 585: proper serialization         |
+| Uses `#[cfg_attr(not(feature = "integration-tests"), ignore)]` | ✅         | All integration tests marked                          |
+| Verifies actual behavior (not just exit codes)                 | ✅         | JSON parsing, field assertions                        |
+| Uses TestDeployment fixture                                    | ✅         | Lines 24-27, 60-67                                    |
+| Help tests (non-integration)                                   | ✅         | `test_deployment_commands_help` runs without env vars |
+| Documents prerequisites                                        | ✅         | Header comments lines 1-16                            |
 
 **Assessment:** Good CLI testing pattern. The `#[serial]` fix (documented in deadlock analysis) was correctly applied.
 
 #### SDK Integration Tests (`sdk/tests/graph_integration_test.rs`) - 321 lines
 
-| Standard | Compliance | Evidence |
-|----------|------------|----------|
-| Uses `#[ignore]` | ✅ | All integration tests marked |
-| Follows CRUD lifecycle pattern | ✅ | `test_graph_crud_lifecycle` (lines 369-498) |
-| SDK→CLI verification | ⚠️ Partial | SDK-only tests; CLI verification in separate file |
-| Skips gracefully when env not set | ✅ | Uses `Option` pattern, early returns |
-| Cross-validates list vs get | ✅ | Step 5 in lifecycle test |
+| Standard                          | Compliance | Evidence                                          |
+| --------------------------------- | ---------- | ------------------------------------------------- |
+| Uses `#[ignore]`                  | ✅         | All integration tests marked                      |
+| Follows CRUD lifecycle pattern    | ✅         | `test_graph_crud_lifecycle` (lines 369-498)       |
+| SDK→CLI verification              | ⚠️ Partial  | SDK-only tests; CLI verification in separate file |
+| Skips gracefully when env not set | ✅         | Uses `Option` pattern, early returns              |
+| Cross-validates list vs get       | ✅         | Step 5 in lifecycle test                          |
 
 **Assessment:** Solid SDK integration testing. The CRUD lifecycle test demonstrates proper verification patterns.
 
@@ -421,11 +439,11 @@ The tests in PR #646 are a **good representation of this repository's testing st
 
 From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 
-| Anti-Pattern | Avoided? | Evidence |
-|--------------|----------|----------|
-| Exit code only tests | ✅ Yes | JSON parsing and field assertions throughout |
-| No cleanup | ✅ Yes | TestDeployment uses RAII, lifecycle tests clean up |
-| Hard-coded test data | ✅ Yes | Timestamp-based unique names |
+| Anti-Pattern         | Avoided? | Evidence                                           |
+| -------------------- | -------- | -------------------------------------------------- |
+| Exit code only tests | ✅ Yes   | JSON parsing and field assertions throughout       |
+| No cleanup           | ✅ Yes   | TestDeployment uses RAII, lifecycle tests clean up |
+| Hard-coded test data | ✅ Yes   | Timestamp-based unique names                       |
 
 ### Issues Found
 
@@ -436,6 +454,7 @@ From `HIGH_LEVEL_TESTING_GUIDELINES.md`:
 **Correction:** This claim was made without CI verification. All CI checks on main are green: https://github.com/codekiln/langstar/commits/main/
 
 This violated the Toyota Andon Cord principle:
+
 - ❌ Claimed a failure was "pre-existing" without objective CI proof
 - ❌ Recommended merging despite observing a local test failure
 
@@ -459,20 +478,22 @@ This violated the Toyota Andon Cord principle:
 
 ### Test Coverage Summary
 
-| Component | Unit Tests | Integration Tests | Help Tests |
-|-----------|------------|-------------------|------------|
-| SDK Graph Client | 12 tests ✅ | 5 tests ✅ | N/A |
-| CLI Deployment Commands | N/A | 11 tests ✅ | 1 test ✅ |
-| Deadlock Analysis | N/A | N/A | Documentation ✅ |
+| Component               | Unit Tests  | Integration Tests | Help Tests       |
+| ----------------------- | ----------- | ----------------- | ---------------- |
+| SDK Graph Client        | 12 tests ✅ | 5 tests ✅        | N/A              |
+| CLI Deployment Commands | N/A         | 11 tests ✅       | 1 test ✅        |
+| Deadlock Analysis       | N/A         | N/A               | Documentation ✅ |
 
 ### Final Assessment
 
 **Test Plan Quality:** ✅ Meets Standards
+
 - Correctly structured per `/gh-milestones:test-plan` template
 - References all appropriate testing documentation
 - Includes clear success criteria
 
 **Test Implementation Quality:** ✅ Meets Standards
+
 - Follows established patterns from `cli-integration-tests.md`
 - Proper use of `#[serial]` for shared resources
 - Good error handling coverage
@@ -513,6 +534,7 @@ After the initial audit approved the PR for merge, a local test run revealed `te
 **Problem:** The LangSmith API returns `repo_handle` without owner prefix (e.g., `test-prompt-xyz`), but `GET /api/v1/repos/{owner}/{repo}` requires two path segments. Private prompts use `-` as the owner.
 
 **Fix Applied:**
+
 ```rust
 let full_handle = if handle.contains('/') {
     handle.to_string()
@@ -527,6 +549,7 @@ let path = format!("/api/v1/repos/{}", full_handle);
 **Critical Finding:** The test was showing as "passed" in CI's 289 integration tests, but it was actually **silently skipping**.
 
 **Root Cause:** CI integration tests (`.github/workflows/ci.yml:200-203`) set:
+
 ```yaml
 env:
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
@@ -536,6 +559,7 @@ env:
 ```
 
 **Test Behavior:**
+
 ```rust
 fn get_org_id_or_skip() -> Option<String> {
     match std::env::var("LANGSMITH_ORGANIZATION_ID") {
@@ -560,6 +584,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
 **Result:** Test reports `ok` but never executes the actual test logic. This was counted as one of the 289 "passing" integration tests.
 
 **Verification:**
+
 ```bash
 # Simulating CI environment (no LANGSMITH_ORGANIZATION_ID)
 $ unset LANGSMITH_ORGANIZATION_ID && cargo test --test prompt_scoping_test test_prompt_crud_lifecycle_private_visibility -- --nocapture
@@ -589,6 +614,7 @@ test test_prompt_crud_lifecycle_private_visibility ... ok  # ← Silent skip!
 ### Fix Verification
 
 All tests pass with the SDK fix applied:
+
 - ✅ 174 unit tests (`--workspace --lib`)
 - ✅ 15 prompt scoping tests (with `LANGSMITH_ORGANIZATION_ID` set locally)
 - ✅ `cargo clippy` clean

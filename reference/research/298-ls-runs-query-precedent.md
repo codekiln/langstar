@@ -12,6 +12,7 @@
 This report analyzes the LangSmith Python SDK's `list_runs` implementation to establish recommendations for implementing `langstar runs query` in Rust. The Python SDK provides a well-designed reference with cursor-based pagination, flexible filtering, and field selection capabilities.
 
 **Key Recommendations:**
+
 1. Use POST `/runs/query` endpoint (not GET)
 2. Implement cursor-based pagination with streaming iterator
 3. Support the LangSmith filter query language (function-style syntax)
@@ -54,6 +55,7 @@ def list_runs(
 
 **Endpoint**: `POST /runs/query`
 **Request Body** (JSON):
+
 ```json
 {
   "session": ["<project-id-1>", "<project-id-2>"],
@@ -100,6 +102,7 @@ def _get_cursor_paginated_list(
 ```
 
 **Response Shape**:
+
 ```json
 {
   "runs": [...],
@@ -117,40 +120,40 @@ def _get_cursor_paginated_list(
 
 The filter uses a **function-style syntax** (NOT SQL-like):
 
-| Operator | Usage | Example |
-|----------|-------|---------|
-| `eq` | Equals | `eq(status, "failed")` |
-| `neq` | Not equals | `neq(error, null)` |
-| `gt` | Greater than | `gt(latency, 10)` |
-| `gte` | Greater or equal | `gte(start_time, "2025-01-01T00:00:00Z")` |
-| `lt` | Less than | `lt(total_tokens, 1000)` |
-| `lte` | Less or equal | `lte(latency, 5)` |
-| `has` | Array contains | `has(tags, "production")` |
-| `search` | Substring match | `search(name, "agent")` |
-| `and` | Logical AND | `and(eq(status, "failed"), gt(latency, 10))` |
-| `or` | Logical OR | `or(has(tags, "experimental"), has(tags, "beta"))` |
+| Operator | Usage            | Example                                            |
+| -------- | ---------------- | -------------------------------------------------- |
+| `eq`     | Equals           | `eq(status, "failed")`                             |
+| `neq`    | Not equals       | `neq(error, null)`                                 |
+| `gt`     | Greater than     | `gt(latency, 10)`                                  |
+| `gte`    | Greater or equal | `gte(start_time, "2025-01-01T00:00:00Z")`          |
+| `lt`     | Less than        | `lt(total_tokens, 1000)`                           |
+| `lte`    | Less or equal    | `lte(latency, 5)`                                  |
+| `has`    | Array contains   | `has(tags, "production")`                          |
+| `search` | Substring match  | `search(name, "agent")`                            |
+| `and`    | Logical AND      | `and(eq(status, "failed"), gt(latency, 10))`       |
+| `or`     | Logical OR       | `or(has(tags, "experimental"), has(tags, "beta"))` |
 
 ### 2.2 Filterable Fields
 
 From the SDK docs and Run schema:
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `id` | UUID | Run ID |
-| `name` | string | Run name |
-| `run_type` | string | "llm", "chain", "tool", "retriever" |
-| `status` | string | "success", "error", "pending" |
-| `start_time` | datetime | ISO 8601 format |
-| `end_time` | datetime | ISO 8601 format |
-| `latency` | float | Duration in seconds |
-| `error` | string/null | Error message if failed |
-| `total_tokens` | int | Total token count |
-| `prompt_tokens` | int | Input token count |
-| `completion_tokens` | int | Output token count |
-| `tags` | array[string] | User-defined tags |
-| `metadata.*` | any | Custom metadata fields |
-| `feedback_key` | string | Feedback key name |
-| `feedback_score` | float | Feedback score value |
+| Field               | Type          | Notes                               |
+| ------------------- | ------------- | ----------------------------------- |
+| `id`                | UUID          | Run ID                              |
+| `name`              | string        | Run name                            |
+| `run_type`          | string        | "llm", "chain", "tool", "retriever" |
+| `status`            | string        | "success", "error", "pending"       |
+| `start_time`        | datetime      | ISO 8601 format                     |
+| `end_time`          | datetime      | ISO 8601 format                     |
+| `latency`           | float         | Duration in seconds                 |
+| `error`             | string/null   | Error message if failed             |
+| `total_tokens`      | int           | Total token count                   |
+| `prompt_tokens`     | int           | Input token count                   |
+| `completion_tokens` | int           | Output token count                  |
+| `tags`              | array[string] | User-defined tags                   |
+| `metadata.*`        | any           | Custom metadata fields              |
+| `feedback_key`      | string        | Feedback key name                   |
+| `feedback_score`    | float         | Feedback score value                |
 
 ### 2.3 Complex Filter Examples
 
@@ -520,18 +523,21 @@ fn build_filter(args: &RunsQueryArgs) -> Result<Option<String>> {
 ## 5. Implementation Phases
 
 ### Phase 1: SDK Foundation (MVP)
+
 - [ ] Add `Run` and related structs to `sdk/src/runs.rs`
 - [ ] Implement `list_runs` with basic filtering
 - [ ] Implement cursor-based pagination
 - [ ] Add unit tests with httpmock
 
 ### Phase 2: Filter Builder
+
 - [ ] Create `sdk/src/filter_builder.rs` module
 - [ ] Implement type-safe filter construction
 - [ ] Add pre-built common filters
 - [ ] Unit test filter string generation
 
 ### Phase 3: CLI Integration
+
 - [ ] Add `runs` subcommand group to CLI
 - [ ] Implement `runs query` command
 - [ ] Add convenience flags (--tag, --failed, --since)
@@ -539,6 +545,7 @@ fn build_filter(args: &RunsQueryArgs) -> Result<Option<String>> {
 - [ ] Add CLI tests
 
 ### Phase 4: Advanced Features
+
 - [ ] Support `trace_filter` and `tree_filter`
 - [ ] Add `--select` field filtering
 - [ ] Implement `--output <file>` export

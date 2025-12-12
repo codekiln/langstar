@@ -54,6 +54,7 @@ devcontainer features test --global-scenarios-only .
 ### Base Image Matrix
 
 Features are tested against **7 base images**:
+
 - ubuntu:focal
 - ubuntu:jammy
 - ubuntu:noble (24.04)
@@ -95,6 +96,7 @@ test/rust/
 ```
 
 **scenarios.json pattern**:
+
 ```json
 {
   "rust_at_pinned_version": {
@@ -109,6 +111,7 @@ test/rust/
 ```
 
 **test.sh pattern**:
+
 ```bash
 #!/bin/bash
 set -e
@@ -153,6 +156,7 @@ reportResults
 ### Complete Testing Workflow (test-all.yaml)
 
 **Differences from PR workflow**:
+
 - No change detection - tests ALL features
 - Triggered on: push to main, manual workflow_dispatch
 - Same matrix and test approach
@@ -160,6 +164,7 @@ reportResults
 ### Linting Workflow (linter-automated.yaml)
 
 **Configuration**:
+
 ```yaml
 - name: Shell Linter
   uses: azohra/shell-linter@v0.6.0
@@ -195,6 +200,7 @@ devcontainers/features/
 ### Test Library
 
 Features use `dev-container-features-test-lib` which provides:
+
 - `check "<description>" <command>` - Run command and verify exit code
 - `reportResults` - Report pass/fail summary
 
@@ -215,6 +221,7 @@ devcontainer features test -f langstar -i debian:12 .
 ### 2. Create test/langstar/ Directory
 
 Structure:
+
 ```
 test/langstar/
 ├── test.sh              # Basic smoke test
@@ -251,6 +258,7 @@ reportResults
 ### 4. Create scenarios.json
 
 Test different configurations:
+
 ```json
 {
   "langstar_default": {
@@ -279,6 +287,7 @@ Test different configurations:
 ### 5. Create GitHub Actions Workflow
 
 **Minimal PR testing** (.github/workflows/test-pr.yaml):
+
 ```yaml
 name: "PR - Test Langstar Feature"
 on:
@@ -310,6 +319,7 @@ jobs:
 ### 6. Add ShellCheck Linting
 
 **Linting workflow** (.github/workflows/lint.yaml):
+
 ```yaml
 name: "Lint Shell Scripts"
 on:
@@ -334,11 +344,13 @@ jobs:
 ### 7. Testing Strategy
 
 **For PRs**:
+
 - Test against 3-5 base images (Ubuntu 22.04, 24.04, Debian 12)
 - Run linting on all shell scripts
 - Keep it fast (< 5 minutes)
 
 **For main branch**:
+
 - More comprehensive matrix (7+ base images)
 - Test all scenarios
 - Can take longer
@@ -346,6 +358,7 @@ jobs:
 ### 8. Use continue-on-error Strategically
 
 From the upstream workflows:
+
 ```yaml
 test:
   runs-on: ubuntu-latest
@@ -386,16 +399,19 @@ This allows you to see all test results, not just the first failure.
 ### Implementation Priority
 
 **Phase 1 (MVP)**:
+
 1. Create test/langstar/test.sh
 2. Test against ubuntu:noble only
 3. Run manually with `devcontainer features test`
 
 **Phase 2 (CI Integration)**:
+
 1. Create .github/workflows/test-pr.yaml
 2. Test against 3 base images
 3. Add ShellCheck linting
 
 **Phase 3 (Comprehensive)**:
+
 1. Add scenarios.json with multiple configurations
 2. Expand base image matrix to 7+ images
 3. Add test-all.yaml for main branch

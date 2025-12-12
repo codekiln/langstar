@@ -23,11 +23,13 @@ All commit messages should follow this format:
 Use the following commit types with their corresponding emojis:
 
 **Primary Types:**
+
 - `✨ feat` - A new feature (triggers MINOR version bump)
 - `🩹 fix` - A bug fix (triggers PATCH version bump)
 - `🚨 BREAKING CHANGE` - API-breaking modifications (triggers MAJOR version bump)
 
 **Additional Types:**
+
 - `📚 docs` - Documentation changes
 - `♻️ refactor` - Code refactoring without functional changes
 - `🧪 test` - Adding or modifying tests
@@ -38,6 +40,7 @@ Use the following commit types with their corresponding emojis:
 ## Examples
 
 **Feature with breaking change:**
+
 ```
 ✨ feat(auth): add OAuth2 support
 
@@ -47,11 +50,13 @@ BREAKING CHANGE: removes legacy authentication endpoints
 ```
 
 **Simple bug fix:**
+
 ```
 🩹 fix: resolve image upload bug in Safari
 ```
 
 **Documentation update:**
+
 ```
 📚 docs: update installation instructions
 ```

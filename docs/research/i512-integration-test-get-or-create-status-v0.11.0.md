@@ -10,10 +10,10 @@
 
 The project has **two completely separate test fixture implementations** with no code sharing:
 
-| Component | Location | Approach | Status |
-|-----------|----------|----------|--------|
+| Component     | Location                                       | Approach          | Status     |
+| ------------- | ---------------------------------------------- | ----------------- | ---------- |
 | **SDK Tests** | `sdk/tests/integration_deployment_workflow.rs` | Uses SDK directly | ✅ Correct |
-| **CLI Tests** | `cli/tests/common/fixtures.rs` | Shells out to CLI | ❌ Broken |
+| **CLI Tests** | `cli/tests/common/fixtures.rs`                 | Shells out to CLI | ❌ Broken  |
 
 **The core problem:** CLI test fixtures reimplemented deployment management by shelling out to CLI commands instead of using the SDK. This led to bugs, duplication, and inconsistent behavior.
 
@@ -46,6 +46,7 @@ wait_for_deployment(&client, &deployment_id, &revision_id).await?;
 ```
 
 **Features:**
+
 - Uses `client.integrations().find_integration_for_repo()` for GitHub integration ID
 - Filters by **name** (not status) - can find in-progress deployments
 - Has `wait_for_deployment()` helper that polls until READY
@@ -74,6 +75,7 @@ cmd.args([
 ```
 
 **Problems:**
+
 1. **Shells out to CLI** instead of using SDK - duplicates logic, prone to parsing errors
 2. **Filters by `--status READY`** - misses Building/Deploying/Queued deployments
 3. **Falls back to `LANGGRAPH_GITHUB_INTEGRATION_ID` env var** - workaround that should be removed
@@ -109,6 +111,7 @@ let integration_id = client
 ```
 
 **API Endpoints:**
+
 - `GET /v1/integrations/github/install` - List all integrations
 - `GET /v1/integrations/github/{id}/repos` - List repos for an integration
 
@@ -126,6 +129,7 @@ cmd.args(["--status", "READY", ...]);
 ```
 
 This only finds READY deployments. If a deployment is Building/Deploying/Queued:
+
 1. Fixture doesn't find it
 2. Creates a NEW deployment
 3. Results in duplicate deployments and race conditions
@@ -141,6 +145,7 @@ let filters = DeploymentFilters {
 ```
 
 Filters by **name only**, then checks status after finding:
+
 - If READY → use it
 - If Building/Deploying/Queued → wait for it
 - If not found → create new
@@ -154,6 +159,7 @@ Filters by **name only**, then checks status after finding:
 **Purpose:** Fast iteration during development and PR CI
 
 **Behavior:**
+
 1. Look for existing deployment by name
 2. If found (any status) → wait for READY if needed, then use it
 3. If not found → create new
@@ -161,6 +167,7 @@ Filters by **name only**, then checks status after finding:
 5. Cleanup happens via periodic cron job
 
 **SDK Example:** `test_deployment_workflow()` (lines 87-299)
+
 - Uses persistent name: `langstar-integration-test`
 - Leaves deployment running
 
@@ -169,12 +176,14 @@ Filters by **name only**, then checks status after finding:
 **Purpose:** Pre-release validation of complete workflow
 
 **Behavior:**
+
 1. Always create fresh deployment with timestamp-based unique name
 2. Run tests
 3. Delete deployment (cleanup in same job)
 4. Validates the full create→test→teardown cycle
 
 **SDK Example:** `test_deployment_workflow_full_lifecycle()` (lines 337-535)
+
 - Uses unique name: `langstar-test-{timestamp}`
 - Deletes after test
 - Uses `DeploymentGuard` for cleanup on failure
@@ -215,19 +224,23 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 ## Summary of v0.10.0 → v0.11.0 Changes
 
 ### PR #185: SDK Integration API
+
 - Added `IntegrationClient` with `list_github_integrations()`, `find_integration_for_repo()`
 - The correct way to discover GitHub integration IDs
 
 ### PR #503: CI Test Auto-Discovery
+
 - Changed from hard-coded test files to `cargo test -p langstar --features integration-tests`
 - Added `LANGGRAPH_GITHUB_INTEGRATION_ID` to CI secrets (workaround, should be removed)
 
 ### PR #519: Test Parallelization
+
 - Added `serial_test` crate for selective serialization
 - Marked shared-deployment tests with `#[serial]`
 - No changes to fixtures.rs
 
 ### PR #522: Security Fix + Fixture Improvements
+
 - Added `sanitize_secrets()` for graph command output
 - Added `query_github_integration_id()` to CLI fixtures (still uses CLI, not SDK)
 
@@ -236,22 +249,26 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 ## References
 
 ### Issues
+
 - **Issue #524:** https://github.com/codekiln/langstar/issues/524 (Consolidate test fixtures)
 - Issue #512: https://github.com/codekiln/langstar/issues/512 (Security: secrets in plaintext)
 - Issue #517: https://github.com/codekiln/langstar/issues/517 (Parallelize tests)
 - Issue #499: https://github.com/codekiln/langstar/issues/499 (Eval tests not running in CI)
 
 ### Pull Requests
+
 - PR #185: https://github.com/codekiln/langstar/pull/185 (SDK integration API)
 - PR #503: https://github.com/codekiln/langstar/pull/503 (CI auto-discovery)
 - PR #519: https://github.com/codekiln/langstar/pull/519 (Test parallelization)
 - PR #522: https://github.com/codekiln/langstar/pull/522 (Security fix)
 
 ### Key Files
+
 - `sdk/src/integrations.rs` - GitHub integration API client
 - `sdk/tests/integration_deployment_workflow.rs` - Correct SDK-based test fixtures
 - `cli/tests/common/fixtures.rs` - CLI fixtures (needs refactoring)
 
 ### Releases
+
 - v0.10.0: https://github.com/codekiln/langstar/releases/tag/v0.10.0
 - v0.11.0: https://github.com/codekiln/langstar/releases/tag/v0.11.0

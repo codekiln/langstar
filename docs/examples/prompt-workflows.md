@@ -41,6 +41,7 @@ langstar prompt list
 ```
 
 **Output example:**
+
 ```
 Owner/Name                          Updated
 alice/my-summarization-prompt       2024-01-15
@@ -57,6 +58,7 @@ langstar prompt get alice/my-summarization-prompt
 ```
 
 **Output example:**
+
 ```
 Name: my-summarization-prompt
 Owner: alice
@@ -79,6 +81,7 @@ langstar prompt search "summarization"
 ```
 
 **Output example:**
+
 ```
 Owner/Name                          Matches
 alice/my-summarization-prompt       1
@@ -128,6 +131,7 @@ langstar prompt list
 ```
 
 **Output example:**
+
 ```
 Owner/Name                          Updated
 team/customer-support-v1            2024-01-15
@@ -145,6 +149,7 @@ langstar prompt list --public
 ```
 
 **Output example:**
+
 ```
 Owner/Name                          Updated
 team/public-template-v1             2024-01-15
@@ -207,6 +212,7 @@ langstar prompt list
 ```
 
 **Output example:**
+
 ```
 Owner/Name                          Updated
 project/phoenix-summary-v1          2024-01-15
@@ -466,7 +472,7 @@ langstar prompt list --format json | jq -r '
 
 Create a `PROMPTS.md` in your project:
 
-```markdown
+````markdown
 # Prompt Management
 
 Our team uses LangSmith prompts scoped to workspaces:
@@ -484,8 +490,9 @@ langstar prompt list --workspace-id "<dev-workspace-id>"
 # Production
 langstar prompt list --workspace-id "<prod-workspace-id>"
 ```
-```
+````
 
+````
 ### 4. Use Descriptive Names
 
 ```bash
@@ -496,7 +503,7 @@ langstar prompt get team/p2
 # ✅ Good
 langstar prompt get team/customer-support-qa-v2
 langstar prompt get team/product-description-generator
-```
+````
 
 ### 5. Search Before Creating
 

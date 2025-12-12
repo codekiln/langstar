@@ -15,6 +15,7 @@ TEST_DIR=$(mktemp -d -t "test-${feature}-XXXXXX")
 ```
 
 **Benefits:**
+
 - Prevents file system conflicts between tests
 - Ensures each test has its own workspace
 - Allows parallel test execution in the future
@@ -29,6 +30,7 @@ devcontainer up --workspace-folder "${TEST_DIR}"
 ```
 
 The Dev Container CLI creates a new container for each workspace folder, ensuring:
+
 - No shared environment variables from previous tests
 - No cached dependencies or artifacts
 - No leftover processes or services
@@ -47,6 +49,7 @@ fi
 ```
 
 **Why explicit cleanup is necessary:**
+
 - Simply removing the workspace directory does NOT stop or remove containers
 - Without cleanup, containers accumulate during test runs
 - Stale containers can cause resource exhaustion
@@ -55,6 +58,7 @@ fi
 ### 4. No Shared Volumes
 
 Each test uses only volumes created by the Dev Container CLI for that specific workspace:
+
 - Volume names are derived from workspace paths
 - Volumes are removed when containers are removed
 - No persistent volumes are used across tests
@@ -62,6 +66,7 @@ Each test uses only volumes created by the Dev Container CLI for that specific w
 ### 5. Test Order Independence
 
 Because each test:
+
 - Uses a unique temporary directory
 - Creates a fresh container
 - Cleans up completely after execution
@@ -145,6 +150,7 @@ Tests should pass regardless of order.
 ### 3. Check Resource Usage
 
 Monitor disk and memory usage during test runs. Should see:
+
 - Temporary directories created and removed
 - Container count stays constant (not growing)
 - Disk space released after each test
@@ -181,6 +187,7 @@ docker rm -f "${CONTAINER_NAME}" || true
 ```
 
 This ensures:
+
 - Tests can still fail/succeed based on their actual results
 - Cleanup issues don't mask test failures
 - Workflow completes even if cleanup has issues

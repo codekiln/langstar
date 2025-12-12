@@ -12,6 +12,7 @@ Started investigation after predecessor timed out while working on tests. Note i
 ## Initial Assessment
 
 ### Environment Status
+
 - Checked git worktree list: 3 active worktrees found
   - `/workspace/wip/claude-587-5842-pilot-command-phase-2-pilot-command-implement` (this issue)
   - `/workspace/wip/i649-update-branch-naming-standards`
@@ -25,6 +26,7 @@ Started investigation after predecessor timed out while working on tests. Note i
 - Environment variables: `LANGSMITH_API_KEY` confirmed set
 
 ### Worktree Status (#587)
+
 - Modified file: `cli/src/commands/prompt.rs`
 - Untracked file: `cli/tests/prompt_text_output_test.rs` (new test file, 430 lines)
 
@@ -40,12 +42,14 @@ Executed: `cargo test --test prompt_text_output_test`
 
 **Failure Pattern Observed:**
 All failures showed the same error:
+
 ```
 error: invalid value 'text' for '--offset <OFFSET>': invalid digit found in string
 ```
 
 **Root Cause Analysis:**
 Tests were using `-o text` for output format, but:
+
 - CLI uses `-f` (short form) or `--format` (long form) for output format (`cli/src/main.rs:27`)
 - The `-o` short form is already assigned to `--offset` in `PromptCommands::List` (`cli/src/commands/prompt.rs:24`)
 - When tests specified `-o text`, clap interpreted this as `--offset text`, causing parsing error
@@ -57,6 +61,7 @@ Tests were using `-o text` for output format, but:
 **File:** `cli/tests/prompt_text_output_test.rs`
 
 Changed all instances of `-o text` to `-f text`:
+
 - Line 60: `test_prompt_list_text_output_basic`
 - Line 122: `test_prompt_list_text_output_single_column`
 - Line 180: `test_prompt_list_text_output_multiple_columns`
@@ -64,6 +69,7 @@ Changed all instances of `-o text` to `-f text`:
 - Line 352: `test_prompt_list_text_output_field_validation`
 
 Also updated:
+
 - Documentation comment (line 5-8) to reference `-f text`
 - Print statements to show `-f` in test output
 - Expected usage message (line 256) in `test_prompt_list_show_columns`
@@ -73,6 +79,7 @@ Also updated:
 **File:** `cli/src/commands/prompt.rs:369`
 
 Changed hardcoded usage example:
+
 ```rust
 // Before:
 println!("\nUsage: langstar prompt list -o text --columns handle,downloads");
@@ -87,6 +94,7 @@ After fixing the `-o`/`-f` issue, tests compiled but revealed a different proble
 
 **Failure Pattern:**
 Tests were failing because info messages were appearing in stdout, contaminating TSV data:
+
 ```
 Line 0 should contain tabs for TSV format: ℹ Fetching prompts (limit: 5, offset: 0)...
 ```
@@ -192,7 +200,9 @@ The new `prompt_text_output_test.rs` file provides integration tests for:
 ## Other Worktree Status
 
 ### Issue #634 Worktree
+
 Checked `/workspace/wip/node-634-update-in-progres-milestones-and-milestone-plannin`:
+
 - Modified: `sdk/tests/playground_settings_integration_test.rs`
 - New file: `docs/implementation/634-test-plan-phase-addition.md`
 - No test failures detected
@@ -201,6 +211,7 @@ Checked `/workspace/wip/node-634-update-in-progres-milestones-and-milestone-plan
 ## Next Steps (Potential)
 
 The code appears ready for further work:
+
 - Files are currently unstaged
 - All integration tests pass
 - May want to run full pre-commit checks before committing

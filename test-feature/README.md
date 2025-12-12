@@ -28,6 +28,7 @@ The `devcontainer.json` references the local feature using a relative path:
 ## Expected Behavior
 
 When the container builds:
+
 1. The base Ubuntu image is pulled
 2. The feature's `install.sh` script executes
 3. Langstar CLI is downloaded and installed to `/usr/local/bin`

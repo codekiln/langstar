@@ -47,6 +47,7 @@ gh release create v{X.Y.Z} --generate-notes
 ```
 
 This command:
+
 - Verifies release exists
 - Validates sub-issue completion
 - Closes milestone with release link
@@ -77,10 +78,10 @@ git branch -d {branch}
 
 ## Troubleshooting
 
-| Error | Solution |
-|-------|----------|
-| Release not found | Create first: `gh release create v{X.Y.Z}` |
-| Open sub-issues | Close them or use `FORCE_RELEASE=true` |
+| Error                | Solution                                                            |
+| -------------------- | ------------------------------------------------------------------- |
+| Release not found    | Create first: `gh release create v{X.Y.Z}`                          |
+| Open sub-issues      | Close them or use `FORCE_RELEASE=true`                              |
 | gh-sub-issue missing | Install: `gh extension install https://github.com/cli/gh-sub-issue` |
 
 ## References

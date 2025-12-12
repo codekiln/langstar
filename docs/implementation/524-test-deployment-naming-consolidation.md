@@ -10,10 +10,10 @@
 
 Consolidate from 8 test deployment naming patterns to exactly **two types**:
 
-| Type | Pattern | Behavior |
-|------|---------|----------|
-| **PR/Dev** | `pr-integration-test-{timestamp}` | Get-or-create by prefix, cleaned by cron |
-| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting |
+| Type        | Pattern                                | Behavior                                 |
+| ----------- | -------------------------------------- | ---------------------------------------- |
+| **PR/Dev**  | `pr-integration-test-{timestamp}`      | Get-or-create by prefix, cleaned by cron |
+| **Release** | `release-integration-test-{timestamp}` | Always fresh, self-deleting              |
 
 ---
 
@@ -22,6 +22,7 @@ Consolidate from 8 test deployment naming patterns to exactly **two types**:
 ### Step 1: Update `sdk/src/test_utils.rs`
 
 **1.1 Add constants for prefixes (after line 35):**
+
 ```rust
 /// Prefix for PR/dev test deployments (reusable via get-or-create)
 /// Note: No trailing hyphen - this matches both old "pr-integration-test" and new "pr-integration-test-{ts}"
@@ -32,6 +33,7 @@ pub const RELEASE_TEST_DEPLOYMENT_PREFIX: &str = "release-integration-test";
 ```
 
 **1.2 Add `name_prefix` field to `TestDeploymentConfig` (line 39-49):**
+
 ```rust
 pub struct TestDeploymentConfig {
     /// Name of the deployment
@@ -50,6 +52,7 @@ pub struct TestDeploymentConfig {
 ```
 
 **1.3 Update `Default` impl (line 52-67):**
+
 ```rust
 impl Default for TestDeploymentConfig {
     fn default() -> Self {
@@ -74,6 +77,7 @@ impl Default for TestDeploymentConfig {
 ```
 
 **1.4 Update `for_release_tests()` (line 70-87):**
+
 ```rust
 pub fn for_release_tests() -> Self {
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -91,6 +95,7 @@ pub fn for_release_tests() -> Self {
 ```
 
 **1.5 Update `get_or_create_deployment()` (around line 305-320):**
+
 ```rust
 // Step 2: Look for existing deployment by prefix or name
 let search_pattern = config.name_prefix.as_ref()
@@ -132,6 +137,7 @@ let deployment = if config.name_prefix.is_some() {
 ### Step 2: Update `sdk/tests/integration_deployment_workflow.rs`
 
 **2.1 Import shared utilities (add near top):**
+
 ```rust
 use langstar_sdk::test_utils::{TestDeploymentConfig, get_or_create_deployment};
 ```
@@ -139,6 +145,7 @@ use langstar_sdk::test_utils::{TestDeploymentConfig, get_or_create_deployment};
 **2.2 Update `test_deployment_workflow()` (line 87-299):**
 
 Replace lines 122-143:
+
 ```rust
 // BEFORE
 let deployment_name = "langstar-integration-test".to_string();
@@ -156,6 +163,7 @@ let (deployment_id, revision_id) = get_or_create_deployment(&client, &config).aw
 **2.3 Update `test_deployment_workflow_full_lifecycle()` (line 337-535):**
 
 Replace lines 372-397:
+
 ```rust
 // BEFORE
 let deployment_name = format!("{}-test-{}", repository_name, timestamp);
@@ -174,11 +182,13 @@ let (deployment_id, revision_id) = get_or_create_deployment(&client, &config).aw
 ### Step 3: Update `cli/tests/graph_command_test.rs`
 
 **3.1 Add import (if not already present):**
+
 ```rust
 use langstar_sdk::test_utils::TestDeploymentConfig;
 ```
 
 **3.2 Update `test_graph_create_basic()` (line 297):**
+
 ```rust
 // BEFORE
 let deployment_name = format!("cli-test-deployment-{}", timestamp);
@@ -189,6 +199,7 @@ let deployment_name = config.name.clone();
 ```
 
 **3.3 Update `test_graph_create_with_wait()` (line 354):**
+
 ```rust
 // BEFORE
 let deployment_name = format!("cli-test-deployment-wait-{}", timestamp);
@@ -199,6 +210,7 @@ let deployment_name = config.name.clone();
 ```
 
 **3.4 Update `test_graph_lifecycle()` (line 426):**
+
 ```rust
 // BEFORE
 let deployment_name = format!("cli-test-lifecycle-{}", timestamp);
@@ -209,6 +221,7 @@ let deployment_name = config.name.clone();
 ```
 
 **3.5 Update `test_graph_create_with_env_secrets()` (line 614):**
+
 ```rust
 // BEFORE
 let deployment_name = format!("cli-test-deployment-env-{}", timestamp);
@@ -225,6 +238,7 @@ let deployment_name = config.name.clone();
 **File:** `.github/workflows/cleanup-test-deployments.yml`
 
 **Update pattern matching (lines 67-76):**
+
 ```yaml
 # BEFORE - multiple patterns needed
 for pattern in "integration-test" "langstar-test" "cli-test"; do
@@ -252,6 +266,7 @@ deployments="$raw_deployments"
 ### Step 5: Update Documentation
 
 **5.1 Update `sdk/tests/README.md` (lines 16-22):**
+
 ```markdown
 ### Test Deployment Naming
 
@@ -281,21 +296,21 @@ Add note at top referencing this consolidation.
 
 ### Files to Modify
 
-| File | Changes |
-|------|---------|
-| `sdk/src/test_utils.rs` | Add prefixes, name_prefix field, update get-or-create |
-| `sdk/tests/integration_deployment_workflow.rs` | Use TestDeploymentConfig |
-| `cli/tests/graph_command_test.rs` | Use TestDeploymentConfig::for_release_tests() |
-| `.github/workflows/cleanup-test-deployments.yml` | Simplify to single pattern |
-| `sdk/tests/README.md` | Update naming docs |
-| `cli/tests/README.md` | Update fixtures docs |
+| File                                             | Changes                                               |
+| ------------------------------------------------ | ----------------------------------------------------- |
+| `sdk/src/test_utils.rs`                          | Add prefixes, name_prefix field, update get-or-create |
+| `sdk/tests/integration_deployment_workflow.rs`   | Use TestDeploymentConfig                              |
+| `cli/tests/graph_command_test.rs`                | Use TestDeploymentConfig::for_release_tests()         |
+| `.github/workflows/cleanup-test-deployments.yml` | Simplify to single pattern                            |
+| `sdk/tests/README.md`                            | Update naming docs                                    |
+| `cli/tests/README.md`                            | Update fixtures docs                                  |
 
 ### Files Created (this PR)
 
-| File | Purpose |
-|------|---------|
-| `reference/research/524-integration-test-deployment-consolidation.md` | Research findings |
-| `docs/implementation/524-test-deployment-naming-consolidation.md` | This implementation plan |
+| File                                                                  | Purpose                  |
+| --------------------------------------------------------------------- | ------------------------ |
+| `reference/research/524-integration-test-deployment-consolidation.md` | Research findings        |
+| `docs/implementation/524-test-deployment-naming-consolidation.md`     | This implementation plan |
 
 ---
 

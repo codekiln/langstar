@@ -14,6 +14,7 @@ This command helps AI agents create test plans following langstar testing standa
 ```
 
 **Examples:**
+
 - `/gh-milestones:test-plan ls-runs-query`
 - `/gh-milestones:test-plan 14`
 - `/gh-milestones:test-plan https://github.com/codekiln/langstar/milestone/14`
@@ -37,6 +38,7 @@ gh api repos/codekiln/langstar/milestones/$MILESTONE_NUMBER
 ```
 
 Fetch the parent issue for context:
+
 ```bash
 gh issue view <parent-issue-number> --json title,body,labels
 ```
@@ -46,6 +48,7 @@ gh issue view <parent-issue-number> --json title,body,labels
 Analyze the milestone to determine feature type. Ask the user if unclear:
 
 **Feature types:**
+
 - **SDK feature** - New API client methods, data types
 - **CLI feature** - New commands or subcommands
 - **Infrastructure** - CI/CD, devcontainer, build system
@@ -58,23 +61,27 @@ Use the AskUserQuestion tool if type is unclear from milestone description.
 Based on feature type, load specific docs:
 
 **For SDK features:**
+
 - `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always)
 - `@docs/dev/testing/sdk-integration-tests.md`
 - `@docs/dev/testing/mocking-patterns.md`
 - `@docs/dev/testing/test-fixtures.md` (if using test deployments)
 
 **For CLI features:**
+
 - `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always)
 - `@docs/dev/testing/cli-integration-tests.md`
 - `@docs/dev/testing/crud-lifecycle-pattern.md` (if CRUD operations)
 - `@docs/dev/testing/test-fixtures.md` (if using test deployments)
 
 **For infrastructure:**
+
 - `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always)
 - `@docs/dev/testing/devcontainer-feature-tests.md` (if devcontainer)
 - Relevant CI/CD documentation
 
 **For documentation:**
+
 - Testing may not be applicable, inform user
 
 ### Step 5: Generate Test Plan
@@ -118,6 +125,7 @@ Create a comprehensive test plan document at `docs/implementation/<milestone-nam
 ### Step 6: Output Test Plan
 
 Present the generated test plan to the user with:
+
 - Summary of testing approach
 - Link to generated test plan document
 - Checklist of tasks to implement tests
@@ -132,6 +140,7 @@ Present the generated test plan to the user with:
 **Test approach:** Unit tests (mocking) + Integration tests (CRUD lifecycle)
 
 ### Key Requirements:
+
 - [ ] Unit tests for query building logic (httpmock)
 - [ ] Integration test: Create run with SDK -> verify with SDK
 - [ ] Integration test: Create run with SDK → Query via CLI → Verify in results
@@ -140,6 +149,7 @@ Present the generated test plan to the user with:
 - [ ] All tests must verify actual behavior (not just exit codes)
 
 ### Toyota Andon Cord Reminder:
+
 All tests must pass before merge. No exceptions for "unrelated failures."
 
 See `@docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` for requirements.

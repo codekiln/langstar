@@ -28,11 +28,11 @@ Understand how structured output prompts work in LangSmith by:
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `README.md` | This file - experiment overview |
-| `run_test.sh` | Shell wrapper with environment setup |
-| `test_structured_prompts.py` | Python script for experiments |
+| File                         | Purpose                              |
+| ---------------------------- | ------------------------------------ |
+| `README.md`                  | This file - experiment overview      |
+| `run_test.sh`                | Shell wrapper with environment setup |
+| `test_structured_prompts.py` | Python script for experiments        |
 
 ## Usage
 
@@ -72,6 +72,7 @@ The manifest uses LC-JSON format with this structure for StructuredPrompt:
 **Pydantic classes CANNOT be serialized properly!**
 
 When passing a Pydantic class to `schema_`:
+
 - Serializes as `{"lc": 1, "type": "not_implemented", ...}`
 - Stored as `null` in LangSmith
 

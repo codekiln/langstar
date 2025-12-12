@@ -21,10 +21,12 @@ Complete guide to running evaluations on LangSmith datasets using the `langstar 
 ## Overview
 
 Langstar evaluations allow you to automatically score outputs against datasets using either:
+
 - **Heuristic evaluators**: Fast, deterministic, zero-cost local evaluations
 - **LLM-as-judge evaluators**: Model-based scoring using LLM reasoning
 
 Evaluations help you:
+
 - Test model performance on standardized datasets
 - Compare different prompts or models
 - Monitor quality metrics over time
@@ -46,27 +48,29 @@ Evaluations help you:
 
 ### Core Configuration
 
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `LANGSMITH_API_KEY` | ✅ Yes | LangSmith authentication | `lsv2_pt_...` |
-| `LANGSMITH_API_URL` | No | Custom API endpoint | `https://api.smith.langchain.com` (default) |
+| Variable            | Required | Description              | Example                                     |
+| ------------------- | -------- | ------------------------ | ------------------------------------------- |
+| `LANGSMITH_API_KEY` | ✅ Yes   | LangSmith authentication | `lsv2_pt_...`                               |
+| `LANGSMITH_API_URL` | No       | Custom API endpoint      | `https://api.smith.langchain.com` (default) |
 
 ### LLM Judge Configuration
 
-| Variable | Required When | Description | Example |
-|----------|---------------|-------------|---------|
+| Variable            | Required When         | Description       | Example      |
+| ------------------- | --------------------- | ----------------- | ------------ |
 | `ANTHROPIC_API_KEY` | Using Anthropic judge | Anthropic API key | `sk-ant-...` |
-| `OPENAI_API_KEY` | Using OpenAI judge | OpenAI API key | `sk-...` |
+| `OPENAI_API_KEY`    | Using OpenAI judge    | OpenAI API key    | `sk-...`     |
 
 ### Setting Environment Variables
 
 **Linux/macOS:**
+
 ```bash
 export LANGSMITH_API_KEY="<your-api-key>"
 export ANTHROPIC_API_KEY="<your-api-key>"
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 $env:LANGSMITH_API_KEY="<your-api-key>"
 $env:ANTHROPIC_API_KEY="<your-api-key>"
@@ -75,6 +79,7 @@ $env:ANTHROPIC_API_KEY="<your-api-key>"
 **Persistent Configuration:**
 
 Create `~/.langstar/config.toml`:
+
 ```toml
 [langsmith]
 api_key = "<your-api-key>"
@@ -91,22 +96,22 @@ api_key = "<your-openai-key>"
 
 ### Heuristic Evaluators (Zero-Cost)
 
-| Evaluator | Use Case | Score Range | Example |
-|-----------|----------|-------------|---------|
-| `exact-match` | Exact string equality | 0.0 or 1.0 | Validating exact answers |
-| `contains` | Substring presence | 0.0 or 1.0 | Keyword detection |
-| `regex-match` | Pattern matching | 0.0 or 1.0 | Format validation (emails, dates) |
-| `json-valid` | JSON syntax check | 0.0 or 1.0 | API response validation |
-| `string-distance` | Fuzzy matching | 0.0 to 1.0 | Typo tolerance, similarity |
+| Evaluator         | Use Case              | Score Range | Example                           |
+| ----------------- | --------------------- | ----------- | --------------------------------- |
+| `exact-match`     | Exact string equality | 0.0 or 1.0  | Validating exact answers          |
+| `contains`        | Substring presence    | 0.0 or 1.0  | Keyword detection                 |
+| `regex-match`     | Pattern matching      | 0.0 or 1.0  | Format validation (emails, dates) |
+| `json-valid`      | JSON syntax check     | 0.0 or 1.0  | API response validation           |
+| `string-distance` | Fuzzy matching        | 0.0 to 1.0  | Typo tolerance, similarity        |
 
 ### LLM-as-Judge Evaluators (API Calls Required)
 
-| Feature | Categorical | Continuous |
-|---------|-------------|------------|
-| **Score Type** | Predefined choices | Numeric range |
-| **Use Case** | Pass/Fail, Rating scales | Quality scores, percentages |
-| **Example Scores** | Y/N, Poor/Fair/Good/Excellent | 0.0-1.0, 1-10 |
-| **Cost** | Per API call | Per API call |
+| Feature            | Categorical                   | Continuous                  |
+| ------------------ | ----------------------------- | --------------------------- |
+| **Score Type**     | Predefined choices            | Numeric range               |
+| **Use Case**       | Pass/Fail, Rating scales      | Quality scores, percentages |
+| **Example Scores** | Y/N, Poor/Fair/Good/Excellent | 0.0-1.0, 1-10               |
+| **Cost**           | Per API call                  | Per API call                |
 
 ## Quick Start
 
@@ -121,6 +126,7 @@ langstar dataset import <dataset-id> --file examples.jsonl
 ```
 
 **Example `examples.jsonl`:**
+
 ```jsonl
 {"input": {"question": "What is 2+2?"}, "output": {"answer": "4"}}
 {"input": {"question": "Capital of France?"}, "output": {"answer": "Paris"}}
@@ -130,6 +136,7 @@ langstar dataset import <dataset-id> --file examples.jsonl
 ### Step 2: Create an Evaluation
 
 **Heuristic evaluator:**
+
 ```bash
 langstar eval create \
   --name "exact-match-qa" \
@@ -138,6 +145,7 @@ langstar eval create \
 ```
 
 **LLM judge:**
+
 ```bash
 langstar eval create \
   --name "quality-check" \
@@ -178,11 +186,13 @@ langstar eval export <eval-id> --format csv --output results.csv
 Tests for exact string equality (case-sensitive).
 
 **Use Cases:**
+
 - Multiple choice answers
 - Exact code output validation
 - Binary classification
 
 **Example:**
+
 ```bash
 langstar eval create \
   --name "exact-answer-check" \
@@ -191,6 +201,7 @@ langstar eval create \
 ```
 
 **Score Logic:**
+
 - `1.0` if output exactly matches expected
 - `0.0` otherwise
 
@@ -199,11 +210,13 @@ langstar eval create \
 Checks if output contains expected substring (case-sensitive).
 
 **Use Cases:**
+
 - Keyword presence detection
 - Required phrase validation
 - Content filtering
 
 **Example:**
+
 ```bash
 langstar eval create \
   --name "keyword-presence" \
@@ -212,6 +225,7 @@ langstar eval create \
 ```
 
 **Score Logic:**
+
 - `1.0` if expected substring found in output
 - `0.0` otherwise
 
@@ -220,11 +234,13 @@ langstar eval create \
 Validates output against regular expression pattern.
 
 **Use Cases:**
+
 - Email/phone format validation
 - Date/time format checking
 - Structured output verification
 
 **Example:**
+
 ```bash
 langstar eval create \
   --name "email-format-check" \
@@ -233,6 +249,7 @@ langstar eval create \
 ```
 
 **Score Logic:**
+
 - `1.0` if output matches regex pattern
 - `0.0` otherwise
 - `Error` if regex pattern is invalid
@@ -242,11 +259,13 @@ langstar eval create \
 Validates that output is syntactically valid JSON.
 
 **Use Cases:**
+
 - API response validation
 - Structured data output
 - JSON generation tasks
 
 **Example:**
+
 ```bash
 langstar eval create \
   --name "json-output-validation" \
@@ -255,6 +274,7 @@ langstar eval create \
 ```
 
 **Score Logic:**
+
 - `1.0` if output is valid JSON
 - `0.0` otherwise
 
@@ -263,11 +283,13 @@ langstar eval create \
 Normalized Levenshtein distance for fuzzy matching.
 
 **Use Cases:**
+
 - Typo tolerance
 - Approximate matching
 - Similarity scoring
 
 **Example:**
+
 ```bash
 langstar eval create \
   --name "fuzzy-matching" \
@@ -276,11 +298,13 @@ langstar eval create \
 ```
 
 **Score Logic:**
+
 - `1.0` = identical strings
 - `0.0` = completely different
 - Range: Continuous between 0.0 and 1.0
 
 **Calculation:**
+
 ```
 similarity = 1.0 - (levenshtein_distance / max_string_length)
 ```
@@ -292,6 +316,7 @@ similarity = 1.0 - (levenshtein_distance / max_string_length)
 LLM-as-judge uses a language model to evaluate outputs based on a custom rubric or prompt.
 
 **Key Components:**
+
 1. **Judge Model**: The LLM that will evaluate (e.g., Claude, GPT-4)
 2. **Judge Provider**: API provider (anthropic, openai)
 3. **Judge Prompt**: Instructions/rubric for evaluation
@@ -303,6 +328,7 @@ LLM-as-judge uses a language model to evaluate outputs based on a custom rubric 
 Use when you want predefined rating categories.
 
 **Example: Binary Classification**
+
 ```bash
 langstar eval create \
   --name "pass-fail-check" \
@@ -317,6 +343,7 @@ langstar eval create \
 ```
 
 **Example Rubric (`rubrics/pass-fail.txt`):**
+
 ```
 Evaluate whether the code output is correct.
 
@@ -328,6 +355,7 @@ Return either "Pass" or "Fail".
 ```
 
 **Example: Multi-Level Rating**
+
 ```bash
 langstar eval create \
   --name "quality-rating" \
@@ -342,6 +370,7 @@ langstar eval create \
 ```
 
 **Example Rubric (`rubrics/quality-scale.txt`):**
+
 ```
 Evaluate the quality of this customer service response.
 
@@ -359,6 +388,7 @@ Return one of: Poor, Fair, Good, Excellent
 Use when you want numeric scores on a continuous scale.
 
 **Example: 0-1 Scale**
+
 ```bash
 langstar eval create \
   --name "relevance-score" \
@@ -374,6 +404,7 @@ langstar eval create \
 ```
 
 **Example Rubric (`rubrics/relevance.txt`):**
+
 ```
 Evaluate how relevant this search result is to the query.
 
@@ -386,6 +417,7 @@ Return a score between 0.0 and 1.0 (use decimals).
 ```
 
 **Example: 1-10 Scale**
+
 ```bash
 langstar eval create \
   --name "content-quality" \
@@ -400,6 +432,7 @@ langstar eval create \
 ```
 
 **Example Rubric (`rubrics/article-quality.txt`):**
+
 ```
 Rate the quality of this generated article on a scale of 1-10.
 
@@ -449,6 +482,7 @@ Show 1-2 examples of inputs and expected scores.
 ### Example Rubrics
 
 **Factual Accuracy (Categorical):**
+
 ```
 Evaluate whether the answer is factually accurate.
 
@@ -461,6 +495,7 @@ Return one of: Incorrect, Partially_Correct, Correct
 ```
 
 **Helpfulness (Continuous):**
+
 ```
 Rate how helpful this response is to the user (0.0 to 1.0).
 
@@ -473,6 +508,7 @@ Return a score between 0.0 and 1.0.
 ```
 
 **Toxicity Detection (Categorical):**
+
 ```
 Classify the toxicity level of this text.
 
@@ -548,11 +584,13 @@ langstar eval get <eval-id> --json
 ### Export Formats
 
 **CSV (Tabular):**
+
 ```bash
 langstar eval export <eval-id> --format csv --output results.csv
 ```
 
 **Output:**
+
 ```csv
 example_id,key,score,value,comment
 550e8400-...,accuracy,1.0,Pass,Correct answer
@@ -560,17 +598,20 @@ example_id,key,score,value,comment
 ```
 
 **JSONL (JSON Lines):**
+
 ```bash
 langstar eval export <eval-id> --format jsonl --output results.jsonl
 ```
 
 **Output:**
+
 ```jsonl
 {"example_id":"550e8400-...","key":"accuracy","score":1.0,"value":"Pass","comment":"Correct answer"}
 {"example_id":"660f9511-...","key":"accuracy","score":0.0,"value":"Fail","comment":"Wrong answer"}
 ```
 
 **JSON (Full Document):**
+
 ```bash
 langstar eval export <eval-id> --format json --output results.json --include-metadata
 ```
@@ -578,12 +619,14 @@ langstar eval export <eval-id> --format json --output results.json --include-met
 ### Analyzing Results
 
 **Using CSV with spreadsheet tools:**
+
 ```bash
 langstar eval export <eval-id> --format csv --output results.csv
 # Open in Excel, Google Sheets, etc.
 ```
 
 **Using jq for JSON analysis:**
+
 ```bash
 # Average score
 langstar eval export <eval-id> --format jsonl | \
@@ -731,12 +774,14 @@ langstar eval export $EVAL_ID --format jsonl | \
 ### Choosing Evaluator Types
 
 **Use Heuristic Evaluators When:**
+
 - ✅ Expected output is well-defined
 - ✅ Cost is a concern (zero cost)
 - ✅ Speed is critical (instant)
 - ✅ Determinism is required
 
 **Use LLM Judge When:**
+
 - ✅ Subjective quality assessment needed
 - ✅ Complex reasoning required
 - ✅ Natural language understanding needed
@@ -745,6 +790,7 @@ langstar eval export $EVAL_ID --format jsonl | \
 ### Cost Optimization
 
 **For LLM Judges:**
+
 1. **Use Preview Mode**: Test on subset before full run
    ```bash
    langstar eval run <eval-id> --preview 10
@@ -759,6 +805,7 @@ langstar eval export $EVAL_ID --format jsonl | \
 ### Rubric Design
 
 **Do:**
+
 - ✅ Be explicit about scoring criteria
 - ✅ Provide clear examples
 - ✅ Use consistent terminology
@@ -766,6 +813,7 @@ langstar eval export $EVAL_ID --format jsonl | \
 - ✅ Include edge case handling
 
 **Don't:**
+
 - ❌ Use ambiguous language
 - ❌ Mix multiple evaluation dimensions without structure
 - ❌ Assume judge has external context
@@ -774,11 +822,13 @@ langstar eval export $EVAL_ID --format jsonl | \
 ### Evaluation Management
 
 **Naming Conventions:**
+
 - Use descriptive names: `qa-exact-match-v1`, `cs-quality-claude-sonnet`
 - Include version numbers for iterations
 - Tag evaluations by purpose: `test`, `prod`, `experiment`
 
 **Version Control:**
+
 - Store judge prompts in version control
 - Document rubric changes
 - Track evaluation IDs and configurations
@@ -788,6 +838,7 @@ langstar eval export $EVAL_ID --format jsonl | \
 ### Common Issues
 
 **"API key not found"**
+
 ```bash
 # Solution: Set required environment variable
 export LANGSMITH_API_KEY="<your-key>"
@@ -795,6 +846,7 @@ export ANTHROPIC_API_KEY="<your-key>"  # For Anthropic judges
 ```
 
 **"Dataset not found"**
+
 ```bash
 # Solution: Verify dataset exists and ID is correct
 langstar dataset list
@@ -802,6 +854,7 @@ langstar dataset get <dataset-id>
 ```
 
 **"Judge model rate limit exceeded"**
+
 ```bash
 # Solution: Use preview mode to reduce calls
 langstar eval run <eval-id> --preview 10
@@ -811,6 +864,7 @@ langstar eval run <eval-id> --preview 10
 ```
 
 **"Rubric file not found"**
+
 ```bash
 # Solution: Use absolute path or verify file exists
 langstar eval create \
@@ -818,6 +872,7 @@ langstar eval create \
 ```
 
 **"Invalid score type for choices"**
+
 ```bash
 # Solution: Categorical requires --score-choices
 langstar eval create \
@@ -828,21 +883,25 @@ langstar eval create \
 ### Debugging Evaluations
 
 **1. Dry Run First:**
+
 ```bash
 langstar eval run <eval-id> --dry-run
 ```
 
 **2. Preview with Small Subset:**
+
 ```bash
 langstar eval run <eval-id> --preview 3
 ```
 
 **3. Check JSON Output:**
+
 ```bash
 langstar eval get <eval-id> --json | jq
 ```
 
 **4. Examine Individual Results:**
+
 ```bash
 langstar eval export <eval-id> --format jsonl | head -5
 ```

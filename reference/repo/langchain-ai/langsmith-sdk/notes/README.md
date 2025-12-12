@@ -9,6 +9,7 @@
 ## Purpose
 
 Study the official LangSmith Python SDK to understand:
+
 - How to implement LangSmith API clients
 - Proper patterns for prompts, datasets, and tracing
 - API parameter structures and serialization
@@ -27,10 +28,12 @@ Structured output prompts allow defining a JSON schema that the LLM output must 
 ### Key Classes
 
 **`langchain_core.prompts.structured.StructuredPrompt`**
+
 - Core class for defining structured output constraints
 - Imported in `client.py:7725`
 
 **`ls_structured_output_format`**
+
 - Keyword argument used to pass structured output format between transforms
 - Found in `client.py:8779-8782`
 
@@ -87,6 +90,7 @@ See: `reference/experiments/398-structured-output-prompts/` for experiments.
 Research for implementing the `/api/v1/playground-settings` API in Langstar SDK.
 
 **Key findings:**
+
 - Python SDK has NO implementation for playground settings
 - Langstar will be first SDK to implement this API
 - Should follow existing Langstar patterns from datasets/prompts
@@ -95,6 +99,7 @@ Research for implementing the `/api/v1/playground-settings` API in Langstar SDK.
 ### Patterns
 
 See: `playground-settings-patterns.md` for complete SDK implementation patterns including:
+
 - Method signatures for CRUD operations
 - Type definitions
 - Pagination strategy

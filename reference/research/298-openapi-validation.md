@@ -12,6 +12,7 @@
 This report validates the LangSmith `/runs/query` endpoint design against the official OpenAPI specification fetched from `https://api.smith.langchain.com/openapi.json`. The validation confirms that the recommendations in the #299 research report are **accurate and match the official API specification** with only minor additional findings.
 
 **Key Findings:**
+
 1. ✅ Endpoint is `POST /api/v1/runs/query` (matches research)
 2. ✅ Request schema matches research report recommendations
 3. ✅ Run schema fields align with Python SDK analysis
@@ -37,17 +38,18 @@ Operation ID: query_runs_api_v1_runs_query_post
 **Response Schema**: `ListRunsResponse`
 
 **Security**:
+
 - API Key authentication
 - Tenant ID header
 - Bearer token authentication
 
 ### 1.2 Comparison with Research Report (#299)
 
-| Aspect | Research Report | OpenAPI Spec | Match |
-|--------|----------------|--------------|-------|
-| HTTP Method | POST | POST | ✅ |
-| Path | `/runs/query` | `/api/v1/runs/query` | ✅ (with version prefix) |
-| Content Type | application/json | application/json | ✅ |
+| Aspect       | Research Report  | OpenAPI Spec         | Match                    |
+| ------------ | ---------------- | -------------------- | ------------------------ |
+| HTTP Method  | POST             | POST                 | ✅                       |
+| Path         | `/runs/query`    | `/api/v1/runs/query` | ✅ (with version prefix) |
+| Content Type | application/json | application/json     | ✅                       |
 
 **Verdict**: ✅ **MATCHES** - The endpoint design matches the research recommendations.
 
@@ -59,45 +61,46 @@ Operation ID: query_runs_api_v1_runs_query_post
 
 **From OpenAPI** (`reference/api-specs/runs-query-request-schema.json`):
 
-| Parameter | Type | OpenAPI Spec | Research Report | Match |
-|-----------|------|--------------|-----------------|-------|
-| `session` | array[uuid] \| null | ✅ | ✅ (Project IDs) | ✅ |
-| `filter` | string \| null | ✅ | ✅ | ✅ |
-| `trace_filter` | string \| null | ✅ | ✅ | ✅ |
-| `tree_filter` | string \| null | ✅ | ✅ | ✅ |
-| `is_root` | boolean \| null | ✅ | ✅ | ✅ |
-| `parent_run` | uuid \| null | ✅ | ✅ | ✅ |
-| `trace` | uuid \| null | ✅ | ✅ (trace_id) | ✅ |
-| `id` | array[uuid] \| null | ✅ | ✅ (run_ids) | ✅ |
-| `select` | array[string] | ✅ | ✅ | ✅ |
-| `cursor` | string \| null | ✅ | ✅ | ✅ |
-| `query` | string \| null | ✅ | ✅ (experimental) | ✅ |
-| `run_type` | string \| null | ✅ | ✅ | ✅ |
-| `error` | boolean \| null | ✅ | ✅ | ✅ |
-| `start_time` | datetime \| null | ✅ | ✅ | ✅ |
-| `end_time` | datetime \| null | ✅ | ❌ (not in research) | ⚠️ |
-| `limit` | integer | ✅ | ❌ (handled client-side in research) | ⚠️ |
+| Parameter      | Type                | OpenAPI Spec | Research Report                      | Match |
+| -------------- | ------------------- | ------------ | ------------------------------------ | ----- |
+| `session`      | array[uuid] \| null | ✅           | ✅ (Project IDs)                     | ✅    |
+| `filter`       | string \| null      | ✅           | ✅                                   | ✅    |
+| `trace_filter` | string \| null      | ✅           | ✅                                   | ✅    |
+| `tree_filter`  | string \| null      | ✅           | ✅                                   | ✅    |
+| `is_root`      | boolean \| null     | ✅           | ✅                                   | ✅    |
+| `parent_run`   | uuid \| null        | ✅           | ✅                                   | ✅    |
+| `trace`        | uuid \| null        | ✅           | ✅ (trace_id)                        | ✅    |
+| `id`           | array[uuid] \| null | ✅           | ✅ (run_ids)                         | ✅    |
+| `select`       | array[string]       | ✅           | ✅                                   | ✅    |
+| `cursor`       | string \| null      | ✅           | ✅                                   | ✅    |
+| `query`        | string \| null      | ✅           | ✅ (experimental)                    | ✅    |
+| `run_type`     | string \| null      | ✅           | ✅                                   | ✅    |
+| `error`        | boolean \| null     | ✅           | ✅                                   | ✅    |
+| `start_time`   | datetime \| null    | ✅           | ✅                                   | ✅    |
+| `end_time`     | datetime \| null    | ✅           | ❌ (not in research)                 | ⚠️     |
+| `limit`        | integer             | ✅           | ❌ (handled client-side in research) | ⚠️     |
 
 ### 2.2 Additional Request Parameters Discovered
 
 The OpenAPI spec includes several parameters not mentioned in the research report:
 
-| Parameter | Type | Purpose |
-|-----------|------|---------|
-| `data_source_type` | string \| null | Data source filtering |
-| `execution_order` | integer \| null | Execution order filtering |
-| `order` | string \| null | Sort order specification |
-| `skip_pagination` | boolean | Disable pagination |
-| `skip_prev_cursor` | boolean | Skip previous cursor |
-| `search_filter` | string \| null | Alternative search syntax |
-| `use_experimental_search` | boolean | Enable experimental search |
-| `reference_example` | array[uuid] \| null | Filter by reference examples |
+| Parameter                 | Type                | Purpose                      |
+| ------------------------- | ------------------- | ---------------------------- |
+| `data_source_type`        | string \| null      | Data source filtering        |
+| `execution_order`         | integer \| null     | Execution order filtering    |
+| `order`                   | string \| null      | Sort order specification     |
+| `skip_pagination`         | boolean             | Disable pagination           |
+| `skip_prev_cursor`        | boolean             | Skip previous cursor         |
+| `search_filter`           | string \| null      | Alternative search syntax    |
+| `use_experimental_search` | boolean             | Enable experimental search   |
+| `reference_example`       | array[uuid] \| null | Filter by reference examples |
 
 **Analysis**: These additional parameters provide extended functionality not covered in the Python SDK analysis. They should be supported in the Rust implementation for API completeness.
 
 ### 2.3 Default Select Fields
 
 **From OpenAPI Spec**:
+
 ```json
 [
   "id", "name", "run_type", "start_time", "end_time", "status", "error",
@@ -115,6 +118,7 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 ```
 
 **Comparison with Research Report**:
+
 - Research report listed 26 default fields
 - OpenAPI spec shows 47 default fields
 - All fields from research report are present
@@ -166,14 +170,15 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 
 **Comparison with Research Report**:
 
-| Field | Research Report | OpenAPI Spec | Match |
-|-------|----------------|--------------|-------|
-| `runs` | ✅ array[Run] | ✅ array[RunSchema] | ✅ |
-| `cursors` | ✅ `{next: string}` | ✅ object with optional strings | ✅ |
-| `search_cursors` | ❌ | ✅ (new) | ⚠️ |
-| `parsed_query` | ❌ | ✅ (new) | ⚠️ |
+| Field            | Research Report     | OpenAPI Spec                    | Match |
+| ---------------- | ------------------- | ------------------------------- | ----- |
+| `runs`           | ✅ array[Run]       | ✅ array[RunSchema]             | ✅    |
+| `cursors`        | ✅ `{next: string}` | ✅ object with optional strings | ✅    |
+| `search_cursors` | ❌                  | ✅ (new)                        | ⚠️     |
+| `parsed_query`   | ❌                  | ✅ (new)                        | ⚠️     |
 
 **Additional Response Fields**:
+
 - `search_cursors`: Used when experimental search is enabled
 - `parsed_query`: Shows how the query was interpreted (debugging)
 
@@ -192,10 +197,12 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 ```
 
 **Analysis**: The OpenAPI spec marks 8 fields as required:
+
 - `id`, `name`, `run_type`, `trace_id` - Core identifiers
 - `dotted_order`, `status`, `session_id`, `app_path` - Additional required fields
 
 **Comparison with Research Report** (line 183-214):
+
 - Research report marked fewer fields as required in the Python `RunBase` model
 - OpenAPI spec is more strict, reflecting server validation
 
@@ -203,24 +210,25 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 
 ### 4.2 Core Run Fields Comparison
 
-| Field | Python SDK Type | OpenAPI Type | Rust Recommendation | Match |
-|-------|----------------|--------------|---------------------|-------|
-| `id` | UUID | uuid | `Uuid` | ✅ |
-| `name` | str | string | `String` | ✅ |
-| `run_type` | str | RunTypeEnum | `String` (enum) | ✅ |
-| `start_time` | datetime | date-time | `Option<DateTime<Utc>>` | ⚠️ |
-| `end_time` | Optional[datetime] | date-time \| null | `Option<DateTime<Utc>>` | ✅ |
-| `status` | Optional[str] | string (required!) | `String` | ⚠️ |
-| `error` | Optional[str] | string \| null | `Option<String>` | ✅ |
-| `inputs` | dict | object \| null | `Option<Value>` | ⚠️ |
-| `outputs` | Optional[dict] | object \| null | `Option<Value>` | ✅ |
-| `tags` | Optional[list[str]] | array[string] \| null | `Option<Vec<String>>` | ✅ |
-| `trace_id` | UUID | uuid | `Uuid` | ✅ |
-| `session_id` | Optional[UUID] | uuid (required!) | `Uuid` | ⚠️ |
-| `parent_run_id` | Optional[UUID] | uuid \| null | `Option<Uuid>` | ✅ |
-| `parent_run_ids` | Optional[list[UUID]] | array[uuid] \| null | `Option<Vec<Uuid>>` | ✅ |
+| Field            | Python SDK Type      | OpenAPI Type          | Rust Recommendation     | Match |
+| ---------------- | -------------------- | --------------------- | ----------------------- | ----- |
+| `id`             | UUID                 | uuid                  | `Uuid`                  | ✅    |
+| `name`           | str                  | string                | `String`                | ✅    |
+| `run_type`       | str                  | RunTypeEnum           | `String` (enum)         | ✅    |
+| `start_time`     | datetime             | date-time             | `Option<DateTime<Utc>>` | ⚠️     |
+| `end_time`       | Optional[datetime]   | date-time \| null     | `Option<DateTime<Utc>>` | ✅    |
+| `status`         | Optional[str]        | string (required!)    | `String`                | ⚠️     |
+| `error`          | Optional[str]        | string \| null        | `Option<String>`        | ✅    |
+| `inputs`         | dict                 | object \| null        | `Option<Value>`         | ⚠️     |
+| `outputs`        | Optional[dict]       | object \| null        | `Option<Value>`         | ✅    |
+| `tags`           | Optional[list[str]]  | array[string] \| null | `Option<Vec<String>>`   | ✅    |
+| `trace_id`       | UUID                 | uuid                  | `Uuid`                  | ✅    |
+| `session_id`     | Optional[UUID]       | uuid (required!)      | `Uuid`                  | ⚠️     |
+| `parent_run_id`  | Optional[UUID]       | uuid \| null          | `Option<Uuid>`          | ✅    |
+| `parent_run_ids` | Optional[list[UUID]] | array[uuid] \| null   | `Option<Vec<Uuid>>`     | ✅    |
 
 **Key Discrepancies**:
+
 1. ⚠️ `status` - Research shows Optional, OpenAPI shows required
 2. ⚠️ `session_id` - Research shows Optional, OpenAPI shows required
 3. ⚠️ `start_time` - Research doesn't mark as Optional, but OpenAPI doesn't list as required
@@ -230,20 +238,22 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 
 ### 4.3 Token and Cost Fields
 
-| Field | OpenAPI Type | Research Type | Rust Recommendation | Match |
-|-------|--------------|---------------|---------------------|-------|
-| `total_tokens` | integer (default: 0) | Optional[int] | `Option<i64>` | ⚠️ |
-| `prompt_tokens` | integer (default: 0) | Optional[int] | `Option<i64>` | ⚠️ |
-| `completion_tokens` | integer (default: 0) | Optional[int] | `Option<i64>` | ⚠️ |
-| `total_cost` | string \| null | Optional[Decimal] | `Option<Decimal>` | ✅ |
-| `prompt_cost` | string \| null | Optional[Decimal] | `Option<Decimal>` | ✅ |
-| `completion_cost` | string \| null | Optional[Decimal] | `Option<Decimal>` | ✅ |
+| Field               | OpenAPI Type         | Research Type     | Rust Recommendation | Match |
+| ------------------- | -------------------- | ----------------- | ------------------- | ----- |
+| `total_tokens`      | integer (default: 0) | Optional[int]     | `Option<i64>`       | ⚠️     |
+| `prompt_tokens`     | integer (default: 0) | Optional[int]     | `Option<i64>`       | ⚠️     |
+| `completion_tokens` | integer (default: 0) | Optional[int]     | `Option<i64>`       | ⚠️     |
+| `total_cost`        | string \| null       | Optional[Decimal] | `Option<Decimal>`   | ✅    |
+| `prompt_cost`       | string \| null       | Optional[Decimal] | `Option<Decimal>`   | ✅    |
+| `completion_cost`   | string \| null       | Optional[Decimal] | `Option<Decimal>`   | ✅    |
 
 **Analysis**:
+
 - Token fields have `default: 0` in OpenAPI (not truly optional)
 - Cost fields are strings representing decimal values (correct for precision)
 
 **Recommendation**:
+
 - Token fields: Use `i64` with `#[serde(default)]` to match OpenAPI defaults
 - Cost fields: Use `Option<Decimal>` as recommended (parse from string)
 
@@ -251,16 +261,16 @@ The OpenAPI spec includes several parameters not mentioned in the research repor
 
 The OpenAPI spec includes many fields not covered in the research report:
 
-| Category | Fields |
-|----------|--------|
-| **Token Details** | `prompt_token_details`, `completion_token_details` |
-| **Cost Details** | `prompt_cost_details`, `completion_cost_details`, `price_model_id` |
-| **S3 Storage** | `inputs_s3_urls`, `outputs_s3_urls`, `s3_urls` |
-| **Manifests** | `manifest_id`, `manifest_s3_id`, `serialized` |
+| Category           | Fields                                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------------------- |
+| **Token Details**  | `prompt_token_details`, `completion_token_details`                                                       |
+| **Cost Details**   | `prompt_cost_details`, `completion_cost_details`, `price_model_id`                                       |
+| **S3 Storage**     | `inputs_s3_urls`, `outputs_s3_urls`, `s3_urls`                                                           |
+| **Manifests**      | `manifest_id`, `manifest_s3_id`, `serialized`                                                            |
 | **Trace Metadata** | `trace_tier`, `trace_upgrade`, `trace_first_received_at`, `trace_max_start_time`, `trace_min_start_time` |
-| **Execution** | `execution_order`, `direct_child_run_ids`, `child_run_ids`, `last_queued_at` |
-| **Dataset** | `in_dataset`, `reference_dataset_id` |
-| **Other** | `thread_id`, `share_token`, `ttl_seconds`, `events`, `inputs_preview`, `outputs_preview` |
+| **Execution**      | `execution_order`, `direct_child_run_ids`, `child_run_ids`, `last_queued_at`                             |
+| **Dataset**        | `in_dataset`, `reference_dataset_id`                                                                     |
+| **Other**          | `thread_id`, `share_token`, `ttl_seconds`, `events`, `inputs_preview`, `outputs_preview`                 |
 
 **Total Run Fields**: 54 fields (research report covered ~25)
 
@@ -269,11 +279,13 @@ The OpenAPI spec includes many fields not covered in the research report:
 ### 4.5 RunTypeEnum Values
 
 **From OpenAPI**:
+
 ```json
 ["tool", "chain", "llm", "retriever", "embedding", "prompt", "parser"]
 ```
 
 **From Research Report** (line 187):
+
 ```python
 "tool", "chain", "llm", "retriever", "embedding", "prompt", "parser"
 ```
@@ -289,6 +301,7 @@ The OpenAPI spec includes many fields not covered in the research report:
 **Finding**: The OpenAPI specification does **NOT document the filter query language syntax or operators**.
 
 The `filter`, `trace_filter`, and `tree_filter` fields are defined as:
+
 ```json
 {
   "anyOf": [{"type": "string"}, {"type": "null"}],
@@ -297,6 +310,7 @@ The `filter`, `trace_filter`, and `tree_filter` fields are defined as:
 ```
 
 **No details provided on**:
+
 - Supported operators (`eq`, `neq`, `gt`, `has`, `search`, `and`, `or`, etc.)
 - Syntax rules (function-style vs SQL-like)
 - Filterable field names
@@ -305,6 +319,7 @@ The `filter`, `trace_filter`, and `tree_filter` fields are defined as:
 ### 5.2 Validation Source
 
 The filter language details in the research report (Section 2) were derived from:
+
 1. Python SDK documentation and docstrings
 2. LangSmith public documentation
 3. Analysis of SDK implementation
@@ -314,6 +329,7 @@ The filter language details in the research report (Section 2) were derived from
 ### 5.3 Recommendation
 
 For filter language implementation:
+
 1. ✅ Follow research report Section 2 recommendations
 2. ✅ Implement all operators listed (eq, neq, gt, gte, lt, lte, has, search, and, or)
 3. ✅ Use function-style syntax as documented
@@ -330,14 +346,15 @@ For filter language implementation:
 
 **Discrepancy**: OpenAPI spec marks more fields as required than Python SDK suggests.
 
-| Field | Research (Python) | OpenAPI Spec |
-|-------|------------------|--------------|
-| `status` | Optional | **Required** |
-| `session_id` | Optional | **Required** |
-| `app_path` | Not mentioned | **Required** |
-| `dotted_order` | Not mentioned | **Required** |
+| Field          | Research (Python) | OpenAPI Spec |
+| -------------- | ----------------- | ------------ |
+| `status`       | Optional          | **Required** |
+| `session_id`   | Optional          | **Required** |
+| `app_path`     | Not mentioned     | **Required** |
+| `dotted_order` | Not mentioned     | **Required** |
 
 **Analysis**:
+
 - Python SDK types may reflect client-side optionality (fields may be None before run completes)
 - OpenAPI spec reflects server response guarantees (API always returns these fields)
 
@@ -346,10 +363,12 @@ For filter language implementation:
 ### 6.2 Additional Request Parameters
 
 The OpenAPI spec includes 8 additional request parameters not in research:
+
 - `data_source_type`, `execution_order`, `order`, `skip_pagination`, `skip_prev_cursor`
 - `search_filter`, `use_experimental_search`, `reference_example`
 
 **Recommendation**:
+
 - Implement these as advanced/optional features
 - Prioritize research report parameters for MVP
 - Add these for API completeness in later phases
@@ -357,6 +376,7 @@ The OpenAPI spec includes 8 additional request parameters not in research:
 ### 6.3 Additional Run Fields
 
 The OpenAPI spec includes 29 additional Run fields beyond research report:
+
 - Token/cost detail breakdowns
 - S3 storage URLs
 - Trace metadata
@@ -364,6 +384,7 @@ The OpenAPI spec includes 29 additional Run fields beyond research report:
 - Preview fields
 
 **Recommendation**:
+
 - Include all fields in Rust `Run` struct for API completeness
 - Use `#[serde(skip_serializing_if = "Option::is_none")]` for optional fields
 - Consider separate "compact" vs "full" Run types if needed
@@ -380,31 +401,32 @@ OpenAPI spec has 47 default select fields (research had 26).
 
 ### 7.1 Overall Assessment
 
-| Category | Validation Result |
-|----------|------------------|
-| **Endpoint Design** | ✅ MATCHES - POST /api/v1/runs/query |
-| **Request Schema (Core)** | ✅ MATCHES - All research params present |
-| **Request Schema (Extended)** | ⚠️ ADDITIONAL - 8 extra parameters in OpenAPI |
-| **Response Schema** | ✅ MATCHES - Core structure correct + 2 additional fields |
-| **Run Schema (Core)** | ✅ MATCHES - All research fields present |
-| **Run Schema (Extended)** | ⚠️ ADDITIONAL - 29 extra fields in OpenAPI |
-| **Required Fields** | ⚠️ DISCREPANCY - OpenAPI more strict than Python SDK |
-| **RunTypeEnum** | ✅ EXACT MATCH |
-| **Filter Language** | ⚠️ NOT IN OPENAPI - Research report is authoritative |
+| Category                      | Validation Result                                         |
+| ----------------------------- | --------------------------------------------------------- |
+| **Endpoint Design**           | ✅ MATCHES - POST /api/v1/runs/query                      |
+| **Request Schema (Core)**     | ✅ MATCHES - All research params present                  |
+| **Request Schema (Extended)** | ⚠️ ADDITIONAL - 8 extra parameters in OpenAPI              |
+| **Response Schema**           | ✅ MATCHES - Core structure correct + 2 additional fields |
+| **Run Schema (Core)**         | ✅ MATCHES - All research fields present                  |
+| **Run Schema (Extended)**     | ⚠️ ADDITIONAL - 29 extra fields in OpenAPI                 |
+| **Required Fields**           | ⚠️ DISCREPANCY - OpenAPI more strict than Python SDK       |
+| **RunTypeEnum**               | ✅ EXACT MATCH                                            |
+| **Filter Language**           | ⚠️ NOT IN OPENAPI - Research report is authoritative       |
 
 ### 7.2 Confidence Levels
 
-| Aspect | Confidence | Rationale |
-|--------|-----------|-----------|
-| Endpoint method/path | **100%** | Exact match in OpenAPI |
-| Core request parameters | **100%** | All present and correctly typed |
-| Core Run fields | **95%** | All present, minor optionality differences |
-| Filter language syntax | **80%** | Not in OpenAPI, relies on SDK analysis |
-| Extended parameters | **90%** | OpenAPI is authoritative for full API |
+| Aspect                  | Confidence | Rationale                                  |
+| ----------------------- | ---------- | ------------------------------------------ |
+| Endpoint method/path    | **100%**   | Exact match in OpenAPI                     |
+| Core request parameters | **100%**   | All present and correctly typed            |
+| Core Run fields         | **95%**    | All present, minor optionality differences |
+| Filter language syntax  | **80%**    | Not in OpenAPI, relies on SDK analysis     |
+| Extended parameters     | **90%**    | OpenAPI is authoritative for full API      |
 
 ### 7.3 Recommendations for Implementation
 
 **Phase 1 (MVP) - High Confidence**:
+
 1. ✅ Implement POST `/api/v1/runs/query` endpoint
 2. ✅ Support all core request parameters from research report
 3. ✅ Implement Run schema with fields from research report + OpenAPI required fields
@@ -494,6 +516,7 @@ OpenAPI spec has 47 default select fields (research had 26).
 ### 9.1 OpenAPI Spec Artifacts
 
 All extracted schemas saved to `reference/api-specs/`:
+
 - `langsmith-openapi.json` - Full spec (635KB)
 - `runs-query-endpoint.json` - Endpoint definition
 - `runs-query-request-schema.json` - Request body schema (307 lines)

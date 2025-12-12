@@ -7,6 +7,7 @@
 ## Overview
 
 Updated branch naming convention from `<username>/<issue_num>-<slug>` to milestone/parent-aware format:
+
 - `m<milestone_id>-p<parent_issue_id>-i<issue_num>-<slug>` (full)
 - `p<parent_issue_id>-i<issue_num>-<slug>` (parent only)
 - `m<milestone_id>-i<issue_num>-<slug>` (milestone only)
@@ -15,6 +16,7 @@ Updated branch naming convention from `<username>/<issue_num>-<slug>` to milesto
 ## Changes Implemented
 
 ### Documentation Updates
+
 - ✅ `.claude/commands/` - gh-start-issue.md, pr-workflow.md
 - ✅ `.claude/skills/` - pr-lifecycle, git-worktrees
 - ✅ `docs/dev/` - github-workflow.md, claude-code-branch-naming.md, README.md
@@ -22,6 +24,7 @@ Updated branch naming convention from `<username>/<issue_num>-<slug>` to milesto
 - ✅ Config files - .github/copilot-instructions.md
 
 ### Script Implementation
+
 - ✅ `scripts/cleanup-closed-issue-worktrees.sh`
   - Updated regex to match new `i<number>` pattern
   - Added backward compatibility for old format
@@ -34,6 +37,7 @@ Updated branch naming convention from `<username>/<issue_num>-<slug>` to milesto
   - Update worktree path generation
 
 ### Additional Fixes During Review
+
 - ✅ Fixed issue extraction regex in pr-workflow.md
 - ✅ Corrected `gh pr checks` field names (state vs conclusion)
 - ✅ Clarified parameter meanings (milestone_id, parent_issue_id, issue_num)
