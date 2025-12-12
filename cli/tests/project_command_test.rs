@@ -426,15 +426,15 @@ fn test_project_list_json_output() {
     );
 
     // If there are any projects, verify they have expected fields
-    if let Ok(projects) = projects {
-        if !projects.is_empty() {
-            let first = &projects[0];
-            assert!(first.get("id").is_some(), "Project should have 'id' field");
-            assert!(
-                first.get("tenant_id").is_some(),
-                "Project should have 'tenant_id' field"
-            );
-        }
+    if let Ok(projects) = projects
+        && !projects.is_empty()
+    {
+        let first = &projects[0];
+        assert!(first.get("id").is_some(), "Project should have 'id' field");
+        assert!(
+            first.get("tenant_id").is_some(),
+            "Project should have 'tenant_id' field"
+        );
     }
 }
 
