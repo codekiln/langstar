@@ -6,6 +6,7 @@
 **Auditor**: `/gh-milestones:test-audit` command
 
 ## Summary
+
 - **Tests Planned**: 37 (18 SDK + 19 CLI from test plan)
 - **Tests Implemented**: 30 (17 SDK + 13 CLI)
 - **Compliance Rate**: 81% (30/37 tests)
@@ -19,10 +20,12 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 ## Positive Findings
 
 ### ✅ No Unconditional `#[ignore]` Attributes
+
 - **Finding**: Zero unconditional `#[ignore]` found in both test files
 - **Result**: All tests will run when executed (no accidental disabling)
 
 ### ✅ Explicit Failures for Missing Environment Variables
+
 - **Finding**: All CLI integration tests use `.expect()` for env vars (lines 166-171, 339-344, etc.)
 - **Example**:
   ```rust
@@ -32,11 +35,13 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 - **Result**: No silent skips - tests fail loudly if credentials missing
 
 ### ✅ Full CRUD Lifecycle Pattern Implemented
+
 - **Finding**: `test_project_crud_lifecycle()` (lines 162-333) follows the exact pattern from `prompt_scoping_test.rs`
 - **Pattern**: CREATE → VERIFY → READ → VERIFY → UPDATE → VERIFY → DELETE
 - **Result**: Prevents #536-style bugs where tests pass but features are broken
 
 ### ✅ Behavior Verification (Not Just Exit Codes)
+
 - **Finding**: All CLI tests parse output and verify actual data
 - **Examples**:
   - Line 241-242: Parses JSON output and searches for created project
@@ -45,6 +50,7 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 - **Result**: Tests verify actual behavior, not just that commands don't crash
 
 ### ✅ Proper Cleanup
+
 - **Finding**: All integration tests clean up created resources
 - **Examples**:
   - Line 329: CRUD lifecycle cleanup
@@ -53,6 +59,7 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 - **Result**: Tests don't leave orphaned resources
 
 ### ✅ CI Configuration Complete
+
 - **Finding**: `.github/workflows/ci.yml` properly configured
 - **Lines 198-203**: Integration tests run with all three required env vars:
   ```yaml
@@ -74,6 +81,7 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 **Current**: SDK tests run unconditionally (which is correct), but may be gated by integration-tests feature in CI
 
 **Recommendation**:
+
 - SDK tests with mockito are fast unit-style tests that should always run
 - Only CLI tests with real API calls need `#[cfg_attr(not(feature = "integration-tests"), ignore)]`
 - Current implementation works correctly, but could be clearer
@@ -89,6 +97,7 @@ The test implementation demonstrates **exemplary adherence** to testing guidelin
 **Current Behavior**: Tests always run and fail if env vars missing (which is actually good for catching missing credentials)
 
 **From guidelines**: Integration tests should be marked with conditional ignore:
+
 ```rust
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[test]
@@ -98,6 +107,7 @@ fn test_project_crud_lifecycle() { ... }
 **Recommendation**: Add conditional ignore to CLI integration tests (lines 162, 337, 403, 443, 470, 501, 567)
 
 **Example fix**:
+
 ```rust
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[test]
@@ -113,6 +123,7 @@ fn test_project_crud_lifecycle() {
 **Missing Tests** (7 tests from plan not implemented):
 
 **CLI Tests Missing** (6):
+
 1. `test_project_list_with_limit` - Verify limit parameter works
 2. `test_project_list_with_include_stats` - Verify stats fields present
 3. `test_project_create_without_name` - Error handling for missing required arg
@@ -121,68 +132,69 @@ fn test_project_crud_lifecycle() {
 6. `test_project_get_json_output` - Verify single object (not array)
 
 **SDK Tests Missing** (1):
+
 1. None - all 17 planned SDK tests implemented (4 create + 6 list + 2 get + 3 update + 2 delete)
 
 **Impact**: Low - core CRUD lifecycle is fully tested, missing tests are edge cases
 
 ## Test Plan Coverage Matrix
 
-| Test Case (from plan) | Implemented? | File:Line | Notes |
-|----------------------|--------------|-----------|-------|
-| **SDK Create Tests** |
-| test_create_project_minimal | ✅ Yes | sdk/tests/project_test.rs:41 | |
-| test_create_project_with_description | ✅ Yes | sdk/tests/project_test.rs:79 | |
-| test_create_project_with_metadata | ✅ Yes | sdk/tests/project_test.rs:120 | |
-| test_create_project_with_trace_tier | ✅ Yes | sdk/tests/project_test.rs:159 | |
-| **SDK List Tests** |
-| test_list_projects_all | ✅ Yes | sdk/tests/project_test.rs:201 | |
-| test_list_projects_with_name_filter | ✅ Yes | sdk/tests/project_test.rs:232 | |
-| test_list_projects_with_name_contains_filter | ✅ Yes | sdk/tests/project_test.rs:271 | |
-| test_list_projects_with_limit | ✅ Yes | sdk/tests/project_test.rs:309 | |
-| test_list_projects_with_include_stats | ✅ Yes | sdk/tests/project_test.rs:347 | |
-| test_list_projects_empty | ✅ Yes | sdk/tests/project_test.rs:391 | |
-| **SDK Get Tests** |
-| test_get_project_by_id | ✅ Yes | sdk/tests/project_test.rs:421 | |
-| test_get_project_not_found | ✅ Yes | sdk/tests/project_test.rs:449 | |
-| **SDK Update Tests** |
-| test_update_project_description | ✅ Yes | sdk/tests/project_test.rs:478 | |
-| test_update_project_name | ✅ Yes | sdk/tests/project_test.rs:514 | |
-| test_update_project_metadata | ✅ Yes | sdk/tests/project_test.rs:549 | |
-| **SDK Delete Tests** |
-| test_delete_project | ✅ Yes | sdk/tests/project_test.rs:590 | |
-| test_delete_project_not_found | ✅ Yes | sdk/tests/project_test.rs:615 | |
-| **CLI Help Tests** |
-| test_project_help | ✅ Yes | cli/tests/project_command_test.rs:67 | |
-| test_project_list_help | ✅ Yes | cli/tests/project_command_test.rs:82 | |
-| test_project_create_help | ✅ Yes | cli/tests/project_command_test.rs:100 | |
-| test_project_get_help | ✅ Yes | cli/tests/project_command_test.rs:113 | |
-| test_project_update_help | ✅ Yes | cli/tests/project_command_test.rs:126 | |
-| test_project_delete_help | ✅ Yes | cli/tests/project_command_test.rs:139 | |
-| **CLI Integration Tests** |
-| test_project_crud_lifecycle | ✅ Yes | cli/tests/project_command_test.rs:162 | ⭐ Critical test |
-| test_project_list_with_name_contains | ✅ Yes | cli/tests/project_command_test.rs:337 | |
-| test_project_list_with_limit | ❌ No | - | Missing |
-| test_project_list_with_include_stats | ❌ No | - | Missing |
-| test_project_list_json_output | ✅ Yes | cli/tests/project_command_test.rs:403 | |
-| test_project_list_table_output | ✅ Yes | cli/tests/project_command_test.rs:443 | |
-| test_project_get_json_output | ⚠️ Partial | - | Covered in CRUD lifecycle |
-| test_project_get_not_found | ✅ Yes | cli/tests/project_command_test.rs:470 | |
-| test_project_create_without_name | ❌ No | - | Missing |
-| test_project_create_with_metadata | ✅ Yes | cli/tests/project_command_test.rs:501 | |
-| test_project_create_with_invalid_metadata | ✅ Yes | cli/tests/project_command_test.rs:567 | |
-| test_project_delete_confirmation | ❌ No | - | Missing |
-| test_project_delete_force | ❌ No | - | Missing |
+| Test Case (from plan)                        | Implemented? | File:Line                             | Notes                     |
+| -------------------------------------------- | ------------ | ------------------------------------- | ------------------------- |
+| **SDK Create Tests**                         |              |                                       |                           |
+| test_create_project_minimal                  | ✅ Yes       | sdk/tests/project_test.rs:41          |                           |
+| test_create_project_with_description         | ✅ Yes       | sdk/tests/project_test.rs:79          |                           |
+| test_create_project_with_metadata            | ✅ Yes       | sdk/tests/project_test.rs:120         |                           |
+| test_create_project_with_trace_tier          | ✅ Yes       | sdk/tests/project_test.rs:159         |                           |
+| **SDK List Tests**                           |              |                                       |                           |
+| test_list_projects_all                       | ✅ Yes       | sdk/tests/project_test.rs:201         |                           |
+| test_list_projects_with_name_filter          | ✅ Yes       | sdk/tests/project_test.rs:232         |                           |
+| test_list_projects_with_name_contains_filter | ✅ Yes       | sdk/tests/project_test.rs:271         |                           |
+| test_list_projects_with_limit                | ✅ Yes       | sdk/tests/project_test.rs:309         |                           |
+| test_list_projects_with_include_stats        | ✅ Yes       | sdk/tests/project_test.rs:347         |                           |
+| test_list_projects_empty                     | ✅ Yes       | sdk/tests/project_test.rs:391         |                           |
+| **SDK Get Tests**                            |              |                                       |                           |
+| test_get_project_by_id                       | ✅ Yes       | sdk/tests/project_test.rs:421         |                           |
+| test_get_project_not_found                   | ✅ Yes       | sdk/tests/project_test.rs:449         |                           |
+| **SDK Update Tests**                         |              |                                       |                           |
+| test_update_project_description              | ✅ Yes       | sdk/tests/project_test.rs:478         |                           |
+| test_update_project_name                     | ✅ Yes       | sdk/tests/project_test.rs:514         |                           |
+| test_update_project_metadata                 | ✅ Yes       | sdk/tests/project_test.rs:549         |                           |
+| **SDK Delete Tests**                         |              |                                       |                           |
+| test_delete_project                          | ✅ Yes       | sdk/tests/project_test.rs:590         |                           |
+| test_delete_project_not_found                | ✅ Yes       | sdk/tests/project_test.rs:615         |                           |
+| **CLI Help Tests**                           |              |                                       |                           |
+| test_project_help                            | ✅ Yes       | cli/tests/project_command_test.rs:67  |                           |
+| test_project_list_help                       | ✅ Yes       | cli/tests/project_command_test.rs:82  |                           |
+| test_project_create_help                     | ✅ Yes       | cli/tests/project_command_test.rs:100 |                           |
+| test_project_get_help                        | ✅ Yes       | cli/tests/project_command_test.rs:113 |                           |
+| test_project_update_help                     | ✅ Yes       | cli/tests/project_command_test.rs:126 |                           |
+| test_project_delete_help                     | ✅ Yes       | cli/tests/project_command_test.rs:139 |                           |
+| **CLI Integration Tests**                    |              |                                       |                           |
+| test_project_crud_lifecycle                  | ✅ Yes       | cli/tests/project_command_test.rs:162 | ⭐ Critical test          |
+| test_project_list_with_name_contains         | ✅ Yes       | cli/tests/project_command_test.rs:337 |                           |
+| test_project_list_with_limit                 | ❌ No        | -                                     | Missing                   |
+| test_project_list_with_include_stats         | ❌ No        | -                                     | Missing                   |
+| test_project_list_json_output                | ✅ Yes       | cli/tests/project_command_test.rs:403 |                           |
+| test_project_list_table_output               | ✅ Yes       | cli/tests/project_command_test.rs:443 |                           |
+| test_project_get_json_output                 | ⚠️ Partial    | -                                     | Covered in CRUD lifecycle |
+| test_project_get_not_found                   | ✅ Yes       | cli/tests/project_command_test.rs:470 |                           |
+| test_project_create_without_name             | ❌ No        | -                                     | Missing                   |
+| test_project_create_with_metadata            | ✅ Yes       | cli/tests/project_command_test.rs:501 |                           |
+| test_project_create_with_invalid_metadata    | ✅ Yes       | cli/tests/project_command_test.rs:567 |                           |
+| test_project_delete_confirmation             | ❌ No        | -                                     | Missing                   |
+| test_project_delete_force                    | ❌ No        | -                                     | Missing                   |
 
 ## Anti-Pattern Detection
 
-| Pattern | Found? | Location |
-|---------|--------|----------|
-| Unconditional `#[ignore]` | ❌ No | - |
-| Exit-code-only assertions | ❌ No | All tests verify actual behavior |
-| Missing cleanup | ❌ No | All tests clean up resources |
-| Silent skips (missing .expect()) | ❌ No | All tests use explicit .expect() |
-| Hardcoded test data | ✅ Yes | Uses unique timestamps + UUIDs (good) |
-| Missing CRUD lifecycle | ❌ No | Full lifecycle implemented |
+| Pattern                          | Found? | Location                              |
+| -------------------------------- | ------ | ------------------------------------- |
+| Unconditional `#[ignore]`        | ❌ No  | -                                     |
+| Exit-code-only assertions        | ❌ No  | All tests verify actual behavior      |
+| Missing cleanup                  | ❌ No  | All tests clean up resources          |
+| Silent skips (missing .expect()) | ❌ No  | All tests use explicit .expect()      |
+| Hardcoded test data              | ✅ Yes | Uses unique timestamps + UUIDs (good) |
+| Missing CRUD lifecycle           | ❌ No  | Full lifecycle implemented            |
 
 ## Recommendations
 
@@ -218,11 +230,13 @@ fn test_project_crud_lifecycle() {
 ## Next Steps
 
 **Immediate:**
+
 1. ✅ Tests are ready for merge as-is (zero critical issues)
 2. ✅ All pre-commit checks passing
 3. ✅ CI will run tests correctly
 
 **Optional Follow-up:**
+
 1. Add `#[cfg_attr(not(feature = "integration-tests"), ignore)]` to CLI integration tests for better DX
 2. Implement remaining 6 edge case tests if desired
 3. Update this coverage status document after any changes

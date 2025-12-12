@@ -29,6 +29,7 @@ cli/tests/
 ## Required Environment Variables
 
 All integration tests require (per docs/dev/environment-variables.md):
+
 - `LANGSMITH_API_KEY` - API authentication
 - `LANGSMITH_ORGANIZATION_ID` - Organization scoping
 - `LANGSMITH_WORKSPACE_ID` - Workspace scoping
@@ -36,6 +37,7 @@ All integration tests require (per docs/dev/environment-variables.md):
 ## SDK Integration Tests (sdk/tests/project_test.rs)
 
 ### Purpose
+
 Verify SDK methods work correctly using httpmock to mock API responses.
 
 ### Test Cases
@@ -43,76 +45,92 @@ Verify SDK methods work correctly using httpmock to mock API responses.
 #### 1. Create Project Tests
 
 **test_create_project_minimal**
+
 - Mock: `POST /api/v1/sessions` with minimal body `{name: "Test Project"}`
 - Verify: Response parsed correctly, returns `Project` with expected fields
 - Pattern: Based on `dataset_test.rs::test_create_dataset()`
 
 **test_create_project_with_description**
+
 - Mock: `POST /api/v1/sessions` with name + description
 - Verify: Description field preserved in response
 
 **test_create_project_with_metadata**
+
 - Mock: `POST /api/v1/sessions` with name + extra metadata JSON
 - Verify: Metadata serialized correctly, response contains metadata
 
 #### 2. List Projects Tests
 
 **test_list_projects_all**
+
 - Mock: `GET /api/v1/sessions` returns array of 2 projects
 - Verify: Returns `Vec<Project>` with correct length, fields populated
 
 **test_list_projects_with_name_filter**
+
 - Mock: `GET /api/v1/sessions?name=my-project`
 - Verify: Query parameter added correctly to request
 
 **test_list_projects_with_name_contains_filter**
+
 - Mock: `GET /api/v1/sessions?name_contains=prod`
 - Verify: Query parameter added correctly
 
 **test_list_projects_with_limit**
+
 - Mock: `GET /api/v1/sessions?limit=5`
 - Verify: Limit parameter passed correctly
 
 **test_list_projects_with_include_stats**
+
 - Mock: `GET /api/v1/sessions?include_stats=true`
 - Mock response includes: `run_count`, `latency_p50`, `latency_p99`
 - Verify: Stats fields populated in response
 
 **test_list_projects_empty**
+
 - Mock: `GET /api/v1/sessions` returns `[]`
 - Verify: Returns empty vector, no errors
 
 #### 3. Get Project Tests
 
 **test_get_project_by_id**
+
 - Mock: `GET /api/v1/sessions/{uuid}`
 - Verify: Project returned with correct ID
 
 **test_get_project_not_found**
+
 - Mock: `GET /api/v1/sessions/{uuid}` returns 404
 - Verify: Returns appropriate error
 
 #### 4. Update Project Tests
 
 **test_update_project_description**
+
 - Mock: `PATCH /api/v1/sessions/{uuid}` with `{description: "Updated"}`
 - Verify: Request body correct, response parsed
 
 **test_update_project_name**
+
 - Mock: `PATCH /api/v1/sessions/{uuid}` with `{name: "New Name"}`
 - Verify: Name update request sent correctly
 
 **test_update_project_metadata**
+
 - Mock: `PATCH /api/v1/sessions/{uuid}` with `{extra: {...}}`
 - Verify: Metadata serialized correctly
 
 #### 5. Delete Project Tests
 
 **test_delete_project**
+
 - Mock: `DELETE /api/v1/sessions/{uuid}` returns 204
 - Verify: Request sent correctly, no errors
 
 **test_delete_project_not_found**
+
 - Mock: `DELETE /api/v1/sessions/{uuid}` returns 404
 - Verify: Returns appropriate error
 
@@ -172,6 +190,7 @@ async fn test_create_project_minimal() {
 ## CLI Integration Tests (cli/tests/project_command_test.rs)
 
 ### Purpose
+
 Verify CLI commands work end-to-end with real API using CRUD lifecycle pattern.
 
 ### Test Organization
@@ -225,18 +244,21 @@ fn test_project_output_formats() { /* JSON vs table output */ }
 #### 1. Help Tests (No API Required)
 
 **test_project_help**
+
 - Run: `langstar project --help`
 - Verify stdout contains:
   - "Manage LangSmith projects"
   - "list", "get", "create", "update", "delete"
 
 **test_project_list_help**
+
 - Run: `langstar project list --help`
 - Verify stdout contains:
   - "--name", "--name-contains", "--limit", "--include-stats"
   - "-f, --format" (not `-o`)
 
 **test_project_create_help**
+
 - Run: `langstar project create --help`
 - Verify stdout contains:
   - "name" (positional argument)
@@ -244,14 +266,17 @@ fn test_project_output_formats() { /* JSON vs table output */ }
   - "-f, --format"
 
 **test_project_get_help**
+
 - Run: `langstar project get --help`
 - Verify: Help text mentions ID or name lookup
 
 **test_project_update_help**
+
 - Run: `langstar project update --help`
 - Verify: Lists update fields (--name, --description)
 
 **test_project_delete_help**
+
 - Run: `langstar project delete --help`
 - Verify: Shows --force flag
 
@@ -417,18 +442,21 @@ fn test_project_crud_lifecycle() {
 #### 3. List Filtering Tests
 
 **test_project_list_with_name_contains**
+
 - Create: 2 projects via SDK (`test-alpha-123`, `test-beta-456`)
 - Run: `langstar project list --name-contains "alpha" -f json`
 - Verify: Only `test-alpha-123` in results
 - Cleanup: Delete both projects
 
 **test_project_list_with_limit**
+
 - Create: 5 projects via SDK
 - Run: `langstar project list --limit 2 -f json`
 - Verify: Exactly 2 projects returned
 - Cleanup: Delete all 5 projects
 
 **test_project_list_with_include_stats**
+
 - Run: `langstar project list --include-stats -f json | head -1`
 - Verify: Output includes fields like `run_count`, `latency_p50`
 - Note: Don't verify exact values, just field presence
@@ -436,18 +464,21 @@ fn test_project_crud_lifecycle() {
 #### 4. Output Format Tests
 
 **test_project_list_json_output**
+
 - Run: `langstar project list -f json --limit 1`
 - Verify:
   - Output is valid JSON array
   - Each object has `id`, `name`, `tenant_id` fields
 
 **test_project_list_table_output**
+
 - Run: `langstar project list -f table --limit 5`
 - Verify:
   - Output contains table headers: "ID", "Name", "Description"
   - Output has row separators
 
 **test_project_get_json_output**
+
 - Create: 1 project via SDK
 - Run: `langstar project get <name> -f json`
 - Verify: Output is single JSON object (not array)
@@ -456,22 +487,26 @@ fn test_project_crud_lifecycle() {
 #### 5. Error Handling Tests
 
 **test_project_get_not_found**
+
 - Run: `langstar project get nonexistent-project-12345`
 - Verify:
   - Exit code non-zero
   - Stderr contains "not found" or similar error message
 
 **test_project_create_without_name**
+
 - Run: `langstar project create` (missing required name argument)
 - Verify: Exit code non-zero, shows usage help
 
 **test_project_delete_confirmation**
+
 - Create: 1 project via SDK
 - Run: `langstar project delete <name>` (without --force)
 - Verify: Prompts for confirmation (or fails if stdin not available in test)
 - Cleanup: Delete with --force
 
 **test_project_delete_force**
+
 - Create: 1 project via SDK
 - Run: `langstar project delete <name> --force`
 - Verify:
@@ -482,6 +517,7 @@ fn test_project_crud_lifecycle() {
 #### 6. Metadata Tests
 
 **test_project_create_with_metadata**
+
 - Run: `langstar project create test-metadata --metadata '{"env":"staging"}' -f json`
 - Verify:
   - Exit code 0
@@ -489,6 +525,7 @@ fn test_project_crud_lifecycle() {
 - Cleanup: Delete project
 
 **test_project_create_with_invalid_metadata_json**
+
 - Run: `langstar project create test-bad-meta --metadata 'not-valid-json'`
 - Verify:
   - Exit code non-zero
@@ -497,6 +534,7 @@ fn test_project_crud_lifecycle() {
 ## Test Coverage Summary
 
 ### SDK Tests (sdk/tests/project_test.rs)
+
 - ✅ 5 create tests (minimal, description, metadata, error cases)
 - ✅ 6 list tests (all, filters, pagination, empty)
 - ✅ 2 get tests (success, not found)
@@ -505,6 +543,7 @@ fn test_project_crud_lifecycle() {
 - **Total: ~18 SDK tests**
 
 ### CLI Tests (cli/tests/project_command_test.rs)
+
 - ✅ 6 help tests (one per subcommand)
 - ✅ 1 full CRUD lifecycle test (CREATE → VERIFY → READ → VERIFY → UPDATE → VERIFY → DELETE)
 - ✅ 3 list filtering tests
@@ -516,12 +555,14 @@ fn test_project_crud_lifecycle() {
 ### Anti-Patterns to Avoid
 
 ❌ **Exit code only verification**
+
 ```rust
 // BAD
 cmd.assert().success();
 ```
 
 ✅ **Verify actual behavior**
+
 ```rust
 // GOOD
 let output = cmd.output()?;
@@ -532,6 +573,7 @@ assert_eq!(projects[0].name, Some(expected_name));
 ```
 
 ❌ **Silent skips for missing env vars**
+
 ```rust
 // BAD
 let Some(api_key) = std::env::var("LANGSMITH_API_KEY").ok() else {
@@ -540,6 +582,7 @@ let Some(api_key) = std::env::var("LANGSMITH_API_KEY").ok() else {
 ```
 
 ✅ **Explicit failures**
+
 ```rust
 // GOOD
 let api_key = std::env::var("LANGSMITH_API_KEY")
@@ -547,6 +590,7 @@ let api_key = std::env::var("LANGSMITH_API_KEY")
 ```
 
 ❌ **No cleanup after test**
+
 ```rust
 // BAD
 let project = client.create_project(...).await?;
@@ -554,6 +598,7 @@ let project = client.create_project(...).await?;
 ```
 
 ✅ **Always cleanup**
+
 ```rust
 // GOOD
 let project = client.create_project(...).await?;
