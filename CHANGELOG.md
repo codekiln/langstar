@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2025-12-12
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(ci): add missing LANGSMITH_ORGANIZATION_ID to release workflow (#707)
+
+Add LANGSMITH_ORGANIZATION_ID environment variable to the pre-release-validation job
+in the release workflow to match the CI workflow configuration.
+
+According to docs/dev/environment-variables.md and issue #660, all three environment
+variables (LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID) are
+required for integration tests. The CI workflow already has all three, but the release
+workflow was missing LANGSMITH_ORGANIZATION_ID, causing test failures.
+
+Fixes #706
+
 ## [2.1.1] - 2025-12-11
 
 ### ✨ Features
