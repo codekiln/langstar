@@ -479,7 +479,7 @@ EOF
 ```bash
 # Create issue
 ISSUE_URL=$(gh issue create --title "Refactor: improve error handling patterns" \
-  --body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
+--body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
 NEW_ISSUE=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
 
 # Add to milestone (if PR has one)
@@ -595,24 +595,24 @@ gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
   EOF
   )"
 
-  git push origin $(git branch --show-current)
-  if [ $? -ne 0 ]; then
-  echo "❌ git push failed due to network or permission issues. Please check your connection and access rights."
-  exit 1
-  fi
-  ```
-  - Report what was fixed:
-  ```
-  ✅ **Fixes Applied:**
-  - Removed unused variable `foo` in src/main.rs:45
-  - Added missing documentation in src/lib.rs:120
-  - Fixed assertion in test_authentication
-  - Resolved panic in test_authorization
+git push origin $(git branch --show-current)
+if [ $? -ne 0 ]; then
+echo "❌ git push failed due to network or permission issues. Please check your connection and access rights."
+exit 1
+fi
+`- Report what was fixed:`
+✅ **Fixes Applied:**
 
-  🔄 Pushed commit: abc123
-  ⏳ Waiting for CI to run again...
-  ```
-  ```
+- Removed unused variable `foo` in src/main.rs:45
+- Added missing documentation in src/lib.rs:120
+- Fixed assertion in test_authentication
+- Resolved panic in test_authorization
+
+🔄 Pushed commit: abc123
+⏳ Waiting for CI to run again...
+
+```
+```
 
 7. **Stability monitoring (after all fixes):**
    - Once all checks pass, monitor for 5-7 minutes to ensure stability
