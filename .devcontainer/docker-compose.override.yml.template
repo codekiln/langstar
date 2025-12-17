@@ -140,6 +140,27 @@ services:
     # volumes:
     #   - ~/my-local-data:/data
 
+    # ============================================================================
+    # OPTIONAL: Use bind mount instead of named volume for workspace
+    # ============================================================================
+    #
+    # By default, /workspace uses a named Docker volume for optimal file watching
+    # and performance. This is recommended for JetBrains IDEs (RustRover, IntelliJ)
+    # which rely on proper inotify support.
+    #
+    # If you prefer the traditional bind mount approach (files shared between host
+    # and container), uncomment the volumes section below. This provides:
+    # - Edit files with host-based editors outside the container
+    # - See file changes immediately without container restart
+    # - But: May cause "External file changes sync might be slow" warning in JetBrains
+    #
+    # To use bind mount instead of named volume:
+    # 1. Uncomment the volumes section below
+    # 2. Rebuild the container: Dev Containers: Rebuild Container
+    #
+    # volumes:
+    #   - ..:/workspace:cached
+
     # Example: Override specific environment variables for debugging
     # environment:
     #   - DEBUG=true

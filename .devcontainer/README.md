@@ -2,6 +2,8 @@
 
 This directory contains the devcontainer configuration for the Langstar project. The devcontainer provides a consistent development environment across local machines and GitHub Codespaces using **Docker Compose**.
 
+> **First-time contributor?** See [docs/dev/getting-started.md](../docs/dev/getting-started.md) for step-by-step setup instructions for VS Code, JetBrains, and Codespaces.
+
 ## Overview
 
 The devcontainer uses Docker Compose which provides **native `.env` file support**, solving environment variable management elegantly for both local and Codespaces environments.
