@@ -50,6 +50,26 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
    - Select "Dev Containers: Reopen in Container"
    - Wait for the container to build (first time takes a few minutes)
 
+### Workspace Volume Architecture
+
+This devcontainer uses a **named Docker volume** for `/workspace` instead of a bind mount from the host. This design provides several benefits:
+
+**Benefits:**
+- **Proper file watching**: Enables reliable inotify support for JetBrains IDEs (RustRover, IntelliJ, etc.)
+- **Eliminates gRPC FUSE**: Avoids the "External file changes sync might be slow" warning
+- **Better performance**: Container-native filesystem provides optimal I/O performance
+- **Consistent across platforms**: Works identically on macOS, Linux, and Windows
+
+**Important Notes:**
+- The workspace content lives **inside the Docker volume**, not on your host filesystem
+- VS Code/JetBrains will clone the repository into the volume when you open the devcontainer
+- The volume persists across container rebuilds, so your code remains intact
+- To inspect volume contents: `docker volume inspect langstar-workspace`
+- To remove the volume: `docker volume rm langstar-workspace` (deletes all workspace data!)
+
+**Migration from bind mount:**
+If you were previously using a bind mount setup, the named volume will start empty. Simply use the IDE's built-in repository cloning feature to clone the project into `/workspace` within the container.
+
 ### Files Created (Gitignored)
 
 These files are created locally and **will not be committed** to git:
@@ -142,8 +162,12 @@ services:
       GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
       # ... other variables
     volumes:
-      - ..:/workspace:cached
+      - langstar-workspace:/workspace
       - claude-code-bashhistory:/commandhistory
+
+volumes:
+  langstar-workspace:
+  claude-code-bashhistory:
 ```
 
 **`docker-compose.override.yml`** (local only, gitignored):
