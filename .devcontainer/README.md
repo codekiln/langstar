@@ -52,54 +52,38 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
    - Select "Dev Containers: Reopen in Container"
    - Wait for the container to build (first time takes a few minutes)
 
-### Workspace Volume Architecture (Hybrid Approach)
+### Workspace Mount Configuration
 
-This devcontainer uses a **hybrid volume architecture** that combines the benefits of named volumes and bind mounts:
+By default, this devcontainer uses a **bind mount** (`..:/workspace:cached`) for maximum compatibility with VS Code, JetBrains, and GitHub Codespaces.
 
-1. **Named volume** for `/workspace` - Container-native filesystem for proper inotify
-2. **Bind mount overlay** for `/workspace/.devcontainer` - Lifecycle scripts and secrets from host
+**Default behavior:**
+- Your local repository files are mounted directly into the container
+- Changes sync bidirectionally between host and container
+- Standard "Reopen in Container" workflow works seamlessly
 
-```
-/workspace/                    ← Named volume (container-native, proper inotify)
-├── .devcontainer/             ← Bind mount OVERLAY from host
-│   ├── .env                   ← Your secrets (from host, gitignored)
-│   ├── post-create.sh         ← Lifecycle script (from host)
-│   ├── setup-github-auth.sh   ← Auth setup script (from host)
-│   └── docker-compose.yml     ← This config file (from host)
-├── src/                       ← In named volume (you clone code here)
-├── Cargo.toml                 ← In named volume
-└── ...                        ← Rest of repo in named volume
-```
+#### Optional: Named Volume for JetBrains IDEs
 
-**Benefits:**
-- **Proper file watching**: Named volume enables reliable inotify for JetBrains IDEs (RustRover, IntelliJ)
-- **Eliminates gRPC FUSE**: Avoids the "External file changes sync might be slow" warning
-- **Lifecycle scripts work**: Bind mount overlay ensures `post-create.sh` and `setup-github-auth.sh` are accessible
-- **Secrets accessible**: `.env` file is available both to Docker Compose (on host) and inside container
-- **Cross-IDE compatibility**: Works with VS Code, JetBrains, and GitHub Codespaces
+If you're using **RustRover, IntelliJ**, or other JetBrains IDEs and see the warning:
+> "External file changes sync might be slow"
 
-**How the hybrid mount works:**
-1. Docker mounts the named volume at `/workspace` first (starts empty)
-2. Docker then overlays the bind mount at `/workspace/.devcontainer`
-3. Result: `.devcontainer/` has files from host, everything else is in the named volume
+This occurs because Docker's bind mount on macOS uses gRPC FUSE, which doesn't provide full `inotify` support.
 
-**Initial setup workflow:**
-1. Clone the repository locally on your host machine
-2. Configure `.devcontainer/.env` with your secrets
-3. Open in your IDE and "Reopen in Container"
-4. Container starts - `.devcontainer/` is immediately available via bind mount
-5. Clone the repository INTO `/workspace` inside the container:
-   ```bash
-   cd /workspace
-   git clone https://github.com/codekiln/langstar.git .
-   ```
+**To fix this**, you can switch to a named Docker volume by editing `docker-compose.override.yml`:
 
-**Volume management:**
-- Inspect volume: `docker volume inspect langstar-workspace`
-- Remove volume: `docker volume rm langstar-workspace` (⚠️ deletes all workspace code!)
-- The volume persists across container rebuilds
+1. Copy the template: `cp docker-compose.override.yml.template docker-compose.override.yml`
+2. Uncomment the volumes section for named volume
+3. Rebuild the container
+4. Clone the repo inside the container: `cd /workspace && git clone <repo-url> .`
 
-> **Migration from pure bind mount:** If upgrading from an older setup that used `..:/workspace:cached`, the named volume starts empty. Your existing `.devcontainer/.env` and local configs will still work (they're bind-mounted). You just need to clone the repo into `/workspace` inside the container.
+**Trade-offs of named volume:**
+| Aspect | Bind Mount (default) | Named Volume (optional) |
+|--------|---------------------|------------------------|
+| File watching | Limited (gRPC FUSE) | Full inotify support |
+| File location | Host filesystem | Container volume |
+| Setup workflow | Standard | Requires clone into container |
+| Host editing | Supported | Not supported |
+
+See `docker-compose.override.yml.template` for detailed instructions.
 
 ### Files Created (Gitignored)
 
@@ -193,14 +177,12 @@ services:
       GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
       # ... other variables
     volumes:
-      # Hybrid architecture: named volume + bind mount overlay
-      - langstar-workspace:/workspace          # Named volume for code (inotify)
-      - .:/workspace/.devcontainer             # Bind mount for lifecycle scripts
+      # Bind mount for compatibility with VS Code, JetBrains, and Codespaces
+      - ..:/workspace:cached
       - claude-code-bashhistory:/commandhistory
       - claude-code-config:/home/node/.claude
 
 volumes:
-  langstar-workspace:
   claude-code-bashhistory:
   claude-code-config:
 ```

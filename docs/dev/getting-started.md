@@ -110,23 +110,9 @@ GITHUB_PROJECT_PAT=ghp_YourProjectTokenHere
 3. Select **Dev Containers: Reopen in Container**
 4. Wait for the container to build (first time takes ~5 minutes)
 
-### Step 4: Initialize Workspace
+### Step 4: Verify Setup
 
-After the container starts, `/workspace` uses a **hybrid volume architecture**:
-- `/workspace/.devcontainer/` is bind-mounted from your host (lifecycle scripts, `.env`)
-- The rest of `/workspace` is a named Docker volume (starts empty)
-
-Clone the repository into the workspace:
-
-```bash
-# Inside the container terminal
-cd /workspace
-git clone https://github.com/codekiln/langstar.git .
-```
-
-> **Why this architecture?** The named volume provides proper inotify support for JetBrains IDEs, while the bind mount overlay ensures lifecycle scripts and your `.env` secrets are immediately available. See `.devcontainer/README.md` for details.
-
-### Step 5: Verify Setup
+After the container starts, your local repository files are mounted at `/workspace` via bind mount.
 
 ```bash
 # Check git authentication
@@ -180,21 +166,9 @@ Edit `.env` with your actual credentials (same as VS Code setup above).
 4. Navigate to the cloned repository folder
 5. Wait for the container to build
 
-### Step 4: Initialize Workspace
+### Step 4: Verify Setup
 
-After the container starts, `/workspace` uses a **hybrid volume architecture**:
-- `/workspace/.devcontainer/` is bind-mounted from your host (lifecycle scripts, `.env`)
-- The rest of `/workspace` is a named Docker volume (starts empty)
-
-Clone the repository into the workspace:
-
-```bash
-# Inside the container terminal
-cd /workspace
-git clone https://github.com/codekiln/langstar.git .
-```
-
-### Step 5: Verify Setup
+After the container starts, your local repository files are mounted at `/workspace` via bind mount.
 
 ```bash
 # Check git authentication
@@ -207,18 +181,20 @@ printenv | grep -E 'LANGSMITH|AWS' | cut -d= -f1
 cargo check --workspace
 ```
 
-### Why Hybrid Volumes for JetBrains
+### Optional: Fix JetBrains File Watching Warning
 
-JetBrains IDEs rely on `inotify` for file watching. With pure bind mounts on macOS, Docker uses gRPC FUSE which doesn't provide full inotify support, causing:
-- "External file changes sync might be slow" warning
-- Unreliable file change detection
-- Potential IDE performance issues
+If you see "External file changes sync might be slow" in RustRover/IntelliJ, this is because Docker's bind mount on macOS uses gRPC FUSE which doesn't provide full `inotify` support.
 
-The **hybrid approach** solves this by:
-1. Using a named volume for `/workspace` → proper inotify support
-2. Overlaying a bind mount for `.devcontainer/` → lifecycle scripts and secrets work
+**To fix this**, you can optionally switch to a named Docker volume:
 
-This gives you the best of both worlds: native filesystem performance AND working devcontainer lifecycle.
+1. Edit `docker-compose.override.yml` (copy from template if needed)
+2. Uncomment the named volume configuration
+3. Rebuild the container
+4. Clone the repo inside the container: `cd /workspace && git clone <repo-url> .`
+
+See `.devcontainer/docker-compose.override.yml.template` for detailed instructions.
+
+**Trade-off:** With named volumes, code lives inside the container volume rather than on your host filesystem. You'll need to clone the repo into the container after setup.
 
 ---
 
@@ -254,48 +230,41 @@ This gives you the best of both worlds: native filesystem performance AND workin
 
 **Key insight**: Docker Compose reads `.env` from the **host** filesystem before starting the container. Environment variables are passed into the container via the `environment:` section in `docker-compose.yml`. The `.env` file itself doesn't need to be inside the container.
 
-### Workspace Volume Architecture (Hybrid)
+### Workspace Mount
 
-The devcontainer uses a **hybrid volume architecture**:
-
-| Component | Mount Type | Purpose |
-|-----------|------------|---------|
-| `/workspace` | Named volume | Code storage with proper inotify |
-| `/workspace/.devcontainer` | Bind mount overlay | Lifecycle scripts, `.env` secrets |
+By default, the devcontainer uses a **bind mount** for maximum compatibility:
 
 ```
 HOST                              CONTAINER
-.devcontainer/                    /workspace/.devcontainer/ (bind mount)
-├── .env          ───────────────→├── .env
-├── post-create.sh───────────────→├── post-create.sh
-└── docker-compose.yml───────────→└── docker-compose.yml
-
-(nothing)                         /workspace/ (named volume)
-                                  ├── src/
-                                  ├── Cargo.toml
-                                  └── ... (cloned repo)
+<repo-root>/                      /workspace/ (bind mount)
+├── .devcontainer/   ────────────→├── .devcontainer/
+├── src/             ────────────→├── src/
+├── Cargo.toml       ────────────→├── Cargo.toml
+└── ...              ────────────→└── ...
 ```
 
-**Benefits of hybrid approach:**
-- Proper `inotify` support for JetBrains IDEs
-- Lifecycle scripts work correctly (bind-mounted from host)
-- `.env` secrets accessible both to Docker Compose AND inside container
-- Works with VS Code, JetBrains, and Codespaces
+**Benefits:**
+- Standard "Reopen in Container" workflow
+- Changes sync bidirectionally between host and container
+- Compatible with VS Code, JetBrains, and GitHub Codespaces
+- Edit files with host-based tools outside the container
 
-**Trade-off:**
-- Code (except `.devcontainer/`) lives inside the container volume
-- Requires initial clone into the container after first setup
+**Optional:** JetBrains users can switch to a named volume for proper `inotify` support. See `.devcontainer/README.md` for details.
 
 ### Volume Persistence
 
-The named volume persists across container rebuilds:
+Named volumes (bash history, Claude config) persist across container rebuilds:
 
 ```bash
-# Inspect volume
-docker volume inspect langstar-workspace
+# List volumes
+docker volume ls | grep langstar
 
-# Remove volume (deletes all workspace data!)
-docker volume rm langstar-workspace
+# Persistent volumes used by default:
+# - claude-code-bashhistory (shell history)
+# - claude-code-config (Claude settings)
+
+# If using optional named volume for JetBrains:
+# - langstar-workspace (code - only if enabled)
 ```
 
 ---

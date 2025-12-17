@@ -83,33 +83,17 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-${DEVCONTAINER_GITHUB_TOKEN}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-${DEVCONTAINER_OPENAI_API_KEY}}
 
-    # Volume mounts - Hybrid architecture for optimal file watching
+    # Volume mounts
     # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
-    #
-    # This configuration uses a HYBRID approach:
-    # 1. Named volume for /workspace - container-native filesystem for proper inotify
-    # 2. Bind mount overlay for .devcontainer/ - lifecycle scripts and secrets from host
-    #
-    # Benefits:
-    # - JetBrains IDEs get proper file watching (no gRPC FUSE warning)
-    # - Lifecycle scripts (post-create.sh, setup-github-auth.sh) work correctly
-    # - .env secrets are accessible both to Docker Compose and inside container
-    # - VS Code, JetBrains, and Codespaces all work with the same config
-    #
-    # How it works:
-    # - Named volume mounts first at /workspace (starts empty)
-    # - Bind mount overlays .devcontainer/ directory on top
-    # - Result: /workspace/.devcontainer/ has host files, rest is named volume
     volumes:
-      # Named volume for workspace (container-native filesystem for proper inotify)
-      # This enables reliable file watching in JetBrains IDEs and eliminates gRPC FUSE
-      # https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
-      - langstar-workspace:/workspace
-
-      # Bind mount overlay for .devcontainer/ directory
-      # Makes lifecycle scripts and .env accessible inside the container
-      # The "." context is .devcontainer/ (where docker-compose.yml lives)
-      - .:/workspace/.devcontainer
+      # Bind mount workspace directory with cached consistency for better performance
+      # This is the default for compatibility with VS Code and GitHub Codespaces
+      # https://docs.docker.com/compose/compose-file/compose-file-v3/#caching-options-for-volume-mounts-docker-desktop
+      #
+      # NOTE FOR JETBRAINS USERS: If you see "External file changes sync might be slow"
+      # warning in RustRover/IntelliJ, see docker-compose.override.yml.template for
+      # an optional named volume configuration that provides proper inotify support.
+      - ..:/workspace:cached
 
       # Named volumes for persistent data across container rebuilds
       # These survive even when the container is deleted
@@ -127,10 +111,10 @@ services:
 # Named volumes declaration
 # https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
 volumes:
-  # Workspace volume for container-native filesystem (eliminates gRPC FUSE)
-  # Enables proper inotify support for JetBrains file watching
-  langstar-workspace:
   # Persistent bash history across container rebuilds
   claude-code-bashhistory:
   # Persistent Claude configuration across container rebuilds
   claude-code-config:
+  # Optional: Workspace volume for JetBrains users who need proper inotify
+  # Uncomment in docker-compose.override.yml if using RustRover/IntelliJ
+  # langstar-workspace:
