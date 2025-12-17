@@ -83,13 +83,33 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-${DEVCONTAINER_GITHUB_TOKEN}}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-${DEVCONTAINER_OPENAI_API_KEY}}
 
-    # Volume mounts
+    # Volume mounts - Hybrid architecture for optimal file watching
     # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
+    #
+    # This configuration uses a HYBRID approach:
+    # 1. Named volume for /workspace - container-native filesystem for proper inotify
+    # 2. Bind mount overlay for .devcontainer/ - lifecycle scripts and secrets from host
+    #
+    # Benefits:
+    # - JetBrains IDEs get proper file watching (no gRPC FUSE warning)
+    # - Lifecycle scripts (post-create.sh, setup-github-auth.sh) work correctly
+    # - .env secrets are accessible both to Docker Compose and inside container
+    # - VS Code, JetBrains, and Codespaces all work with the same config
+    #
+    # How it works:
+    # - Named volume mounts first at /workspace (starts empty)
+    # - Bind mount overlays .devcontainer/ directory on top
+    # - Result: /workspace/.devcontainer/ has host files, rest is named volume
     volumes:
       # Named volume for workspace (container-native filesystem for proper inotify)
       # This enables reliable file watching in JetBrains IDEs and eliminates gRPC FUSE
       # https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
       - langstar-workspace:/workspace
+
+      # Bind mount overlay for .devcontainer/ directory
+      # Makes lifecycle scripts and .env accessible inside the container
+      # The "." context is .devcontainer/ (where docker-compose.yml lives)
+      - .:/workspace/.devcontainer
 
       # Named volumes for persistent data across container rebuilds
       # These survive even when the container is deleted

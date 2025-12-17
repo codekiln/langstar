@@ -52,25 +52,54 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
    - Select "Dev Containers: Reopen in Container"
    - Wait for the container to build (first time takes a few minutes)
 
-### Workspace Volume Architecture
+### Workspace Volume Architecture (Hybrid Approach)
 
-This devcontainer uses a **named Docker volume** for `/workspace` instead of a bind mount from the host. This design provides several benefits:
+This devcontainer uses a **hybrid volume architecture** that combines the benefits of named volumes and bind mounts:
+
+1. **Named volume** for `/workspace` - Container-native filesystem for proper inotify
+2. **Bind mount overlay** for `/workspace/.devcontainer` - Lifecycle scripts and secrets from host
+
+```
+/workspace/                    ← Named volume (container-native, proper inotify)
+├── .devcontainer/             ← Bind mount OVERLAY from host
+│   ├── .env                   ← Your secrets (from host, gitignored)
+│   ├── post-create.sh         ← Lifecycle script (from host)
+│   ├── setup-github-auth.sh   ← Auth setup script (from host)
+│   └── docker-compose.yml     ← This config file (from host)
+├── src/                       ← In named volume (you clone code here)
+├── Cargo.toml                 ← In named volume
+└── ...                        ← Rest of repo in named volume
+```
 
 **Benefits:**
-- **Proper file watching**: Enables reliable inotify support for JetBrains IDEs (RustRover, IntelliJ, etc.)
+- **Proper file watching**: Named volume enables reliable inotify for JetBrains IDEs (RustRover, IntelliJ)
 - **Eliminates gRPC FUSE**: Avoids the "External file changes sync might be slow" warning
-- **Better performance**: Container-native filesystem provides optimal I/O performance
-- **Consistent across platforms**: Works identically on macOS, Linux, and Windows
+- **Lifecycle scripts work**: Bind mount overlay ensures `post-create.sh` and `setup-github-auth.sh` are accessible
+- **Secrets accessible**: `.env` file is available both to Docker Compose (on host) and inside container
+- **Cross-IDE compatibility**: Works with VS Code, JetBrains, and GitHub Codespaces
 
-**Important Notes:**
-- The workspace content lives **inside the Docker volume**, not on your host filesystem
-- VS Code/JetBrains will clone the repository into the volume when you open the devcontainer
-- The volume persists across container rebuilds, so your code remains intact
-- To inspect volume contents: `docker volume inspect langstar-workspace`
-- To remove the volume: `docker volume rm langstar-workspace` (deletes all workspace data!)
+**How the hybrid mount works:**
+1. Docker mounts the named volume at `/workspace` first (starts empty)
+2. Docker then overlays the bind mount at `/workspace/.devcontainer`
+3. Result: `.devcontainer/` has files from host, everything else is in the named volume
 
-**Migration from bind mount:**
-If you were previously using a bind mount setup, the named volume will start empty. Simply use the IDE's built-in repository cloning feature to clone the project into `/workspace` within the container.
+**Initial setup workflow:**
+1. Clone the repository locally on your host machine
+2. Configure `.devcontainer/.env` with your secrets
+3. Open in your IDE and "Reopen in Container"
+4. Container starts - `.devcontainer/` is immediately available via bind mount
+5. Clone the repository INTO `/workspace` inside the container:
+   ```bash
+   cd /workspace
+   git clone https://github.com/codekiln/langstar.git .
+   ```
+
+**Volume management:**
+- Inspect volume: `docker volume inspect langstar-workspace`
+- Remove volume: `docker volume rm langstar-workspace` (⚠️ deletes all workspace code!)
+- The volume persists across container rebuilds
+
+> **Migration from pure bind mount:** If upgrading from an older setup that used `..:/workspace:cached`, the named volume starts empty. Your existing `.devcontainer/.env` and local configs will still work (they're bind-mounted). You just need to clone the repo into `/workspace` inside the container.
 
 ### Files Created (Gitignored)
 
@@ -164,12 +193,16 @@ services:
       GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
       # ... other variables
     volumes:
-      - langstar-workspace:/workspace
+      # Hybrid architecture: named volume + bind mount overlay
+      - langstar-workspace:/workspace          # Named volume for code (inotify)
+      - .:/workspace/.devcontainer             # Bind mount for lifecycle scripts
       - claude-code-bashhistory:/commandhistory
+      - claude-code-config:/home/node/.claude
 
 volumes:
   langstar-workspace:
   claude-code-bashhistory:
+  claude-code-config:
 ```
 
 **`docker-compose.override.yml`** (local only, gitignored):

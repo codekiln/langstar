@@ -112,7 +112,11 @@ GITHUB_PROJECT_PAT=ghp_YourProjectTokenHere
 
 ### Step 4: Initialize Workspace
 
-After the container starts, the `/workspace` directory uses a named Docker volume for optimal file watching performance. Clone the repository into the workspace:
+After the container starts, `/workspace` uses a **hybrid volume architecture**:
+- `/workspace/.devcontainer/` is bind-mounted from your host (lifecycle scripts, `.env`)
+- The rest of `/workspace` is a named Docker volume (starts empty)
+
+Clone the repository into the workspace:
 
 ```bash
 # Inside the container terminal
@@ -120,7 +124,7 @@ cd /workspace
 git clone https://github.com/codekiln/langstar.git .
 ```
 
-> **Note**: The named volume architecture eliminates file watching issues but requires this initial clone step. Your code lives inside the Docker volume, providing native filesystem performance.
+> **Why this architecture?** The named volume provides proper inotify support for JetBrains IDEs, while the bind mount overlay ensures lifecycle scripts and your `.env` secrets are immediately available. See `.devcontainer/README.md` for details.
 
 ### Step 5: Verify Setup
 
@@ -178,7 +182,11 @@ Edit `.env` with your actual credentials (same as VS Code setup above).
 
 ### Step 4: Initialize Workspace
 
-After the container starts, clone the repository into the workspace volume:
+After the container starts, `/workspace` uses a **hybrid volume architecture**:
+- `/workspace/.devcontainer/` is bind-mounted from your host (lifecycle scripts, `.env`)
+- The rest of `/workspace` is a named Docker volume (starts empty)
+
+Clone the repository into the workspace:
 
 ```bash
 # Inside the container terminal
@@ -199,14 +207,18 @@ printenv | grep -E 'LANGSMITH|AWS' | cut -d= -f1
 cargo check --workspace
 ```
 
-### Why Named Volumes for JetBrains
+### Why Hybrid Volumes for JetBrains
 
-JetBrains IDEs rely on `inotify` for file watching. With bind mounts on macOS, Docker uses gRPC FUSE which doesn't provide full inotify support, causing:
+JetBrains IDEs rely on `inotify` for file watching. With pure bind mounts on macOS, Docker uses gRPC FUSE which doesn't provide full inotify support, causing:
 - "External file changes sync might be slow" warning
 - Unreliable file change detection
 - Potential IDE performance issues
 
-The named volume approach keeps files in the container's native filesystem, providing proper inotify support and eliminating these issues.
+The **hybrid approach** solves this by:
+1. Using a named volume for `/workspace` → proper inotify support
+2. Overlaying a bind mount for `.devcontainer/` → lifecycle scripts and secrets work
+
+This gives you the best of both worlds: native filesystem performance AND working devcontainer lifecycle.
 
 ---
 
@@ -242,25 +254,37 @@ The named volume approach keeps files in the container's native filesystem, prov
 
 **Key insight**: Docker Compose reads `.env` from the **host** filesystem before starting the container. Environment variables are passed into the container via the `environment:` section in `docker-compose.yml`. The `.env` file itself doesn't need to be inside the container.
 
-### Workspace Volume Architecture
+### Workspace Volume Architecture (Hybrid)
 
-The devcontainer uses a **named Docker volume** for `/workspace` instead of a bind mount:
+The devcontainer uses a **hybrid volume architecture**:
 
-| Approach | File Location | File Watching | Performance |
-|----------|---------------|---------------|-------------|
-| Bind mount | Host filesystem | Limited (gRPC FUSE) | Variable |
-| Named volume | Container filesystem | Full inotify | Optimal |
+| Component | Mount Type | Purpose |
+|-----------|------------|---------|
+| `/workspace` | Named volume | Code storage with proper inotify |
+| `/workspace/.devcontainer` | Bind mount overlay | Lifecycle scripts, `.env` secrets |
 
-**Benefits of named volumes:**
-- Proper `inotify` support for all IDEs
-- No gRPC FUSE layer on macOS
-- Consistent performance across platforms
-- Eliminates "External file changes sync might be slow" warning
+```
+HOST                              CONTAINER
+.devcontainer/                    /workspace/.devcontainer/ (bind mount)
+├── .env          ───────────────→├── .env
+├── post-create.sh───────────────→├── post-create.sh
+└── docker-compose.yml───────────→└── docker-compose.yml
+
+(nothing)                         /workspace/ (named volume)
+                                  ├── src/
+                                  ├── Cargo.toml
+                                  └── ... (cloned repo)
+```
+
+**Benefits of hybrid approach:**
+- Proper `inotify` support for JetBrains IDEs
+- Lifecycle scripts work correctly (bind-mounted from host)
+- `.env` secrets accessible both to Docker Compose AND inside container
+- Works with VS Code, JetBrains, and Codespaces
 
 **Trade-off:**
-- Code lives only inside the container volume
-- Requires initial clone into the container
-- Can't edit files with host-based editors outside the container
+- Code (except `.devcontainer/`) lives inside the container volume
+- Requires initial clone into the container after first setup
 
 ### Volume Persistence
 
