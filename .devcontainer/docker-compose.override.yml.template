@@ -140,6 +140,33 @@ services:
     # volumes:
     #   - ~/my-local-data:/data
 
+    # ============================================================================
+    # OPTIONAL: Named volume for JetBrains IDEs (RustRover, IntelliJ)
+    # ============================================================================
+    #
+    # If you're using JetBrains IDEs and see "External file changes sync might be
+    # slow" warning, you can switch to a named Docker volume for proper inotify
+    # support. This eliminates gRPC FUSE and provides native file watching.
+    #
+    # TRADE-OFFS:
+    # + Proper inotify support - no more file watching warnings
+    # + Better I/O performance for large projects
+    # - Code lives inside container volume, not on host
+    # - Must clone repo into container after first setup
+    # - Can't edit files with host-based editors outside container
+    #
+    # TO ENABLE NAMED VOLUME FOR JETBRAINS:
+    # 1. Uncomment the volumes section below
+    # 2. Rebuild container: Dev Containers: Rebuild Container
+    # 3. Clone repo inside container: cd /workspace && git clone <repo-url> .
+    #
+    # volumes:
+    #   - langstar-workspace:/workspace
+    #
+    # Also add to the top-level volumes section:
+    # volumes:
+    #   langstar-workspace:
+
     # Example: Override specific environment variables for debugging
     # environment:
     #   - DEBUG=true

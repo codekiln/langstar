@@ -86,8 +86,13 @@ services:
     # Volume mounts
     # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
     volumes:
-      # Mount workspace directory with cached consistency for better performance
+      # Bind mount workspace directory with cached consistency for better performance
+      # This is the default for compatibility with VS Code and GitHub Codespaces
       # https://docs.docker.com/compose/compose-file/compose-file-v3/#caching-options-for-volume-mounts-docker-desktop
+      #
+      # NOTE FOR JETBRAINS USERS: If you see "External file changes sync might be slow"
+      # warning in RustRover/IntelliJ, see docker-compose.override.yml.template for
+      # an optional named volume configuration that provides proper inotify support.
       - ..:/workspace:cached
 
       # Named volumes for persistent data across container rebuilds
@@ -110,3 +115,6 @@ volumes:
   claude-code-bashhistory:
   # Persistent Claude configuration across container rebuilds
   claude-code-config:
+  # Optional: Workspace volume for JetBrains users who need proper inotify
+  # Uncomment in docker-compose.override.yml if using RustRover/IntelliJ
+  # langstar-workspace:

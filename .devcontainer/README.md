@@ -2,6 +2,8 @@
 
 This directory contains the devcontainer configuration for the Langstar project. The devcontainer provides a consistent development environment across local machines and GitHub Codespaces using **Docker Compose**.
 
+> **First-time contributor?** See [docs/dev/getting-started.md](../docs/dev/getting-started.md) for step-by-step setup instructions for VS Code, JetBrains, and Codespaces.
+
 ## Overview
 
 The devcontainer uses Docker Compose which provides **native `.env` file support**, solving environment variable management elegantly for both local and Codespaces environments.
@@ -49,6 +51,39 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
    - Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
    - Select "Dev Containers: Reopen in Container"
    - Wait for the container to build (first time takes a few minutes)
+
+### Workspace Mount Configuration
+
+By default, this devcontainer uses a **bind mount** (`..:/workspace:cached`) for maximum compatibility with VS Code, JetBrains, and GitHub Codespaces.
+
+**Default behavior:**
+- Your local repository files are mounted directly into the container
+- Changes sync bidirectionally between host and container
+- Standard "Reopen in Container" workflow works seamlessly
+
+#### Optional: Named Volume for JetBrains IDEs
+
+If you're using **RustRover, IntelliJ**, or other JetBrains IDEs and see the warning:
+> "External file changes sync might be slow"
+
+This occurs because Docker's bind mount on macOS uses gRPC FUSE, which doesn't provide full `inotify` support.
+
+**To fix this**, you can switch to a named Docker volume by editing `docker-compose.override.yml`:
+
+1. Copy the template: `cp docker-compose.override.yml.template docker-compose.override.yml`
+2. Uncomment the volumes section for named volume
+3. Rebuild the container
+4. Clone the repo inside the container: `cd /workspace && git clone <repo-url> .`
+
+**Trade-offs of named volume:**
+| Aspect | Bind Mount (default) | Named Volume (optional) |
+|--------|---------------------|------------------------|
+| File watching | Limited (gRPC FUSE) | Full inotify support |
+| File location | Host filesystem | Container volume |
+| Setup workflow | Standard | Requires clone into container |
+| Host editing | Supported | Not supported |
+
+See `docker-compose.override.yml.template` for detailed instructions.
 
 ### Files Created (Gitignored)
 
@@ -142,8 +177,14 @@ services:
       GITHUB_USER: ${GITHUB_USER:-${GH_USER}}
       # ... other variables
     volumes:
+      # Bind mount for compatibility with VS Code, JetBrains, and Codespaces
       - ..:/workspace:cached
       - claude-code-bashhistory:/commandhistory
+      - claude-code-config:/home/node/.claude
+
+volumes:
+  claude-code-bashhistory:
+  claude-code-config:
 ```
 
 **`docker-compose.override.yml`** (local only, gitignored):
