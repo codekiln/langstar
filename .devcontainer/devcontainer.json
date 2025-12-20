@@ -4,11 +4,10 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "langstar-dev",
   "workspaceFolder": "/workspace",
-
   // Dev Container features (installed by VS Code, not Docker Compose)
   "features": {
     // "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {},
+      "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/devcontainers-extra/features/mise:1": {},
     "ghcr.io/devcontainers-extra/features/uv:1": {},
     "ghcr.io/devcontainers/features/rust:1": {},
@@ -16,7 +15,6 @@
       "version": "2.1.2"
     }
   },
-
   // VS Code customizations
   "customizations": {
     "vscode": {
@@ -47,11 +45,14 @@
           }
         }
       }
+    },
+    "jetbrains": {
+      "plugins": [
+        "com.anthropic.code.plugin"
+      ]
     }
   },
-
   "remoteUser": "node",
-
   // Lifecycle commands
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "bash .devcontainer/setup-github-auth.sh"

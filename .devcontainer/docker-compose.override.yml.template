@@ -156,18 +156,24 @@ services:
     # - Can't edit files with host-based editors outside container
     #
     # TO ENABLE NAMED VOLUME FOR JETBRAINS:
-    # 1. Uncomment the volumes section below
+    # 1. Uncomment BOTH the volumes section below AND the top-level volumes
+    #    section at the end of this file (lines 172-174)
     # 2. Rebuild container: Dev Containers: Rebuild Container
     # 3. Clone repo inside container: cd /workspace && git clone <repo-url> .
     #
     # volumes:
     #   - langstar-workspace:/workspace
-    #
-    # Also add to the top-level volumes section:
-    # volumes:
-    #   langstar-workspace:
 
     # Example: Override specific environment variables for debugging
     # environment:
     #   - DEBUG=true
     #   - LOG_LEVEL=debug
+
+# Top-level volumes section (required for named volumes)
+# https://docs.docker.com/compose/compose-file/compose-file-v3/#volume-configuration-reference
+#
+# IMPORTANT: If you uncommented the langstar-workspace volume above (line 165),
+# you MUST also uncomment the lines below to declare the named volume:
+#
+# volumes:
+#   langstar-workspace:
