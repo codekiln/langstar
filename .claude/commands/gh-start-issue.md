@@ -1,12 +1,14 @@
 ---
-description: Create a git worktree from main for a GitHub issue branch and get started on the work
+description: Complete workflow for GitHub issues - create worktree, implement changes, and submit PR
 argument-hint: <issue_number>
-allowed-tools: [Bash, Read, Write, Glob, Grep]
+allowed-tools: [Bash, Read, Write, Glob, Grep, Edit, TodoWrite, Task]
 ---
 
-# gh-start-issue - Automated Issue Workflow
+# gh-start-issue - Complete Issue Workflow Automation
 
-Automates the workflow for starting work on a GitHub issue by creating a worktree, updating the tmux window name, and setting up context.
+Automates the FULL workflow for a GitHub issue: creates worktree, implements all changes, runs tests, and submits PR.
+
+**This command does not stop at worktree creation.** It automatically proceeds to implement the issue and submit a PR.
 
 ## Arguments
 
@@ -187,9 +189,26 @@ echo "  3. Use /pr-workflow when ready to create PR and submit"
 echo ""
 ```
 
-## Next Steps After Running
+## Automatic Implementation (Critical)
 
-After this command completes:
+**IMPORTANT**: This command does NOT stop after worktree creation. You MUST immediately begin implementing the issue.
+
+After the bash steps above complete:
+
+1. **Update working directory context** - Change your internal context to the worktree path
+2. **Create todo list** - Use TodoWrite to break down the issue into actionable tasks
+3. **Read relevant code** - Identify and read files that need modification
+4. **Implement all changes** - Make all code changes described in the issue
+5. **Run pre-commit checks** - Execute: `cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo nextest run --profile ci --all-features --workspace`
+6. **Commit changes** - Follow conventional emoji commit format
+7. **Push branch** - Push to remote: `git push -u origin <branch_name>`
+8. **Submit PR** - Use `/pr-workflow` or create PR manually with `gh pr create`
+
+**DO NOT** stop and say "your worktree is ready" - that creates poor UX. The user expects you to complete the full workflow from setup through PR submission.
+
+## Next Steps After Running (For Manual Override Only)
+
+If you need to manually work in the worktree instead of automatic implementation:
 
 1. **Navigate to worktree**: `cd <worktree_path>`
 2. **Implement changes**: Make code changes for the issue
