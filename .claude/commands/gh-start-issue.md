@@ -51,14 +51,13 @@ if [ -z "$ISSUE_NUM" ] || ! [[ "$ISSUE_NUM" =~ ^[0-9]+$ ]]; then
 fi
 
 # Fetch issue details and validate existence
-ISSUE_DATA=$(gh issue view "$ISSUE_NUM" --json title,body,state,milestone 2>/dev/null)
-if [ $? -ne 0 ]; then
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title --jq .title 2>/dev/null)
+if [ $? -ne 0 ] || [ -z "$ISSUE_TITLE" ]; then
   echo "❌ Error: Issue #$ISSUE_NUM not found or you don't have access"
   exit 1
 fi
 
-ISSUE_TITLE=$(echo "$ISSUE_DATA" | jq -r .title)
-ISSUE_STATE=$(echo "$ISSUE_DATA" | jq -r .state)
+ISSUE_STATE=$(gh issue view "$ISSUE_NUM" --json state --jq .state)
 
 if [ "$ISSUE_STATE" = "CLOSED" ]; then
   echo "⚠️  Warning: Issue #$ISSUE_NUM is already closed"
@@ -169,10 +168,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "📋 Issue #$ISSUE_NUM: $ISSUE_TITLE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-
-# Display issue body
-echo "$ISSUE_DATA" | jq -r '.body // "(No description provided)"'
-
+echo "ℹ️  Run 'gh issue view $ISSUE_NUM' to see full issue description"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🚀 Ready to Start"
