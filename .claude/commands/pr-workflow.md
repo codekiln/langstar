@@ -492,13 +492,20 @@ EOF
 
 4. **Check CI/CD status:**
    ```bash
+   # IMPORTANT: gh pr checks available fields (DO NOT use 'conclusion' - that's only in gh run)
+   # Available fields: bucket, completedAt, description, event, link, name, startedAt, state, workflow
+
+   # Initial overview - display all checks and their current state
+   echo "Checking CI/CD status..."
+   gh pr checks "$PR_NUM" --json name,state,completedAt,workflow | \
+     jq -r '.[] | "\(.name): \(.state) (\(.workflow))"'
+
    # Update tmux status to "waiting for tests"
    !update_tmux_status "⏳" "pr" "$PR_NUM"
 
-   # Check CI/CD status and wait for completion
+   # Wait for all checks to complete
    while true; do
-     # Get the status of all checks
-     # Note: gh pr checks uses 'state' field with values: SUCCESS, FAILURE, SKIPPED, PENDING, etc.
+     # Count running checks (where completedAt is null)
      checks_running=$(gh pr checks "$PR_NUM" --json state,completedAt --jq '[.[] | select(.completedAt == null)] | length')
      if [ "$checks_running" -gt 0 ]; then
        echo "⏳ Checks still running, waiting 30 seconds..."
@@ -510,9 +517,18 @@ EOF
 
    # Return to PR maintenance status
    !update_tmux_status "🔧" "pr" "$PR_NUM"
-   # Now parse output for failed checks
-   - If checks pass: proceed to stability monitoring
-   - If checks fail: proceed to failure handling
+
+   # After completion, check for failures
+   checks_failed=$(gh pr checks "$PR_NUM" --json state --jq '[.[] | select(.state == "FAILURE")] | length')
+
+   if [ "$checks_failed" -gt 0 ]; then
+     echo "❌ $checks_failed check(s) failed"
+     # Proceed to failure handling (step 5)
+   else
+     echo "✅ All checks passed"
+     # Proceed to stability monitoring
+   fi
+   ```
 
 5. **If CI/CD checks fail:**
    ```bash
