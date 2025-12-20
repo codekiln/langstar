@@ -199,7 +199,10 @@ After the bash steps above complete:
 2. **Create todo list** - Use TodoWrite to break down the issue into actionable tasks
 3. **Read relevant code** - Identify and read files that need modification
 4. **Implement all changes** - Make all code changes described in the issue
-5. **Run pre-commit checks** - Execute: `cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo nextest run --profile ci --all-features --workspace`
+5. **Run pre-commit checks (if code changed)** - Check `git status` to see what changed:
+   - **If only markdown/docs changed**: Skip cargo checks, proceed to commit
+   - **If Rust code changed**: Execute full checks: `cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo nextest run --profile ci --all-features --workspace`
+   - **If config/YAML changed**: Run relevant validation only
 6. **Commit changes** - Follow conventional emoji commit format
 7. **Push branch** - Push to remote: `git push -u origin <branch_name>`
 8. **Submit PR** - Use `/pr-workflow` or create PR manually with `gh pr create`
