@@ -193,6 +193,8 @@ echo ""
 
 **IMPORTANT**: This command does NOT stop after worktree creation. You MUST immediately begin implementing the issue.
 
+**Testing Principle**: Only run checks necessary to validate the types of changes introduced. The bar is higher for critical items like Rust code or YAML configs than it is for documentation in markdown files. Don't waste time running cargo tests when only markdown changed.
+
 After the bash steps above complete:
 
 1. **Update working directory context** - Change your internal context to the worktree path
