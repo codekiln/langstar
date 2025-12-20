@@ -497,8 +497,8 @@ EOF
 
    # Initial overview - display all checks and their current state
    echo "Checking CI/CD status..."
-   gh pr checks "$PR_NUM" --json name,state,completedAt,workflow | \
-     jq -r '.[] | "\(.name): \(.state) (\(.workflow))"'
+   gh pr checks "$PR_NUM" --json name,state,completedAt,workflow \
+     --jq '.[] | "\(.name): \(.state) (\(.workflow))"'
 
    # Update tmux status to "waiting for tests"
    !update_tmux_status "⏳" "pr" "$PR_NUM"
