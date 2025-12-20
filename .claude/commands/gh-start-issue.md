@@ -57,7 +57,11 @@ if [ $? -ne 0 ] || [ -z "$ISSUE_TITLE" ]; then
   exit 1
 fi
 
-ISSUE_STATE=$(gh issue view "$ISSUE_NUM" --json state --jq .state)
+ISSUE_STATE=$(gh issue view "$ISSUE_NUM" --json state --jq .state 2>/dev/null)
+if [ $? -ne 0 ] || [ -z "$ISSUE_STATE" ]; then
+  echo "❌ Error: Failed to fetch state for issue #$ISSUE_NUM"
+  exit 1
+fi
 
 if [ "$ISSUE_STATE" = "CLOSED" ]; then
   echo "⚠️  Warning: Issue #$ISSUE_NUM is already closed"
