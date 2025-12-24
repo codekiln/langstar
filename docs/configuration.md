@@ -46,9 +46,11 @@ langstar assistant list   # Uses LANGSMITH_API_KEY
 
 Langstar supports three configuration methods, evaluated in this order of precedence:
 
-1. **Command-line flags** (highest priority)
-2. **Configuration file** (`~/.langstar/config.toml`)
-3. **Environment variables** (lowest priority)
+1. **Environment variables** (highest priority)
+2. **Configuration file** (`~/.config/langstar/config.toml`)
+3. **Default values** (lowest priority)
+
+**Note:** Command-line flags (when available) override environment variables for specific commands.
 
 ### When to Use Each Method
 
@@ -72,11 +74,14 @@ Langstar supports three configuration methods, evaluated in this order of preced
 
 ### Location
 
-Langstar looks for configuration in these locations (in order):
+The configuration file is located at:
+- **macOS and Linux**: `~/.config/langstar/config.toml`
+- **Windows**: `%APPDATA%\langstar\config.toml`
 
-1. `./config.toml` (current directory)
-2. `~/.langstar/config.toml` (user home)
-3. `~/.config/langstar/config.toml` (XDG config)
+To create a config file with all available options, run:
+```bash
+langstar config create
+```
 
 ### Format
 
@@ -326,12 +331,13 @@ Result:
 **Setup:**
 
 ```bash
-# Create config file
-mkdir -p ~/.langstar
-cat > ~/.langstar/config.toml <<EOF
-[langstar]
+# Create config file with defaults
+langstar config create
+
+# Or create manually
+mkdir -p ~/.config/langstar
+cat > ~/.config/langstar/config.toml <<EOF
 langsmith_api_key = "<your-langsmith-key>"
-# Assistants use the same langsmith_api_key
 output_format = "table"
 EOF
 ```
@@ -349,9 +355,7 @@ langstar assistant list
 **Setup:**
 
 ```toml
-# ~/.langstar/config.toml
-[langstar]
-langsmith_api_key = "<your-key>"
+# ~/.config/langstar/config.toml
 langsmith_api_key = "<your-key>"
 
 # Scope prompts to team organization
@@ -376,9 +380,7 @@ langstar assistant list
 **Setup:**
 
 ```toml
-# ~/.langstar/config.toml
-[langstar]
-langsmith_api_key = "<your-key>"
+# ~/.config/langstar/config.toml
 langsmith_api_key = "<your-key>"
 
 # Default organization (can be overridden)
@@ -454,20 +456,25 @@ langstar config
 **Example output:**
 
 ```
-Configuration file: ~/.langstar/config.toml
+Configuration file: ~/.config/langstar/config.toml
+  File exists: true
 
-LangSmith Configuration (for 'prompt' commands):
-  API key: configured
-  Organization ID: <your-org-id> (scopes prompt operations)
-  Workspace ID: <your-workspace-id> (narrows scope further)
-  → Prompt commands will use workspace-scoped resources
+Current configuration:
+  output_format: table (from config file)
+  timezone: local (from config file)
+  hide_workspace_and_org_id_message: false (from config file)
 
-LangGraph Configuration (for 'assistant' commands):
-  API key: configured
-  → Assistant commands use deployment-level resources
-  → No organization/workspace scoping available
+Authentication and scoping:
+  langsmith_api_key: lsv2_sk_ab... (from env: LANGSMITH_API_KEY)
+  organization_id: <your-org-id> (from config file)
+  workspace_id: <your-workspace-id> (from config file)
+  github_integration_id: not set
 
-Output Format: table
+  Active scope: Workspace (narrower)
+  → Operations will be scoped to the workspace
+
+💡 Tip: Run 'langstar config env' to see all environment variable mappings
+💡 Tip: Run 'langstar config validate' to check for config file errors
 ```
 
 **What it shows:**
@@ -496,18 +503,18 @@ export LANGSMITH_API_KEY="<key>"
 
 ```bash
 # Create config file
-mkdir -p ~/.langstar
-cat > ~/.langstar/config.toml <<EOF
-[langstar]
+langstar config create
+
+# Or manually:
+mkdir -p ~/.config/langstar
+cat > ~/.config/langstar/config.toml <<EOF
 langsmith_api_key = "<key>"
 organization_id = "<org-id>"
-langsmith_api_key = "<key>"
 EOF
 
 # Remove environment variables if desired
 unset LANGSMITH_API_KEY
 unset LANGSMITH_ORGANIZATION_ID
-unset LANGSMITH_API_KEY
 ```
 
 **Benefits:**
@@ -592,11 +599,8 @@ Error: Missing required configuration: LANGSMITH_API_KEY
 
 3. Or create config file:
    ```bash
-   mkdir -p ~/.langstar
-   cat > ~/.langstar/config.toml <<EOF
-   [langstar]
-   langsmith_api_key = "<your-key>"
-   EOF
+   langstar config create
+   # Edit ~/.config/langstar/config.toml with your API key
    ```
 
 ### Wrong API Key for Service
@@ -657,13 +661,14 @@ Config file exists but settings aren't applied.
 
 1. Check file location:
    ```bash
-   ls ~/.langstar/config.toml
-   langstar config  # Shows which file is used
+   ls ~/.config/langstar/config.toml
+   langstar config show  # Shows which file is used
    ```
 
 2. Verify TOML syntax:
    ```bash
-   cat ~/.langstar/config.toml
+   cat ~/.config/langstar/config.toml
+   langstar config validate  # Check for errors
    ```
 
 3. Check for environment variable overrides:
@@ -679,7 +684,7 @@ Config file exists but settings aren't applied.
 **DO:**
 - ✅ Use config file with restricted permissions:
   ```bash
-  chmod 600 ~/.langstar/config.toml
+  chmod 600 ~/.config/langstar/config.toml
   ```
 - ✅ Use environment variables in CI/CD
 - ✅ Use different keys for dev/staging/production
@@ -694,19 +699,20 @@ Config file exists but settings aren't applied.
 ### Using Config Files Safely
 
 ```bash
-# Create config file with restricted permissions
-mkdir -p ~/.langstar
-cat > ~/.langstar/config.toml <<EOF
-[langstar]
-langsmith_api_key = "<your-key>"
+# Create config file (automatically sets secure permissions)
+langstar config create
+
+# Or manually with restricted permissions
+mkdir -p ~/.config/langstar
+cat > ~/.config/langstar/config.toml <<EOF
 langsmith_api_key = "<your-key>"
 EOF
 
 # Restrict access to owner only
-chmod 600 ~/.langstar/config.toml
+chmod 600 ~/.config/langstar/config.toml
 
 # Verify permissions
-ls -la ~/.langstar/config.toml
+ls -la ~/.config/langstar/config.toml
 # Should show: -rw------- (owner read/write only)
 ```
 

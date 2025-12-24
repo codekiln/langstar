@@ -108,6 +108,8 @@ impl Config {
         let config_path = Self::config_file_path()?;
 
         if !config_path.exists() {
+            // Check for old config location and suggest migration (macOS only)
+            Self::check_old_config_location();
             return Ok(Self::default());
         }
 
@@ -120,12 +122,54 @@ impl Config {
         Ok(config)
     }
 
-    /// Get the path to the config file
-    pub fn config_file_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .ok_or_else(|| CliError::Config("Could not determine config directory".to_string()))?;
+    /// Check if old config location exists and print migration suggestion
+    #[cfg(target_os = "macos")]
+    fn check_old_config_location() {
+        if let Some(config_dir) = dirs::config_dir() {
+            let old_path = config_dir.join("langstar").join("config.toml");
+            if old_path.exists() {
+                eprintln!(
+                    "ℹ️  Found config file at old location: {}",
+                    old_path.display()
+                );
+                eprintln!("   Consider moving it to the new location:");
+                eprintln!(
+                    "   mkdir -p ~/.config/langstar && mv \"{}\" ~/.config/langstar/config.toml",
+                    old_path.display()
+                );
+            }
+        }
+    }
 
-        Ok(config_dir.join("langstar").join("config.toml"))
+    #[cfg(not(target_os = "macos"))]
+    fn check_old_config_location() {
+        // No migration needed on Linux/Windows
+    }
+
+    /// Get the path to the config file
+    ///
+    /// Uses ~/.config/langstar/config.toml on macOS and Linux for consistency.
+    /// On Windows, uses the platform-specific AppData location.
+    pub fn config_file_path() -> Result<PathBuf> {
+        #[cfg(target_os = "windows")]
+        {
+            let config_dir = dirs::config_dir().ok_or_else(|| {
+                CliError::Config("Could not determine config directory".to_string())
+            })?;
+            Ok(config_dir.join("langstar").join("config.toml"))
+        }
+
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Use ~/.config/langstar/config.toml on macOS and Linux
+            let home_dir = dirs::home_dir().ok_or_else(|| {
+                CliError::Config("Could not determine home directory".to_string())
+            })?;
+            Ok(home_dir
+                .join(".config")
+                .join("langstar")
+                .join("config.toml"))
+        }
     }
 
     /// Save the current configuration to file

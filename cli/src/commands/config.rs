@@ -16,6 +16,19 @@ pub enum ConfigCommands {
     /// Show configuration file location and values
     Show,
 
+    /// Create a new config file with all available options and defaults
+    Create {
+        /// Overwrite the config file if it already exists
+        #[arg(long)]
+        force: bool,
+    },
+
+    /// Validate the config file and check for errors
+    Validate,
+
+    /// Show environment variable mappings for all config keys
+    Env,
+
     /// Manage hide_workspace_and_org_id_message setting
     #[command(name = "hide_workspace_and_org_id_message")]
     HideWorkspaceAndOrgIdMessage(SettingAction),
@@ -50,6 +63,15 @@ impl ConfigCommands {
             ConfigCommands::Show => {
                 Self::show_config()?;
             }
+            ConfigCommands::Create { force } => {
+                Self::handle_create(*force)?;
+            }
+            ConfigCommands::Validate => {
+                Self::handle_validate()?;
+            }
+            ConfigCommands::Env => {
+                Self::handle_env()?;
+            }
             ConfigCommands::HideWorkspaceAndOrgIdMessage(action) => {
                 Self::handle_hide_workspace_and_org_id_message(action)?;
             }
@@ -68,40 +90,81 @@ impl ConfigCommands {
         let config_path = Config::config_file_path()?;
 
         println!("Configuration file: {}", config_path.display());
+        println!("  File exists: {}", config_path.exists());
+
         println!("\nCurrent configuration:");
-        println!("  Output format: {}", config.output_format);
+
+        // Show each setting with its value and source
+        Self::show_setting_with_source(
+            "output_format",
+            &config.output_format,
+            &std::env::var("LANGSTAR_OUTPUT_FORMAT"),
+            "LANGSTAR_OUTPUT_FORMAT",
+        );
 
         // Parse and display timezone with validation
         let tz_display = match ConfiguredTimezone::parse(&config.timezone) {
             Ok(tz) => tz.description(),
             Err(_) => format!("{} (invalid, using UTC)", config.timezone),
         };
-        println!("  Timezone: {}", tz_display);
-        println!(
-            "  Hide workspace/org ID warnings: {}",
-            config.hide_workspace_and_org_id_message
-        );
-        println!(
-            "  LangSmith API key: {}",
-            if config.langsmith_api_key.is_some() {
-                "configured"
-            } else {
-                "not configured"
-            }
+        Self::show_setting_with_source(
+            "timezone",
+            &tz_display,
+            &std::env::var("LANGSTAR_TIMEZONE"),
+            "LANGSTAR_TIMEZONE",
         );
 
-        // Show scoping configuration
-        println!("\nScoping configuration:");
-        println!(
-            "  Organization ID: {}",
-            config
-                .organization_id
-                .as_deref()
-                .unwrap_or("not configured")
+        Self::show_setting_with_source(
+            "hide_workspace_and_org_id_message",
+            &config.hide_workspace_and_org_id_message.to_string(),
+            &std::env::var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE"),
+            "LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE",
         );
-        println!(
-            "  Workspace ID: {}",
-            config.workspace_id.as_deref().unwrap_or("not configured")
+
+        println!("\nAuthentication and scoping:");
+
+        // LangSmith API key
+        // Compare full values for accuracy, but display truncated for security
+        let (api_key_display, api_key_full) = if let Some(ref key) = config.langsmith_api_key {
+            (format!("{}...", &key[..key.len().min(10)]), key.clone())
+        } else {
+            ("not set".to_string(), String::new())
+        };
+
+        // For API keys, we need to compare full values but display truncated
+        let env_api_key = std::env::var("LANGSMITH_API_KEY");
+        let source = match &env_api_key {
+            Ok(env_value) if !api_key_full.is_empty() && env_value == &api_key_full => {
+                "(from env: LANGSMITH_API_KEY)".to_string()
+            }
+            Ok(_) if !api_key_full.is_empty() => "(from config file or default)".to_string(),
+            Err(_) if !api_key_full.is_empty() => "(from config file or default)".to_string(),
+            _ => "(from config file or default)".to_string(),
+        };
+        println!("  langsmith_api_key: {} {}", api_key_display, source);
+
+        // Organization ID
+        Self::show_setting_with_source(
+            "organization_id",
+            config.organization_id.as_deref().unwrap_or("not set"),
+            &std::env::var("LANGSMITH_ORGANIZATION_ID"),
+            "LANGSMITH_ORGANIZATION_ID",
+        );
+
+        // Workspace ID
+        Self::show_setting_with_source(
+            "workspace_id",
+            config.workspace_id.as_deref().unwrap_or("not set"),
+            &std::env::var("LANGSMITH_WORKSPACE_ID"),
+            "LANGSMITH_WORKSPACE_ID",
+        );
+
+        // GitHub Integration ID
+        Self::show_setting_with_source(
+            "github_integration_id",
+            config.github_integration_id.as_deref().unwrap_or("not set"),
+            &std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID"),
+            "LANGGRAPH_GITHUB_INTEGRATION_ID",
         );
 
         // Show active scope
@@ -113,39 +176,251 @@ impl ConfigCommands {
             println!("  → Operations will be scoped to the organization");
         } else {
             println!("\n  Active scope: None (global)");
-            println!("  → Operations will access all available prompts");
+            println!("  → Operations will access all available resources");
         }
 
-        println!("\nEnvironment variables:");
+        println!("\n💡 Tip: Run 'langstar config env' to see all environment variable mappings");
+        println!("💡 Tip: Run 'langstar config validate' to check for config file errors");
+
+        Ok(())
+    }
+
+    fn show_setting_with_source(
+        key: &str,
+        current_value: &str,
+        env_var_result: &std::result::Result<String, std::env::VarError>,
+        env_var_name: &str,
+    ) {
+        let source = match env_var_result {
+            // Env var is set; check whether its value matches the effective configuration value.
+            Ok(env_value) if env_value == current_value => {
+                format!("(from env: {})", env_var_name)
+            }
+            // Env var is set but the effective value differs, so the value must be coming
+            // from the config file or a default, and the env var is not actually in use.
+            Ok(_) => "(from config file or default)".to_string(),
+            // Env var is not set; the value is coming from the config file or a built-in default.
+            Err(_) => "(from config file or default)".to_string(),
+        };
+        println!("  {}: {} {}", key, current_value, source);
+    }
+
+    fn handle_create(force: bool) -> Result<()> {
+        let config_path = Config::config_file_path()?;
+
+        // Check if config file already exists
+        if config_path.exists() && !force {
+            return Err(CliError::Config(format!(
+                "Config file already exists at {}\nUse --force to overwrite",
+                config_path.display()
+            )));
+        }
+
+        // Create parent directories if they don't exist
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        // Create config file content with comments showing environment variable mappings
+        let config_content = r#"# Langstar Configuration File
+#
+# This file provides default values for the Langstar CLI.
+# Environment variables take precedence over values in this file.
+#
+# For a complete mapping of config keys to environment variables, run:
+#   langstar config env
+
+# Authentication and Scoping
+# --------------------------
+
+# LangSmith API key (used for both LangSmith and LangGraph APIs)
+# Environment variable: LANGSMITH_API_KEY
+# langsmith_api_key = "your-api-key-here"
+
+# Optional organization ID for scoping LangSmith operations
+# Environment variable: LANGSMITH_ORGANIZATION_ID
+# organization_id = "your-org-id"
+
+# Optional workspace ID for narrower scoping of LangSmith operations
+# Environment variable: LANGSMITH_WORKSPACE_ID
+# workspace_id = "your-workspace-id"
+
+# Optional GitHub integration ID for deployment creation
+# Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
+# github_integration_id = "your-integration-id"
+
+# CLI Display Settings
+# --------------------
+
+# Default output format for command results (json or table)
+# Environment variable: LANGSTAR_OUTPUT_FORMAT
+output_format = "table"
+
+# Timezone for displaying timestamps in CLI output
+# Accepts IANA timezone names (e.g., "America/New_York", "Europe/London")
+# or special values: "local" (system timezone), "UTC"
+# Environment variable: LANGSTAR_TIMEZONE
+timezone = "local"
+
+# Suppress warning when both organization_id and workspace_id are set
+# Environment variable: LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE
+hide_workspace_and_org_id_message = false
+"#;
+
+        // Write config file
+        fs::write(&config_path, config_content)?;
+
+        // Set secure permissions (0600 - owner read/write only) on Unix platforms
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let permissions = std::fs::Permissions::from_mode(0o600);
+            std::fs::set_permissions(&config_path, permissions)?;
+        }
+
+        println!("✓ Created config file at: {}", config_path.display());
+        #[cfg(unix)]
+        println!("  File permissions set to 0600 (owner read/write only)");
+
+        println!("\nNext steps:");
+        println!("  1. Edit the file to set your API key and preferences");
+        println!("  2. Run 'langstar config show' to verify configuration");
+        println!("  3. Run 'langstar config validate' to check for errors");
+
+        Ok(())
+    }
+
+    fn handle_validate() -> Result<()> {
+        let config_path = Config::config_file_path()?;
+
+        println!("Validating configuration...");
+        println!("  Config file: {}", config_path.display());
+
+        // Check if config file exists
+        if !config_path.exists() {
+            println!("  ⚠ Config file does not exist");
+            println!("\n💡 Tip: Run 'langstar config create' to create one");
+            return Ok(());
+        }
+
+        // Try to load and parse the config file
+        let config = match Config::load() {
+            Ok(c) => c,
+            Err(e) => {
+                println!("  ✗ Config file validation FAILED");
+                println!("\nError: {}", e);
+                return Err(e);
+            }
+        };
+
+        // Validate output_format
+        let valid_formats = ["json", "table"];
+        if !valid_formats.contains(&config.output_format.as_str()) {
+            println!("  ✗ Invalid output_format: {}", config.output_format);
+            println!("    Valid values: json, table");
+            return Err(CliError::Config(format!(
+                "Invalid output_format: {}. Must be 'json' or 'table'",
+                config.output_format
+            )));
+        }
+
+        // Validate timezone
+        if let Err(e) = ConfiguredTimezone::parse(&config.timezone) {
+            println!("  ✗ Invalid timezone: {}", config.timezone);
+            println!("    Error: {}", e);
+            return Err(CliError::Config(format!(
+                "Invalid timezone: {}. {}",
+                config.timezone, e
+            )));
+        }
+
+        // Check for API key
+        if config.langsmith_api_key.is_none() {
+            println!("  ⚠ LangSmith API key is not configured");
+            println!("    Set LANGSMITH_API_KEY environment variable or add to config file");
+        }
+
+        println!("\n✓ Configuration is valid");
+        println!("\nConfiguration summary:");
+        println!("  Output format: {}", config.output_format);
+        println!("  Timezone: {}", config.timezone);
         println!(
-            "  LANGSMITH_API_KEY: {}",
-            if std::env::var("LANGSMITH_API_KEY").is_ok() {
-                "set"
+            "  API key: {}",
+            if config.langsmith_api_key.is_some() {
+                "configured"
             } else {
-                "not set"
+                "not configured"
             }
         );
+
+        Ok(())
+    }
+
+    fn handle_env() -> Result<()> {
+        println!("Config Key to Environment Variable Mapping");
+        println!("==========================================\n");
+
+        // Define the mappings
+        let mappings = vec![
+            (
+                "langsmith_api_key",
+                "LANGSMITH_API_KEY",
+                "API key for LangSmith and LangGraph services",
+            ),
+            (
+                "organization_id",
+                "LANGSMITH_ORGANIZATION_ID",
+                "Organization ID for scoping operations",
+            ),
+            (
+                "workspace_id",
+                "LANGSMITH_WORKSPACE_ID",
+                "Workspace ID for narrower scoping",
+            ),
+            (
+                "github_integration_id",
+                "LANGGRAPH_GITHUB_INTEGRATION_ID",
+                "GitHub integration ID for deployments",
+            ),
+            (
+                "output_format",
+                "LANGSTAR_OUTPUT_FORMAT",
+                "Default output format (json or table)",
+            ),
+            (
+                "timezone",
+                "LANGSTAR_TIMEZONE",
+                "Timezone for timestamp display",
+            ),
+            (
+                "hide_workspace_and_org_id_message",
+                "LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE",
+                "Suppress workspace/org ID warnings",
+            ),
+        ];
+
+        // Display the table
         println!(
-            "  LANGSMITH_ORGANIZATION_ID: {}",
-            std::env::var("LANGSMITH_ORGANIZATION_ID").unwrap_or_else(|_| "not set".to_string())
+            "{:<35} {:<45} Description",
+            "Config File Key", "Environment Variable"
         );
+        println!("{}", "-".repeat(110));
+
+        for (config_key, env_var, description) in mappings {
+            println!("{:<35} {:<45} {}", config_key, env_var, description);
+        }
+
+        println!("\nNotes:");
+        println!("  • Environment variables take precedence over config file values");
+        println!("  • Most environment variables use LANGSMITH_ or LANGSTAR_ prefixes");
         println!(
-            "  LANGSMITH_WORKSPACE_ID: {}",
-            std::env::var("LANGSMITH_WORKSPACE_ID").unwrap_or_else(|_| "not set".to_string())
+            "  • Config file keys use snake_case, environment variables use SCREAMING_SNAKE_CASE"
         );
-        println!(
-            "  LANGSTAR_OUTPUT_FORMAT: {}",
-            std::env::var("LANGSTAR_OUTPUT_FORMAT").unwrap_or_else(|_| "not set".to_string())
-        );
-        println!(
-            "  LANGSTAR_TIMEZONE: {}",
-            std::env::var("LANGSTAR_TIMEZONE").unwrap_or_else(|_| "not set".to_string())
-        );
-        println!(
-            "  LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE: {}",
-            std::env::var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE")
-                .unwrap_or_else(|_| "not set".to_string())
-        );
+
+        println!("\nRelated commands:");
+        println!("  langstar config show      - Show current configuration with sources");
+        println!("  langstar config create    - Create a config file with all options");
+        println!("  langstar config validate  - Validate the config file");
 
         Ok(())
     }
