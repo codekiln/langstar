@@ -637,12 +637,23 @@ This section provides detailed configuration options for both LangSmith and Lang
 Langstar supports three configuration methods, in order of precedence:
 
 1. **Command-line flags** (highest priority)
-2. **Configuration file** (`~/.langstar/config.toml`)
+2. **Configuration file** (`~/.config/langstar/config.toml`)
 3. **Environment variables** (lowest priority)
 
 ### Configuration File Format
 
-Create a configuration file at `~/.langstar/config.toml`:
+Create a configuration file at `~/.config/langstar/config.toml`:
+
+```bash
+# Create with defaults
+langstar config create
+
+# Or manually:
+mkdir -p ~/.config/langstar
+cat > ~/.config/langstar/config.toml <<EOF
+# Your configuration here
+EOF
+```
 
 ```toml
 [langstar]
@@ -705,7 +716,7 @@ This displays:
 
 **Example output:**
 ```
-Configuration file: ~/.langstar/config.toml
+Configuration file: ~/.config/langstar/config.toml
 
 LangSmith Configuration:
   API key: configured

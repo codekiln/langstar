@@ -121,11 +121,29 @@ impl Config {
     }
 
     /// Get the path to the config file
+    ///
+    /// Uses ~/.config/langstar/config.toml on macOS and Linux for consistency.
+    /// On Windows, uses the platform-specific AppData location.
     pub fn config_file_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .ok_or_else(|| CliError::Config("Could not determine config directory".to_string()))?;
+        #[cfg(target_os = "windows")]
+        {
+            let config_dir = dirs::config_dir().ok_or_else(|| {
+                CliError::Config("Could not determine config directory".to_string())
+            })?;
+            Ok(config_dir.join("langstar").join("config.toml"))
+        }
 
-        Ok(config_dir.join("langstar").join("config.toml"))
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Use ~/.config/langstar/config.toml on macOS and Linux
+            let home_dir = dirs::home_dir().ok_or_else(|| {
+                CliError::Config("Could not determine home directory".to_string())
+            })?;
+            Ok(home_dir
+                .join(".config")
+                .join("langstar")
+                .join("config.toml"))
+        }
     }
 
     /// Save the current configuration to file
