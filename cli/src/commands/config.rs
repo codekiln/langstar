@@ -124,17 +124,24 @@ impl ConfigCommands {
         println!("\nAuthentication and scoping:");
 
         // LangSmith API key
-        let api_key_value = if let Some(ref key) = config.langsmith_api_key {
-            format!("{}...", &key[..key.len().min(10)])
+        // Compare full values for accuracy, but display truncated for security
+        let (api_key_display, api_key_full) = if let Some(ref key) = config.langsmith_api_key {
+            (format!("{}...", &key[..key.len().min(10)]), key.clone())
         } else {
-            "not set".to_string()
+            ("not set".to_string(), String::new())
         };
-        Self::show_setting_with_source(
-            "langsmith_api_key",
-            &api_key_value,
-            &std::env::var("LANGSMITH_API_KEY").map(|k| format!("{}...", &k[..k.len().min(10)])),
-            "LANGSMITH_API_KEY",
-        );
+
+        // For API keys, we need to compare full values but display truncated
+        let env_api_key = std::env::var("LANGSMITH_API_KEY");
+        let source = match &env_api_key {
+            Ok(env_value) if !api_key_full.is_empty() && env_value == &api_key_full => {
+                "(from env: LANGSMITH_API_KEY)".to_string()
+            }
+            Ok(_) if !api_key_full.is_empty() => "(from config file or default)".to_string(),
+            Err(_) if !api_key_full.is_empty() => "(from config file or default)".to_string(),
+            _ => "(from config file or default)".to_string(),
+        };
+        println!("  langsmith_api_key: {} {}", api_key_display, source);
 
         // Organization ID
         Self::show_setting_with_source(
