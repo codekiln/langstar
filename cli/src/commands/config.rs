@@ -184,10 +184,16 @@ impl ConfigCommands {
         env_var_result: &std::result::Result<String, std::env::VarError>,
         env_var_name: &str,
     ) {
-        let source = if env_var_result.is_ok() {
-            format!("(from env: {})", env_var_name)
-        } else {
-            "(from config file)".to_string()
+        let source = match env_var_result {
+            // Env var is set; check whether its value matches the effective configuration value.
+            Ok(env_value) if env_value == current_value => {
+                format!("(from env: {})", env_var_name)
+            }
+            // Env var is set but the effective value differs, so the value must be coming
+            // from the config file or a default, and the env var is not actually in use.
+            Ok(_) => "(from config file or default)".to_string(),
+            // Env var is not set; the value is coming from the config file or a built-in default.
+            Err(_) => "(from config file or default)".to_string(),
         };
         println!("  {}: {} {}", key, current_value, source);
     }

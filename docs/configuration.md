@@ -46,9 +46,11 @@ langstar assistant list   # Uses LANGSMITH_API_KEY
 
 Langstar supports three configuration methods, evaluated in this order of precedence:
 
-1. **Command-line flags** (highest priority)
-2. **Environment variables**
-3. **Configuration file** (`~/.config/langstar/config.toml`) (lowest priority)
+1. **Environment variables** (highest priority)
+2. **Configuration file** (`~/.config/langstar/config.toml`)
+3. **Default values** (lowest priority)
+
+**Note:** Command-line flags (when available) override environment variables for specific commands.
 
 ### When to Use Each Method
 

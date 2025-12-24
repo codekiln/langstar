@@ -108,6 +108,8 @@ impl Config {
         let config_path = Self::config_file_path()?;
 
         if !config_path.exists() {
+            // Check for old config location and suggest migration (macOS only)
+            Self::check_old_config_location();
             return Ok(Self::default());
         }
 
@@ -118,6 +120,30 @@ impl Config {
             .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
 
         Ok(config)
+    }
+
+    /// Check if old config location exists and print migration suggestion
+    #[cfg(target_os = "macos")]
+    fn check_old_config_location() {
+        if let Some(config_dir) = dirs::config_dir() {
+            let old_path = config_dir.join("langstar").join("config.toml");
+            if old_path.exists() {
+                eprintln!(
+                    "ℹ️  Found config file at old location: {}",
+                    old_path.display()
+                );
+                eprintln!("   Consider moving it to the new location:");
+                eprintln!(
+                    "   mkdir -p ~/.config/langstar && mv \"{}\" ~/.config/langstar/config.toml",
+                    old_path.display()
+                );
+            }
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    fn check_old_config_location() {
+        // No migration needed on Linux/Windows
     }
 
     /// Get the path to the config file
