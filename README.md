@@ -636,9 +636,11 @@ This section provides detailed configuration options for both LangSmith and Lang
 
 Langstar supports three configuration methods, in order of precedence:
 
-1. **Command-line flags** (highest priority)
+1. **Environment variables** (highest priority)
 2. **Configuration file** (`~/.config/langstar/config.toml`)
-3. **Environment variables** (lowest priority)
+3. **Default values** (lowest priority)
+
+**Note:** Command-line flags (when available) override environment variables for specific commands.
 
 ### Configuration File Format
 
