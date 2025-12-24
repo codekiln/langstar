@@ -270,7 +270,18 @@ hide_workspace_and_org_id_message = false
         // Write config file
         fs::write(&config_path, config_content)?;
 
+        // Set secure permissions (0600 - owner read/write only) on Unix platforms
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let permissions = std::fs::Permissions::from_mode(0o600);
+            std::fs::set_permissions(&config_path, permissions)?;
+        }
+
         println!("✓ Created config file at: {}", config_path.display());
+        #[cfg(unix)]
+        println!("  File permissions set to 0600 (owner read/write only)");
+
         println!("\nNext steps:");
         println!("  1. Edit the file to set your API key and preferences");
         println!("  2. Run 'langstar config show' to verify configuration");
