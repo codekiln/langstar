@@ -26,6 +26,8 @@ ENV TZ="$TZ"
 ARG CLAUDE_CODE_VERSION=latest
 
 # Install basic development tools and iptables/ipset
+# Note: X11 libraries (libxext6, libxrender1, etc.) are required for JetBrains Gateway
+# https://www.jetbrains.com/help/rust/prerequisites-for-dev-containers.html
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -46,6 +48,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   tmux \
+  curl \
+  libxext6 \
+  libxrender1 \
+  libxtst6 \
+  libxi6 \
+  libfreetype6 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure default node user has access to /usr/local/share

@@ -1,0 +1,53 @@
+{
+  "name": "langstar-codespaces",
+  // Use Docker Compose for container configuration
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "langstar-dev",
+  "workspaceFolder": "/workspace",
+
+  // Dev Container features (installed by VS Code, not Docker Compose)
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/mise:1": {},
+    "ghcr.io/devcontainers-extra/features/uv:1": {},
+    "ghcr.io/devcontainers/features/rust:1": {},
+    "ghcr.io/codekiln/langstar/langstar:1": {
+      "version": "2.1.2"
+    }
+  },
+
+  // VS Code customizations
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "anthropic.claude-code",
+        // container tools for docker
+        "ms-azuretools.vscode-containers",
+        "ms-azuretools.vscode-docker",
+        // python language support
+        "ms-python.python"
+      ],
+      "settings": {
+        "files.autoSave": "afterDelay",
+        "editor.formatOnSave": true,
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "bash",
+            "icon": "terminal-bash"
+          },
+          "zsh": {
+            "path": "zsh"
+          }
+        }
+      }
+    }
+  },
+
+  "remoteUser": "node",
+
+  // Lifecycle commands
+  // Note: Scripts are in parent directory, referenced via /workspace path
+  "postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
+  "postStartCommand": "bash /workspace/.devcontainer/setup-github-auth.sh"
+}

@@ -1,0 +1,103 @@
+# Docker Compose configuration for GitHub Codespaces
+# Compose file format: https://docs.docker.com/compose/compose-file/
+#
+# IMPORTANT: This configuration is specifically designed for GitHub Codespaces.
+# It does NOT depend on .env files (which are gitignored and don't exist in Codespaces).
+# All environment variables come from GitHub Codespaces secrets.
+#
+# For local VS Code development, use the default config at ../.devcontainer/
+# For JetBrains Gateway, use .devcontainer/jetbrains/
+
+services:
+  langstar-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      # Build arguments with defaults (Codespaces secrets can override)
+      # https://docs.docker.com/compose/compose-file/build/#args
+      args:
+        TZ: ${TZ:-America/New_York}
+        CLAUDE_CODE_VERSION: ${CLAUDE_CODE_VERSION:-latest}
+        GIT_DELTA_VERSION: ${GIT_DELTA_VERSION:-0.18.2}
+        ZSH_IN_DOCKER_VERSION: ${ZSH_IN_DOCKER_VERSION:-1.2.1}
+
+    # Add Linux capabilities for VPN/network tools
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#cap_add
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+    # Environment variables from GitHub Codespaces secrets
+    # https://docs.github.com/en/codespaces/managing-your-codespaces/managing-encrypted-secrets-for-your-codespaces
+    #
+    # IMPORTANT: NO fallback syntax (${VAR:-${OTHER}}) - Codespaces secrets only.
+    # The .env file does NOT exist in Codespaces (it's gitignored).
+    # All secrets must be configured in GitHub: Settings → Secrets → Codespaces
+    #
+    # Required Codespaces secrets:
+    # - GH_PAT: GitHub Personal Access Token
+    # - GH_USER: GitHub username
+    # - AWS_ACCESS_KEY_ID: AWS access key for Bedrock
+    # - AWS_SECRET_ACCESS_KEY: AWS secret key for Bedrock
+    # - LANGSMITH_API_KEY: LangSmith API key
+    environment:
+      # GitHub Authentication (from Codespaces secrets)
+      GITHUB_PAT: ${GH_PAT}
+      GITHUB_USER: ${GH_USER}
+      GITHUB_PROJECT_PAT: ${GH_PROJECT_PAT}
+
+      # Anthropic/AWS Configuration (from Codespaces secrets)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-us.anthropic.claude-sonnet-4-5-20250929-v1:0}
+      ANTHROPIC_SMALL_FAST_MODEL: ${ANTHROPIC_SMALL_FAST_MODEL:-us.anthropic.claude-haiku-4-5-20251001-v1:0}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      CLAUDE_CODE_USE_BEDROCK: ${CLAUDE_CODE_USE_BEDROCK:-1}
+
+      # LangChain API Configuration (from Codespaces secrets)
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_ORGANIZATION_NAME: ${LANGSMITH_ORGANIZATION_NAME}
+      LANGSMITH_ORGANIZATION_ID: ${LANGSMITH_ORGANIZATION_ID}
+      LANGSMITH_WORKSPACE_NAME: ${LANGSMITH_WORKSPACE_NAME}
+      LANGSMITH_WORKSPACE_ID: ${LANGSMITH_WORKSPACE_ID}
+
+      # Test LangGraph Deployment (optional)
+      TEST_GRAPH_ID: ${TEST_GRAPH_ID}
+      TEST_DEPLOYMENT_ID: ${TEST_DEPLOYMENT_ID}
+
+      # Container Environment (static values)
+      NODE_OPTIONS: --max-old-space-size=4096
+      CLAUDE_CONFIG_DIR: /home/node/.claude
+      POWERLEVEL9K_DISABLE_GITSTATUS: "true"
+
+      # tmux skill configuration
+      CLAUDE_TMUX_SOCKET_DIR: /tmp/claude-tmux-sockets
+
+      # Claude Code Token Configuration
+      CLAUDE_CODE_MAX_OUTPUT_TOKENS: ${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-4096}
+      MAX_THINKING_TOKENS: ${MAX_THINKING_TOKENS:-1024}
+
+      # Legacy variables (optional)
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+    # Volume mounts
+    # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
+    volumes:
+      # Bind mount workspace (Codespaces manages this in cloud)
+      - ..:/workspace:cached
+
+      # Named volumes for persistent data across container rebuilds
+      - claude-code-bashhistory:/commandhistory
+      - claude-code-config:/home/node/.claude
+
+    # Keep container running (required for devcontainers)
+    command: sleep infinity
+
+    # Run container as 'node' user (matches Dockerfile USER directive)
+    user: node
+
+# Named volumes declaration
+volumes:
+  claude-code-bashhistory:
+  claude-code-config:

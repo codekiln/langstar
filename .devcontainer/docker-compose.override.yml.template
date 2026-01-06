@@ -1,8 +1,15 @@
 # Docker Compose Override Template
 #
+# NOTE: For most use cases, dedicated configs are now available:
+# - JetBrains (RustRover, IntelliJ): Use .devcontainer/jetbrains/ instead
+# - GitHub Codespaces: Use .devcontainer/codespaces/ instead
+#
+# This override file is DEPRECATED for JetBrains users. The dedicated JetBrains
+# config provides a proper hybrid mount setup that resolves gRPC FUSE issues.
+#
 # This file is for LOCAL DEVELOPMENT ONLY and should NOT be committed to git.
 #
-# SETUP INSTRUCTIONS:
+# SETUP INSTRUCTIONS (if you still need custom overrides):
 #
 # 1. Copy this file to create your local override:
 #    cp docker-compose.override.yml.template docker-compose.override.yml
@@ -141,31 +148,26 @@ services:
     #   - ~/my-local-data:/data
 
     # ============================================================================
-    # OPTIONAL: Named volume for JetBrains IDEs (RustRover, IntelliJ)
+    # JETBRAINS USERS: Use the dedicated config instead!
     # ============================================================================
     #
-    # If you're using JetBrains IDEs and see "External file changes sync might be
-    # slow" warning, you can switch to a named Docker volume for proper inotify
-    # support. This eliminates gRPC FUSE and provides native file watching.
+    # For JetBrains IDEs (RustRover, IntelliJ), use the dedicated configuration
+    # at .devcontainer/jetbrains/ which provides:
+    # - Named volume for workspace (native inotify support)
+    # - Bind mount for .devcontainer (access to local .env file)
+    # - Proper hybrid mount setup
     #
-    # TRADE-OFFS:
-    # + Proper inotify support - no more file watching warnings
-    # + Better I/O performance for large projects
-    # - Code lives inside container volume, not on host
-    # - Must clone repo into container after first setup
-    # - Can't edit files with host-based editors outside container
+    # See .devcontainer/README.md for setup instructions.
     #
-    # TO ENABLE NAMED VOLUME FOR JETBRAINS:
-    # 1. Uncomment the volumes section below
-    # 2. Rebuild container: Dev Containers: Rebuild Container
-    # 3. Clone repo inside container: cd /workspace && git clone <repo-url> .
+    # The manual override approach below is DEPRECATED and may not work properly
+    # with JetBrains Gateway due to how it handles docker-compose.override.yml.
+    #
+    # ============================================================================
+    # LEGACY: Named volume for JetBrains IDEs (DEPRECATED)
+    # ============================================================================
     #
     # volumes:
     #   - langstar-workspace:/workspace
-    #
-    # Also add to the top-level volumes section:
-    # volumes:
-    #   langstar-workspace:
 
     # Example: Override specific environment variables for debugging
     # environment:
