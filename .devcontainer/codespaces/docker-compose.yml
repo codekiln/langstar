@@ -85,7 +85,7 @@ services:
     # https://docs.docker.com/compose/compose-file/compose-file-v3/#volumes
     volumes:
       # Bind mount workspace (Codespaces manages this in cloud)
-      - ..:/workspace:cached
+      - ../..:/workspace:cached
 
       # Named volumes for persistent data across container rebuilds
       - claude-code-bashhistory:/commandhistory
