@@ -126,6 +126,18 @@ pub enum PromptCommands {
         #[arg(long, default_value = "json_schema")]
         schema_method: String,
 
+        /// Parent commit hash for updates (resolves 409 conflicts)
+        #[arg(long, value_name = "HASH", conflicts_with = "auto_parent")]
+        parent_commit: Option<String>,
+
+        /// Automatically fetch and use latest commit as parent
+        #[arg(long, conflicts_with = "parent_commit")]
+        auto_parent: bool,
+
+        /// Force push without parent commit validation (use with caution)
+        #[arg(long)]
+        force: bool,
+
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
@@ -588,6 +600,9 @@ impl PromptCommands {
                 template_format,
                 schema,
                 schema_method,
+                parent_commit,
+                auto_parent,
+                force,
                 organization_id,
                 workspace_id,
             } => {
@@ -619,9 +634,10 @@ impl PromptCommands {
                 let repo_handle = format!("{}/{}", owner, repo);
                 formatter.info(&format!("Checking if repository {} exists...", repo_handle));
 
-                match client.prompts().get(&repo_handle).await {
+                let repo_exists = match client.prompts().get(&repo_handle).await {
                     Ok(_) => {
                         println!("✓ Repository exists");
+                        true
                     }
                     Err(_) => {
                         formatter.info(&format!(
@@ -641,14 +657,46 @@ impl PromptCommands {
                         {
                             Ok(_) => {
                                 println!("✓ Repository created successfully");
+                                false // New repo, no commits yet
                             }
                             Err(e) => {
                                 eprintln!("⚠ Warning: Could not create repository: {}", e);
                                 eprintln!("  Will attempt to push anyway...");
+                                true // Assume it exists and proceed
                             }
                         }
                     }
-                }
+                };
+
+                // Determine parent commit for the push
+                let final_parent_commit = if *force {
+                    eprintln!("⚠ Warning: Using --force flag");
+                    eprintln!("  This will push without parent commit validation");
+                    eprintln!("  May overwrite concurrent changes to the prompt");
+                    None
+                } else if *auto_parent {
+                    if repo_exists {
+                        formatter.info("Fetching latest commit as parent...");
+                        match client.prompts().get_commit(owner, repo, "latest").await {
+                            Ok(commit_info) => {
+                                println!("✓ Latest commit: {}", commit_info.commit_hash);
+                                Some(commit_info.commit_hash)
+                            }
+                            Err(e) => {
+                                eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
+                                eprintln!(
+                                    "  Proceeding without parent commit (assuming first commit)"
+                                );
+                                None
+                            }
+                        }
+                    } else {
+                        formatter.info("New repository, no parent commit needed");
+                        None
+                    }
+                } else {
+                    parent_commit.clone()
+                };
 
                 // Parse input variables
                 let vars: Vec<String> = if let Some(vars_str) = input_variables {
@@ -727,7 +775,12 @@ impl PromptCommands {
                     // Push structured prompt
                     client
                         .prompts()
-                        .push_structured_prompt(owner, repo, structured_prompt, None)
+                        .push_structured_prompt(
+                            owner,
+                            repo,
+                            structured_prompt,
+                            final_parent_commit.clone(),
+                        )
                         .await
                         .map_err(crate::error::CliError::Sdk)?
                 } else {
@@ -741,7 +794,7 @@ impl PromptCommands {
                             "input_variables": vars,
                             "template_format": template_format
                         }),
-                        parent_commit: None,
+                        parent_commit: final_parent_commit,
                         example_run_ids: None,
                     };
 

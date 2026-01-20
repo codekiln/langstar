@@ -203,6 +203,7 @@ async fn test_pull_structured_prompt_success() {
     });
 
     let mock_response = json!({
+        "commit_hash": "abc123def456",
         "manifest": {
             "lc": 1,
             "type": "constructor",
@@ -343,6 +344,7 @@ async fn test_structured_prompt_round_trip_mock() {
     // Step 2: Mock pull (simulate API returning what we just pushed)
     let wrapped_prompt = original_prompt.to_lc_json();
     let pull_response = json!({
+        "commit_hash": commit_hash.clone(),
         "manifest": serde_json::to_value(&wrapped_prompt).unwrap()
     });
 
