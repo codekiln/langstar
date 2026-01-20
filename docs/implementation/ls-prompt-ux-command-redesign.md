@@ -134,13 +134,13 @@ Commands:
 
 ## Success Criteria
 
-- [x] Every primary workflow has clear, unambiguous command
-- [x] Claude can reliably choose correct command from `--help`
-- [x] Prompt engineering workflow (get → edit → push) is easy
-- [x] Structured prompt schemas visible
-- [x] No overlapping/confusing command names
-- [x] Clear migration path for breaking changes
-- [x] Help text self-explanatory
+- [ ] Every primary workflow has clear, unambiguous command
+- [ ] Claude can reliably choose correct command from `--help`
+- [ ] Prompt engineering workflow (get → edit → push) is easy
+- [ ] Structured prompt schemas visible
+- [ ] No overlapping/confusing command names
+- [ ] Clear migration path for breaking changes
+- [ ] Help text self-explanatory
 
 ---
 
