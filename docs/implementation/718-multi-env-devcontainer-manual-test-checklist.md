@@ -13,10 +13,10 @@ This PR adds three separate devcontainer configurations optimized for different 
 
 ## Pre-Testing Setup
 
-- [ ] Ensure Docker Desktop is running (for local tests)
-- [ ] Have GitHub Codespaces access configured (for Codespaces tests)
-- [ ] Have JetBrains Gateway installed (for JetBrains tests)
-- [ ] Have test credentials ready (API keys, PATs, etc.)
+- [x] Ensure Docker Desktop is running (for local tests)
+- [x] Have GitHub Codespaces access configured (for Codespaces tests)
+- [x] Have JetBrains Gateway installed (for JetBrains tests)
+- [x] Have test credentials ready (API keys, PATs, etc.)
 
 ---
 
@@ -24,21 +24,21 @@ This PR adds three separate devcontainer configurations optimized for different 
 
 ### 1.1 Initial Setup from Scratch
 
-- [ ] **Clone fresh repository**
+- [x] **Clone fresh repository**
   ```bash
   git clone https://github.com/codekiln/langstar.git test-langstar-vscode
   cd test-langstar-vscode
   git checkout i718-multi-env-devcontainer
   ```
 
-- [ ] **Create `.env` file**
+- [x] **Create `.env` file**
   ```bash
   cd .devcontainer
   cp .env.default .env
   # Edit .env with real credentials
   ```
 
-- [ ] **Verify `.env` has actual values** (not placeholders)
+- [x] **Verify `.env` has actual values** (not placeholders)
   - `GITHUB_PAT` starts with `ghp_`
   - `LANGSMITH_API_KEY` starts with `lsv2_`
   - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are populated
@@ -259,7 +259,8 @@ This PR adds three separate devcontainer configurations optimized for different 
 
 ### 3.1 Prerequisites Setup
 
-- [ ] **Prepare local checkout with `.env`**
+NOTE - when I tested, I didn't do a separate checkout; I reused the existing one. 
+- [x] **Prepare local checkout with `.env`**
   ```bash
   git clone https://github.com/codekiln/langstar.git test-langstar-jetbrains
   cd test-langstar-jetbrains
@@ -269,14 +270,14 @@ This PR adds three separate devcontainer configurations optimized for different 
   # Edit .env with real credentials
   ```
 
-- [ ] **Verify SSH agent is running**
+- [x] **Verify SSH agent is running**
   ```bash
   ssh-add -l  # Should list keys or show "The agent has no identities"
   ```
 
 ### 3.2 JetBrains Gateway Setup
 
-- [ ] **Open JetBrains Gateway**
+- [x] **Open JetBrains Gateway**
   - Select "Remote Development" → "Dev Containers"
 
 - [ ] **Clone repository through Gateway**
