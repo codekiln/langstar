@@ -108,6 +108,7 @@ async fn test_assistant_lifecycle() {
     let create_request = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: test_name.clone(),
+        description: None,
         config: Some(json!({"configurable": {"test": true}})),
         metadata: Some(json!({"purpose": "integration_test"})),
     };
@@ -155,6 +156,7 @@ async fn test_assistant_lifecycle() {
 
     let update_request = UpdateAssistantRequest {
         name: Some(updated_name.clone()),
+        description: None,
         config: Some(json!({"configurable": {"test": true, "updated": true}})),
         metadata: Some(json!({"purpose": "integration_test", "updated": true})),
     };
@@ -249,6 +251,7 @@ async fn test_assistant_search() {
     let create_request1 = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: assistant1_name.clone(),
+        description: None,
         config: None,
         metadata: Some(json!({"test": "search"})),
     };
@@ -262,6 +265,7 @@ async fn test_assistant_search() {
     let create_request2 = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: assistant2_name.clone(),
+        description: None,
         config: None,
         metadata: Some(json!({"test": "search"})),
     };
@@ -407,6 +411,7 @@ async fn test_list_assistants() {
     let create_request = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: test_name.clone(),
+        description: None,
         config: None,
         metadata: None,
     };
@@ -519,6 +524,7 @@ async fn test_error_handling() {
 
     let update_request = UpdateAssistantRequest {
         name: Some("updated-name".to_string()),
+        description: None,
         config: None,
         metadata: None,
     };
