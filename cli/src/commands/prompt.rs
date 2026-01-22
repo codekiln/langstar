@@ -135,7 +135,7 @@ pub enum PromptCommands {
         auto_parent: bool,
 
         /// Force push without parent commit validation (use with caution)
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["parent_commit", "auto_parent"])]
         force: bool,
 
         /// Organization ID for scoping (overrides config/env)
@@ -661,8 +661,10 @@ impl PromptCommands {
                             }
                             Err(e) => {
                                 eprintln!("⚠ Warning: Could not create repository: {}", e);
-                                eprintln!("  Will attempt to push anyway...");
-                                true // Assume it exists and proceed
+                                eprintln!(
+                                    "  Will attempt to push anyway, but auto-parent will be disabled..."
+                                );
+                                false // Repository creation failed; treat as non-existent for auto-parent
                             }
                         }
                     }
