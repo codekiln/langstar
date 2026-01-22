@@ -8,7 +8,13 @@ use serde_json::json;
 use tabled::Tabled;
 
 /// Available columns for assistant list text output
-const ASSISTANT_COLUMNS: &[&str] = &["assistant_id", "name", "graph_id", "created_at"];
+const ASSISTANT_COLUMNS: &[&str] = &[
+    "assistant_id",
+    "name",
+    "graph_id",
+    "description",
+    "created_at",
+];
 
 /// Commands for interacting with LangGraph Assistants
 #[derive(Debug, Subcommand)]
@@ -28,7 +34,7 @@ pub enum AssistantCommands {
         offset: u32,
 
         /// Select specific columns for text output (comma-separated)
-        /// Available: assistant_id, name, graph_id, created_at
+        /// Available: assistant_id, name, graph_id, description, created_at
         #[arg(long, value_delimiter = ',')]
         columns: Option<Vec<String>>,
 
@@ -75,6 +81,10 @@ pub enum AssistantCommands {
         #[arg(short, long)]
         name: String,
 
+        /// Description for the assistant
+        #[arg(short, long)]
+        description: Option<String>,
+
         /// Configuration JSON file path
         #[arg(long)]
         config_file: Option<String>,
@@ -96,6 +106,10 @@ pub enum AssistantCommands {
         /// Updated name
         #[arg(short, long)]
         name: Option<String>,
+
+        /// Updated description
+        #[arg(short, long)]
+        description: Option<String>,
 
         /// Configuration JSON file path
         #[arg(long)]
@@ -175,6 +189,11 @@ impl ColumnMetadata for Assistant {
                 "assistant_id" => self.assistant_id.clone(),
                 "name" => self.name.replace(['\t', '\n'], " "),
                 "graph_id" => self.graph_id.clone(),
+                "description" => self
+                    .description
+                    .clone()
+                    .unwrap_or_default()
+                    .replace(['\t', '\n'], " "),
                 "created_at" => self
                     .created_at
                     .clone()
@@ -326,6 +345,9 @@ impl AssistantCommands {
                     eprintln!("  ID: {}", assistant.assistant_id);
                     eprintln!("  Name: {}", assistant.name);
                     eprintln!("  Graph ID: {}", assistant.graph_id);
+                    if let Some(description) = &assistant.description {
+                        eprintln!("  Description: {}", description);
+                    }
                     if let Some(created) = &assistant.created_at {
                         eprintln!("  Created: {}", created);
                     }
@@ -347,6 +369,7 @@ impl AssistantCommands {
                 deployment: _,
                 graph_id,
                 name,
+                description,
                 config_file,
                 config,
             } => {
@@ -365,6 +388,7 @@ impl AssistantCommands {
                 let request = CreateAssistantRequest {
                     graph_id: graph_id.clone(),
                     name: name.clone(),
+                    description: description.clone(),
                     config: config_value,
                     metadata: None,
                 };
@@ -386,6 +410,7 @@ impl AssistantCommands {
                 deployment: _,
                 assistant_id,
                 name,
+                description,
                 config_file,
                 config,
             } => {
@@ -403,6 +428,7 @@ impl AssistantCommands {
 
                 let request = UpdateAssistantRequest {
                     name: name.clone(),
+                    description: description.clone(),
                     config: config_value,
                     metadata: None,
                 };
@@ -470,6 +496,7 @@ mod tests {
             assistant_id: "very-long-assistant-id-that-should-be-truncated".to_string(),
             graph_id: "graph-123".to_string(),
             name: "Test Assistant".to_string(),
+            description: None,
             config: None,
             metadata: None,
             created_at: Some("2024-01-01T00:00:00Z".to_string()),

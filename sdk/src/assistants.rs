@@ -77,6 +77,9 @@ pub struct Assistant {
     pub graph_id: String,
     /// Name of the assistant
     pub name: String,
+    /// Description of the assistant
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Configuration for the assistant
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
@@ -98,6 +101,9 @@ pub struct CreateAssistantRequest {
     pub graph_id: String,
     /// Name for the assistant
     pub name: String,
+    /// Optional description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Optional configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
@@ -112,6 +118,9 @@ pub struct UpdateAssistantRequest {
     /// Updated name
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Updated description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Updated configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
@@ -282,6 +291,7 @@ mod tests {
             assistant_id: "test-id".to_string(),
             graph_id: "graph-123".to_string(),
             name: "Test Assistant".to_string(),
+            description: Some("Test description".to_string()),
             config: Some(serde_json::json!({"key": "value"})),
             metadata: None,
             created_at: Some("2024-01-01T00:00:00Z".to_string()),
@@ -298,6 +308,7 @@ mod tests {
         let request = CreateAssistantRequest {
             graph_id: "graph-123".to_string(),
             name: "My Assistant".to_string(),
+            description: Some("My description".to_string()),
             config: Some(serde_json::json!({"temperature": 0.7})),
             metadata: None,
         };

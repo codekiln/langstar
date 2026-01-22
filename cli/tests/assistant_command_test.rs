@@ -146,6 +146,236 @@ fn test_assistant_create_basic() {
 
 #[test]
 #[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_assistant_description_field() {
+    println!("==================================================");
+    println!("Test: Assistant Description Field (CLI)");
+    println!("==================================================\n");
+
+    let (deployment_name, _graph_name) = get_test_deployment();
+    let assistant_name = generate_test_name("cli-test-assistant-desc");
+
+    // Step 1: Create assistant WITH description
+    println!("1. CREATE assistant with --description flag");
+    println!("   Name: {}", assistant_name);
+    let test_description = "This is a test description via CLI";
+    println!("   Description: {}", test_description);
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "assistant",
+        "create",
+        "--deployment",
+        &deployment_name,
+        "--graph-id",
+        "test_graph",
+        "--name",
+        &assistant_name,
+        "--description",
+        test_description,
+        "--format",
+        "json",
+    ]);
+
+    let output = cmd.output().expect("Failed to execute command");
+
+    println!("Exit status: {}", output.status);
+    println!("Stdout:\n{}", String::from_utf8_lossy(&output.stdout));
+    if !output.stderr.is_empty() {
+        println!("Stderr:\n{}", String::from_utf8_lossy(&output.stderr));
+    }
+
+    assert!(
+        output.status.success(),
+        "Assistant create with description should succeed"
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    // Extract JSON from output (skip info messages)
+    let json_start = stdout
+        .find('{')
+        .expect("Should contain JSON object in output");
+    let json_str = &stdout[json_start..];
+
+    let json: serde_json::Value = serde_json::from_str(json_str).expect("Should return valid JSON");
+    let assistant_id = json["assistant_id"]
+        .as_str()
+        .expect("Should have assistant_id field");
+
+    // Verify description is in create response
+    assert!(
+        json.get("description").is_some(),
+        "Create response should include description field"
+    );
+    assert_eq!(
+        json["description"].as_str().unwrap_or(""),
+        test_description,
+        "Description in create response should match input"
+    );
+
+    println!("✓ CLI successfully created assistant with description");
+    println!("  Assistant ID: {}", assistant_id);
+    println!(
+        "  Description: {}",
+        json["description"].as_str().unwrap_or("")
+    );
+
+    // Step 2: GET assistant and verify description appears
+    println!("\n2. GET assistant and verify description");
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "assistant",
+        "get",
+        assistant_id,
+        "--deployment",
+        &deployment_name,
+        "--format",
+        "json",
+    ]);
+
+    let output = cmd.output().expect("Failed to get assistant");
+    assert!(output.status.success(), "Get should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json_start = stdout.find('{').expect("Should contain JSON");
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout[json_start..]).expect("Should return valid JSON");
+
+    assert_eq!(
+        json["assistant_id"].as_str().unwrap(),
+        assistant_id,
+        "Should return same assistant"
+    );
+
+    // Verify description field is present and correct
+    assert!(
+        json.get("description").is_some(),
+        "Get response should include description field"
+    );
+    assert_eq!(
+        json["description"].as_str().unwrap_or(""),
+        test_description,
+        "Description should match what was set"
+    );
+
+    println!("✓ GET shows correct description");
+    println!(
+        "  Description: {}",
+        json["description"].as_str().unwrap_or("")
+    );
+
+    // Step 3: UPDATE description
+    println!("\n3. UPDATE assistant description");
+    let updated_description = "Updated description via CLI";
+    println!("   New description: {}", updated_description);
+
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "assistant",
+        "update",
+        assistant_id,
+        "--deployment",
+        &deployment_name,
+        "--description",
+        updated_description,
+        "--format",
+        "json",
+    ]);
+
+    let output = cmd.output().expect("Failed to update assistant");
+    assert!(output.status.success(), "Update should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json_start = stdout.find('{').expect("Should contain JSON");
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout[json_start..]).expect("Should return valid JSON");
+
+    // Verify updated description
+    assert!(
+        json.get("description").is_some(),
+        "Update response should include description"
+    );
+    assert_eq!(
+        json["description"].as_str().unwrap_or(""),
+        updated_description,
+        "Description should be updated"
+    );
+
+    println!("✓ UPDATE successfully changed description");
+    println!(
+        "  New description: {}",
+        json["description"].as_str().unwrap_or("")
+    );
+
+    // Step 4: Verify update persisted with another GET
+    println!("\n4. VERIFY description update persisted");
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "assistant",
+        "get",
+        assistant_id,
+        "--deployment",
+        &deployment_name,
+        "--format",
+        "json",
+    ]);
+
+    let output = cmd.output().expect("Failed to get assistant after update");
+    assert!(output.status.success(), "Get after update should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let json_start = stdout.find('{').expect("Should contain JSON");
+    let json: serde_json::Value =
+        serde_json::from_str(&stdout[json_start..]).expect("Should return valid JSON");
+
+    assert_eq!(
+        json["description"].as_str().unwrap_or(""),
+        updated_description,
+        "Updated description should persist"
+    );
+
+    println!("✓ Updated description persisted correctly");
+
+    // Step 5: Test GET output (non-JSON) includes description
+    println!("\n5. VERIFY description appears in text output");
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "assistant",
+        "get",
+        assistant_id,
+        "--deployment",
+        &deployment_name,
+    ]);
+
+    let output = cmd.output().expect("Failed to get assistant (text format)");
+    assert!(output.status.success(), "Get (text) should succeed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    println!("Text stdout:\n{}", stdout);
+    println!("Text stderr:\n{}", stderr);
+
+    // Description appears in stderr as part of "Assistant Details" section
+    // (CLI uses eprintln! for detailed output)
+    assert!(
+        stderr.contains("Description:") && stderr.contains(updated_description),
+        "Description should appear in text output (stderr)"
+    );
+
+    println!("✓ Description appears in text format output");
+
+    println!("\n==================================================");
+    println!("✓ All CLI description field tests passed!");
+    println!(
+        "  Note: Assistant '{}' created (cleanup needed)",
+        assistant_name
+    );
+    println!("==================================================\n");
+}
+
+#[test]
+#[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
 #[ignore] // Blocked by #131 - Delete command has clap flag conflict
 fn test_assistant_lifecycle() {
     println!("==================================================");

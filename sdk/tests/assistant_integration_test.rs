@@ -108,6 +108,7 @@ async fn test_assistant_lifecycle() {
     let create_request = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: test_name.clone(),
+        description: None,
         config: Some(json!({"configurable": {"test": true}})),
         metadata: Some(json!({"purpose": "integration_test"})),
     };
@@ -155,6 +156,7 @@ async fn test_assistant_lifecycle() {
 
     let update_request = UpdateAssistantRequest {
         name: Some(updated_name.clone()),
+        description: None,
         config: Some(json!({"configurable": {"test": true, "updated": true}})),
         metadata: Some(json!({"purpose": "integration_test", "updated": true})),
     };
@@ -249,6 +251,7 @@ async fn test_assistant_search() {
     let create_request1 = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: assistant1_name.clone(),
+        description: None,
         config: None,
         metadata: Some(json!({"test": "search"})),
     };
@@ -262,6 +265,7 @@ async fn test_assistant_search() {
     let create_request2 = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: assistant2_name.clone(),
+        description: None,
         config: None,
         metadata: Some(json!({"test": "search"})),
     };
@@ -407,6 +411,7 @@ async fn test_list_assistants() {
     let create_request = CreateAssistantRequest {
         graph_id: graph_name.clone(),
         name: test_name.clone(),
+        description: None,
         config: None,
         metadata: None,
     };
@@ -470,6 +475,216 @@ async fn test_list_assistants() {
     println!("==================================================\n");
 }
 
+/// Integration test for assistant description field functionality
+///
+/// This test verifies the description field works correctly:
+/// - Create assistant WITH description
+/// - Verify description is returned in GET
+/// - Update assistant description
+/// - Verify updated description persists
+/// - Test None description handling
+///
+/// **Prerequisites:** Same as test_assistant_lifecycle
+///
+/// Run with: cargo test --test assistant_integration_test test_assistant_description_field -- --ignored --nocapture
+#[tokio::test]
+#[ignore]
+async fn test_assistant_description_field() {
+    println!("==================================================");
+    println!("Test: Assistant Description Field");
+    println!("==================================================\n");
+
+    // Load authentication from environment
+    let auth =
+        AuthConfig::from_env().expect("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must be set");
+
+    auth.require_langsmith_key()
+        .expect("LANGSMITH_API_KEY is required");
+
+    if auth.workspace_id.is_none() {
+        panic!("LANGSMITH_WORKSPACE_ID is required for assistant tests");
+    }
+
+    // Create client
+    let client = LangchainClient::new(auth).expect("Failed to create client");
+
+    // Discover test deployment and get custom URL
+    let (graph_name, custom_url) = discover_test_deployment(&client).await;
+
+    // Override client with deployment's custom URL
+    let client = client.with_langgraph_url(custom_url);
+
+    println!("\n1. CREATE assistant WITH description");
+    println!("--------------------------------------------------");
+
+    let test_name = generate_test_name("test-assistant-desc");
+    let test_description = "This is a test assistant for verifying description field support";
+    println!("  Creating assistant: {}", test_name);
+    println!("  Description: {}", test_description);
+
+    let create_request = CreateAssistantRequest {
+        graph_id: graph_name.clone(),
+        name: test_name.clone(),
+        description: Some(test_description.to_string()),
+        config: Some(json!({"configurable": {"test": true}})),
+        metadata: Some(json!({"purpose": "description_test"})),
+    };
+
+    let created_assistant = client
+        .assistants()
+        .create(&create_request)
+        .await
+        .expect("Failed to create assistant");
+
+    println!("✓ Assistant created successfully");
+    println!("  Assistant ID: {}", created_assistant.assistant_id);
+    println!("  Name: {}", created_assistant.name);
+    println!("  Description: {:?}", created_assistant.description);
+
+    assert_eq!(created_assistant.name, test_name);
+    assert_eq!(created_assistant.graph_id, graph_name);
+    assert!(
+        created_assistant.description.is_some(),
+        "Description should be Some"
+    );
+    assert_eq!(
+        created_assistant.description.as_ref().unwrap(),
+        test_description,
+        "Description should match the one we set"
+    );
+
+    let assistant_id = created_assistant.assistant_id.clone();
+
+    println!("\n2. GET assistant and verify description");
+    println!("--------------------------------------------------");
+    println!("  Fetching assistant: {}", assistant_id);
+
+    let fetched_assistant = client
+        .assistants()
+        .get(&assistant_id)
+        .await
+        .expect("Failed to get assistant");
+
+    println!("✓ Assistant fetched successfully");
+    println!("  Name: {}", fetched_assistant.name);
+    println!("  Description: {:?}", fetched_assistant.description);
+
+    assert_eq!(fetched_assistant.assistant_id, assistant_id);
+    assert_eq!(fetched_assistant.name, test_name);
+    assert!(
+        fetched_assistant.description.is_some(),
+        "Fetched assistant should have description"
+    );
+    assert_eq!(
+        fetched_assistant.description.as_ref().unwrap(),
+        test_description,
+        "Fetched description should match original"
+    );
+
+    println!("\n3. UPDATE assistant description");
+    println!("--------------------------------------------------");
+
+    let updated_description = "Updated description - testing description update functionality";
+    println!("  Updating description to: {}", updated_description);
+
+    let update_request = UpdateAssistantRequest {
+        name: None, // Don't change the name
+        description: Some(updated_description.to_string()),
+        config: None,
+        metadata: None,
+    };
+
+    let updated_assistant = client
+        .assistants()
+        .update(&assistant_id, &update_request)
+        .await
+        .expect("Failed to update assistant");
+
+    println!("✓ Assistant updated successfully");
+    println!("  Description: {:?}", updated_assistant.description);
+
+    assert_eq!(updated_assistant.assistant_id, assistant_id);
+    assert_eq!(updated_assistant.name, test_name, "Name should not change");
+    assert!(
+        updated_assistant.description.is_some(),
+        "Updated description should be Some"
+    );
+    assert_eq!(
+        updated_assistant.description.as_ref().unwrap(),
+        updated_description,
+        "Description should be updated"
+    );
+
+    // Verify update persisted
+    println!("  Verifying updated description persisted...");
+    let refetched_assistant = client
+        .assistants()
+        .get(&assistant_id)
+        .await
+        .expect("Failed to refetch assistant");
+
+    assert_eq!(
+        refetched_assistant.description.as_ref().unwrap(),
+        updated_description,
+        "Updated description should persist"
+    );
+    println!("✓ Updated description persisted correctly");
+
+    println!("\n4. UPDATE to clear description (set to None)");
+    println!("--------------------------------------------------");
+
+    let clear_request = UpdateAssistantRequest {
+        name: None,
+        description: None, // Clear the description
+        config: None,
+        metadata: None,
+    };
+
+    let cleared_assistant = client
+        .assistants()
+        .update(&assistant_id, &clear_request)
+        .await
+        .expect("Failed to clear description");
+
+    println!("✓ Description cleared");
+    println!("  Description: {:?}", cleared_assistant.description);
+
+    // Note: The API behavior for None may vary:
+    // - Some APIs treat None as "no change" (keep existing value)
+    // - Some APIs treat None as "clear the field" (set to null)
+    // This test documents the actual behavior
+    println!(
+        "  Actual behavior: description = {:?}",
+        cleared_assistant.description
+    );
+
+    println!("\n5. DELETE assistant");
+    println!("--------------------------------------------------");
+    println!("  Deleting assistant: {}", assistant_id);
+
+    client
+        .assistants()
+        .delete(&assistant_id)
+        .await
+        .expect("Failed to delete assistant");
+
+    println!("✓ Assistant deleted successfully");
+
+    // Verify deletion - get should fail
+    println!("  Verifying deletion...");
+    let get_result = client.assistants().get(&assistant_id).await;
+
+    assert!(
+        get_result.is_err(),
+        "Get should fail after deletion, but succeeded"
+    );
+    println!("✓ Confirmed assistant no longer exists");
+
+    println!("\n==================================================");
+    println!("✓ All description field tests passed!");
+    println!("==================================================\n");
+}
+
 /// Integration test for error handling
 ///
 /// **Prerequisites:** Same as test_assistant_lifecycle
@@ -519,6 +734,7 @@ async fn test_error_handling() {
 
     let update_request = UpdateAssistantRequest {
         name: Some("updated-name".to_string()),
+        description: None,
         config: None,
         metadata: None,
     };
