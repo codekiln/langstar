@@ -126,18 +126,6 @@ pub enum PromptCommands {
         #[arg(long, default_value = "json_schema")]
         schema_method: String,
 
-        /// Parent commit hash for updates (resolves 409 conflicts)
-        #[arg(long, value_name = "HASH", conflicts_with = "auto_parent")]
-        parent_commit: Option<String>,
-
-        /// Automatically fetch and use latest commit as parent
-        #[arg(long, conflicts_with = "parent_commit")]
-        auto_parent: bool,
-
-        /// Force push without parent commit validation (use with caution)
-        #[arg(long, conflicts_with_all = ["parent_commit", "auto_parent"])]
-        force: bool,
-
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
@@ -600,9 +588,6 @@ impl PromptCommands {
                 template_format,
                 schema,
                 schema_method,
-                parent_commit,
-                auto_parent,
-                force,
                 organization_id,
                 workspace_id,
             } => {
@@ -671,33 +656,23 @@ impl PromptCommands {
                 };
 
                 // Determine parent commit for the push
-                let final_parent_commit = if *force {
-                    eprintln!("⚠ Warning: Using --force flag");
-                    eprintln!("  This will push without parent commit validation");
-                    eprintln!("  May overwrite concurrent changes to the prompt");
-                    None
-                } else if *auto_parent {
-                    if repo_exists {
-                        formatter.info("Fetching latest commit as parent...");
-                        match client.prompts().get_commit(owner, repo, "latest").await {
-                            Ok(commit_info) => {
-                                println!("✓ Latest commit: {}", commit_info.commit_hash);
-                                Some(commit_info.commit_hash)
-                            }
-                            Err(e) => {
-                                eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
-                                eprintln!(
-                                    "  Proceeding without parent commit (assuming first commit)"
-                                );
-                                None
-                            }
+                // Automatically fetch latest commit as parent if repo exists
+                let final_parent_commit = if repo_exists {
+                    formatter.info("Fetching latest commit as parent...");
+                    match client.prompts().get_commit(owner, repo, "latest").await {
+                        Ok(commit_info) => {
+                            println!("✓ Latest commit: {}", commit_info.commit_hash);
+                            Some(commit_info.commit_hash)
                         }
-                    } else {
-                        formatter.info("New repository, no parent commit needed");
-                        None
+                        Err(e) => {
+                            eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
+                            eprintln!("  Proceeding without parent commit (assuming first commit)");
+                            None
+                        }
                     }
                 } else {
-                    parent_commit.clone()
+                    formatter.info("New repository, no parent commit needed");
+                    None
                 };
 
                 // Parse input variables
