@@ -49,3 +49,25 @@ When working on complex tasks:
   1. Proceed with a summarized version within the limit
   2. Break the task into multiple smaller requests
   3. Temporarily increase the limit for this specific task
+
+## Background Task Management
+
+**CRITICAL: Never use `tail -f` to monitor background tasks** - it runs indefinitely and leaves processes running.
+
+**Correct approach for monitoring background tasks:**
+
+```bash
+# ❌ WRONG - leaves tail -f running forever
+cargo nextest run --workspace &
+tail -f /tmp/output.log
+
+# ✅ CORRECT - use TaskOutput with block=true
+cargo nextest run --workspace  # This runs in background automatically
+# Then use TaskOutput tool with block=true to wait for completion
+```
+
+**Rules:**
+- Use `TaskOutput` tool with `block=true` to wait for background command completion
+- NEVER use `tail -f` - it runs until manually killed
+- If you accidentally start `tail -f`, immediately use `KillShell` to stop it
+- Background tasks from Bash tool are automatically monitored - don't add extra monitoring
