@@ -808,7 +808,7 @@ pub struct CommitManifestResponse {
     pub commit_hash: String,
     /// The commit manifest (prompt template/schema)
     pub manifest: serde_json::Value,
-    /// Optional example run IDs
+    /// Optional example run records (serialized RepoExampleResponse objects)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub examples: Option<Vec<serde_json::Value>>,
 }
