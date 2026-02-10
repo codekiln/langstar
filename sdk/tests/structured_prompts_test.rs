@@ -203,6 +203,7 @@ async fn test_pull_structured_prompt_success() {
     });
 
     let mock_response = json!({
+        "commit_hash": "abc123def456",
         "manifest": {
             "lc": 1,
             "type": "constructor",
@@ -270,11 +271,72 @@ async fn test_pull_structured_prompt_success() {
 }
 
 #[tokio::test]
+async fn test_get_commit_success() {
+    let mut server = Server::new_async().await;
+
+    // Create a mock response with commit_hash and manifest
+    let schema = json!({
+        "type": "object",
+        "properties": {
+            "answer": {"type": "string"}
+        },
+        "required": ["answer"]
+    });
+
+    let mock_response = json!({
+        "commit_hash": "test-commit-hash-123",
+        "manifest": {
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+            "kwargs": {
+                "input_variables": ["question"],
+                "messages": [],
+                "schema_": schema,
+                "structured_output_kwargs": {
+                    "method": "json_schema"
+                }
+            }
+        }
+    });
+
+    let mock = server
+        .mock("GET", "/api/v1/commits/test-owner/test-repo/abc123")
+        .match_header("x-api-key", "test-api-key")
+        .match_header("x-organization-id", "test-org-id")
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(mock_response.to_string())
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server);
+
+    let result = client
+        .prompts()
+        .get_commit("test-owner", "test-repo", "abc123")
+        .await;
+
+    mock.assert_async().await;
+    assert!(result.is_ok());
+
+    let commit_response = result.unwrap();
+    assert_eq!(commit_response.commit_hash, "test-commit-hash-123");
+    assert!(commit_response.manifest.is_object());
+    assert_eq!(
+        commit_response.manifest["kwargs"]["structured_output_kwargs"]["method"],
+        "json_schema"
+    );
+}
+
+#[tokio::test]
 async fn test_pull_structured_prompt_deserialization_error() {
     let mut server = Server::new_async().await;
 
-    // Mock API returns invalid JSON structure (missing required fields)
+    // Mock API returns invalid JSON structure (missing required manifest fields)
+    // commit_hash is valid, but manifest is malformed to test deserialization error
     let invalid_response = json!({
+        "commit_hash": "test-commit-hash-456",
         "manifest": {
             "lc": 1,
             "type": "constructor",
@@ -343,6 +405,7 @@ async fn test_structured_prompt_round_trip_mock() {
     // Step 2: Mock pull (simulate API returning what we just pushed)
     let wrapped_prompt = original_prompt.to_lc_json();
     let pull_response = json!({
+        "commit_hash": commit_hash.clone(),
         "manifest": serde_json::to_value(&wrapped_prompt).unwrap()
     });
 

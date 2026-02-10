@@ -619,9 +619,10 @@ impl PromptCommands {
                 let repo_handle = format!("{}/{}", owner, repo);
                 formatter.info(&format!("Checking if repository {} exists...", repo_handle));
 
-                match client.prompts().get(&repo_handle).await {
+                let repo_exists = match client.prompts().get(&repo_handle).await {
                     Ok(_) => {
                         println!("✓ Repository exists");
+                        true
                     }
                     Err(_) => {
                         formatter.info(&format!(
@@ -641,14 +642,38 @@ impl PromptCommands {
                         {
                             Ok(_) => {
                                 println!("✓ Repository created successfully");
+                                false // New repo, no commits yet
                             }
                             Err(e) => {
                                 eprintln!("⚠ Warning: Could not create repository: {}", e);
-                                eprintln!("  Will attempt to push anyway...");
+                                eprintln!(
+                                    "  Will attempt to push anyway, but auto-parent will be disabled..."
+                                );
+                                false // Repository creation failed; treat as non-existent for auto-parent
                             }
                         }
                     }
-                }
+                };
+
+                // Determine parent commit for the push
+                // Automatically fetch latest commit as parent if repo exists
+                let final_parent_commit = if repo_exists {
+                    formatter.info("Fetching latest commit as parent...");
+                    match client.prompts().get_commit(owner, repo, "latest").await {
+                        Ok(commit_info) => {
+                            println!("✓ Latest commit: {}", commit_info.commit_hash);
+                            Some(commit_info.commit_hash)
+                        }
+                        Err(e) => {
+                            eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
+                            eprintln!("  Proceeding without parent commit (assuming first commit)");
+                            None
+                        }
+                    }
+                } else {
+                    formatter.info("New repository, no parent commit needed");
+                    None
+                };
 
                 // Parse input variables
                 let vars: Vec<String> = if let Some(vars_str) = input_variables {
@@ -727,7 +752,12 @@ impl PromptCommands {
                     // Push structured prompt
                     client
                         .prompts()
-                        .push_structured_prompt(owner, repo, structured_prompt, None)
+                        .push_structured_prompt(
+                            owner,
+                            repo,
+                            structured_prompt,
+                            final_parent_commit.clone(),
+                        )
                         .await
                         .map_err(crate::error::CliError::Sdk)?
                 } else {
@@ -741,7 +771,7 @@ impl PromptCommands {
                             "input_variables": vars,
                             "template_format": template_format
                         }),
-                        parent_commit: None,
+                        parent_commit: final_parent_commit,
                         example_run_ids: None,
                     };
 

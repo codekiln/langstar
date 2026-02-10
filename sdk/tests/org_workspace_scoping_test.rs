@@ -40,7 +40,7 @@ async fn test_org_id_from_environment() {
     // Make API call to verify headers are sent correctly
     // We'll list prompts as a simple test that exercises the headers
     println!("Testing API call with organization ID: {}", org_id);
-    let result = client.prompts().list(Some(5), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(5), None, None).await;
 
     match result {
         Ok(prompts) => {
@@ -86,7 +86,7 @@ async fn test_workspace_id_from_environment() {
 
     // Make API call to verify headers are sent correctly
     println!("Testing API call with workspace ID: {}", workspace_id);
-    let result = client.prompts().list(Some(5), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(5), None, None).await;
 
     match result {
         Ok(prompts) => {
@@ -139,7 +139,7 @@ async fn test_both_org_and_workspace_ids() {
         org_id, workspace_id
     );
 
-    let result = client.prompts().list(Some(5), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(5), None, None).await;
 
     match result {
         Ok(prompts) => {
@@ -180,7 +180,7 @@ async fn test_visibility_filtering_default_private_when_scoped() {
     );
 
     // Call list with None visibility - should default to Private when scoped
-    let result = client.prompts().list(Some(20), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(20), None, None).await;
 
     match result {
         Ok(prompts) => {
@@ -223,7 +223,7 @@ async fn test_visibility_filtering_explicit_private() {
     );
 
     // Explicitly request private prompts
-    let result = client
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client
         .prompts()
         .list(Some(20), None, Some(Visibility::Private))
         .await;
@@ -258,7 +258,7 @@ async fn test_visibility_filtering_explicit_public() {
     println!("Testing explicit Public visibility with org ID: {}", org_id);
 
     // Explicitly request public prompts
-    let result = client
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client
         .prompts()
         .list(Some(20), None, Some(Visibility::Public))
         .await;
@@ -311,7 +311,7 @@ async fn test_with_organization_id_builder() {
     );
 
     // Verify API call works
-    let result = client.prompts().list(Some(5), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(5), None, None).await;
     assert!(
         result.is_ok(),
         "API call should succeed with builder-applied org ID"
@@ -345,7 +345,7 @@ async fn test_with_workspace_id_builder() {
     );
 
     // Verify API call works
-    let result = client.prompts().list(Some(5), None, None).await;
+    let result: langstar_sdk::Result<Vec<langstar_sdk::Prompt>> = client.prompts().list(Some(5), None, None).await;
     assert!(
         result.is_ok(),
         "API call should succeed with builder-applied workspace ID"
