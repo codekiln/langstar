@@ -333,8 +333,10 @@ async fn test_get_commit_success() {
 async fn test_pull_structured_prompt_deserialization_error() {
     let mut server = Server::new_async().await;
 
-    // Mock API returns invalid JSON structure (missing required fields)
+    // Mock API returns invalid JSON structure (missing required manifest fields)
+    // commit_hash is valid, but manifest is malformed to test deserialization error
     let invalid_response = json!({
+        "commit_hash": "test-commit-hash-456",
         "manifest": {
             "lc": 1,
             "type": "constructor",
