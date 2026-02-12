@@ -1,0 +1,35 @@
+{
+  "name": "langstar-jetbrains",
+  // Use Docker Compose for container configuration
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "langstar-dev",
+  "workspaceFolder": "/workspace",
+
+  // Dev Container features
+  // Note: JetBrains Gateway applies these same features
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/mise:1": {},
+    "ghcr.io/devcontainers-extra/features/uv:1": {},
+    "ghcr.io/devcontainers/features/rust:1": {},
+    "ghcr.io/codekiln/langstar/langstar:1": {
+      "version": "2.1.2"
+    }
+  },
+
+  // JetBrains-specific customizations
+  // VS Code extensions are not applicable for JetBrains IDEs
+  "customizations": {
+    "jetbrains": {
+      // JetBrains Gateway settings can be added here
+      // See: https://www.jetbrains.com/help/idea/connect-to-devcontainer.html
+    }
+  },
+
+  "remoteUser": "node",
+
+  // Lifecycle commands
+  // Note: Scripts are in parent directory, accessed via bind-mounted .devcontainer
+  "postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
+  "postStartCommand": "bash /workspace/.devcontainer/setup-github-auth.sh"
+}

@@ -6,13 +6,21 @@ This directory contains the devcontainer configuration for the Langstar project.
 
 ## Overview
 
-The devcontainer uses Docker Compose which provides **native `.env` file support**, solving environment variable management elegantly for both local and Codespaces environments.
+The devcontainer uses Docker Compose with **three separate configurations** optimized for different development environments:
 
-### Architecture
+| Config | Location | Best For | Workspace | Secrets |
+|--------|----------|----------|-----------|---------|
+| **Default** | `.devcontainer/` | VS Code local | Bind mount | `.env` file |
+| **Codespaces** | `.devcontainer/codespaces/` | GitHub Codespaces | Cloud-managed | GitHub secrets |
+| **JetBrains** | `.devcontainer/jetbrains/` | RustRover, IntelliJ | Named volume | `.env` via bind mount |
 
-- **Local Development**: Docker Compose automatically loads `.env` file
-- **GitHub Codespaces**: Environment variables come from Codespaces secrets
-- **Single Configuration**: No duplication, standard Docker Compose patterns
+### Why Three Configurations?
+
+Each environment has unique requirements:
+
+- **VS Code Local**: Bind mounts project from host, uses local `.env` file
+- **Codespaces**: Cloud-based, no local files - must use GitHub Codespaces secrets (`.env` is gitignored and doesn't exist in cloud)
+- **JetBrains**: Needs named volume for native inotify support (avoids gRPC FUSE file watching issues), but also needs access to local `.env` file via hybrid mount
 
 ## Local Development Setup
 
@@ -54,36 +62,55 @@ The devcontainer uses Docker Compose which provides **native `.env` file support
 
 ### Workspace Mount Configuration
 
-By default, this devcontainer uses a **bind mount** (`..:/workspace:cached`) for maximum compatibility with VS Code, JetBrains, and GitHub Codespaces.
+By default, this devcontainer uses a **bind mount** (`..:/workspace:cached`) which works well for VS Code.
 
 **Default behavior:**
 - Your local repository files are mounted directly into the container
 - Changes sync bidirectionally between host and container
 - Standard "Reopen in Container" workflow works seamlessly
 
-#### Optional: Named Volume for JetBrains IDEs
+## JetBrains Gateway Setup
 
-If you're using **RustRover, IntelliJ**, or other JetBrains IDEs and see the warning:
-> "External file changes sync might be slow"
+If you're using **RustRover, IntelliJ**, or other JetBrains IDEs, use the dedicated JetBrains configuration at `.devcontainer/jetbrains/`.
 
-This occurs because Docker's bind mount on macOS uses gRPC FUSE, which doesn't provide full `inotify` support.
+This configuration uses a **hybrid mount approach** that provides:
+- Native inotify support (no "External file changes sync might be slow" warnings)
+- Access to your local `.env` file without baking secrets into the image
 
-**To fix this**, you can switch to a named Docker volume by editing `docker-compose.override.yml`:
+### JetBrains Prerequisites
 
-1. Copy the template: `cp docker-compose.override.yml.template docker-compose.override.yml`
-2. Uncomment the volumes section for named volume
-3. Rebuild the container
-4. Clone the repo inside the container: `cd /workspace && git clone <repo-url> .`
+1. **Local checkout required**: Have a local checkout of the repo with `.devcontainer/.env` configured
+2. **SSH agent**: Ensure SSH agent is running on your host machine
 
-**Trade-offs of named volume:**
-| Aspect | Bind Mount (default) | Named Volume (optional) |
-|--------|---------------------|------------------------|
-| File watching | Limited (gRPC FUSE) | Full inotify support |
-| File location | Host filesystem | Container volume |
-| Setup workflow | Standard | Requires clone into container |
-| Host editing | Supported | Not supported |
+### JetBrains Setup Steps
 
-See `docker-compose.override.yml.template` for detailed instructions.
+1. Open JetBrains Gateway
+2. Select **Remote Development > Dev Containers**
+3. Click **Clone Repository**
+4. Enter the repository URL
+5. When prompted for devcontainer path, select: `.devcontainer/jetbrains/devcontainer.json`
+6. Gateway will clone into a named volume and bind-mount your local `.devcontainer` for secrets
+
+### How the JetBrains Hybrid Mount Works
+
+```
+/workspace                    → Named volume (cloned by JetBrains, native inotify)
+/workspace/.devcontainer      → Bind mount from host (provides .env file)
+```
+
+This allows:
+- Full inotify support for file watching (no gRPC FUSE)
+- Access to your local `.env` file for secrets
+- Code lives in the named volume (cloned separately by JetBrains)
+
+### JetBrains Trade-offs
+
+| Aspect | VS Code (default) | JetBrains (hybrid) |
+|--------|-------------------|-------------------|
+| File watching | gRPC FUSE (limited) | Native inotify |
+| Code location | Host filesystem | Named volume |
+| Secrets | Direct from `.env` | `.env` via bind mount |
+| Prerequisites | Just `.env` | Local checkout + `.env` |
 
 ### Files Created (Gitignored)
 
@@ -94,9 +121,11 @@ These files are created locally and **will not be committed** to git:
 
 ## GitHub Codespaces Setup
 
-### Configure Codespaces Secrets
+For Codespaces, use the dedicated configuration at `.devcontainer/codespaces/`.
 
-Codespaces uses repository or organization secrets instead of local `.env` files.
+**Why a separate config?** The `.env` file is gitignored and doesn't exist in Codespaces. The Codespaces config is designed to work exclusively with GitHub Codespaces secrets, with no `.env` file dependency.
+
+### Configure Codespaces Secrets
 
 1. **Go to your repository settings:**
    - Navigate to `Settings` → `Secrets and variables` → `Codespaces`
@@ -117,30 +146,52 @@ Codespaces uses repository or organization secrets instead of local `.env` files
    - Click the green "Code" button
    - Select "Codespaces" tab
    - Click "Create codespace on main" (or your branch)
+   - When prompted, select: `.devcontainer/codespaces/devcontainer.json`
 
-### How Codespaces Works
+### How Codespaces Config Works
 
-In Codespaces:
-- The `devcontainer.json` uses Docker Compose configuration
-- `docker-compose.yml` uses fallback syntax: `${GITHUB_PAT:-${GH_PAT}}`
-- Environment variables come from Codespaces secrets (`GH_PAT`, `GH_USER`, etc.)
-- No `.env` file is needed or used
+The Codespaces configuration:
+- Uses `docker-compose.yml` with direct secret references (`${GH_PAT}`, not fallback syntax)
+- Has NO `env_file` directive (would fail since `.env` doesn't exist)
+- All environment variables come from Codespaces secrets
 - `setup-github-auth.sh` configures git authentication using the provided variables
 
 ## Architecture
 
+### Directory Structure
+
+```
+.devcontainer/
+├── devcontainer.json              # VS Code local (default)
+├── docker-compose.yml             # VS Code compose (bind mount, .env)
+├── Dockerfile                     # Shared container image
+├── .env.default                   # Environment template
+├── .env                           # Local secrets (gitignored)
+├── post-create.sh                 # Shared setup script
+├── setup-github-auth.sh           # Shared auth script
+├── codespaces/                    # GitHub Codespaces config
+│   ├── devcontainer.json          # Codespaces-specific
+│   └── docker-compose.yml         # No .env dependency
+└── jetbrains/                     # JetBrains Gateway config
+    ├── devcontainer.json          # JetBrains-specific
+    └── docker-compose.yml         # Hybrid volume mount
+```
+
 ### Configuration Files
 
-| File | Purpose | Committed to Git | Environment |
-|------|---------|------------------|-------------|
-| `devcontainer.json` | Dev Container config (points to Docker Compose) | ✅ Yes | Both |
-| `docker-compose.yml` | Docker Compose service definition | ✅ Yes | Both |
-| `docker-compose.override.yml.template` | Template for local Docker overrides | ✅ Yes | Both |
-| `docker-compose.override.yml` | Local Docker Compose overrides | ❌ No (gitignored) | Local only |
-| `.env.default` | Environment variables template | ✅ Yes | Both |
-| `.env` | Actual environment variables | ❌ No (gitignored) | Local only |
-| `Dockerfile` | Container image definition | ✅ Yes | Both |
-| `setup-github-auth.sh` | Git authentication setup | ✅ Yes | Both |
+| File | Purpose | Committed | Used By |
+|------|---------|-----------|---------|
+| `devcontainer.json` | Default Dev Container config | ✅ Yes | VS Code local |
+| `docker-compose.yml` | VS Code compose (bind mount) | ✅ Yes | VS Code local |
+| `codespaces/devcontainer.json` | Codespaces config | ✅ Yes | GitHub Codespaces |
+| `codespaces/docker-compose.yml` | Codespaces compose (no .env) | ✅ Yes | GitHub Codespaces |
+| `jetbrains/devcontainer.json` | JetBrains config | ✅ Yes | RustRover, IntelliJ |
+| `jetbrains/docker-compose.yml` | JetBrains compose (hybrid mount) | ✅ Yes | RustRover, IntelliJ |
+| `Dockerfile` | Container image definition | ✅ Yes | All |
+| `.env.default` | Environment variables template | ✅ Yes | VS Code, JetBrains |
+| `.env` | Actual environment variables | ❌ No | VS Code, JetBrains |
+| `docker-compose.override.yml.template` | Template for local overrides | ✅ Yes | Reference only |
+| `docker-compose.override.yml` | Local overrides (deprecated) | ❌ No | Legacy |
 
 ### How Docker Compose Environment Variables Work
 
@@ -250,7 +301,11 @@ services:
 
 **Problem:** Local overrides in `docker-compose.override.yml` aren't applied
 
-**Solution:**
+**Note:** The override file approach is deprecated. Use the dedicated configs instead:
+- **JetBrains**: Use `.devcontainer/jetbrains/` instead
+- **Codespaces**: Use `.devcontainer/codespaces/` instead
+
+**If you still need override files:**
 1. Ensure file is named exactly `docker-compose.override.yml` (not `.template`)
 2. Verify it's in `.devcontainer/` directory
 3. Check YAML syntax is valid: `docker-compose config`
@@ -340,6 +395,9 @@ docker-compose config | grep -A 10 environment:
 
 ## Related Issues
 
+- [#718](https://github.com/codekiln/langstar/issues/718) - Multi-environment devcontainer setup (VS Code, Codespaces, JetBrains)
+- [#711](https://github.com/codekiln/langstar/issues/711) - JetBrains OOM crash from gRPC FUSE
+- [#712](https://github.com/codekiln/langstar/pull/712) - Named volume configuration for JetBrains
 - [#33](https://github.com/codekiln/langstar/issues/33) - Fix devcontainer .env file handling for Codespaces compatibility
 - [#23](https://github.com/codekiln/langstar/issues/23) - Refactor to use `GH_*` variables for Codespaces compatibility
 - [#26](https://github.com/codekiln/langstar/issues/26) - Removed problematic `env` section from `.claude/settings.json`
