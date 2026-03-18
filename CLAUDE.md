@@ -62,7 +62,7 @@ cargo nextest run --workspace &
 tail -f /tmp/output.log
 
 # ✅ CORRECT - use TaskOutput with block=true
-cargo nextest run --workspace  # This runs in background automatically
+cargo nextest run --workspace # This runs in background automatically
 # Then use TaskOutput tool with block=true to wait for completion
 ```
 
