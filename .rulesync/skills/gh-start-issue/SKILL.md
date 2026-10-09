@@ -160,7 +160,7 @@ The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets thr
 
 ```bash
 # Link fnox.local.toml from the root checkout, if the task exists
-if mise tasks ls 2>/dev/null | grep -q 'worktree:link-secrets'; then
+if (cd "$WORKTREE_PATH" && mise tasks ls 2>/dev/null | grep -q 'worktree:link-secrets'); then
   (cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
 else
   echo "ℹ️  worktree:link-secrets is not available yet; skipping"

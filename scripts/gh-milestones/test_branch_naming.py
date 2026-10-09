@@ -229,7 +229,7 @@ def test_worktree_path_generation():
         try:
             for label, cwd in (("root checkout", root), ("linked worktree", linked)):
                 os.chdir(cwd)
-                results[label] = os.path.realpath(os.path.dirname(prep_next.worktree_path_for(branch))) + "/" + branch
+                results[label] = os.path.realpath(prep_next.worktree_path_for(branch))
         finally:
             os.chdir(original_cwd)
 
