@@ -300,7 +300,7 @@ Found 2 model configurations
 MODEL CONFIGURATION DETAILS
 ─────────────────────────────────────────
 Name:        Production Claude Config
-ID:          <your-org-id>
+ID:          00000000-0000-0000-0000-000000000000
 Provider:    Anthropic
 Model:       claude-3-5-sonnet-20241022
 Description: Claude 3.5 Sonnet for production use

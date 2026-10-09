@@ -69,7 +69,7 @@ When writing documentation or examples:
 ```bash
 # ❌ WRONG - actual values
 export LANGSMITH_API_KEY=lsv2_sk_abc123...
-export LANGSMITH_ORGANIZATION_ID=<your-org-id>
+export LANGSMITH_ORGANIZATION_ID=00000000-0000-0000-0000-000000000000
 
 # ✅ CORRECT - placeholders
 export LANGSMITH_API_KEY=<your-api-key>
@@ -111,7 +111,7 @@ If you accidentally post sensitive information to a GitHub issue, PR, or comment
 
 ```bash
 # ❌ BAD - Shows actual org details
-Organization ID: <your-org-id>
+Organization ID: 00000000-0000-0000-0000-000000000000
 Organization Name: ACME Corporation
 
 # ✅ GOOD - Redacted
