@@ -648,3 +648,62 @@ fn test_cli_pull_private_prompt_json_output() {
 
     // CLEANUP: Automatic via Drop trait
 }
+
+/// Regression test for #719 / #733: pushing an update to an existing prompt must
+/// auto-fetch the latest commit as parent instead of failing with a 409 conflict.
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
+fn test_cli_push_prompt_update_with_auto_parent() {
+    check_env_vars_private_prompts();
+
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-auto-parent");
+    let bin = get_langstar_bin();
+
+    let push = |template: &str| {
+        let mut cmd = Command::new(&bin);
+        cmd.args([
+            "prompt",
+            "push",
+            "--owner",
+            "-",
+            "--repo",
+            fixture.repo_name(),
+            "--template",
+            template,
+            "--input-variables",
+            "query",
+        ]);
+        let output = cmd.assert().success();
+        String::from_utf8_lossy(&output.get_output().stdout).to_string()
+    };
+
+    let extract_hash = |stdout: &str| -> String {
+        stdout
+            .lines()
+            .find(|l| l.contains("Commit hash:"))
+            .and_then(|l| l.split("Commit hash:").nth(1))
+            .map(|s| s.trim().to_string())
+            .expect("Commit hash not found in push output")
+    };
+
+    // TEST Step 1: first commit
+    let first_stdout = push("First version: {query}");
+    let first_hash = extract_hash(&first_stdout);
+
+    // TEST Step 2: update to the same repo; without auto-parent this is a 409
+    let second_stdout = push("Second version: {query}");
+    let second_hash = extract_hash(&second_stdout);
+
+    // VERIFY: second push succeeded, created a new commit, and used the first as parent
+    assert_ne!(first_hash, second_hash, "update should create a new commit");
+    assert!(
+        second_stdout.contains(&format!("Latest commit: {}", first_hash)),
+        "auto-parent should have fetched the first commit ({}); output:\n{}",
+        first_hash,
+        second_stdout
+    );
+
+    // CLEANUP: Automatic via Drop trait
+}
