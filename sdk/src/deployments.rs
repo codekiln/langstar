@@ -66,7 +66,11 @@ pub enum DeploymentType {
 pub struct Deployment {
     /// Unique identifier for the deployment
     pub id: String,
-    /// User-assigned name for the deployment
+    /// User-assigned name for the deployment.
+    ///
+    /// The control plane may send `null` (for example, for an agent-mode
+    /// deployment); the SDK reads that as an empty string.
+    #[serde(deserialize_with = "crate::serde_utils::deserialize_null_as_default")]
     pub name: String,
     /// Source type (github or external_docker)
     pub source: DeploymentSource,
@@ -466,6 +470,25 @@ mod tests {
         let awaiting = DeploymentStatus::AwaitingDatabase;
         let json = serde_json::to_string(&awaiting).unwrap();
         assert_eq!(json, "\"AWAITING_DATABASE\"");
+    }
+
+    #[test]
+    fn test_deployment_null_name_reads_as_empty() {
+        let json = r#"{"resources": [
+            {"id": "a", "name": null, "source": "github",
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "status": "READY"},
+            {"id": "b", "name": "named", "source": "github",
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "status": "AWAITING_FINAL_DELETE"}
+        ], "offset": 0}"#;
+        let list: DeploymentsList = serde_json::from_str(json).unwrap();
+        assert_eq!(list.resources[0].name, "");
+        assert_eq!(list.resources[1].name, "named");
+        assert_eq!(
+            list.resources[1].status,
+            DeploymentStatus::AwaitingFinalDelete
+        );
     }
 
     #[test]
