@@ -6,6 +6,9 @@ python = "3.11"
 # rulesync generates CLAUDE.md, AGENTS.md and the skills from .rulesync/.
 # https://github.com/dyoshikawa/rulesync
 "npm:rulesync" = "27.0.0"
+# OpenSpec holds feature designs and specs under openspec/; its skills are in .rulesync/skills/.
+# https://github.com/Fission-AI/OpenSpec
+"npm:@fission-ai/openspec" = "1.14.1"
 
 # Rust is managed by devcontainer feature (ghcr.io/devcontainers/features/rust:1)
 # Not managed by mise to avoid duplicate installation
