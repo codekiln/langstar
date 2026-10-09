@@ -49,7 +49,7 @@ This project uses git worktrees for parallel development. Keep `/workspace` clea
 **Related resources:**
 - `.claude/skills/git-worktrees/SKILL.md` - Worktree management skill
 - `docs/dev/github-workflow.md` - Issue-driven workflow
-- `scripts/cleanup-closed-issue-worktrees.sh` - Cleanup automation
+- `mise run worktree:cleanup` - Cleanup automation
 
 ## Coding Conventions
 
@@ -120,5 +120,5 @@ Canonical reference for LangSmith environment variables and their mapping to API
 
 ### `wip/` - work in progress
 - gitignored
-- includes git worktrees for active in dev issues. `scripts/cleanup-closed-issue-worktrees.sh` and .claude/skills/git-worktrees creates and cleans up.
+- includes git worktrees for active in dev issues. `mise run worktree:cleanup` and .claude/skills/git-worktrees creates and cleans up.
 - some txt files with debugging for active issues

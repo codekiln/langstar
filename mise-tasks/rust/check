@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Type-check the workspace with every feature enabled"
+set -euo pipefail
+
+cargo check --workspace --all-features
