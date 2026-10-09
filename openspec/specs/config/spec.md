@@ -77,7 +77,7 @@ When both an organization ID and a workspace ID are set, every langstar command 
 
 ### Requirement: Check the settings langstar would use
 
-`langstar config validate` SHALL load the settings the way every langstar command loads them, from environment variables, the config file and defaults, and print a summary. It SHALL exit with an error when `output_format` is something other than `json` or `table`, or when `timezone` is not a timezone langstar understands. It SHALL warn when no API key is set, and SHALL suggest `langstar config create` when the config file is missing.
+When the config file exists, `langstar config validate` SHALL load the settings the way every langstar command loads them, from environment variables, the config file and defaults, and print a summary. It SHALL exit with an error when `output_format` is something other than `json` or `table`, or when `timezone` is not a timezone langstar understands. It SHALL warn when no API key is set.
 
 #### Scenario: Invalid timezone
 
@@ -91,6 +91,17 @@ When both an organization ID and a workspace ID are set, every langstar command 
 - **AND** `LANGSTAR_OUTPUT_FORMAT=text` is set in the environment
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the invalid output format
+
+### Requirement: Stop checking when the config file is missing
+
+When the config file is missing, `langstar config validate` SHALL print the config file's path, suggest `langstar config create` and exit successfully, without checking any setting, including the ones set in the environment.
+
+#### Scenario: No config file and an invalid output format in the environment
+
+- **WHEN** no config file exists
+- **AND** `LANGSTAR_OUTPUT_FORMAT=text` is set in the environment
+- **AND** a user runs `langstar config validate`
+- **THEN** langstar says the config file does not exist, suggests `langstar config create` and exits successfully
 
 ### Requirement: Change one setting from the command line
 

@@ -83,7 +83,7 @@ The `dataset` subcommands that print a dataset or a list SHALL print a table or 
 
 ### Requirement: Import examples from JSONL or CSV
 
-`langstar dataset import <dataset-id> --file <path>` SHALL add the examples in the file to the dataset. `--format` SHALL choose `jsonl` or `csv`; without it, langstar SHALL take the format from the file extension. Langstar SHALL skip blank lines, lines starting with `#`, and records it cannot read, warning about each record it skips, then report how many examples it imported.
+`langstar dataset import <dataset-id> --file <path>` SHALL add the examples in the file to the dataset. `--format` SHALL choose `jsonl` or `csv`; without it, langstar SHALL take the format from the file extension. In a JSONL file, langstar SHALL skip blank lines and lines starting with `#`. In either format, it SHALL skip each record it cannot read with a warning, then report how many examples it imported.
 
 #### Scenario: Import a JSONL file
 
