@@ -39,7 +39,9 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 /// sequentially to avoid resource conflicts. Other tests can run in parallel.
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_langstar"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", common::home::empty_home());
+    cmd
 }
 
 /// Helper to generate unique test names using microsecond timestamp + UUID suffix.
