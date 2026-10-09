@@ -504,14 +504,14 @@ EOF
    deadline=$(( $(date +%s) + 3600 ))
    timed_out=false
    while true; do
-     # Count running checks (where completedAt is null)
-     checks_running=$(gh pr checks "$PR_NUM" --json state,completedAt --jq '[.[] | select(.completedAt == null)] | length')
+     # Count the checks that are queued or running
+     checks_running=$(gh pr checks "$PR_NUM" --json bucket --jq '[.[] | select(.bucket == "pending")] | length')
      if [ "$checks_running" -eq 0 ]; then
        break
      fi
      if [ "$(date +%s)" -ge "$deadline" ]; then
        echo "⚠️ $checks_running checks still running after 60 minutes; stopping the wait. Tell the user which checks are stuck."
-       gh pr checks "$PR_NUM" --json name,state,completedAt --jq '.[] | select(.completedAt == null) | "\(.name): \(.state)"'
+       gh pr checks "$PR_NUM" --json name,state,bucket --jq '.[] | select(.bucket == "pending") | "\(.name): \(.state)"'
        timed_out=true
        break
      fi
