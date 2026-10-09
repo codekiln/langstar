@@ -1,4 +1,5 @@
-//! CLI tests for delete confirmation on `dataset delete` (#702) and `queue delete` (#703).
+//! CLI tests for delete confirmation on `dataset delete` (#702) and `queue delete` (#703),
+//! plus `project delete` and `assistant delete`, which share the same prompt.
 //!
 //! assert_cmd pipes stdin, so these exercise the non-TTY path: without the skip flag the
 //! command must fail with a clear message, before any API request is made. The interactive
