@@ -1,7 +1,7 @@
 # Keep the generated agent config in sync with its source in .rulesync/.
-# After a pull (post-merge) or a branch checkout (post-checkout), fetch any
-# declared skill sources and regenerate CLAUDE.md, AGENTS.md, .claude/skills/
-# and .agents/skills/.
+# After a pull (post-merge), a rebase (post-rewrite) or a branch checkout
+# (post-checkout), fetch any declared skill sources and regenerate CLAUDE.md,
+# AGENTS.md, .claude/skills/ and .agents/skills/.
 #
 # `mise x --` runs the rulesync pinned in mise.toml, even from a hook's
 # minimal PATH.
@@ -13,6 +13,12 @@ post-merge:
       run: mise x -- rulesync install && mise x -- rulesync generate
 
 post-checkout:
+  commands:
+    rulesync:
+      run: mise x -- rulesync install && mise x -- rulesync generate
+
+# `git pull --rebase` and `git rebase` run post-rewrite instead of post-merge.
+post-rewrite:
   commands:
     rulesync:
       run: mise x -- rulesync install && mise x -- rulesync generate
