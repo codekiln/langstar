@@ -58,11 +58,7 @@ If CI is green on main, the failure is **your responsibility** to fix, not a pre
 **ALWAYS run before committing:**
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace && \
-cargo fmt --check
+mise run check
 ```
 
 On your own computer, start the test step with `fnox exec --` so the integration tests get the LangSmith credentials: `fnox exec -- cargo nextest run --profile ci --all-features --workspace`. See [Loading the Variables Locally](../environment-variables.md#loading-the-variables-locally). In the devcontainer, `.devcontainer/.env` already sets them.

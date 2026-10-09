@@ -29,11 +29,10 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 Merge a PR only when every test passes, including a test that was already failing before your change. Run this before every commit:
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace
+mise run check
 ```
+
+`mise run check` runs `cargo fmt`, `cargo check`, `cargo clippy` and the nextest suite under `fnox exec`, which supplies the three test credentials below, then `cargo fmt --check`, and stops at the first failure.
 
 Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`; `docs/dev/environment-variables.md` maps them to API headers. Each test asserts on what the CLI command or SDK call returned, such as fields in its JSON output or the resource it created, as well as on its exit code. `docs/dev/testing/README.md` indexes the testing docs: read `HIGH_LEVEL_TESTING_GUIDELINES.md` and the one or two others your task needs. The `test-runner-worktree` skill runs the tests inside a worktree.
 

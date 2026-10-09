@@ -106,11 +106,7 @@ For pre-commit testing requirements, see `docs/dev/testing/cli-integration-tests
 
 **Quick reference:**
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features && \
-cargo fmt --check
+mise run check
 ```
 
 **Full documentation:** `docs/dev/testing/cli-integration-tests.md`
