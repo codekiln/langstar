@@ -806,6 +806,18 @@ For detailed architecture documentation, see [docs/architecture.md](./docs/archi
 
 ## Development
 
+### Agent Config
+
+Coding agents read `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. [rulesync](https://github.com/dyoshikawa/rulesync) generates them from `.rulesync/`, and git ignores them. After you clone the repository outside the devcontainer, generate them and install the git hooks that keep them current:
+
+```bash
+mise install
+"$(mise which lefthook)" install
+"$(mise which rulesync)" generate
+```
+
+The devcontainer runs these steps when it is created.
+
 ### Building
 
 ```bash
