@@ -22,7 +22,7 @@ The `docs/implementation/ls-prompt-ux-command-redesign.md` outlines a future CRU
 
 ### What Exists Now
 - **PR #723 implementation**: Three flags for parent commit handling
-- **Uncommitted changes**: Removed all three flags, made auto-parent the default
+- The branch removes the three flags and fetches the latest commit as the parent whenever the repository already exists.
 - **Code location**: `cli/src/commands/prompt.rs` lines 100-800
 - **SDK support**: `get_commit()` method exists and works (added in PR #723)
 
@@ -34,7 +34,8 @@ let final_parent_commit = if repo_exists {
     // Fetch latest commit automatically
     match client.prompts().get_commit(owner, repo, "latest").await {
         Ok(commit_info) => Some(commit_info.commit_hash),
-        Err(e) => None  // Graceful fallback
+        Err(ApiError { status: 404, .. }) => None, // repo has no commits yet
+        Err(e) => return Err(e),                   // any other error stops the push
     }
 } else {
     None  // New repo, no parent needed
@@ -125,11 +126,12 @@ let final_parent_commit = if repo_exists {
             println!("✓ Latest commit: {}", commit_info.commit_hash);
             Some(commit_info.commit_hash)
         }
-        Err(e) => {
-            eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
-            eprintln!("  Proceeding without parent commit (assuming first commit)");
+        // A 404 means the repo exists but has no commits yet
+        Err(ApiError { status: 404, .. }) => {
+            formatter.info("Repository has no commits yet, no parent commit needed");
             None
         }
+        Err(e) => return Err(CliError::Sdk(e)),
     }
 } else {
     formatter.info("New repository, no parent commit needed");
@@ -168,14 +170,14 @@ $ langstar prompt push -o owner -r existing-prompt -t "updated template"
 ✓ Pushed successfully (commit: def789ghi012)
 ```
 
-**Error handling (graceful fallback):**
+**Error handling:** When the repository exists but has no commits yet, the API answers 404 and the CLI pushes without a parent. Any other error stops the push and prints the API error.
+
 ```bash
 $ langstar prompt push -o owner -r existing-prompt -t "template"
 ℹ Checking if repository owner/existing-prompt exists...
 ✓ Repository exists
 ℹ Fetching latest commit as parent...
-⚠ Warning: Could not fetch latest commit: API error: 404
-  Proceeding without parent commit (assuming first commit)
+ℹ Repository has no commits yet, no parent commit needed
 ℹ Pushing prompt to owner/existing-prompt...
 ✓ Pushed successfully
 ```
@@ -207,7 +209,7 @@ cargo nextest run --profile ci test_push test_get_commit
 - ✅ No 409 errors when updating existing prompts
 - ✅ New prompts created without parent commit
 - ✅ Existing prompts updated with auto-fetched parent
-- ✅ Graceful fallback if parent fetch fails
+- ✅ Only a 404 on the latest-commit fetch proceeds without a parent; any other error stops the push
 - ✅ All existing tests pass
 - ✅ Help text updated (no mention of removed flags)
 
@@ -225,7 +227,7 @@ Changes:
 - Make parent commit fetching automatic and transparent
 - New repos: no parent needed (first commit)
 - Existing repos: auto-fetch latest commit as parent
-- Graceful error handling with fallback to no parent
+- Only a 404 on the latest-commit fetch (repo has no commits yet) pushes without a parent; any other error stops the push
 
 Fixes #719
 
