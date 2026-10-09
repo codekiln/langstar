@@ -277,7 +277,7 @@ struct ModelConfigRow {
 ╭────────────────────────┬──────────┬───────────┬────────────────────────────┬────────────┬────────────╮
 │ Name                   │ ID       │ Provider  │ Model                      │ Rate Limit │ Updated    │
 ├────────────────────────┼──────────┼───────────┼────────────────────────────┼────────────┼────────────┤
-│ Production Claude      │ d1e1dfff │ anthropic │ claude-3-5-sonnet-20241022 │ 10/s       │ 2025-11-30 │
+│ Production Claude      │ 00000000 │ anthropic │ claude-3-5-sonnet-20241022 │ 10/s       │ 2025-11-30 │
 │ Dev OpenAI             │ a2b3c4d5 │ openai    │ gpt-4o                     │ None       │ 2025-11-29 │
 ╰────────────────────────┴──────────┴───────────┴────────────────────────────┴────────────┴────────────╯
 
@@ -300,7 +300,7 @@ Found 2 model configurations
 MODEL CONFIGURATION DETAILS
 ─────────────────────────────────────────
 Name:        Production Claude Config
-ID:          d1e1dfff-39bf-4cea-9a2e-85e970ce40ef
+ID:          00000000-0000-0000-0000-000000000000
 Provider:    Anthropic
 Model:       claude-3-5-sonnet-20241022
 Description: Claude 3.5 Sonnet for production use
@@ -554,10 +554,10 @@ langstar model-config list -f json > configs.json
 **Use Case 2: Inspect configuration details**
 ```bash
 # View full configuration including settings
-langstar model-config get d1e1dfff-39bf
+langstar model-config get 00000000-0000
 
 # Export single config to JSON
-langstar model-config get d1e1dfff-39bf -f json > prod-claude-config.json
+langstar model-config get 00000000-0000 -f json > prod-claude-config.json
 ```
 
 **Use Case 3: Search for specific configurations**
@@ -616,7 +616,7 @@ cat > new-settings.json <<EOF
 }
 EOF
 
-langstar model-config update d1e1dfff-39bf \
+langstar model-config update 00000000-0000 \
   --name "Production Claude 3 Opus" \
   --settings new-settings.json
 ```
