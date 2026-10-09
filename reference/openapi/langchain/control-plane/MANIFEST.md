@@ -32,11 +32,18 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 |------|--------|------|-------|
 | 2025-11-20 | Initial fetch | 70K | v0.1.0 |
 | 2025-12-11 | Refresh | 71K | Updated spec |
+| 2026-10-09 | Refresh for [#748 Refresh OpenAPI specs](https://github.com/codekiln/langstar/issues/748) | 152K | Checked the endpoints the SDK calls against this spec; pretty-printed with `jq --indent 2` |
 
 ## Refresh Command
 
 ```bash
-curl -o openapi.json https://api.host.langchain.com/openapi.json
+# Exits non-zero and leaves openapi.json untouched if the download or jq fails.
+(
+  tmp=$(mktemp) && trap 'rm -f "$tmp" "$tmp.json"' EXIT &&
+  curl -sSf https://api.host.langchain.com/openapi.json -o "$tmp" &&
+  jq --indent 2 . "$tmp" > "$tmp.json" &&
+  mv "$tmp.json" openapi.json
+)
 ```
 
 ## Related Files

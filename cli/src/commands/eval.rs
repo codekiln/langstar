@@ -280,17 +280,17 @@ pub struct EvaluationResultDisplay {
     /// Metric key
     pub key: String,
     /// Numeric score
-    #[tabled(display_with = "display_option_f64")]
+    #[tabled(display = "display_option_f64")]
     pub score: Option<f64>,
     /// Categorical value
-    #[tabled(display_with = "display_option_string")]
+    #[tabled(display = "display_option_string")]
     pub value: Option<String>,
     /// Comment/reasoning
-    #[tabled(display_with = "display_option_string")]
+    #[tabled(display = "display_option_string")]
     pub comment: Option<String>,
 }
 
-// Note: These display functions are used by tabled's display_with attribute
+// Note: These display functions are used by tabled's display attribute
 // but are flagged as unused until EvaluationResultDisplay is actually instantiated
 #[allow(dead_code)]
 fn display_option_f64(opt: &Option<f64>) -> String {

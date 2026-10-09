@@ -724,7 +724,7 @@ langstar prompt list 2>&1 | tee error.log
 
 ```bash
 export LANGSMITH_API_KEY="lsv2_sk_abc123..."
-export LANGSMITH_ORGANIZATION_ID="d1e1dfff-39bf..."
+export LANGSMITH_ORGANIZATION_ID="00000000-0000-0000-0000-000000000000"
 ```
 
 ✅ **DO share:**
