@@ -244,10 +244,12 @@ fn test_secrets_delete_accepts_format_flag() {
         .stderr(predicate::str::contains("--format").not()); // --format parsed
 }
 
-/// `--yes` skips the confirmation prompt. With a dummy API key, the command
-/// gets past the prompt, sends the delete, and LangSmith rejects the key, so
-/// the test deletes nothing. If `--yes` stopped skipping the prompt, the
-/// command would stop at the terminal check before sending anything.
+/// `--yes` skips the confirmation prompt. The command prints "Deleting secret"
+/// after the prompt and before it sends any request, so that line shows the
+/// prompt was skipped. If `--yes` stopped skipping the prompt, the command
+/// would stop at the terminal check instead. The test uses a dummy API key,
+/// so the request that follows cannot delete anything; it asserts nothing
+/// about that request, because its answer depends on the network.
 #[test]
 fn test_secrets_delete_yes_skips_confirmation() {
     let mut cmd = langstar_cmd();
@@ -256,12 +258,11 @@ fn test_secrets_delete_yes_skips_confirmation() {
         .env_remove("LANGSMITH_WORKSPACE_ID")
         .args(["secrets", "delete", "LANGSTAR_NO_SUCH_SECRET", "--yes"]);
 
-    cmd.assert()
-        .failure()
+    cmd.timeout(std::time::Duration::from_secs(60))
+        .assert()
         .stdout(predicate::str::contains(
             "Deleting secret 'LANGSTAR_NO_SUCH_SECRET'",
         ))
-        .stderr(predicate::str::contains("API error"))
         .stderr(predicate::str::contains("not a terminal").not());
 }
 
