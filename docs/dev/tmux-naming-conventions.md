@@ -9,7 +9,7 @@ The point of the layout: opening the tmux session picker shows everything the ag
 | Tmux thing | Rule | Example |
 |------------|------|---------|
 | Session | Named for an area of responsibility: a whole repository, or an area within one | `langstar` |
-| Window 0 | The manager agent, started with `claude -n langstar-manager` | `manager` |
+| Window 0 | The manager agent, started with `claude -n langstar-manager` | `langstar-manager` |
 | Window 1..n | One worker agent per window, named for its job | `i738-tmux-workflow` |
 | Pane 0 of a window | The agent | `claude -n i738-tmux-workflow` |
 
@@ -61,7 +61,7 @@ Open PRs ready for review, never as drafts. CI does not run on drafts here, and 
 Ask codekiln to review a PR only after these two steps:
 
 1. Resolve every Copilot review thread.
-2. Run the `codekiln-review` skill on the PR: `/codekiln-review codekiln/langstar <n>`.
+2. Run the `codekiln-review` skill on the PR: `/codekiln-review codekiln/langstar <n>`. It is codekiln's personal skill, installed at `~/.claude/skills/codekiln-review`, not part of this repository.
 
 ## Related files
 

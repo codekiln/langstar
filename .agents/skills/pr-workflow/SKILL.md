@@ -395,6 +395,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 - Improved error messages for user clarity
 
 Addresses review comment: https://github.com/owner/repo/pull/385#discussion_r123456
+
+#<N> <Issue Title>
 EOF
 )"
    ```
@@ -522,6 +524,8 @@ EOF
 
 - Fixed clippy warnings in src/main.rs
 - Resolved test failures in authentication module
+
+#<N> <Issue Title>
 EOF
 )"
 

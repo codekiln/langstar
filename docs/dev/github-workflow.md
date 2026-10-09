@@ -415,7 +415,8 @@ git -C <root> pull --ff-only
 
 # Remove the worktree and delete the local branch
 git -C <root> worktree remove .worktrees/<branch_name>
-git -C <root> branch -d <branch_name>
+# Squash merge leaves the branch tip outside main, so -d refuses; -D is safe once the PR is merged
+git -C <root> branch -D <branch_name>
 ```
 
 ### Working as a Tmux Worker
