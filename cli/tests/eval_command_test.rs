@@ -19,6 +19,9 @@
 //!
 //! Run with: `cargo test --test eval_command_test`
 
+#[path = "common/home.rs"]
+mod home;
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
@@ -27,7 +30,9 @@ use uuid::Uuid;
 
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_langstar"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", home::empty_home());
+    cmd
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
