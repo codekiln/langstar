@@ -47,7 +47,7 @@ $ARGUMENTS
 This command delegates to a Python script for robust implementation:
 
 ```bash
-python3 scripts/gh-milestones-prep-next.py $ARGUMENTS
+python3 scripts/gh-milestones/prep-next.py $ARGUMENTS
 ```
 
 The script performs the following steps:
@@ -255,7 +255,7 @@ Command finds #102 as next issue (sibling of last completed #101).
 
 ## Development Notes
 
-**Script location:** `scripts/gh-milestones-prep-next.py`
+**Script location:** `scripts/gh-milestones/prep-next.py`
 
 The Python implementation provides:
 - Better error handling than shell scripts

@@ -2,9 +2,9 @@
 name: gh-pr-comment-reply
 description: >-
   Reply to one GitHub PR review comment in its thread through the GitHub API.
-  Use when answering or resolving a single review comment, given a comment URL
-  or a PR number and comment id.
-argument-hint: '<comment_url> | <pr_number> <comment_id> "<reply>" [owner] [repo]'
+  Use when answering or resolving a single review comment, given a PR number, a
+  comment id and the reply text.
+argument-hint: '<pr_number> <comment_id> "<body>" [owner] [repo]'
 ---
 # Reply to GitHub PR Review Comment
 

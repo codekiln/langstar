@@ -2,8 +2,8 @@
 name: gh-pr-comment-reply
 description: >-
   Reply to one GitHub PR review comment in its thread through the GitHub API.
-  Use when answering or resolving a single review comment, given a comment URL
-  or a PR number and comment id.
+  Use when answering or resolving a single review comment, given a PR number, a
+  comment id and the reply text.
 ---
 # Reply to GitHub PR Review Comment
 

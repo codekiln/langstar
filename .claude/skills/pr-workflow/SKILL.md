@@ -418,19 +418,13 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    This allows maintainers to mark threads as resolved.
 
    **Steps:**
-   1. Extract the comment URL from the review:
-      ```bash
-      # From unresolved comments JSON (step 1 above), get the comment ID
-      # Build the comment URL: https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
-      COMMENT_URL="https://github.com/$REPO/pull/$PR_NUM#discussion_r$COMMENT_ID"
-      ```
+   1. Get the comment ID from the unresolved comments JSON (step 1 above).
 
    2. Use the `gh-pr-comment-reply` skill to reply:
       ```bash
-      /gh-pr-comment-reply $COMMENT_URL
+      /gh-pr-comment-reply $PR_NUM $COMMENT_ID "<reply text>"
       ```
-      This command:
-      - Extracts the comment ID automatically
+      This skill:
       - Uses the correct GitHub API endpoint for in-thread replies
       - Ensures the reply appears in the comment thread (not top-level)
       - Allows maintainers to mark the thread as resolved
@@ -466,8 +460,7 @@ EOF
    gh sub-issue add "$PARENT_ISSUE" "$NEW_ISSUE"
 
    # Reply to comment using the `gh-pr-comment-reply` skill
-   /gh-pr-comment-reply https://github.com/owner/repo/pull/385#discussion_r123456
-   # Reply body: "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
+   /gh-pr-comment-reply 385 123456 "Created #$NEW_ISSUE to track this. Not addressing in this PR as it's a larger refactor."
    ```
 
 3. **Check if branch needs rebasing:**
@@ -977,8 +970,7 @@ gh api repos/$REPO/pulls/$PR_NUM/comments --paginate \
   --jq '.[] | select(.resolved == null) | {id, path, line, user: .user.login, body}'
 
 # Reply to a review comment - ALWAYS use the `gh-pr-comment-reply` skill
-# Build comment URL: https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
-/gh-pr-comment-reply https://github.com/<owner>/<repo>/pull/<pr_num>#discussion_r<comment_id>
+/gh-pr-comment-reply <pr_num> <comment_id> "<reply text>"
 
 # ❌ NEVER use these for review comment replies:
 # - gh pr comment <pr_num> --body "..."  (creates top-level comment, can't be resolved)

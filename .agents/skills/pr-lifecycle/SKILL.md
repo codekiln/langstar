@@ -3,7 +3,9 @@ name: pr-lifecycle
 description: >-
   Enforce project hygiene throughout the PR lifecycle. Use before creating PRs
   to validate worktrees, branch naming, and issue linking. Use when creating PRs
-  to ensure proper "Fixes
+  to ensure proper "Fixes #XYZ" keywords, conventional commit titles, and
+  complete PR bodies. Use after PR merge for cleanup guidance and issue closure
+  verification.
 ---
 # PR Lifecycle Management
 
