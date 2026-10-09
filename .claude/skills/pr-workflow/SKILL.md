@@ -500,16 +500,23 @@ EOF
    # Update tmux status to "waiting for tests"
    !update_tmux_status "⏳" "pr" "$PR_NUM"
 
-   # Wait for all checks to complete
+   # Wait for all checks to complete, and give up after 60 minutes
+   deadline=$(( $(date +%s) + 3600 ))
+   timed_out=false
    while true; do
      # Count running checks (where completedAt is null)
      checks_running=$(gh pr checks "$PR_NUM" --json state,completedAt --jq '[.[] | select(.completedAt == null)] | length')
-     if [ "$checks_running" -gt 0 ]; then
-       echo "⏳ Checks still running, waiting 30 seconds..."
-       sleep 30
-     else
+     if [ "$checks_running" -eq 0 ]; then
        break
      fi
+     if [ "$(date +%s)" -ge "$deadline" ]; then
+       echo "⚠️ $checks_running checks still running after 60 minutes; stopping the wait. Tell the user which checks are stuck."
+       gh pr checks "$PR_NUM" --json name,state,completedAt --jq '.[] | select(.completedAt == null) | "\(.name): \(.state)"'
+       timed_out=true
+       break
+     fi
+     echo "⏳ Checks still running, waiting 30 seconds..."
+     sleep 30
    done
 
    # Return to PR maintenance status
@@ -521,6 +528,9 @@ EOF
    if [ "$checks_failed" -gt 0 ]; then
      echo "❌ $checks_failed check(s) failed"
      # Proceed to failure handling (step 5)
+   elif [ "$timed_out" = true ]; then
+     echo "⚠️ No check has failed, but some are still running"
+     # Stop here and ask the user what to do about the stuck checks
    else
      echo "✅ All checks passed"
      # Proceed to stability monitoring
