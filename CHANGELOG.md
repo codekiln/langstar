@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `assistant create` and `assistant update` take `--description`, and `assistant get` shows it.
 - ✨ feat(dev): load LangSmith secrets through fnox and 1Password (#754)
   - `deployment create --source github` now finds the GitHub integration through the Control Plane API, or takes `--integration-id`. `LANGGRAPH_GITHUB_INTEGRATION_ID` and the `github_integration_id` config key are no longer read; old config files that still carry the key load without error.
+- ✨ feat(dev): use mise for tools, env and tasks (#763)
 
 ### 🩹 Bug Fixes
 
