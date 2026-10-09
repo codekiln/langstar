@@ -1,4 +1,5 @@
-//! CLI tests for delete confirmation on `dataset delete` (#702) and `queue delete` (#703),
+//! CLI tests for the delete confirmation that issues [#702](https://github.com/codekiln/langstar/issues/702)
+//! (dataset delete) and [#703](https://github.com/codekiln/langstar/issues/703) (queue delete) asked for,
 //! plus `project delete` and `assistant delete`, which share the same prompt.
 //!
 //! assert_cmd pipes stdin, so these exercise the non-TTY path: without the skip flag the
