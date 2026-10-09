@@ -7,6 +7,8 @@ claudecode:
 
 # Scout Milestone Research (Phase 0.0)
 
+If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
+
 Create a scout issue and perform preliminary research to understand the problem domain and gather knowledge for milestone planning.
 
 ## Arguments

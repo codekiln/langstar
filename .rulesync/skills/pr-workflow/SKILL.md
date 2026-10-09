@@ -7,6 +7,8 @@ claudecode:
 
 # PR Workflow
 
+If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
+
 Guide Claude agents through creating and managing a pull request from start to finish, with autonomous monitoring and iterative fixes until the PR is ready to merge.
 
 ## Critical Constraints - Session Statelessness

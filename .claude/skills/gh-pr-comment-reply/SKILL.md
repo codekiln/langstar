@@ -8,6 +8,8 @@ argument-hint: '<pr_number> <comment_id> "<body>" [owner] [repo]'
 ---
 # Reply to GitHub PR Review Comment
 
+If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
+
 Reply to a single PR review comment using the GitHub API.
 
 ## Critical Constraints - Session Statelessness

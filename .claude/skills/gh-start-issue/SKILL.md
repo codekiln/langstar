@@ -17,6 +17,8 @@ argument-hint: <issue_number>
 ---
 # gh-start-issue - Complete Issue Workflow Automation
 
+If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
+
 Automates the FULL workflow for a GitHub issue: creates worktree, implements all changes, runs tests, and submits PR.
 
 **This command does not stop at worktree creation.** It automatically proceeds to implement the issue and submit a PR.
