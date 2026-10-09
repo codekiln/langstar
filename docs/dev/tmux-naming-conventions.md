@@ -1,6 +1,6 @@
 # Tmux Manager/Worker Workflow
 
-A manager agent in window 0 of a tmux session starts one worker agent per window, and each worker takes one GitHub issue to a merged pull request. The layout follows the garden rules [Git Worktree PR](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR.md) and its [Tmux](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR___Tmux.md) extension.
+A manager agent in window 0 of a tmux session starts one worker agent per window, and each worker takes one GitHub issue to a merged pull request. The layout follows two of codekiln's AI rules in the `logseq-encode-garden` repository: [My/AI/Rule/Dev/Workflow/Git Worktree PR](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR.md) and [My/AI/Rule/Dev/Workflow/Git Worktree PR/Tmux](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR___Tmux.md).
 
 The point of the layout: opening the tmux session picker shows everything the agents are working on, one line per agent.
 
@@ -28,7 +28,7 @@ The manager picks the issues, records which worker owns which, and answers worke
 
 ## Workers reach the manager with SendMessage
 
-A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the name the manager was started with (`claude -n langstar-manager` makes that name `langstar-manager`). It never uses `tmux send-keys`. `send-keys` types into whatever pane has focus, which is usually the human's input box, so a worker that uses it interrupts the human instead of reaching the manager.
+A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the name the manager was started with (`claude -n langstar-manager` makes that name `langstar-manager`). It never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
 
 Claude Code does not load the `SendMessage` tool until it is asked to. Run `ToolSearch` with the query `select:SendMessage` before the first message.
 
@@ -37,26 +37,26 @@ Claude Code does not load the `SendMessage` tool until it is asked to. Run `Tool
 1. **Start.** Work from one GitHub issue, in a worktree whose branch name carries the issue (`m<milestone>-p<parent>-i<issue>-<slug>`). See [GitHub Workflow](./github-workflow.md#step-2-branch-creation).
 2. **Commit.** Use Conventional Emoji Commits, with the last line `#<N> <Issue Title>`. See [Git SCM Conventions](./git-scm-conventions.md#ticket-references).
 3. **Open the PR** with `Fixes #<N>` in the body and the issue's milestone.
-4. **Open it in the browser** (`gh pr view --web`) so the reviewer sees it. Then tell the manager the PR is ready with `SendMessage`.
-5. **Answer review comments.** The reviewer leaves comments in the browser. The worker fixes each one, pushes, replies to the comment and resolves the thread.
+4. **Open it in the browser** (`gh pr view --web`) so codekiln can read it. Then tell the manager the PR is ready with `SendMessage`.
+5. **Answer review comments.** codekiln leaves comments in the browser. The worker fixes each one, pushes, replies to the comment and resolves the thread.
 6. **After merge, clean up.** Sync the root checkout with `git pull --ff-only` on `main`, remove the worktree with `git worktree remove`, delete the local branch, and tell the manager the job is done.
 
 The root checkout stays on `main` and clean throughout. A worker never edits or commits there.
 
-If the reviewer asks for tuicr, a terminal tool for reviewing a diff, the worker opens the PR diff in tuicr in a new tmux window named for the job.
+If codekiln asks for tuicr, a terminal tool for reviewing a diff, the worker opens the PR diff in tuicr in a new tmux window named for the job.
 
 ## Stacked PRs
 
 When a branch builds on another unmerged branch (its parent):
 
 1. Branch the child from the parent's branch, not from `main`.
-2. Open the child's PR with `--base <parent-branch>`. CI runs on any base once [🔧 build(ci): run CI on stacked PRs whose base is not main (#758)](https://github.com/codekiln/langstar/pull/758) merges.
+2. Open the child's PR with `--base <parent-branch>`. CI runs on a pull request into any base branch, since [🔧 build(ci): run CI on stacked PRs whose base is not main (#758)](https://github.com/codekiln/langstar/pull/758) merged.
 3. When the parent squash-merges, rebase the child onto `main`, dropping the parent's commits: `git rebase --onto origin/main <old-parent-tip>`.
 4. Retarget the PR with `gh pr edit --base main`.
 
 ## Ready checklist
 
-Open PRs ready for review, never as drafts. CI does not run on drafts here, and codekiln is never asked to review one. A PR that was a draft gets `gh pr ready <n>` before it is reported ready.
+Open each PR ready for review. When a PR starts as a draft, run `gh pr ready <n>` before reporting it: Copilot does not review drafts, and codekiln reviews only PRs that are ready.
 
 Ask codekiln to review a PR only after these two steps:
 

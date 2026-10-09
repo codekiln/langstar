@@ -60,7 +60,7 @@ When addressing review comments, choose ONE of these options:
 
 ## Tmux Window Naming Convention
 
-A manager agent in window 0 starts each worker in its own window, named for the job, running `claude -n` with the same name. The worker does not rename the window as the PR moves through phases. See `docs/dev/tmux-naming-conventions.md` for the layout and the worker's PR lifecycle.
+A manager agent in window 0 starts each worker in its own window, named for the job, running `claude -n` with the same name. The window keeps the name the manager gave it until the worker finishes. See `docs/dev/tmux-naming-conventions.md` for the layout and the worker's PR lifecycle.
 
 ## Phase 1: Before Creating PR
 
