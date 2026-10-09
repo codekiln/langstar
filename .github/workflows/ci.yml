@@ -149,9 +149,9 @@ jobs:
           ls -la target/nextest/ci/junit-ci.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # Runs before the results are published or uploaded. When it finds an ID
-        # it redacts it in the file and fails the job; the later steps still run,
-        # so the results stay available to debug without the ID.
+        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # in the JUnit file and fails the job. The publish and upload steps below
+        # run anyway, so a developer can download the results without the ID.
         if: always()
         run: scripts/redact-ids-in-junit.sh target/nextest/ci/junit-ci.xml
         env:
@@ -219,9 +219,9 @@ jobs:
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # Runs before the results are published or uploaded. When it finds an ID
-        # it redacts it in the file and fails the job; the later steps still run,
-        # so the results stay available to debug without the ID.
+        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # in the JUnit file and fails the job. The publish and upload steps below
+        # run anyway, so a developer can download the results without the ID.
         if: always()
         run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
         env:
@@ -288,9 +288,9 @@ jobs:
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # Runs before the results are published or uploaded. When it finds an ID
-        # it redacts it in the file and fails the job; the later steps still run,
-        # so the results stay available to debug without the ID.
+        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # in the JUnit file and fails the job. The publish and upload steps below
+        # run anyway, so a developer can download the results without the ID.
         if: always()
         run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
         env:

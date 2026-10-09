@@ -7,10 +7,13 @@
 # but not in uploaded files, so a test that prints either ID publishes it.
 #
 # When a file contains a value, the script replaces it with [redacted VAR] in
-# place and exits 1. Square brackets keep the XML valid: nextest writes test
-# output as XML text, where a bare < or > would break the file. The job fails, and the steps after it can still publish
-# and upload the results for debugging without publishing the ID. The script
-# names the file and the variable, and never prints the value.
+# place and exits 1, which fails the CI job. The publish and upload steps that
+# follow in .github/workflows/ci.yml still run, so a developer can download
+# the results without the ID. The script names the file and the variable, and
+# never prints the value.
+#
+# The marker uses square brackets because nextest writes test output as XML
+# text, where a bare < or > would break the file.
 #
 # An empty variable is skipped: pull requests from forks get empty secrets,
 # and an empty value cannot leak.
