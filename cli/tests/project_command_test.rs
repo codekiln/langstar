@@ -21,19 +21,12 @@
 //! Run with: `cargo test --test project_command_test`
 
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use langstar_sdk::{AuthConfig, LangchainClient, ProjectCreate};
 use predicates::prelude::*;
 
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    Command::new(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper function to create SDK client from environment
