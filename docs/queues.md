@@ -301,6 +301,9 @@ on:
         description: 'Annotation queue name'
         required: true
         default: 'CI Review'
+      project_id:
+        description: 'UUID of the tracing project to read error runs from'
+        required: true
 
 jobs:
   triage:
@@ -324,8 +327,8 @@ jobs:
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
         run: |
-          # Get recent error runs
-          langstar runs query --errors-only --limit 10 --output json | \
+          # Get recent error runs from the project named in the workflow input
+          langstar runs query -p "${{ inputs.project_id }}" --errors-only --limit 10 --output json | \
             jq -r '.[].id' > error_runs.txt
 
           # Add to annotation queue
@@ -440,7 +443,7 @@ let request = CreateAnnotationQueueRequest {
 2. **Query recent errors and add to queue:**
    ```bash
    # Save error run IDs to file
-   langstar runs query --errors-only --limit 100 --output json | \
+   langstar runs query -p <project-uuid> --errors-only --limit 100 --output json | \
      jq -r '.[].id' > errors.txt
 
    # Add to queue
@@ -549,7 +552,7 @@ langstar config
 
 ### "Run not found"
 
-- Verify the run ID exists: `langstar runs query --filter 'eq(id, "<run-id>")'`
+- Verify the run ID exists: `langstar runs query -p <project-uuid> --filter 'eq(id, "<run-id>")'`
 - Ensure the run belongs to a project accessible by your API key
 
 ### Empty queue items

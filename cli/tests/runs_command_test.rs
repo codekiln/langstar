@@ -26,7 +26,8 @@ mod home;
 
 use assert_cmd::Command;
 use chrono::Utc;
-use langstar_sdk::{AuthConfig, LangchainClient, ProjectCreate};
+use futures_util::StreamExt;
+use langstar_sdk::{AuthConfig, LangchainClient, ProjectCreate, QueryRunsRequest, RunSelectField};
 use predicates::prelude::*;
 use serde_json::{Value, json};
 use std::time::{Duration, Instant};
@@ -610,9 +611,32 @@ fn test_runs_query_lifecycle() {
     let asc2 = query_runs_json(&project_id, &["-o", "json", "--order", "asc", "-l", "2"]);
     assert_eq!(names(&asc2), vec!["seed-middle-llm", "seed-newest-failed"]);
 
-    // --limit 1 across pages: page_size follows --limit, so this pages once per run
+    // --limit 1: the CLI sets page_size to 1 and stops after the first run
     let one = query_runs_json(&project_id, &["-o", "json", "-l", "1"]);
     assert_eq!(names(&one), vec!["seed-newest-failed"]);
+
+    // Paging: the CLI only pages past 1000 runs, so ask the SDK for one run
+    // per page and check that it follows next_cursor through all three.
+    let paged: Vec<String> = runtime.block_on(async {
+        let request = QueryRunsRequest {
+            project_ids: Some(vec![project.id]),
+            min_start_time: Some(Utc::now() - chrono::Duration::hours(1)),
+            page_size: Some(1),
+            selects: Some(vec![RunSelectField::Name]),
+            ..Default::default()
+        };
+        let mut stream = client.query_runs_paginated(request, None);
+        let mut names = Vec::new();
+        while let Some(run) = stream.next().await {
+            names.push(run.expect("page request failed").name.unwrap_or_default());
+        }
+        names
+    });
+    assert_eq!(
+        paged,
+        vec!["seed-newest-failed", "seed-middle-llm", "seed-oldest-chain"],
+        "one run per page should still reach every run"
+    );
 
     // --run-type
     let llm = query_runs_json(&project_id, &["-o", "json", "--run-type", "llm"]);

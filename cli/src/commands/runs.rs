@@ -581,7 +581,10 @@ impl RunsCommands {
                 }
             }
         } else if fields.is_empty() {
+            // An empty `selects` list is not the same as leaving it out, so
+            // ask for the ID explicitly.
             formatter.warning("--select named no fields; returning run IDs only");
+            fields.push(RunSelectField::Id);
         }
 
         Ok(fields)
@@ -1258,6 +1261,16 @@ mod tests {
             assert!(selects.contains(&field), "table needs {:?}", field);
         }
         assert_eq!(selects.len(), 1 + TABLE_FIELDS.len());
+    }
+
+    #[test]
+    fn test_resolve_selects_empty_json_asks_for_id() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        args.select = Some(" , ".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(selects, vec![RunSelectField::Id]);
     }
 
     #[test]
