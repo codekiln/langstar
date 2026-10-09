@@ -9,9 +9,9 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Design new features with OpenSpec
 
-Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, delta specs and tasks, and `openspec/config.yaml` sets what each of them must contain. `openspec validate <slug> --strict` checks the change. When the implementation is done, and before the feature's PR merges, the `openspec-archive-change` skill moves the change under `openspec/changes/archive/` and merges its delta specs into `openspec/specs/`, which describe what langstar does today, one command group per spec.
+Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, a task list, and the edits it makes to the specs in `openspec/specs/`; `openspec/config.yaml` sets what each file must contain. `openspec validate <slug> --strict` checks the change. When the implementation is done, and before the feature's PR merges, run the `openspec-archive-change` skill. It moves the change into `openspec/changes/archive/` and applies the change's spec edits to `openspec/specs/`, which describe what each langstar command group does today.
 
-The design work in Phase 2 goes into the change's `design.md`, and its tasks replace the implementation plan in Phase 10. `docs/implementation/` holds the design documents written before langstar adopted OpenSpec, and the test plans from Phase 7.
+Write the Phase 2 design in the change's `design.md` and the steps to build it in the change's `tasks.md`. `docs/implementation/` keeps the design documents written before langstar adopted OpenSpec, and the test plans that the `gh-milestones-test-plan` skill writes in Phase 7.
 
 ---
 
@@ -314,26 +314,7 @@ Understand what this feature accomplishes from a user's perspective in the LangS
 
 ### 2.4 Design Decisions Summary
 
-Write the decisions into the `## Decisions` section of the OpenSpec change's `design.md`. Before OpenSpec, they went into a "Design Decisions" section of the research report, like this:
-
-```markdown
-## Design Decisions
-
-### DX Consistency
-- Following `runs query` pattern for [reason]
-- Using `-f/--filter` flag consistent with [existing command]
-- Output formats: json (default for piping), table (default for terminal)
-
-### Configuration
-- Requires: LANGSMITH_API_KEY (existing), LANGSMITH_PROJECT_NAME (existing)
-- New env var: [none / LANGSMITH_NEW_VAR for reason]
-- Defaults: [list sensible defaults]
-
-### Business Purpose
-- Supports workflow: [describe UI workflow]
-- Key scenarios: [list 2-3 primary use cases]
-- CLI advantage: [why CLI is better than UI for this]
-```
+Write the decisions as prose in the `## Decisions` section of the OpenSpec change's `design.md`. Say which existing langstar command the new one follows and why, which settings and environment variables it reads, and which LangSmith workflow it serves that a user would rather run from the command line than from the web interface.
 
 ---
 
