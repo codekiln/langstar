@@ -42,6 +42,21 @@ async fn make_request_with_headers(
     Ok(request.send().await?)
 }
 
+/// Error bodies from `/repos` can name the organization or workspace, and CI
+/// stores test output where anyone signed in to GitHub can read it. This
+/// replaces each ID the test sent with its label, then any other UUID with
+/// `<uuid>`, so the printed body keeps the API's message without an ID.
+fn redact_ids(body: &str, sent: &[(&str, &str)]) -> String {
+    let mut redacted = body.to_string();
+    for (value, label) in sent {
+        redacted = redacted.replace(value, label);
+    }
+    let uuid =
+        regex::Regex::new(r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+            .expect("UUID pattern compiles");
+    uuid.replace_all(&redacted, "<uuid>").into_owned()
+}
+
 /// Test 1: Request with x-organization-id header only
 ///
 /// This tests whether the API accepts organization-level scoping via the
@@ -75,15 +90,15 @@ async fn test_org_id_header_only() {
         .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts x-organization-id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {} bytes", body.len());
+        println!(
+            "Error response: {}",
+            redact_ids(&body, &[(org_id, "<org-id>")])
+        );
         println!("\n✗ FAILED: API rejected x-organization-id header");
     }
 }
@@ -127,15 +142,15 @@ async fn test_workspace_id_header_only() {
             .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts X-Tenant-Id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {} bytes", body.len());
+        println!(
+            "Error response: {}",
+            redact_ids(&body, &[(&workspace_id, "<workspace-id>")])
+        );
         println!("\n✗ FAILED: API rejected X-Tenant-Id header");
     }
 }
@@ -193,16 +208,19 @@ async fn test_both_headers() {
     .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts both headers");
         println!("  NOTE: Need to determine which header takes precedence");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {} bytes", body.len());
+        println!(
+            "Error response: {}",
+            redact_ids(
+                &body,
+                &[(org_id, "<org-id>"), (&workspace_id, "<workspace-id>")]
+            )
+        );
         println!("\n✗ FAILED: API rejected the header combination");
     }
 }
@@ -252,10 +270,20 @@ async fn test_mismatched_ids() {
 
     let status = response.status();
     println!("Response status: {}", status);
-    println!("Response headers: {} received", response.headers().len());
 
-    let body = response.text().await.unwrap();
-    println!("Response body: {} bytes", body.len());
+    if status != StatusCode::OK {
+        let body = response.text().await.unwrap();
+        println!(
+            "Error response: {}",
+            redact_ids(
+                &body,
+                &[
+                    (org_id, "<org-id>"),
+                    (fake_workspace_id, "<fake-workspace-id>")
+                ]
+            )
+        );
+    }
 
     match status {
         StatusCode::BAD_REQUEST | StatusCode::FORBIDDEN | StatusCode::NOT_FOUND => {
@@ -293,13 +321,11 @@ async fn test_no_headers_baseline() {
     println!("Response status: {}", response.status());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: Baseline request works");
         println!("  This shows what results are returned without scoping");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {} bytes", body.len());
+        println!("Error response: {}", redact_ids(&body, &[]));
         println!("\n✗ FAILED: Even baseline request failed");
     }
 }
