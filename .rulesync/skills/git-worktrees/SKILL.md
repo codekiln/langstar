@@ -432,7 +432,7 @@ git branch --list codekiln/130-add-authentication
 
 ## Environment Requirements
 
-**Prerequisites:** Git 2.5+, `.worktrees/` in `.gitignore`, `gh` CLI (for issue queries)
+**Prerequisites:** Git 2.31+, `.worktrees/` in `.gitignore`, `gh` CLI (for issue queries)
 
 **Verification:** `git --version` and `git check-ignore .worktrees/` (should output: .worktrees/)
 
