@@ -29,3 +29,8 @@ rules:
     - Write requirements in terms of what a langstar user types and sees, such as arguments, flags, output and errors.
   tasks:
     - Include tasks for the unit and integration tests that docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md calls for.
+
+operations:
+  archive:
+    guidance:
+      - Run `openspec validate <name> --strict` before syncing or archiving the change, and stop when it fails.

@@ -33,7 +33,7 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 
 ### Requirement: Show the current settings and where each came from
 
-`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value with its source: the environment variable that set it, or the config file or a default. It SHALL show only the first 10 characters of the API key, followed by `...`. It SHALL name the active scope: the workspace when a workspace ID is set, otherwise the organization when an organization ID is set, otherwise none.
+`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value with its source: `(from env: <VARIABLE>)` when an environment variable set it, and `(from config file or default)` otherwise. It SHALL show only the first 10 characters of the API key, followed by `...`. It SHALL name the active scope: the workspace when a workspace ID is set, otherwise the organization when an organization ID is set, otherwise none.
 
 #### Scenario: API key from the environment
 

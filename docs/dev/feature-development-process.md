@@ -9,9 +9,9 @@ This document codifies the best practices and standard phases for implementing n
 
 ## Design new features with OpenSpec
 
-Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, delta specs and tasks, and `openspec/config.yaml` sets what each of them must contain. `openspec validate <slug> --strict` checks the change. Once the feature merges, the `openspec-archive-change` skill moves the change under `openspec/changes/archive/` and merges its delta specs into `openspec/specs/`, which describe what langstar does today, one command group per spec.
+Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, delta specs and tasks, and `openspec/config.yaml` sets what each of them must contain. `openspec validate <slug> --strict` checks the change. When the implementation is done, and before the feature's PR merges, the `openspec-archive-change` skill moves the change under `openspec/changes/archive/` and merges its delta specs into `openspec/specs/`, which describe what langstar does today, one command group per spec.
 
-The design work in Phase 2 goes into the change's `design.md`, and its tasks replace the implementation plan in Phase 10. `docs/implementation/` holds the design documents written before langstar adopted OpenSpec.
+The design work in Phase 2 goes into the change's `design.md`, and its tasks replace the implementation plan in Phase 10. `docs/implementation/` holds the design documents written before langstar adopted OpenSpec, and the test plans from Phase 7.
 
 ---
 
@@ -991,7 +991,7 @@ If the audit finds issues:
 
 ### 10.1 Archive the OpenSpec Change
 
-Check off the change's `tasks.md`, then archive the change with the `openspec-archive-change` skill so its specs reach `openspec/specs/`.
+Check off the change's `tasks.md`, then archive the change with the `openspec-archive-change` skill so its specs reach `openspec/specs/`. Commit the archive in the feature's PR, before it merges.
 
 ### 10.2 Update README
 
