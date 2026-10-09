@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🩹 fix(gh-start-issue): handle control characters in issue body JSON parsing (#717)
 - 🩹 fix(prompt): fetch the latest commit as parent when pushing an update to an existing prompt (#723)
 - 🩹 fix(cli): ask for confirmation before deleting datasets and queues (#739)
-  - `dataset delete` and `queue delete` now ask you to type `yes`. Without a terminal, `delete` on datasets, queues, projects, deployments, model configs and assistants now fails with an error instead of quietly cancelling, unless you pass the command's `--yes` or `--force` flag.
+  - `dataset delete` and `queue delete` now ask you to type `yes`. A script or CI job that runs `delete` on datasets, queues, projects, deployments, model configs or assistants now has to pass the command's `--yes` or `--force` flag; without it, the command stops with an error where it used to cancel quietly.
 - 🩹 fix(docs): replace real LangSmith org and workspace IDs with placeholders (#751)
 - 🩹 fix(api): follow LangSmith's new playground-settings and deployment responses, refresh OpenAPI specs (#755)
 - 🩹 fix(test): stop printing organization and workspace IDs in integration test output (#772)
