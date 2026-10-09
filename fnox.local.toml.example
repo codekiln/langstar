@@ -1,5 +1,6 @@
 # Template for the gitignored fnox.local.toml. Keep the real file in the main
-# checkout and symlink it from each worktree; one `fnox sync` then serves them all.
+# clone, and run `mise run worktree:link-secrets` in each worktree to link to it,
+# so one `fnox sync` fills the cache for every worktree.
 # See docs/dev/environment-variables.md.
 #
 #   cp fnox.local.toml.example fnox.local.toml

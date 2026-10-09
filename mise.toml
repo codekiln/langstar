@@ -9,7 +9,8 @@ minimum_release_age = "5d"
 [tools]
 python = "3.11"
 # Same version as rust-toolchain.toml, so mise and rustup users get one compiler.
-# The code uses let-chains (`if let ... && ...`), which compile only on Rust 1.88 or newer.
+# The workspace needs Rust 1.89 or newer (uuid 1.27's minimum), and the code uses let-chains
+# (`if let ... && ...`), which older compilers reject.
 rust = "1.99.0"
 # Secrets: fnox resolves fnox.toml's 1Password references (op) into an
 # age-encrypted local cache. See docs/dev/environment-variables.md.
@@ -17,9 +18,9 @@ fnox = "1.38.1"
 1password-cli = "2.40.0"
 # age provides age-keygen for the one-time machine setup.
 age = "1.3.2"
-# The test runner the pre-commit checks use. Neither the mise registry nor
-# aqua lists nextest, so the cargo backend builds it with the host toolchain.
-"cargo:cargo-nextest" = "0.9.148"
+# The test runner the pre-commit checks use. aqua downloads nextest's
+# prebuilt release, so nobody compiles it.
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.148"
 # Generates CHANGELOG.md; the release workflow and docs/dev/README.md call it.
 git-cliff = "2.14.2"
 # GitHub CLI, used by the worktree cleanup task and the issue workflow skills.
@@ -30,8 +31,6 @@ gh = "2.102.0"
 
 [env]
 # Test fixture names are not secrets, so they live here rather than in 1Password.
-# TEST_GRAPH_ID is the graph name in tests/fixtures/test-graph-deployment/langgraph.json.
-TEST_GRAPH_ID = "test_graph"
 REPOSITORY_OWNER = "codekiln"
 REPOSITORY_NAME = "langstar"
 # Only the repo-local bin. $HOME/.local/bin is deliberately absent: a stale

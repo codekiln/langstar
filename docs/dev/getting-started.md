@@ -4,7 +4,7 @@ This guide covers setting up the Langstar development environment for first-time
 
 ## Prerequisites
 
-- Host machine (primary): a Rust toolchain, [mise](https://mise.jdx.dev), and access to the 1Password vault that holds the LangSmith test credentials
+- Host machine (primary): Rust 1.89 or newer (`rustc --version` shows yours, and `rustup update stable` installs it), [mise](https://mise.jdx.dev), and access to the 1Password vault that holds the LangSmith test credentials
 - Devcontainer (secondary):
   - Docker Desktop installed and running (local development)
   - One of:
@@ -38,9 +38,11 @@ op signin      # or turn on the 1Password desktop app integration
 
 ### Step 2: One-Time Machine Setup
 
-Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if another project on the machine already did it.
+Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.
 
 ### Step 3: Point fnox at Your Vault and Sync
+
+Run these commands in the main clone:
 
 ```bash
 cp fnox.local.toml.example fnox.local.toml
@@ -49,7 +51,7 @@ fnox sync --provider sync-age --local-file
 fnox check --all
 ```
 
-Do this in the main clone. In each worktree, run `mise run worktree:link-secrets` after `git worktree add`, so every worktree reads the same cache.
+In each worktree, run `mise run worktree:link-secrets` right after `git worktree add`, so every worktree reads the same cache.
 
 ### Step 4: Verify Setup
 

@@ -12,20 +12,20 @@ Langstar uses three core environment variables for authentication across differe
 
 ## Loading the Variables Locally
 
-On a host machine, the variables come from 1Password through [fnox](https://fnox.jdx.dev), following the fnox [golden path](https://fnox.jdx.dev/guide/golden-path.html). 1Password is the source of truth. The committed `fnox.toml` holds only references to items and fields. Each developer reads from an age-encrypted cache in a gitignored `fnox.local.toml`, so daily runs work without calling 1Password.
+On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentials from 1Password once and keeps an encrypted copy in your gitignored `fnox.local.toml`, so tests run without asking 1Password each time. The committed `fnox.toml` says only which 1Password item and field holds each credential. This is the setup the [fnox guide](https://fnox.jdx.dev/guide/golden-path.html) recommends.
 
 | File | Committed | Contents |
 |------|-----------|----------|
 | `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
-| `fnox.local.toml.example` | Yes | Template for the local layer, with a placeholder vault |
+| `fnox.local.toml.example` | Yes | Template for your `fnox.local.toml`, with a placeholder vault name |
 | `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
-| `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `TEST_GRAPH_ID`, `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
+| `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
 
-The vault name stays out of the repository. Only the provider in your `fnox.local.toml` names it.
+Write your vault's name only in the `vault` setting of `[providers.langsmith]` in your gitignored `fnox.local.toml`, so it stays out of every commit.
 
 ### One-time machine setup
 
-Do this once per machine. Every project on the machine then shares the key and the provider.
+Do this once per computer. fnox then uses the same key and provider for every project on it.
 
 ```bash
 # Generate your personal age key
@@ -49,7 +49,7 @@ Sign in to the 1Password CLI (`op signin`, or turn on the desktop app integratio
 
 #### Optional: keep the age key in the Secure Enclave
 
-On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. Depending on the access-control policy, every decryption may then ask for Touch ID, which stalls unattended agent runs. Keep the plain key file if agents run tests for you. Only the provider changes:
+On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. With the `any-biometry` policy in the command below, macOS can ask for Touch ID each time fnox decrypts the cache, and an agent running tests unattended waits at that prompt. Keep the plain key file if agents run tests for you. Install the plugin and generate a key in the Secure Enclave, then point the `sync-age` provider in `~/.config/fnox/config.toml` at the new key:
 
 ```bash
 brew install age-plugin-se
@@ -67,10 +67,10 @@ Re-sync after you switch keys, because the old cache is encrypted to the old key
 
 ### Per-checkout setup
 
-fnox lets a config in a child directory override the same secret in a parent directory, so a worktree's committed `fnox.toml` hides a cache that sits only in the main checkout. To share one cache across every worktree, keep the real `fnox.local.toml` in the main checkout and symlink it from each worktree:
+Keep the real `fnox.local.toml` in the main clone and link to it from each worktree, so one `fnox sync` fills the cache for every worktree. Without the link, fnox takes each secret from the worktree's own `fnox.toml`, which holds only 1Password references, and asks 1Password for every one:
 
 ```bash
-# In the main checkout
+# In the main clone
 cp fnox.local.toml.example fnox.local.toml
 "${EDITOR:-vi}" fnox.local.toml               # set vault = "<your-1password-vault>"
 fnox sync --provider sync-age --local-file    # asks 1Password once
@@ -80,7 +80,7 @@ fnox check --all
 mise run worktree:link-secrets
 ```
 
-`mise-tasks/worktree/link-secrets` creates the relative symlink `fnox.local.toml -> ../../fnox.local.toml`. Running it again changes nothing, and it refuses to replace a real `fnox.local.toml`. Use `mise run worktree:link-secrets --check` to test a worktree without changing it. `fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you keep a single checkout, skip this step.
+`mise-tasks/worktree/link-secrets` creates the relative symlink `fnox.local.toml -> ../../fnox.local.toml`. Running it again changes nothing, and it refuses to replace a real `fnox.local.toml`. Use `mise run worktree:link-secrets --check` to test a worktree without changing it. `fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you work only in the main clone, skip `mise run worktree:link-secrets`.
 
 ### Run commands with the secrets
 
@@ -88,7 +88,7 @@ mise run worktree:link-secrets
 fnox exec -- cargo nextest run --profile ci --all-features --workspace
 ```
 
-`fnox exec` decrypts the cache with your age key and does not call 1Password. It fails before the command runs if any secret cannot be resolved, so integration tests are never skipped in silence (#660). For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
+`fnox exec` decrypts the cache with your age key and does not call 1Password. When fnox cannot find a secret, `fnox exec` stops before the command starts, so the test run fails instead of quietly skipping the integration tests. Quietly skipped tests are one of the testing problems listed in [#660 Final testing verification for ls-prompt-structured-outputs milestone](https://github.com/codekiln/langstar/issues/660). For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
 
 ### Re-sync after a rotation
 
@@ -105,7 +105,7 @@ The devcontainer still reads the variables from `.devcontainer/.env` through `do
 
 ### CI
 
-CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox. A 1Password service account sees whole vaults, so moving CI to `OP_SERVICE_ACCOUNT_TOKEN` is a separate decision.
+CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox.
 
 ## Environment Variable to Header Mapping
 
@@ -209,7 +209,7 @@ This approach was chosen because:
 | Refresh the cache after a rotation | `fnox sync --provider sync-age --local-file --force` |
 | See which config files fnox loaded | `fnox config-files` |
 
-Every API needs `LANGSMITH_API_KEY`. The Control Plane API also needs `LANGSMITH_WORKSPACE_ID`. Integration tests need all three variables, and `fnox.toml` loads all three.
+Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, and `fnox exec` sets each of them.
 
 ## Implementation Details
 
