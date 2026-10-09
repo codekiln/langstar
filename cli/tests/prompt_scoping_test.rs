@@ -433,9 +433,10 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
 
 /// Generate a unique test prompt name.
 ///
-/// Every run that uses the same LangSmith workspace shares its prompts, so a
-/// name built from a timestamp or a process ID can repeat across runs. The
-/// first 12 hex characters of a random UUID make a repeat vanishingly unlikely.
+/// All test runs against one LangSmith workspace create prompts in that
+/// workspace, so a name built from a timestamp or a process ID can repeat
+/// across runs. The first 12 hex characters of a random UUID make a repeat
+/// vanishingly unlikely.
 fn generate_test_prompt_name(prefix: &str) -> String {
     format!(
         "{}-{}",
@@ -445,10 +446,11 @@ fn generate_test_prompt_name(prefix: &str) -> String {
 }
 
 /// Deletes a test prompt when dropped, so a test that fails after creating
-/// its prompt still removes it and a later run never finds it left behind.
+/// its prompt still tries to remove it. If that delete fails too, `Drop`
+/// prints a warning and the prompt stays in the workspace.
 ///
-/// The test's own DELETE step calls `delete_now`, which deletes the prompt
-/// and disarms the guard once the delete succeeds.
+/// The test's own DELETE step calls `delete_now`. When that delete succeeds,
+/// `Drop` has nothing left to delete.
 struct PromptCleanup<'a> {
     runtime: &'a tokio::runtime::Runtime,
     client: &'a LangchainClient,
