@@ -972,7 +972,7 @@ If the audit finds issues:
 
 ### 10.1 Archive the OpenSpec Change
 
-Check off the change's `tasks.md`, then archive the change with the `openspec-archive-change` skill so its specs reach `openspec/specs/`. Commit the archive in the feature's PR, before it merges.
+Check off the change's `tasks.md`, then run the `openspec-archive-change` skill. It applies the change's spec edits to `openspec/specs/` and moves the change into `openspec/changes/archive/`. Commit the archive in the feature's PR, before it merges.
 
 ### 10.2 Update README
 
@@ -1118,7 +1118,7 @@ gh release create v0.10.0 --generate-notes
 - [ ] MANIFEST.md updated with provenance for spec fetches
 - [ ] Extracted fragments in `reference/api-specs/{api}/`
 - [ ] FRAGMENTS.md updated with jq queries for extractions
-- [ ] OpenSpec change archived and its specs merged into `openspec/specs/`
+- [ ] OpenSpec change archived, with its spec edits applied to `openspec/specs/`
 - [ ] Same markdown structure
 
 ---
