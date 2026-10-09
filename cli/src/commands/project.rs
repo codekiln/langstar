@@ -437,6 +437,11 @@ impl ProjectCommands {
     }
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
+        // Refuse before the name lookup below when there is nobody to ask.
+        if !args.force {
+            crate::confirm::require_terminal("--force")?;
+        }
+
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 

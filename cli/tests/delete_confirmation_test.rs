@@ -47,3 +47,16 @@ fn dataset_delete_without_yes_on_non_tty_errors() {
 fn queue_delete_without_force_on_non_tty_errors() {
     assert_refuses_without_tty(&["queue", "delete", ID], "--force");
 }
+
+#[test]
+fn project_delete_by_name_without_force_on_non_tty_errors_before_lookup() {
+    assert_refuses_without_tty(&["project", "delete", "some-project-name"], "--force");
+}
+
+#[test]
+fn assistant_delete_without_force_on_non_tty_errors_before_lookup() {
+    assert_refuses_without_tty(
+        &["assistant", "delete", ID, "--deployment", "some-deployment"],
+        "--force",
+    );
+}

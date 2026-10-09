@@ -219,6 +219,11 @@ impl AssistantCommands {
             AssistantCommands::Delete { deployment, .. } => deployment,
         };
 
+        // Refuse before any network lookup when there is nobody to ask.
+        if let AssistantCommands::Delete { force: false, .. } = self {
+            crate::confirm::require_terminal("--force")?;
+        }
+
         // Resolve deployment to URL
         let deployment_url = resolve_deployment_url(config, deployment_name).await?;
 

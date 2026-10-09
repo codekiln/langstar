@@ -22,6 +22,25 @@ pub fn confirm(question: &str, accepted: &[&str], skip_flag: &str) -> Result<boo
     )
 }
 
+/// Fails when stdin is not a terminal, naming `skip_flag` as the way to proceed.
+///
+/// A command that must look something up over the network before it can ask calls this
+/// first, so a script without the flag gets this error and not a lookup failure.
+pub fn require_terminal(skip_flag: &str) -> Result<()> {
+    require_terminal_if(io::stdin().is_terminal(), skip_flag)
+}
+
+fn require_terminal_if(is_tty: bool, skip_flag: &str) -> Result<()> {
+    if is_tty {
+        Ok(())
+    } else {
+        Err(CliError::Config(format!(
+            "confirmation required but stdin is not a terminal; pass {} to proceed without prompting",
+            skip_flag
+        )))
+    }
+}
+
 /// Asks the same question as [`confirm`], but the caller says where the answer is read from,
 /// whether that source is a terminal, and where the question is printed. The unit tests use it
 /// to run the prompt without a real terminal.
@@ -33,12 +52,7 @@ pub fn confirm_from(
     accepted: &[&str],
     skip_flag: &str,
 ) -> Result<bool> {
-    if !is_tty {
-        return Err(CliError::Config(format!(
-            "confirmation required but stdin is not a terminal; pass {} to proceed without prompting",
-            skip_flag
-        )));
-    }
+    require_terminal_if(is_tty, skip_flag)?;
 
     write!(prompt_out, "{} ", question)?;
     prompt_out.flush()?;
@@ -91,6 +105,18 @@ mod tests {
         let err = run("y\n", false, YN).unwrap_err().to_string();
         assert!(err.contains("--yes"), "{err}");
         assert!(err.contains("not a terminal"), "{err}");
+    }
+
+    #[test]
+    fn require_terminal_errors_naming_flag_only_without_tty() {
+        let err = require_terminal_if(false, "--force")
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("--force") && err.contains("not a terminal"),
+            "{err}"
+        );
+        assert!(require_terminal_if(true, "--force").is_ok());
     }
 
     #[test]
