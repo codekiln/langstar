@@ -451,30 +451,29 @@ fn generate_test_prompt_name(prefix: &str) -> String {
 ///
 /// The test's own DELETE step calls `delete_now`. When that delete succeeds,
 /// `Drop` has nothing left to delete.
-struct PromptCleanup<'a> {
-    runtime: &'a tokio::runtime::Runtime,
-    client: &'a LangchainClient,
+///
+/// `delete` is the function that removes a prompt by name. The tests pass one
+/// that calls LangSmith; the unit tests below pass one that records each call.
+struct PromptCleanup<D: FnMut(&str) -> Result<(), String>> {
+    delete: D,
     name: Option<String>,
 }
 
-impl<'a> PromptCleanup<'a> {
-    fn new(runtime: &'a tokio::runtime::Runtime, client: &'a LangchainClient, name: &str) -> Self {
+impl<D: FnMut(&str) -> Result<(), String>> PromptCleanup<D> {
+    fn new(name: &str, delete: D) -> Self {
         Self {
-            runtime,
-            client,
+            delete,
             name: Some(name.to_string()),
         }
     }
 
     /// Delete the prompt now. When the delete fails, `Drop` tries it again as
     /// the test ends.
-    fn delete_now(&mut self) -> Result<(), langstar_sdk::LangstarError> {
+    fn delete_now(&mut self) -> Result<(), String> {
         let Some(name) = self.name.clone() else {
             return Ok(());
         };
-        let result = self
-            .runtime
-            .block_on(async { self.client.prompts().delete(&name).await });
+        let result = (self.delete)(&name);
         if result.is_ok() {
             self.name = None;
         }
@@ -482,17 +481,14 @@ impl<'a> PromptCleanup<'a> {
     }
 }
 
-impl Drop for PromptCleanup<'_> {
+impl<D: FnMut(&str) -> Result<(), String>> Drop for PromptCleanup<D> {
     fn drop(&mut self) {
         if let Some(name) = self.name.take() {
             println!(
                 "[CLEANUP] Deleting test prompt left by a failed step: {}",
                 name
             );
-            if let Err(e) = self
-                .runtime
-                .block_on(async { self.client.prompts().delete(&name).await })
-            {
+            if let Err(e) = (self.delete)(&name) {
                 println!(
                     "   ⚠ Warning: Failed to delete test prompt '{}': {}",
                     name, e
@@ -500,6 +496,72 @@ impl Drop for PromptCleanup<'_> {
             }
         }
     }
+}
+
+/// A `PromptCleanup` delete function for the lifecycle tests, which deletes
+/// the prompt in LangSmith.
+fn delete_prompt_in_langsmith<'a>(
+    runtime: &'a tokio::runtime::Runtime,
+    client: &'a LangchainClient,
+) -> impl FnMut(&str) -> Result<(), String> + 'a {
+    move |name| {
+        runtime
+            .block_on(async { client.prompts().delete(name).await })
+            .map_err(|e| e.to_string())
+    }
+}
+
+/// A test that panics after its guard exists still deletes the prompt, once.
+#[test]
+fn test_prompt_cleanup_deletes_once_when_a_step_panics() {
+    let calls = std::cell::RefCell::new(Vec::new());
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let _cleanup = PromptCleanup::new("test-prompt", |name: &str| {
+            calls.borrow_mut().push(name.to_string());
+            Ok(())
+        });
+        panic!("a test step failed");
+    }));
+
+    assert!(result.is_err(), "the closure should have panicked");
+    assert_eq!(calls.into_inner(), vec!["test-prompt".to_string()]);
+}
+
+/// A failed `delete_now` keeps the guard armed, and `Drop` tries again.
+#[test]
+fn test_prompt_cleanup_retries_a_failed_delete_on_drop() {
+    let calls = std::cell::RefCell::new(Vec::new());
+    {
+        let mut cleanup = PromptCleanup::new("test-prompt", |name: &str| {
+            calls.borrow_mut().push(name.to_string());
+            if calls.borrow().len() == 1 {
+                Err("server error".to_string())
+            } else {
+                Ok(())
+            }
+        });
+        assert_eq!(cleanup.delete_now(), Err("server error".to_string()));
+    }
+
+    assert_eq!(
+        calls.into_inner(),
+        vec!["test-prompt".to_string(), "test-prompt".to_string()]
+    );
+}
+
+/// A successful `delete_now` leaves `Drop` nothing to delete.
+#[test]
+fn test_prompt_cleanup_does_not_delete_again_after_delete_now() {
+    let calls = std::cell::RefCell::new(Vec::new());
+    {
+        let mut cleanup = PromptCleanup::new("test-prompt", |name: &str| {
+            calls.borrow_mut().push(name.to_string());
+            Ok(())
+        });
+        assert_eq!(cleanup.delete_now(), Ok(()));
+    }
+
+    assert_eq!(calls.into_inner(), vec!["test-prompt".to_string()]);
 }
 
 /// CRUD Lifecycle Test: Full Create → Read → List → Delete cycle
@@ -553,7 +615,10 @@ fn test_prompt_crud_lifecycle_private_visibility() {
         Ok(p) => p,
         Err(e) => panic!("Failed to create test prompt: {}", e),
     };
-    let mut cleanup = PromptCleanup::new(&runtime, &client, &test_prompt_name);
+    let mut cleanup = PromptCleanup::new(
+        &test_prompt_name,
+        delete_prompt_in_langsmith(&runtime, &client),
+    );
     println!("   ✓ Created prompt: {}", prompt.repo_handle);
     assert!(!prompt.is_public, "Prompt should be private");
 
@@ -760,7 +825,10 @@ fn test_prompt_search_crud_lifecycle() {
     });
 
     let prompt = created.expect("Failed to create searchable test prompt");
-    let mut cleanup = PromptCleanup::new(&runtime, &client, &test_prompt_name);
+    let mut cleanup = PromptCleanup::new(
+        &test_prompt_name,
+        delete_prompt_in_langsmith(&runtime, &client),
+    );
     println!("   ✓ Created: {}", prompt.repo_handle);
 
     // ═══════════════════════════════════════════════════════════════════════
