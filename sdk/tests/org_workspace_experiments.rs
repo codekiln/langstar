@@ -30,12 +30,12 @@ async fn make_request_with_headers(
     let mut request = client.http_client().get(&url).header("x-api-key", api_key);
 
     if let Some(org) = org_id {
-        println!("  Adding x-organization-id: {}", org);
+        println!("  Adding x-organization-id header");
         request = request.header("x-organization-id", org);
     }
 
     if let Some(ws) = workspace_id {
-        println!("  Adding X-Tenant-Id: {}", ws);
+        println!("  Adding X-Tenant-Id header");
         request = request.header("X-Tenant-Id", ws);
     }
 
@@ -66,11 +66,7 @@ async fn test_org_id_header_only() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
-    println!(
-        "Organization name: {}",
-        org.display_name.unwrap_or_default()
-    );
+    println!("✓ Organization resolved");
 
     // Make a request to list prompts with only org ID header
     println!("\nMaking request with x-organization-id only...");
@@ -79,18 +75,15 @@ async fn test_org_id_header_only() {
         .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
+    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
+        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts x-organization-id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!("Error response: {} bytes", body.len());
         println!("\n✗ FAILED: API rejected x-organization-id header");
     }
 }
@@ -124,7 +117,7 @@ async fn test_workspace_id_header_only() {
     }
 
     let workspace_id = workspace_id.unwrap();
-    println!("Workspace ID: {}", workspace_id);
+    println!("✓ Workspace ID set");
 
     // Make a request to list prompts with only workspace ID header
     println!("\nMaking request with X-Tenant-Id only...");
@@ -134,18 +127,15 @@ async fn test_workspace_id_header_only() {
             .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
+    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
+        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts X-Tenant-Id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!("Error response: {} bytes", body.len());
         println!("\n✗ FAILED: API rejected X-Tenant-Id header");
     }
 }
@@ -177,7 +167,7 @@ async fn test_both_headers() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
+    println!("✓ Organization resolved");
 
     // Get workspace ID from environment
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok();
@@ -189,7 +179,7 @@ async fn test_both_headers() {
     }
 
     let workspace_id = workspace_id.unwrap();
-    println!("Workspace ID: {}", workspace_id);
+    println!("✓ Workspace ID set");
 
     // Make a request with both headers
     println!("\nMaking request with both headers...");
@@ -203,19 +193,16 @@ async fn test_both_headers() {
     .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
+    println!("Response headers: {} received", response.headers().len());
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
+        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: API accepts both headers");
         println!("  NOTE: Need to determine which header takes precedence");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!("Error response: {} bytes", body.len());
         println!("\n✗ FAILED: API rejected the header combination");
     }
 }
@@ -246,7 +233,7 @@ async fn test_mismatched_ids() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
+    println!("✓ Organization resolved");
 
     // Use a fake/mismatched workspace ID
     let fake_workspace_id = "00000000-0000-0000-0000-000000000000";
@@ -265,10 +252,10 @@ async fn test_mismatched_ids() {
 
     let status = response.status();
     println!("Response status: {}", status);
-    println!("Response headers: {:#?}", response.headers());
+    println!("Response headers: {} received", response.headers().len());
 
     let body = response.text().await.unwrap();
-    println!("Response body: {}", body);
+    println!("Response body: {} bytes", body.len());
 
     match status {
         StatusCode::BAD_REQUEST | StatusCode::FORBIDDEN | StatusCode::NOT_FOUND => {
@@ -307,15 +294,12 @@ async fn test_no_headers_baseline() {
 
     if response.status().is_success() {
         let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
+        println!("Response body: {} bytes", body.len());
         println!("\n✓ SUCCESS: Baseline request works");
         println!("  This shows what results are returned without scoping");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!("Error response: {} bytes", body.len());
         println!("\n✗ FAILED: Even baseline request failed");
     }
 }
