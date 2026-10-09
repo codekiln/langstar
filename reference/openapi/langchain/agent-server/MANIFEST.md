@@ -3,8 +3,8 @@
 ## Source
 
 - **URL Pattern**: `https://<deployment-url>/openapi.json`
-- **Test Deployment**: `pr-integration-test-1764940-7a241d0b197b5ecfa646acb9f75eea50.us.langgraph.app`
-- **Fetched**: 2025-12-05
+- **Test Deployment**: the shared `pr-integration-test-*` deployment that the integration tests reuse. Its URL is left out of this repository; look it up with the refresh command below.
+- **Fetched**: 2026-10-09
 - **Version**: 0.1.0
 
 ## Nature of This API
