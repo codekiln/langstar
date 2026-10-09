@@ -1,7 +1,9 @@
 # https://mise.jdx.dev/
 
-# A release younger than this is not installed. Five days gives the community
-# time to catch a compromised or broken release first.
+# Five days gives the community time to catch a compromised or broken release
+# first. mise applies this only to versions it resolves itself (`latest`, a
+# prefix like `22`, npm dependencies); an exact pin below is exempt, so check a
+# release's age by hand before bumping one.
 # https://mise.jdx.dev/configuration/settings.html#minimum_release_age
 [settings]
 minimum_release_age = "5d"
@@ -28,6 +30,9 @@ gh = "2.102.0"
 # Generates the per-agent config files from .rulesync/. Pinned because an older
 # copy silently drops skill frontmatter (license, argument-hint, allowed-tools).
 "npm:rulesync" = "27.0.0"
+# rulesync is a Node CLI (v27 declares node >=22); without Node its executable
+# cannot run on a clean host.
+node = "22"
 
 [env]
 # Test fixture names are not secrets, so they live here rather than in 1Password.
