@@ -79,12 +79,12 @@ Every `langstar deployment` subcommand that prints a deployment SHALL replace ea
 
 ### Requirement: Find the GitHub integration ID
 
-For a `github` source, `langstar deployment create` SHALL take the GitHub integration ID from `--integration-id`, then from the `LANGGRAPH_GITHUB_INTEGRATION_ID` environment variable or the `github_integration_id` config setting, and then from the first existing GitHub deployment in the workspace. When none of these has one, it SHALL exit with an error that explains each way to supply the ID.
+For a `github` source, `langstar deployment create` SHALL take the GitHub integration ID from `--integration-id`, then from the `LANGGRAPH_GITHUB_INTEGRATION_ID` environment variable or the `github_integration_id` config setting, and then from the first GitHub deployment among the first 100 deployments in the workspace. When none of these has one, it SHALL exit with an error that explains each way to supply the ID.
 
 #### Scenario: ID found on an existing deployment
 
 - **WHEN** a user creates a GitHub deployment without passing or configuring an integration ID
-- **AND** the workspace already has a GitHub deployment
+- **AND** the workspace's first 100 deployments include a GitHub deployment
 - **THEN** langstar uses that deployment's integration ID and says where it found it
 
 #### Scenario: No ID anywhere

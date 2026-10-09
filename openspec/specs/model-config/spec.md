@@ -31,11 +31,11 @@ In text format, `langstar model-config list` SHALL print one tab-separated line 
 
 ### Requirement: Get one model configuration
 
-`langstar model-config get <id>` SHALL show the model configuration with that ID, in the same table and JSON output as `model-config list`. When no configuration has the ID, it SHALL exit with an error that names the ID.
+`langstar model-config get <id>` SHALL show the model configuration with that ID, in the same table and JSON output as `model-config list`. It SHALL look for the ID among the first 5,000 configurations in the workspace, and when none of them has the ID, it SHALL exit with an error that names the ID.
 
 #### Scenario: Unknown ID
 
-- **WHEN** a user runs `langstar model-config get <config-id>` and no configuration has that ID
+- **WHEN** a user runs `langstar model-config get <config-id>` and none of the first 5,000 configurations has that ID
 - **THEN** langstar exits with an error saying the model configuration was not found
 
 ### Requirement: Create a model configuration from a file
