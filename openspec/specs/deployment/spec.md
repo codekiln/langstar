@@ -17,7 +17,7 @@
 
 ### Requirement: Filter the deployment list
 
-`langstar deployment list` SHALL narrow the list with `--name-contains` (a substring of the name), `--status` (one of `READY`, `AWAITING_DATABASE`, `UNUSED`, `AWAITING_DELETE` or `UNKNOWN`, in any case) and `--deployment-type` (one of `dev_free`, `dev` or `prod`). It SHALL exit with an error that lists the valid values when a user passes any other status or type.
+`langstar deployment list` SHALL narrow the list with `--name-contains` (a substring of the name), `--status` (one of `READY`, `AWAITING_DATABASE`, `UNUSED`, `AWAITING_DELETE`, `AWAITING_FINAL_DELETE` or `UNKNOWN`, in any case) and `--deployment-type` (one of `dev_free`, `dev` or `prod`). It SHALL exit with an error that lists the valid values when a user passes any other status or type.
 
 #### Scenario: Filter by status
 

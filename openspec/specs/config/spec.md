@@ -33,13 +33,23 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 
 ### Requirement: Show the current settings and where each came from
 
-`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value with its source: `(from env: <VARIABLE>)` when an environment variable set it, and `(from config file or default)` otherwise. It SHALL show only the first 10 characters of the API key, followed by `...`. It SHALL name the active scope: the workspace when a workspace ID is set, otherwise the organization when an organization ID is set, otherwise none.
+`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value with its source: `(from env: <VARIABLE>)` when the environment variable's text equals the setting's value as langstar displays it, comparing the whole API key rather than its first 10 characters, and `(from config file or default)` otherwise. It SHALL show only the first 10 characters of the API key, followed by `...`.
 
 #### Scenario: API key from the environment
 
 - **WHEN** `LANGSMITH_API_KEY` is set to `<your-api-key>`
 - **AND** a user runs `langstar config show`
 - **THEN** langstar shows the first 10 characters of `<your-api-key>` followed by `...` and `(from env: LANGSMITH_API_KEY)`
+
+#### Scenario: Environment variable whose value langstar rewrites
+
+- **WHEN** `LANGSTAR_TIMEZONE` is set to `local`
+- **AND** a user runs `langstar config show`
+- **THEN** langstar shows the timezone as `local (system timezone)` followed by `(from config file or default)`
+
+### Requirement: Name the active scope
+
+`langstar config show` SHALL name the active scope: the workspace when a workspace ID is set, otherwise the organization when an organization ID is set, otherwise none.
 
 #### Scenario: Workspace scope
 
