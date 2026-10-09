@@ -233,7 +233,7 @@ DEPLOYMENT_TYPE="${1:-dev_free}"
 langstar deployment create \
   --name "$DEPLOYMENT_NAME" \
   --source github \
-  --repo-url "$GITHUB_REPOSITORY" \
+  --repo-url "https://github.com/$GITHUB_REPOSITORY" \
   --branch "$GITHUB_REF_NAME" \
   --deployment-type "$DEPLOYMENT_TYPE" \
   --wait

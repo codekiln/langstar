@@ -624,7 +624,7 @@ async fn resolve_integration_id(
     let (owner, repo) = parse_github_repo(repo_url).ok_or_else(|| {
         crate::error::CliError::Config(format!(
             "Cannot read the GitHub owner and repository from --repo-url {}. \
-             Use https://github.com/<owner>/<repo>, or pass --integration-id.",
+             Use the full URL https://github.com/<owner>/<repo>, or pass --integration-id.",
             repo_url
         ))
     })?;
@@ -633,7 +633,7 @@ async fn resolve_integration_id(
         .find_integration_for_repo(&owner, &repo)
         .await
         .map_err(|e| match e {
-            langstar_sdk::LangstarError::ApiError { status: 404, .. } => {
+            langstar_sdk::LangstarError::NoGitHubIntegrationForRepo { .. } => {
                 crate::error::CliError::Config(format!(
                     "No GitHub integration in this workspace has access to {}/{}. \
                      In LangSmith, open Deployments, choose + New Deployment, then \
@@ -771,6 +771,40 @@ mod tests {
             message.contains("--integration-id"),
             "unexpected error: {}",
             message
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_integration_id_keeps_api_errors() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/v1/integrations/github/install")
+            .with_body(r#"[{"id":"forbidden","installation_id":1,"name":"a"}]"#)
+            .create_async()
+            .await;
+        server
+            .mock("GET", "/v1/integrations/github/forbidden/repos")
+            .with_status(403)
+            .with_body(r#"{"detail":"Forbidden"}"#)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let err = resolve_integration_id(&client, None, "https://github.com/codekiln/langstar")
+            .await
+            .unwrap_err();
+
+        // A 403 from LangSmith is a permission problem, not a missing GitHub app.
+        assert!(
+            matches!(
+                err,
+                crate::error::CliError::Sdk(langstar_sdk::LangstarError::ApiError {
+                    status: 403,
+                    ..
+                })
+            ),
+            "expected the 403 to pass through, got {}",
+            err
         );
     }
 

@@ -1,5 +1,7 @@
 # Integration Test Fixture Analysis: SDK vs CLI
 
+> **`LANGGRAPH_GITHUB_INTEGRATION_ID` no longer exists.** [#648 🧪 test: fix silent test skip patterns and CI env vars](https://github.com/codekiln/langstar/pull/648) removed the CI secret, [#526 ♻️ refactor(tests): consolidate CLI test fixtures to use SDK directly](https://github.com/codekiln/langstar/pull/526) removed the test-fixture fallback, and [#754 ✨ feat(dev): load LangSmith secrets through fnox and 1Password](https://github.com/codekiln/langstar/pull/754) removed the CLI variable and the `github_integration_id` config key. `langstar deployment create` now asks the Control Plane API which GitHub integration can reach the repository. The rest of this page is the original record.
+
 **Issue:** #512, #524
 **Date:** 2025-12-03
 **Purpose:** Document the current state of test fixtures, the discrepancy between SDK and CLI implementations, and the path forward for consolidation.

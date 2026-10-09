@@ -30,11 +30,7 @@ async fn test_push_prompt_to_prompthub() {
     match client.get_current_organization().await {
         Ok(org) => {
             if let Some(org_id) = org.id {
-                println!(
-                    "✓ Organization: {} (ID: {})",
-                    org.display_name.unwrap_or_default(),
-                    org_id
-                );
+                println!("✓ Organization resolved");
                 client = client.with_organization_id(org_id);
             } else {
                 println!("⚠ Organization has no ID, proceeding without X-Organization-Id header");
