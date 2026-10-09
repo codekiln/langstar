@@ -663,7 +663,9 @@ async fn create_fresh_deployment_with_attempts(
 /// * `Err(...)` - If creation or waiting failed
 ///
 /// Note: The returned `deployment_name` may differ from `config.name` when an existing
-/// deployment is reused via prefix matching. Always use the returned name for assertions.
+/// deployment is reused via prefix matching, or when a release config's create got a 409
+/// and was retried under a new `release-integration-test-*` name. Always use the returned
+/// name for assertions.
 ///
 /// # Example
 ///
