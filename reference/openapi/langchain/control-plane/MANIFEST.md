@@ -37,7 +37,9 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 ## Refresh Command
 
 ```bash
-curl -sSf https://api.host.langchain.com/openapi.json | jq --indent 2 . > openapi.json
+curl -sSf https://api.host.langchain.com/openapi.json -o openapi.json.tmp \
+  && jq --indent 2 . openapi.json.tmp > openapi.json.new \
+  && mv openapi.json.new openapi.json; rm -f openapi.json.tmp openapi.json.new
 ```
 
 ## Related Files

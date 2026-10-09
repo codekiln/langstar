@@ -40,7 +40,9 @@ The core LangSmith API provides endpoints for:
 ## Refresh Command
 
 ```bash
-curl -sSf https://api.smith.langchain.com/openapi.json | jq --indent 2 . > openapi.json
+curl -sSf https://api.smith.langchain.com/openapi.json -o openapi.json.tmp \
+  && jq --indent 2 . openapi.json.tmp > openapi.json.new \
+  && mv openapi.json.new openapi.json; rm -f openapi.json.tmp openapi.json.new
 ```
 
 ## Related Files
