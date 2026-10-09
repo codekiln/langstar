@@ -28,7 +28,7 @@ The manager picks the issues, records which worker owns which, and answers worke
 
 ## Workers reach the manager with SendMessage
 
-A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the name the manager was started with (`claude -n langstar-manager` makes that name `langstar-manager`). It never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
+A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the manager's name exactly as `ListAgents` prints it. The display name from `claude -n` can differ from that routable name, so a worker looks the manager up with `ListAgents` (or uses the address the manager gave it in its brief) instead of guessing; a guess fails with "No agent named ... is reachable". It never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
 
 Claude Code does not load the `SendMessage` tool until it is asked to. Run `ToolSearch` with the query `select:SendMessage` before the first message.
 
