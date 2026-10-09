@@ -24,7 +24,7 @@ async fn create_integration_test_client() -> LangchainClient {
     match client.get_current_organization().await {
         Ok(org) => {
             if let Some(org_id) = org.id {
-                println!("✓ Using organization from API (name withheld from logs)");
+                println!("✓ Organization resolved");
                 client = client.with_organization_id(org_id);
             }
         }
