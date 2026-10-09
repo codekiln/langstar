@@ -649,7 +649,7 @@ fn test_cli_pull_private_prompt_json_output() {
     // CLEANUP: Automatic via Drop trait
 }
 
-/// Pushing a second version to an existing prompt must fetch the first commit as parent instead of failing with a 409 conflict. Fixes the bug in <https://github.com/codekiln/langstar/issues/719> (prompt push fails with 409 conflict when updating existing prompt); the test itself is <https://github.com/codekiln/langstar/issues/733>.
+/// Pushing a second version to an existing prompt must fetch the first commit as parent instead of failing with a 409 conflict, the bug reported in <https://github.com/codekiln/langstar/issues/719> (prompt push fails with 409 conflict when updating existing prompt). The test was requested in <https://github.com/codekiln/langstar/issues/733> (add integration test for prompt update auto-parent behavior).
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[serial]

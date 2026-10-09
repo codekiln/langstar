@@ -13,17 +13,14 @@
 > "It's my expectation that 'The push should automatically fetch the latest commit hash and use it as the parent commit' as per the description of #719. That's what happens in git and it's what should happen here."
 
 **Design Document Context**:
-The design doc `docs/implementation/ls-prompt-ux-command-redesign.md` plans a CRUD redesign for later, tracked in [#728 668.2-crud-commands Implement CRUD command structure (create, get, update)](https://github.com/codekiln/langstar/issues/728), in which `push` splits into `create` for new prompts and `update` for existing ones.
-- `push` will be split into `create` (new prompts) and `update` (existing prompts)
-- This is part of a broader AI-first UX redesign
-- Phase 2 is planned but not yet implemented
+The design doc `docs/implementation/ls-prompt-ux-command-redesign.md` plans a CRUD redesign for later, tracked in [#728 668.2-crud-commands Implement CRUD command structure (create, get, update)](https://github.com/codekiln/langstar/issues/728), in which `push` splits into `create` for new prompts and `update` for existing ones; that work has not started.
 
 ## Current State Analysis
 
 ### What Exists Now
 - **PR #723 implementation**: Three flags for parent commit handling
 - The branch removes the three flags and fetches the latest commit as the parent whenever the repository already exists.
-- **Code location**: `cli/src/commands/prompt.rs` lines 100-800
+- **Code location**: the push handler in `cli/src/commands/prompt.rs`
 - **SDK support**: `get_commit()` method exists and works (added in PR #723)
 
 ### Current Behavior After Changes
@@ -86,8 +83,8 @@ Split `push` into `create` and `update` commands as outlined in redesign doc.
 ### Files to Modify
 
 1. **`cli/src/commands/prompt.rs`** (primary changes)
-   - Lines 100-148: Remove three flag definitions
-   - Lines 588-593: Remove flag variables from pattern match
+   - Remove the `parent_commit`, `auto_parent` and `force` flag definitions from the `Push` struct in `cli/src/commands/prompt.rs`.
+   - Remove those three flags from the pattern match in the push handler.
    - In the push handler, replace the parent-commit branching with the auto-fetch shown under "Detailed Changes".
 
 2. **Tests to Update**
@@ -260,5 +257,3 @@ The following are planned but NOT part of this fix:
 **Changes**: This branch removes the three flags and fetches the parent commit automatically.
 **Testing**: Manual + automated verification
 **Outcome**: Git-like UX where "push just works" for both create and update
-
-This plan solves #719 completely while staying focused and not over-engineering the solution.
