@@ -92,6 +92,12 @@ impl ConfigCommands {
 
         println!("Configuration file: {}", config_path.display());
         println!("  File exists: {}", config_path.exists());
+        if let Some(path) = Config::file_to_read()?.filter(|path| *path != config_path) {
+            println!(
+                "  Reading instead: {} (where langstar kept it before v2.2.0)",
+                path.display()
+            );
+        }
 
         println!("\nCurrent configuration:");
 
@@ -285,11 +291,20 @@ hide_workspace_and_org_id_message = false
         println!("Validating configuration...");
         println!("  Config file: {}", config_path.display());
 
-        // Check if config file exists
-        if !config_path.exists() {
-            println!("  ⚠ Config file does not exist");
-            println!("\n💡 Tip: Run 'langstar config create' to create one");
-            return Ok(());
+        // Check which config file langstar reads, if any
+        match Config::file_to_read()? {
+            None => {
+                println!("  ⚠ Config file does not exist");
+                println!("\n💡 Tip: Run 'langstar config create' to create one");
+                return Ok(());
+            }
+            Some(path) if path != config_path => {
+                println!(
+                    "  Reading instead: {} (where langstar kept it before v2.2.0)",
+                    path.display()
+                );
+            }
+            Some(_) => {}
         }
 
         // Try to load and parse the config file
@@ -561,6 +576,14 @@ hide_workspace_and_org_id_message = false
                 None => String::new(),
             };
             fs::write(config_path, initial_content)?;
+
+            // The file can hold the API key, so give it the same permissions
+            // as `config create` (0600 - owner read/write only) on Unix platforms
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(config_path, fs::Permissions::from_mode(0o600))?;
+            }
         }
 
         // Read and parse the config file
@@ -609,6 +632,13 @@ mod tests {
         let config: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
         assert_eq!(config.langsmith_api_key.as_deref(), Some("old-key"));
         assert_eq!(config.timezone, "UTC");
+        // The copy can hold the API key, so only the owner can read it
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&config_path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
         // The old file is copied, not moved
         assert_eq!(
             fs::read_to_string(&old_path).unwrap(),

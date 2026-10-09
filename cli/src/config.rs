@@ -163,6 +163,19 @@ impl Config {
         Ok(config)
     }
 
+    /// The config file `load` reads: the current one, or on macOS the one from
+    /// before v2.2.0 when only that one exists. `None` when neither exists.
+    pub fn file_to_read() -> Result<Option<PathBuf>> {
+        let config_path = Self::config_file_path()?;
+        let old_path = Self::old_config_file_path();
+        Ok(
+            match choose_config_file(&config_path, old_path.as_deref()) {
+                ConfigFile::Current(path) | ConfigFile::Old(path) => Some(path.to_path_buf()),
+                ConfigFile::Missing => None,
+            },
+        )
+    }
+
     /// Where langstar kept the config file on macOS before v2.2.0:
     /// `~/Library/Application Support/langstar/config.toml`
     #[cfg(target_os = "macos")]
