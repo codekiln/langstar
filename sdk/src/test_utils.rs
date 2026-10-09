@@ -341,52 +341,60 @@ async fn create_new_deployment(
             );
             Ok(new_deployment)
         }
-        Err(err) => {
-            // Provide actionable guidance for 409 conflicts
-            if is_tracing_project_conflict(&err) {
-                eprintln!();
-                eprintln!("╭────────────────────────────────────────────────────────────────╮");
-                eprintln!("│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ A previous deployment was deleted but its associated tracing  │");
-                eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
-                eprintln!("│ deployment with the same name.                                │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ To fix this issue:                                            │");
-                eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
-                // Truncate long names to fit in the 24-char column; show full name in error below
-                let display_name = if config.name.len() > 24 {
-                    format!("{}...", &config.name[..21])
-                } else {
-                    config.name.clone()
-                };
-                eprintln!("│  2. Find and delete project named: {:24} │", display_name);
-                eprintln!("│  3. Re-run the tests                                          │");
-                eprintln!("╰────────────────────────────────────────────────────────────────╯");
-                eprintln!();
-                // Keep the original error, so a caller can see it is a 409:
-                // `create_fresh_deployment` retries it under a new name.
-                Err(err.into())
-            } else if is_conflict_error(&err) {
-                eprintln!();
-                eprintln!("╭────────────────────────────────────────────────────────────────╮");
-                eprintln!("│ ⚠️  409 CONFLICT ERROR                                          │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ A resource conflict occurred. This may indicate:              │");
-                eprintln!("│  - A concurrent test is using the same deployment name        │");
-                eprintln!("│  - An orphaned resource needs manual cleanup                  │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ Suggested actions:                                            │");
-                eprintln!("│  1. Check if another CI run is in progress                    │");
-                eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
-                eprintln!("│  3. Wait and retry if concurrent access suspected             │");
-                eprintln!("╰────────────────────────────────────────────────────────────────╯");
-                eprintln!();
-                Err(err.into())
-            } else {
-                Err(err.into())
-            }
-        }
+        // Keep the original error, so a caller can see it is a 409. The
+        // callers print `print_create_conflict_guidance` only once they stop
+        // retrying, so a create that a later retry fixes prints no advice.
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Print what to do about a 409 from a deployment create named `name`.
+///
+/// Callers print this once they stop retrying. It prints nothing for an error
+/// that isn't a 409.
+fn print_create_conflict_guidance(
+    err: &(dyn std::error::Error + Send + Sync + 'static),
+    name: &str,
+) {
+    let Some(err) = err.downcast_ref::<LangstarError>() else {
+        return;
+    };
+    if is_tracing_project_conflict(err) {
+        eprintln!();
+        eprintln!("╭────────────────────────────────────────────────────────────────╮");
+        eprintln!("│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ A previous deployment was deleted but its associated tracing  │");
+        eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
+        eprintln!("│ deployment with the same name.                                │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ To fix this issue:                                            │");
+        eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
+        // Truncate long names to fit in the 24-char column; show full name in error below
+        let display_name = if name.len() > 24 {
+            format!("{}...", &name[..21])
+        } else {
+            name.to_string()
+        };
+        eprintln!("│  2. Find and delete project named: {:24} │", display_name);
+        eprintln!("│  3. Re-run the tests                                          │");
+        eprintln!("╰────────────────────────────────────────────────────────────────╯");
+        eprintln!();
+    } else if is_conflict_error(err) {
+        eprintln!();
+        eprintln!("╭────────────────────────────────────────────────────────────────╮");
+        eprintln!("│ ⚠️  409 CONFLICT ERROR                                          │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ A resource conflict occurred. This may indicate:              │");
+        eprintln!("│  - A concurrent test is using the same deployment name        │");
+        eprintln!("│  - An orphaned resource needs manual cleanup                  │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ Suggested actions:                                            │");
+        eprintln!("│  1. Check if another CI run is in progress                    │");
+        eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
+        eprintln!("│  3. Wait and retry if concurrent access suspected             │");
+        eprintln!("╰────────────────────────────────────────────────────────────────╯");
+        eprintln!();
     }
 }
 
@@ -552,7 +560,10 @@ async fn reuse_or_create_deployment_with_attempts(
                 );
                 tokio::time::sleep(retry_interval).await;
             }
-            Err(err) => return Err(err),
+            Err(err) => {
+                print_create_conflict_guidance(err.as_ref(), &config.name);
+                return Err(err);
+            }
         }
     }
     Err(
@@ -611,7 +622,9 @@ async fn create_fresh_deployment_with_attempts(
         .name
         .starts_with(&format!("{RELEASE_TEST_DEPLOYMENT_PREFIX}-"))
     {
-        return create_new_deployment(client, config, integration_id).await;
+        return create_new_deployment(client, config, integration_id)
+            .await
+            .inspect_err(|err| print_create_conflict_guidance(err.as_ref(), &config.name));
     }
     let mut attempt_config = config.clone();
     for attempt in 1..=attempts {
@@ -633,7 +646,10 @@ async fn create_fresh_deployment_with_attempts(
                 );
                 tokio::time::sleep(retry_interval).await;
             }
-            Err(err) => return Err(err),
+            Err(err) => {
+                print_create_conflict_guidance(err.as_ref(), &attempt_config.name);
+                return Err(err);
+            }
         }
     }
     Err(format!("no attempt to create the fresh deployment ran (attempts = {attempts})").into())
