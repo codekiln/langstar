@@ -83,7 +83,7 @@ If arguments are provided, parse the issue number. Otherwise, extract from the c
 Throughout the workflow, update tmux window name to reflect current phase.
 
 ```bash
-!# Helper function to update tmux status
+# Helper function to update tmux status
 # Usage: update_tmux_status <emoji> <prefix> <number>
 # Examples:
 #   update_tmux_status "💻" "i" "483"  -> 💻i483 (coding on issue #483)
@@ -299,7 +299,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Actions:**
 1. **Update tmux status to "submitting PR":**
    ```bash
-   !update_tmux_status "🚀" "i" "$ISSUE_NUM"
+   update_tmux_status "🚀" "i" "$ISSUE_NUM"
    ```
 
 2. **Push branch to remote (if not already pushed):**
@@ -365,8 +365,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 
 **Update tmux status to "PR maintenance" (using PR number):**
 ```bash
-!# After PR is created, switch from issue number to PR number
-!update_tmux_status "🔧" "pr" "$PR_NUM"
+# After PR is created, switch from issue number to PR number
+update_tmux_status "🔧" "pr" "$PR_NUM"
 ```
 
 **Order of operations (priority):**
@@ -499,7 +499,7 @@ EOF
      --jq '.[] | "\(.name): \(.state) (\(.workflow))"'
 
    # Update tmux status to "waiting for tests"
-   !update_tmux_status "⏳" "pr" "$PR_NUM"
+   update_tmux_status "⏳" "pr" "$PR_NUM"
 
    # Wait for all checks to complete, and give up after 60 minutes
    deadline=$(( $(date +%s) + 3600 ))
@@ -521,7 +521,7 @@ EOF
    done
 
    # Return to PR maintenance status
-   !update_tmux_status "🔧" "pr" "$PR_NUM"
+   update_tmux_status "🔧" "pr" "$PR_NUM"
 
    # After completion, check for failures
    checks_failed=$(gh pr checks "$PR_NUM" --json state --jq '[.[] | select(.state == "FAILURE")] | length')

@@ -44,7 +44,7 @@ $ARGUMENTS
 **Step 1:** Validate issue number and fetch details
 
 ```bash
-!ISSUE_NUM="$ARGUMENTS"
+ISSUE_NUM="$ARGUMENTS"
 
 # Validate issue number format
 if [ -z "$ISSUE_NUM" ] || ! [[ "$ISSUE_NUM" =~ ^[0-9]+$ ]]; then
@@ -76,7 +76,7 @@ echo "📋 Issue #$ISSUE_NUM: $ISSUE_TITLE"
 **Step 2:** Determine target branch (check for parent issues)
 
 ```bash
-!# Check if issue has a parent (for hierarchical branching)
+# Check if issue has a parent (for hierarchical branching)
 TARGET_BRANCH="main"
 PARENT_OUTPUT=$(gh sub-issue list "$ISSUE_NUM" --relation parent 2>/dev/null || echo "")
 
@@ -95,7 +95,7 @@ git fetch origin "$TARGET_BRANCH"
 **Step 3:** Generate branch name following project conventions
 
 ```bash
-!# Create slug from title (lowercase, replace spaces/special chars with hyphens)
+# Create slug from title (lowercase, replace spaces/special chars with hyphens)
 ISSUE_SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 -]//g' | tr -s ' ' '-' | sed 's/^-//;s/-$//' | cut -c1-50)
 if [ -z "$ISSUE_SLUG" ]; then
   ISSUE_SLUG="issue"
@@ -125,7 +125,7 @@ echo "📂 Worktree: $WORKTREE_PATH"
 **Step 4:** Create worktree
 
 ```bash
-!# Check if worktree directory already exists
+# Check if worktree directory already exists
 if [ -d "$WORKTREE_PATH" ]; then
   echo "❌ Error: Worktree already exists at $WORKTREE_PATH"
   echo "Remove it first with: git worktree remove $WORKTREE_PATH"
@@ -154,7 +154,7 @@ echo "✅ Worktree created successfully"
 **Step 5:** Update tmux window name (if in tmux)
 
 ```bash
-!# Update tmux window name if in tmux session
+# Update tmux window name if in tmux session
 # Format: <emoji>i<issue_num> where emoji indicates phase and 'i' prefix indicates issue
 # Example: 💻i483 = coding on issue #483
 # 💻 = coding (initial phase when starting issue)
@@ -170,7 +170,7 @@ fi
 **Step 6:** Display issue context and next steps
 
 ```bash
-!echo ""
+echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "📋 Issue #$ISSUE_NUM: $ISSUE_TITLE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
