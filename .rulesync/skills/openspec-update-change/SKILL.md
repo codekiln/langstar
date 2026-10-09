@@ -46,7 +46,7 @@ This workflow revises artifacts that already exist; it never creates missing one
 
    Mark the most recently modified change as "(Recommended)" since it's likely what the user wants to update.
 
-   Always announce: "Using change: <name>" and how to override (e.g., `openspec-update-change <other>`).
+   Always announce: "Using change: <name>", and tell the user they can name a different change to update that one instead.
 
 2. **Get the change's artifacts**
    ```bash

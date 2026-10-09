@@ -43,7 +43,7 @@ In both branches, never create the root as a side effect: do not run `openspec i
 
    When prompting, show changes that have delta specs (under `specs/` directory).
 
-   Always announce: "Using change: <name>" and how to override (e.g., `openspec-sync-specs <other>`).
+   Always announce: "Using change: <name>", and tell the user they can name a different change to sync that one instead.
 
 2. **Resolve change context**
 

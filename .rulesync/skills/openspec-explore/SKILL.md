@@ -267,7 +267,7 @@ You: [reads codebase]
 
 **User is stuck mid-implementation:**
 ```
-User: openspec-explore add-auth-system
+User: Let's explore the add-auth-system change.
       The OAuth integration is more complex than expected
 
 You: [reads change artifacts]
@@ -317,7 +317,7 @@ You: That changes everything.
 
 There's no required ending. Discovery might:
 
-- **Flow into a proposal**: "Ready to start? Run `openspec-propose` and this becomes a change."
+- **Flow into a proposal**: "Ready to start? Ask me to propose this, and the `openspec-propose` skill turns it into a change."
 - **Result in artifact updates**: "Updated design.md with these decisions"
 - **Just provide clarity**: User has what they need, moves on
 - **Continue later**: "We can pick this up anytime"
