@@ -17,7 +17,7 @@ On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentia
 | File | Committed | Contents |
 |------|-----------|----------|
 | `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
-| `fnox.local.toml.example` | Yes | Template for the local layer, with a placeholder vault |
+| `fnox.local.toml.example` | Yes | Template for your `fnox.local.toml`, with a placeholder vault name |
 | `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
 | `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
 
@@ -49,7 +49,7 @@ Sign in to the 1Password CLI (`op signin`, or turn on the desktop app integratio
 
 #### Optional: keep the age key in the Secure Enclave
 
-On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. With the `any-biometry` policy in the command below, macOS can ask for Touch ID each time fnox decrypts the cache, and an agent running tests unattended waits at that prompt. Keep the plain key file if agents run tests for you. Only the provider changes:
+On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. With the `any-biometry` policy in the command below, macOS can ask for Touch ID each time fnox decrypts the cache, and an agent running tests unattended waits at that prompt. Keep the plain key file if agents run tests for you. Install the plugin and generate a key in the Secure Enclave, then point the `sync-age` provider in `~/.config/fnox/config.toml` at the new key:
 
 ```bash
 brew install age-plugin-se
