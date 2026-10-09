@@ -22,7 +22,8 @@ pub fn confirm(question: &str, accepted: &[&str], skip_flag: &str) -> Result<boo
     )
 }
 
-/// Testable core of [`confirm`]: reader, terminal flag and prompt sink are injected.
+/// Does the work of [`confirm`], taking the input source, the is-a-terminal answer and the
+/// place to print the prompt as arguments so the unit tests can supply them.
 pub fn confirm_from(
     input: &mut impl BufRead,
     is_tty: bool,
