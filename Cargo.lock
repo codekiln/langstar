@@ -955,6 +955,7 @@ dependencies = [
  "dirs",
  "futures-util",
  "langstar-sdk",
+ "mockito",
  "predicates",
  "rpassword",
  "serde",

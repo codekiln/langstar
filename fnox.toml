@@ -1,0 +1,19 @@
+# LangSmith credentials for local development and integration tests.
+# Follows the setup the fnox guide recommends:
+# https://fnox.jdx.dev/guide/golden-path.html
+#
+# This file holds 1Password references only; the values stay in 1Password.
+# The `langsmith` provider, which names the vault, lives in a gitignored
+# fnox.local.toml (see fnox.local.toml.example).
+#
+# fnox stops before running the command when it cannot find a secret, so a
+# missing credential stops the test run instead of letting integration tests skip.
+# Why: https://github.com/codekiln/langstar/issues/660 (#660 Final testing
+# verification for ls-prompt-structured-outputs milestone)
+#
+# Setup and re-sync steps: docs/dev/environment-variables.md
+
+[secrets]
+LANGSMITH_API_KEY = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/password", if_missing = "error" }
+LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-org-id", if_missing = "error" }
+LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-workspace-id", if_missing = "error" }
