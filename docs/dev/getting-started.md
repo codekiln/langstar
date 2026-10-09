@@ -38,7 +38,7 @@ op signin      # or turn on the 1Password desktop app integration
 
 ### Step 2: One-Time Machine Setup
 
-Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if another project on the machine already did it.
+Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.
 
 ### Step 3: Point fnox at Your Vault and Sync
 

@@ -25,7 +25,7 @@ Write your vault's name only in the `vault` setting of `[providers.langsmith]` i
 
 ### One-time machine setup
 
-Do this once per machine. Every project on the machine then shares the key and the provider.
+Do this once per computer. fnox then uses the same key and provider for every project on it.
 
 ```bash
 # Generate your personal age key
