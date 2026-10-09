@@ -49,7 +49,7 @@ Sign in to the 1Password CLI (`op signin`, or turn on the desktop app integratio
 
 #### Optional: keep the age key in the Secure Enclave
 
-On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. Only the provider changes:
+On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. Depending on the access-control policy, every decryption may then ask for Touch ID, which stalls unattended agent runs. Keep the plain key file if agents run tests for you. Only the provider changes:
 
 ```bash
 brew install age-plugin-se
@@ -76,11 +76,11 @@ cp fnox.local.toml.example fnox.local.toml
 fnox sync --provider sync-age --local-file    # asks 1Password once
 fnox check --all
 
-# In each worktree under .worktrees/<branch>
-ln -s ../../fnox.local.toml fnox.local.toml
+# In each new worktree, right after `git worktree add`
+mise run worktree:link-secrets
 ```
 
-`fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you keep a single checkout, skip the symlink.
+`mise-tasks/worktree/link-secrets` creates the relative symlink `fnox.local.toml -> ../../fnox.local.toml`. Running it again changes nothing, and it refuses to replace a real `fnox.local.toml`. Use `mise run worktree:link-secrets --check` to test a worktree without changing it. `fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you keep a single checkout, skip this step.
 
 ### Run commands with the secrets
 

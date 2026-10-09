@@ -49,6 +49,8 @@ fnox sync --provider sync-age --local-file
 fnox check --all
 ```
 
+Do this in the main clone. In each worktree, run `mise run worktree:link-secrets` after `git worktree add`, so every worktree reads the same cache.
+
 ### Step 4: Verify Setup
 
 ```bash
