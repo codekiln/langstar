@@ -70,9 +70,10 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
 
 /// Generate a unique test repo name to avoid conflicts between tests.
 ///
-/// Every suite run on every machine shares one LangSmith workspace, so a name
-/// built from a millisecond timestamp can repeat when two runs start the same
-/// test at once. A random UUID cannot.
+/// Suite runs that use the same LangSmith workspace share its prompt repos, so a
+/// name built from a millisecond timestamp can repeat when two runs start the
+/// same test at the same moment. The name ends in the first 12 hex characters
+/// of a random UUID instead.
 fn generate_unique_repo_name(prefix: &str) -> String {
     format!(
         "{}-{}",
