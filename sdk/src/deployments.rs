@@ -26,8 +26,12 @@ pub enum DeploymentSource {
 }
 
 /// Current status of a deployment
+///
+/// `#[non_exhaustive]` lets the SDK add a variant when the control plane adds
+/// a status, without breaking code that matches on this enum.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[non_exhaustive]
 pub enum DeploymentStatus {
     /// Deployment is awaiting database provisioning
     AwaitingDatabase,
