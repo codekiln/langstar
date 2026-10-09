@@ -102,3 +102,24 @@ fn test_config_validate_fails_on_malformed_old_file() {
     assert!(stdout.contains("Reading instead:"), "{stdout}");
     assert!(stdout.contains("validation FAILED"), "{stdout}");
 }
+
+#[test]
+fn test_config_commands_repair_unsupported_output_format_in_old_file() {
+    let home = Home::new();
+    Home::write(&home.old_config(), "output_format = \"yaml\"\n");
+
+    // Before the fix, every command failed on the unsupported format, so
+    // these could neither show the value nor set a valid one
+    let show = home.langstar().args(["config", "show"]).output().unwrap();
+    assert!(show.status.success(), "{show:?}");
+    assert!(String::from_utf8_lossy(&show.stdout).contains("output_format: yaml"));
+
+    let set = home
+        .langstar()
+        .args(["config", "output_format", "set", "table"])
+        .output()
+        .unwrap();
+    assert!(set.status.success(), "{set:?}");
+    let new_file = fs::read_to_string(home.config()).unwrap();
+    assert!(new_file.contains("output_format = \"table\""), "{new_file}");
+}
