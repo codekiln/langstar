@@ -368,7 +368,7 @@ langstar graph list my-deployment --format json
 #### LangSmith Runs/Traces
 
 Query and filter LangSmith runs (traces) to analyze LLM application execution.
-Each query needs at least one project UUID (`-p`, repeatable); `langstar project list` shows them.
+Each query needs at least one project UUID (`-p`, repeatable). `langstar project get <name>` prints a project's full UUID; the `langstar project list` table shortens IDs to 8 characters, which `-p` does not accept.
 
 ```bash
 PROJECT='<your-project-uuid>'

@@ -326,9 +326,11 @@ jobs:
       - name: Query error runs and add to queue
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          # Passed through env so the shell reads the input as data, not code
+          PROJECT_ID: ${{ inputs.project_id }}
         run: |
           # Get recent error runs from the project named in the workflow input
-          langstar runs query -p "${{ inputs.project_id }}" --errors-only --limit 10 --output json | \
+          langstar runs query -p "$PROJECT_ID" --errors-only --limit 10 --output json | \
             jq -r '.[].id' > error_runs.txt
 
           # Add to annotation queue

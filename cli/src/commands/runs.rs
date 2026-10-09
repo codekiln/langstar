@@ -143,9 +143,10 @@ pub struct QueryArgs {
 
     /// Fields to select (comma-separated)
     ///
-    /// Limits the fields returned in the response. Without it, every field
-    /// the API offers is returned. Table output always adds the fields its
-    /// columns need.
+    /// Limits the fields returned in the response. Without it, JSON output
+    /// gets every field the API offers except `share_url`, a public link to
+    /// the run that only `--select share_url` returns. Table output always
+    /// adds the fields its columns need.
     /// Example: --select id,name,status,total_tokens
     #[arg(long)]
     pub select: Option<String>,
@@ -237,6 +238,15 @@ const TABLE_FIELDS: [RunSelectField; 7] = [
     RunSelectField::StartTime,
     RunSelectField::EndTime,
 ];
+
+/// Whether JSON output asks for `field` when --select is not given.
+///
+/// `share_url` is left out: the OpenAPI spec says anyone with that URL can
+/// view the run anonymously, "so treat it as a secret and do not log it".
+/// `--select share_url` still returns it.
+fn is_default_field(field: RunSelectField) -> bool {
+    field != RunSelectField::ShareUrl
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Filter Builder
@@ -545,15 +555,22 @@ impl RunsCommands {
 
     /// Fields to request from the API.
     ///
-    /// Without --select, every field the API offers, so JSON output carries
-    /// the whole run. With --select, the named fields, plus the ones the
-    /// table columns read when the output is a table.
+    /// Without --select, table output asks for its columns and JSON output
+    /// asks for every field except `share_url` (see [`is_default_field`]).
+    /// With --select, the named fields, plus the ones the table columns read
+    /// when the output is a table.
     fn resolve_selects(
         args: &QueryArgs,
         formatter: &OutputFormatter,
     ) -> Result<Vec<RunSelectField>> {
         let Some(select) = &args.select else {
-            return Ok(RunSelectField::ALL.to_vec());
+            return Ok(match args.output {
+                RunsOutputFormat::Table => TABLE_FIELDS.to_vec(),
+                RunsOutputFormat::Json | RunsOutputFormat::JsonPretty => RunSelectField::ALL
+                    .into_iter()
+                    .filter(|f| is_default_field(*f))
+                    .collect(),
+            });
         };
 
         let mut fields = Vec::new();
@@ -1236,11 +1253,31 @@ mod tests {
     // ═══════════════════════════════════════════════════════════════════════
 
     #[test]
-    fn test_resolve_selects_default_requests_every_field() {
+    fn test_resolve_selects_default_table_asks_for_its_columns() {
         let args = create_test_query_args();
         let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
         let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
-        assert_eq!(selects, RunSelectField::ALL.to_vec());
+        assert_eq!(selects, TABLE_FIELDS.to_vec());
+    }
+
+    #[test]
+    fn test_resolve_selects_default_json_leaves_out_share_url() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert!(!selects.contains(&RunSelectField::ShareUrl));
+        assert_eq!(selects.len(), RunSelectField::ALL.len() - 1);
+    }
+
+    #[test]
+    fn test_resolve_selects_share_url_only_when_named() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        args.select = Some("id,share_url".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(selects, vec![RunSelectField::Id, RunSelectField::ShareUrl]);
     }
 
     #[test]
