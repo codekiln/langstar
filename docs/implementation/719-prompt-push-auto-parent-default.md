@@ -88,7 +88,7 @@ Split `push` into `create` and `update` commands as outlined in redesign doc.
 1. **`cli/src/commands/prompt.rs`** (primary changes)
    - Lines 100-148: Remove three flag definitions
    - Lines 588-593: Remove flag variables from pattern match
-   - Lines 656-678: Simplify parent commit logic (already done in uncommitted changes)
+   - In the push handler, replace the parent-commit branching with the auto-fetch shown under "Detailed Changes".
 
 2. **Tests to Update**
    - Any CLI tests that use `--parent-commit`, `--auto-parent`, or `--force` flags
@@ -100,7 +100,7 @@ Split `push` into `create` and `update` commands as outlined in redesign doc.
 
 ### Detailed Changes
 
-#### 1. Remove Flag Definitions (DONE in uncommitted changes)
+#### Remove the three flags from the Push struct
 ```rust
 // REMOVE these lines from Push struct:
 /// Parent commit hash for updates (resolves 409 conflicts)
@@ -116,7 +116,7 @@ auto_parent: bool,
 force: bool,
 ```
 
-#### 2. Simplify Parent Commit Logic (DONE in uncommitted changes)
+#### Fetch the latest commit as parent when the repository exists
 ```rust
 // Replace complex if/else with simple auto-fetch logic
 let final_parent_commit = if repo_exists {
@@ -257,7 +257,7 @@ The following are planned but NOT part of this fix:
 
 **Approach**: Minimal fix - make auto-parent the default behavior
 **Scope**: Issue #719 only (409 conflict resolution)
-**Changes**: Remove flags, simplify logic (already done in uncommitted changes)
+**Changes**: This branch removes the three flags and fetches the parent commit automatically.
 **Testing**: Manual + automated verification
 **Outcome**: Git-like UX where "push just works" for both create and update
 
