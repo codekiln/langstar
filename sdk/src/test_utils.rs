@@ -487,7 +487,7 @@ async fn reuse_or_create_deployment(
     config: &TestDeploymentConfig,
     integration_id: &str,
 ) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
-    reuse_or_create_deployment_with_retry(
+    reuse_or_create_deployment_with_attempts(
         client,
         config,
         integration_id,
@@ -497,9 +497,11 @@ async fn reuse_or_create_deployment(
     .await
 }
 
-/// `reuse_or_create_deployment` with the number of attempts and the wait
-/// between them passed in, so tests can run it without real 30-second waits.
-async fn reuse_or_create_deployment_with_retry(
+/// Reuse or create the test deployment, trying up to `attempts` times and
+/// sleeping `retry_interval` after each 409. `reuse_or_create_deployment`
+/// passes `REUSE_ATTEMPTS` and `REUSE_RETRY_INTERVAL`; the mocked tests pass
+/// a zero wait.
+async fn reuse_or_create_deployment_with_attempts(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
     integration_id: &str,
@@ -731,7 +733,7 @@ mod tests {
         )));
     }
 
-    // ── reuse_or_create_deployment_with_retry against a mocked control plane ──
+    // ── reuse_or_create_deployment_with_attempts against a mocked control plane ──
 
     use mockito::{Matcher, Server};
     use std::sync::Arc;
@@ -800,7 +802,7 @@ mod tests {
             .create_async()
             .await;
 
-        let found = reuse_or_create_deployment_with_retry(
+        let found = reuse_or_create_deployment_with_attempts(
             &mock_client(&server),
             &config,
             "integration",
@@ -835,7 +837,7 @@ mod tests {
             .create_async()
             .await;
 
-        let err = reuse_or_create_deployment_with_retry(
+        let err = reuse_or_create_deployment_with_attempts(
             &mock_client(&server),
             &config,
             "integration",
@@ -854,7 +856,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_retry_returns_non_conflict_error_at_once() {
+    async fn test_retry_returns_500_on_first_attempt() {
         let mut server = Server::new_async().await;
         let config = TestDeploymentConfig::default();
 
@@ -873,7 +875,7 @@ mod tests {
             .create_async()
             .await;
 
-        let err = reuse_or_create_deployment_with_retry(
+        let err = reuse_or_create_deployment_with_attempts(
             &mock_client(&server),
             &config,
             "integration",
