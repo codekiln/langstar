@@ -634,7 +634,13 @@ hide_workspace_and_org_id_message = false
             options.mode(0o600);
         }
         let mut file = options.open(path)?;
-        file.write_all(content.as_bytes())?;
+        if let Err(e) = file.write_all(content.as_bytes()) {
+            // A partly written file would win over the old one on every later
+            // run, so remove it and return the write error
+            drop(file);
+            let _ = fs::remove_file(path);
+            return Err(e.into());
+        }
         Ok(())
     }
 }
