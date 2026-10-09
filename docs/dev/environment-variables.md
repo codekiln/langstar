@@ -210,7 +210,7 @@ This approach was chosen because:
 | Refresh the cache after a rotation | `fnox sync --provider sync-age --local-file --force` |
 | See which config files fnox loaded | `fnox config-files` |
 
-Every API needs `LANGSMITH_API_KEY`. The Control Plane API also needs `LANGSMITH_WORKSPACE_ID`. Integration tests need all three variables, and `fnox.toml` loads all three.
+Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, and `fnox exec` sets each of them.
 
 ## Implementation Details
 
