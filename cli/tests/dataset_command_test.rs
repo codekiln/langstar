@@ -18,6 +18,9 @@
 //!
 //! Run with: `cargo test --test dataset_command_test`
 
+#[path = "common/home.rs"]
+mod home;
+
 use assert_cmd::Command;
 use predicates::prelude::*;
 use std::fs;
@@ -25,7 +28,9 @@ use tempfile::TempDir;
 
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_langstar"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", home::empty_home());
+    cmd
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
