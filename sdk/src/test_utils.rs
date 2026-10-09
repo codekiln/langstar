@@ -371,8 +371,9 @@ fn print_create_conflict_guidance(
         eprintln!("│ To fix this issue:                                            │");
         eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
         // Truncate long names to fit in the 24-char column; the full name follows the box
-        let display_name = if name.len() > 24 {
-            format!("{}...", &name[..21])
+        // Count characters, not bytes: slicing a multibyte name by bytes panics.
+        let display_name = if name.chars().count() > 24 {
+            format!("{}...", name.chars().take(21).collect::<String>())
         } else {
             name.to_string()
         };
@@ -1255,6 +1256,17 @@ mod tests {
     async fn test_fresh_create_does_not_retry_a_name_that_lacks_the_release_hyphen() {
         // Starts with `release-integration-test` but not `release-integration-test-`.
         assert_fresh_create_sends_one_create_under("release-integration-testing").await;
+    }
+
+    #[test]
+    fn test_conflict_guidance_truncates_a_multibyte_name_without_panicking() {
+        let err = LangstarError::ApiError {
+            status: 409,
+            message: TRACING_PROJECT_409.to_string(),
+        };
+        // Byte 21 falls inside the second "é", so a byte slice there panics.
+        let name = format!("{}éé{}", "a".repeat(20), "b".repeat(10));
+        print_create_conflict_guidance(&err, &name);
     }
 
     #[test]
