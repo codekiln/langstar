@@ -6,7 +6,7 @@ description: "Langstar: project, workflow, testing, secrets"
 
 # Langstar
 
-Langstar aims to be the one tool people need for working in LangSmith, so they never have to work out whether a task needs an MCP server, the LangSmith CLI, the LangGraph CLI or something else.
+Langstar's goal is to be the one tool people use for all of their LangSmith work, in place of the LangSmith MCP server, the LangSmith CLI and the LangGraph CLI.
 
 Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph REST APIs, plus a devcontainer feature that installs the CLI (`.devcontainer/features/langstar`). `reference/api-specs/LANGSMITH_API_OVERVIEW.md` summarizes the APIs. Prefer Rust-based tools where practical, and configure the dev environment through `.devcontainer/`.
 
@@ -16,7 +16,7 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 
 ## Workflow
 
-- Every change starts from a GitHub issue and lands in one PR whose body says `Fixes #N`. Details are in `docs/dev/github-workflow.md`.
+- Open a GitHub issue for each piece of work before you start it, and close the issue from one PR whose body says `Fixes #<issue number>`. Details are in `docs/dev/github-workflow.md`.
 - Name branches `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that don't apply.
 - Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
 - Commit messages and PR titles use Conventional Emoji Commits (`✨ feat(scope): ...`), per `docs/dev/git-scm-conventions.md`.
@@ -46,4 +46,4 @@ To see whether a background command has finished, read the end of its log with `
 
 ## Output budget
 
-When `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is set, keep each response under it. If a task needs more, ask whether to summarize it or split it.
+When `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is set, keep each response under that many tokens. When a task needs a longer response, ask the user whether to summarize the response or split the task into smaller requests.

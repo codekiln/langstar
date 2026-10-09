@@ -6,7 +6,7 @@
 
 > **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution.
 
-**Langstar** is one CLI for everything you do in LangSmith and LangGraph Cloud, so you don't have to work out whether a task needs an MCP server, the LangSmith CLI, the LangGraph CLI or another tool.
+**Langstar** is a CLI for LangSmith and LangGraph Cloud. Its goal is to cover everything you do there, so you can use one tool instead of choosing among the LangSmith MCP server, the LangSmith CLI and the LangGraph CLI.
 
 ## Features
 
