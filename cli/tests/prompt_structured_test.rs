@@ -81,6 +81,148 @@ fn generate_unique_repo_name(prefix: &str) -> String {
     )
 }
 
+/// What `create_test_repo` does after one `create_repo` attempt.
+#[derive(Debug, PartialEq)]
+enum CreateAttempt {
+    Created,
+    Retry,
+    Failed,
+}
+
+/// The kinds of `create_repo` failure that `create_attempt_outcome` tells apart.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CreateFailure {
+    /// No answer within the SDK client's 30-second request timeout.
+    Timeout,
+    /// LangSmith answered 5xx.
+    ServerError,
+    /// LangSmith answered 409: a repo with this name already exists.
+    AlreadyExists,
+    /// Any other error.
+    Other,
+}
+
+fn create_failure_kind(err: &langstar_sdk::LangstarError) -> CreateFailure {
+    match err {
+        langstar_sdk::LangstarError::HttpError(e) if e.is_timeout() => CreateFailure::Timeout,
+        langstar_sdk::LangstarError::ApiError { status, .. } if *status >= 500 => {
+            CreateFailure::ServerError
+        }
+        langstar_sdk::LangstarError::ApiError { status: 409, .. } => CreateFailure::AlreadyExists,
+        _ => CreateFailure::Other,
+    }
+}
+
+/// Decide what to do after one `create_repo` attempt.
+///
+/// A timeout or a 5xx is retried until the attempts run out. A 409 counts as
+/// created only after an earlier attempt, because a create that timed out or
+/// answered 5xx may still have made the repo. A 409 on the first attempt, or
+/// any other error, fails the test.
+fn create_attempt_outcome(
+    attempt: u32,
+    attempts: u32,
+    failure: Option<CreateFailure>,
+) -> CreateAttempt {
+    match failure {
+        None => CreateAttempt::Created,
+        Some(CreateFailure::AlreadyExists) if attempt > 1 => CreateAttempt::Created,
+        Some(CreateFailure::Timeout | CreateFailure::ServerError) if attempt < attempts => {
+            CreateAttempt::Retry
+        }
+        Some(_) => CreateAttempt::Failed,
+    }
+}
+
+/// Create a prompt repo for a test, retrying a timeout or a 5xx.
+///
+/// LangSmith sometimes takes longer than the SDK client's 30-second request
+/// timeout to answer `create_repo` (issue #787). This tries up to three times,
+/// waiting 2s and then 4s, and panics with the SDK error when it gives up.
+fn create_test_repo(
+    runtime: &tokio::runtime::Runtime,
+    client: &LangchainClient,
+    repo_name: &str,
+    description: String,
+    is_public: bool,
+) {
+    const ATTEMPTS: u32 = 3;
+    for attempt in 1..=ATTEMPTS {
+        let result = runtime.block_on(async {
+            client
+                .prompts()
+                .create_repo(repo_name, Some(description.clone()), None, is_public, None)
+                .await
+        });
+        let failure = result.as_ref().err().map(create_failure_kind);
+        match create_attempt_outcome(attempt, ATTEMPTS, failure) {
+            CreateAttempt::Created => return,
+            CreateAttempt::Retry => {
+                eprintln!(
+                    "[SETUP] create_repo for {repo_name} failed on attempt {attempt} \
+                     of {ATTEMPTS} ({failure:?}); retrying"
+                );
+                std::thread::sleep(std::time::Duration::from_secs(2u64.pow(attempt)));
+            }
+            CreateAttempt::Failed => {
+                let Err(err) = result else {
+                    unreachable!("Failed means create_repo returned an error");
+                };
+                panic!(
+                    "Failed to create test repo {repo_name} on attempt {attempt} of {ATTEMPTS}: {err}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_create_attempt_outcome() {
+    use CreateFailure::*;
+
+    assert_eq!(create_attempt_outcome(1, 3, None), CreateAttempt::Created);
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(Timeout)),
+        CreateAttempt::Retry
+    );
+    assert_eq!(
+        create_attempt_outcome(2, 3, Some(ServerError)),
+        CreateAttempt::Retry
+    );
+    assert_eq!(
+        create_attempt_outcome(3, 3, Some(Timeout)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(3, 3, Some(ServerError)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(2, 3, Some(AlreadyExists)),
+        CreateAttempt::Created
+    );
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(AlreadyExists)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(Other)),
+        CreateAttempt::Failed
+    );
+}
+
+#[test]
+fn test_create_failure_kind_reads_api_status() {
+    let api = |status| langstar_sdk::LangstarError::ApiError {
+        status,
+        message: String::new(),
+    };
+    assert_eq!(create_failure_kind(&api(500)), CreateFailure::ServerError);
+    assert_eq!(create_failure_kind(&api(503)), CreateFailure::ServerError);
+    assert_eq!(create_failure_kind(&api(409)), CreateFailure::AlreadyExists);
+    assert_eq!(create_failure_kind(&api(403)), CreateFailure::Other);
+}
+
 /// Test fixture that creates a unique repo and cleans it up on drop
 struct PromptRepoFixture {
     repo_name: String,
@@ -98,19 +240,13 @@ impl PromptRepoFixture {
 
         // Create the repo via SDK
         println!("[SETUP] Creating private repo: -/{}", repo_name);
-        runtime.block_on(async {
-            client
-                .prompts()
-                .create_repo(
-                    &repo_name,
-                    Some(format!("Test repo for {}", prefix)),
-                    None,
-                    false, // is_public = false (private)
-                    None,
-                )
-                .await
-                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
-        });
+        create_test_repo(
+            &runtime,
+            &client,
+            &repo_name,
+            format!("Test repo for {}", prefix),
+            false, // is_public = false (private)
+        );
 
         Self {
             repo_name,
@@ -128,19 +264,13 @@ impl PromptRepoFixture {
 
         // Create the repo via SDK
         println!("[SETUP] Creating public repo: {}/{}", TEST_OWNER, repo_name);
-        runtime.block_on(async {
-            client
-                .prompts()
-                .create_repo(
-                    &repo_name,
-                    Some(format!("Test repo for {}", prefix)),
-                    None,
-                    true, // is_public = true
-                    None,
-                )
-                .await
-                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
-        });
+        create_test_repo(
+            &runtime,
+            &client,
+            &repo_name,
+            format!("Test repo for {}", prefix),
+            true, // is_public = true
+        );
 
         Self {
             repo_name,
