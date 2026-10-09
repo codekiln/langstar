@@ -266,7 +266,7 @@ Evaluate how the feature aligns with existing Langstar commands and patterns:
 - `cli/src/config.rs` - Configuration loading patterns
 - Existing command help text (`langstar <command> --help`)
 
-**Document in research report**:
+**Write in the change's `design.md`**:
 - Consistency decisions (which patterns to follow)
 - Intentional deviations (with rationale)
 - New patterns being introduced (if any)
@@ -307,7 +307,7 @@ Understand what this feature accomplishes from a user's perspective in the LangS
 - Review official documentation for the feature
 - Consider common user scenarios and edge cases
 
-**Document in research report**:
+**Write in the change's `design.md`**:
 - UI workflow description (what users do in the web interface)
 - Key user scenarios (the "jobs to be done")
 - How the CLI can improve or complement the UI workflow
