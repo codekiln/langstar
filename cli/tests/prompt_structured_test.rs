@@ -89,7 +89,7 @@ enum CreateAttempt {
     Failed,
 }
 
-/// The kinds of `create_repo` failure that `create_attempt_outcome` tells apart.
+/// The kinds of `create_repo` failure that `create_failure_kind` sorts an SDK error into.
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum CreateFailure {
     /// No answer within the SDK client's 30-second request timeout.
@@ -136,9 +136,9 @@ fn create_attempt_outcome(
 
 /// Create a prompt repo for a test, retrying a timeout or a 5xx.
 ///
-/// In local runs, this test's setup panicked after 30 seconds, the SDK
-/// client's request timeout, so LangSmith most likely took longer than that to
-/// answer `create_repo`. https://github.com/codekiln/langstar/issues/787
+/// In local runs, setup for `test_cli_push_prompt_update_with_auto_parent`
+/// panicked after 30 seconds, the SDK client's request timeout, so LangSmith
+/// most likely took longer than that to answer `create_repo`. https://github.com/codekiln/langstar/issues/787
 /// ("prompt_structured_test setup panics without the error when creating its
 /// repo takes over 30 seconds") describes those runs. This function tries up
 /// to three times, waiting 2s and then 4s, and panics with the SDK error when
