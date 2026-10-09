@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage: find-sessions.sh [-L socket-name|-S socket-path|-A] [-q pattern]
 
-List tmux sessions on a socket (default tmux socket if none provided).
+List tmux sessions on a socket (your personal tmux server if none is given).
 
 Options:
   -L, --socket       tmux socket name (passed to tmux -L)
@@ -99,7 +99,7 @@ if [[ "$scan_all" == true ]]; then
 fi
 
 tmux_cmd=(tmux)
-socket_label="default socket"
+socket_label="your personal tmux server"
 
 if [[ -n "$socket_name" ]]; then
   tmux_cmd+=(-L "$socket_name")

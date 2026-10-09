@@ -169,7 +169,8 @@ update_single_issue() {
 
   # Update project status
   echo "  - Updating project status to '$STATUS'..."
-  GH_TOKEN="$PROJECT_TOKEN" gh api graphql -f query="
+  # set -e does not apply here, because the caller runs this function as an if condition.
+  if ! GH_TOKEN="$PROJECT_TOKEN" gh api graphql -f query="
     mutation {
       updateProjectV2ItemFieldValue(input: {
         projectId: \"$PROJECT_ID\"
@@ -184,7 +185,10 @@ update_single_issue() {
         }
       }
     }
-  " > /dev/null
+  " > /dev/null; then
+    echo "  ✗ Error: Could not update the project status of issue #${ISSUE_NUMBER}"
+    return 1
+  fi
 
   echo "  ✓ Successfully updated issue #${ISSUE_NUMBER}"
   echo "    - Status: $STATUS"
