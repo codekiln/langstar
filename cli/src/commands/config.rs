@@ -302,7 +302,7 @@ hide_workspace_and_org_id_message = false
         };
         if path != config_path {
             println!(
-                "  Reading instead: {} (where langstar kept it before v2.2.0)",
+                "  Missing, so langstar reads its config file from before v2.2.0: {}",
                 path.display()
             );
         }

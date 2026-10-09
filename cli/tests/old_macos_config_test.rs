@@ -99,5 +99,9 @@ fn test_config_validate_fails_on_malformed_old_file() {
 
     assert!(!output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("Missing, so langstar reads its config file from before v2.2.0:"),
+        "{stdout}"
+    );
     assert!(stdout.contains("validation FAILED"), "{stdout}");
 }
