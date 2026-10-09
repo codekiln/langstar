@@ -187,12 +187,14 @@ langstar secrets set API_KEY "sk-ant-..."          # Argument doesn't exist (sec
 
 ### Delete a Secret
 
-Remove a secret from the workspace. The command asks you to type `yes` before it deletes the secret, and `--yes` (`-y`) skips the question. Scripts must pass `--yes`, because a script has no terminal to answer from and the command stops with an error:
+Remove a secret from the workspace. The command asks you to type `yes` before it deletes the secret, and `--yes` (`-y`) skips the question:
 
 ```bash
 langstar secrets delete ANTHROPIC_API_KEY
 langstar secrets delete ANTHROPIC_API_KEY --yes   # no prompt
 ```
+
+A CI job, a cron job, or a script that pipes input into `langstar secrets delete` has no terminal to type `yes` into, so it must pass `--yes`. Without the flag, the command deletes nothing and stops with `confirmation required but stdin is not a terminal; pass --yes to proceed without prompting`.
 
 **Example Output** (with `--yes`):
 ```
