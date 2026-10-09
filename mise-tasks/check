@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Run the pre-commit chain: fmt, check, clippy, tests, then fmt --check (stops at the first failure)"
+set -euo pipefail
+
+# Sequential on purpose: `depends` runs sibling tasks in parallel, which would
+# let `cargo fmt` rewrite sources while check and clippy read them.
+# rust:test runs the tests under `fnox exec`, which stops with an error before any
+# test starts when a LangSmith secret is missing, so integration tests never skip in
+# silence. The reason all three secrets are required is in [Testing Context](https://github.com/codekiln/langstar/blob/main/docs/dev/environment-variables.md#testing-context).
+mise run rust:fmt
+mise run rust:check
+mise run rust:clippy
+mise run rust:test
+cargo fmt --check

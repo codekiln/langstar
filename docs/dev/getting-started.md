@@ -31,8 +31,16 @@ LangSmith credentials stay in 1Password. The committed `fnox.toml` holds only re
 
 ### Step 1: Install the Tools
 
+Add mise to your shell first, so the tools it installs are on `PATH`. For zsh, add this line to `~/.zshrc`, then open a new terminal (use `bash` and `~/.bashrc` for bash). See [mise: activate](https://mise.jdx.dev/getting-started.html#activate-mise).
+
 ```bash
-mise install   # installs fnox, 1password-cli, age and cargo-nextest from mise.toml
+eval "$(mise activate zsh)"
+```
+
+Then install the tools:
+
+```bash
+mise install   # installs every tool pinned in mise.toml
 op signin      # or turn on the 1Password desktop app integration
 ```
 
