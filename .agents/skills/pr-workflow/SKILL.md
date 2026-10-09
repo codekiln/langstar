@@ -265,7 +265,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    git push -u origin $(git branch --show-current)
    ```
 
-3. **Create PR using gh CLI:**
+2. **Create PR using gh CLI:**
    ```bash
    ISSUE_NUM=<extracted_issue_num>
    BASE_BRANCH=<determined_base_branch>
@@ -283,7 +283,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
    ```
 
-4. **Add milestone to PR (if issue has milestone):**
+3. **Add milestone to PR (if issue has milestone):**
    ```bash
    MILESTONE=$(gh issue view "$ISSUE_NUM" --json milestone -q '.milestone.title')
 
@@ -292,14 +292,14 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    fi
    ```
 
-5. **Verify PR will close issue:**
+4. **Verify PR will close issue:**
    ```bash
    gh pr view "$PR_NUM" --json closingIssuesReferences -q '.closingIssuesReferences[].number'
    ```
    - Should output the issue number
    - If not, **WARN** and fix PR body
 
-6. **Report PR creation:**
+5. **Report PR creation:**
    ```
    ✅ **PR Created:** #$PR_NUM
    📍 URL: <pr_url>
