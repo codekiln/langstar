@@ -577,9 +577,9 @@ hide_workspace_and_org_id_message = false
         new_value: &str,
     ) -> Result<()> {
         let is_new_file = !config_path.exists();
-        // The file the content comes from, which errors name: on macOS with no
-        // new file yet, that's the old one, and `config set` never prints the
-        // warning that names it
+        // The errors below name this file, the one langstar read the settings
+        // from. On a Mac with no new file yet it is the old file, and these
+        // errors are the only place `config set` shows that path.
         let source_path = if is_new_file {
             old_path.filter(|path| path.exists())
         } else {
