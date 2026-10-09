@@ -541,9 +541,10 @@ hide_workspace_and_org_id_message = false
 
     /// Set `key` in the config file at `config_path`, creating the file if needed.
     ///
-    /// A new file starts as a copy of the pre-v2.2.0 macOS file at `old_path`
-    /// when that one exists. The new file then takes over from it, so starting
-    /// empty would drop every setting langstar was reading from the old file.
+    /// When the file at `config_path` is missing, this copies the pre-v2.2.0
+    /// macOS file at `old_path` into it first, if that file exists. langstar
+    /// reads only the new file once it exists, so an empty new file would drop
+    /// every setting langstar was reading from the old one.
     fn set_value_in_file(
         config_path: &Path,
         old_path: Option<&Path>,
