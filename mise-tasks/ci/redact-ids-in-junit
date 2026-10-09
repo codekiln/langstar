@@ -21,7 +21,6 @@
 # and an empty value cannot leak.
 #
 # Usage: mise run ci:redact-ids-in-junit <junit-file>...
-#    or: mise-tasks/ci/redact-ids-in-junit <junit-file>...
 
 set -euo pipefail
 
