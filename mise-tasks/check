@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-#MISE description="Run the pre-commit chain: fmt, check, clippy, then every test (fails on any)"
-#MISE depends=["rust:fmt", "rust:check", "rust:clippy"]
+#MISE description="Run the pre-commit chain: fmt, check, clippy, tests, then fmt --check (stops at the first failure)"
 set -euo pipefail
 
-# Integration tests need the LangSmith secrets, so the test step runs under
-# `fnox exec`, which fails before the tests start when any secret is missing
-# (#660) instead of skipping them in silence.
-exec mise run rust:test
+# Sequential on purpose: `depends` runs sibling tasks in parallel, which would
+# let `cargo fmt` rewrite sources while check and clippy read them.
+# rust:test wraps `fnox exec`, so a missing LangSmith secret fails the run
+# before any test starts instead of skipping integration tests (#660).
+mise run rust:fmt
+mise run rust:check
+mise run rust:clippy
+mise run rust:test
+cargo fmt --check
