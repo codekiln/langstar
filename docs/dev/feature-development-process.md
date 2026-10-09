@@ -1009,7 +1009,7 @@ Add new commands to main README:
 
 ## Phase 11: Milestone Release
 
-When the milestone's features ship in a GitHub release, use the `/gh-milestones-release` slash command to automate milestone cleanup.
+When the milestone's features ship in a GitHub release, use the `gh-milestones-release` skill to automate milestone cleanup.
 
 ### 11.1 Prerequisites
 
