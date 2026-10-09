@@ -720,12 +720,12 @@ mod integration {
     /// when LangSmith answers with a server error.
     ///
     /// In CI, LangSmith sometimes answers `DELETE /api/v1/datasets/{id}` with
-    /// HTTP 500 (issue #773). It did not happen locally in 30 runs of these
-    /// tests or in 68 create-then-delete pairs, 48 of them eight at a time, so
-    /// the delete is not racing the create. A delete that answered 500 may
-    /// still have removed the dataset, so a retry that gets 404 counts as
-    /// deleted; `delete_attempt_outcome` holds those rules. A delete that
-    /// fails any other way, or fails three times, fails the test.
+    /// HTTP 500; see issue #773, "dataset delete returns HTTP 500 intermittently
+    /// in CLI integration tests" (https://github.com/codekiln/langstar/issues/773).
+    /// A delete that answered 500 may still have removed the dataset, so a retry
+    /// that gets 404 counts as deleted; `delete_attempt_outcome` holds those
+    /// rules. A delete that fails any other way, or fails three times, fails the
+    /// test.
     fn delete_dataset(dataset_id: &str) {
         const ATTEMPTS: u32 = 3;
         for attempt in 1..=ATTEMPTS {
