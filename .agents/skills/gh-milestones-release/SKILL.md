@@ -2,8 +2,8 @@
 name: gh-milestones-release
 description: >-
   Mark a milestone as released and update its parent issue with the release
-  information. Use when the features of a milestone have shipped in a GitHub
-  release.
+  information. Use after the GitHub release that contains the milestone's
+  features is published.
 ---
 # Mark Milestone as Released
 
