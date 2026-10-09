@@ -99,7 +99,7 @@ In text format, `langstar assistant list` SHALL print one tab-separated line per
 
 ### Requirement: Delete an assistant after confirmation
 
-`langstar assistant delete <assistant-id>` SHALL ask the user to confirm with `y` or `yes` before deleting the assistant, and SHALL skip the question when the user passes `-y` or `--force`. When standard input is not a terminal and the user has not passed `--force`, it SHALL exit with an error that names `--force`, without deleting anything. In JSON format it SHALL print an object whose `deleted` field holds the assistant ID.
+`langstar assistant delete <assistant-id>` SHALL ask the user to confirm with `y` or `yes` before deleting the assistant, and SHALL skip the question when the user passes `-y` or `--force`. When langstar would ask the user to confirm but standard input is not a terminal, as when a script runs the command, it SHALL leave the assistant in place and exit with an error that says to pass `--force`. In JSON format it SHALL print an object whose `deleted` field holds the assistant ID.
 
 #### Scenario: User declines
 
@@ -111,7 +111,7 @@ In text format, `langstar assistant list` SHALL print one tab-separated line per
 - **WHEN** a user runs `langstar assistant delete <assistant-id> --deployment my-agent --force`
 - **THEN** langstar deletes the assistant without asking
 
-#### Scenario: No terminal to ask
+#### Scenario: Standard input is not a terminal
 
 - **WHEN** a user runs `langstar assistant delete <assistant-id> --deployment my-agent` with standard input that is not a terminal and without `--force`
 - **THEN** langstar exits with an error saying to pass `--force`, and deletes nothing

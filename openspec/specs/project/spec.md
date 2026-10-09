@@ -73,7 +73,7 @@
 
 ### Requirement: Delete a project after confirmation
 
-`langstar project delete <id-or-name>` SHALL ask the user to type `yes` before deleting the project, and SHALL skip the question when the user passes `--force`. When standard input is not a terminal and the user has not passed `--force`, it SHALL exit with an error that names `--force`, without deleting anything.
+`langstar project delete <id-or-name>` SHALL ask the user to type `yes` before deleting the project, and SHALL skip the question when the user passes `--force`. When langstar would ask the user to confirm but standard input is not a terminal, as when a script runs the command, it SHALL leave the project in place and exit with an error that says to pass `--force`.
 
 #### Scenario: User declines
 
@@ -85,7 +85,7 @@
 - **WHEN** a user runs `langstar project delete my-project --force`
 - **THEN** langstar deletes the project without asking and prints its ID
 
-#### Scenario: No terminal to ask
+#### Scenario: Standard input is not a terminal
 
 - **WHEN** a user runs `langstar project delete my-project` with standard input that is not a terminal and without `--force`
 - **THEN** langstar exits with an error saying to pass `--force`, and deletes nothing

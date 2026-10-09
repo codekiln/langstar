@@ -113,7 +113,7 @@ With `-w` or `--wait`, `langstar deployment create` SHALL check the new deployme
 
 ### Requirement: Delete a deployment after confirmation
 
-`langstar deployment delete <deployment-id>` SHALL ask the user to type `yes` before deleting the deployment, and SHALL skip the question when the user passes `-y` or `--yes`. When standard input is not a terminal and the user has not passed `--yes`, it SHALL exit with an error that names `--yes`, without deleting anything. In JSON format it SHALL print an object with `status` set to `deleted` and the `deployment_id`.
+`langstar deployment delete <deployment-id>` SHALL ask the user to type `yes` before deleting the deployment, and SHALL skip the question when the user passes `-y` or `--yes`. When langstar would ask the user to confirm but standard input is not a terminal, as when a script runs the command, it SHALL leave the deployment in place and exit with an error that says to pass `--yes`. In JSON format it SHALL print an object with `status` set to `deleted` and the `deployment_id`.
 
 #### Scenario: User declines
 
@@ -125,7 +125,7 @@ With `-w` or `--wait`, `langstar deployment create` SHALL check the new deployme
 - **WHEN** a user runs `langstar deployment delete <deployment-id> --yes`
 - **THEN** langstar deletes the deployment without asking
 
-#### Scenario: No terminal to ask
+#### Scenario: Standard input is not a terminal
 
 - **WHEN** a user runs `langstar deployment delete <deployment-id>` with standard input that is not a terminal and without `--yes`
 - **THEN** langstar exits with an error saying to pass `--yes`, and deletes nothing

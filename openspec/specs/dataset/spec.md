@@ -69,7 +69,7 @@ The `dataset` subcommands that print a dataset or a list SHALL print a table or 
 
 ### Requirement: Delete a dataset after confirmation
 
-`langstar dataset delete <dataset-id>` SHALL ask the user to type `yes` before deleting the dataset, and SHALL skip the question when the user passes `-y` or `--yes`. When standard input is not a terminal and the user has not passed `--yes`, it SHALL exit with an error that names `--yes`, without deleting anything.
+`langstar dataset delete <dataset-id>` SHALL ask the user to type `yes` before deleting the dataset, and SHALL skip the question when the user passes `-y` or `--yes`. When langstar would ask the user to confirm but standard input is not a terminal, as when a script runs the command, it SHALL leave the dataset in place and exit with an error that says to pass `--yes`.
 
 #### Scenario: User declines
 
@@ -81,7 +81,7 @@ The `dataset` subcommands that print a dataset or a list SHALL print a table or 
 - **WHEN** a user runs `langstar dataset delete <dataset-id> --yes`
 - **THEN** langstar deletes the dataset without asking and prints its ID
 
-#### Scenario: No terminal to ask
+#### Scenario: Standard input is not a terminal
 
 - **WHEN** a user runs `langstar dataset delete <dataset-id>` with standard input that is not a terminal and without `--yes`
 - **THEN** langstar exits with an error saying to pass `--yes`, and deletes nothing

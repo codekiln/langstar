@@ -58,7 +58,7 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 
 ### Requirement: Delete an annotation queue after confirmation
 
-`langstar queue delete <queue-id>` SHALL ask the user to type `yes` before deleting the queue, and SHALL skip the question when the user passes `--force`. When standard input is not a terminal and the user has not passed `--force`, it SHALL exit with an error that names `--force`, without deleting anything.
+`langstar queue delete <queue-id>` SHALL ask the user to type `yes` before deleting the queue, and SHALL skip the question when the user passes `--force`. When langstar would ask the user to confirm but standard input is not a terminal, as when a script runs the command, it SHALL leave the queue in place and exit with an error that says to pass `--force`.
 
 #### Scenario: User declines
 
@@ -70,7 +70,7 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 - **WHEN** a user runs `langstar queue delete <queue-id> --force`
 - **THEN** langstar deletes the queue without asking and prints its ID
 
-#### Scenario: No terminal to ask
+#### Scenario: Standard input is not a terminal
 
 - **WHEN** a user runs `langstar queue delete <queue-id>` with standard input that is not a terminal and without `--force`
 - **THEN** langstar exits with an error saying to pass `--force`, and deletes nothing
