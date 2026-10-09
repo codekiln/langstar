@@ -158,10 +158,12 @@ fn create_test_repo(
         match create_attempt_outcome(attempt, ATTEMPTS, failure) {
             CreateAttempt::Created => return,
             CreateAttempt::Retry => {
-                eprintln!(
-                    "[SETUP] create_repo for {repo_name} failed on attempt {attempt} \
-                     of {ATTEMPTS} ({failure:?}); retrying"
-                );
+                if let Err(err) = &result {
+                    eprintln!(
+                        "[SETUP] create_repo for {repo_name} failed on attempt {attempt} \
+                         of {ATTEMPTS}: {err}; retrying"
+                    );
+                }
                 std::thread::sleep(std::time::Duration::from_secs(2u64.pow(attempt)));
             }
             CreateAttempt::Failed => {
