@@ -10,6 +10,103 @@ Langstar uses three core environment variables for authentication across differe
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoping operations
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID for narrower scoping (also used as Tenant ID)
 
+## Loading the Variables Locally
+
+On a host machine, the variables come from 1Password through [fnox](https://fnox.jdx.dev), following the fnox [golden path](https://fnox.jdx.dev/guide/golden-path.html). 1Password is the source of truth. The committed `fnox.toml` holds only references to items and fields. Each developer reads from an age-encrypted cache in a gitignored `fnox.local.toml`, so daily runs work without calling 1Password.
+
+| File | Committed | Contents |
+|------|-----------|----------|
+| `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
+| `fnox.local.toml.example` | Yes | Template for the local layer, with a placeholder vault |
+| `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
+| `mise.toml` | Yes | Pins `fnox`, `1password-cli` and `age`. Sets the non-secret fixture names `TEST_GRAPH_ID`, `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
+
+The vault name stays out of the repository. Only the provider in your `fnox.local.toml` names it.
+
+### One-time machine setup
+
+Do this once per machine. Every project on the machine then shares the key and the provider.
+
+```bash
+# Generate your personal age key
+mkdir -p ~/.config/fnox
+age-keygen -o ~/.config/fnox/age.txt
+
+# Add the machine-wide sync provider
+fnox provider add sync-age age --global
+```
+
+Then edit `~/.config/fnox/config.toml` so the provider uses your public key and key file:
+
+```toml
+[providers.sync-age]
+type = "age"
+recipients = ["age1..."] # the "public key:" line from ~/.config/fnox/age.txt
+key_file = "~/.config/fnox/age.txt"
+```
+
+Sign in to the 1Password CLI (`op signin`, or turn on the desktop app integration) and check that `op vault list` shows the vault that holds the LangSmith item.
+
+#### Optional: keep the age key in the Secure Enclave
+
+On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. Only the provider changes:
+
+```bash
+brew install age-plugin-se
+age-plugin-se keygen --access-control=any-biometry -o ~/.config/fnox/age-se.txt
+```
+
+```toml
+[providers.sync-age]
+type = "age"
+recipients = ["age1se1..."] # the public key that keygen printed
+key_file = "~/.config/fnox/age-se.txt"
+```
+
+Re-sync after you switch keys, because the old cache is encrypted to the old key. See [fnox: Apple Secure Enclave](https://fnox.jdx.dev/guide/sync.html#apple-secure-enclave-touch-id) for the access-control options and for YubiKey and TPM keys.
+
+### Per-checkout setup
+
+fnox lets a config in a child directory override the same secret in a parent directory, so a worktree's committed `fnox.toml` hides a cache that sits only in the main checkout. To share one cache across every worktree, keep the real `fnox.local.toml` in the main checkout and symlink it from each worktree:
+
+```bash
+# In the main checkout
+cp fnox.local.toml.example fnox.local.toml
+"${EDITOR:-vi}" fnox.local.toml               # set vault = "<your-1password-vault>"
+fnox sync --provider sync-age --local-file    # asks 1Password once
+fnox check --all
+
+# In each worktree under .worktrees/<branch>
+ln -s ../../fnox.local.toml fnox.local.toml
+```
+
+`fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you keep a single checkout, skip the symlink.
+
+### Run commands with the secrets
+
+```bash
+fnox exec -- cargo nextest run --profile ci --all-features --workspace
+```
+
+`fnox exec` decrypts the cache with your age key and does not call 1Password. It fails before the command runs if any secret cannot be resolved, so integration tests are never skipped in silence (#660). For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
+
+### Re-sync after a rotation
+
+The cache does not refresh itself. After a value changes in 1Password, such as a rotated API key, or after a reference is added to `fnox.toml`, re-sync:
+
+```bash
+fnox sync --provider sync-age --local-file --force
+fnox check --all
+```
+
+### Devcontainer and Codespaces (secondary)
+
+The devcontainer still reads the variables from `.devcontainer/.env` through `docker-compose.yml`, and Codespaces reads them from Codespaces secrets. See [getting-started.md](./getting-started.md). This path keeps working, but host development through fnox is the primary path.
+
+### CI
+
+CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox. A 1Password service account sees whole vaults, so moving CI to `OP_SERVICE_ACCOUNT_TOKEN` is a separate decision.
+
 ## Environment Variable to Header Mapping
 
 | Environment Variable | HTTP Header | Usage |
@@ -104,36 +201,14 @@ This approach was chosen because:
 
 ## Quick Reference
 
-### Minimal Setup (LangSmith API only)
-```bash
-export LANGSMITH_API_KEY="<your-api-key>"
-```
+| Need | Command |
+|------|---------|
+| Run all tests with the secrets | `fnox exec -- cargo nextest run --profile ci --all-features --workspace` |
+| Check that every secret resolves | `fnox check --all` |
+| Refresh the cache after a rotation | `fnox sync --provider sync-age --local-file --force` |
+| See which config files fnox loaded | `fnox config-files` |
 
-### With Organization Scoping
-```bash
-export LANGSMITH_API_KEY="<your-api-key>"
-export LANGSMITH_ORGANIZATION_ID="<your-org-id>"
-```
-
-### With Workspace Scoping
-```bash
-export LANGSMITH_API_KEY="<your-api-key>"
-export LANGSMITH_ORGANIZATION_ID="<your-org-id>"
-export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
-```
-
-### Control Plane API Setup (Required)
-```bash
-export LANGSMITH_API_KEY="<your-api-key>"
-export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"  # Required!
-```
-
-### Integration Tests Setup (All Required)
-```bash
-export LANGSMITH_API_KEY="<your-api-key>"
-export LANGSMITH_ORGANIZATION_ID="<your-org-id>"
-export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
-```
+Every API needs `LANGSMITH_API_KEY`. The Control Plane API also needs `LANGSMITH_WORKSPACE_ID`. Integration tests need all three variables, and `fnox.toml` loads all three.
 
 ## Implementation Details
 

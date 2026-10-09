@@ -3,6 +3,12 @@
 
 [tools]
 python = "3.11"
+# Secrets: fnox resolves fnox.toml's 1Password references (op) into an
+# age-encrypted local cache. See docs/dev/environment-variables.md.
+fnox = "1.38.1"
+1password-cli = "2.40.0"
+# age provides age-keygen for the one-time machine setup.
+age = "1.3.2"
 
 # Rust is managed by devcontainer feature (ghcr.io/devcontainers/features/rust:1)
 # Not managed by mise to avoid duplicate installation
@@ -12,6 +18,11 @@ python = "3.11"
 # node = "22"
 
 [env]
+# Test fixture names are not secrets, so they live here rather than in 1Password.
+# TEST_GRAPH_ID is the graph name in tests/fixtures/test-graph-deployment/langgraph.json.
+TEST_GRAPH_ID = "test_graph"
+REPOSITORY_OWNER = "codekiln"
+REPOSITORY_NAME = "langstar"
 # Ensure Python tools installed via uv are available in PATH
 _.path = [
   "{{ config_root }}/.local/bin",
