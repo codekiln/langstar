@@ -648,3 +648,68 @@ fn test_cli_pull_private_prompt_json_output() {
 
     // CLEANUP: Automatic via Drop trait
 }
+
+/// Pushing a second version to an existing prompt must fetch the first commit as parent instead of failing with a 409 conflict, the bug reported in <https://github.com/codekiln/langstar/issues/719> (prompt push fails with 409 conflict when updating existing prompt). The test was requested in <https://github.com/codekiln/langstar/issues/733> (add integration test for prompt update auto-parent behavior).
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
+fn test_cli_push_prompt_update_with_auto_parent() {
+    check_env_vars_private_prompts();
+
+    // CREATE: Setup test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-auto-parent");
+    let schema_file = create_temp_schema_file();
+    let schema_path = schema_file.path().to_str().unwrap();
+
+    let bin = get_langstar_bin();
+
+    let push = |template: &str| {
+        let mut cmd = Command::new(&bin);
+        cmd.args([
+            "prompt",
+            "push",
+            "--owner",
+            "-",
+            "--repo",
+            fixture.repo_name(),
+            "--template",
+            template,
+            "--input-variables",
+            "query",
+            "--schema",
+            schema_path,
+            "--schema-method",
+            "json_schema",
+        ]);
+        let output = cmd.assert().success();
+        String::from_utf8_lossy(&output.get_output().stdout).to_string()
+    };
+
+    let extract_hash = |stdout: &str| -> String {
+        stdout
+            .lines()
+            .find(|l| l.contains("Commit hash:"))
+            .and_then(|l| l.split("Commit hash:").nth(1))
+            .map(|s| s.trim().to_string())
+            .expect("Commit hash not found in push output")
+    };
+
+    // TEST Step 1: first commit
+    let first_stdout = push("First version: {query}");
+    let first_hash = extract_hash(&first_stdout);
+
+    // TEST Step 2: push an update to the same repo; before this fix the API answered 409 because the push sent no parent commit
+    let second_stdout = push("Second version: {query}");
+    let second_hash = extract_hash(&second_stdout);
+
+    // VERIFY: second push succeeded, created a new commit, and used the first as parent
+    assert_ne!(first_hash, second_hash, "update should create a new commit");
+    assert!(
+        second_stdout.contains(&format!("Latest commit: {}", first_hash)),
+        "the second push should have fetched the first commit ({}) as its parent; output:\n{}",
+        first_hash,
+        second_stdout
+    );
+
+    // CLEANUP: Automatic via Drop trait
+}
