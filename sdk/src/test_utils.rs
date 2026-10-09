@@ -451,11 +451,28 @@ async fn find_reusable_deployment(
         return Ok(Some(existing));
     }
 
-    let all = client.deployments().list(Some(100), None, None).await?;
-    Ok(all
-        .resources
-        .into_iter()
-        .find(|d| deploys_test_graph(d, config) && !is_being_deleted(d)))
+    // The control plane allows one deployment of the test graph per agent
+    // environment across the whole workspace, so read every page.
+    const PAGE: u32 = 100;
+    let mut offset = 0;
+    loop {
+        let page = client
+            .deployments()
+            .list(Some(PAGE), Some(offset), None)
+            .await?;
+        let count = page.resources.len();
+        if let Some(found) = page
+            .resources
+            .into_iter()
+            .find(|d| deploys_test_graph(d, config) && !is_being_deleted(d))
+        {
+            return Ok(Some(found));
+        }
+        if count < PAGE as usize {
+            return Ok(None);
+        }
+        offset += PAGE;
+    }
 }
 
 /// Reuse whatever live deployment of the test graph exists, or create one.
