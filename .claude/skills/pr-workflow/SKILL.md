@@ -77,41 +77,6 @@ $ARGUMENTS
 
 If arguments are provided, parse the issue number. Otherwise, extract from the current branch name.
 
-## Tmux Status Helper
-
-Throughout the workflow, update tmux window name to reflect current phase.
-
-```bash
-!# Helper function to update tmux status
-# Usage: update_tmux_status <emoji> <prefix> <number>
-# Examples:
-#   update_tmux_status "💻" "i" "483"  -> 💻i483 (coding on issue #483)
-#   update_tmux_status "🔧" "pr" "485" -> 🔧pr485 (maintaining PR #485)
-update_tmux_status() {
-  local EMOJI="$1"
-  local PREFIX="$2"
-  local NUMBER="$3"
-
-  if [ -n "$TMUX" ]; then
-    TMUX_NAME="${EMOJI}${PREFIX}${NUMBER}"
-    tmux rename-window "$TMUX_NAME" 2>/dev/null
-  fi
-}
-
-# Phase emojis:
-# 🔍 = gathering information
-# 💻 = coding
-# ⏳ = waiting for tests
-# ❓ = waiting for user (need more info)
-# 🚀 = submitting pr
-# 🔧 = pr maintenance
-# 🧹 = cleanup
-
-# Prefix conventions:
-# i = issue number (e.g., i483 for issue #483)
-# pr = pull request number (e.g., pr485 for PR #485)
-```
-
 ## Overview
 
 This command provides **highly autonomous** PR management, reducing cognitive load by:
@@ -296,12 +261,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Goal:** Create PR with proper formatting and configuration.
 
 **Actions:**
-1. **Update tmux status to "submitting PR":**
-   ```bash
-   !update_tmux_status "🚀" "i" "$ISSUE_NUM"
-   ```
-
-2. **Push branch to remote (if not already pushed):**
+1. **Push branch to remote (if not already pushed):**
    ```bash
    git push -u origin $(git branch --show-current)
    ```
@@ -361,12 +321,6 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 - Each run checks current state and only acts on what's needed
 - Safe to restart if interrupted - will pick up where it left off
 - Safe to run in parallel with manual changes - will sync and continue
-
-**Update tmux status to "PR maintenance" (using PR number):**
-```bash
-!# After PR is created, switch from issue number to PR number
-!update_tmux_status "🔧" "pr" "$PR_NUM"
-```
 
 **Order of operations (priority):**
 1. Review comments FIRST (most important - human feedback)
@@ -497,9 +451,6 @@ EOF
    gh pr checks "$PR_NUM" --json name,state,completedAt,workflow \
      --jq '.[] | "\(.name): \(.state) (\(.workflow))"'
 
-   # Update tmux status to "waiting for tests"
-   !update_tmux_status "⏳" "pr" "$PR_NUM"
-
    # Wait for all checks to complete
    while true; do
      # Count running checks (where completedAt is null)
@@ -511,9 +462,6 @@ EOF
        break
      fi
    done
-
-   # Return to PR maintenance status
-   !update_tmux_status "🔧" "pr" "$PR_NUM"
 
    # After completion, check for failures
    checks_failed=$(gh pr checks "$PR_NUM" --json state --jq '[.[] | select(.state == "FAILURE")] | length')
