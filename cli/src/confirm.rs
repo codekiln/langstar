@@ -8,8 +8,7 @@ use std::io::{self, BufRead, IsTerminal, Write};
 /// Returns `Ok(true)` when the answer is one of `accepted` (case-insensitive),
 /// `Ok(false)` for any other answer or end of input.
 ///
-/// When stdin is not a terminal there is nobody to ask, so this returns an
-/// error naming `skip_flag` instead of hanging or deleting silently.
+/// When stdin is not a terminal, nobody can answer, so this returns an error that names `skip_flag`.
 pub fn confirm(question: &str, accepted: &[&str], skip_flag: &str) -> Result<bool> {
     let stdin = io::stdin();
     confirm_from(

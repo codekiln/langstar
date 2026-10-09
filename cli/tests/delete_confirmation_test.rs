@@ -1,6 +1,8 @@
-//! CLI tests for the delete confirmation that issues [#702](https://github.com/codekiln/langstar/issues/702)
-//! (dataset delete) and [#703](https://github.com/codekiln/langstar/issues/703) (queue delete) asked for,
-//! plus `project delete` and `assistant delete`, which share the same prompt.
+//! Tests that `dataset delete`, `queue delete`, `project delete` and `assistant delete` refuse to run
+//! when no terminal is attached and the skip flag is missing. codekiln filed
+//! [#702 Fix dataset delete confirmation to actually wait for user input](https://github.com/codekiln/langstar/issues/702)
+//! and [#703 Fix queue delete confirmation to actually wait for user input](https://github.com/codekiln/langstar/issues/703)
+//! for the dataset and queue prompts.
 //!
 //! assert_cmd pipes stdin, so these exercise the non-TTY path: without the skip flag the
 //! command must fail with a clear message, before any API request is made. The interactive
