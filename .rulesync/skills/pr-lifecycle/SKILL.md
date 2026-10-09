@@ -80,8 +80,11 @@ echo "Issue number: $ISSUE_NUM"
 # 4. Verify issue exists and is open
 gh issue view "$ISSUE_NUM" --json state,title
 
-# 5. Check commit messages for the "#N Issue Title" footer or a closing keyword
-git log origin/main..HEAD --pretty=format:"%B" | grep -iE "^#${ISSUE_NUM}( |$)|(fix(es)?|close[sd]?|resolve[sd]?) +#${ISSUE_NUM}\b" || echo "WARNING: No '#${ISSUE_NUM} Issue Title' footer or closing keyword for #${ISSUE_NUM} found in commit messages"
+# 5. Check that every commit message has this issue's "#N Issue Title" line (use the PR's base branch instead of origin/main for a stacked PR)
+for sha in $(git rev-list --no-merges origin/main..HEAD); do
+  git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
+done
 ```
 
 ### Validation Details
@@ -147,10 +150,11 @@ fi
 
 **Verify commits reference the issue:**
 ```bash
-# Check the whole message (%B) for this issue's "#N Issue Title" footer or a GitHub closing keyword
-git log origin/main..HEAD --pretty=format:"%B" | \
-  grep -iE "^#${ISSUE_NUM}( |$)|(fix(es)?|close[sd]?|resolve[sd]?) +#${ISSUE_NUM}\b" || \
-  echo "WARNING: No '#${ISSUE_NUM} Issue Title' footer or closing keyword for #${ISSUE_NUM} found in commit messages"
+# Check that every commit message has this issue's "#N Issue Title" line
+for sha in $(git rev-list --no-merges origin/main..HEAD); do
+  git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
+done
 ```
 
 **GitHub closing keywords:** `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`

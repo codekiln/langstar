@@ -43,7 +43,7 @@ Claude Code does not load the `SendMessage` tool until it is asked to. Run `Tool
 
 The root checkout stays on `main` and clean throughout. A worker never edits or commits there.
 
-If codekiln asks for tuicr, a terminal tool for reviewing a diff, the worker opens the PR diff in tuicr in a new tmux window named for the job.
+If codekiln asks for tuicr, a terminal tool for reviewing a diff, the worker opens the PR diff in tuicr in a new pane of its own window, after the agent's first pane.
 
 ## Stacked PRs
 
