@@ -143,8 +143,8 @@ When the script fails with permission errors:
 
 1. **Check token availability:**
    ```bash
-   echo "GITHUB_PROJECT_PAT: ${GITHUB_PROJECT_PAT:0:10}..."
-   echo "GITHUB_PAT: ${GITHUB_PAT:0:10}..."
+   [ -n "${GITHUB_PROJECT_PAT:-}" ] && echo "GITHUB_PROJECT_PAT is set" || echo "GITHUB_PROJECT_PAT is not set"
+   [ -n "${GITHUB_PAT:-}" ] && echo "GITHUB_PAT is set" || echo "GITHUB_PAT is not set"
    ```
 
 2. **Verify token scopes:**
