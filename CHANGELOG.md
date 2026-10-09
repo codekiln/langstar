@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✨ feat(assistant): add description field support from Agent Server API (#726)
   - `assistant create` and `assistant update` take `--description`, and `assistant get` shows it.
 - ✨ feat(dev): load LangSmith secrets through fnox and 1Password (#754)
-  - `deployment create --source github` now finds the GitHub integration through the Control Plane API, or takes `--integration-id`. `LANGGRAPH_GITHUB_INTEGRATION_ID` and the `github_integration_id` config key are no longer read; old config files that still carry the key load without error.
+  - The same pull request changed how `deployment create --source github` picks a GitHub integration: it asks the Control Plane API for the integration that can reach your repository, or uses the ID you pass with `--integration-id`. Langstar now ignores `LANGGRAPH_GITHUB_INTEGRATION_ID` and the `github_integration_id` config key, so pass `--integration-id` where you used to set them. A config file that still has the key loads as before.
 - ✨ feat(dev): use mise for tools, env and tasks (#763)
 
 ### 🩹 Bug Fixes
