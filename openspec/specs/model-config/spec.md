@@ -64,9 +64,14 @@ In text format, `langstar model-config list` SHALL print one tab-separated line 
 
 ### Requirement: Delete a model configuration after confirmation
 
-`langstar model-config delete <id>` SHALL ask the user to confirm with `y` or `yes` before deleting the configuration, and SHALL skip the question when the user passes `-y` or `--yes`.
+`langstar model-config delete <id>` SHALL ask the user to confirm with `y` or `yes` before deleting the configuration, and SHALL skip the question when the user passes `-y` or `--yes`. When standard input is not a terminal and the user has not passed `--yes`, it SHALL exit with an error that names `--yes`, without deleting anything.
 
 #### Scenario: User declines
 
 - **WHEN** a user runs `langstar model-config delete <config-id>` and answers anything other than `y` or `yes`
 - **THEN** langstar prints that it cancelled and leaves the configuration in place
+
+#### Scenario: No terminal to ask
+
+- **WHEN** a user runs `langstar model-config delete <config-id>` with standard input that is not a terminal and without `--yes`
+- **THEN** langstar exits with an error saying to pass `--yes`, and deletes nothing

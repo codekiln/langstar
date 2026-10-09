@@ -67,19 +67,24 @@ The `dataset` subcommands that print a dataset or a list SHALL print a table or 
 - **WHEN** a user runs `langstar dataset update <dataset-id>` with neither `--name` nor `--description`
 - **THEN** langstar prints a warning naming both flags and leaves the dataset unchanged
 
-### Requirement: Delete a dataset only with --yes
+### Requirement: Delete a dataset after confirmation
 
-`langstar dataset delete <dataset-id>` SHALL delete the dataset when the user passes `--yes` or `-y`. Without that flag, it SHALL print a message asking whether to delete the dataset, tell the user to pass `--yes`, and exit without deleting.
+`langstar dataset delete <dataset-id>` SHALL ask the user to type `yes` before deleting the dataset, and SHALL skip the question when the user passes `-y` or `--yes`. When standard input is not a terminal and the user has not passed `--yes`, it SHALL exit with an error that names `--yes`, without deleting anything.
 
-#### Scenario: Delete without --yes
+#### Scenario: User declines
 
-- **WHEN** a user runs `langstar dataset delete <dataset-id>`
-- **THEN** langstar tells the user to pass `--yes` and leaves the dataset in place
+- **WHEN** a user runs `langstar dataset delete <dataset-id>` and types anything other than `yes`
+- **THEN** langstar prints that it cancelled the deletion and leaves the dataset in place
 
 #### Scenario: Delete with --yes
 
 - **WHEN** a user runs `langstar dataset delete <dataset-id> --yes`
-- **THEN** langstar deletes the dataset and prints its ID
+- **THEN** langstar deletes the dataset without asking and prints its ID
+
+#### Scenario: No terminal to ask
+
+- **WHEN** a user runs `langstar dataset delete <dataset-id>` with standard input that is not a terminal and without `--yes`
+- **THEN** langstar exits with an error saying to pass `--yes`, and deletes nothing
 
 ### Requirement: Import examples from JSONL or CSV
 

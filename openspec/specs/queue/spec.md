@@ -56,20 +56,24 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 - **WHEN** a user runs `langstar queue update <queue-id>` with no other flags
 - **THEN** langstar warns that no updates were given and leaves the queue unchanged
 
-### Requirement: Delete an annotation queue only with force
+### Requirement: Delete an annotation queue after confirmation
 
-`langstar queue delete <queue-id>` SHALL delete the queue only when the user passes `--force`. Without `--force`, it SHALL print a message saying to add `--force` and exit without deleting.
+`langstar queue delete <queue-id>` SHALL ask the user to type `yes` before deleting the queue, and SHALL skip the question when the user passes `--force`. When standard input is not a terminal and the user has not passed `--force`, it SHALL exit with an error that names `--force`, without deleting anything.
 
-#### Scenario: Delete without force
+#### Scenario: User declines
 
-- **WHEN** a user runs `langstar queue delete <queue-id>`
-- **THEN** langstar asks the user to rerun with `--force`
-- **AND** the queue stays in place
+- **WHEN** a user runs `langstar queue delete <queue-id>` and types anything other than `yes`
+- **THEN** langstar prints that it cancelled the deletion and leaves the queue in place
 
 #### Scenario: Delete with force
 
 - **WHEN** a user runs `langstar queue delete <queue-id> --force`
-- **THEN** langstar deletes the queue and prints its ID
+- **THEN** langstar deletes the queue without asking and prints its ID
+
+#### Scenario: No terminal to ask
+
+- **WHEN** a user runs `langstar queue delete <queue-id>` with standard input that is not a terminal and without `--force`
+- **THEN** langstar exits with an error saying to pass `--force`, and deletes nothing
 
 ### Requirement: Add runs to a queue
 
