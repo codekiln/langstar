@@ -1,4 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#MISE description="Require branches to be up to date before merging, on the main ruleset"
+#USAGE arg "[repo]" help="owner/name of the repository" default="codekiln/langstar"
+#USAGE arg "[ruleset_id]" help="Numeric id of the ruleset" default="9196293"
+#USAGE arg "[ruleset_name]" help="Name of the ruleset" default="main"
 # Enable strict required status checks for the "main" repository ruleset
 #
 # This script updates the "main" ruleset to require branches to be up-to-date
@@ -15,9 +19,9 @@
 set -euo pipefail
 
 # Configuration: Accept as command-line arguments, with defaults
-REPO="${1:-codekiln/langstar}"
-RULESET_ID="${2:-9196293}"
-RULESET_NAME="${3:-main}"
+REPO="${usage_repo:-codekiln/langstar}"
+RULESET_ID="${usage_ruleset_id:-9196293}"
+RULESET_NAME="${usage_ruleset_name:-main}"
 echo "================================================"
 echo "Enable Strict Status Checks for ${RULESET_NAME} Ruleset"
 echo "================================================"
