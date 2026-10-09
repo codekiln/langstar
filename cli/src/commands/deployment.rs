@@ -598,14 +598,7 @@ impl DeploymentCommands {
                     ));
                     formatter.info("This action cannot be undone. Use --yes to skip this prompt.");
 
-                    // Read from stdin
-                    use std::io::{self, Write};
-                    print!("Type 'yes' to confirm: ");
-                    io::stdout().flush()?;
-                    let mut confirmation = String::new();
-                    io::stdin().read_line(&mut confirmation)?;
-
-                    if confirmation.trim().to_lowercase() != "yes" {
+                    if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--yes")? {
                         formatter.info("Deletion cancelled.");
                         return Ok(());
                     }

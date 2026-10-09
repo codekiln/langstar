@@ -484,12 +484,11 @@ impl DatasetCommands {
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
         if !args.yes {
-            eprintln!(
-                "Are you sure you want to delete dataset {}?",
-                args.dataset_id
-            );
-            eprintln!("Use --yes (-y) to skip this confirmation.");
-            return Ok(());
+            let question = format!("Delete dataset {}? [y/N]:", args.dataset_id);
+            if !crate::confirm::confirm(&question, &["y", "yes"], "--yes")? {
+                eprintln!("Cancelled");
+                return Ok(());
+            }
         }
 
         let auth = config.to_auth_config();

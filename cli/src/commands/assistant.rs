@@ -455,16 +455,7 @@ impl AssistantCommands {
                         "⚠ This will permanently delete assistant '{}'",
                         assistant_id
                     );
-                    eprint!("Continue? [y/N]: ");
-
-                    use std::io::{self, Write};
-                    io::stdout().flush()?;
-
-                    let mut input = String::new();
-                    io::stdin().read_line(&mut input)?;
-
-                    let input = input.trim().to_lowercase();
-                    if input != "y" && input != "yes" {
+                    if !crate::confirm::confirm("Continue? [y/N]:", &["y", "yes"], "--force")? {
                         eprintln!("❌ Cancelled");
                         return Ok(());
                     }

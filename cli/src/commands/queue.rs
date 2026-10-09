@@ -395,9 +395,11 @@ impl QueueCommands {
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
         if !args.force {
-            eprintln!("Are you sure you want to delete queue {}?", args.queue_id);
-            eprintln!("Use --force to skip this confirmation.");
-            return Ok(());
+            let question = format!("Delete queue {}? [y/N]:", args.queue_id);
+            if !crate::confirm::confirm(&question, &["y", "yes"], "--force")? {
+                eprintln!("Cancelled");
+                return Ok(());
+            }
         }
 
         let auth = config.to_auth_config();
