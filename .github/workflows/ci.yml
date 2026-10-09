@@ -3,11 +3,17 @@ name: CI
 on:
   push:
     branches: [main]
+  # No branch filter on pull_request, so stacked PRs (base is another
+  # feature branch) get CI too. See #757.
   pull_request:
-    branches: [main]
     # NOTE: path-ignore removed in favor of job-level path filtering (see #640)
     # This allows us to override path filters for release branches while
     # still skipping CI for docs-only changes on regular PRs
+
+# A new push to a PR cancels the run it supersedes. Pushes to main keep every run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
