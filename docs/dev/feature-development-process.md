@@ -7,6 +7,12 @@ This document codifies the best practices and standard phases for implementing n
 - **#334 ls-annotation-queues** - Annotation queue management
 - **#201 devcontainer-feature** - Infrastructure milestone (different pattern)
 
+## Design new features with OpenSpec
+
+Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, delta specs and tasks, and `openspec/config.yaml` sets what each of them must contain. `openspec validate <slug> --strict` checks the change. Once the feature merges, the `openspec-archive-change` skill moves the change under `openspec/changes/archive/` and merges its delta specs into `openspec/specs/`, which describe what langstar does today, one command group per spec.
+
+The design work in Phase 2 goes into the change's `design.md`, and its tasks replace the implementation plan in Phase 10. `docs/implementation/` holds the design documents written before langstar adopted OpenSpec.
+
 ---
 
 ## Overview
@@ -18,7 +24,7 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 | **0.0** | **Pre-Epic Scouting (Optional)** | **Gather research and technical context** | **Scout research report** |
 | 0 | Epic Setup | Establish tracking structure | Parent issue, milestone, sub-issues |
 | 1 | Research | Understand SDK precedent | Research report in `reference/research/` |
-| 2 | Design | Ensure DX consistency and integration | Design decisions documented in research report |
+| 2 | Design | Ensure DX consistency and integration | OpenSpec change in `openspec/changes/` |
 | 3 | OpenAPI Validation | Verify design against spec | Validation report + extracted schemas |
 | 4 | SDK Types | Implement Rust types | `sdk/src/{feature}.rs` types |
 | 5 | SDK Client | Implement client methods | Client methods in SDK |
@@ -26,7 +32,7 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 | 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones-test-plan` |
 | 8 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
 | 9 | Test Audit | Verify test compliance | Audit report via `/gh-milestones-test-audit` |
-| 10 | Documentation | Document usage | README updates, implementation docs |
+| 10 | Documentation | Document usage | README updates, archived OpenSpec change |
 | **11** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
 
 **Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 11 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) and Phase 9 (Test Audit) were added to formalize comprehensive test planning and compliance verification (Issue #634).
@@ -308,7 +314,7 @@ Understand what this feature accomplishes from a user's perspective in the LangS
 
 ### 2.4 Design Decisions Summary
 
-Add a "Design Decisions" section to your research report:
+Write the decisions into the `## Decisions` section of the OpenSpec change's `design.md`. Before OpenSpec, they went into a "Design Decisions" section of the research report, like this:
 
 ```markdown
 ## Design Decisions
@@ -983,14 +989,9 @@ If the audit finds issues:
 
 ## Phase 10: Documentation
 
-### 10.1 Implementation Plan
+### 10.1 Archive the OpenSpec Change
 
-Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
-- Executive summary
-- Research sources with links
-- Implementation phases with code snippets
-- Testing plan
-- Future enhancements
+Check off the change's `tasks.md`, then archive the change with the `openspec-archive-change` skill so its specs reach `openspec/specs/`.
 
 ### 10.2 Update README
 
@@ -1136,7 +1137,7 @@ gh release create v0.10.0 --generate-notes
 - [ ] MANIFEST.md updated with provenance for spec fetches
 - [ ] Extracted fragments in `reference/api-specs/{api}/`
 - [ ] FRAGMENTS.md updated with jq queries for extractions
-- [ ] Implementation plans in `docs/implementation/`
+- [ ] OpenSpec change archived and its specs merged into `openspec/specs/`
 - [ ] Same markdown structure
 
 ---
