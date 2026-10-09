@@ -48,6 +48,20 @@ enum ConfigFile<'a> {
     Missing,
 }
 
+/// The warning langstar prints when it reads the config file at `old_path`,
+/// telling the user how to move it to `config_path`
+fn old_config_warning(old_path: &Path, config_path: &Path) -> String {
+    format!(
+        "Warning: Reading config from {}, where langstar kept it before v2.2.0. \
+         Move it to {} with:\n  mkdir -p \"{}\" && mv \"{}\" \"{}\"",
+        old_path.display(),
+        config_path.display(),
+        config_path.parent().unwrap_or(config_path).display(),
+        old_path.display(),
+        config_path.display()
+    )
+}
+
 /// Pick the current config file when it exists, otherwise the old one when it exists
 fn choose_config_file<'a>(config_path: &'a Path, old_path: Option<&'a Path>) -> ConfigFile<'a> {
     if config_path.exists() {
@@ -138,22 +152,20 @@ impl Config {
                 // Commands such as `config show` load the config more than once
                 // per run; warn on the first load only.
                 static WARN_ONCE: Once = Once::new();
-                WARN_ONCE.call_once(|| {
-                    eprintln!(
-                        "Warning: Reading config from {}, where langstar kept it before v2.2.0. \
-                     Move it to {} with:\n  mkdir -p \"{}\" && mv \"{}\" \"{}\"",
-                        path.display(),
-                        config_path.display(),
-                        config_path.parent().unwrap_or(config_path).display(),
-                        path.display(),
-                        config_path.display()
-                    );
-                });
+                WARN_ONCE.call_once(|| eprintln!("{}", old_config_warning(path, config_path)));
                 path
             }
             ConfigFile::Missing => return Ok(Self::default()),
         };
 
+        Self::read_file(path)
+    }
+
+    /// Read and parse the config file at `path`, returning any read or parse error.
+    ///
+    /// `load` turns these errors into the default config; `config validate`
+    /// calls this to report them.
+    pub fn read_file(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| CliError::Config(format!("Failed to read config file: {}", e)))?;
 
@@ -357,6 +369,30 @@ mod tests {
         );
         let config = Config::load_from_paths(&paths.current, None).unwrap();
         assert!(config.langsmith_api_key.is_none());
+    }
+
+    #[test]
+    fn test_old_config_warning_names_both_paths_and_the_move_command() {
+        let old = Path::new("/home/user/Library/Application Support/langstar/config.toml");
+        let current = Path::new("/home/user/.config/langstar/config.toml");
+
+        assert_eq!(
+            old_config_warning(old, current),
+            "Warning: Reading config from /home/user/Library/Application Support/langstar/config.toml, \
+             where langstar kept it before v2.2.0. Move it to /home/user/.config/langstar/config.toml with:\n  \
+             mkdir -p \"/home/user/.config/langstar\" && \
+             mv \"/home/user/Library/Application Support/langstar/config.toml\" \"/home/user/.config/langstar/config.toml\""
+        );
+    }
+
+    #[test]
+    fn test_read_file_reports_a_parse_error() {
+        let paths = ConfigPaths::new();
+        std::fs::create_dir_all(paths.old.parent().unwrap()).unwrap();
+        std::fs::write(&paths.old, "langsmith_api_key = \"unterminated\n").unwrap();
+
+        let error = Config::read_file(&paths.old).unwrap_err().to_string();
+        assert!(error.contains("Failed to parse config file"), "{error}");
     }
 
     #[test]
