@@ -445,7 +445,7 @@ impl RunsCommands {
     /// 4. Default (7 days)
     ///
     /// --no-time-filter overrides all of these with the last
-    /// [`NO_TIME_FILTER_DAYS`] days, the widest window the API accepts.
+    /// [`NO_TIME_FILTER_DAYS`] days, one day inside the API's 401-day limit.
     ///
     /// Returns (start_time, end_time, description).
     fn resolve_time_filters(
@@ -454,9 +454,9 @@ impl RunsCommands {
     ) -> (Option<DateTime<Utc>>, Option<DateTime<Utc>>, String) {
         let now = Utc::now();
 
-        // The API defaults to the last day when no start time is sent and
-        // rejects windows over 401 days, so --no-time-filter sends the widest
-        // window it accepts.
+        // The API searches only the last day when no start time is sent, and it
+        // rejects windows over 401 days. --no-time-filter asks for the last 400 days,
+        // one day inside that limit.
         if args.no_time_filter {
             return (
                 Some(now - chrono::Duration::days(NO_TIME_FILTER_DAYS)),

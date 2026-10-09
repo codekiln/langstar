@@ -407,7 +407,7 @@ langstar runs query -p "$PROJECT" --since 2024-01-01T00:00:00Z --until 2024-01-3
 # the newest --limit runs oldest first
 langstar runs query -p "$PROJECT" --order asc --limit 10
 
-# Widen the default 7-day window to the last 400 days (the API maximum)
+# Widen the default 7-day window to the last 400 days (the API rejects windows over 401 days)
 langstar runs query -p "$PROJECT" --no-time-filter
 
 # Pretty-printed JSON output

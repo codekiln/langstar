@@ -618,7 +618,7 @@ fn test_runs_query_lifecycle() {
     let llm = query_runs_json(&project_id, &["-o", "json", "--run-type", "llm"]);
     assert_eq!(names(&llm), vec!["seed-middle-llm"]);
 
-    // --errors-only and --status go through the filter expression
+    // --errors-only sends has_error: true; --status adds eq(status, ...) to the filter
     let errors = query_runs_json(&project_id, &["-o", "json", "--errors-only"]);
     assert_eq!(names(&errors), vec!["seed-newest-failed"]);
     let success = query_runs_json(&project_id, &["-o", "json", "--status", "success"]);
