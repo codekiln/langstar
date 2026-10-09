@@ -273,8 +273,7 @@ async fn test_delete_nonexistent_setting() {
 
     let result = client.delete_playground_settings(nonexistent_id).await;
 
-    // Since 2026 the API answers a delete of a missing setting with 404.
-    // It used to return 200.
+    // LangSmith answers a delete of a missing setting with 404.
     match result {
         Err(LangstarError::ApiError { status: 404, .. }) => {
             println!("✓ Delete of nonexistent setting returned 404");

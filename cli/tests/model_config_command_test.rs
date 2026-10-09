@@ -326,7 +326,7 @@ fn test_model_config_get_nonexistent() {
 #[test]
 fn test_model_config_delete_nonexistent() {
     // Try to delete a non-existent config (all-zero UUID).
-    // Since 2026 the API answers this with 404; it used to return 200.
+    // LangSmith answers a delete of a missing setting with 404.
     let fake_id = "00000000-0000-0000-0000-000000000000";
 
     let mut cmd = langstar_cmd();
