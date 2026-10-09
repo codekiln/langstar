@@ -39,7 +39,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Model configurations | Terraform `langsmith_model_configuration` | Partly: `model-config`, but `create` returns an HTTP 500 | Small |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
 | Resource tags | Terraform `langsmith_tag_key`, `langsmith_tag_value`, `langsmith_tagging` | Lacks it | Medium |
-| Workspaces, members, roles, access policies and service keys | Terraform; LangSmith CLI `workspace` | Lacks it | Large |
+| Workspaces, members, roles, access policies and service keys | Terraform `langsmith_workspace`, `langsmith_workspace_membership`, `langsmith_workspace_role`, `langsmith_access_policy`, `langsmith_service_key`; the LangSmith CLI's `workspace` only lists workspaces and sets the default one | Lacks it | Large |
 | Alert rules and gateway policies | Terraform `langsmith_alert_rule`, `langsmith_gateway_policy` | Lacks it | Medium |
 | Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: API key from the environment or the config file | Medium |
 | Call any LangSmith API endpoint | LangSmith CLI `api` | Lacks it | Small |
@@ -49,7 +49,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 
 Langstar also has a few smaller things the official tools lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, `project get` and `project update` have no official command. `runs query` filters on traces and trees, selects fields and sorts. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
 
-## The larger gaps
+## What closing each gap would take
 
 ### Evaluators and experiments
 
@@ -57,7 +57,7 @@ Every langstar `eval` subcommand (`create`, `run`, `list`, `get`, `export`) has 
 
 ### Assistants kept in Git
 
-The garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md) found no tool, official or community, that keeps assistant definitions in Git and applies them to each deployment. Langstar is the nearest thing, but its `assistant create` cannot choose the assistant's ID or skip an assistant that already exists, and langstar has no version commands. The LangGraph SDK has all of these ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)).
+No tool, official or community, keeps assistant definitions in Git and applies them to each deployment, according to the survey in the garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md). Langstar is the nearest thing, but its `assistant create` cannot choose the assistant's ID or skip an assistant that already exists, and langstar has no version commands. The LangGraph SDK has all of these ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)).
 
 ### Local development and deploying from local code
 
@@ -99,7 +99,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 1.
 >
-> Recommendation: evaluators and experiments first, because evaluation is one of the main reasons people use LangSmith and langstar's `eval` commands do nothing today. Then reading runs, traces and threads one at a time, which is how people debug an agent. The small prompt gaps (delete, commit history, tags) could ride along with the ls-prompt-ux milestone. The model configuration 500 belongs to the reboot milestone already.
+> Recommendation: evaluators and experiments first, because evaluation is one of the main reasons people use LangSmith and langstar's `eval` commands do nothing today. Then reading runs, traces and threads one at a time, which is how people debug an agent. Add the missing prompt commands (delete, commit history and tags) to [ls-prompt-ux milestone · Issue #668](https://github.com/codekiln/langstar/issues/668), which already redesigns every `prompt` command. The HTTP 500 error from `model-config create` is already listed in [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746).
 
 <ANSWER_HERE>
 
@@ -123,11 +123,11 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 4.
 >
-> Workspace administration, resource tags and alerts are in Terraform only. People who use Terraform for these may not want a second tool changing the same settings. Recommendation: build apply-from-a-file for assistants first, since no official tool does it, and leave the Terraform-only areas until someone asks for them.
+> Workspace administration, resource tags and alerts are in Terraform only. People who use Terraform for these may not want a second tool changing the same settings. Recommendation: leave the Terraform-only areas until someone asks for them. Spend that effort on a langstar command that reads assistant definitions from a file in Git and creates or updates them on each deployment, which no official tool does.
 
 <ANSWER_HERE>
 
-### 5 - Should the ls-prompt-ux milestone also close the prompt gaps?
+### 5 - Should the prompt command redesign also add delete, commit history and tags?
 
 > Context from the drafting agent, for question 5.
 >
@@ -135,7 +135,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 <ANSWER_HERE>
 
-### 6 - Should the ls-cli-output-dx milestone go ahead as planned?
+### 6 - Should every list command get table output and column selection?
 
 > Context from the drafting agent, for question 6.
 >
