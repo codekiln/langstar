@@ -659,6 +659,9 @@ fn test_cli_push_prompt_update_with_auto_parent() {
 
     // CREATE: Setup test repo (cleaned up automatically on drop)
     let fixture = PromptRepoFixture::new_private("test-auto-parent");
+    let schema_file = create_temp_schema_file();
+    let schema_path = schema_file.path().to_str().unwrap();
+
     let bin = get_langstar_bin();
 
     let push = |template: &str| {
@@ -674,6 +677,10 @@ fn test_cli_push_prompt_update_with_auto_parent() {
             template,
             "--input-variables",
             "query",
+            "--schema",
+            schema_path,
+            "--schema-method",
+            "json_schema",
         ]);
         let output = cmd.assert().success();
         String::from_utf8_lossy(&output.get_output().stdout).to_string()
