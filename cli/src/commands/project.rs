@@ -437,22 +437,20 @@ impl ProjectCommands {
     }
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
+        // Refuse before the name lookup below when there is nobody to ask.
+        if !args.force {
+            crate::confirm::require_terminal("--force")?;
+        }
+
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
         let project_id = resolve_project_id(&client, &args.id_or_name).await?;
 
         if !args.force {
-            use std::io::{self, Write};
             eprintln!("Are you sure you want to delete project {}?", project_id);
             eprintln!("This action cannot be undone. Use --force to skip this prompt.");
-            print!("Type 'yes' to confirm: ");
-            io::stdout().flush()?;
-
-            let mut confirmation = String::new();
-            io::stdin().read_line(&mut confirmation)?;
-
-            if confirmation.trim().to_lowercase() != "yes" {
+            if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--force")? {
                 println!("Deletion cancelled.");
                 return Ok(());
             }
