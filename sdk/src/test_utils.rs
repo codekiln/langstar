@@ -370,7 +370,7 @@ fn print_create_conflict_guidance(
         eprintln!("├────────────────────────────────────────────────────────────────┤");
         eprintln!("│ To fix this issue:                                            │");
         eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
-        // Truncate long names to fit in the 24-char column; show full name in error below
+        // Truncate long names to fit in the 24-char column; the full name follows the box
         let display_name = if name.len() > 24 {
             format!("{}...", &name[..21])
         } else {
@@ -379,6 +379,9 @@ fn print_create_conflict_guidance(
         eprintln!("│  2. Find and delete project named: {:24} │", display_name);
         eprintln!("│  3. Re-run the tests                                          │");
         eprintln!("╰────────────────────────────────────────────────────────────────╯");
+        // Release names share their first 24 characters, and the API's error
+        // doesn't name the project, so print the whole name.
+        eprintln!("   Project to delete: {}", name);
         eprintln!();
     } else if is_conflict_error(err) {
         eprintln!();
