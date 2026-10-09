@@ -504,8 +504,8 @@ mod tests {
 
     #[test]
     fn test_deployment_status_unrecognised_value_is_unknown() {
-        // A status added by the control plane after this SDK was built must
-        // not make a whole deployment list fail to deserialize.
+        // The SDK must still read a deployment list that holds a status
+        // the control plane added after this SDK was built.
         let status: DeploymentStatus = serde_json::from_str("\"SOME_FUTURE_STATUS\"").unwrap();
         assert_eq!(status, DeploymentStatus::Unknown);
     }
