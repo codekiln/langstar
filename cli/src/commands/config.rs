@@ -3,6 +3,7 @@ use crate::error::{CliError, Result};
 use crate::time::ConfiguredTimezone;
 use clap::{Args, Subcommand};
 use std::fs;
+use std::path::Path;
 use toml_edit::DocumentMut;
 
 /// Message constants for DRY principle
@@ -534,18 +535,35 @@ hide_workspace_and_org_id_message = false
 
     fn set_config_value(key: &str, new_value: &str) -> Result<()> {
         let config_path = Config::config_file_path()?;
+        let old_path = Config::old_config_file_path();
+        Self::set_value_in_file(&config_path, old_path.as_deref(), key, new_value)
+    }
 
-        // Create config file if it doesn't exist
+    /// Set `key` in the config file at `config_path`, creating the file if needed.
+    ///
+    /// A new file starts as a copy of the pre-v2.2.0 macOS file at `old_path`
+    /// when that one exists. The new file then takes over from it, so starting
+    /// empty would drop every setting langstar was reading from the old file.
+    fn set_value_in_file(
+        config_path: &Path,
+        old_path: Option<&Path>,
+        key: &str,
+        new_value: &str,
+    ) -> Result<()> {
         if !config_path.exists() {
             if let Some(parent) = config_path.parent() {
                 fs::create_dir_all(parent)?;
             }
-            // Create empty config file - toml_edit handles empty documents
-            fs::write(&config_path, "")?;
+            let initial_content = match old_path.filter(|path| path.exists()) {
+                Some(old_path) => fs::read_to_string(old_path)?,
+                // toml_edit handles empty documents
+                None => String::new(),
+            };
+            fs::write(config_path, initial_content)?;
         }
 
         // Read and parse the config file
-        let config_content = fs::read_to_string(&config_path)?;
+        let config_content = fs::read_to_string(config_path)?;
         let mut doc = config_content
             .parse::<DocumentMut>()
             .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
@@ -564,8 +582,48 @@ hide_workspace_and_org_id_message = false
         }
 
         // Write the updated config
-        fs::write(&config_path, doc.to_string())?;
+        fs::write(config_path, doc.to_string())?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_set_starts_new_file_from_old_macos_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+        let old_path = dir
+            .path()
+            .join("Library/Application Support/langstar/config.toml");
+        fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+        fs::write(&old_path, "langsmith_api_key = \"old-key\"\n").unwrap();
+
+        ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC")
+            .unwrap();
+
+        let config: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+        assert_eq!(config.langsmith_api_key.as_deref(), Some("old-key"));
+        assert_eq!(config.timezone, "UTC");
+        // The old file is copied, not moved
+        assert_eq!(
+            fs::read_to_string(&old_path).unwrap(),
+            "langsmith_api_key = \"old-key\"\n"
+        );
+    }
+
+    #[test]
+    fn test_set_starts_empty_file_without_old_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+
+        ConfigCommands::set_value_in_file(&config_path, None, "timezone", "UTC").unwrap();
+
+        let config: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+        assert!(config.langsmith_api_key.is_none());
+        assert_eq!(config.timezone, "UTC");
     }
 }
