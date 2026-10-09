@@ -25,12 +25,12 @@ class CommitParser:
     # Conventional Emoji Commit patterns
     # Format: <emoji> <type>[optional scope]: <description>
     COMMIT_PATTERN = re.compile(
-        r'^[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]?\s*'  # Optional emoji
+        r'^[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]?\uFE0F?\s*'  # Optional emoji, with its optional variation selector U+FE0F
         r'(\w+)'  # type (required)
         r'(?:\([^)]+\))?'  # optional scope in parentheses
-        r'!?'  # optional breaking change indicator
+        r'(!)?'  # optional breaking change indicator
         r':\s*'  # colon separator
-        r'(.+)'  # description
+        r'(.+)'  # description (group 3)
     , re.UNICODE)
 
     # Breaking change indicators
@@ -84,7 +84,7 @@ class CommitParser:
         commit_type = match.group(1).lower()
 
         # Check for breaking change indicator (!)
-        if '!' in first_line and '!:' not in first_line:
+        if match.group(2):
             return BumpType.MAJOR
 
         # Return bump type based on commit type
