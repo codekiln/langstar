@@ -86,7 +86,11 @@ In both branches, never create the root as a side effect: do not run `openspec i
 
 4. **For each delta spec, apply changes to main specs**
 
-   Before the first main-spec write, obtain one current specs-rule snapshot:
+   Before the first main-spec write, run `openspec validate "<name>" --strict`
+   with the same selected-root flags. If it exits non-zero, report its errors and
+   stop without writing any main spec.
+
+   Then obtain one current specs-rule snapshot:
    - If archive invoked this workflow inline and supplied a valid snapshot from
      `openspec instructions specs --change "<name>" --json`, reuse it and do not
      fetch the same instructions again.

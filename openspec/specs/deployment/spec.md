@@ -79,7 +79,7 @@ Every `langstar deployment` subcommand that prints a deployment SHALL replace ea
 
 ### Requirement: Find the GitHub integration ID
 
-For a `github` source, `langstar deployment create` SHALL use the GitHub integration ID passed with `--integration-id`. Without the flag, it SHALL look the ID up itself, and when it finds none, it SHALL exit with an error that says how to supply the ID. Pull request [#754 replaces this lookup with a call to LangSmith's `GET /v1/integrations/github/install`](https://github.com/codekiln/langstar/pull/754) and keeps `--integration-id` as an override; it has not merged yet.
+For a `github` source, `langstar deployment create` SHALL use the GitHub integration ID passed with `--integration-id`. Without the flag, it SHALL list the workspace's GitHub integrations with LangSmith's `GET /v1/integrations/github/install` and use the one whose repositories include the `--repo-url` repository. When no integration has access to that repository, it SHALL exit with an error that says how to give one access or pass `--integration-id`.
 
 #### Scenario: ID passed on the command line
 
@@ -89,8 +89,8 @@ For a `github` source, `langstar deployment create` SHALL use the GitHub integra
 #### Scenario: No ID found
 
 - **WHEN** a user creates a GitHub deployment without `--integration-id`
-- **AND** langstar finds no integration ID for the workspace
-- **THEN** langstar exits with an error that says how to supply the ID
+- **AND** no GitHub integration in the workspace has access to the `--repo-url` repository
+- **THEN** langstar exits with an error that says how to give an integration access or pass `--integration-id`
 
 ### Requirement: Set deployment environment variables
 
