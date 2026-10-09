@@ -29,8 +29,8 @@ pub fn require_terminal(skip_flag: &str) -> Result<()> {
     require_terminal_if(io::stdin().is_terminal(), skip_flag)
 }
 
-fn require_terminal_if(is_tty: bool, skip_flag: &str) -> Result<()> {
-    if is_tty {
+fn require_terminal_if(is_terminal: bool, skip_flag: &str) -> Result<()> {
+    if is_terminal {
         Ok(())
     } else {
         Err(CliError::Config(format!(
@@ -45,13 +45,13 @@ fn require_terminal_if(is_tty: bool, skip_flag: &str) -> Result<()> {
 /// to run the prompt without a real terminal.
 pub fn confirm_from(
     input: &mut impl BufRead,
-    is_tty: bool,
+    is_terminal: bool,
     prompt_out: &mut impl Write,
     question: &str,
     accepted: &[&str],
     skip_flag: &str,
 ) -> Result<bool> {
-    require_terminal_if(is_tty, skip_flag)?;
+    require_terminal_if(is_terminal, skip_flag)?;
 
     write!(prompt_out, "{} ", question)?;
     prompt_out.flush()?;
@@ -68,10 +68,10 @@ mod tests {
 
     const YN: &[&str] = &["y", "yes"];
 
-    fn run(input: &str, is_tty: bool, accepted: &[&str]) -> Result<bool> {
+    fn run(input: &str, is_terminal: bool, accepted: &[&str]) -> Result<bool> {
         confirm_from(
             &mut input.as_bytes(),
-            is_tty,
+            is_terminal,
             &mut Vec::new(),
             "Delete? [y/N]:",
             accepted,
@@ -94,20 +94,20 @@ mod tests {
     }
 
     #[test]
-    fn strict_mode_rejects_bare_y() {
+    fn yes_only_rejects_bare_y() {
         assert!(!run("y\n", true, &["yes"]).unwrap());
         assert!(run("yes\n", true, &["yes"]).unwrap());
     }
 
     #[test]
-    fn non_tty_errors_naming_flag_even_if_input_says_yes() {
+    fn no_terminal_errors_naming_flag_even_if_input_says_yes() {
         let err = run("y\n", false, YN).unwrap_err().to_string();
         assert!(err.contains("--yes"), "{err}");
         assert!(err.contains("not a terminal"), "{err}");
     }
 
     #[test]
-    fn require_terminal_errors_naming_flag_only_without_tty() {
+    fn require_terminal_errors_naming_flag_only_without_terminal() {
         let err = require_terminal_if(false, "--force")
             .unwrap_err()
             .to_string();

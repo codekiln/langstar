@@ -4,8 +4,9 @@
 //! and [#703 Fix queue delete confirmation to actually wait for user input](https://github.com/codekiln/langstar/issues/703)
 //! for the dataset and queue prompts.
 //!
-//! assert_cmd pipes stdin, so these exercise the non-TTY path: without the skip flag the
-//! command must fail with a clear message, before any API request is made. The interactive
+//! assert_cmd feeds the command's input through a pipe, so these tests run the command with no
+//! terminal attached: without the skip flag the command must fail with a clear message before
+//! it sends any API request. The interactive
 //! answers (`n`, `yes`, and a bare `y` that is refused) are covered by unit tests in
 //! `cli/src/confirm.rs`.
 
@@ -23,14 +24,14 @@ fn langstar_cmd() -> Command {
         .path()
         .to_owned();
     let mut cmd = Command::new(bin);
-    // Dummy credentials: the non-TTY check must fire before any request is sent.
+    // Dummy credentials: the no-terminal check must fire before any request is sent.
     cmd.env("LANGSMITH_API_KEY", "dummy-key-for-tests")
         .env_remove("LANGSMITH_ORGANIZATION_ID")
         .env_remove("LANGSMITH_WORKSPACE_ID");
     cmd
 }
 
-fn assert_refuses_without_tty(args: &[&str], flag: &str) {
+fn assert_refuses_without_terminal(args: &[&str], flag: &str) {
     langstar_cmd()
         .args(args)
         .write_stdin("y\n")
@@ -43,23 +44,23 @@ fn assert_refuses_without_tty(args: &[&str], flag: &str) {
 }
 
 #[test]
-fn dataset_delete_without_yes_on_non_tty_errors() {
-    assert_refuses_without_tty(&["dataset", "delete", ID], "--yes");
+fn dataset_delete_without_yes_on_no_terminal_errors() {
+    assert_refuses_without_terminal(&["dataset", "delete", ID], "--yes");
 }
 
 #[test]
-fn queue_delete_without_force_on_non_tty_errors() {
-    assert_refuses_without_tty(&["queue", "delete", ID], "--force");
+fn queue_delete_without_force_on_no_terminal_errors() {
+    assert_refuses_without_terminal(&["queue", "delete", ID], "--force");
 }
 
 #[test]
-fn project_delete_by_name_without_force_on_non_tty_errors_before_lookup() {
-    assert_refuses_without_tty(&["project", "delete", "some-project-name"], "--force");
+fn project_delete_by_name_without_force_on_no_terminal_errors_before_lookup() {
+    assert_refuses_without_terminal(&["project", "delete", "some-project-name"], "--force");
 }
 
 #[test]
-fn assistant_delete_without_force_on_non_tty_errors_before_lookup() {
-    assert_refuses_without_tty(
+fn assistant_delete_without_force_on_no_terminal_errors_before_lookup() {
+    assert_refuses_without_terminal(
         &["assistant", "delete", ID, "--deployment", "some-deployment"],
         "--force",
     );
