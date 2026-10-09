@@ -433,10 +433,10 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
 
 /// Generate a unique test prompt name.
 ///
-/// All test runs against one LangSmith workspace create prompts in that
-/// workspace, so a name built from a timestamp or a process ID can repeat
-/// across runs. The first 12 hex characters of a random UUID make a repeat
-/// vanishingly unlikely.
+/// Every test run against a LangSmith workspace creates its prompts in that
+/// workspace, so a run that picks an earlier run's name gets 409 Conflict.
+/// Timestamps and process IDs repeat across runs; the first 12 hex
+/// characters of a random UUID almost never do.
 fn generate_test_prompt_name(prefix: &str) -> String {
     format!(
         "{}-{}",
@@ -466,8 +466,8 @@ impl<'a> PromptCleanup<'a> {
         }
     }
 
-    /// Delete the prompt now. The guard disarms only when the delete succeeds,
-    /// so a failed delete is tried again when the guard is dropped.
+    /// Delete the prompt now. When the delete fails, `Drop` tries it again as
+    /// the test ends.
     fn delete_now(&mut self) -> Result<(), langstar_sdk::LangstarError> {
         let Some(name) = self.name.clone() else {
             return Ok(());
