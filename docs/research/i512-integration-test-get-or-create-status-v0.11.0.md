@@ -1,5 +1,7 @@
 # Integration Test Fixture Analysis: SDK vs CLI
 
+> **`LANGGRAPH_GITHUB_INTEGRATION_ID` no longer exists.** [#648 🧪 test: fix silent test skip patterns and CI env vars](https://github.com/codekiln/langstar/pull/648) removed the CI secret, [#526 ♻️ refactor(tests): consolidate CLI test fixtures to use SDK directly](https://github.com/codekiln/langstar/pull/526) removed the test-fixture fallback, and [#754 ✨ feat(dev): load LangSmith secrets through fnox and 1Password](https://github.com/codekiln/langstar/pull/754) removed the CLI variable and the `github_integration_id` config key. `langstar deployment create` now asks the Control Plane API which GitHub integration can reach the repository. The rest of this page is the original record.
+
 **Issue:** #512, #524
 **Date:** 2025-12-03
 **Purpose:** Document the current state of test fixtures, the discrepancy between SDK and CLI implementations, and the path forward for consolidation.
@@ -76,7 +78,7 @@ cmd.args([
 **Problems:**
 1. **Shells out to CLI** instead of using SDK - duplicates logic, prone to parsing errors
 2. **Filters by `--status READY`** - misses Building/Deploying/Queued deployments
-3. **Falls back to the GitHub integration-ID env var (removed in #740)** - workaround that should be removed
+3. **Falls back to `LANGGRAPH_GITHUB_INTEGRATION_ID` env var** - workaround that should be removed
 4. **No `wait_for_deployment`** - can't wait for in-progress deployments
 5. **No code sharing** with SDK tests
 
@@ -90,7 +92,7 @@ To deploy from GitHub, LangGraph Cloud needs a GitHub App integration. Each inte
 
 ### Historical Workarounds
 
-1. **GitHub integration-ID env var (removed in #740)** - Required devs to find ID in Chrome DevTools Network tab (extremely inconvenient)
+1. **`LANGGRAPH_GITHUB_INTEGRATION_ID` env var** - Required devs to find ID in Chrome DevTools Network tab (extremely inconvenient)
 2. **CLI auto-discovery from existing deployments** - Parse `source_config.integration_id` from existing GitHub deployments
 
 ### The Correct Solution (SDK)
@@ -207,7 +209,7 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 
 1. **Extract shared utilities from SDK tests** into reusable module
 2. **Refactor CLI fixtures** to import SDK utilities instead of shelling out
-3. **Remove the GitHub integration-ID env var** (done in #740) - use `find_integration_for_repo()` instead
+3. **Remove `LANGGRAPH_GITHUB_INTEGRATION_ID`** - use `find_integration_for_repo()` instead
 4. **Remove `--status READY` filter** - filter by name, check status after
 
 ---
@@ -220,7 +222,7 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 
 ### PR #503: CI Test Auto-Discovery
 - Changed from hard-coded test files to `cargo test -p langstar --features integration-tests`
-- Added the GitHub integration-ID env var (removed in #740) to CI secrets (workaround, should be removed)
+- Added `LANGGRAPH_GITHUB_INTEGRATION_ID` to CI secrets (workaround, should be removed)
 
 ### PR #519: Test Parallelization
 - Added `serial_test` crate for selective serialization
