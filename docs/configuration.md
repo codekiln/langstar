@@ -80,7 +80,7 @@ The configuration file is located at:
 
 #### Moving a config file from before v2.2.0 on macOS
 
-Before v2.2.0, langstar on macOS kept its config file at `~/Library/Application Support/langstar/config.toml`. If `~/.config/langstar/config.toml` doesn't exist, langstar still reads the old file, and each run prints a warning with the command that moves it:
+Before v2.2.0, langstar on macOS kept its config file at `~/Library/Application Support/langstar/config.toml`. If `~/.config/langstar/config.toml` doesn't exist, langstar still reads the old file and, every time it runs, prints a warning with the command that moves it:
 
 ```bash
 mkdir -p ~/.config/langstar && mv ~/Library/Application\ Support/langstar/config.toml ~/.config/langstar/config.toml
