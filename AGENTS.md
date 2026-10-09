@@ -6,14 +6,14 @@ Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph
 
 ## Agent config
 
-To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run `"$(mise which rulesync)" generate`, and commit the source together with the files rulesync writes: `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. `mise which` runs the rulesync version pinned in `mise.toml`. An older rulesync earlier on `PATH` drops `license`, `argument-hint` and `allowed-tools` from the generated skills and writes a `.codex/` directory.
+To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run `"$(mise which rulesync)" generate`, and commit the source together with the files rulesync writes: `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. `mise which rulesync` prints the path of the rulesync version pinned in `mise.toml`, so `"$(mise which rulesync)" generate` runs that version even when an older rulesync is earlier on `PATH`. An older rulesync drops `license`, `argument-hint` and `allowed-tools` from the generated skills and writes a `.codex/` directory.
 
 ## Workflow
 
 - Open a GitHub issue for each piece of work before you start it, and close the issue from one PR whose body says `Fixes #<issue number>`. Details are in `docs/dev/github-workflow.md`.
 - Name branches `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that don't apply.
 - Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
-- Commit messages and PR titles use Conventional Emoji Commits (`✨ feat(scope): ...`), per `docs/dev/git-scm-conventions.md`.
+- Write commit messages and PR titles as Conventional Emoji Commits (`✨ feat(scope): ...`), following `docs/dev/git-scm-conventions.md`.
 - Give a PR the milestone of its issue.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.
 
