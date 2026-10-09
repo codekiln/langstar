@@ -2,7 +2,7 @@
 
 codekiln wants langstar to be the one command line tool a LangSmith user needs, so they never have to work out whether a task calls for the LangSmith CLI, the LangGraph CLI, an MCP server or Terraform. This document lists what each of those official tools can do, says whether langstar can do it too, and sizes each gap. The open questions at the end ask codekiln which gaps to close first.
 
-Langstar is ahead on assistants, graphs, annotation queues and structured-output prompts, which no official command line tool manages. It is furthest behind on evaluators and experiments, where its `eval` commands are placeholders, and on what only Terraform manages: workspace administration, resource tags and alerts.
+Langstar is ahead on assistants, graphs and annotation queues, which no official command line tool manages, and on building a structured-output prompt from a template and a JSON Schema file. It is furthest behind on evaluators and experiments, where its `eval` commands are placeholders, and on what only Terraform manages: workspace administration, resource tags and alerts.
 
 The official tools were read from source on 2026-10-09 at these commits, the same ones pinned on the garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%253F.md):
 
@@ -22,7 +22,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | List, get, search, push and pull prompts | LangSmith CLI `prompt`; MCP `list_prompts`, `get_prompt_by_name` | Has it: `prompt` | None |
 | Delete prompts, read commit history, manage tags | LangSmith CLI `prompt delete`, `commits`, `tag` | Lacks it | Small |
 | Create, read, update and delete assistants | None; only the LangGraph SDKs and the Agent Server API | Has it: `assistant` | Langstar is ahead |
-| Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Medium |
+| Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Small |
 | Show a deployed graph's structure | None; only the LangGraph SDKs | Has it: `graph` | Langstar is ahead |
 | List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment` | None |
 | Deployment logs and revisions | LangGraph CLI `deploy logs`, `deploy revisions list`; Terraform revision data sources | Lacks it | Small |
@@ -58,7 +58,7 @@ Every langstar `eval` subcommand (`create`, `run`, `list`, `get`, `export`) has 
 
 ### Assistants kept in Git
 
-No tool, official or community, keeps assistant definitions in Git and applies them to each deployment, according to the survey in the garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md). Langstar is the nearest thing, but its `assistant create` cannot choose the assistant's ID or skip an assistant that already exists, and langstar has no version commands. The LangGraph SDK has all of these ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)).
+To keep assistant definitions in Git and apply them to each deployment, langstar's `assistant create` needs to set the assistant's ID and to skip an assistant that already exists, and langstar needs commands for assistant versions. The LangGraph SDK has all of these ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)). According to the survey in the garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md), no tool, official or community, keeps assistants in Git this way today.
 
 ### Local development and deploying from local code
 
@@ -66,7 +66,7 @@ The LangGraph CLI runs an Agent Server on your machine, builds Docker images and
 
 ### Workspace administration, resource tags and alerts
 
-Workspace administration, resource tags and alerts have resources only in Terraform ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)); outside Terraform they are managed in the UI or by hand-written requests through `langsmith api`. Terraform describes the state a workspace should be in and changes the workspace to match; langstar runs one change per command. To replace Terraform for someone, langstar would need both the commands and a way to apply a file of desired state.
+Workspace administration, resource tags and alerts have resources only in Terraform ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)); outside Terraform they are managed in the UI or by hand-written requests through `langsmith api`. Terraform applies a file that describes how a whole workspace should look; langstar changes one setting per command. Once langstar has these commands, a team that wants its workspace described in one file and applied in one step will still need Terraform.
 
 ### Model configurations
 
@@ -124,7 +124,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 4.
 >
-> Workspace administration, resource tags and alerts are in Terraform only, and codekiln has no Terraform state backend, so langstar should cover them through the LangSmith API. Recommendation: add them in order of size. Resource tags first, a medium gap, because they label prompts, datasets, projects and deployments that langstar already manages. Then alert rules and gateway policies, also medium. Workspaces, members, roles, access policies and service keys last, the large gap.
+> codekiln has no Terraform state backend, so langstar should manage workspace administration, resource tags and alerts by calling the LangSmith API, the same API the Terraform provider calls. Recommendation: add them in order of size. Resource tags first, a medium gap, because they label prompts, datasets, projects and deployments that langstar already manages. Then alert rules and gateway policies, also medium. Workspaces, members, roles, access policies and service keys last, the large gap.
 
 <ANSWER_HERE>
 
