@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🩹 fix(test): retry a dataset delete that LangSmith answers with a server error (#776)
 - 🩹 fix(test): run the CLI binary Cargo built for the tests instead of rebuilding it (#780)
 - 🩹 fix(config): read the pre-2.2.0 macOS config file when the new one is missing (#789)
-  - If you haven't moved your config file yet, langstar on macOS keeps reading it from `~/Library/Application Support/langstar/config.toml` and prints the `mv` command that moves it. `langstar config <key> set` starts the new file as a copy of the old one, so your other settings carry over.
+  - If you haven't moved your config file yet, langstar on macOS keeps reading it from `~/Library/Application Support/langstar/config.toml` and prints the `mv` command that moves it. `langstar config <key> set` starts the new file as a copy of the old one, so your other settings carry over. `langstar config` commands also run when the file's `output_format` is one langstar doesn't support, so `langstar config output_format set table` can fix it.
 
 ### 📚 Documentation
 
