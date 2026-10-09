@@ -187,7 +187,7 @@ langstar secrets set API_KEY "sk-ant-..."          # Argument doesn't exist (sec
 
 ### Delete a Secret
 
-Remove a secret from the workspace. The command asks you to type `yes` first; pass `--yes` (`-y`) to skip the prompt, which scripts and other non-interactive callers must do:
+Remove a secret from the workspace. The command asks you to type `yes` before it deletes the secret, and `--yes` (`-y`) skips the question. Scripts must pass `--yes`, because a script has no terminal to answer from and the command stops with an error:
 
 ```bash
 langstar secrets delete ANTHROPIC_API_KEY
