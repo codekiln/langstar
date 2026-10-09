@@ -422,11 +422,11 @@ fn deploys_test_graph(deployment: &crate::Deployment, config: &TestDeploymentCon
     same_repo && same_graph
 }
 
-/// True when a deployment found by source, not by name, is safe to reuse.
+/// True when the PR tests can reuse this deployment of the test graph.
 ///
-/// A release lifecycle test creates its own `release-integration-test-*`
-/// deployment and deletes it when it finishes, so the PR tests must not pick
-/// one up.
+/// The release lifecycle test deletes its `release-integration-test-*`
+/// deployment when it finishes, so this skips those deployments as well as
+/// deployments being deleted.
 fn is_reusable_by_source(deployment: &crate::Deployment, config: &TestDeploymentConfig) -> bool {
     deploys_test_graph(deployment, config)
         && !is_being_deleted(deployment)
