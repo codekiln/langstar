@@ -1,6 +1,6 @@
 # Langstar and the official LangChain tools
 
-Since langstar started, LangChain has shipped tools that cover much of the same ground. This document goes through every langstar command group, says which official tool covers it and how well, and names what langstar does that no official tool does. It ends with the decisions codekiln needs to make about which groups to keep.
+Since langstar started, LangChain has released official tools that do most of what langstar does. The LangSmith CLI, the LangGraph CLI and the LangSmith Terraform provider now cover `runs`, `deployment`, `model-config`, `secrets`, `eval`, most of `prompt` and `dataset`, and part of `project`. Only langstar has commands for assistants, graphs and annotation queues, or builds a structured-output prompt from a template and a JSON Schema. The open questions at the end are codekiln's decisions about which command groups to keep.
 
 The official tools were read from source on 2026-10-09 at these commits, the same ones pinned on the garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%3F.md):
 
@@ -23,11 +23,11 @@ Langstar was read at `main` as of [`1704f1e` design AI-first command structure f
 | `dataset` | LangSmith CLI `dataset`, `example` | Mostly covered | Dataset update, and import and export as CSV or JSONL |
 | `project` | LangSmith CLI `project` | Partly covered | Project get, create and update |
 | `eval` | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator` | Covered, and langstar's group is unfinished | Nothing; every langstar `eval` subcommand is a placeholder |
-| `model-config` | Terraform `langsmith_model_configuration` | Covered, as declared state | Imperative commands outside Terraform |
-| `secrets` | Terraform `langsmith_workspace_secret` | Covered, as declared state | Imperative commands outside Terraform |
+| `model-config` | Terraform `langsmith_model_configuration` | Covered, through Terraform config files | One-off commands from a shell, with no Terraform config |
+| `secrets` | Terraform `langsmith_workspace_secret` | Covered, through Terraform config files | One-off commands from a shell, with no Terraform config |
 | `config`, `version` | Not applicable | Langstar's own settings | Not applicable |
 
-The official CLI also has groups langstar never had: `chart`, `insights`, `sandbox`, `hub`, `apps`, `workspace`, `profile`, and `api`, which calls any LangSmith REST endpoint directly. Because of `api`, the official CLI can reach every LangSmith API endpoint langstar's groups call, including queues, secrets and model configurations, with hand-written JSON. The table above counts only typed commands.
+The official CLI also has groups langstar never had: `chart`, `insights`, `sandbox`, `hub`, `apps`, `workspace`, `profile`, and `api`, which calls any LangSmith REST endpoint directly. Because of `api`, the official CLI can reach every LangSmith API endpoint langstar's groups call, including queues, secrets and model configurations, with hand-written JSON. The summary table counts only commands built for one kind of resource, such as `langsmith dataset list`, and leaves out what `langsmith api` can reach.
 
 ## Command groups
 
@@ -35,15 +35,15 @@ The official CLI also has groups langstar never had: `chart`, `insights`, `sandb
 
 Langstar has `list`, `get`, `search`, `push` and `pull` ([cli/src/commands/prompt.rs](../../cli/src/commands/prompt.rs)). The official [`langsmith prompt`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/prompt.go#L31) has `list`, `get`, `create`, `delete`, `pull`, `push`, `commits` and a `tag` group with `list`, `create` and `update`. Its `list --query` does what langstar's `search` does.
 
-The official `push` takes a whole manifest as JSON from a file or stdin ([prompt.go#L367](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/prompt.go#L367)). Langstar's `push` builds that manifest for you: it takes a template, a template format, and a `--schema` JSON Schema file with `--schema-method json_schema` or `function_calling`, validates the schema, and sends a `StructuredPrompt`. That is the one thing in this group no official tool does. Writing the manifest by hand for the official CLI means writing LangChain's serialized `StructuredPrompt` format.
+The official `push` takes a whole manifest as JSON from a file or stdin ([prompt.go#L367](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/prompt.go#L367)). Langstar's `push` builds that manifest for you: it takes a template, a template format, and a `--schema` JSON Schema file with `--schema-method json_schema` or `function_calling`, validates the schema, and sends a `StructuredPrompt`. Only langstar builds a structured-output prompt this way. Writing the manifest by hand for the official CLI means writing LangChain's serialized `StructuredPrompt` format.
 
 Langstar lacks delete, commit history and tags.
 
 ### `assistant`
 
-Langstar has `list`, `search`, `get`, `create`, `update` and `delete`, against each deployment's Agent Server ([cli/src/commands/assistant.rs](../../cli/src/commands/assistant.rs)). No official command line tool, MCP server or Terraform resource manages assistants. Only the LangGraph SDKs ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)), the Agent Server REST API and the UI do. The garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md) found no community tool either.
+Langstar has `list`, `search`, `get`, `create`, `update` and `delete`, against each deployment's Agent Server ([cli/src/commands/assistant.rs](../../cli/src/commands/assistant.rs)). No official command line tool, MCP server or Terraform resource manages assistants. Only the LangGraph SDKs ([`assistants.py`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314-L376)), the Agent Server REST API and the UI do. No community tool turned up in the search behind the garden report [LangSmith/Report/26/10/Assistants as Code in LangSmith Deployments](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Report___26___10___Assistants%20as%20Code%20in%20LangSmith%20Deployments.md) either.
 
-Langstar's group is plain CRUD. It does not cover what the report identifies as the missing piece: keeping assistant specs in Git and applying them to each deployment. The SDK supports that through a caller-chosen `assistant_id`, `if_exists`, version listing and `set_latest`. Langstar's `create` takes none of these, and langstar has no version commands.
+In the garden report on assistants as code, the missing piece is a tool that keeps assistant specs in Git and applies them to each deployment. Langstar's `assistant` group has list, search, get, create, update and delete, and would need new options to do that job. The SDK supports that through a caller-chosen `assistant_id`, `if_exists`, version listing and `set_latest`. Langstar's `create` takes none of these, and langstar has no version commands.
 
 ### `graph`
 
@@ -53,7 +53,7 @@ Langstar's `list` and `get` show the graphs in a deployment and their structure,
 
 Langstar has `list`, `get`, `create` and `delete` against the control plane API ([cli/src/commands/deployment.rs](../../cli/src/commands/deployment.rs)). `create` builds from a GitHub repository or an external Docker image, finds the GitHub integration ID from existing deployments if you don't give one, and can wait until the deployment is ready.
 
-The LangGraph CLI's [`langgraph deploy`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/deploy.py#L2474-L2695) builds an image and creates or updates a deployment, with `list`, `delete`, `logs` and `revisions list`; all are marked beta. The Terraform [`langsmith_deployment`](https://github.com/langchain-ai/terraform-provider-langsmith/blob/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources/deployment.md) resource builds from a GitHub repository and has data sources for revisions. Between them they cover everything langstar's group does, plus logs and revisions.
+The LangGraph CLI's [`langgraph deploy`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/deploy.py#L2474-L2695) builds an image and creates or updates a deployment, with `list`, `delete`, `logs` and `revisions list`; all are marked beta. The Terraform [`langsmith_deployment`](https://github.com/langchain-ai/terraform-provider-langsmith/blob/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources/deployment.md) resource builds from a GitHub repository and has data sources for revisions. Between them they cover every langstar `deployment` command and add logs and revisions. Langstar alone looks up the GitHub integration ID from existing deployments; Terraform's `langsmith_deployment` takes that ID as its `integration_id` input.
 
 ### `runs`
 
@@ -69,7 +69,7 @@ Langstar has `create`, `list`, `get`, `update`, `delete`, `import`, `list-exampl
 
 ### `project`
 
-Langstar has `list`, `get`, `create`, `update` and `delete` ([cli/src/commands/project.rs](../../cli/src/commands/project.rs)). The official [`langsmith project`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/project.go#L15) has `list`, `delete` and an `issues` group, but no `get`. Langstar's `get` looks a project up by ID or name and shows its details. Tracing creates a project on first use, so create matters less than it looks; get and update are the real gaps. Terraform only has a data source that looks a project up by name.
+Langstar has `list`, `get`, `create`, `update` and `delete` ([cli/src/commands/project.rs](../../cli/src/commands/project.rs)). The official [`langsmith project`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/project.go#L15) has `list`, `delete` and an `issues` group, but no `get`. Langstar's `get` looks a project up by ID or name and shows its details. LangSmith creates a project the first time an application sends it a trace, so few people need langstar's `project create`. The official CLI lacks `get` and `update`. Terraform only has a data source that looks a project up by name.
 
 ### `eval`
 
@@ -77,7 +77,7 @@ Every langstar `eval` subcommand (`create`, `run`, `list`, `get`, `export`) is a
 
 ### `model-config`
 
-Langstar has `list`, `get`, `create`, `update` and `delete` against the playground settings API ([cli/src/commands/model_config.rs](../../cli/src/commands/model_config.rs)). [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746) notes that `create` now returns a 500, which is part of what that milestone is fixing. The Terraform [`langsmith_model_configuration`](https://github.com/langchain-ai/terraform-provider-langsmith/blob/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources/model_configuration.md) resource calls the same endpoint, `api/v1/playground-settings`, and is maintained, so its source shows what the endpoint expects now. The garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%3F.md) does not list this resource.
+Langstar has `list`, `get`, `create`, `update` and `delete` against the playground settings API ([cli/src/commands/model_config.rs](../../cli/src/commands/model_config.rs)). `model-config create` now fails with an HTTP 500 server error, one of the breakages listed in [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746). The Terraform [`langsmith_model_configuration`](https://github.com/langchain-ai/terraform-provider-langsmith/blob/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources/model_configuration.md) resource calls the same endpoint, `api/v1/playground-settings`, and LangChain keeps it working, so its source shows the request langstar's `create` should send. The garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%3F.md) does not list this resource.
 
 ### `secrets`
 
@@ -101,7 +101,7 @@ Yes. The provider has `langsmith_model_configuration` and `langsmith_workspace_s
 
 No. Each subcommand is a placeholder that does no work.
 
-### 4 - Can the official CLI reach endpoints it has no typed commands for?
+### 4 - Can the official CLI reach endpoints that have no command of their own?
 
 Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation queues, secrets and model configurations are reachable with hand-written JSON. It cannot reach assistants or graphs, which live on each deployment's Agent Server rather than the LangSmith API.
 
@@ -111,7 +111,7 @@ Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation q
 
 > Context from the drafting agent, for question 1.
 >
-> Recommendation: keep `assistant`, `graph` and `queue`, because no official command line tool covers them. Keep `prompt push` with `--schema`, because no official tool builds a structured-output prompt from a template and a schema. `assistant` is where langstar could matter most: the assistants report says the missing piece is applying assistant specs kept in Git to each deployment, and langstar would need a caller-chosen `assistant_id`, `if_exists` and version commands to do it.
+> Recommendation: keep `assistant`, `graph` and `queue`, because no official command line tool covers them. Keep `prompt push` with `--schema`, because no official tool builds a structured-output prompt from a template and a schema. `assistant` is where langstar could matter most: the missing piece, in the garden report on assistants, is applying assistant specs kept in Git to each deployment, and langstar would need a caller-chosen `assistant_id`, `if_exists` and version commands to do it.
 
 <ANSWER_HERE>
 
@@ -119,7 +119,7 @@ Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation q
 
 > Context from the drafting agent, for question 2.
 >
-> Recommendation: deprecate `runs` in favour of `langsmith run`, `trace` and `thread`; `deployment` in favour of `langgraph deploy` or Terraform; and `model-config` and `secrets` in favour of Terraform. `dataset` and `project` are closer calls: the official CLI lacks dataset update, CSV import, and project get and update. Each group kept means another set of API changes to follow, which is the work #746 is doing now.
+> Recommendation: deprecate `runs` in favour of `langsmith run`, `trace` and `thread`; `deployment` in favour of `langgraph deploy` or Terraform; and `model-config` and `secrets` in favour of Terraform. `dataset` and `project` are closer calls: the official CLI lacks dataset update, CSV import, and project get and update. Every group langstar keeps is one more group someone has to update when LangSmith changes its API, which is the work under way in [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746).
 
 <ANSWER_HERE>
 
@@ -127,7 +127,7 @@ Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation q
 
 > Context from the drafting agent, for question 3.
 >
-> Recommendation: delete it. It ships commands that do nothing, and the official `evaluator` and `experiment` groups and Terraform's `langsmith_evaluator` already cover the ground it planned to cover.
+> Recommendation: delete it. Every `eval` command is a placeholder that does no work, and the official `evaluator` and `experiment` groups and Terraform's `langsmith_evaluator` already do what those commands were meant to do.
 
 <ANSWER_HERE>
 
