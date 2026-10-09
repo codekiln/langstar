@@ -47,7 +47,20 @@ If the reviewer asks for tuicr instead of the browser, the worker opens the PR d
 
 ## Stacked PRs
 
-When a branch builds on another unmerged branch, open the PR with `--base <that-branch>`. Once the base PR merges, rebase onto `main` and retarget with `gh pr edit --base main`.
+When a branch builds on another unmerged branch (its parent):
+
+1. Branch the child from the parent's branch, not from `main`.
+2. Open the child's PR with `--base <parent-branch>`. CI runs on any base once PR #758 merges.
+3. When the parent squash-merges, rebase the child onto `main`, dropping the parent's commits: `git rebase --onto origin/main <old-parent-tip>`.
+4. Retarget the PR with `gh pr edit --base main`.
+
+## Ready checklist
+
+Before asking codekiln to review a PR:
+
+1. Resolve every Copilot review thread.
+2. Run the `codekiln-review` skill on the PR: `/codekiln-review codekiln/langstar <n>`.
+3. Only then ask codekiln to review.
 
 ## Related files
 
