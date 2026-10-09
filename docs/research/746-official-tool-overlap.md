@@ -32,22 +32,23 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Get one run, export runs, read traces as trees, read thread messages | LangSmith CLI `run`, `trace`, `thread`; MCP `get_thread_history` | Lacks it | Medium |
 | Charts, insight reports and issues for a tracing project | LangSmith CLI `chart`, `insights`, `project issues` | Lacks it | Medium |
 | Manage annotation queues and their runs | None | Has it: `queue` | Langstar is ahead |
-| Create, list, get, update, delete, import and export datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset` | None |
-| Create and delete single examples | LangSmith CLI `example` | Partly: `dataset list-examples` reads them | Small |
-| List, get, create, update and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
+| List, get, create and delete datasets, and import and export them as JSON | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset` | None |
+| List the examples in a dataset | LangSmith CLI `example list`; MCP `list_examples` | Has it: `dataset list-examples` | None |
+| Read, create and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example` | Lacks it | Small |
+| List and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
 | Code and LLM-as-judge evaluators, the rules that attach them, experiment results | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator`, `langsmith_run_rule`; MCP `list_experiments` | Lacks it: every `eval` command is a placeholder | Large |
 | Model configurations | Terraform `langsmith_model_configuration` | Partly: `model-config`, but `create` returns an HTTP 500 | Small |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
 | Resource tags | Terraform `langsmith_tag_key`, `langsmith_tag_value`, `langsmith_tagging` | Lacks it | Medium |
 | Workspaces, members, roles, access policies and service keys | Terraform `langsmith_workspace`, `langsmith_workspace_membership`, `langsmith_workspace_role`, `langsmith_access_policy`, `langsmith_service_key`; the LangSmith CLI's `workspace` only lists workspaces and sets the default one | Lacks it | Large |
 | Alert rules and gateway policies | Terraform `langsmith_alert_rule`, `langsmith_gateway_policy` | Lacks it | Medium |
-| Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: API key from the environment or the config file | Medium |
+| Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: `config` keeps one API key, organization ID, workspace ID, output format and timezone in a config file, and each can come from the environment instead | Medium |
 | Call any LangSmith API endpoint | LangSmith CLI `api` | Lacks it | Small |
 | Update the tool itself | LangSmith CLI `update` | Lacks it; the install script installs a new version | Small |
 | Billing usage | MCP `get_billing_usage` | Lacks it | Small |
 | Hub agent and skill repos, Custom Apps, sandboxes | LangSmith CLI `hub`, `apps`, `sandbox` | Lacks it | Large |
 
-Langstar also has a few smaller things the official tools lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, `project get` and `project update` have no official command. `runs query` filters on traces and trees, selects fields and sorts. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
+In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, and `project get`, `create` and `update` have no official command. `runs query` filters on traces and trees, selects fields and sorts. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
 
 ## What closing each gap would take
 
@@ -65,7 +66,7 @@ The LangGraph CLI runs an Agent Server on your machine, builds Docker images and
 
 ### What only Terraform manages
 
-Workspace administration, resource tags and alerts are reachable today only through Terraform or the UI ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)). Terraform describes the state a workspace should be in and changes the workspace to match; langstar runs one change per command. To replace Terraform for someone, langstar would need both the commands and a way to apply a file of desired state.
+Workspace administration, resource tags and alerts have resources only in Terraform ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)); outside Terraform they are managed in the UI or by hand-written requests through `langsmith api`. Terraform describes the state a workspace should be in and changes the workspace to match; langstar runs one change per command. To replace Terraform for someone, langstar would need both the commands and a way to apply a file of desired state.
 
 ### Model configurations
 
@@ -91,7 +92,7 @@ Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation q
 
 ### 5 - What is langstar for?
 
-codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the one stop shop so people don't need to go to multiple tools to do things in langsmith (e.g. do I need mcp, langsmith cli, langgraph cli, etc)". Langstar therefore keeps every command group it has and closes gaps with the official tools rather than deferring to them.
+codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the one stop shop so people don't need to go to multiple tools to do things in langsmith (e.g. do I need mcp, langsmith cli, langgraph cli, etc)". So we keep every langstar command group and add the commands langstar lacks, until a LangSmith user can do in langstar everything the official tools do.
 
 ## Open Questions
 
@@ -99,7 +100,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 1.
 >
-> Recommendation: evaluators and experiments first, because evaluation is one of the main reasons people use LangSmith and langstar's `eval` commands do nothing today. Then reading runs, traces and threads one at a time, which is how people debug an agent. Add the missing prompt commands (delete, commit history and tags) to [ls-prompt-ux milestone · Issue #668](https://github.com/codekiln/langstar/issues/668), which already redesigns every `prompt` command. The HTTP 500 error from `model-config create` is already listed in [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746).
+> Recommendation: evaluators and experiments first, because evaluation is one of the main reasons people use LangSmith and langstar's `eval` commands do nothing today. Then reading runs, traces and threads one at a time, which is how people debug an agent.
 
 <ANSWER_HERE>
 
@@ -119,7 +120,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 <ANSWER_HERE>
 
-### 4 - Should langstar manage what only Terraform manages, and by single commands or by applying a file?
+### 4 - Should langstar add commands for workspace administration, resource tags and alerts, which only Terraform has resources for?
 
 > Context from the drafting agent, for question 4.
 >
@@ -131,7 +132,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 5.
 >
-> [ls-prompt-ux milestone · Issue #668](https://github.com/codekiln/langstar/issues/668) redesigns every `prompt` command around create, get, update and list, with `help` subcommands. The official `langsmith prompt` also has delete, commit history and tags, which langstar lacks. Recommendation: add those to the milestone, since the redesign already touches every `prompt` command.
+> We plan in [ls-prompt-ux milestone · Issue #668](https://github.com/codekiln/langstar/issues/668) to redesign every `prompt` command around create, get, update and list, with `help` subcommands. The official `langsmith prompt` also has delete, commit history and tags, which langstar lacks. Recommendation: add those to the milestone, since whoever does the redesign will already be rewriting every `prompt` command.
 
 <ANSWER_HERE>
 
@@ -139,6 +140,6 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 6.
 >
-> [ls-cli-output-dx milestone · Issue #529](https://github.com/codekiln/langstar/issues/529) adds table, json and text output and column selection to every list command. The official CLI offers only `pretty` and `json` output and `-o` to write JSON to a file, so this would put langstar ahead. Recommendation: go ahead, and apply it to new command groups as they are added.
+> We plan in [ls-cli-output-dx milestone · Issue #529](https://github.com/codekiln/langstar/issues/529) to give every list command table, JSON and text output and a flag to choose columns. The official CLI offers only `pretty` and `json` output and `-o` to write JSON to a file, so this would put langstar ahead. Recommendation: go ahead, and give each new command group the same output options when we add it.
 
 <ANSWER_HERE>
