@@ -2197,6 +2197,11 @@ impl LangchainClient {
     /// # }
     /// ```
     ///
+    /// # Errors
+    ///
+    /// Returns `LangstarError::InvalidInput`, without sending a request, when
+    /// `request.name` is missing or blank.
+    ///
     /// # API Reference
     ///
     /// - Endpoint: `POST /api/v1/playground-settings`
@@ -2205,6 +2210,14 @@ impl LangchainClient {
         &self,
         request: crate::playground_settings::PlaygroundSettingsCreateRequest,
     ) -> Result<crate::playground_settings::PlaygroundSettingsResponse> {
+        // LangSmith answers a create without a name with a bare 500, so
+        // reject it here with an error that says what is missing.
+        if request.name.as_deref().is_none_or(|n| n.trim().is_empty()) {
+            return Err(LangstarError::InvalidInput(
+                "a playground setting needs a non-empty name; LangSmith rejects a create without one"
+                    .to_string(),
+            ));
+        }
         let request_builder = self
             .langsmith_post("/api/v1/playground-settings")?
             .json(&request);
@@ -2434,6 +2447,40 @@ pub struct ListResponse<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn test_create_playground_settings_rejects_missing_or_blank_name() {
+        let mut server = mockito::Server::new_async().await;
+        let post = server
+            .mock("POST", "/api/v1/playground-settings")
+            .expect(0)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+
+        for name in [None, Some("".to_string()), Some("   ".to_string())] {
+            let request = crate::playground_settings::PlaygroundSettingsCreateRequest {
+                name: name.clone(),
+                description: None,
+                settings: serde_json::json!({"key": "value"}),
+                options: Default::default(),
+            };
+            let result = client.create_playground_settings(request).await;
+            assert!(
+                matches!(result, Err(LangstarError::InvalidInput(_))),
+                "name {:?} should be rejected before the request, got {:?}",
+                name,
+                result
+            );
+        }
+        post.assert_async().await;
+    }
 
     #[test]
     fn test_client_creation() {
