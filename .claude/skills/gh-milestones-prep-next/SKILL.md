@@ -10,8 +10,6 @@ argument-hint: '[milestone-name-or-number]'
 ---
 # gh-milestones-prep-next - Move to Next Issue in Milestone
 
-If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
-
 Automates the workflow of moving to the next issue within an active milestone after completing the current task.
 
 ## Problem
@@ -26,6 +24,8 @@ When working through a milestone with multiple issues and sub-issues, developers
 This command automates this entire process.
 
 ## Arguments
+
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
 
 ```text
 $ARGUMENTS

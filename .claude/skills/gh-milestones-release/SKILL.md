@@ -8,8 +8,6 @@ argument-hint: <milestone> <version>
 ---
 # Mark Milestone as Released
 
-If the commands in this skill still show a dollar sign followed by the word ARGUMENTS, your agent did not fill in the arguments the way Claude Code does. Set the shell variable yourself before you run them: `ARGUMENTS='<the arguments the user gave>'`.
-
 Automates the process of marking milestones as completed and updating related issues when a milestone is released.
 
 ## Critical Constraints - Session Statelessness
@@ -25,6 +23,8 @@ Automates the process of marking milestones as completed and updating related is
 **You MUST complete all milestone release steps in this session or notify the user of any blockers immediately.**
 
 ## Arguments
+
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
 
 Arguments are passed via `$ARGUMENTS` in the format:
 ```
