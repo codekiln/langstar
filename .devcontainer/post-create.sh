@@ -67,6 +67,14 @@ mise trust
 echo "[post-create] Installing mise tools (Rust, Python, etc.)..."
 mise install
 
+# Step 3b: Install the git hooks and generate the agent config
+# CLAUDE.md, AGENTS.md, .claude/skills/ and .agents/skills/ are gitignored and
+# generated from .rulesync/. lefthook regenerates them after each pull and
+# checkout; this first run covers the fresh clone.
+echo "[post-create] Installing lefthook git hooks and generating agent config..."
+"$(mise which lefthook)" install
+"$(mise which rulesync)" generate
+
 # Step 4: Install cargo tools
 # After mise install, cargo should be available via ~/.cargo/env
 echo "[post-create] Installing cargo tools (cargo-release, git-cliff)..."

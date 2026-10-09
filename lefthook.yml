@@ -1,0 +1,20 @@
+# Keep the generated agent config in sync with its source in .rulesync/.
+# After a pull (post-merge) or a branch checkout (post-checkout), fetch any
+# declared skill sources and regenerate CLAUDE.md, AGENTS.md, .claude/skills/
+# and .agents/skills/.
+#
+# `mise which rulesync` prints the path of the rulesync pinned in mise.toml.
+# The hooks call that path instead of `mise x -- rulesync`, because mise.toml
+# puts $HOME/.local/bin ahead of mise's tools on PATH, and an older rulesync
+# there would otherwise run.
+# https://lefthook.dev/configuration/
+
+post-merge:
+  commands:
+    rulesync:
+      run: RULESYNC="$(mise which rulesync)" && "$RULESYNC" install && "$RULESYNC" generate
+
+post-checkout:
+  commands:
+    rulesync:
+      run: RULESYNC="$(mise which rulesync)" && "$RULESYNC" install && "$RULESYNC" generate

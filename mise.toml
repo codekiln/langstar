@@ -4,8 +4,12 @@
 [tools]
 python = "3.11"
 # rulesync generates CLAUDE.md, AGENTS.md and the skills from .rulesync/.
+# The generated files are gitignored; lefthook regenerates them.
 # https://github.com/dyoshikawa/rulesync
 "npm:rulesync" = "27.0.0"
+# lefthook runs the git hooks in lefthook.yml.
+# https://github.com/evilmartians/lefthook
+lefthook = "2.2.1"
 
 # Rust is managed by devcontainer feature (ghcr.io/devcontainers/features/rust:1)
 # Not managed by mise to avoid duplicate installation
@@ -13,6 +17,12 @@ python = "3.11"
 # Node.js version matches devcontainer base image
 # Managed by devcontainer, not by mise
 # node = "22"
+
+# Install the lefthook git hooks on entering this repo. Running it again is
+# harmless.
+# https://mise.jdx.dev/hooks.html
+[hooks]
+enter = "lefthook install"
 
 [env]
 # Ensure Python tools installed via uv are available in PATH
