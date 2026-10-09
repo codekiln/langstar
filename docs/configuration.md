@@ -468,7 +468,6 @@ Authentication and scoping:
   langsmith_api_key: lsv2_sk_ab... (from env: LANGSMITH_API_KEY)
   organization_id: <your-org-id> (from config file)
   workspace_id: <your-workspace-id> (from config file)
-  github_integration_id: not set
 
   Active scope: Workspace (narrower)
   → Operations will be scoped to the workspace

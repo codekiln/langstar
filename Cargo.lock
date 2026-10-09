@@ -967,6 +967,7 @@ dependencies = [
  "escargot",
  "futures-util",
  "langstar-sdk",
+ "mockito",
  "predicates",
  "rpassword",
  "serde",
