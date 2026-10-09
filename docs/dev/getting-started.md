@@ -42,6 +42,8 @@ Create your personal age key and the machine-wide `sync-age` provider, as shown 
 
 ### Step 3: Point fnox at Your Vault and Sync
 
+Run these commands in the main clone:
+
 ```bash
 cp fnox.local.toml.example fnox.local.toml
 "${EDITOR:-vi}" fnox.local.toml               # set vault = "<your-1password-vault>"
@@ -49,7 +51,7 @@ fnox sync --provider sync-age --local-file
 fnox check --all
 ```
 
-Do this in the main clone. In each worktree, run `mise run worktree:link-secrets` after `git worktree add`, so every worktree reads the same cache.
+In each worktree, run `mise run worktree:link-secrets` right after `git worktree add`, so every worktree reads the same cache.
 
 ### Step 4: Verify Setup
 
