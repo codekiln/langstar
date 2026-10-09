@@ -565,8 +565,8 @@ hide_workspace_and_org_id_message = false
     ///
     /// When the file at `config_path` is missing, this copies the pre-v2.2.0
     /// macOS file at `old_path` into it first, if that file exists. langstar
-    /// reads only the new file once it exists, so an empty new file would drop
-    /// every setting langstar was reading from the old one.
+    /// reads only the new file once it exists, so if this function wrote an
+    /// empty new file, langstar would stop loading every setting in the old one.
     fn set_value_in_file(
         config_path: &Path,
         old_path: Option<&Path>,
