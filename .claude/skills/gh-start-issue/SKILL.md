@@ -13,6 +13,7 @@ allowed-tools:
   - Edit
   - TodoWrite
   - Task
+argument-hint: <issue_number>
 ---
 # gh-start-issue - Complete Issue Workflow Automation
 

@@ -4,6 +4,7 @@ description: >-
   Create a Phase 0.0 scout issue and do the preliminary research for a new
   milestone. Use when planning a new feature milestone before its issues are
   written.
+argument-hint: <feature-name>
 ---
 # Scout Milestone Research (Phase 0.0)
 

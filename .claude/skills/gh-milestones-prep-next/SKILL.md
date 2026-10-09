@@ -4,6 +4,7 @@ description: >-
   Move to the next issue in a milestone: clean up the finished issue, find the
   next one in the hierarchy, label it and create its worktree. Use after an
   issue in a milestone closes and work should continue on the milestone.
+argument-hint: '[milestone-name-or-number]'
 ---
 # gh-milestones-prep-next - Move to Next Issue in Milestone
 
