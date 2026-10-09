@@ -170,7 +170,7 @@ impl Drop for PromptRepoFixture {
     }
 }
 
-/// Helper to build and get the langstar binary path
+/// Path to the langstar binary Cargo built for this integration test run
 fn get_langstar_bin() -> std::path::PathBuf {
     std::path::PathBuf::from(env!("CARGO_BIN_EXE_langstar"))
 }
