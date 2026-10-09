@@ -69,7 +69,7 @@ Re-sync after you switch keys, because the old cache is encrypted to the old key
 
 ### Per-checkout setup
 
-Keep the real `fnox.local.toml` in the main clone and link to it from each worktree, so one `fnox sync` fills the cache for every worktree. A worktree sits inside the main clone, and fnox lets the worktree's own `fnox.toml` replace each secret from the main clone's cache, so without the link fnox in a worktree asks 1Password for every secret:
+Keep the real `fnox.local.toml` in the main clone and link to it from each worktree, so one `fnox sync` fills the cache for every worktree. Without the link, fnox takes each secret from the worktree's own `fnox.toml`, which holds only 1Password references, and asks 1Password for every one:
 
 ```bash
 # In the main clone
