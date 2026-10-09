@@ -16,7 +16,7 @@
 
 ## Post-Merge Testing
 
-After this PR is merged and a new Claude Code session starts:
+After this PR is merged and you pull `main`:
 
 ### 1. Skill Discovery
 
@@ -87,6 +87,6 @@ All checks must pass:
 
 ## Notes
 
-- Claude Code loads a skill as soon as rulesync writes it to `.claude/skills/`, so an open session can run these checks once the post-merge hook has regenerated the skills
+- Claude Code picks up the skills rulesync writes to `.claude/skills/` without a restart ([skills docs](https://code.claude.com/docs/en/skills.md)), so the session you pulled from can run these checks. If `.claude/skills/` did not exist when that session started, run `/reload-skills` first.
 - Context window monitoring is critical for progressive disclosure
 - Generated test plans should be reviewed for quality and specificity

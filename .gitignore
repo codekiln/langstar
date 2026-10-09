@@ -46,9 +46,9 @@ reference/repo/**/code/
 .idea
 
 
-# Older rulesync releases write Codex skills here, and codekiln's dotfiles
-# ignore them too. The rulesync pinned in mise.toml writes .agents/skills/
-# instead.
+# A rulesync older than the one pinned in mise.toml can write Codex skills to
+# .codex/skills/ and Codex rules to .codex/memories/. Git ignores both, so
+# running that older rulesync by mistake leaves git status clean.
 **/.codex/skills/
 **/.codex/memories/
 
