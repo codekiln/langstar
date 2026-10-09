@@ -5,7 +5,7 @@ on:
     branches: [main]
   # GitHub runs this workflow for a pull request into any branch, so a pull request
   # stacked on another feature branch gets CI checks too.
-  # Issue #757 run CI on stacked PRs whose base is not main: https://github.com/codekiln/langstar/issues/757
+  # Issue #757, "run CI on stacked PRs whose base is not main": https://github.com/codekiln/langstar/issues/757
   pull_request:
     # NOTE: path-ignore removed in favor of job-level path filtering (see #640)
     # This allows us to override path filters for release branches while
