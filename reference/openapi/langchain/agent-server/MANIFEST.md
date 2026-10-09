@@ -3,7 +3,7 @@
 ## Source
 
 - **URL Pattern**: `https://<deployment-url>/openapi.json`
-- **Test Deployment**: the shared `pr-integration-test-*` deployment that the integration tests reuse. Its URL is left out of this repository; look it up with the refresh command below.
+- **Test Deployment**: the shared `pr-integration-test-*` deployment that the integration tests reuse, built from `tests/fixtures/test-graph-deployment/langgraph.json`. `langstar deployment list -f json` gives its URL in `source_config.custom_url`; the refresh command below looks it up by name.
 - **Fetched**: 2026-10-09
 - **Version**: 0.1.0
 
@@ -26,11 +26,14 @@ curl -H "x-api-key: $LANGSMITH_API_KEY" "https://<deployment-url>/openapi.json"
 
 ## Refresh Command
 
+Needs `LANGSMITH_API_KEY` and `LANGSMITH_WORKSPACE_ID`, which `langstar deployment list` uses to read the control plane.
+
 ```bash
-# Fetch from any active deployment
-DEPLOYMENT_URL=$(langstar graph list --limit 1 -f json | jq -r '.resources[0].source_config.custom_url')
-curl -H "x-api-key: $LANGSMITH_API_KEY" "$DEPLOYMENT_URL/openapi.json" \
-  -o reference/openapi/langchain/agent-server/openapi.json
+# Fetch from the shared pr-integration-test-* deployment and indent with 2 spaces
+DEPLOYMENT_URL=$(langstar deployment list --name-contains pr-integration-test- -f json \
+  | jq -r '[.resources[] | select(.name | startswith("pr-integration-test-"))][0].source_config.custom_url')
+curl -fsS -H "x-api-key: $LANGSMITH_API_KEY" "$DEPLOYMENT_URL/openapi.json" \
+  | jq --indent 2 . > reference/openapi/langchain/agent-server/openapi.json
 ```
 
 ## Related
