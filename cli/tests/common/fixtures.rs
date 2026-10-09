@@ -166,8 +166,8 @@ impl TestDeployment {
             panic!("LANGSMITH_API_KEY and LANGSMITH_WORKSPACE_ID must not be empty");
         }
 
-        println!("Environment variables validated");
-        println!("  Workspace: {}", workspace_id);
+        println!("✓ Environment variables validated");
+        println!("✓ Workspace ID set");
     }
 }
 
