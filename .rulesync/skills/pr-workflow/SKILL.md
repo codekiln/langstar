@@ -2,7 +2,7 @@
 name: pr-workflow
 description: "Guide a pull request from pre-PR validation through CI monitoring and review comments to merge. Use when creating a PR for the current issue branch, watching its checks, or working through review feedback until it can merge."
 claudecode:
-  argument-hint: '<issue_number>'
+  argument-hint: '[issue-number]'
 ---
 
 # PR Workflow

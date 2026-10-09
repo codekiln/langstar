@@ -171,7 +171,12 @@ pub struct PlaygroundSavedOptions {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlaygroundSettingsCreateRequest {
-    /// Optional human-readable name for the configuration
+    /// Human-readable name for the configuration.
+    ///
+    /// The OpenAPI spec marks this optional, but as of 2026-10 the API returns
+    /// 500 when it is missing or when another configuration in the workspace
+    /// already has the same name. Always set a name that is unique in the
+    /// workspace.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 
