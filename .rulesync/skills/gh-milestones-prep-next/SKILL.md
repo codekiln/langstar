@@ -22,6 +22,8 @@ This command automates this entire process.
 
 ## Arguments
 
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
+
 ```text
 $ARGUMENTS
 ```

@@ -3,11 +3,19 @@ name: CI
 on:
   push:
     branches: [main]
+  # GitHub runs this workflow for a pull request into any branch, so a pull request
+  # stacked on another feature branch gets CI checks too.
+  # Issue #757, "run CI on stacked PRs whose base is not main": https://github.com/codekiln/langstar/issues/757
   pull_request:
-    branches: [main]
     # NOTE: path-ignore removed in favor of job-level path filtering (see #640)
     # This allows us to override path filters for release branches while
     # still skipping CI for docs-only changes on regular PRs
+
+# When someone pushes a new commit to a pull request, GitHub cancels that pull request's
+# run still in progress. Every run on main finishes.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always

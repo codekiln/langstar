@@ -23,6 +23,8 @@ Automates the process of marking milestones as completed and updating related is
 
 ## Arguments
 
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
+
 Arguments are passed via `$ARGUMENTS` in the format:
 ```
 <milestone> <version>
