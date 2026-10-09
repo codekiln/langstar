@@ -21,6 +21,7 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 - Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
 - Write commit messages and PR titles as Conventional Emoji Commits (`✨ feat(scope): ...`), following `docs/dev/git-scm-conventions.md`.
 - Give a PR the milestone of its issue.
+- Design a new feature as an OpenSpec change under `openspec/changes/`, using the `openspec-propose` skill. `openspec/specs/` describes what each command group does today. `docs/dev/feature-development-process.md` has the process.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.
 
 ## Testing
