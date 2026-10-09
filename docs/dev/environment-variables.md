@@ -80,7 +80,7 @@ fnox check --all
 mise run worktree:link-secrets
 ```
 
-`mise-tasks/worktree/link-secrets` creates the relative symlink `fnox.local.toml -> ../../fnox.local.toml`. Running it again changes nothing, and it refuses to replace a real `fnox.local.toml`. Use `mise run worktree:link-secrets --check` to test a worktree without changing it. `fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you keep a single checkout, skip this step.
+`mise-tasks/worktree/link-secrets` creates the relative symlink `fnox.local.toml -> ../../fnox.local.toml`. Running it again changes nothing, and it refuses to replace a real `fnox.local.toml`. Use `mise run worktree:link-secrets --check` to test a worktree without changing it. `fnox sync` writes through the symlink, so a sync run from any worktree updates the shared cache. If you work only in the main clone, skip `mise run worktree:link-secrets`.
 
 ### Run commands with the secrets
 
@@ -88,7 +88,7 @@ mise run worktree:link-secrets
 fnox exec -- cargo nextest run --profile ci --all-features --workspace
 ```
 
-`fnox exec` decrypts the cache with your age key and does not call 1Password. When fnox cannot find a secret, `fnox exec` stops before the command starts, so a missing credential stops the test run instead of letting integration tests skip. Silently skipped tests are why the project requires all three variables; see [#660 Final testing verification for ls-prompt-structured-outputs milestone](https://github.com/codekiln/langstar/issues/660). For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
+`fnox exec` decrypts the cache with your age key and does not call 1Password. When fnox cannot find a secret, `fnox exec` stops before the command starts, so the test run fails instead of quietly skipping the integration tests, which is the problem [#660 Final testing verification for ls-prompt-structured-outputs milestone](https://github.com/codekiln/langstar/issues/660) set out to fix. For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
 
 ### Re-sync after a rotation
 
