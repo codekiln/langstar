@@ -22,8 +22,9 @@ pub fn confirm(question: &str, accepted: &[&str], skip_flag: &str) -> Result<boo
     )
 }
 
-/// Does the work of [`confirm`], taking the input source, the is-a-terminal answer and the
-/// place to print the prompt as arguments so the unit tests can supply them.
+/// Asks the same question as [`confirm`], but the caller says where the answer is read from,
+/// whether that source is a terminal, and where the question is printed. The unit tests use it
+/// to run the prompt without a real terminal.
 pub fn confirm_from(
     input: &mut impl BufRead,
     is_tty: bool,
