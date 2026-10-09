@@ -9,8 +9,8 @@ Poll a tmux pane for text and exit when found.
 
 Options:
   -t, --target    tmux target (session:window.pane), required
-  -S, --socket    tmux socket path, passed to tmux -S; without -S or -L, the script reads your personal tmux server
-  -L, --socket-name  tmux socket name, passed to tmux -L
+  -S, --socket-path  tmux socket path, passed to tmux -S; without -S or -L, the script reads your personal tmux server
+  -L, --socket       tmux socket name, passed to tmux -L
   -p, --pattern   regex pattern to look for, required
   -F, --fixed     treat pattern as a fixed string (grep -F)
   -T, --timeout   seconds to wait (integer, default: 15)
@@ -31,8 +31,8 @@ lines=1000
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -t|--target)   target="${2-}"; shift 2 ;;
-    -S|--socket)   tmux_cmd+=(-S "${2-}"); shift 2 ;;
-    -L|--socket-name) tmux_cmd+=(-L "${2-}"); shift 2 ;;
+    -S|--socket-path) tmux_cmd+=(-S "${2-}"); shift 2 ;;
+    -L|--socket)      tmux_cmd+=(-L "${2-}"); shift 2 ;;
     -p|--pattern)  pattern="${2-}"; shift 2 ;;
     -F|--fixed)    grep_flag="-F"; shift ;;
     -T|--timeout)  timeout="${2-}"; shift 2 ;;
