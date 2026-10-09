@@ -129,7 +129,7 @@ fn test_sanitize_secrets_with_empty_secrets() {
 
 **File:** `cli/tests/common/fixtures.rs`
 
-**Problem:** Integration tests failing after #519 (parallelization) when the GitHub integration-ID env var (removed in #740) not set and no existing deployments available.
+**Problem:** Integration tests failing after #519 (parallelization) when `LANGGRAPH_GITHUB_INTEGRATION_ID` not set and no existing deployments available.
 
 **Root Cause:**
 - Test fixture relied on CLI's auto-discovery happening inside `graph create`
@@ -149,18 +149,18 @@ fn query_github_integration_id() -> Option<String> {
 
 **Modified (lines 278-293):** Enhanced `create_new_deployment()` with 3-tier discovery
 ```rust
-let integration_id = std::env::var(INTEGRATION_ID_ENV_VAR) // env var removed in #740
+let integration_id = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID")
     .ok()
     .filter(|s| !s.is_empty())
     .or_else(|| {
-        println!("integration-ID env var not set, querying API...");
+        println!("LANGGRAPH_GITHUB_INTEGRATION_ID not set, querying API...");
         Self::query_github_integration_id()
     })
     .expect("GitHub integration ID required but not found...");
 ```
 
 **Discovery Order:**
-1. **Environment variable** (GitHub integration-ID env var, removed in #740) - highest priority
+1. **Environment variable** (LANGGRAPH_GITHUB_INTEGRATION_ID) - highest priority
 2. **API query fallback** - Query existing deployments (NEW)
 3. **Fail with helpful message** - Clear setup instructions
 
@@ -204,7 +204,7 @@ cargo clippy --workspace --all-features -- -D warnings
 
 **After fix:**
 - Expected: ✅ Tests should pass in CI (existing deployments provide integration ID)
-- Local: Cannot verify without the GitHub integration-ID env var (removed in #740) or existing deployments
+- Local: Cannot verify without LANGGRAPH_GITHUB_INTEGRATION_ID or existing deployments
 - **Note:** 6 tests marked `#[ignore]` for other blocking issues (#127, #128)
 
 ---
@@ -312,7 +312,7 @@ output, logs, or screenshots.
 ```
 🩹 fix(tests): improve GitHub integration ID discovery in test fixtures
 
-Fixes integration test failures when the GitHub integration-ID env var (removed in #740) is
+Fixes integration test failures when LANGGRAPH_GITHUB_INTEGRATION_ID is
 not set and test environment has no existing deployments.
 ```
 
@@ -453,7 +453,7 @@ cargo build --release
 **Commits `ec09c40` and `a8edd7c` were reverted** - removed 118 lines of temporary workarounds from `cli/tests/common/fixtures.rs`.
 
 **Why:**
-- CI has the GitHub integration-ID env var (removed in #740) set - tests work without workarounds
+- CI has `LANGGRAPH_GITHUB_INTEGRATION_ID` env var set - tests work without workarounds
 - The workarounds used CLI shelling (wrong approach per research)
 - Issue #524 tracks proper refactor: consolidate CLI fixtures to use SDK directly
 - PR #522 should stay focused on security fix
@@ -497,7 +497,7 @@ The integration test failures in fresh environments were caused by:
 2. **Reuse if found:** Return existing deployment (no creation needed)
 3. **Create if not found:** Generate unique name and create new deployment
 4. **Integration ID discovery (3-tier):**
-   - the GitHub integration-ID env var (removed in #740)
+   - Environment variable `LANGGRAPH_GITHUB_INTEGRATION_ID`
    - API query fallback (new in PR #522)
    - Panic with helpful message
 
@@ -520,4 +520,4 @@ PR #503 changed CI from hard-coded test files to auto-discovery:
 # After:  cargo test -p langstar --features integration-tests
 ```
 
-This change ensures local and CI tests run the same way. It also added the GitHub integration-ID env var (removed in #740) to CI secrets, providing a reliable fallback for the fixture
+This change ensures local and CI tests run the same way. It also added `LANGGRAPH_GITHUB_INTEGRATION_ID` to CI secrets, providing a reliable fallback for the fixture

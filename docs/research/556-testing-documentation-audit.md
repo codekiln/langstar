@@ -157,7 +157,7 @@ This audit identifies **10 testing-related documentation files** totaling **~3,6
 **Testing-Related Sections:**
 - **test job** (lines 54-105): Unit tests with cargo-nextest, JUnit output
 - **integration-tests job** (lines 106-163): Integration tests with features flag
-- Environment variables: `LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`, the GitHub integration-ID env var (removed in #740)
+- Environment variables: `LANGSMITH_API_KEY`, `LANGSMITH_WORKSPACE_ID`, `LANGGRAPH_GITHUB_INTEGRATION_ID`
 - Test profiles: `ci` for unit tests, `integration` for integration tests
 - Artifact upload with 90-day retention
 

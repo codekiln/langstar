@@ -70,7 +70,7 @@ run: cargo nextest run --profile integration -p langstar --features integration-
 env:
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
   LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
-  # GitHub integration-ID secret: removed in #740; the CLI asks the Control Plane API
+  LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
 ```
 
 ### Cleanup Workflow (cleanup-test-deployments.yml)

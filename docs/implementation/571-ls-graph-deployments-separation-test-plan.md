@@ -533,7 +533,7 @@ let path = format!("/api/v1/repos/{}", full_handle);
 env:
   LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
   LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
-  # GitHub integration-ID secret: removed in #740; the CLI asks the Control Plane API
+  LANGGRAPH_GITHUB_INTEGRATION_ID: ${{ secrets.LANGGRAPH_GITHUB_INTEGRATION_ID }}
   # NOTE: LANGSMITH_ORGANIZATION_ID is NOT passed to integration tests!
 ```
 
