@@ -80,8 +80,9 @@ echo "Issue number: $ISSUE_NUM"
 # 4. Verify issue exists and is open
 gh issue view "$ISSUE_NUM" --json state,title
 
-# 5. Check that every commit message has this issue's "#N Issue Title" line (use the PR's base branch instead of origin/main for a stacked PR)
-for sha in $(git rev-list --no-merges origin/main..HEAD); do
+# 5. Check that every commit message has this issue's "#N Issue Title" line (against the PR's base branch, so a stacked PR skips its parent's commits)
+BASE=$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)
+for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
   git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
     echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
 done
@@ -150,8 +151,9 @@ fi
 
 **Verify commits reference the issue:**
 ```bash
-# Check that every commit message has this issue's "#N Issue Title" line
-for sha in $(git rev-list --no-merges origin/main..HEAD); do
+# Check that every commit message has this issue's "#N Issue Title" line, against the PR's base branch (main before a PR exists)
+BASE=$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)
+for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
   git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
     echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
 done
