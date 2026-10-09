@@ -18,7 +18,7 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 
 - Open a GitHub issue for each piece of work before you start it, and close the issue from one PR whose body says `Fixes #<issue number>`. Details are in `docs/dev/github-workflow.md`.
 - Name branches `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that don't apply.
-- Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
+- Work in a git worktree under `.worktrees/<branch-name>` (gitignored) and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
 - Write commit messages and PR titles as Conventional Emoji Commits (`✨ feat(scope): ...`), following `docs/dev/git-scm-conventions.md`.
 - Give a PR the milestone of its issue.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.

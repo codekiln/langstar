@@ -117,7 +117,9 @@ BRANCH_PARTS+=("i${ISSUE_NUM}")
 BRANCH_PARTS+=("${ISSUE_SLUG}")
 
 BRANCH_NAME=$(IFS='-'; echo "${BRANCH_PARTS[*]}")
-WORKTREE_PATH="wip/${BRANCH_NAME}"
+# Worktrees live under the root checkout, whichever worktree this runs from
+REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${BRANCH_NAME}"
 
 echo "🌿 Branch: $BRANCH_NAME"
 echo "📂 Worktree: $WORKTREE_PATH"
@@ -150,6 +152,19 @@ if ! git worktree add -b "$BRANCH_NAME" "$WORKTREE_PATH" "origin/$TARGET_BRANCH"
 fi
 
 echo "✅ Worktree created successfully"
+```
+
+**Step 4b:** Link secrets into the worktree
+
+The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740), makes the worktree's `fnox.local.toml` a link to the root checkout's copy. Every worktree then reads the same locally stored secrets, and nobody signs in to 1Password again in each new worktree. Skip this step until that task exists.
+
+```bash
+# Link fnox.local.toml from the root checkout, if the task exists
+if (cd "$WORKTREE_PATH" && mise tasks ls 2>/dev/null | grep -q 'worktree:link-secrets'); then
+  (cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
+else
+  echo "ℹ️  worktree:link-secrets is not available yet; skipping"
+fi
 ```
 
 **Step 5:** Update tmux window name (if in tmux)

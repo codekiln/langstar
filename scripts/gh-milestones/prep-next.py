@@ -21,6 +21,19 @@ import traceback
 from typing import Optional, Dict, List, Tuple
 
 
+
+def worktree_path_for(branch_name: str) -> str:
+    """Return the worktree path under the root checkout, wherever this runs.
+
+    Running from a linked worktree must not nest a worktree inside it, so the
+    root is the parent of the absolute git common directory.
+    """
+    git_common_dir = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True, check=True
+    ).stdout.strip()
+    return os.path.join(os.path.dirname(git_common_dir), ".worktrees", branch_name)
+
 class MilestoneWorkflow:
     """Manages milestone workflow operations."""
 
@@ -411,7 +424,7 @@ class MilestoneWorkflow:
         branch_parts.append(issue_slug)
 
         branch_name = "-".join(branch_parts)
-        worktree_path = f"wip/{branch_name}"
+        worktree_path = worktree_path_for(branch_name)
 
         # Check if worktree already exists
         if os.path.exists(worktree_path):

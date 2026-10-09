@@ -133,9 +133,9 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 **Actions:**
 1. **Check working directory:**
    ```bash
-   pwd | grep -q "wip/" && echo "✅ In worktree" || echo "❌ Not in wip/ worktree"
+   pwd | grep -qE "/\.(claude/)?worktrees/" && echo "✅ In worktree" || echo "❌ Not in a .worktrees/ or .claude/worktrees/ worktree"
    ```
-   - **MUST** be in a `wip/` worktree, not `/workspace`
+   - **MUST** be in a `.worktrees/` (or Claude Desktop `.claude/worktrees/`) worktree, not the root checkout
    - If not in worktree, **STOP** and instruct user to use `git-worktrees` skill
 
 2. **Verify branch naming convention:**
@@ -669,10 +669,10 @@ EOF
    ```
 
    ```bash
-   cd /workspace
+   cd <repo-root>
    git checkout main
    git pull origin main
-   git worktree remove wip/<branch-name>
+   git worktree remove .worktrees/<branch-name>
    git branch -d <branch-name>
    git worktree prune --verbose
    ```

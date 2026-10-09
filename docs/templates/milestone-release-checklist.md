@@ -69,9 +69,11 @@ gh issue view {parent-issue-num} --json state --jq '.state'
 ## Post-Release
 
 ```bash
+# Run from the root checkout, not from the worktree being removed
+cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 git checkout main && git pull
 # If using worktrees:
-git worktree remove wip/{branch}
+git worktree remove .worktrees/{branch}
 git branch -d {branch}
 ```
 

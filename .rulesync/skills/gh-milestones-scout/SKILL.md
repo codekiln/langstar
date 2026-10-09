@@ -130,7 +130,10 @@ fi
 
 ```bash
 BRANCH="codekiln/${ISSUE_NUM}-${FEATURE_SLUG}-scout"
-git worktree add -b "$BRANCH" "wip/codekiln-${ISSUE_NUM}-scout" main
+# The root checkout holds every worktree, whichever worktree this runs from
+REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${BRANCH//\//-}"
+git worktree add -b "$BRANCH" "$WORKTREE_PATH" main
 ```
 
 ### 7. Perform Scout Research
@@ -165,7 +168,7 @@ Update `$RESEARCH_FILE` with findings, technical patterns discovered, and insigh
 ### 9. Create PR
 
 ```bash
-cd "wip/codekiln-${ISSUE_NUM}-scout"
+cd "$WORKTREE_PATH"
 git add -A
 
 # Use printf to safely pass commit message to avoid command injection
