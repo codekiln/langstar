@@ -448,7 +448,7 @@ fn generate_test_prompt_name(prefix: &str) -> String {
 /// its prompt still removes it and a later run never finds it left behind.
 ///
 /// The test's own DELETE step calls `delete_now`, which deletes the prompt
-/// and disarms the guard.
+/// and disarms the guard once the delete succeeds.
 struct PromptCleanup<'a> {
     runtime: &'a tokio::runtime::Runtime,
     client: &'a LangchainClient,
@@ -464,14 +464,19 @@ impl<'a> PromptCleanup<'a> {
         }
     }
 
-    /// Delete the prompt now and disarm the guard.
+    /// Delete the prompt now. The guard disarms only when the delete succeeds,
+    /// so a failed delete is tried again when the guard is dropped.
     fn delete_now(&mut self) -> Result<(), langstar_sdk::LangstarError> {
-        match self.name.take() {
-            Some(name) => self
-                .runtime
-                .block_on(async { self.client.prompts().delete(&name).await }),
-            None => Ok(()),
+        let Some(name) = self.name.clone() else {
+            return Ok(());
+        };
+        let result = self
+            .runtime
+            .block_on(async { self.client.prompts().delete(&name).await });
+        if result.is_ok() {
+            self.name = None;
         }
+        result
     }
 }
 
