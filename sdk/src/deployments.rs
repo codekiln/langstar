@@ -39,10 +39,11 @@ pub enum DeploymentStatus {
     AwaitingDelete,
     /// Deployment is awaiting the final step of deletion
     AwaitingFinalDelete,
-    /// Deployment status is unknown, or a status this SDK does not know yet.
+    /// The control plane sent `UNKNOWN`, or a status this enum has no variant for.
     ///
-    /// `#[serde(other)]` keeps a deployment list readable when the control
-    /// plane adds a status, as it did with `AWAITING_FINAL_DELETE`.
+    /// When the control plane adds a status, `#[serde(other)]` reads it as
+    /// `Unknown`, so the SDK can still read the rest of the deployment list.
+    /// The control plane last added one with `AWAITING_FINAL_DELETE`.
     #[default]
     #[serde(other)]
     Unknown,
