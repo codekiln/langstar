@@ -1,19 +1,19 @@
 # Plan: Fix Issue #719 - Auto-Parent Commit as Default Behavior
 
-**Issue**: #719 - "prompt push fails with 409 conflict when updating existing prompt"
+**Issue**: [#719 prompt push fails with 409 conflict when updating existing prompt - missing parent commit option](https://github.com/codekiln/langstar/issues/719)
 **Milestone**: #16 (ls-prompt-ux)
 **Date**: 2026-01-23
 
 ## Context
 
 **Root Cause**: LangSmith API requires parent commit when updating existing prompts
-**Current State**: PR #723 added three flags (`--parent-commit`, `--auto-parent`, `--force`) but this is over-engineered
+**Current State**: PR [#723 fix(prompt): fetch the latest commit as parent when pushing an update to an existing prompt](https://github.com/codekiln/langstar/pull/723) added three flags (`--parent-commit`, `--auto-parent`, `--force`) but this is over-engineered
 
 **Key Insight from User**:
 > "It's my expectation that 'The push should automatically fetch the latest commit hash and use it as the parent commit' as per the description of #719. That's what happens in git and it's what should happen here."
 
 **Design Document Context**:
-The `docs/implementation/ls-prompt-ux-command-redesign.md` outlines a future CRUD redesign (Phase 2, Issue #668.2) where:
+The design doc `docs/implementation/ls-prompt-ux-command-redesign.md` plans a CRUD redesign for later, tracked in [#728 668.2-crud-commands Implement CRUD command structure (create, get, update)](https://github.com/codekiln/langstar/issues/728), in which `push` splits into `create` for new prompts and `update` for existing ones.
 - `push` will be split into `create` (new prompts) and `update` (existing prompts)
 - This is part of a broader AI-first UX redesign
 - Phase 2 is planned but not yet implemented
@@ -76,7 +76,7 @@ Split `push` into `create` and `update` commands as outlined in redesign doc.
 
 **Rationale:**
 1. Issue #719 is about fixing 409 conflicts, not redesigning commands
-2. The CRUD redesign is planned for Phase 2 (Issue #668.2) - separate work
+2. The CRUD redesign is planned for Phase 2 ([#728 668.2-crud-commands Implement CRUD command structure (create, get, update)](https://github.com/codekiln/langstar/issues/728)) - separate work
 3. Auto-parent as default solves the problem completely and elegantly
 4. Keeps changes focused and testable
 5. Doesn't block future CRUD implementation
@@ -244,7 +244,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 The following are planned but NOT part of this fix:
 
-1. **Phase 2 CRUD Redesign** (Issue #668.2):
+1. **Phase 2 CRUD Redesign** ([#728 668.2-crud-commands Implement CRUD command structure (create, get, update)](https://github.com/codekiln/langstar/issues/728)):
    - Split `push` into `create` and `update` commands
    - Implement progressive disclosure help system
    - Add `get` command with modifiers
