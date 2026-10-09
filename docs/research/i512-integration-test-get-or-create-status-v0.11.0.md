@@ -76,7 +76,7 @@ cmd.args([
 **Problems:**
 1. **Shells out to CLI** instead of using SDK - duplicates logic, prone to parsing errors
 2. **Filters by `--status READY`** - misses Building/Deploying/Queued deployments
-3. **Falls back to `LANGGRAPH_GITHUB_INTEGRATION_ID` env var** - workaround that should be removed
+3. **Falls back to the GitHub integration-ID env var (removed in #740)** - workaround that should be removed
 4. **No `wait_for_deployment`** - can't wait for in-progress deployments
 5. **No code sharing** with SDK tests
 
@@ -90,7 +90,7 @@ To deploy from GitHub, LangGraph Cloud needs a GitHub App integration. Each inte
 
 ### Historical Workarounds
 
-1. **`LANGGRAPH_GITHUB_INTEGRATION_ID` env var** - Required devs to find ID in Chrome DevTools Network tab (extremely inconvenient)
+1. **GitHub integration-ID env var (removed in #740)** - Required devs to find ID in Chrome DevTools Network tab (extremely inconvenient)
 2. **CLI auto-discovery from existing deployments** - Parse `source_config.integration_id` from existing GitHub deployments
 
 ### The Correct Solution (SDK)
@@ -207,7 +207,7 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 
 1. **Extract shared utilities from SDK tests** into reusable module
 2. **Refactor CLI fixtures** to import SDK utilities instead of shelling out
-3. **Remove `LANGGRAPH_GITHUB_INTEGRATION_ID`** - use `find_integration_for_repo()` instead
+3. **Remove the GitHub integration-ID env var** (done in #740) - use `find_integration_for_repo()` instead
 4. **Remove `--status READY` filter** - filter by name, check status after
 
 ---
@@ -220,7 +220,7 @@ cli/tests/*.rs → imports shared utilities (via fixtures.rs)
 
 ### PR #503: CI Test Auto-Discovery
 - Changed from hard-coded test files to `cargo test -p langstar --features integration-tests`
-- Added `LANGGRAPH_GITHUB_INTEGRATION_ID` to CI secrets (workaround, should be removed)
+- Added the GitHub integration-ID env var (removed in #740) to CI secrets (workaround, should be removed)
 
 ### PR #519: Test Parallelization
 - Added `serial_test` crate for selective serialization

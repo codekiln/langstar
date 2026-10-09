@@ -353,15 +353,8 @@ impl ModelConfigCommands {
             ModelConfigCommands::Delete { id, yes } => {
                 if !yes {
                     // Prompt for confirmation
-                    use std::io::{self, BufRead, Write};
-                    eprint!("Delete model configuration {}? [y/N]: ", id);
-                    io::stderr().flush()?; // Ensure prompt is displayed immediately
-                    let stdin = io::stdin();
-                    let mut line = String::new();
-                    stdin.lock().read_line(&mut line)?;
-
-                    let answer = line.trim().to_lowercase();
-                    if answer != "y" && answer != "yes" {
+                    let question = format!("Delete model configuration {}? [y/N]:", id);
+                    if !crate::confirm::confirm(&question, &["y", "yes"], "--yes")? {
                         println!("Cancelled");
                         return Ok(());
                     }

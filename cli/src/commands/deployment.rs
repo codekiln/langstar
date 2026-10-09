@@ -83,7 +83,8 @@ pub enum DeploymentCommands {
         #[arg(long)]
         branch: Option<String>,
 
-        /// GitHub integration ID (for github source, optional - will auto-discover from existing deployments if not provided)
+        /// GitHub integration ID (for github source). Optional: without it, the CLI asks the
+        /// Control Plane API which GitHub integration can access --repo-url
         #[arg(long)]
         integration_id: Option<String>,
 
@@ -393,62 +394,22 @@ impl DeploymentCommands {
                     }
                 }
 
-                // Determine integration_id with precedence: CLI flag > config/env > auto-discovery
+                // Find the GitHub integration: --integration-id wins, otherwise the
+                // Control Plane API names the integration with access to the repository.
                 let integration_id = if source == "github" {
-                    // 1. CLI flag (highest priority)
-                    if let Some(id) = integration_id {
-                        formatter.info("Using GitHub integration ID from command line");
-                        Some(id.clone())
+                    let repo = repo_url.as_deref().ok_or_else(|| {
+                        crate::error::CliError::Config(
+                            "repo_url is required for github source".to_string(),
+                        )
+                    })?;
+                    if integration_id.is_some() {
+                        formatter.info("Using the GitHub integration ID from --integration-id");
+                    } else {
+                        formatter.info(
+                            "Looking up the GitHub integration with access to the repository...",
+                        );
                     }
-                    // 2. Config/env var
-                    else if let Some(id) = &config.github_integration_id {
-                        formatter.info("Using GitHub integration ID from config/environment");
-                        Some(id.clone())
-                    }
-                    // 3. Auto-discovery (fallback for backward compatibility)
-                    else {
-                        formatter
-                            .info("Looking up GitHub integration ID from existing deployments...");
-
-                        // Query existing deployments to find integration_id
-                        let existing = client.deployments().list(Some(100), Some(0), None).await?;
-
-                        // Find first GitHub deployment and extract integration_id
-                        let github_deployment = existing.resources.iter().find(|d| {
-                            d.source == langstar_sdk::DeploymentSource::Github
-                                && d.source_config.is_some()
-                        });
-
-                        if let Some(deployment) = github_deployment {
-                            if let Some(source_config) = &deployment.source_config {
-                                if let Some(id) =
-                                    source_config.get("integration_id").and_then(|v| v.as_str())
-                                {
-                                    formatter.info(&format!("Found GitHub integration ID: {}", id));
-                                    Some(id.to_string())
-                                } else {
-                                    return Err(crate::error::CliError::Config(
-                                        "Found GitHub deployment but integration_id is missing from source_config".to_string()
-                                    ));
-                                }
-                            } else {
-                                None
-                            }
-                        } else {
-                            // No existing deployments found - provide helpful error
-                            return Err(crate::error::CliError::Config(
-                                "GitHub integration ID not found. Please provide it via:\n\
-                                1. CLI flag: --integration-id <your-integration-id>\n\
-                                2. Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID=<your-integration-id>\n\
-                                3. Config file: github_integration_id = \"<your-integration-id>\"\n\n\
-                                To get your integration ID:\n\
-                                1. Log in to LangSmith UI (https://smith.langchain.com/)\n\
-                                2. Navigate to Deployments → + New Deployment\n\
-                                3. Click 'Import from GitHub' and authorize the 'hosted-langserve' GitHub app\n\
-                                4. After setup, you can find your integration ID in existing deployment configs".to_string()
-                            ));
-                        }
-                    }
+                    Some(resolve_integration_id(&client, integration_id.as_deref(), repo).await?)
                 } else {
                     None
                 };
@@ -599,14 +560,7 @@ impl DeploymentCommands {
                     ));
                     formatter.info("This action cannot be undone. Use --yes to skip this prompt.");
 
-                    // Read from stdin
-                    use std::io::{self, Write};
-                    print!("Type 'yes' to confirm: ");
-                    io::stdout().flush()?;
-                    let mut confirmation = String::new();
-                    io::stdin().read_line(&mut confirmation)?;
-
-                    if confirmation.trim().to_lowercase() != "yes" {
+                    if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--yes")? {
                         formatter.info("Deletion cancelled.");
                         return Ok(());
                     }
@@ -635,9 +589,211 @@ impl DeploymentCommands {
     }
 }
 
+/// Read the owner and repository name from a GitHub URL such as
+/// `https://github.com/<owner>/<repo>` or `git@github.com:<owner>/<repo>.git`.
+fn parse_github_repo(repo_url: &str) -> Option<(String, String)> {
+    let trimmed = repo_url.trim().trim_end_matches('/');
+    let trimmed = trimmed.strip_suffix(".git").unwrap_or(trimmed);
+    let path = trimmed
+        .strip_prefix("https://github.com/")
+        .or_else(|| trimmed.strip_prefix("http://github.com/"))
+        .or_else(|| trimmed.strip_prefix("git@github.com:"))?;
+    let mut parts = path.split('/');
+    let owner = parts.next().filter(|s| !s.is_empty())?;
+    let repo = parts.next().filter(|s| !s.is_empty())?;
+    if parts.next().is_some() {
+        return None;
+    }
+    Some((owner.to_string(), repo.to_string()))
+}
+
+/// Find the GitHub integration ID for a `github` source deployment.
+///
+/// `--integration-id` wins. Otherwise the Control Plane API lists the workspace's
+/// GitHub integrations (`GET /v1/integrations/github/install`, the endpoint the
+/// spec names for `integration_id`) and the one whose repositories include
+/// `repo_url` is used. No environment variable or config key holds this ID.
+async fn resolve_integration_id(
+    client: &LangchainClient,
+    flag: Option<&str>,
+    repo_url: &str,
+) -> Result<String> {
+    if let Some(id) = flag {
+        return Ok(id.to_string());
+    }
+    let (owner, repo) = parse_github_repo(repo_url).ok_or_else(|| {
+        crate::error::CliError::Config(format!(
+            "Cannot read the GitHub owner and repository from --repo-url {}. \
+             Use https://github.com/<owner>/<repo>, or pass --integration-id.",
+            repo_url
+        ))
+    })?;
+    client
+        .integrations()
+        .find_integration_for_repo(&owner, &repo)
+        .await
+        .map_err(|e| match e {
+            langstar_sdk::LangstarError::ApiError { status: 404, .. } => {
+                crate::error::CliError::Config(format!(
+                    "No GitHub integration in this workspace has access to {}/{}. \
+                     In LangSmith, open Deployments, choose + New Deployment, then \
+                     Import from GitHub, and give the 'hosted-langserve' GitHub app \
+                     access to that repository. Or pass --integration-id.",
+                    owner, repo
+                ))
+            }
+            other => other.into(),
+        })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_github_repo() {
+        let expected = Some(("codekiln".to_string(), "langstar".to_string()));
+        for url in [
+            "https://github.com/codekiln/langstar",
+            "https://github.com/codekiln/langstar/",
+            "https://github.com/codekiln/langstar.git",
+            "git@github.com:codekiln/langstar.git",
+        ] {
+            assert_eq!(parse_github_repo(url), expected, "url {}", url);
+        }
+        for url in [
+            "https://gitlab.com/codekiln/langstar",
+            "https://github.com/codekiln",
+            "https://github.com/codekiln/langstar/tree/main",
+        ] {
+            assert_eq!(parse_github_repo(url), None, "url {}", url);
+        }
+    }
+
+    fn mock_client(server: &mockito::ServerGuard) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            langstar_sdk::AuthConfig::new(
+                Some("test_key".to_string()),
+                None,
+                Some("test_workspace".to_string()),
+            ),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_resolve_integration_id_flag_skips_api() {
+        let mut server = mockito::Server::new_async().await;
+        let install = server
+            .mock("GET", "/v1/integrations/github/install")
+            .expect(0)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let id = resolve_integration_id(
+            &client,
+            Some("flag-integration"),
+            "https://github.com/codekiln/langstar",
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(id, "flag-integration");
+        install.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_resolve_integration_id_finds_repo_through_api() {
+        let mut server = mockito::Server::new_async().await;
+        let install = server
+            .mock("GET", "/v1/integrations/github/install")
+            .match_header("x-tenant-id", "test_workspace")
+            .with_body(
+                r#"[{"id":"other-integration","installation_id":1,"name":"other"},
+                    {"id":"langstar-integration","installation_id":2,"name":"codekiln"}]"#,
+            )
+            .create_async()
+            .await;
+        let other_repos = server
+            .mock("GET", "/v1/integrations/github/other-integration/repos")
+            .with_body(r#"[{"owner":"someone","name":"elsewhere"}]"#)
+            .create_async()
+            .await;
+        let langstar_repos = server
+            .mock("GET", "/v1/integrations/github/langstar-integration/repos")
+            .with_body(r#"[{"owner":"codekiln","name":"langstar"}]"#)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let id = resolve_integration_id(&client, None, "https://github.com/codekiln/langstar.git")
+            .await
+            .unwrap();
+
+        assert_eq!(id, "langstar-integration");
+        install.assert_async().await;
+        other_repos.assert_async().await;
+        langstar_repos.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_resolve_integration_id_reports_repo_without_integration() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/v1/integrations/github/install")
+            .with_body(r#"[{"id":"other-integration","installation_id":1,"name":"other"}]"#)
+            .create_async()
+            .await;
+        server
+            .mock("GET", "/v1/integrations/github/other-integration/repos")
+            .with_body(r#"[{"owner":"someone","name":"elsewhere"}]"#)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let err = resolve_integration_id(&client, None, "https://github.com/codekiln/langstar")
+            .await
+            .unwrap_err();
+
+        let message = err.to_string();
+        assert!(
+            message.contains(
+                "No GitHub integration in this workspace has access to codekiln/langstar"
+            ),
+            "unexpected error: {}",
+            message
+        );
+        assert!(
+            message.contains("--integration-id"),
+            "unexpected error: {}",
+            message
+        );
+    }
+
+    #[tokio::test]
+    async fn test_resolve_integration_id_rejects_unparseable_repo_url() {
+        let mut server = mockito::Server::new_async().await;
+        let install = server
+            .mock("GET", "/v1/integrations/github/install")
+            .expect(0)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let err = resolve_integration_id(&client, None, "https://gitlab.com/codekiln/langstar")
+            .await
+            .unwrap_err();
+
+        assert!(
+            err.to_string()
+                .contains("Cannot read the GitHub owner and repository")
+        );
+        install.assert_async().await;
+    }
 
     #[test]
     fn test_deployment_row_truncation() {
