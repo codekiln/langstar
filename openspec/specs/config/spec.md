@@ -65,15 +65,22 @@ When both an organization ID and a workspace ID are set, every langstar command 
 - **THEN** langstar exits with an error that names the file and suggests `--force`
 - **AND** the file stays as it was
 
-### Requirement: Check the config file
+### Requirement: Check the settings langstar would use
 
-`langstar config validate` SHALL check the settings and print a summary. It SHALL exit with an error when `output_format` is something other than `json` or `table`, or when `timezone` is not a timezone langstar understands. It SHALL warn when no API key is set, and SHALL suggest `langstar config create` when the config file is missing.
+`langstar config validate` SHALL load the settings the way every langstar command loads them, from environment variables, the config file and defaults, and print a summary. It SHALL exit with an error when `output_format` is something other than `json` or `table`, or when `timezone` is not a timezone langstar understands. It SHALL warn when no API key is set, and SHALL suggest `langstar config create` when the config file is missing.
 
 #### Scenario: Invalid timezone
 
 - **WHEN** the config file sets `timezone = "<not-a-timezone>"`
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the invalid timezone
+
+#### Scenario: Invalid output format from the environment
+
+- **WHEN** the config file sets `output_format = "table"`
+- **AND** `LANGSTAR_OUTPUT_FORMAT=text` is set in the environment
+- **AND** a user runs `langstar config validate`
+- **THEN** langstar exits with an error that names the invalid output format
 
 ### Requirement: Change one setting from the command line
 
