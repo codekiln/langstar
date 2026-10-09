@@ -49,7 +49,7 @@ Sign in to the 1Password CLI (`op signin`, or turn on the desktop app integratio
 
 #### Optional: keep the age key in the Secure Enclave
 
-On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. Depending on the access-control policy, every decryption may then ask for Touch ID, which stalls unattended agent runs. Keep the plain key file if agents run tests for you. Only the provider changes:
+On a Mac with Touch ID, the age key can live in the Secure Enclave, so it cannot be copied off the machine. With the `any-biometry` policy in the command below, macOS can ask for Touch ID each time fnox decrypts the cache, and an agent running tests unattended waits at that prompt. Keep the plain key file if agents run tests for you. Only the provider changes:
 
 ```bash
 brew install age-plugin-se
