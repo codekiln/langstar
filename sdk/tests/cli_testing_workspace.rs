@@ -70,9 +70,9 @@ async fn test_create_push_and_read_prompt() {
             panic!(
                 "Failed to create repository: {:?}\n\nPlease verify:\n\
                 1. LANGSMITH_API_KEY has write permissions\n\
-                2. You have permission to create prompts in organization {}\n\
+                2. You have permission to create prompts in the organization set by LANGSMITH_ORGANIZATION_ID\n\
                 3. The owner '{}' is correct for your workspace",
-                e, org_id, owner
+                e, owner
             );
         }
     };
@@ -191,12 +191,9 @@ async fn test_create_push_and_read_prompt() {
     println!("║          All Integration Tests Passed! ✓                 ║");
     println!("╚══════════════════════════════════════════════════════════╝");
     println!("\nTest prompt created: {}", created_prompt.repo_handle);
-    println!("Organization: {}", org_id);
-    println!("\nNote: You may want to delete this test prompt from:");
-    println!(
-        "https://smith.langchain.com/prompts/{}?organizationId={}",
-        repo_name, org_id
-    );
+    println!("✓ Organization ID set");
+    println!("\nNote: You may want to delete this test prompt from the test organization:");
+    println!("https://smith.langchain.com/prompts/{}", repo_name);
 }
 
 /// Test: Try to read an existing prompt (requires knowing the correct handle)
