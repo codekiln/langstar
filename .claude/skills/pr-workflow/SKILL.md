@@ -61,6 +61,8 @@ When addressing review comments, choose ONE of these options:
 
 ## Arguments
 
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
+
 Arguments are passed via `$ARGUMENTS` in the format:
 ```
 [issue-number]
@@ -82,7 +84,7 @@ If arguments are provided, parse the issue number. Otherwise, extract from the c
 Throughout the workflow, update tmux window name to reflect current phase.
 
 ```bash
-!# Helper function to update tmux status
+# Helper function to update tmux status
 # Usage: update_tmux_status <emoji> <prefix> <number>
 # Examples:
 #   update_tmux_status "💻" "i" "483"  -> 💻i483 (coding on issue #483)
@@ -298,7 +300,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Actions:**
 1. **Update tmux status to "submitting PR":**
    ```bash
-   !update_tmux_status "🚀" "i" "$ISSUE_NUM"
+   update_tmux_status "🚀" "i" "$ISSUE_NUM"
    ```
 
 2. **Push branch to remote (if not already pushed):**
@@ -364,8 +366,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 
 **Update tmux status to "PR maintenance" (using PR number):**
 ```bash
-!# After PR is created, switch from issue number to PR number
-!update_tmux_status "🔧" "pr" "$PR_NUM"
+# After PR is created, switch from issue number to PR number
+update_tmux_status "🔧" "pr" "$PR_NUM"
 ```
 
 **Order of operations (priority):**
@@ -498,22 +500,29 @@ EOF
      --jq '.[] | "\(.name): \(.state) (\(.workflow))"'
 
    # Update tmux status to "waiting for tests"
-   !update_tmux_status "⏳" "pr" "$PR_NUM"
+   update_tmux_status "⏳" "pr" "$PR_NUM"
 
-   # Wait for all checks to complete
+   # Wait for all checks to complete, and give up after 60 minutes
+   deadline=$(( $(date +%s) + 3600 ))
+   timed_out=false
    while true; do
-     # Count running checks (where completedAt is null)
-     checks_running=$(gh pr checks "$PR_NUM" --json state,completedAt --jq '[.[] | select(.completedAt == null)] | length')
-     if [ "$checks_running" -gt 0 ]; then
-       echo "⏳ Checks still running, waiting 30 seconds..."
-       sleep 30
-     else
+     # Count the checks that are queued or running
+     checks_running=$(gh pr checks "$PR_NUM" --json bucket --jq '[.[] | select(.bucket == "pending")] | length')
+     if [ "$checks_running" -eq 0 ]; then
        break
      fi
+     if [ "$(date +%s)" -ge "$deadline" ]; then
+       echo "⚠️ $checks_running checks still running after 60 minutes; stopping the wait. Tell the user which checks are stuck."
+       gh pr checks "$PR_NUM" --json name,state,bucket --jq '.[] | select(.bucket == "pending") | "\(.name): \(.state)"'
+       timed_out=true
+       break
+     fi
+     echo "⏳ Checks still running, waiting 30 seconds..."
+     sleep 30
    done
 
    # Return to PR maintenance status
-   !update_tmux_status "🔧" "pr" "$PR_NUM"
+   update_tmux_status "🔧" "pr" "$PR_NUM"
 
    # After completion, check for failures
    checks_failed=$(gh pr checks "$PR_NUM" --json state --jq '[.[] | select(.state == "FAILURE")] | length')
@@ -521,6 +530,9 @@ EOF
    if [ "$checks_failed" -gt 0 ]; then
      echo "❌ $checks_failed check(s) failed"
      # Proceed to failure handling (step 5)
+   elif [ "$timed_out" = true ]; then
+     echo "⚠️ No check has failed, but some are still running"
+     # Stop here and ask the user what to do about the stuck checks
    else
      echo "✅ All checks passed"
      # Proceed to stability monitoring

@@ -57,6 +57,8 @@ When the suggestion is nitpicky, negligible, or you disagree:
 
 ## Arguments
 
+Put the arguments the user gave wherever this skill shows a dollar sign followed by the word ARGUMENTS, in the commands and in the text. Claude Code makes that replacement before you read the skill, so in Claude Code nothing is left to replace.
+
 Arguments are passed via `$ARGUMENTS` in the format:
 ```
 <pr_number> <comment_id> <body> [owner] [repo]

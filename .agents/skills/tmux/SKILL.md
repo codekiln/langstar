@@ -38,7 +38,7 @@ This must ALWAYS be printed right after a session was started and once again at 
 ## Socket convention
 
 - Agents MUST place tmux sockets under `CLAUDE_TMUX_SOCKET_DIR` (defaults to `${TMPDIR:-/tmp}/claude-tmux-sockets`) and use `tmux -S "$SOCKET"` so we can enumerate/clean them. Create the dir first: `mkdir -p "$CLAUDE_TMUX_SOCKET_DIR"`.
-- Default socket path to use unless you must isolate further: `SOCKET="$CLAUDE_TMUX_SOCKET_DIR/claude.sock"`.
+- Use this socket path unless you must isolate further: `SOCKET="$CLAUDE_TMUX_SOCKET_DIR/claude.sock"`.
 
 ## Targeting panes and naming
 
@@ -99,7 +99,7 @@ Some special rules for processes:
 ./tools/wait-for-text.sh [-S socket | -L socket-name] -t session:0.0 -p 'pattern' [-F] [-T 20] [-i 0.5] [-l 2000]
 ```
 
-- `-S`/`--socket` socket path, the same `$SOCKET` the session was created with; `-L`/`--socket-name` takes a socket name instead. Without either, the helper reads the default socket.
+- `-S`/`--socket-path` socket path: pass the same `$SOCKET` the session was created with. `-L`/`--socket` takes a socket name instead, as it does in `find-sessions.sh`. With neither flag, the script polls your personal tmux server instead of `$SOCKET` and waits out the timeout.
 - `-t`/`--target` pane target (required)
 - `-p`/`--pattern` regex to match (required); add `-F` for fixed string
 - `-T` timeout seconds (integer, default 15)
