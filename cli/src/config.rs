@@ -170,7 +170,8 @@ impl Config {
         dirs::config_dir().map(|dir| dir.join("langstar").join("config.toml"))
     }
 
-    /// Linux and Windows never moved the config file, so they have no old path.
+    /// langstar kept its config file in the same place on Linux and Windows,
+    /// so they have no old path.
     #[cfg(not(target_os = "macos"))]
     pub fn old_config_file_path() -> Option<PathBuf> {
         None
