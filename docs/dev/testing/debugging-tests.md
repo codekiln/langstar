@@ -192,6 +192,14 @@ println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 println!("status: {}", output.status);
 ```
 
+### See LangSmith State the CLI and API Don't Show
+
+Some LangSmith state is not visible through the CLI or the API: UI-only settings, or confirming in the UI what a test created. An agent can look at it in a browser with `claude --chrome`.
+
+- The browser profile it uses is signed in to the LangSmith workspace used for CLI testing.
+- Only one browser task runs at a time across all agents. Wait for another agent's browser task to finish before starting yours.
+- Never write workspace or organization names or IDs in the docs, issues or PRs. Use placeholders such as `<your-workspace-id>`.
+
 ## Integration Test Prerequisites Checklist
 
 Before running integration tests:

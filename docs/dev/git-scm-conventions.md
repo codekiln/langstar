@@ -58,7 +58,15 @@ BREAKING CHANGE: removes legacy authentication endpoints
 
 ## Ticket References
 
-For ticket-based projects, add the ticket reference as the last line of the commit message:
+For ticket-based projects, end the commit message with the ticket reference: the ticket ID and its title, one per line. For a GitHub issue that is `#<N> <Issue Title>`:
+
+```
+✨ feat: add tmux workflow docs
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+```
+
+For a Jira ticket:
 
 ```
 ✨ feat: implement user profile page

@@ -10,7 +10,7 @@ This directory contains instructions and conventions for developing the Langstar
 - [Git SCM Conventions](./git-scm-conventions.md) - Guidelines for commit messages and version control practices
 - [Feature Development Process](./feature-development-process.md) - **Standard 8-phase process** for API → CLI features (includes OpenAPI spec management pattern)
 - [Procedures & Troubleshooting](./procedures.md) - Detailed step-by-step procedures and operational guides
-- [Tmux Naming Conventions](./tmux-naming-conventions.md) - Window naming format for issue/PR workflow phases with emoji status indicators
+- [Tmux Manager/Worker Workflow](./tmux-naming-conventions.md) - Session and window layout for the manager agent and its workers, and the worker's PR lifecycle
 - [Testing Standards](./testing/README.md) - Progressive disclosure TOC
 
 ## Purpose
