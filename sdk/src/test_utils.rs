@@ -422,6 +422,17 @@ fn deploys_test_graph(deployment: &crate::Deployment, config: &TestDeploymentCon
     same_repo && same_graph
 }
 
+/// True when a deployment found by source, not by name, is safe to reuse.
+///
+/// A release lifecycle test creates its own `release-integration-test-*`
+/// deployment and deletes it when it finishes, so the PR tests must not pick
+/// one up.
+fn is_reusable_by_source(deployment: &crate::Deployment, config: &TestDeploymentConfig) -> bool {
+    deploys_test_graph(deployment, config)
+        && !is_being_deleted(deployment)
+        && !deployment.name.starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX)
+}
+
 /// Find a live deployment to reuse: first by name prefix, then by source.
 ///
 /// The control plane allows one deployment per agent environment, so a
@@ -465,7 +476,7 @@ async fn find_reusable_deployment(
         if let Some(found) = page
             .resources
             .into_iter()
-            .find(|d| deploys_test_graph(d, config) && !is_being_deleted(d))
+            .find(|d| is_reusable_by_source(d, config))
         {
             return Ok(Some(found));
         }
@@ -709,6 +720,23 @@ mod tests {
             &deployment_from("READY", &repo, "other/langgraph.json"),
             &config
         ));
+    }
+
+    #[test]
+    fn test_is_reusable_by_source_skips_release_lifecycle_deployments() {
+        let config = TestDeploymentConfig::default();
+        let repo = format!(
+            "https://github.com/{}/{}",
+            config.repository_owner, config.repository_name
+        );
+        let mut d = deployment_from("READY", &repo, &config.config_path);
+        assert!(is_reusable_by_source(&d, &config));
+
+        d.name = format!("{}-1234", RELEASE_TEST_DEPLOYMENT_PREFIX);
+        assert!(!is_reusable_by_source(&d, &config));
+
+        let deleting = deployment_from("AWAITING_DELETE", &repo, &config.config_path);
+        assert!(!is_reusable_by_source(&deleting, &config));
     }
 
     #[test]
