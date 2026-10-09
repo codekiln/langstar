@@ -37,8 +37,8 @@ You can configure organization and workspace IDs using three methods. CLI flags 
 Set environment variables in your shell:
 
 ```bash
-export LANGSMITH_ORGANIZATION_ID="d1e1dfff-39bf-4cea-9a2e-85e970ce40ef"
-export LANGSMITH_WORKSPACE_ID="6f52dd84-9870-4f3a-b42d-4eea5fc9dfde"
+export LANGSMITH_ORGANIZATION_ID="<your-org-id>"
+export LANGSMITH_WORKSPACE_ID="<your-workspace-id>"
 ```
 
 Add to your shell profile (`~/.bashrc`, `~/.zshrc`) to make persistent:
@@ -327,8 +327,8 @@ Keep organization and workspace IDs documented for your team:
 ```markdown
 # Team LangSmith Configuration
 
-- Organization ID: `d1e1dfff-39bf-4cea-9a2e-85e970ce40ef`
-- Production Workspace ID: `6f52dd84-9870-4f3a-b42d-4eea5fc9dfde`
+- Organization ID: `<your-org-id>`
+- Production Workspace ID: `<your-workspace-id>`
 - Staging Workspace ID: `abc123...`
 ```
 
