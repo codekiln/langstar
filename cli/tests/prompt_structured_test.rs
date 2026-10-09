@@ -137,8 +137,11 @@ fn create_attempt_outcome(
 /// Create a prompt repo for a test, retrying a timeout or a 5xx.
 ///
 /// LangSmith sometimes takes longer than the SDK client's 30-second request
-/// timeout to answer `create_repo` (issue #787). This tries up to three times,
-/// waiting 2s and then 4s, and panics with the SDK error when it gives up.
+/// timeout to answer `create_repo`, which made this test's setup fail in
+/// https://github.com/codekiln/langstar/issues/787 ("prompt_structured_test
+/// setup panics without the error when creating its repo takes over 30
+/// seconds"). This tries up to three times, waiting 2s and then 4s, and
+/// panics with the SDK error when it gives up.
 fn create_test_repo(
     runtime: &tokio::runtime::Runtime,
     client: &LangchainClient,
