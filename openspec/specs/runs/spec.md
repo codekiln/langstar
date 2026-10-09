@@ -8,7 +8,7 @@
 
 ### Requirement: Query runs by project
 
-`langstar runs query` SHALL return runs from the projects named by `-p` or `--project`, which a user can repeat, and from every project when the user passes none. It SHALL accept a project only as a UUID, and SHALL warn about and skip any `--project` value that is not one. `--is-root` SHALL limit the results to the root run of each trace.
+`langstar runs query` SHALL return runs from the projects whose UUIDs the user passes with `-p` or `--project`, which a user can repeat. It SHALL warn about and skip each `--project` value that is not a UUID, and SHALL return runs from every project in the workspace when no UUID is left. `--is-root` SHALL limit the results to the root run of each trace.
 
 #### Scenario: Two projects
 
@@ -19,7 +19,7 @@
 
 - **WHEN** a user runs `langstar runs query --project my-project`
 - **THEN** langstar warns that `my-project` is not a valid UUID
-- **AND** queries without that project
+- **AND** returns runs from every project in the workspace
 
 ### Requirement: Filter runs with flags
 
