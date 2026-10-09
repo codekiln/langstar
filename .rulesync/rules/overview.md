@@ -6,6 +6,8 @@ description: "Langstar: project, workflow, testing, secrets"
 
 # Langstar
 
+Langstar aims to be the one tool people need for working in LangSmith, so they never have to work out whether a task needs an MCP server, the LangSmith CLI, the LangGraph CLI or something else.
+
 Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph REST APIs, plus a devcontainer feature that installs the CLI (`.devcontainer/features/langstar`). `reference/api-specs/LANGSMITH_API_OVERVIEW.md` summarizes the APIs. Prefer Rust-based tools where practical, and configure the dev environment through `.devcontainer/`.
 
 ## Agent config
