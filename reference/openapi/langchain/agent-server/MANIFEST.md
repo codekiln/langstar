@@ -29,11 +29,18 @@ curl -H "x-api-key: $LANGSMITH_API_KEY" "https://<deployment-url>/openapi.json"
 Needs `LANGSMITH_API_KEY` and `LANGSMITH_WORKSPACE_ID`, which `langstar deployment list` uses to read the control plane.
 
 ```bash
-# Fetch from the shared pr-integration-test-* deployment and indent with 2 spaces
+# Fetch from the shared pr-integration-test-* deployment and indent with 2 spaces.
+# The spec is replaced only after the fetch and jq both succeed, so a failed
+# request or invalid JSON leaves the committed file as it was.
+set -euo pipefail
+SPEC=reference/openapi/langchain/agent-server/openapi.json
 DEPLOYMENT_URL=$(langstar deployment list --name-contains pr-integration-test- -f json \
-  | jq -r '[.resources[] | select(.name | startswith("pr-integration-test-"))][0].source_config.custom_url')
+  | jq -er '[.resources[] | select(.name | startswith("pr-integration-test-"))][0].source_config.custom_url')
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
 curl -fsS -H "x-api-key: $LANGSMITH_API_KEY" "$DEPLOYMENT_URL/openapi.json" \
-  | jq --indent 2 . > reference/openapi/langchain/agent-server/openapi.json
+  | jq --indent 2 . > "$TMP"
+mv "$TMP" "$SPEC"
 ```
 
 ## Related
