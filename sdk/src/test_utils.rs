@@ -569,13 +569,16 @@ const FRESH_CREATE_ATTEMPTS: u32 = 5;
 /// How long `create_fresh_deployment` waits after a 409 before trying again.
 const FRESH_CREATE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
 
-/// Create a deployment of its own for the release lifecycle test.
+/// Create a fresh deployment for a config with no `name_prefix`.
 ///
-/// When the control plane answers the create with 409, this waits and tries
-/// again under a new `release-integration-test-*` name. In #755, CI runs got
-/// 409 "A deployment already exists for this agent environment" while
-/// creating test deployments; a new name and a short wait cover both a name
-/// collision and a deployment that is still being deleted.
+/// A config whose name starts with `release-integration-test-`, which
+/// `TestDeploymentConfig::for_release_tests` builds, gets a retry: when the
+/// control plane answers the create with 409, this waits and tries again under
+/// a new `release-integration-test-*` name. In #755, CI runs got 409 "A
+/// deployment already exists for this agent environment" while creating test
+/// deployments; a new name and a short wait cover both a name collision and a
+/// deployment that is still being deleted. Any other config is created once,
+/// under the name the caller chose.
 async fn create_fresh_deployment(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
@@ -602,6 +605,9 @@ async fn create_fresh_deployment_with_attempts(
     attempts: u32,
     retry_interval: Duration,
 ) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    if !config.name.starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX) {
+        return create_new_deployment(client, config, integration_id).await;
+    }
     let mut attempt_config = config.clone();
     for attempt in 1..=attempts {
         match create_new_deployment(client, &attempt_config, integration_id).await {
@@ -1084,6 +1090,43 @@ mod tests {
             err.downcast_ref::<LangstarError>()
                 .is_some_and(is_conflict_error),
             "the last 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_keeps_a_custom_name_and_does_not_retry() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig {
+            name: "custom-fresh-deployment".to_string(),
+            name_prefix: None,
+            ..Default::default()
+        };
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .match_body(Matcher::PartialJson(
+                json!({"name": "custom-fresh-deployment"}),
+            ))
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a custom-named fresh create should not be retried");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the 409 should be returned, got: {err}"
         );
         create.assert_async().await;
     }
