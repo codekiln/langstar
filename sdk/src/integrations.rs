@@ -79,7 +79,10 @@ impl<'a> IntegrationClient<'a> {
         for integration in integrations {
             match self.list_github_repositories(&integration.id).await {
                 Ok(repos) => {
-                    if repos.iter().any(|r| r.owner == owner && r.name == repo) {
+                    // GitHub owner and repository names are case-insensitive.
+                    if repos.iter().any(|r| {
+                        r.owner.eq_ignore_ascii_case(owner) && r.name.eq_ignore_ascii_case(repo)
+                    }) {
                         return Ok(integration.id);
                     }
                 }
@@ -178,6 +181,30 @@ mod tests {
         let id = client
             .integrations()
             .find_integration_for_repo("codekiln", "langstar")
+            .await
+            .unwrap();
+
+        assert_eq!(id, "works");
+    }
+
+    #[tokio::test]
+    async fn test_find_integration_for_repo_ignores_case() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/v1/integrations/github/install")
+            .with_body(r#"[{"id":"works","installation_id":1,"name":"a"}]"#)
+            .create_async()
+            .await;
+        server
+            .mock("GET", "/v1/integrations/github/works/repos")
+            .with_body(r#"[{"owner":"codekiln","name":"langstar"}]"#)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let id = client
+            .integrations()
+            .find_integration_for_repo("CodeKiln", "LangStar")
             .await
             .unwrap();
 
