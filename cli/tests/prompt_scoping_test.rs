@@ -550,16 +550,12 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     });
 
     let prompt = match created_prompt {
-        Ok(p) => {
-            println!("   ✓ Created prompt: {}", p.repo_handle);
-            assert!(!p.is_public, "Prompt should be private");
-            p
-        }
-        Err(e) => {
-            panic!("Failed to create test prompt: {}", e);
-        }
+        Ok(p) => p,
+        Err(e) => panic!("Failed to create test prompt: {}", e),
     };
     let mut cleanup = PromptCleanup::new(&runtime, &client, &test_prompt_name);
+    println!("   ✓ Created prompt: {}", prompt.repo_handle);
+    assert!(!prompt.is_public, "Prompt should be private");
 
     // Store handle for cleanup
     let prompt_handle = prompt.repo_handle.clone();
