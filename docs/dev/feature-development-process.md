@@ -833,11 +833,7 @@ async fn test_query_runs_integration() {
 
 **ALWAYS run before committing**:
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features && \
-cargo fmt --check
+mise run check
 ```
 
 ---

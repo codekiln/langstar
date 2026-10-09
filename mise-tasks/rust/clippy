@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Lint the workspace with clippy, treating warnings as errors"
+set -euo pipefail
+
+cargo clippy --workspace --all-features -- -D warnings

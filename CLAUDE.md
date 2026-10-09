@@ -6,10 +6,7 @@ This project enforces the **Toyota Andon Cord principle** for testing: any faili
 
 **Pre-commit requirements:**
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace
+mise run check
 ```
 
 **For comprehensive testing guidelines:**
