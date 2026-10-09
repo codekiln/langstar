@@ -4,3 +4,6 @@
 # compilers reject.
 [toolchain]
 channel = "1.99.0"
+# CI installs clippy and rustfmt for `stable`, and this file switches cargo to
+# 1.99.0, so the components must be named here for rustup to fetch them.
+components = ["clippy", "rustfmt"]
