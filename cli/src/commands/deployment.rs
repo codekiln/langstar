@@ -633,7 +633,7 @@ async fn resolve_integration_id(
         .find_integration_for_repo(&owner, &repo)
         .await
         .map_err(|e| match e {
-            langstar_sdk::LangstarError::ApiError { status: 404, .. } => {
+            langstar_sdk::LangstarError::NoGitHubIntegrationForRepo { .. } => {
                 crate::error::CliError::Config(format!(
                     "No GitHub integration in this workspace has access to {}/{}. \
                      In LangSmith, open Deployments, choose + New Deployment, then \

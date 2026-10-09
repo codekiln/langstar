@@ -65,7 +65,7 @@ impl<'a> IntegrationClient<'a> {
     ///
     /// # Returns
     /// * `Ok(String)` - The integration ID that has access to this repository
-    /// * `Err(ApiError { status: 404, .. })` - Every integration listed its
+    /// * `Err(NoGitHubIntegrationForRepo { .. })` - Every integration listed its
     ///   repositories, and none includes this one
     /// * `Err(...)` - Listing the integrations failed, or listing an
     ///   integration's repositories failed and no other integration matched
@@ -87,12 +87,12 @@ impl<'a> IntegrationClient<'a> {
             }
         }
 
-        Err(
-            listing_error.unwrap_or_else(|| crate::error::LangstarError::ApiError {
-                status: 404,
-                message: format!("No integration found with access to {}/{}", owner, repo),
-            }),
-        )
+        Err(listing_error.unwrap_or_else(|| {
+            crate::error::LangstarError::NoGitHubIntegrationForRepo {
+                owner: owner.to_string(),
+                repo: repo.to_string(),
+            }
+        }))
     }
 }
 
@@ -185,7 +185,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_find_integration_for_repo_reports_404_when_no_repo_matches() {
+    async fn test_find_integration_for_repo_reports_no_match() {
         let mut server = mockito::Server::new_async().await;
         server
             .mock("GET", "/v1/integrations/github/install")
@@ -206,8 +206,43 @@ mod tests {
             .unwrap_err();
 
         assert!(
+            matches!(
+                &err,
+                LangstarError::NoGitHubIntegrationForRepo { owner, repo }
+                    if owner == "codekiln" && repo == "langstar"
+            ),
+            "expected NoGitHubIntegrationForRepo, got {:?}",
+            err
+        );
+    }
+
+    #[tokio::test]
+    async fn test_find_integration_for_repo_returns_listing_404() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/v1/integrations/github/install")
+            .with_body(r#"[{"id":"deleted","installation_id":1,"name":"a"}]"#)
+            .create_async()
+            .await;
+        server
+            .mock("GET", "/v1/integrations/github/deleted/repos")
+            .with_status(404)
+            .with_body(r#"{"detail":"Not Found"}"#)
+            .create_async()
+            .await;
+        let client = mock_client(&server);
+
+        let err = client
+            .integrations()
+            .find_integration_for_repo("codekiln", "langstar")
+            .await
+            .unwrap_err();
+
+        // A listing 404 (for example, a deleted integration) is an API error,
+        // not "no integration has access".
+        assert!(
             matches!(err, LangstarError::ApiError { status: 404, .. }),
-            "expected 404, got {:?}",
+            "expected the listing 404, got {:?}",
             err
         );
     }
