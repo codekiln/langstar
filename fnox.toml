@@ -9,5 +9,5 @@
 
 [secrets]
 LANGSMITH_API_KEY = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/password", if_missing = "error" }
-LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/organization-id", if_missing = "error" }
-LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/workspace-id", if_missing = "error" }
+LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-org-id", if_missing = "error" }
+LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-workspace-id", if_missing = "error" }
