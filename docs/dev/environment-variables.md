@@ -107,7 +107,7 @@ The devcontainer still reads the variables from `.devcontainer/.env` through `do
 
 ### CI
 
-CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox. A 1Password service account sees whole vaults, so moving CI to `OP_SERVICE_ACCOUNT_TOKEN` is a separate decision.
+CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox. To read secrets from 1Password, CI would need a 1Password service account, and that account can read every item in each vault it is granted. Whether to accept that belongs in its own issue.
 
 ## Environment Variable to Header Mapping
 
