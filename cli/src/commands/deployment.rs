@@ -262,10 +262,11 @@ impl DeploymentCommands {
                         "AWAITING_DATABASE" => DeploymentStatus::AwaitingDatabase,
                         "UNUSED" => DeploymentStatus::Unused,
                         "AWAITING_DELETE" => DeploymentStatus::AwaitingDelete,
+                        "AWAITING_FINAL_DELETE" => DeploymentStatus::AwaitingFinalDelete,
                         "UNKNOWN" => DeploymentStatus::Unknown,
                         _ => {
                             return Err(crate::error::CliError::Config(format!(
-                                "Invalid status: {}. Valid values: READY, AWAITING_DATABASE, UNUSED, AWAITING_DELETE, UNKNOWN",
+                                "Invalid status: {}. Valid values: READY, AWAITING_DATABASE, UNUSED, AWAITING_DELETE, AWAITING_FINAL_DELETE, UNKNOWN",
                                 status_str
                             )));
                         }
