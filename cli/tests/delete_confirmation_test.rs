@@ -2,7 +2,8 @@
 //!
 //! assert_cmd pipes stdin, so these exercise the non-TTY path: without the skip flag the
 //! command must fail with a clear message, before any API request is made. The interactive
-//! "n" / "y" answers are covered by unit tests in `cli/src/confirm.rs`.
+//! answers (`n`, `yes`, and a bare `y` that is refused) are covered by unit tests in
+//! `cli/src/confirm.rs`.
 
 use assert_cmd::Command;
 use escargot::CargoBuild;
