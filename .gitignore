@@ -19,6 +19,9 @@ wip/
 .devcontainer/docker-compose.override.yml
 .devcontainer/.env
 
+# fnox personal secret cache and vault selection (see fnox.local.toml.example)
+/fnox.local.toml
+
 # Rust
 /target
 target

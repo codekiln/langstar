@@ -10,6 +10,15 @@ python = "3.11"
 # lefthook runs the git hooks in lefthook.yml.
 # https://github.com/evilmartians/lefthook
 lefthook = "2.2.1"
+# Secrets: fnox resolves fnox.toml's 1Password references (op) into an
+# age-encrypted local cache. See docs/dev/environment-variables.md.
+fnox = "1.38.1"
+1password-cli = "2.40.0"
+# age provides age-keygen for the one-time machine setup.
+age = "1.3.2"
+# The test runner the pre-commit checks use. aqua downloads nextest's
+# prebuilt release, so nobody compiles it.
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.148"
 
 # Rust is managed by devcontainer feature (ghcr.io/devcontainers/features/rust:1)
 # Not managed by mise to avoid duplicate installation
@@ -25,6 +34,9 @@ lefthook = "2.2.1"
 enter = "lefthook install"
 
 [env]
+# Test fixture names are not secrets, so they live here rather than in 1Password.
+REPOSITORY_OWNER = "codekiln"
+REPOSITORY_NAME = "langstar"
 # Only the repo-local bin. $HOME/.local/bin is deliberately absent: a stale
 # ~/.local/bin/rulesync would shadow the pinned npm:rulesync above.
 _.path = ["{{ config_root }}/.local/bin"]

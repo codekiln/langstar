@@ -14,9 +14,6 @@ pub struct Config {
     /// Optional workspace ID for narrower scoping of LangSmith operations
     #[serde(skip_serializing_if = "Option::is_none")]
     pub workspace_id: Option<String>,
-    /// Optional GitHub integration ID for deployment creation
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub github_integration_id: Option<String>,
     /// Default output format (json or table)
     #[serde(default = "default_output_format")]
     pub output_format: String,
@@ -45,7 +42,6 @@ impl Default for Config {
             langsmith_api_key: None,
             organization_id: None,
             workspace_id: None,
-            github_integration_id: None,
             output_format: default_output_format(),
             timezone: default_timezone(),
             hide_workspace_and_org_id_message: false,
@@ -73,9 +69,6 @@ impl Config {
         }
         if let Ok(workspace_id) = std::env::var("LANGSMITH_WORKSPACE_ID") {
             config.workspace_id = Some(workspace_id);
-        }
-        if let Ok(integration_id) = std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID") {
-            config.github_integration_id = Some(integration_id);
         }
         if let Ok(format) = std::env::var("LANGSTAR_OUTPUT_FORMAT") {
             config.output_format = format;
@@ -213,12 +206,26 @@ mod tests {
     }
 
     #[test]
+    fn test_config_ignores_removed_github_integration_id() {
+        // Config files written before the key was removed still load; the
+        // integration ID now comes from --integration-id or the Control Plane API.
+        let config: Config =
+            toml::from_str("langsmith_api_key = \"key\"\ngithub_integration_id = \"old-id\"\n")
+                .unwrap();
+        assert_eq!(config.langsmith_api_key.as_deref(), Some("key"));
+        assert!(
+            !toml::to_string(&config)
+                .unwrap()
+                .contains("github_integration_id")
+        );
+    }
+
+    #[test]
     fn test_config_serialization() {
         let config = Config {
             langsmith_api_key: Some("test_key".to_string()),
             organization_id: Some("test_org_id".to_string()),
             workspace_id: None,
-            github_integration_id: None,
             output_format: "json".to_string(),
             timezone: "America/New_York".to_string(),
             hide_workspace_and_org_id_message: false,
@@ -239,7 +246,6 @@ mod tests {
             langsmith_api_key: Some("test_key".to_string()),
             organization_id: None,
             workspace_id: Some("test_workspace_id".to_string()),
-            github_integration_id: None,
             output_format: "table".to_string(),
             timezone: "local".to_string(),
             hide_workspace_and_org_id_message: false,
@@ -256,7 +262,6 @@ mod tests {
             langsmith_api_key: Some("key".to_string()),
             organization_id: Some("org_123".to_string()),
             workspace_id: Some("workspace_456".to_string()),
-            github_integration_id: None,
             output_format: "table".to_string(),
             timezone: "UTC".to_string(),
             hide_workspace_and_org_id_message: false,

@@ -159,14 +159,6 @@ impl ConfigCommands {
             "LANGSMITH_WORKSPACE_ID",
         );
 
-        // GitHub Integration ID
-        Self::show_setting_with_source(
-            "github_integration_id",
-            config.github_integration_id.as_deref().unwrap_or("not set"),
-            &std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID"),
-            "LANGGRAPH_GITHUB_INTEGRATION_ID",
-        );
-
         // Show active scope
         if config.workspace_id.is_some() {
             println!("\n  Active scope: Workspace (narrower)");
@@ -244,10 +236,6 @@ impl ConfigCommands {
 # Optional workspace ID for narrower scoping of LangSmith operations
 # Environment variable: LANGSMITH_WORKSPACE_ID
 # workspace_id = "your-workspace-id"
-
-# Optional GitHub integration ID for deployment creation
-# Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
-# github_integration_id = "your-integration-id"
 
 # CLI Display Settings
 # --------------------
@@ -376,11 +364,6 @@ hide_workspace_and_org_id_message = false
                 "workspace_id",
                 "LANGSMITH_WORKSPACE_ID",
                 "Workspace ID for narrower scoping",
-            ),
-            (
-                "github_integration_id",
-                "LANGGRAPH_GITHUB_INTEGRATION_ID",
-                "GitHub integration ID for deployments",
             ),
             (
                 "output_format",

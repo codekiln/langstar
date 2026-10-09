@@ -65,6 +65,8 @@ cargo nextest run --profile ci --all-features --workspace && \
 cargo fmt --check
 ```
 
+On your own computer, start the test step with `fnox exec --` so the integration tests get the LangSmith credentials: `fnox exec -- cargo nextest run --profile ci --all-features --workspace`. See [Loading the Variables Locally](../environment-variables.md#loading-the-variables-locally). In the devcontainer, `.devcontainer/.env` already sets them.
+
 **Why each step matters:**
 
 | Command | Purpose | What it catches |
