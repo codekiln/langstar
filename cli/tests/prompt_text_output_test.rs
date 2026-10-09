@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use predicates::prelude::*;
 
 /// CLI Integration tests for text output format (`-f text`) with column selection
@@ -27,13 +26,7 @@ use predicates::prelude::*;
 /// Reference: Issue #587, Parent #584
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    Command::new(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper function to get organization ID from environment
