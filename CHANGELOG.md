@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ✨ feat: make gh-start-issue auto-implement issues (#715)
 - ✨ feat(config): standardize config file location to ~/.config/langstar/config.toml (#720)
-  - On macOS the config file moves from `~/Library/Application Support/langstar/config.toml` to `~/.config/langstar/config.toml`. Windows keeps its AppData location.
+  - On macOS, langstar now reads its config only from `~/.config/langstar/config.toml`. Move your old file there with `mkdir -p ~/.config/langstar && mv ~/Library/Application\ Support/langstar/config.toml ~/.config/langstar/config.toml`; until you do, langstar runs without it and prints that command as a reminder. Windows keeps its AppData location.
 - ✨ feat(assistant): add description field support from Agent Server API (#726)
   - `assistant create` and `assistant update` take `--description`, and `assistant get` shows it.
 - ✨ feat(dev): load LangSmith secrets through fnox and 1Password (#754)
