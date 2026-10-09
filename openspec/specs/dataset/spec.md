@@ -115,6 +115,15 @@ When importing a CSV file, langstar SHALL read the `id`, `inputs`, `outputs` and
 - **WHEN** a user imports a CSV file with columns `question` and `outputs`
 - **THEN** each example's inputs hold the `question` value under the key `question`
 
+### Requirement: Import a CSV row without its unreadable metadata or ID
+
+When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, langstar SHALL import the row's example without that field and SHALL print no warning.
+
+#### Scenario: Metadata cell that is not JSON
+
+- **WHEN** a user imports a CSV file whose `metadata` cell holds `not json`
+- **THEN** langstar imports that row's example without metadata and prints no warning
+
 ### Requirement: List the examples in a dataset
 
 `langstar dataset list-examples <dataset-id>` SHALL list the dataset's examples, up to `--limit` (default 100). The table SHALL show each example's ID, name, inputs, outputs and creation date, followed by how many examples it found.
