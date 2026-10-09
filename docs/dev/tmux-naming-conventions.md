@@ -51,8 +51,9 @@ When a branch builds on another unmerged branch (its parent):
 
 1. Branch the child from the parent's branch, not from `main`.
 2. Open the child's PR with `--base <parent-branch>`. CI runs on a pull request into any base branch, since [🔧 build(ci): run CI on stacked PRs whose base is not main (#758)](https://github.com/codekiln/langstar/pull/758) merged.
-3. When the parent squash-merges, rebase the child onto `main`, dropping the parent's commits: `git rebase --onto origin/main <old-parent-tip>`.
-4. Retarget the PR with `gh pr edit --base main`.
+3. When the parent squash-merges, fetch the merged `main` tip with `git fetch origin`, then rebase the child onto it, dropping the parent's commits: `git rebase --onto origin/main <old-parent-tip>`.
+4. Push the rebased child with `git push --force-with-lease`, so the PR's remote head no longer holds the parent's commits.
+5. Retarget the PR with `gh pr edit --base main`.
 
 ## Ready checklist
 
