@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - ✨ feat: make gh-start-issue auto-implement issues (#715)
 - ✨ feat(config): standardize config file location to ~/.config/langstar/config.toml (#720)
-  - On macOS, langstar now reads its config only from `~/.config/langstar/config.toml`. Move your old file there with `mkdir -p ~/.config/langstar && mv ~/Library/Application\ Support/langstar/config.toml ~/.config/langstar/config.toml`; until you do, langstar runs without it and prints that command as a reminder. Windows keeps its AppData location.
+  - On macOS, the config file now lives at `~/.config/langstar/config.toml` instead of `~/Library/Application Support/langstar/config.toml`. Windows keeps its AppData location.
 - ✨ feat(assistant): add description field support from Agent Server API (#726)
   - `assistant create` and `assistant update` take `--description`, and `assistant get` shows it.
 - ✨ feat(dev): load LangSmith secrets through fnox and 1Password (#754)
@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🩹 fix(test): stop printing organization and workspace IDs in integration test output (#772)
 - 🩹 fix(test): retry a dataset delete that LangSmith answers with a server error (#776)
 - 🩹 fix(test): run the CLI binary Cargo built for the tests instead of rebuilding it (#780)
+- 🩹 fix(config): read the pre-2.2.0 macOS config path when the new one is missing (#789)
+  - If you haven't moved your config file yet, langstar on macOS keeps reading it from `~/Library/Application Support/langstar/config.toml` and prints the `mv` command that moves it. `langstar config <key> set` starts the new file as a copy of the old one, so your other settings carry over.
 
 ### 📚 Documentation
 
