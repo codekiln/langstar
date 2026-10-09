@@ -440,3 +440,26 @@ async fn test_structured_prompt_round_trip_mock() {
     );
     assert_eq!(pulled_prompt.messages.len(), 1);
 }
+
+#[tokio::test]
+async fn test_pull_tolerates_response_without_commit_hash() {
+    let mut server = Server::new_async().await;
+
+    let mock = server
+        .mock("GET", "/api/v1/commits/test-owner/test-repo/latest")
+        .with_status(200)
+        .with_header("Content-Type", "application/json")
+        .with_body(json!({ "manifest": { "kind": "test" } }).to_string())
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server);
+    let manifest = client
+        .prompts()
+        .pull("test-owner", "test-repo", "latest")
+        .await
+        .expect("pull should only require the manifest");
+
+    mock.assert_async().await;
+    assert_eq!(manifest["kind"], "test");
+}

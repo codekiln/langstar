@@ -624,7 +624,7 @@ impl PromptCommands {
                         println!("✓ Repository exists");
                         true
                     }
-                    Err(_) => {
+                    Err(langstar_sdk::error::LangstarError::ApiError { status: 404, .. }) => {
                         formatter.info(&format!(
                             "Repository not found, creating {}...",
                             repo_handle
@@ -653,6 +653,7 @@ impl PromptCommands {
                             }
                         }
                     }
+                    Err(e) => return Err(crate::error::CliError::Sdk(e)),
                 };
 
                 // Determine parent commit for the push
@@ -664,11 +665,15 @@ impl PromptCommands {
                             println!("✓ Latest commit: {}", commit_info.commit_hash);
                             Some(commit_info.commit_hash)
                         }
-                        Err(e) => {
-                            eprintln!("⚠ Warning: Could not fetch latest commit: {}", e);
-                            eprintln!("  Proceeding without parent commit (assuming first commit)");
+                        // A 404 means the repo exists but has no commits yet
+                        Err(langstar_sdk::error::LangstarError::ApiError {
+                            status: 404, ..
+                        }) => {
+                            formatter
+                                .info("Repository has no commits yet, no parent commit needed");
                             None
                         }
+                        Err(e) => return Err(crate::error::CliError::Sdk(e)),
                     }
                 } else {
                     formatter.info("New repository, no parent commit needed");

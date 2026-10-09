@@ -651,8 +651,12 @@ impl<'a> PromptClient<'a> {
     /// # }
     /// ```
     pub async fn pull(&self, owner: &str, repo: &str, commit: &str) -> Result<Value> {
-        let commit_response = self.get_commit(owner, repo, commit).await?;
-        Ok(commit_response.manifest)
+        // Deserialize only the manifest so pull() stays tolerant of responses that
+        // omit commit_hash (get_commit() enforces it).
+        let path = format!("/api/v1/commits/{}/{}/{}", owner, repo, commit);
+        let request = self.client.langsmith_get(&path)?;
+        let response: ManifestOnlyResponse = self.client.execute(request).await?;
+        Ok(response.manifest)
     }
 
     /// Pull a structured prompt from the PromptHub and deserialize it.
@@ -811,6 +815,12 @@ pub struct CommitManifestResponse {
     /// Optional example run records (serialized RepoExampleResponse objects)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub examples: Option<Vec<serde_json::Value>>,
+}
+
+/// Minimal commit response used by `pull()`, which only needs the manifest
+#[derive(Debug, Deserialize)]
+struct ManifestOnlyResponse {
+    manifest: serde_json::Value,
 }
 
 /// Data for creating/updating a prompt (deprecated, use CommitRequest)
