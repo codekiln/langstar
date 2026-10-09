@@ -86,24 +86,32 @@ impl Default for TestDeploymentConfig {
 impl TestDeploymentConfig {
     /// Create configuration for release/lifecycle tests
     ///
-    /// Uses a timestamped name to ensure a fresh deployment is created,
-    /// allowing the full create → test → delete lifecycle to be verified.
+    /// Uses a fresh `release-integration-test-*` name, so the full
+    /// create → test → delete lifecycle runs against a deployment of its own.
     /// These deployments should be cleaned up after the test completes.
     ///
     /// Sets `name_prefix: None` so get-or-create always creates fresh.
     pub fn for_release_tests() -> Self {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-
         Self {
-            name: format!("{}-{}", RELEASE_TEST_DEPLOYMENT_PREFIX, timestamp),
+            name: release_test_deployment_name(),
             name_prefix: None, // No prefix search - always create fresh
             ..Default::default()
         }
     }
+}
+
+/// A new `release-integration-test-*` name.
+///
+/// Every run that uses the same workspace shares its deployments, so a name
+/// built from a seconds timestamp repeats when two runs start in the same
+/// second. The first 12 hex characters of a random UUID make a repeat
+/// vanishingly unlikely.
+fn release_test_deployment_name() -> String {
+    format!(
+        "{}-{}",
+        RELEASE_TEST_DEPLOYMENT_PREFIX,
+        &uuid::Uuid::new_v4().simple().to_string()[..12]
+    )
 }
 
 /// RAII guard to remind about deployment cleanup
@@ -554,6 +562,72 @@ async fn reuse_or_create_deployment_with_attempts(
     )
 }
 
+/// How many times `create_fresh_deployment` tries to create the release test
+/// deployment before giving up.
+const FRESH_CREATE_ATTEMPTS: u32 = 5;
+
+/// How long `create_fresh_deployment` waits after a 409 before trying again.
+const FRESH_CREATE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
+
+/// Create a deployment of its own for the release lifecycle test.
+///
+/// When the control plane answers the create with 409, this waits and tries
+/// again under a new `release-integration-test-*` name. In #755, CI runs got
+/// 409 "A deployment already exists for this agent environment" while
+/// creating test deployments; a new name and a short wait cover both a name
+/// collision and a deployment that is still being deleted.
+async fn create_fresh_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    create_fresh_deployment_with_attempts(
+        client,
+        config,
+        integration_id,
+        FRESH_CREATE_ATTEMPTS,
+        FRESH_CREATE_RETRY_INTERVAL,
+    )
+    .await
+}
+
+/// Create a fresh deployment, trying up to `attempts` times with a new name
+/// and a `retry_interval` wait after each 409. `create_fresh_deployment`
+/// passes `FRESH_CREATE_ATTEMPTS` and `FRESH_CREATE_RETRY_INTERVAL`; the
+/// mocked tests pass a zero wait.
+async fn create_fresh_deployment_with_attempts(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+    attempts: u32,
+    retry_interval: Duration,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    let mut attempt_config = config.clone();
+    for attempt in 1..=attempts {
+        match create_new_deployment(client, &attempt_config, integration_id).await {
+            Ok(created) => return Ok(created),
+            Err(err)
+                if attempt < attempts
+                    && err
+                        .downcast_ref::<LangstarError>()
+                        .is_some_and(is_conflict_error) =>
+            {
+                attempt_config.name = release_test_deployment_name();
+                eprintln!(
+                    "Create returned 409 (attempt {}/{}); waiting {}s and trying again as {}...",
+                    attempt,
+                    attempts,
+                    retry_interval.as_secs(),
+                    attempt_config.name
+                );
+                tokio::time::sleep(retry_interval).await;
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    Err(format!("no attempt to create the fresh deployment ran (attempts = {attempts})").into())
+}
+
 /// Get or create a test deployment by name
 ///
 /// This function implements the "get-or-create" pattern:
@@ -605,7 +679,7 @@ pub async fn get_or_create_deployment(
         reuse_or_create_deployment(client, config, &integration_id).await?
     } else {
         // No prefix: always create fresh
-        create_new_deployment(client, config, &integration_id).await?
+        create_fresh_deployment(client, config, &integration_id).await?
     };
 
     let deployment_id = deployment.id.clone();
@@ -923,12 +997,110 @@ mod tests {
         create.assert_async().await;
     }
 
+    // ── create_fresh_deployment_with_attempts against a mocked control plane ──
+
+    /// The deployment name in a create request body.
+    fn requested_name(request: &mockito::Request) -> String {
+        let body: serde_json::Value =
+            serde_json::from_slice(request.body().expect("request body")).expect("JSON body");
+        body["name"].as_str().expect("name").to_string()
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_retries_a_409_under_a_new_name() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::for_release_tests();
+        let names = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let names_seen = names.clone();
+
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |request| {
+                names_seen.lock().unwrap().push(requested_name(request));
+                br#"{"detail":"A deployment already exists for this agent environment."}"#.to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+        let names_seen = names.clone();
+        let created = server
+            .mock("POST", "/v2/deployments")
+            .with_status(201)
+            .with_body_from_request(move |request| {
+                let name = requested_name(request);
+                names_seen.lock().unwrap().push(name.clone());
+                deployment_json(&name).to_string().into_bytes()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let deployment = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("the second create should succeed");
+
+        let names = names.lock().unwrap().clone();
+        assert_eq!(names.len(), 2, "two create requests should be sent");
+        assert_eq!(
+            names[0], config.name,
+            "the first create uses the config's name"
+        );
+        assert_ne!(names[1], names[0], "the retry uses a new name");
+        assert!(names[1].starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX));
+        assert_eq!(deployment.name, names[1]);
+        create.assert_async().await;
+        created.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_gives_up_after_the_last_409() {
+        let mut server = Server::new_async().await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(2)
+            .create_async()
+            .await;
+
+        let err = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &TestDeploymentConfig::for_release_tests(),
+            "integration",
+            2,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("two 409s with two attempts should fail");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the last 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
     #[test]
     fn test_deployment_config_for_release() {
         let config = TestDeploymentConfig::for_release_tests();
-        assert!(
-            config.name.starts_with("release-integration-test-"),
-            "Release name should start with release-integration-test-"
+        let suffix = config
+            .name
+            .strip_prefix("release-integration-test-")
+            .expect("Release name should start with release-integration-test-");
+        assert_eq!(suffix.len(), 12, "suffix should be 12 hex characters");
+        assert!(suffix.chars().all(|c| c.is_ascii_hexdigit()));
+        assert_ne!(
+            config.name,
+            TestDeploymentConfig::for_release_tests().name,
+            "two release configs should get different names"
         );
         // name_prefix is None for release tests - always create fresh
         assert_eq!(
