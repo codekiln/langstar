@@ -574,11 +574,14 @@ const FRESH_CREATE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
 /// A config whose name starts with `release-integration-test-`, which
 /// `TestDeploymentConfig::for_release_tests` builds, gets a retry: when the
 /// control plane answers the create with 409, this waits and tries again under
-/// a new `release-integration-test-*` name. In #755, CI runs got 409 "A
-/// deployment already exists for this agent environment" while creating test
-/// deployments; a new name and a short wait cover both a name collision and a
-/// deployment that is still being deleted. Any other config is created once,
-/// under the name the caller chose.
+/// a new `release-integration-test-*` name. The retry is a precaution. CI in
+/// [🩹 fix(api): adapt the SDK and tests to LangSmith API drift · PR #755](https://github.com/codekiln/langstar/pull/755)
+/// got 409 "A deployment already exists for this agent environment" when
+/// concurrent runs created the shared `pr-integration-test-*` deployment,
+/// which this function never creates. Nobody has seen the release test get
+/// it. A new name covers two release runs that pick the same name, and the
+/// wait covers a release deployment that is still being deleted. Any other
+/// config is created once, under the name the caller chose.
 async fn create_fresh_deployment(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
