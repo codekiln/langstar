@@ -140,7 +140,7 @@ pub struct AssistantSearchRequest {
     /// Sent as `name`, the field `POST /assistants/search` filters on.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Maximum number of results (default: 20)
+    /// Maximum number of results. When `None`, the API returns up to 10.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// Number of results to skip (default: 0)
@@ -162,7 +162,7 @@ impl<'a> AssistantClient<'a> {
     /// List all assistants
     ///
     /// # Arguments
-    /// * `limit` - Maximum number of assistants to return (default: 20)
+    /// * `limit` - Maximum number of assistants to return. When `None`, the API returns up to 10.
     /// * `offset` - Number of assistants to skip (default: 0)
     ///
     /// # Note
@@ -187,7 +187,7 @@ impl<'a> AssistantClient<'a> {
     ///
     /// # Arguments
     /// * `query` - Text to look for in assistant names
-    /// * `limit` - Maximum number of results (default: 20)
+    /// * `limit` - Maximum number of results. When `None`, the API returns up to 10.
     pub async fn search(&self, query: &str, limit: Option<u32>) -> Result<Vec<Assistant>> {
         let request_body = AssistantSearchRequest {
             name: Some(query.to_string()),
