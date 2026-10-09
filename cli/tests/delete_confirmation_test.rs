@@ -1,5 +1,5 @@
 //! Tests that `dataset delete`, `queue delete`, `project delete`, `assistant delete`,
-//! `deployment delete` and `model-config delete` refuse to run when no terminal is attached and the skip flag is missing. codekiln filed
+//! `deployment delete`, `model-config delete` and `secrets delete` refuse to run when no terminal is attached and the skip flag is missing. codekiln filed
 //! [#702 Fix dataset delete confirmation to actually wait for user input](https://github.com/codekiln/langstar/issues/702)
 //! and [#703 Fix queue delete confirmation to actually wait for user input](https://github.com/codekiln/langstar/issues/703)
 //! for the dataset and queue prompts.
@@ -74,4 +74,9 @@ fn deployment_delete_without_yes_with_no_terminal_errors() {
 #[test]
 fn model_config_delete_without_yes_with_no_terminal_errors() {
     assert_refuses_without_terminal(&["model-config", "delete", ID], "--yes");
+}
+
+#[test]
+fn secrets_delete_without_yes_with_no_terminal_errors() {
+    assert_refuses_without_terminal(&["secrets", "delete", "SOME_KEY"], "--yes");
 }

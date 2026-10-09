@@ -87,7 +87,8 @@ fn test_secrets_delete_help() {
         .success()
         .stdout(predicate::str::contains("Delete a workspace secret"))
         .stdout(predicate::str::contains("<KEY>"))
-        .stdout(predicate::str::contains("--format"));
+        .stdout(predicate::str::contains("--format"))
+        .stdout(predicate::str::contains("--yes"));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
