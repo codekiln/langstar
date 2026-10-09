@@ -157,11 +157,12 @@ jobs:
           ls -la target/nextest/ci/junit-ci.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # mise-tasks/ci/redact-ids-in-junit replaces any organization or workspace ID
         # in the JUnit file and fails the job. The publish and upload steps below
         # run anyway, so a developer can download the results without the ID.
         if: always()
-        run: scripts/redact-ids-in-junit.sh target/nextest/ci/junit-ci.xml
+        # This job doesn't install mise, so it runs the mise file task by its path.
+        run: mise-tasks/ci/redact-ids-in-junit target/nextest/ci/junit-ci.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
@@ -227,11 +228,12 @@ jobs:
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # mise-tasks/ci/redact-ids-in-junit replaces any organization or workspace ID
         # in the JUnit file and fails the job. The publish and upload steps below
         # run anyway, so a developer can download the results without the ID.
         if: always()
-        run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
+        # This job doesn't install mise, so it runs the mise file task by its path.
+        run: mise-tasks/ci/redact-ids-in-junit target/nextest/integration/junit-integration.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
@@ -296,11 +298,12 @@ jobs:
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
       - name: Redact organization and workspace IDs from test results
-        # scripts/redact-ids-in-junit.sh replaces any organization or workspace ID
+        # mise-tasks/ci/redact-ids-in-junit replaces any organization or workspace ID
         # in the JUnit file and fails the job. The publish and upload steps below
         # run anyway, so a developer can download the results without the ID.
         if: always()
-        run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
+        # This job doesn't install mise, so it runs the mise file task by its path.
+        run: mise-tasks/ci/redact-ids-in-junit target/nextest/integration/junit-integration.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#MISE description="Redact the organization and workspace IDs from JUnit files, and fail if either was there"
+#USAGE arg "<junit_file>" var=#true help="JUnit XML file to redact in place"
 # Replace the values of LANGSMITH_ORGANIZATION_ID and LANGSMITH_WORKSPACE_ID
 # in JUnit files with [redacted VAR], and fail when either value was there.
 #
@@ -18,7 +20,8 @@
 # An empty variable is skipped: pull requests from forks get empty secrets,
 # and an empty value cannot leak.
 #
-# Usage: scripts/redact-ids-in-junit.sh <junit-file>...
+# Usage: mise run ci:redact-ids-in-junit <junit-file>...
+#    or: mise-tasks/ci/redact-ids-in-junit <junit-file>...
 
 set -euo pipefail
 
