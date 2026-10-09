@@ -389,7 +389,8 @@ async fn create_new_deployment(
 /// the shared deployment before giving up.
 const REUSE_ATTEMPTS: u32 = 10;
 
-/// Wait between attempts while another run, or a deletion, holds the slot.
+/// How long to wait before looking again while another CI run's deployment,
+/// or one still being deleted, takes up the test graph's agent environment.
 const REUSE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
 
 /// True for a deployment that is being deleted and can't be reused.
@@ -477,10 +478,10 @@ async fn find_reusable_deployment(
 
 /// Reuse whatever live deployment of the test graph exists, or create one.
 ///
-/// Concurrent CI runs, and the scheduled cleanup that deletes old test
-/// deployments, can make a create collide with a deployment that appeared,
-/// or is still being deleted, after the lookup. On a 409 this waits and looks
-/// again rather than failing.
+/// Between this function's lookup and its create request, another CI run can
+/// create the test deployment, or the scheduled cleanup job can still be
+/// deleting an old one. The control plane answers either case with 409, and
+/// this function waits and looks again.
 async fn reuse_or_create_deployment(
     client: &LangchainClient,
     config: &TestDeploymentConfig,
