@@ -607,6 +607,12 @@ hide_workspace_and_org_id_message = false
             }
         }
 
+        // Check the result the way Config::load will read it, so a value of the
+        // wrong type in the file is reported here instead of being written and
+        // then replaced by the defaults on every run
+        toml::from_str::<Config>(&doc.to_string())
+            .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
+
         // Write the updated config
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
@@ -694,6 +700,25 @@ mod tests {
 
         assert!(result.is_err());
         // With no new file, langstar keeps reading the old one on the next run
+        assert!(!config_path.exists());
+    }
+
+    #[test]
+    fn test_set_leaves_no_new_file_when_old_file_has_a_wrong_type() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+        let old_path = dir
+            .path()
+            .join("Library/Application Support/langstar/config.toml");
+        fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+        // Valid TOML, but Config needs a string here
+        fs::write(&old_path, "output_format = 1\n").unwrap();
+
+        let result =
+            ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC");
+
+        let error = result.unwrap_err().to_string();
+        assert!(error.contains("Failed to parse config file"), "{error}");
         assert!(!config_path.exists());
     }
 
