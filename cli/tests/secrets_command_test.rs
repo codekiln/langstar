@@ -244,6 +244,27 @@ fn test_secrets_delete_accepts_format_flag() {
         .stderr(predicate::str::contains("--format").not()); // --format parsed
 }
 
+/// `--yes` skips the confirmation prompt. With a dummy API key, the command
+/// gets past the prompt, sends the delete, and LangSmith rejects the key, so
+/// the test deletes nothing. If `--yes` stopped skipping the prompt, the
+/// command would stop at the terminal check before sending anything.
+#[test]
+fn test_secrets_delete_yes_skips_confirmation() {
+    let mut cmd = langstar_cmd();
+    cmd.env("LANGSMITH_API_KEY", "dummy-key-for-tests")
+        .env_remove("LANGSMITH_ORGANIZATION_ID")
+        .env_remove("LANGSMITH_WORKSPACE_ID")
+        .args(["secrets", "delete", "LANGSTAR_NO_SUCH_SECRET", "--yes"]);
+
+    cmd.assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "Deleting secret 'LANGSTAR_NO_SUCH_SECRET'",
+        ))
+        .stderr(predicate::str::contains("API error"))
+        .stderr(predicate::str::contains("not a terminal").not());
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Security Validation Tests - No Secret Leakage
 // ═══════════════════════════════════════════════════════════════════════════
