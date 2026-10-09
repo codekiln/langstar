@@ -87,7 +87,7 @@ After [#740 Load LangSmith secrets through the fnox golden path with 1Password](
 mise run worktree:link-secrets
 ```
 
-The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740), links the worktree's `fnox.local.toml` to the root checkout's copy, so every worktree reads the same fnox cache and none asks for a sync or a 1Password prompt. Skip this step until that task exists.
+The task makes the worktree's `fnox.local.toml` a link to the root checkout's copy, so every worktree shares the root checkout's fnox cache and none of them prompts for 1Password.
 
 ## Core Commands
 
