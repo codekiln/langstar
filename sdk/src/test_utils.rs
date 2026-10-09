@@ -487,7 +487,26 @@ async fn reuse_or_create_deployment(
     config: &TestDeploymentConfig,
     integration_id: &str,
 ) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
-    for attempt in 1..=REUSE_ATTEMPTS {
+    reuse_or_create_deployment_with_retry(
+        client,
+        config,
+        integration_id,
+        REUSE_ATTEMPTS,
+        REUSE_RETRY_INTERVAL,
+    )
+    .await
+}
+
+/// `reuse_or_create_deployment` with the number of attempts and the wait
+/// between them passed in, so tests can run it without real 30-second waits.
+async fn reuse_or_create_deployment_with_retry(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+    attempts: u32,
+    retry_interval: Duration,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    for attempt in 1..=attempts {
         if let Some(existing) = find_reusable_deployment(client, config).await? {
             eprintln!(
                 "Found existing deployment: {} (status: {:?})",
@@ -499,7 +518,7 @@ async fn reuse_or_create_deployment(
         match create_new_deployment(client, config, integration_id).await {
             Ok(created) => return Ok(created),
             Err(err)
-                if attempt < REUSE_ATTEMPTS
+                if attempt < attempts
                     && err
                         .downcast_ref::<LangstarError>()
                         .is_some_and(is_conflict_error) =>
@@ -508,15 +527,18 @@ async fn reuse_or_create_deployment(
                     "Create collided with an existing deployment (attempt {}/{}); \
                      waiting {}s and looking again...",
                     attempt,
-                    REUSE_ATTEMPTS,
-                    REUSE_RETRY_INTERVAL.as_secs()
+                    attempts,
+                    retry_interval.as_secs()
                 );
-                tokio::time::sleep(REUSE_RETRY_INTERVAL).await;
+                tokio::time::sleep(retry_interval).await;
             }
             Err(err) => return Err(err),
         }
     }
-    unreachable!("the last attempt returns from the loop")
+    Err(
+        format!("no attempt to reuse or create the test deployment ran (attempts = {attempts})")
+            .into(),
+    )
 }
 
 /// Get or create a test deployment by name
@@ -707,6 +729,168 @@ mod tests {
             "",
             path
         )));
+    }
+
+    // ── reuse_or_create_deployment_with_retry against a mocked control plane ──
+
+    use mockito::{Matcher, Server};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn mock_client(server: &Server) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            crate::AuthConfig::new(
+                Some("test-key".to_string()),
+                None,
+                Some("test-workspace".to_string()),
+            ),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .expect("client")
+    }
+
+    fn deployment_json(name: &str) -> serde_json::Value {
+        json!({
+            "id": "existing-id",
+            "name": name,
+            "source": "github",
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "status": "READY"
+        })
+    }
+
+    #[tokio::test]
+    async fn test_retry_reuses_deployment_that_appears_after_409() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+        let existing_name = format!("{}-other-run", config.name_prefix.clone().unwrap());
+
+        // The list is empty until a create has been rejected, as when another
+        // CI run creates the deployment between our lookup and our create.
+        let creates = Arc::new(AtomicUsize::new(0));
+        let creates_seen = creates.clone();
+        let list = server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body_from_request(move |_| {
+                let resources = if creates_seen.load(Ordering::SeqCst) == 0 {
+                    json!([])
+                } else {
+                    json!([deployment_json(&existing_name)])
+                };
+                json!({"resources": resources, "offset": 0})
+                    .to_string()
+                    .into_bytes()
+            })
+            .expect_at_least(3)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |_| {
+                creates.fetch_add(1, Ordering::SeqCst);
+                br#"{"detail":"A deployment already exists for this agent environment."}"#.to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let found = reuse_or_create_deployment_with_retry(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("should reuse the deployment found after the 409");
+
+        assert_eq!(found.id, "existing-id");
+        create.assert_async().await;
+        list.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_gives_up_after_last_attempt() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+
+        server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(r#"{"resources": [], "offset": 0}"#)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(2)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_retry(
+            &mock_client(&server),
+            &config,
+            "integration",
+            2,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("two 409s with two attempts should fail");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the last 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_returns_non_conflict_error_at_once() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+
+        server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(r#"{"resources": [], "offset": 0}"#)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(500)
+            .with_body(r#"{"detail":"Internal server error"}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_retry(
+            &mock_client(&server),
+            &config,
+            "integration",
+            5,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a 500 should not be retried");
+
+        assert!(
+            matches!(
+                err.downcast_ref::<LangstarError>(),
+                Some(LangstarError::ApiError { status: 500, .. })
+            ),
+            "the 500 should be returned unchanged, got: {err}"
+        );
+        create.assert_async().await;
     }
 
     #[test]
