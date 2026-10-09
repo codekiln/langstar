@@ -304,8 +304,8 @@ fn default_execution_order() -> i32 {
 /// A run returned by `POST /api/v2/runs/query`, matching OpenAPI `query.RunResponse`.
 ///
 /// The API returns only the fields named in [`QueryRunsRequest::selects`]
-/// (only `id` when `selects` is omitted), so every field except `id` is
-/// optional.
+/// (only `id` when `selects` is omitted), so every field is optional,
+/// `id` included.
 ///
 /// # OpenAPI Reference
 ///
@@ -313,7 +313,8 @@ fn default_execution_order() -> i32 {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueriedRun {
     /// Unique identifier for the run
-    pub id: Uuid,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<Uuid>,
 
     /// Name of the run (typically the component name)
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -881,9 +882,18 @@ mod tests {
         // With no `selects`, the API returns only `id`.
         let run: QueriedRun =
             serde_json::from_str(r#"{"id": "123e4567-e89b-12d3-a456-426614174000"}"#).unwrap();
+        assert!(run.id.is_some());
         assert!(run.name.is_none());
         assert!(run.status.is_none());
         assert!(run.total_tokens.is_none());
+    }
+
+    #[test]
+    fn test_run_deserialization_without_id() {
+        // `selects` without `ID` leaves `id` out of each run.
+        let run: QueriedRun = serde_json::from_str(r#"{"name": "ChatOpenAI"}"#).unwrap();
+        assert!(run.id.is_none());
+        assert_eq!(run.name.as_deref(), Some("ChatOpenAI"));
     }
 
     #[test]

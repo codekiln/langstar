@@ -382,7 +382,10 @@ impl RunRow {
         };
 
         Self {
-            id: run.id.to_string().chars().take(8).collect::<String>(), // Short UUID
+            id: run
+                .id
+                .map(|id| id.to_string().chars().take(8).collect::<String>()) // Short UUID
+                .unwrap_or_else(|| "-".to_string()),
             name,
             run_type: run
                 .run_type

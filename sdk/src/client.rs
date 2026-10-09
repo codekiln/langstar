@@ -995,7 +995,7 @@ impl LangchainClient {
     ///
     /// # Returns
     ///
-    /// A `Stream` of `Result<Run>` that yields runs one at a time, newest first.
+    /// A `Stream` of `Result<QueriedRun>` that yields runs one at a time, newest first.
     ///
     /// # Example
     ///

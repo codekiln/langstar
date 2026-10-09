@@ -640,6 +640,16 @@ fn test_runs_query_lifecycle() {
         keys.sort();
         assert_eq!(keys, vec!["id", "name"]);
     }
+
+    // --select without id: the runs come back without one
+    let no_id = query_runs_json(&project_id, &["-o", "json", "--select", "name"]);
+    assert_eq!(
+        names(&no_id),
+        vec!["seed-newest-failed", "seed-middle-llm", "seed-oldest-chain"]
+    );
+    for run in &no_id {
+        assert!(run.get("id").is_none(), "id was not selected: {}", run);
+    }
     println!("[VERIFY] Order, limit, run type, status and select flags work");
 
     // Table output, even with a narrow --select, fills its columns
