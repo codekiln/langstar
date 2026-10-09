@@ -113,7 +113,7 @@ Run these validations before creating a PR:
 
 ```bash
 # 1. Verify you're in a worktree (not main)
-pwd | grep -q ".worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
+pwd | grep -qF "/.worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
 
 # 2. Check branch name follows convention
 BRANCH=$(git branch --show-current)
@@ -142,7 +142,7 @@ git log origin/main..HEAD --oneline | grep -i "fixes #\|closes #\|resolves #" ||
 git worktree list
 
 # Verify current directory is in .worktrees/
-pwd | grep -q ".worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
+pwd | grep -qF "/.worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
 ```
 
 **Expected:** You should be in a `.worktrees/<branch-name>/` directory.
@@ -452,7 +452,7 @@ git branch | grep -v "^\*" | grep -v "main\|master"
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| In worktree | `pwd` &#124; `grep .worktrees/` | In .worktrees/ directory |
+| In worktree | `pwd` &#124; `grep -F /.worktrees/` | In .worktrees/ directory |
 | Branch format | `git branch --show-current` | `user/num-slug` |
 | Issue open | `gh issue view N --json state` | `OPEN` |
 | Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |

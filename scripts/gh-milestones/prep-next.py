@@ -411,7 +411,12 @@ class MilestoneWorkflow:
         branch_parts.append(issue_slug)
 
         branch_name = "-".join(branch_parts)
-        worktree_path = f".worktrees/{branch_name}"
+        # Build the path under the root checkout, so running from a worktree does not nest one
+        git_common_dir = subprocess.run(
+            ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        worktree_path = os.path.join(os.path.dirname(git_common_dir), ".worktrees", branch_name)
 
         # Check if worktree already exists
         if os.path.exists(worktree_path):

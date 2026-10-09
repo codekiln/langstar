@@ -132,7 +132,7 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 **Actions:**
 1. **Check working directory:**
    ```bash
-   pwd | grep -q ".worktrees/" && echo "✅ In worktree" || echo "❌ Not in .worktrees/ worktree"
+   pwd | grep -qF "/.worktrees/" && echo "✅ In worktree" || echo "❌ Not in .worktrees/ worktree"
    ```
    - **MUST** be in a `.worktrees/` worktree, not the root checkout
    - If not in worktree, **STOP** and instruct user to use `git-worktrees` skill
