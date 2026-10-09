@@ -163,8 +163,8 @@ impl Config {
 
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
-    /// `load` turns these errors into the default config; `config validate`
-    /// calls this to report them.
+    /// `load` uses the default config when this returns an error; `config validate`
+    /// calls this to report the error.
     pub fn read_file(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| CliError::Config(format!("Failed to read config file: {}", e)))?;

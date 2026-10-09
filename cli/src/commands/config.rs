@@ -302,13 +302,15 @@ hide_workspace_and_org_id_message = false
             }
         };
         if path != config_path {
+            println!("  File exists: false");
             println!(
-                "  Missing, so langstar reads its config file from before v2.2.0: {}",
+                "  Reading instead: {} (where langstar kept it before v2.2.0)",
                 path.display()
             );
         }
 
-        // Parse that file here: Config::load uses the defaults when it can't
+        // Config::load below uses the defaults when it can't parse the file, so
+        // parse the file here first to report the error
         if let Err(e) = Config::read_file(&path) {
             println!("  ✗ Config file validation FAILED");
             println!("\nError: {}", e);
@@ -585,8 +587,9 @@ hide_workspace_and_org_id_message = false
             fs::read_to_string(config_path)?
         };
 
-        // Parse before writing anything, so a malformed old file leaves no new
-        // file behind to win over it on the next run
+        // Parse first: when the old file is malformed, this function returns the
+        // parse error before it creates the new file, so langstar keeps reading
+        // the old file on the next run
         let mut doc = config_content
             .parse::<DocumentMut>()
             .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
@@ -684,7 +687,7 @@ mod tests {
             ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC");
 
         assert!(result.is_err());
-        // No new file wins over the old one on the next run
+        // With no new file, langstar keeps reading the old one on the next run
         assert!(!config_path.exists());
     }
 

@@ -44,7 +44,7 @@ impl Home {
         fs::write(path, content).unwrap();
     }
 
-    /// langstar with this home and without the output format from the environment
+    /// A langstar command with `HOME` set to this home and `LANGSTAR_OUTPUT_FORMAT` unset
     fn langstar(&self) -> Command {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
         cmd.env("HOME", self.dir.path())
@@ -99,9 +99,6 @@ fn test_config_validate_fails_on_malformed_old_file() {
 
     assert!(!output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(
-        stdout.contains("Missing, so langstar reads its config file from before v2.2.0:"),
-        "{stdout}"
-    );
+    assert!(stdout.contains("Reading instead:"), "{stdout}");
     assert!(stdout.contains("validation FAILED"), "{stdout}");
 }
