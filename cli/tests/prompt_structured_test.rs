@@ -20,7 +20,6 @@
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use langstar_sdk::auth::AuthConfig;
 use langstar_sdk::client::LangchainClient;
 use predicates::prelude::*;
@@ -176,14 +175,9 @@ impl Drop for PromptRepoFixture {
     }
 }
 
-/// Helper to build and get the langstar binary path
+/// Path to the langstar binary Cargo built for this integration test run
 fn get_langstar_bin() -> std::path::PathBuf {
-    CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned()
+    std::path::PathBuf::from(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper to create a temporary valid JSON schema file
