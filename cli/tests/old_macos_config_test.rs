@@ -108,8 +108,8 @@ fn test_config_commands_repair_unsupported_output_format_in_old_file() {
     let home = Home::new();
     Home::write(&home.old_config(), "output_format = \"yaml\"\n");
 
-    // Before the fix, every command failed on the unsupported format, so
-    // these could neither show the value nor set a valid one
+    // langstar runs `config` commands before it parses the output format, so
+    // they can show the `yaml` value and replace it
     let show = home.langstar().args(["config", "show"]).output().unwrap();
     assert!(show.status.success(), "{show:?}");
     assert!(String::from_utf8_lossy(&show.stdout).contains("output_format: yaml"));

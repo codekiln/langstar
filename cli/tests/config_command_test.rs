@@ -1,4 +1,4 @@
-//! `langstar config` commands with a config file langstar can't fully use
+//! `langstar config` commands when the config file sets an `output_format` langstar doesn't support
 //!
 //! These tests run the langstar binary with `HOME` set to a temporary
 //! directory, so they read only the config file each test writes. On Windows

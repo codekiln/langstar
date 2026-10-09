@@ -10,11 +10,11 @@ use std::path::PathBuf;
 /// Tests take their credentials from environment variables, which still reach
 /// the binary.
 ///
-/// On Windows this does not isolate the tests: langstar takes the config path
-/// from `dirs::config_dir()`, which calls `SHGetKnownFolderPath` (dirs-sys) and
-/// ignores both `HOME` and `APPDATA`. CI doesn't build Windows. Issue #792
-/// (<https://github.com/codekiln/langstar/issues/792>) proposes
-/// `LANGSTAR_CONFIG_DIR` as the fix.
+/// On Windows the tests still read the developer's own config file:
+/// `dirs::config_dir()` asks Windows for the AppData folder and ignores both
+/// `HOME` and `APPDATA`. CI doesn't build Windows.
+/// [#792 let LANGSTAR_CONFIG_DIR choose the config directory](https://github.com/codekiln/langstar/issues/792)
+/// would let the tests choose the config directory there.
 pub fn empty_home() -> PathBuf {
     let home = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("empty-home");
     std::fs::create_dir_all(&home).expect("Failed to create the empty HOME for tests");
