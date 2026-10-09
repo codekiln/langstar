@@ -605,7 +605,10 @@ async fn create_fresh_deployment_with_attempts(
     attempts: u32,
     retry_interval: Duration,
 ) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
-    if !config.name.starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX) {
+    if !config
+        .name
+        .starts_with(&format!("{RELEASE_TEST_DEPLOYMENT_PREFIX}-"))
+    {
         return create_new_deployment(client, config, integration_id).await;
     }
     let mut attempt_config = config.clone();
@@ -1094,19 +1097,19 @@ mod tests {
         create.assert_async().await;
     }
 
-    #[tokio::test]
-    async fn test_fresh_create_keeps_a_custom_name_and_does_not_retry() {
+    /// Send a fresh create for a config named `name` to a control plane that
+    /// answers 409, and check that one create goes out, under `name`, and that
+    /// the 409 comes back.
+    async fn assert_fresh_create_sends_one_create_under(name: &str) {
         let mut server = Server::new_async().await;
         let config = TestDeploymentConfig {
-            name: "custom-fresh-deployment".to_string(),
+            name: name.to_string(),
             name_prefix: None,
             ..Default::default()
         };
         let create = server
             .mock("POST", "/v2/deployments")
-            .match_body(Matcher::PartialJson(
-                json!({"name": "custom-fresh-deployment"}),
-            ))
+            .match_body(Matcher::PartialJson(json!({ "name": name })))
             .with_status(409)
             .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
             .expect(1)
@@ -1129,6 +1132,17 @@ mod tests {
             "the 409 should be returned, got: {err}"
         );
         create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_keeps_a_custom_name_and_does_not_retry() {
+        assert_fresh_create_sends_one_create_under("custom-fresh-deployment").await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_does_not_retry_a_name_that_lacks_the_release_hyphen() {
+        // Starts with `release-integration-test` but not `release-integration-test-`.
+        assert_fresh_create_sends_one_create_under("release-integration-testing").await;
     }
 
     #[test]
