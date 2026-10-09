@@ -1,4 +1,7 @@
 use assert_cmd::Command;
+#[path = "common/home.rs"]
+mod home;
+
 use langstar_sdk::{AuthConfig, LangchainClient};
 use predicates::prelude::*;
 use serde_json::Value;
@@ -20,7 +23,9 @@ use serde_json::Value;
 /// Run locally with: cargo test --test prompt_scoping_test
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    Command::new(env!("CARGO_BIN_EXE_langstar"))
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", home::empty_home());
+    cmd
 }
 
 /// Helper function to get organization ID from environment, or panic if not available

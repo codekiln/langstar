@@ -1,7 +1,8 @@
 use crate::error::{CliError, Result};
 use langstar_sdk::AuthConfig;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::Once;
 
 /// Configuration for the Langstar CLI
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +35,42 @@ fn default_output_format() -> String {
 
 fn default_timezone() -> String {
     "local".to_string()
+}
+
+/// The config file langstar reads
+#[derive(Debug, PartialEq)]
+enum ConfigFile<'a> {
+    /// The file at the current path
+    Current(&'a Path),
+    /// The file at the pre-v2.2.0 macOS path, used only when the current one is missing
+    Old(&'a Path),
+    /// Neither file exists
+    Missing,
+}
+
+/// The warning langstar prints when it reads the config file at `old_path`,
+/// telling the user how to move it to `config_path`
+fn old_config_warning(old_path: &Path, config_path: &Path) -> String {
+    format!(
+        "Warning: Reading config from {}, where langstar kept it before v2.2.0. \
+         Move it to {} with:\n  mkdir -p \"{}\" && mv \"{}\" \"{}\"",
+        old_path.display(),
+        config_path.display(),
+        config_path.parent().unwrap_or(config_path).display(),
+        old_path.display(),
+        config_path.display()
+    )
+}
+
+/// Pick the current config file when it exists, otherwise the old one when it exists
+fn choose_config_file<'a>(config_path: &'a Path, old_path: Option<&'a Path>) -> ConfigFile<'a> {
+    if config_path.exists() {
+        ConfigFile::Current(config_path)
+    } else if let Some(old_path) = old_path.filter(|path| path.exists()) {
+        ConfigFile::Old(old_path)
+    } else {
+        ConfigFile::Missing
+    }
 }
 
 impl Default for Config {
@@ -99,14 +136,37 @@ impl Config {
     /// Load configuration from the config file
     fn load_from_file() -> Result<Self> {
         let config_path = Self::config_file_path()?;
+        let old_path = Self::old_config_file_path();
+        Self::load_from_paths(&config_path, old_path.as_deref())
+    }
 
-        if !config_path.exists() {
-            // Check for old config location and suggest migration (macOS only)
-            Self::check_old_config_location();
-            return Ok(Self::default());
-        }
+    /// Load the config file at `config_path`, or the file at `old_path` when
+    /// only the old one exists, warning that it should be moved.
+    ///
+    /// Takes both paths as arguments so tests on any platform can point it at
+    /// temporary directories.
+    fn load_from_paths(config_path: &Path, old_path: Option<&Path>) -> Result<Self> {
+        let path = match choose_config_file(config_path, old_path) {
+            ConfigFile::Current(path) => path,
+            ConfigFile::Old(path) => {
+                // Commands such as `config show` load the config more than once
+                // per run; warn on the first load only.
+                static WARN_ONCE: Once = Once::new();
+                WARN_ONCE.call_once(|| eprintln!("{}", old_config_warning(path, config_path)));
+                path
+            }
+            ConfigFile::Missing => return Ok(Self::default()),
+        };
 
-        let content = std::fs::read_to_string(&config_path)
+        Self::read_file(path)
+    }
+
+    /// Read and parse the config file at `path`, returning any read or parse error.
+    ///
+    /// `load` uses the default config when this returns an error; `config validate`
+    /// calls this to report the error.
+    pub fn read_file(path: &Path) -> Result<Self> {
+        let content = std::fs::read_to_string(path)
             .map_err(|e| CliError::Config(format!("Failed to read config file: {}", e)))?;
 
         let config: Config = toml::from_str(&content)
@@ -115,28 +175,31 @@ impl Config {
         Ok(config)
     }
 
-    /// Check if old config location exists and print migration suggestion
-    #[cfg(target_os = "macos")]
-    fn check_old_config_location() {
-        if let Some(config_dir) = dirs::config_dir() {
-            let old_path = config_dir.join("langstar").join("config.toml");
-            if old_path.exists() {
-                eprintln!(
-                    "ℹ️  Found config file at old location: {}",
-                    old_path.display()
-                );
-                eprintln!("   Consider moving it to the new location:");
-                eprintln!(
-                    "   mkdir -p ~/.config/langstar && mv \"{}\" ~/.config/langstar/config.toml",
-                    old_path.display()
-                );
-            }
-        }
+    /// The config file `load` reads: the current one, or on macOS the one from
+    /// before v2.2.0 when only that one exists. `None` when neither exists.
+    pub fn file_to_read() -> Result<Option<PathBuf>> {
+        let config_path = Self::config_file_path()?;
+        let old_path = Self::old_config_file_path();
+        Ok(
+            match choose_config_file(&config_path, old_path.as_deref()) {
+                ConfigFile::Current(path) | ConfigFile::Old(path) => Some(path.to_path_buf()),
+                ConfigFile::Missing => None,
+            },
+        )
     }
 
+    /// Where langstar kept the config file on macOS before v2.2.0:
+    /// `~/Library/Application Support/langstar/config.toml`
+    #[cfg(target_os = "macos")]
+    pub fn old_config_file_path() -> Option<PathBuf> {
+        dirs::config_dir().map(|dir| dir.join("langstar").join("config.toml"))
+    }
+
+    /// langstar kept its config file in the same place on Linux and Windows,
+    /// so they have no old path.
     #[cfg(not(target_os = "macos"))]
-    fn check_old_config_location() {
-        // No migration needed on Linux/Windows
+    pub fn old_config_file_path() -> Option<PathBuf> {
+        None
     }
 
     /// Get the path to the config file
@@ -203,6 +266,133 @@ mod tests {
         assert_eq!(config.output_format, "table");
         assert_eq!(config.timezone, "local");
         assert!(config.langsmith_api_key.is_none());
+    }
+
+    /// A temporary home with the current and the pre-v2.2.0 macOS config paths
+    /// inside it; each test writes the files it needs.
+    struct ConfigPaths {
+        _dir: tempfile::TempDir,
+        current: PathBuf,
+        old: PathBuf,
+    }
+
+    impl ConfigPaths {
+        fn new() -> Self {
+            let dir = tempfile::tempdir().unwrap();
+            let current = dir.path().join(".config/langstar/config.toml");
+            let old = dir
+                .path()
+                .join("Library/Application Support/langstar/config.toml");
+            Self {
+                _dir: dir,
+                current,
+                old,
+            }
+        }
+
+        fn write(path: &Path, api_key: &str) {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, format!("langsmith_api_key = \"{api_key}\"\n")).unwrap();
+        }
+
+        fn load(&self) -> Config {
+            Config::load_from_paths(&self.current, Some(&self.old)).unwrap()
+        }
+    }
+
+    #[test]
+    fn test_load_reads_current_file_when_only_it_exists() {
+        let paths = ConfigPaths::new();
+        ConfigPaths::write(&paths.current, "current-key");
+
+        assert_eq!(
+            choose_config_file(&paths.current, Some(&paths.old)),
+            ConfigFile::Current(&paths.current)
+        );
+        assert_eq!(
+            paths.load().langsmith_api_key.as_deref(),
+            Some("current-key")
+        );
+    }
+
+    #[test]
+    fn test_load_reads_old_file_when_only_it_exists() {
+        let paths = ConfigPaths::new();
+        ConfigPaths::write(&paths.old, "old-key");
+
+        assert_eq!(
+            choose_config_file(&paths.current, Some(&paths.old)),
+            ConfigFile::Old(&paths.old)
+        );
+        assert_eq!(paths.load().langsmith_api_key.as_deref(), Some("old-key"));
+    }
+
+    #[test]
+    fn test_load_prefers_current_file_when_both_exist() {
+        let paths = ConfigPaths::new();
+        ConfigPaths::write(&paths.current, "current-key");
+        ConfigPaths::write(&paths.old, "old-key");
+
+        assert_eq!(
+            choose_config_file(&paths.current, Some(&paths.old)),
+            ConfigFile::Current(&paths.current)
+        );
+        assert_eq!(
+            paths.load().langsmith_api_key.as_deref(),
+            Some("current-key")
+        );
+    }
+
+    #[test]
+    fn test_load_uses_defaults_when_neither_file_exists() {
+        let paths = ConfigPaths::new();
+
+        assert_eq!(
+            choose_config_file(&paths.current, Some(&paths.old)),
+            ConfigFile::Missing
+        );
+        let config = paths.load();
+        assert!(config.langsmith_api_key.is_none());
+        assert_eq!(config.output_format, "table");
+    }
+
+    #[test]
+    fn test_load_ignores_old_file_without_an_old_path() {
+        // On Linux and Windows, `load_from_file` passes no old path, so
+        // langstar never reads the old macOS file.
+        let paths = ConfigPaths::new();
+        ConfigPaths::write(&paths.old, "old-key");
+
+        assert_eq!(
+            choose_config_file(&paths.current, None),
+            ConfigFile::Missing
+        );
+        let config = Config::load_from_paths(&paths.current, None).unwrap();
+        assert!(config.langsmith_api_key.is_none());
+    }
+
+    #[test]
+    fn test_old_config_warning_names_both_paths_and_the_move_command() {
+        let old = Path::new("/home/user/Library/Application Support/langstar/config.toml");
+        let current = Path::new("/home/user/.config/langstar/config.toml");
+
+        assert_eq!(
+            old_config_warning(old, current),
+            "Warning: Reading config from /home/user/Library/Application Support/langstar/config.toml, \
+             where langstar kept it before v2.2.0. Move it to /home/user/.config/langstar/config.toml with:\n  \
+             mkdir -p \"/home/user/.config/langstar\" && \
+             mv \"/home/user/Library/Application Support/langstar/config.toml\" \"/home/user/.config/langstar/config.toml\""
+        );
+    }
+
+    #[test]
+    fn test_read_file_reports_a_parse_error() {
+        let paths = ConfigPaths::new();
+        std::fs::create_dir_all(paths.old.parent().unwrap()).unwrap();
+        std::fs::write(&paths.old, "langsmith_api_key = \"unterminated\n").unwrap();
+
+        let error = Config::read_file(&paths.old).unwrap_err().to_string();
+        assert!(error.contains("Failed to parse config file"), "{error}");
     }
 
     #[test]
