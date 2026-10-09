@@ -4,7 +4,7 @@ Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph
 
 ## Agent config
 
-rulesync generates the agent config from `.rulesync/` using `rulesync.jsonc`. `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/` are its output. Edit `.rulesync/rules/` or `.rulesync/skills/`, run `rulesync generate`, and commit the source with the output.
+rulesync generates the agent config from `.rulesync/` using `rulesync.jsonc`. `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/` are its output. Edit `.rulesync/rules/` or `.rulesync/skills/`, run `rulesync generate` with the version pinned in `mise.toml` (`"$(mise which rulesync)" generate` picks it even when an older rulesync is earlier on `PATH`), and commit the source with the output.
 
 ## Workflow
 
