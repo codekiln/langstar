@@ -56,6 +56,8 @@ When a branch builds on another unmerged branch (its parent):
 
 ## Ready checklist
 
+Open PRs ready for review, never as drafts. CI does not run on drafts here, and codekiln is never asked to review one. A PR that was a draft gets `gh pr ready <n>` before it is reported ready.
+
 Ask codekiln to review a PR only after these two steps:
 
 1. Resolve every Copilot review thread.
