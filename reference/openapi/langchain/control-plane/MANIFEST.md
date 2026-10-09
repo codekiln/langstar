@@ -32,11 +32,12 @@ The Deployment Control Plane API manages LangGraph Server deployments:
 |------|--------|------|-------|
 | 2025-11-20 | Initial fetch | 70K | v0.1.0 |
 | 2025-12-11 | Refresh | 71K | Updated spec |
+| 2026-10-09 | Refresh for #748 | 152K | API drift audit; pretty-printed with `jq --indent 2` |
 
 ## Refresh Command
 
 ```bash
-curl -o openapi.json https://api.host.langchain.com/openapi.json
+curl -sSf https://api.host.langchain.com/openapi.json | jq --indent 2 . > openapi.json
 ```
 
 ## Related Files

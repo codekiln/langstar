@@ -35,11 +35,12 @@ The core LangSmith API provides endpoints for:
 | 2025-11-26 | Initial fetch | 635K | v0.1.0 |
 | 2025-11-28 | Refresh for #350 | 639K | Dataset API validation |
 | 2025-11-29 | Refresh for #404 | 638K | Structured output prompt validation |
+| 2026-10-09 | Refresh for #748 | 1.2M | API drift audit; pretty-printed with `jq --indent 2` |
 
 ## Refresh Command
 
 ```bash
-curl -o openapi.json https://api.smith.langchain.com/openapi.json
+curl -sSf https://api.smith.langchain.com/openapi.json | jq --indent 2 . > openapi.json
 ```
 
 ## Related Files
