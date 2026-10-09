@@ -577,14 +577,25 @@ hide_workspace_and_org_id_message = false
         new_value: &str,
     ) -> Result<()> {
         let is_new_file = !config_path.exists();
-        let config_content = if is_new_file {
-            match old_path.filter(|path| path.exists()) {
-                Some(old_path) => fs::read_to_string(old_path)?,
-                // toml_edit handles empty documents
-                None => String::new(),
-            }
+        // The file the content comes from, which errors name: on macOS with no
+        // new file yet, that's the old one, and `config set` never prints the
+        // warning that names it
+        let source_path = if is_new_file {
+            old_path.filter(|path| path.exists())
         } else {
-            fs::read_to_string(config_path)?
+            Some(config_path)
+        };
+        let config_content = match source_path {
+            Some(path) => fs::read_to_string(path)?,
+            // toml_edit handles empty documents
+            None => String::new(),
+        };
+        let parse_error = |e: &dyn std::fmt::Display| {
+            CliError::Config(format!(
+                "Failed to parse config file {}: {}",
+                source_path.unwrap_or(config_path).display(),
+                e
+            ))
         };
 
         // Parse first: when the old file is malformed, this function returns the
@@ -592,7 +603,7 @@ hide_workspace_and_org_id_message = false
         // the old file on the next run
         let mut doc = config_content
             .parse::<DocumentMut>()
-            .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
+            .map_err(|e| parse_error(&e))?;
 
         // Set the value based on type
         match key {
@@ -610,8 +621,7 @@ hide_workspace_and_org_id_message = false
         // Check the result the way Config::load will read it, so a value of the
         // wrong type in the file is reported here instead of being written and
         // then replaced by the defaults on every run
-        toml::from_str::<Config>(&doc.to_string())
-            .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
+        toml::from_str::<Config>(&doc.to_string()).map_err(|e| parse_error(&e))?;
 
         // Write the updated config
         if let Some(parent) = config_path.parent() {
@@ -719,6 +729,8 @@ mod tests {
 
         let error = result.unwrap_err().to_string();
         assert!(error.contains("Failed to parse config file"), "{error}");
+        // The error names the old file, the one the user has to fix
+        assert!(error.contains(&old_path.display().to_string()), "{error}");
         assert!(!config_path.exists());
     }
 
