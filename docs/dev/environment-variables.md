@@ -23,6 +23,8 @@ On a host machine, the variables come from 1Password through [fnox](https://fnox
 
 The vault name stays out of the repository. Only the provider in your `fnox.local.toml` names it.
 
+`LANGGRAPH_GITHUB_INTEGRATION_ID` is not in `fnox.toml`. No test reads it, CI does not set it, and `langstar deployment create` finds the ID from existing GitHub deployments when it is unset. Because `if_missing = "error"` fails every `fnox exec` when a value is absent, adding it would block developers who never create deployments. If you need it, pass `--integration-id` or set it in `~/.config/langstar/config.toml`.
+
 ### One-time machine setup
 
 Do this once per machine. Every project on the machine then shares the key and the provider.
