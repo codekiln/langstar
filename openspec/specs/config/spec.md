@@ -21,6 +21,17 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 - **WHEN** neither the config file nor the environment sets the output format
 - **THEN** langstar prints its command output as tables
 
+### Requirement: Read the config file from before v2.2.0 on macOS
+
+On macOS, when `~/.config/langstar/config.toml` does not exist, langstar SHALL read `~/Library/Application Support/langstar/config.toml`, where versions before v2.2.0 kept it, and print a warning with the command that moves it.
+
+#### Scenario: Config file from before v2.2.0 on macOS
+
+- **WHEN** `~/.config/langstar/config.toml` does not exist on macOS
+- **AND** `~/Library/Application Support/langstar/config.toml` sets `output_format = "json"`
+- **THEN** langstar prints its command output as JSON
+- **AND** prints a warning with the command that moves the old file to `~/.config/langstar/config.toml`
+
 ### Requirement: Each setting has one environment variable
 
 `langstar config env` SHALL print every config file key next to the environment variable that sets it, for example `langsmith_api_key` next to `LANGSMITH_API_KEY`.
