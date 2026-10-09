@@ -40,7 +40,11 @@ fn assert_refuses_without_terminal(args: &[&str], flag: &str) {
         .failure()
         .stderr(predicate::str::contains("not a terminal"))
         .stderr(predicate::str::contains(flag))
-        .stdout(predicate::str::contains("Deleted").not());
+        .stdout(
+            predicate::str::contains("Deleted")
+                .or(predicate::str::contains("deleted"))
+                .not(),
+        );
 }
 
 #[test]

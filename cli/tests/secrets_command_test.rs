@@ -237,7 +237,8 @@ fn test_secrets_delete_accepts_format_flag() {
     cmd.args(["secrets", "delete", "TEST_KEY", "--format", "json"]);
 
     // Should parse --format flag correctly (no argument parsing errors)
-    // May succeed or fail depending on environment, but --format should parse
+    // Without --yes and with no terminal, the command always fails at the
+    // confirmation check and deletes nothing, but --format should parse
     let assert = cmd.assert();
     assert.stderr(predicate::str::contains("--format").not()); // No format parsing error
 }
