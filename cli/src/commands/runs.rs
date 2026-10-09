@@ -143,10 +143,10 @@ pub struct QueryArgs {
 
     /// Fields to select (comma-separated)
     ///
-    /// Limits the fields returned in the response. Without it, JSON output
-    /// gets every field the API offers except `share_url`, a public link to
-    /// the run that only `--select share_url` returns. Table output always
-    /// adds the fields its columns need.
+    /// Limits the fields returned in the response. Without it, the CLI asks
+    /// for every field the API offers except `share_url` and `attachments`,
+    /// links that open the run or its files without an API key; name them
+    /// here to get them. Table output always adds the fields its columns need.
     /// Example: --select id,name,status,total_tokens
     #[arg(long)]
     pub select: Option<String>,
@@ -239,14 +239,17 @@ const TABLE_FIELDS: [RunSelectField; 7] = [
     RunSelectField::EndTime,
 ];
 
-/// Whether JSON output asks for `field` when --select is not given.
+/// Fields that hold a link anyone can open without an API key. The CLI asks
+/// for them only when --select names them.
 ///
-/// `share_url` is left out: the OpenAPI spec says anyone with that URL can
-/// view the run anonymously, "so treat it as a secret and do not log it".
-/// `--select share_url` still returns it.
-fn is_default_field(field: RunSelectField) -> bool {
-    field != RunSelectField::ShareUrl
-}
+/// - `share_url`: the OpenAPI spec says anyone with it "can view the run
+///   anonymously, so treat it as a secret and do not log it".
+/// - `attachments`: the spec says it maps each file name "to a pre-signed
+///   HTTPS download URL".
+///
+/// These are the only `query.RunResponse` fields the spec describes as
+/// URLs that grant access.
+const SECRET_FIELDS: [RunSelectField; 2] = [RunSelectField::ShareUrl, RunSelectField::Attachments];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Filter Builder
@@ -555,10 +558,10 @@ impl RunsCommands {
 
     /// Fields to request from the API.
     ///
-    /// Without --select, table output asks for its columns and JSON output
-    /// asks for every field except `share_url` (see [`is_default_field`]).
-    /// With --select, the named fields, plus the ones the table columns read
-    /// when the output is a table.
+    /// Without --select, the CLI asks for the table's columns when printing a
+    /// table, and for every field except [`SECRET_FIELDS`] when printing JSON.
+    /// With --select, it asks for the named fields, plus the ones the table
+    /// columns read when printing a table.
     fn resolve_selects(
         args: &QueryArgs,
         formatter: &OutputFormatter,
@@ -568,7 +571,7 @@ impl RunsCommands {
                 RunsOutputFormat::Table => TABLE_FIELDS.to_vec(),
                 RunsOutputFormat::Json | RunsOutputFormat::JsonPretty => RunSelectField::ALL
                     .into_iter()
-                    .filter(|f| is_default_field(*f))
+                    .filter(|f| !SECRET_FIELDS.contains(f))
                     .collect(),
             });
         };
@@ -1261,23 +1264,34 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_selects_default_json_leaves_out_share_url() {
+    fn test_resolve_selects_default_json_leaves_out_secret_fields() {
         let mut args = create_test_query_args();
         args.output = RunsOutputFormat::Json;
         let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
         let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
         assert!(!selects.contains(&RunSelectField::ShareUrl));
-        assert_eq!(selects.len(), RunSelectField::ALL.len() - 1);
+        assert!(!selects.contains(&RunSelectField::Attachments));
+        assert_eq!(
+            selects.len(),
+            RunSelectField::ALL.len() - SECRET_FIELDS.len()
+        );
     }
 
     #[test]
-    fn test_resolve_selects_share_url_only_when_named() {
+    fn test_resolve_selects_secret_fields_only_when_named() {
         let mut args = create_test_query_args();
         args.output = RunsOutputFormat::Json;
-        args.select = Some("id,share_url".to_string());
+        args.select = Some("id,share_url,attachments".to_string());
         let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
         let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
-        assert_eq!(selects, vec![RunSelectField::Id, RunSelectField::ShareUrl]);
+        assert_eq!(
+            selects,
+            vec![
+                RunSelectField::Id,
+                RunSelectField::ShareUrl,
+                RunSelectField::Attachments
+            ]
+        );
     }
 
     #[test]
