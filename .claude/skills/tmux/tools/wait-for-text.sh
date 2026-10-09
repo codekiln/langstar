@@ -9,7 +9,7 @@ Poll a tmux pane for text and exit when found.
 
 Options:
   -t, --target    tmux target (session:window.pane), required
-  -S, --socket    tmux socket path, passed to tmux -S (default: the default socket)
+  -S, --socket    tmux socket path, passed to tmux -S; without -S or -L, the script reads your personal tmux server
   -L, --socket-name  tmux socket name, passed to tmux -L
   -p, --pattern   regex pattern to look for, required
   -F, --fixed     treat pattern as a fixed string (grep -F)
