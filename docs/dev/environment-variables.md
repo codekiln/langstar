@@ -19,7 +19,7 @@ On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentia
 | `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
 | `fnox.local.toml.example` | Yes | Template for the local layer, with a placeholder vault |
 | `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
-| `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `TEST_GRAPH_ID`, `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
+| `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
 
 Write your vault's name only in the `vault` setting of `[providers.langsmith]` in your gitignored `fnox.local.toml`, so it stays out of every commit.
 
