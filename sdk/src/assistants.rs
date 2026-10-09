@@ -75,7 +75,10 @@ pub struct Assistant {
     pub assistant_id: String,
     /// Graph ID this assistant is based on
     pub graph_id: String,
-    /// Name of the assistant
+    /// Name of the assistant. The Agent Server API doesn't require it, so an
+    /// assistant without one reads as an empty name instead of failing the
+    /// whole response.
+    #[serde(default)]
     pub name: String,
     /// Description of the assistant
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -132,9 +135,13 @@ pub struct UpdateAssistantRequest {
 /// Request to search for assistants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssistantSearchRequest {
-    /// Search query (searches assistant names). Empty string lists all assistants.
+    /// Keep only assistants whose name contains this text, ignoring case.
+    /// `None` lists all assistants.
+    ///
+    /// The Agent Server API calls this field `name`. The SDK used to send it as
+    /// `query`, which the API ignores, so a search returned every assistant.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<String>,
+    pub name: Option<String>,
     /// Maximum number of results (default: 20)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
@@ -161,11 +168,11 @@ impl<'a> AssistantClient<'a> {
     /// * `offset` - Number of assistants to skip (default: 0)
     ///
     /// # Note
-    /// This method uses the POST /assistants/search endpoint with an empty query,
+    /// This method uses the POST /assistants/search endpoint with no name filter,
     /// which is the correct way to list all assistants in the LangGraph API.
     pub async fn list(&self, limit: Option<u32>, offset: Option<u32>) -> Result<Vec<Assistant>> {
         let request_body = AssistantSearchRequest {
-            query: None, // Empty query lists all assistants
+            name: None, // No name filter lists all assistants
             limit,
             offset,
         };
@@ -178,14 +185,14 @@ impl<'a> AssistantClient<'a> {
         Ok(response)
     }
 
-    /// Search for assistants by name
+    /// Search for assistants whose name contains `query`, ignoring case
     ///
     /// # Arguments
-    /// * `query` - Search query string
+    /// * `query` - Text to look for in assistant names
     /// * `limit` - Maximum number of results (default: 20)
     pub async fn search(&self, query: &str, limit: Option<u32>) -> Result<Vec<Assistant>> {
         let request_body = AssistantSearchRequest {
-            query: Some(query.to_string()),
+            name: Some(query.to_string()),
             limit,
             offset: None,
         };
@@ -319,26 +326,41 @@ mod tests {
     }
 
     #[test]
+    fn test_assistant_without_name_deserializes() {
+        let assistant: Assistant = serde_json::from_value(serde_json::json!({
+            "assistant_id": "a1",
+            "graph_id": "agent",
+            "config": {},
+            "metadata": {},
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z"
+        }))
+        .expect("an assistant without a name should still deserialize");
+        assert_eq!(assistant.name, "");
+    }
+
+    #[test]
     fn test_search_request_serialization() {
-        // Test with query
+        // The API filters on `name` and ignores `query`.
         let request = AssistantSearchRequest {
-            query: Some("test".to_string()),
+            name: Some("test".to_string()),
             limit: Some(10),
             offset: Some(5),
         };
         let json = serde_json::to_string(&request).unwrap();
-        assert!(json.contains("test"));
+        assert!(json.contains("\"name\":\"test\""));
+        assert!(!json.contains("query"));
         assert!(json.contains("\"limit\":10"));
         assert!(json.contains("\"offset\":5"));
 
-        // Test without query (for list all)
+        // Without a name filter (for list all)
         let request = AssistantSearchRequest {
-            query: None,
+            name: None,
             limit: Some(20),
             offset: None,
         };
         let json = serde_json::to_string(&request).unwrap();
-        assert!(!json.contains("query")); // Should be omitted when None
+        assert!(!json.contains("name")); // Should be omitted when None
         assert!(json.contains("\"limit\":20"));
     }
 }
