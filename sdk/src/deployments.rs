@@ -26,8 +26,13 @@ pub enum DeploymentSource {
 }
 
 /// Current status of a deployment
+///
+/// Because of `#[non_exhaustive]`, the compiler requires a `_` arm in every
+/// `match` on this enum outside `langstar-sdk`, so that code still compiles
+/// when a developer adds a variant for a new control-plane status.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[non_exhaustive]
 pub enum DeploymentStatus {
     /// Deployment is awaiting database provisioning
     AwaitingDatabase,
@@ -37,8 +42,14 @@ pub enum DeploymentStatus {
     Unused,
     /// Deployment is awaiting deletion
     AwaitingDelete,
-    /// Deployment status is unknown
+    /// Deployment is awaiting the final step of deletion
+    AwaitingFinalDelete,
+    /// The control plane sent `UNKNOWN`, or a status this enum has no variant for.
+    ///
+    /// When the control plane adds a status, `#[serde(other)]` reads it as
+    /// `Unknown`, so the SDK can still read the rest of the deployment list.
     #[default]
+    #[serde(other)]
     Unknown,
 }
 
@@ -60,7 +71,11 @@ pub enum DeploymentType {
 pub struct Deployment {
     /// Unique identifier for the deployment
     pub id: String,
-    /// User-assigned name for the deployment
+    /// User-assigned name for the deployment.
+    ///
+    /// The control plane may send `null` (for example, for an agent-mode
+    /// deployment); the SDK reads that as an empty string.
+    #[serde(deserialize_with = "crate::serde_utils::deserialize_null_as_default")]
     pub name: String,
     /// Source type (github or external_docker)
     pub source: DeploymentSource,
@@ -316,6 +331,7 @@ impl<'a> DeploymentClient<'a> {
                     DeploymentStatus::Ready => "READY",
                     DeploymentStatus::Unused => "UNUSED",
                     DeploymentStatus::AwaitingDelete => "AWAITING_DELETE",
+                    DeploymentStatus::AwaitingFinalDelete => "AWAITING_FINAL_DELETE",
                     DeploymentStatus::Unknown => "UNKNOWN",
                 };
                 query_params.push(format!("status={}", status_str));
@@ -459,6 +475,43 @@ mod tests {
         let awaiting = DeploymentStatus::AwaitingDatabase;
         let json = serde_json::to_string(&awaiting).unwrap();
         assert_eq!(json, "\"AWAITING_DATABASE\"");
+    }
+
+    #[test]
+    fn test_deployment_null_name_reads_as_empty() {
+        let json = r#"{"resources": [
+            {"id": "a", "name": null, "source": "github",
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "status": "READY"},
+            {"id": "b", "name": "named", "source": "github",
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "status": "AWAITING_FINAL_DELETE"}
+        ], "offset": 0}"#;
+        let list: DeploymentsList = serde_json::from_str(json).unwrap();
+        assert_eq!(list.resources[0].name, "");
+        assert_eq!(list.resources[1].name, "named");
+        assert_eq!(
+            list.resources[1].status,
+            DeploymentStatus::AwaitingFinalDelete
+        );
+    }
+
+    #[test]
+    fn test_deployment_status_awaiting_final_delete() {
+        let status: DeploymentStatus = serde_json::from_str("\"AWAITING_FINAL_DELETE\"").unwrap();
+        assert_eq!(status, DeploymentStatus::AwaitingFinalDelete);
+        assert_eq!(
+            serde_json::to_string(&status).unwrap(),
+            "\"AWAITING_FINAL_DELETE\""
+        );
+    }
+
+    #[test]
+    fn test_deployment_status_unrecognised_value_is_unknown() {
+        // The SDK must still read a deployment list that holds a status
+        // the control plane added after this SDK was built.
+        let status: DeploymentStatus = serde_json::from_str("\"SOME_FUTURE_STATUS\"").unwrap();
+        assert_eq!(status, DeploymentStatus::Unknown);
     }
 
     #[test]
