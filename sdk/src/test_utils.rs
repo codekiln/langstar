@@ -1264,7 +1264,8 @@ mod tests {
             status: 409,
             message: TRACING_PROJECT_409.to_string(),
         };
-        // Byte 21 falls inside the second "é", so a byte slice there panics.
+        // The first "é" takes bytes 20 and 21, so the old byte slice `&name[..21]`
+        // cut it in half and panicked.
         let name = format!("{}éé{}", "a".repeat(20), "b".repeat(10));
         print_create_conflict_guidance(&err, &name);
     }
