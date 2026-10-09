@@ -105,9 +105,9 @@ enum CreateFailure {
 fn create_failure_kind(err: &langstar_sdk::LangstarError) -> CreateFailure {
     match err {
         langstar_sdk::LangstarError::HttpError(e) if e.is_timeout() => CreateFailure::Timeout,
-        langstar_sdk::LangstarError::ApiError { status, .. } if *status >= 500 => {
-            CreateFailure::ServerError
-        }
+        langstar_sdk::LangstarError::ApiError {
+            status: 500..=599, ..
+        } => CreateFailure::ServerError,
         langstar_sdk::LangstarError::ApiError { status: 409, .. } => CreateFailure::AlreadyExists,
         _ => CreateFailure::Other,
     }
@@ -115,10 +115,10 @@ fn create_failure_kind(err: &langstar_sdk::LangstarError) -> CreateFailure {
 
 /// Decide what to do after one `create_repo` attempt.
 ///
-/// A timeout or a 5xx is retried until the attempts run out. A 409 counts as
-/// created only after an earlier attempt, because a create that timed out or
-/// answered 5xx may still have made the repo. A 409 on the first attempt, or
-/// any other error, fails the test.
+/// A timeout or a 5xx is retried until the attempts run out. LangSmith may
+/// have made the repo even when the SDK client gave up waiting or LangSmith
+/// answered 5xx, so a 409 after an earlier attempt counts as created. A 409
+/// on the first attempt, or any other error, fails the test.
 fn create_attempt_outcome(
     attempt: u32,
     attempts: u32,
@@ -136,12 +136,13 @@ fn create_attempt_outcome(
 
 /// Create a prompt repo for a test, retrying a timeout or a 5xx.
 ///
-/// LangSmith sometimes takes longer than the SDK client's 30-second request
-/// timeout to answer `create_repo`, which made this test's setup fail in
-/// https://github.com/codekiln/langstar/issues/787 ("prompt_structured_test
-/// setup panics without the error when creating its repo takes over 30
-/// seconds"). This tries up to three times, waiting 2s and then 4s, and
-/// panics with the SDK error when it gives up.
+/// In local runs, this test's setup panicked after 30 seconds, the SDK
+/// client's request timeout, so LangSmith most likely took longer than that to
+/// answer `create_repo`. https://github.com/codekiln/langstar/issues/787
+/// ("prompt_structured_test setup panics without the error when creating its
+/// repo takes over 30 seconds") describes those runs. This function tries up
+/// to three times, waiting 2s and then 4s, and panics with the SDK error when
+/// it gives up.
 fn create_test_repo(
     runtime: &tokio::runtime::Runtime,
     client: &LangchainClient,
@@ -226,6 +227,7 @@ fn test_create_failure_kind_reads_api_status() {
     assert_eq!(create_failure_kind(&api(503)), CreateFailure::ServerError);
     assert_eq!(create_failure_kind(&api(409)), CreateFailure::AlreadyExists);
     assert_eq!(create_failure_kind(&api(403)), CreateFailure::Other);
+    assert_eq!(create_failure_kind(&api(600)), CreateFailure::Other);
 }
 
 /// Test fixture that creates a unique repo and cleans it up on drop
