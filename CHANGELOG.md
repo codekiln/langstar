@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-10-09
+
+### ✨ Features
+
+- ✨ feat: make gh-start-issue auto-implement issues (#715)
+- ✨ feat(config): standardize config file location to ~/.config/langstar/config.toml (#720)
+  - On macOS, langstar now reads its config only from `~/.config/langstar/config.toml`. Move your old file there with `mkdir -p ~/.config/langstar && mv ~/Library/Application\ Support/langstar/config.toml ~/.config/langstar/config.toml`; until you do, langstar runs without it and prints that command as a reminder. Windows keeps its AppData location.
+- ✨ feat(assistant): add description field support from Agent Server API (#726)
+  - `assistant create` and `assistant update` take `--description`, and `assistant get` shows it.
+- ✨ feat(dev): load LangSmith secrets through fnox and 1Password (#754)
+  - The same pull request changed how `deployment create --source github` picks a GitHub integration: it asks the Control Plane API for the integration that can reach your repository, or uses the ID you pass with `--integration-id`. Langstar now ignores `LANGGRAPH_GITHUB_INTEGRATION_ID` and the `github_integration_id` config key, so pass `--integration-id` where you used to set them. A config file that still has the key loads as before.
+- ✨ feat(dev): use mise for tools, env and tasks (#763)
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(gh-start-issue): handle control characters in issue body JSON parsing (#717)
+- 🩹 fix(prompt): fetch the latest commit as parent when pushing an update to an existing prompt (#723)
+- 🩹 fix(cli): ask for confirmation before deleting datasets and queues (#739)
+  - `dataset delete` and `queue delete` now ask you to type `yes`. A script or CI job that runs `delete` on datasets, queues, projects, deployments, model configs or assistants now has to pass the command's `--yes` or `--force` flag; without it, the command stops with an error where it used to cancel quietly.
+- 🩹 fix(docs): replace real LangSmith org and workspace IDs with placeholders (#751)
+- 🩹 fix(api): follow LangSmith's new playground-settings and deployment responses, refresh OpenAPI specs (#755)
+- 🩹 fix(test): stop printing organization and workspace IDs in integration test output (#772)
+- 🩹 fix(test): retry a dataset delete that LangSmith answers with a server error (#776)
+- 🩹 fix(test): run the CLI binary Cargo built for the tests instead of rebuilding it (#780)
+
+### 📚 Documentation
+
+- 📚 docs(prompt): design AI-first command structure for prompt UX (#724)
+
+### 🧪 Testing
+
+- 🧪 test(project): add comprehensive tests for project commands (#709)
+
+### 🔧 Build System
+
+- 🔧 build(devcontainer): use named volume for workspace to fix JetBrains file watching (#712)
+- 🔧 build(deps): clear cargo audit advisories blocking CI (#753)
+- 🔧 build(ci): run CI on stacked PRs whose base is not main (#758)
+
 ## [2.1.2] - 2025-12-12
 
 ### 🩹 Bug Fixes
