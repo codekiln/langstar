@@ -23,7 +23,7 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 
 ### Requirement: Each setting has one environment variable
 
-`langstar config env` SHALL print each config file key next to its environment variable, such as `langsmith_api_key` and `LANGSMITH_API_KEY`, `organization_id` and `LANGSMITH_ORGANIZATION_ID`, `workspace_id` and `LANGSMITH_WORKSPACE_ID`, `output_format` and `LANGSTAR_OUTPUT_FORMAT`, `timezone` and `LANGSTAR_TIMEZONE`, and `hide_workspace_and_org_id_message` and `LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE`.
+`langstar config env` SHALL print every config file key next to the environment variable that sets it, for example `langsmith_api_key` next to `LANGSMITH_API_KEY`.
 
 #### Scenario: Show the mapping
 
