@@ -210,9 +210,16 @@ async fn test_create_playground_settings_minimal() {
         "updated_at": "2024-01-15T10:30:00Z"
     });
 
+    // The smallest request LangSmith accepts: a name and the settings. The
+    // SDK rejects a create without a name before sending it.
     let mock = server
         .mock("POST", "/api/v1/playground-settings")
         .match_header("x-api-key", "test-api-key")
+        .match_body(mockito::Matcher::Json(json!({
+            "name": "Minimal",
+            "settings": {"key": "value"},
+            "options": {}
+        })))
         .with_status(200)
         .with_body(response_json.to_string())
         .create_async()
@@ -220,7 +227,7 @@ async fn test_create_playground_settings_minimal() {
 
     let client = create_test_client(&server);
     let request = PlaygroundSettingsCreateRequest {
-        name: None,
+        name: Some("Minimal".to_string()),
         description: None,
         settings: json!({"key": "value"}),
         options: PlaygroundSavedOptions::default(),
