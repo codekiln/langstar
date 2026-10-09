@@ -69,25 +69,25 @@ Issue #999 (child of #666)
 
 The `.worktrees/` directory is already configured in `.gitignore`, keeping worktrees out of version control.
 
-**Why `.worktrees/`:** the dot prefix keeps Logseq and other scanners from indexing worktree contents, and one shared location per project means every tool's worktrees are in the same place. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
+Logseq and other scanners skip directories whose names start with a dot, and one `.worktrees/` directory holds the worktrees of every tool. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
 
-**Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name. Do not put worktrees beside the project folder.
+**Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
 
 **Exception:** Claude Desktop stores its worktrees in `.claude/worktrees/` and cannot be pointed elsewhere. That directory is gitignored too.
 
-**Standing worktrees:** a long-lived agent inbox is named after the agent (`.worktrees/reviewer`), not a branch.
+A worktree that one agent keeps for many tasks takes the agent's name, such as `.worktrees/reviewer`.
 
 **Run from the root checkout.** A relative `.worktrees/` path resolves against the current directory. From inside another worktree, find the root with `git rev-parse --path-format=absolute --git-common-dir` (strip the trailing `/.git`).
 
 ### Link secrets after creating a worktree
 
-Once #740 lands, run this from the new worktree right after `git worktree add`:
+After [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740) adds the `worktree:link-secrets` mise task, run it from the new worktree right after `git worktree add`:
 
 ```bash
 mise run worktree:link-secrets
 ```
 
-It symlinks the worktree's `fnox.local.toml` to the root checkout's file, so every worktree reads the one fnox cache and none triggers a sync or a 1Password prompt. Until the task exists, skip this step.
+The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740), links the worktree's `fnox.local.toml` to the root checkout's copy, so every worktree reads the same fnox cache and none asks for a sync or a 1Password prompt. Skip this step until that task exists.
 
 ## Core Commands
 
