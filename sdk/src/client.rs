@@ -972,7 +972,8 @@ impl LangchainClient {
     /// # API Reference
     ///
     /// - Endpoint: `POST /api/v2/runs/query`
-    /// - Max `page_size`: 1000; max time window: 401 days
+    /// - Max `page_size`: 1000; max time window: 401 days (from the API's HTTP 400
+    ///   response; the OpenAPI spec does not state it)
     /// - Replaces `POST /api/v1/runs/query`, which LangSmith Cloud removes on 31 Jan 2027:
     ///   <https://docs.langchain.com/langsmith/smithdb-sdk-migration>
     pub async fn query_runs(&self, request: QueryRunsRequest) -> Result<QueryRunsResponse> {

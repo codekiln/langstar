@@ -705,8 +705,9 @@ pub struct QueryRunsRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub has_error: Option<bool>,
 
-    /// Lower bound for run `start_time`. The API defaults to 1 day ago and
-    /// rejects a window longer than 401 days.
+    /// Lower bound for run `start_time`. The API defaults to 1 day ago. A
+    /// window longer than 401 days gets HTTP 400 (`time_range duration
+    /// exceeds maximum of 401 days`); the OpenAPI spec does not state this.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_start_time: Option<DateTime<Utc>>,
 

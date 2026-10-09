@@ -217,10 +217,14 @@ pub enum OrderArg {
 /// Largest `page_size` the runs API accepts.
 const MAX_PAGE_SIZE: u32 = 1000;
 
-/// Days --no-time-filter asks for. The API rejects a window longer than
-/// 401 days. The CLI sends a start time and no end time, so the API measures
-/// the window up to the moment the request arrives; 400 days keeps a day of
-/// margin under the limit.
+/// Days --no-time-filter asks for.
+///
+/// `POST /api/v2/runs/query` rejects a longer window with HTTP 400:
+/// `time_range duration exceeds maximum of 401 days`. Neither the OpenAPI
+/// spec nor LangChain's migration guide states this limit; a live request
+/// returned that error. The CLI sends a start time and no end time, so the
+/// API measures the window up to the moment the request arrives; 400 days
+/// keeps a day of margin under the limit.
 const NO_TIME_FILTER_DAYS: i64 = 400;
 
 /// Fields the table columns read; added to --select for table output.
@@ -583,8 +587,8 @@ impl RunsCommands {
                 }
             }
         } else if fields.is_empty() {
-            // An empty `selects` list is not the same as leaving it out, so
-            // ask for the ID explicitly.
+            // The API returns only `id` when `selects` is left out, but the
+            // CLI always sends `selects`, so it names the ID itself.
             formatter.warning("--select named no fields; returning run IDs only");
             fields.push(RunSelectField::Id);
         }

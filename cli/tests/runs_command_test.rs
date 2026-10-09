@@ -531,6 +531,7 @@ fn names(runs: &[Value]) -> Vec<&str> {
 ///
 /// Pattern: CREATE (SDK) → INGEST runs → READ (CLI) → VERIFY → DELETE
 #[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_runs_query_lifecycle() {
     let _api_key = std::env::var("LANGSMITH_API_KEY")
         .expect("LANGSMITH_API_KEY must be set for integration tests");

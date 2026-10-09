@@ -443,7 +443,7 @@ let request = CreateAnnotationQueueRequest {
 2. **Query recent errors and add to queue:**
    ```bash
    # Save error run IDs to file
-   langstar runs query -p <project-uuid> --errors-only --limit 100 --output json | \
+   langstar runs query -p "<project-uuid>" --errors-only --limit 100 --output json | \
      jq -r '.[].id' > errors.txt
 
    # Add to queue
@@ -552,7 +552,7 @@ langstar config
 
 ### "Run not found"
 
-- Verify the run ID exists: `langstar runs query -p <project-uuid> --filter 'eq(id, "<run-id>")'`
+- Verify the run ID exists: `langstar runs query -p "<project-uuid>" --filter 'eq(id, "<run-id>")'`
 - Ensure the run belongs to a project accessible by your API key
 
 ### Empty queue items

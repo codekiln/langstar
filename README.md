@@ -371,7 +371,7 @@ Query and filter LangSmith runs (traces) to analyze LLM application execution.
 Each query needs at least one project UUID (`-p`, repeatable); `langstar project list` shows them.
 
 ```bash
-PROJECT=<your-project-uuid>
+PROJECT='<your-project-uuid>'
 
 # Query recent runs (root traces only)
 langstar runs query -p "$PROJECT" --is-root --limit 10
