@@ -351,7 +351,12 @@ async fn test_create_with_various_providers() {
             Ok(created) => {
                 println!("✓ Created {}: {}", name, created.id);
                 created_ids.push(created.id);
-                assert_eq!(created.name, expected_name);
+                if created.name != expected_name {
+                    failures.push(format!(
+                        "{}: created with name {:?}, expected {:?}",
+                        name, created.name, expected_name
+                    ));
+                }
             }
             Err(e) => {
                 failures.push(format!("{}: {:?}", name, e));
