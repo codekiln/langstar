@@ -6,7 +6,7 @@
 
 > **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution.
 
-**Langstar** is a unified CLI for the LangChain ecosystem, providing ergonomic access to LangSmith, LangGraph Cloud, and other LangChain services.
+**Langstar** is a CLI for LangSmith and LangGraph Cloud. Its goal is to cover everything you do there, so you can use one tool instead of choosing among the LangSmith MCP server, the LangSmith CLI and the LangGraph CLI.
 
 ## Features
 

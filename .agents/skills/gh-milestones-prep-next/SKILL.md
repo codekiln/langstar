@@ -1,9 +1,11 @@
 ---
 name: gh-milestones-prep-next
 description: >-
-  Move to the next issue in a milestone: clean up the finished issue, find the
-  next one in the hierarchy, label it and create its worktree. Use after an
-  issue in a milestone closes and work should continue on the milestone.
+  Move to the next issue in a milestone: remove the `wip` label from the issue
+  that closed, pick the next open sub-issue under the same parent issue, or else
+  the first open issue in the milestone, then add the `ready` label to it and
+  create its worktree. Use after an issue in a milestone closes and work should
+  continue on the milestone.
 ---
 # gh-milestones-prep-next - Move to Next Issue in Milestone
 
