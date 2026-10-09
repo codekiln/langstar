@@ -1,5 +1,6 @@
 # LangSmith credentials for local development and integration tests.
-# Golden path: https://fnox.jdx.dev/guide/golden-path.html
+# Follows the setup the fnox guide recommends:
+# https://fnox.jdx.dev/guide/golden-path.html
 #
 # This file holds 1Password references only; the values stay in 1Password.
 # The `langsmith` provider, which names the vault, lives in a gitignored

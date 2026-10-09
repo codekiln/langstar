@@ -12,7 +12,7 @@ Langstar uses three core environment variables for authentication across differe
 
 ## Loading the Variables Locally
 
-On a host machine, the variables come from 1Password through [fnox](https://fnox.jdx.dev), following the fnox [golden path](https://fnox.jdx.dev/guide/golden-path.html). 1Password is the source of truth. The committed `fnox.toml` holds only references to items and fields. Each developer reads from an age-encrypted cache in a gitignored `fnox.local.toml`, so daily runs work without calling 1Password.
+On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentials from 1Password once and keeps an encrypted copy in your gitignored `fnox.local.toml`, so tests run without asking 1Password each time. The committed `fnox.toml` says only which 1Password item and field holds each credential. This is the setup the [fnox guide](https://fnox.jdx.dev/guide/golden-path.html) recommends.
 
 | File | Committed | Contents |
 |------|-----------|----------|
