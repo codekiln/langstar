@@ -75,9 +75,8 @@ pub struct Assistant {
     pub assistant_id: String,
     /// Graph ID this assistant is based on
     pub graph_id: String,
-    /// Name of the assistant. The Agent Server API doesn't require it, so an
-    /// assistant without one reads as an empty name instead of failing the
-    /// whole response.
+    /// Name of the assistant, or an empty string when the API leaves it out.
+    /// The Agent Server API doesn't require a name.
     #[serde(default)]
     pub name: String,
     /// Description of the assistant
@@ -138,8 +137,7 @@ pub struct AssistantSearchRequest {
     /// Keep only assistants whose name contains this text, ignoring case.
     /// `None` lists all assistants.
     ///
-    /// The Agent Server API calls this field `name`. The SDK used to send it as
-    /// `query`, which the API ignores, so a search returned every assistant.
+    /// Sent as `name`, the field `POST /assistants/search` filters on.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Maximum number of results (default: 20)
