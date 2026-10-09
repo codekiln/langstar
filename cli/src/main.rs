@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod confirm;
 mod deployment_utils;
 mod error;
 mod output;
