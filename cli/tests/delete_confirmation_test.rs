@@ -11,18 +11,12 @@
 //! `cli/src/confirm.rs`.
 
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use predicates::prelude::*;
 
 const ID: &str = "00000000-0000-0000-0000-000000000001";
 
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
+    let bin = std::path::PathBuf::from(env!("CARGO_BIN_EXE_langstar"));
     let mut cmd = Command::new(bin);
     // Dummy credentials: the no-terminal check must fire before any request is sent.
     cmd.env("LANGSMITH_API_KEY", "dummy-key-for-tests")

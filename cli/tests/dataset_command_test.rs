@@ -19,20 +19,13 @@
 //! Run with: `cargo test --test dataset_command_test`
 
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    Command::new(env!("CARGO_BIN_EXE_langstar"))
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
