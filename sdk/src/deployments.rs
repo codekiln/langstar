@@ -37,8 +37,14 @@ pub enum DeploymentStatus {
     Unused,
     /// Deployment is awaiting deletion
     AwaitingDelete,
-    /// Deployment status is unknown
+    /// Deployment is awaiting the final step of deletion
+    AwaitingFinalDelete,
+    /// Deployment status is unknown, or a status this SDK does not know yet.
+    ///
+    /// `#[serde(other)]` keeps a deployment list readable when the control
+    /// plane adds a status, as it did with `AWAITING_FINAL_DELETE`.
     #[default]
+    #[serde(other)]
     Unknown,
 }
 
@@ -316,6 +322,7 @@ impl<'a> DeploymentClient<'a> {
                     DeploymentStatus::Ready => "READY",
                     DeploymentStatus::Unused => "UNUSED",
                     DeploymentStatus::AwaitingDelete => "AWAITING_DELETE",
+                    DeploymentStatus::AwaitingFinalDelete => "AWAITING_FINAL_DELETE",
                     DeploymentStatus::Unknown => "UNKNOWN",
                 };
                 query_params.push(format!("status={}", status_str));
@@ -459,6 +466,24 @@ mod tests {
         let awaiting = DeploymentStatus::AwaitingDatabase;
         let json = serde_json::to_string(&awaiting).unwrap();
         assert_eq!(json, "\"AWAITING_DATABASE\"");
+    }
+
+    #[test]
+    fn test_deployment_status_awaiting_final_delete() {
+        let status: DeploymentStatus = serde_json::from_str("\"AWAITING_FINAL_DELETE\"").unwrap();
+        assert_eq!(status, DeploymentStatus::AwaitingFinalDelete);
+        assert_eq!(
+            serde_json::to_string(&status).unwrap(),
+            "\"AWAITING_FINAL_DELETE\""
+        );
+    }
+
+    #[test]
+    fn test_deployment_status_unrecognised_value_is_unknown() {
+        // A status added by the control plane after this SDK was built must
+        // not make a whole deployment list fail to deserialize.
+        let status: DeploymentStatus = serde_json::from_str("\"SOME_FUTURE_STATUS\"").unwrap();
+        assert_eq!(status, DeploymentStatus::Unknown);
     }
 
     #[test]

@@ -28,8 +28,8 @@
 //! ```
 
 use crate::{
-    CreateDeploymentRequest, DeploymentFilters, LangchainClient, LangstarError, Revision,
-    RevisionStatus,
+    CreateDeploymentRequest, DeploymentFilters, DeploymentStatus, LangchainClient, LangstarError,
+    Revision, RevisionStatus,
 };
 use serde_json::json;
 use std::time::Duration;
@@ -385,6 +385,122 @@ async fn create_new_deployment(
     }
 }
 
+/// How many times `reuse_or_create_deployment` looks for, or tries to create,
+/// the shared deployment before giving up.
+const REUSE_ATTEMPTS: u32 = 10;
+
+/// Wait between attempts while another run, or a deletion, holds the slot.
+const REUSE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
+
+/// True for a deployment that is being deleted and can't be reused.
+fn is_being_deleted(deployment: &crate::Deployment) -> bool {
+    matches!(
+        deployment.status,
+        DeploymentStatus::AwaitingDelete | DeploymentStatus::AwaitingFinalDelete
+    )
+}
+
+/// True when the deployment builds from the repository and graph config in `config`.
+fn deploys_test_graph(deployment: &crate::Deployment, config: &TestDeploymentConfig) -> bool {
+    let repo_url = format!(
+        "https://github.com/{}/{}",
+        config.repository_owner, config.repository_name
+    );
+    let same_repo = deployment
+        .source_config
+        .as_ref()
+        .and_then(|c| c.get("repo_url"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|url| url.trim_end_matches(".git") == repo_url);
+    let same_graph = deployment
+        .source_revision_config
+        .as_ref()
+        .and_then(|c| c.get("langgraph_config_path"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|path| path == config.config_path);
+    same_repo && same_graph
+}
+
+/// Find a live deployment to reuse: first by name prefix, then by source.
+///
+/// The control plane allows one deployment per agent environment, so a
+/// deployment of the test graph under any name blocks creating another one
+/// (409 "A deployment already exists for this agent environment").
+async fn find_reusable_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+) -> Result<Option<crate::Deployment>, Box<dyn std::error::Error + Send + Sync>> {
+    let prefix = config.name_prefix.clone().unwrap_or_default();
+
+    let by_name = client
+        .deployments()
+        .list(
+            Some(100),
+            None,
+            Some(DeploymentFilters {
+                name_contains: Some(prefix.clone()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+    if let Some(existing) = by_name
+        .resources
+        .into_iter()
+        .find(|d| d.name.starts_with(&prefix) && !is_being_deleted(d))
+    {
+        return Ok(Some(existing));
+    }
+
+    let all = client.deployments().list(Some(100), None, None).await?;
+    Ok(all
+        .resources
+        .into_iter()
+        .find(|d| deploys_test_graph(d, config) && !is_being_deleted(d)))
+}
+
+/// Reuse whatever live deployment of the test graph exists, or create one.
+///
+/// Concurrent CI runs, and the scheduled cleanup that deletes old test
+/// deployments, can make a create collide with a deployment that appeared,
+/// or is still being deleted, after the lookup. On a 409 this waits and looks
+/// again rather than failing.
+async fn reuse_or_create_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    for attempt in 1..=REUSE_ATTEMPTS {
+        if let Some(existing) = find_reusable_deployment(client, config).await? {
+            eprintln!(
+                "Found existing deployment: {} (status: {:?})",
+                existing.name, existing.status
+            );
+            return Ok(existing);
+        }
+
+        match create_new_deployment(client, config, integration_id).await {
+            Ok(created) => return Ok(created),
+            Err(err)
+                if attempt < REUSE_ATTEMPTS
+                    && err
+                        .downcast_ref::<LangstarError>()
+                        .is_some_and(is_conflict_error) =>
+            {
+                eprintln!(
+                    "Create collided with an existing deployment (attempt {}/{}); \
+                     waiting {}s and looking again...",
+                    attempt,
+                    REUSE_ATTEMPTS,
+                    REUSE_RETRY_INTERVAL.as_secs()
+                );
+                tokio::time::sleep(REUSE_RETRY_INTERVAL).await;
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    unreachable!("the last attempt returns from the loop")
+}
+
 /// Get or create a test deployment by name
 ///
 /// This function implements the "get-or-create" pattern:
@@ -429,41 +545,11 @@ pub async fn get_or_create_deployment(
         .integrations()
         .find_integration_for_repo(&config.repository_owner, &config.repository_name)
         .await?;
-    eprintln!("Found integration ID: {}", integration_id);
+    eprintln!("Found GitHub integration");
 
-    // Step 2: Look for existing deployment by prefix or name
-    let search_pattern = config
-        .name_prefix
-        .as_ref()
-        .map(|p| p.to_string())
-        .unwrap_or_else(|| config.name.clone());
-
-    let filters = DeploymentFilters {
-        name_contains: Some(search_pattern.clone()),
-        ..Default::default()
-    };
-    let deployments = client
-        .deployments()
-        .list(Some(100), None, Some(filters))
-        .await?;
-
-    // Find deployment matching prefix (for reuse) or exact name
+    // Step 2: Reuse a matching deployment, or create one
     let deployment = if config.name_prefix.is_some() {
-        // Prefix-based search: find ANY matching deployment for reuse
-        if let Some(existing) = deployments
-            .resources
-            .iter()
-            .find(|d| d.name.starts_with(&search_pattern))
-        {
-            eprintln!(
-                "Found existing deployment: {} ({})",
-                existing.name, existing.id
-            );
-            existing.clone()
-        } else {
-            // Create new with the generated name
-            create_new_deployment(client, config, &integration_id).await?
-        }
+        reuse_or_create_deployment(client, config, &integration_id).await?
     } else {
         // No prefix: always create fresh
         create_new_deployment(client, config, &integration_id).await?
@@ -537,6 +623,72 @@ mod tests {
         );
         assert_eq!(config.branch, "main");
         assert!(config.config_path.contains("langgraph.json"));
+    }
+
+    fn deployment_from(status: &str, repo_url: &str, config_path: &str) -> crate::Deployment {
+        serde_json::from_value(json!({
+            "id": "test-id",
+            "name": "some-other-name",
+            "source": "github",
+            "source_config": {"repo_url": repo_url},
+            "source_revision_config": {"langgraph_config_path": config_path},
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "status": status
+        }))
+        .expect("test deployment JSON should deserialize")
+    }
+
+    #[test]
+    fn test_deploys_test_graph_matches_repo_and_config_path() {
+        let config = TestDeploymentConfig::default();
+        let repo = format!(
+            "https://github.com/{}/{}",
+            config.repository_owner, config.repository_name
+        );
+
+        assert!(deploys_test_graph(
+            &deployment_from("READY", &repo, &config.config_path),
+            &config
+        ));
+        assert!(deploys_test_graph(
+            &deployment_from("READY", &format!("{repo}.git"), &config.config_path),
+            &config
+        ));
+        assert!(!deploys_test_graph(
+            &deployment_from(
+                "READY",
+                "https://github.com/other/repo",
+                &config.config_path
+            ),
+            &config
+        ));
+        assert!(!deploys_test_graph(
+            &deployment_from("READY", &repo, "other/langgraph.json"),
+            &config
+        ));
+    }
+
+    #[test]
+    fn test_is_being_deleted() {
+        let config = TestDeploymentConfig::default();
+        let path = config.config_path.as_str();
+        assert!(is_being_deleted(&deployment_from(
+            "AWAITING_DELETE",
+            "",
+            path
+        )));
+        assert!(is_being_deleted(&deployment_from(
+            "AWAITING_FINAL_DELETE",
+            "",
+            path
+        )));
+        assert!(!is_being_deleted(&deployment_from("READY", "", path)));
+        assert!(!is_being_deleted(&deployment_from(
+            "AWAITING_DATABASE",
+            "",
+            path
+        )));
     }
 
     #[test]
