@@ -33,7 +33,7 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 
 ### Requirement: Show the current settings and where each came from
 
-`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value with its source: `(from env: <VARIABLE>)` when the environment variable's text equals the setting's value as langstar displays it, comparing the whole API key rather than its first 10 characters, and `(from config file or default)` otherwise. It SHALL show only the first 10 characters of the API key, followed by `...`.
+`langstar config show` SHALL print the config file's path, whether the file exists, and each setting's current value followed by its source. It SHALL label a value `(from env: <VARIABLE>)` when the environment variable holds the same text that langstar prints for that setting, and `(from config file or default)` otherwise. For the API key, it SHALL compare the whole key and print only the first 10 characters followed by `...`.
 
 #### Scenario: API key from the environment
 
@@ -41,7 +41,7 @@ Langstar SHALL read its settings from `~/.config/langstar/config.toml` on macOS 
 - **AND** a user runs `langstar config show`
 - **THEN** langstar shows the first 10 characters of `<your-api-key>` followed by `...` and `(from env: LANGSMITH_API_KEY)`
 
-#### Scenario: Environment variable whose value langstar rewrites
+#### Scenario: Timezone set to `local` in the environment
 
 - **WHEN** `LANGSTAR_TIMEZONE` is set to `local`
 - **AND** a user runs `langstar config show`
