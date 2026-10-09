@@ -333,7 +333,8 @@ mod tests {
 
     #[test]
     fn test_load_ignores_old_file_without_an_old_path() {
-        // Linux and Windows pass no old path, so a file there is never read.
+        // On Linux and Windows, `load_from_file` passes no old path, so
+        // langstar never reads the old macOS file.
         let paths = ConfigPaths::new();
         ConfigPaths::write(&paths.old, "old-key");
 
