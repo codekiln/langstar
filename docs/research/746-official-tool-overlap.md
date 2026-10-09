@@ -21,13 +21,13 @@ Langstar was read at `main` as of [`1704f1e` design AI-first command structure f
 | `runs` | LangSmith CLI `run`, `trace`, `thread` | The official CLI does more | A few filter options: trace and tree filters, field selection, sort order |
 | `queue` | None | Nothing official | Everything: annotation queues and the runs in them |
 | `dataset` | LangSmith CLI `dataset`, `example` | Mostly covered | Dataset update, and import and export as CSV or JSONL |
-| `project` | LangSmith CLI `project` | Partly covered | Project create and update |
+| `project` | LangSmith CLI `project` | Partly covered | Project get, create and update |
 | `eval` | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator` | Covered, and langstar's group is unfinished | Nothing; every langstar `eval` subcommand is a placeholder |
 | `model-config` | Terraform `langsmith_model_configuration` | Covered, as declared state | Imperative commands outside Terraform |
 | `secrets` | Terraform `langsmith_workspace_secret` | Covered, as declared state | Imperative commands outside Terraform |
 | `config`, `version` | Not applicable | Langstar's own settings | Not applicable |
 
-The official CLI also has groups langstar never had: `chart`, `insights`, `issues`, `sandbox`, `hub`, `apps`, `workspace`, `profile`, and `api`, which calls any LangSmith REST endpoint directly. Because of `api`, the official CLI can reach every endpoint langstar's groups call, including queues, secrets and model configurations, with hand-written JSON. The table above counts only typed commands.
+The official CLI also has groups langstar never had: `chart`, `insights`, `sandbox`, `hub`, `apps`, `workspace`, `profile`, and `api`, which calls any LangSmith REST endpoint directly. Because of `api`, the official CLI can reach every LangSmith API endpoint langstar's groups call, including queues, secrets and model configurations, with hand-written JSON. The table above counts only typed commands.
 
 ## Command groups
 
@@ -69,7 +69,7 @@ Langstar has `create`, `list`, `get`, `update`, `delete`, `import`, `list-exampl
 
 ### `project`
 
-Langstar has `list`, `get`, `create`, `update` and `delete` ([cli/src/commands/project.rs](../../cli/src/commands/project.rs)). The official [`langsmith project`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/project.go#L15) has `list` and `delete`. Tracing creates a project on first use, so create matters less than it looks; update is the one gap. Terraform only has a data source that looks a project up by name.
+Langstar has `list`, `get`, `create`, `update` and `delete` ([cli/src/commands/project.rs](../../cli/src/commands/project.rs)). The official [`langsmith project`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/project.go#L15) has `list`, `delete` and an `issues` group, but no `get`. Langstar's `get` looks a project up by ID or name and shows its details. Tracing creates a project on first use, so create matters less than it looks; get and update are the real gaps. Terraform only has a data source that looks a project up by name.
 
 ### `eval`
 
@@ -119,7 +119,7 @@ Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation q
 
 > Context from the drafting agent, for question 2.
 >
-> Recommendation: deprecate `runs` in favour of `langsmith run`, `trace` and `thread`; `deployment` in favour of `langgraph deploy` or Terraform; and `model-config` and `secrets` in favour of Terraform. `dataset` and `project` are closer calls: the official CLI lacks dataset update, CSV import and project update. Each group kept means another set of API changes to follow, which is the work #746 is doing now.
+> Recommendation: deprecate `runs` in favour of `langsmith run`, `trace` and `thread`; `deployment` in favour of `langgraph deploy` or Terraform; and `model-config` and `secrets` in favour of Terraform. `dataset` and `project` are closer calls: the official CLI lacks dataset update, CSV import, and project get and update. Each group kept means another set of API changes to follow, which is the work #746 is doing now.
 
 <ANSWER_HERE>
 
