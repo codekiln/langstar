@@ -2214,7 +2214,7 @@ impl LangchainClient {
         // reject it here with an error that says what is missing.
         if request.name.as_deref().is_none_or(|n| n.trim().is_empty()) {
             return Err(LangstarError::InvalidInput(
-                "a playground setting needs a non-empty name; LangSmith rejects a create without one"
+                "set a name for the playground setting; LangSmith answers HTTP 500 when asked to create one without a name"
                     .to_string(),
             ));
         }
