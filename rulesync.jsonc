@@ -1,0 +1,14 @@
+{
+  "$schema": "https://github.com/dyoshikawa/rulesync/releases/latest/download/config-schema.json",
+  "targets": [
+    "agentsskills",
+    "claudecode",
+    "codexcli"
+  ],
+  "features": ["rules", "skills"],
+  "outputRoots": ["."],
+  "global": false,
+  "delete": true,
+  "gitignoreTargetsOnly": true,
+  "verbose": false
+}

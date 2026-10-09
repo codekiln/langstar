@@ -3,6 +3,9 @@
 
 [tools]
 python = "3.11"
+# rulesync generates CLAUDE.md, AGENTS.md and the skills from .rulesync/.
+# https://github.com/dyoshikawa/rulesync
+"npm:rulesync" = "27.0.0"
 
 # Rust is managed by devcontainer feature (ghcr.io/devcontainers/features/rust:1)
 # Not managed by mise to avoid duplicate installation

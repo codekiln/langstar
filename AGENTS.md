@@ -1,124 +1,41 @@
 # Langstar
 
-## Project Overview
+Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph REST APIs, plus a devcontainer feature that installs the CLI (`.devcontainer/features/langstar`). `reference/api-specs/LANGSMITH_API_OVERVIEW.md` summarizes the APIs. Prefer Rust-based tools where practical, and configure the dev environment through `.devcontainer/`.
 
-Langstar is a tool for interacting with LangSmith and LangGraph REST APIs.
-See @/reference/api-specs/LANGSMITH_API_OVERVIEW.md for overview of APIs.
-At a high level, the key deliverables are:
-* `./sdk` - a set of rust-based SDKs for calling the LangSmith REST endpoints
-* `./cli` - a unified CLI calling the langstar rust SDKs 
-* `.devcontainer/features/langstar` - a Devcontainer feature with the CLI installed
+## Agent config
 
-## Dev Setup
-* see .devcontainer
-* git access is provided via a github fine-grained personal access token
-  * it's locked down to this repo
+rulesync generates the agent config from `.rulesync/` using `rulesync.jsonc`. `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/` are its output. Edit `.rulesync/rules/` or `.rulesync/skills/`, run `rulesync generate`, and commit the source with the output.
 
-This project prefers **Rust-based tools** wherever that is practical.
+## Workflow
 
-## Development Workflow
+- Every change starts from a GitHub issue and lands in one PR whose body says `Fixes #N`. Details are in `docs/dev/github-workflow.md`.
+- Name branches `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that don't apply.
+- Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
+- Commit messages and PR titles use Conventional Emoji Commits (`✨ feat(scope): ...`), per `docs/dev/git-scm-conventions.md`.
+- Give a PR the milestone of its issue.
+- Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.
 
-This project follows a GitHub issue-driven development workflow. For complete details, see @docs/dev/github-workflow.md
+## Testing
 
-Key points:
-- Create GitHub issues for all work
-- Use branch naming convention: `m<milestone>-p<parent>-i<issue>-<slug>` (with appropriate variations)
-- Follow Conventional Emoji Commits for commit messages
-- Link PRs to issues using `Fixes #N` or `Closes #N`
+A failing test stops the merge, whether or not your change caused it. Run this before every commit:
 
-### Working in Git Worktrees
-
-**IMPORTANT: Always work in worktrees, never directly in `/workspace`**
-
-This project uses git worktrees for parallel development. Keep `/workspace` clean and synchronized with origin main by doing your work in `wip/` directory worktrees.
-
-**Standard workflow:**
-1. When starting work on an issue, use the `git-worktrees` skill or `/gh-start-issue <issue_number>` command
-2. Work in the created worktree at `wip/<branch-name>/`
-3. Keep `/workspace` reserved for:
-   - Switching between worktrees
-   - Repository-wide operations (git fetch, etc.)
-   - Reading documentation
-
-**Benefits:**
-- Parallel development on multiple issues
-- Clean separation between branches
-- No branch-switching conflicts
-- Easy context switching
-
-**Related resources:**
-- `.claude/skills/git-worktrees/SKILL.md` - Worktree management skill
-- `docs/dev/github-workflow.md` - Issue-driven workflow
-- `scripts/cleanup-closed-issue-worktrees.sh` - Cleanup automation
-
-## Coding Conventions
-
-All coding conventions and development guidelines can be found in @docs/dev/README.md
-
-For commit message formatting, please follow @docs/dev/git-scm-conventions.md
-
-### Basic principles - see @docs/dev/code-style-principles.md
-
-## Supporting Repository Structures
-
-### `docs/` - Project Documentation
-- `dev/` - Development guidelines, workflow docs, ADRs (see @docs/dev/README.md)
-- `examples/` - Example code and usage patterns
-- `implementation/` - Implementation plans and specifications
-- `research/` - Research reports and findings for specific internal issues
-- `templates/` - templates for milestone tickets and checklists 
-- `usage/` - Usage documentation and guides
-
-#### Testing Standards (Progressive Disclosure)
-
-**Testing documentation TOC:** @docs/dev/testing/README.md
-
-The TOC above is auto-loaded (~15 lines). From there, load specific docs on demand:
-
-**Example workflows:**
-
-**Writing SDK integration tests:**
-1. See available docs in auto-loaded TOC
-2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (always relevant)
-3. Load `docs/dev/testing/sdk-integration-tests.md` (SDK-specific)
-4. Load `docs/dev/testing/mocking-patterns.md` (if using mocks)
-
-**Writing CLI integration tests:**
-1. See available docs in auto-loaded TOC
-2. Load `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` (principles)
-3. Load `docs/dev/testing/cli-integration-tests.md` (CLI-specific)
-4. Load `docs/dev/testing/crud-lifecycle-pattern.md` (if CRUD operations)
-
-**Using test planning automation:**
+```bash
+cargo fmt && \
+cargo check --workspace --all-features && \
+cargo clippy --workspace --all-features -- -D warnings && \
+cargo nextest run --profile ci --all-features --workspace
 ```
-/gh-milestones:test-plan <milestone-name>
-```
-This command automatically loads relevant docs and generates a test plan.
 
-**Why progressive disclosure matters:**
-- Testing docs total ~3,000 lines (~24,000-30,000 tokens)
-- Most tasks need only 2-3 docs (~500 lines, ~4,000 tokens)
-- Saves ~20,000-25,000 tokens per testing task (~83% context efficiency gain)
+Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`; `docs/dev/environment-variables.md` maps them to API headers. A test checks behavior; an exit code alone proves nothing. `docs/dev/testing/README.md` indexes the testing docs: read `HIGH_LEVEL_TESTING_GUIDELINES.md` and the one or two others your task needs. The `test-runner-worktree` skill runs the tests inside a worktree.
 
-See `docs/dev/progressive-disclosure-docs-standards.md` for detailed patterns.
+## Secrets
 
-#### Environment Variables and Authentication
+Write placeholders such as `<your-api-key>` wherever an API key, token, organization or workspace ID, or organization name would go, in files, issues, PRs and comments alike. If a secret reaches a GitHub comment, delete the comment, since an edit keeps it in the history, and rotate the secret.
 
-**Environment variable mapping:** @docs/dev/environment-variables.md
+## Background tasks
 
-Canonical reference for LangSmith environment variables and their mapping to API authentication headers. Essential for understanding which variables are required for different APIs and why tests require all three variables.
+Wait for a background command through its completion notice or a bounded check, such as `tail -n 50 <log>` or a polling loop with a timeout. `tail -f` runs until killed and leaves a stray process behind; stop it at once if one starts.
 
-### `reference/` - External Resources & Experiments
-- `api-specs/` - API specifications (LangSmith, control-plane)
-- `experiments/` - Python experiments for API interaction
-- `openapi/langchain/` - OpenAPI JSON specifications
-- `repo/` - Remote repository notes (see .claude/skills/setup-remote-repo-notes-dir knowledge management pattern)
-- `research/` - Research reports on external codebases
+## Output budget
 
-### `tests/` - root-level fixtures for integration tests
-- see `tests/fixtures/test-graph-deployment/README.md` info about langsmith test deployment for integration tests
-
-### `wip/` - work in progress
-- gitignored
-- includes git worktrees for active in dev issues. `scripts/cleanup-closed-issue-worktrees.sh` and .claude/skills/git-worktrees creates and cleans up.
-- some txt files with debugging for active issues
+When `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is set, keep each response under it. If a task needs more, ask whether to summarize it or split it.

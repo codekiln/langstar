@@ -1,10 +1,9 @@
-# Testing Checklist for /gh-milestones:test-plan Command
+# Testing Checklist for /gh-milestones-test-plan Command
 
 ## Pre-Merge Verification
 
 ### File Structure
-- [x] `.claude/commands/gh-milestones/test-plan.md` created
-- [x] `.claude/commands/gh-milestones/README.md` created/updated
+- [x] `.rulesync/skills/gh-milestones-test-plan/SKILL.md` created
 - [x] `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` updated
 - [x] Files have correct frontmatter (description, argument-hint)
 
@@ -23,16 +22,16 @@ After this PR is merged and a new Claude Code session starts:
 ```bash
 # Verify command appears in available commands
 /help
-# Should show: /gh-milestones:test-plan
+# Should show: /gh-milestones-test-plan
 ```
 
 ### 2. Basic Invocation
 ```bash
 # Test with milestone name
-/gh-milestones:test-plan ls-test-improvement
+/gh-milestones-test-plan ls-test-improvement
 
 # Test with milestone number
-/gh-milestones:test-plan 14
+/gh-milestones-test-plan 14
 ```
 
 ### 3. Verify Behavior

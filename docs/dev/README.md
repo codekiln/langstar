@@ -11,7 +11,7 @@ This directory contains instructions and conventions for developing the Langstar
 - [Feature Development Process](./feature-development-process.md) - **Standard 8-phase process** for API → CLI features (includes OpenAPI spec management pattern)
 - [Procedures & Troubleshooting](./procedures.md) - Detailed step-by-step procedures and operational guides
 - [Tmux Naming Conventions](./tmux-naming-conventions.md) - Window naming format for issue/PR workflow phases with emoji status indicators
-- [Testing Standards](./testing/README.md) - Progressive disclosure TOC (auto-loaded via AGENTS.md)
+- [Testing Standards](./testing/README.md) - Progressive disclosure TOC
 
 ## Purpose
 
@@ -21,7 +21,7 @@ These documents outline the coding conventions, best practices, and standards th
 
 Testing documentation uses **progressive disclosure** for context efficiency:
 
-**TOC:** Auto-loaded via AGENTS.md (`docs/dev/testing/README.md`, ~10-15 lines)
+**TOC:** `docs/dev/testing/README.md` (~10-15 lines), pointed to from the root rule in `.rulesync/rules/overview.md`
 
 **Load on-demand based on task:**
 - Writing SDK tests? → `docs/dev/testing/sdk-integration-tests.md`
@@ -29,9 +29,9 @@ Testing documentation uses **progressive disclosure** for context efficiency:
 - Reviewing test quality? → `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md`
 - Learning CRUD pattern? → `docs/dev/testing/crud-lifecycle-pattern.md`
 
-**Use Read tool to load** - Do not use `@` prefix (that's only for the TOC in AGENTS.md).
+**Use the Read tool to load these docs.**
 
-**Automation:** Use `/gh-milestones:test-plan <milestone>` for guided test planning.
+**Automation:** Use `/gh-milestones-test-plan <milestone>` for guided test planning.
 
 ## Tips from Development - Memories
 
