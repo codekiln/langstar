@@ -639,6 +639,72 @@ fn test_dataset_list_with_name_contains_filter() {
     println!("✓ CLI successfully filtered datasets by name");
 }
 
+/// What `delete_dataset` in the integration tests does after one attempt.
+#[derive(Debug, PartialEq)]
+enum DeleteAttempt {
+    Deleted,
+    Retry,
+    Failed,
+}
+
+/// Decide what to do after one `langstar dataset delete` attempt.
+///
+/// A server error (5xx) is retried until the attempts run out. A 404 counts
+/// as deleted only after an earlier attempt, because a delete that answered
+/// 500 may still have removed the dataset. A 404 on the first attempt, or
+/// any other error, is a real failure.
+#[cfg_attr(not(feature = "integration-tests"), allow(dead_code))]
+fn delete_attempt_outcome(
+    attempt: u32,
+    attempts: u32,
+    succeeded: bool,
+    stderr: &str,
+) -> DeleteAttempt {
+    if succeeded || (attempt > 1 && stderr.contains("API error: 404")) {
+        DeleteAttempt::Deleted
+    } else if stderr.contains("API error: 5") && attempt < attempts {
+        DeleteAttempt::Retry
+    } else {
+        DeleteAttempt::Failed
+    }
+}
+
+#[test]
+fn test_delete_attempt_outcome() {
+    let server_error = r#"Error: API error: 500 - {"detail":"Internal server error"}"#;
+    let not_found = r#"Error: API error: 404 - {"title":"Not Found"}"#;
+    let forbidden = r#"Error: API error: 403 - {"detail":"Forbidden"}"#;
+
+    assert_eq!(
+        delete_attempt_outcome(1, 3, true, ""),
+        DeleteAttempt::Deleted
+    );
+    assert_eq!(
+        delete_attempt_outcome(1, 3, false, server_error),
+        DeleteAttempt::Retry
+    );
+    assert_eq!(
+        delete_attempt_outcome(2, 3, false, server_error),
+        DeleteAttempt::Retry
+    );
+    assert_eq!(
+        delete_attempt_outcome(3, 3, false, server_error),
+        DeleteAttempt::Failed
+    );
+    assert_eq!(
+        delete_attempt_outcome(2, 3, false, not_found),
+        DeleteAttempt::Deleted
+    );
+    assert_eq!(
+        delete_attempt_outcome(1, 3, false, not_found),
+        DeleteAttempt::Failed
+    );
+    assert_eq!(
+        delete_attempt_outcome(1, 3, false, forbidden),
+        DeleteAttempt::Failed
+    );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Full CRUD Integration Tests (create, get, update, delete)
 // Gated by integration-tests feature
@@ -647,7 +713,49 @@ fn test_dataset_list_with_name_contains_filter() {
 #[cfg(feature = "integration-tests")]
 mod integration {
     use super::*;
+    use std::time::Duration;
     use uuid::Uuid;
+
+    /// Delete a dataset through the CLI and check that it is gone, retrying
+    /// when LangSmith answers with a server error.
+    ///
+    /// In CI, LangSmith sometimes answers `DELETE /api/v1/datasets/{id}` with
+    /// HTTP 500 (issue #773). It did not happen locally in 30 runs of these
+    /// tests or in 68 create-then-delete pairs, 48 of them eight at a time, so
+    /// the delete is not racing the create. A delete that answered 500 may
+    /// still have removed the dataset, so a retry that gets 404 counts as
+    /// deleted; `delete_attempt_outcome` holds those rules. A delete that
+    /// fails any other way, or fails three times, fails the test.
+    fn delete_dataset(dataset_id: &str) {
+        const ATTEMPTS: u32 = 3;
+        for attempt in 1..=ATTEMPTS {
+            let output = langstar_cmd()
+                .args(["dataset", "delete", dataset_id, "--yes"])
+                .output()
+                .expect("Failed to run langstar dataset delete");
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            match delete_attempt_outcome(attempt, ATTEMPTS, output.status.success(), &stderr) {
+                DeleteAttempt::Deleted => break,
+                DeleteAttempt::Retry => {
+                    eprintln!("⚠ dataset delete got a server error on attempt {attempt}; retrying");
+                    std::thread::sleep(Duration::from_secs(2u64.pow(attempt)));
+                }
+                DeleteAttempt::Failed => {
+                    panic!("dataset delete failed on attempt {attempt} of {ATTEMPTS}:\n{stderr}")
+                }
+            }
+        }
+
+        let output = langstar_cmd()
+            .args(["dataset", "get", dataset_id, "--json"])
+            .output()
+            .expect("Failed to run langstar dataset get");
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            !output.status.success() && stderr.contains("API error: 404"),
+            "dataset get should answer 404 after the delete, got:\n{stderr}"
+        );
+    }
 
     /// Test the full CRUD lifecycle for datasets.
     #[test]
@@ -710,10 +818,7 @@ mod integration {
         println!("✓ Updated dataset successfully");
 
         // 4. Delete dataset
-        let mut cmd = langstar_cmd();
-        cmd.args(["dataset", "delete", dataset_id, "--yes"]);
-
-        cmd.assert().success();
+        delete_dataset(dataset_id);
 
         println!("✓ Deleted dataset successfully");
         println!("✓ Full CRUD lifecycle test passed");
@@ -820,9 +925,7 @@ mod integration {
         println!("✓ Exported to CSV format");
 
         // 6. Cleanup - delete dataset
-        let mut cmd = langstar_cmd();
-        cmd.args(["dataset", "delete", dataset_id, "--yes"]);
-        cmd.assert().success();
+        delete_dataset(dataset_id);
 
         println!("✓ Import/export roundtrip test passed");
     }
