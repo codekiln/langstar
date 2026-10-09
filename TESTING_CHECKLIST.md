@@ -87,7 +87,6 @@ All checks must pass:
 
 ## Notes
 
-- Skills are loaded when a Claude Code session starts, not dynamically
-- Testing must occur after PR merge in a new Claude Code session
+- Claude Code loads a skill as soon as rulesync writes it to `.claude/skills/`, so an open session can run these checks once the post-merge hook has regenerated the skills
 - Context window monitoring is critical for progressive disclosure
 - Generated test plans should be reviewed for quality and specificity
