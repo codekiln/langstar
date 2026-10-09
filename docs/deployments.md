@@ -154,7 +154,7 @@ langstar deployment create [OPTIONS]
 | `-s, --source <SOURCE>` | Source type: `github`, `external_docker` (default: `github`) |
 | `--repo-url <URL>` | Repository URL (required for GitHub source) |
 | `--branch <BRANCH>` | Git branch (required for GitHub source) |
-| `--integration-id <ID>` | GitHub integration ID (auto-discovered if not provided) |
+| `--integration-id <ID>` | GitHub integration ID. Optional: without it, langstar asks the Control Plane API which integration can access `--repo-url` |
 | `--config-path <PATH>` | Path to langgraph.json in repo (default: `langgraph.json`) |
 | `-t, --deployment-type <TYPE>` | Deployment type (default: `dev_free`) |
 | `-e, --env <KEY=VALUE>` | Environment variable (can be repeated) |
@@ -290,10 +290,9 @@ done
 
 ### GitHub integration not found
 
-If `--integration-id` is not provided, langstar attempts to auto-discover it from existing deployments. If you have no existing deployments:
+For a `github` source, `langstar deployment create` takes the GitHub integration ID from `--integration-id` when you pass it. Otherwise langstar lists your workspace's GitHub integrations through the Control Plane API (`GET /v1/integrations/github/install`) and uses the one whose repositories include `--repo-url`. No environment variable or config file key sets this ID. An old config file that still has `github_integration_id` loads without error, and langstar ignores the key.
 
-1. Create a deployment manually in the LangSmith UI first, or
-2. Find your integration ID in LangSmith settings and provide it with `--integration-id`
+If no integration can access the repository, the command stops with `No GitHub integration in this workspace has access to <owner>/<repo>`. To fix it, open Deployments in LangSmith, choose **+ New Deployment**, then **Import from GitHub**, and give the `hosted-langserve` GitHub app access to the repository.
 
 ---
 
