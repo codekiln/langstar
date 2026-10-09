@@ -144,9 +144,11 @@ pub struct QueryArgs {
     /// Fields to select (comma-separated)
     ///
     /// Limits the fields returned in the response. Without it, the CLI asks
-    /// for every field the API offers except `share_url` and `attachments`,
-    /// links that open the run or its files without an API key; name them
-    /// here to get them. Table output always adds the fields its columns need.
+    /// for the table's columns when printing a table. When printing JSON, it
+    /// asks for every field the API offers except `share_url` and
+    /// `attachments`, links that open the run or its files without an API
+    /// key; name them here to get them. When printing a table, the CLI always
+    /// adds the fields its columns need.
     /// Example: --select id,name,status,total_tokens
     #[arg(long)]
     pub select: Option<String>,
