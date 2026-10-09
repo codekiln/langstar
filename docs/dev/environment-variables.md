@@ -203,7 +203,8 @@ This approach was chosen because:
 
 | Need | Command |
 |------|---------|
-| Run all tests with the secrets | `fnox exec -- cargo nextest run --profile ci --all-features --workspace` |
+| Run the full pre-commit chain, tests included | `mise run check` |
+| Run only the tests, with the secrets | `mise run rust:test` |
 | Check that every secret resolves | `fnox check --all` |
 | Refresh the cache after a rotation | `fnox sync --provider sync-age --local-file --force` |
 | See which config files fnox loaded | `fnox config-files` |

@@ -324,10 +324,7 @@ git push
 
 1. **Run full checks locally**:
    ```bash
-   cargo fmt && \
-   cargo check --workspace --all-features && \
-   cargo clippy --workspace --all-features -- -D warnings && \
-   cargo test --workspace --all-features
+   mise run check
    ```
 
 2. **Review commits since last release**:

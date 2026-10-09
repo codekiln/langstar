@@ -290,11 +290,7 @@ cargo fmt --check
 ### Quick One-Liner
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo test --workspace --all-features && \
-cargo fmt --check
+mise run check
 ```
 
 **Time investment**: ~1-2 minutes locally vs 10-20 minutes of CI roundtrips
