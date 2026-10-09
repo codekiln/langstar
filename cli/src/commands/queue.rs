@@ -395,9 +395,10 @@ impl QueueCommands {
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
         if !args.force {
-            let question = format!("Delete queue {}? [y/N]:", args.queue_id);
-            if !crate::confirm::confirm(&question, &["y", "yes"], "--force")? {
-                eprintln!("Cancelled");
+            eprintln!("Are you sure you want to delete queue {}?", args.queue_id);
+            eprintln!("This action cannot be undone. Use --force to skip this prompt.");
+            if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--force")? {
+                println!("Deletion cancelled.");
                 return Ok(());
             }
         }

@@ -484,9 +484,13 @@ impl DatasetCommands {
 
     async fn execute_delete(args: &DeleteArgs, config: &Config) -> Result<()> {
         if !args.yes {
-            let question = format!("Delete dataset {}? [y/N]:", args.dataset_id);
-            if !crate::confirm::confirm(&question, &["y", "yes"], "--yes")? {
-                eprintln!("Cancelled");
+            eprintln!(
+                "Are you sure you want to delete dataset {}?",
+                args.dataset_id
+            );
+            eprintln!("This action cannot be undone. Use --yes (-y) to skip this prompt.");
+            if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--yes")? {
+                println!("Deletion cancelled.");
                 return Ok(());
             }
         }

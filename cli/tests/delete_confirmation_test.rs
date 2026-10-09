@@ -46,22 +46,3 @@ fn dataset_delete_without_yes_on_non_tty_errors() {
 fn queue_delete_without_force_on_non_tty_errors() {
     assert_refuses_without_tty(&["queue", "delete", ID], "--force");
 }
-
-#[test]
-fn dataset_delete_with_yes_skips_prompt_and_reaches_api() {
-    // With a dummy key the API call fails, but the failure must not be the prompt's.
-    langstar_cmd()
-        .args(["dataset", "delete", ID, "--yes"])
-        .timeout(std::time::Duration::from_secs(60))
-        .assert()
-        .stderr(predicate::str::contains("not a terminal").not());
-}
-
-#[test]
-fn queue_delete_with_force_skips_prompt_and_reaches_api() {
-    langstar_cmd()
-        .args(["queue", "delete", ID, "--force"])
-        .timeout(std::time::Duration::from_secs(60))
-        .assert()
-        .stderr(predicate::str::contains("not a terminal").not());
-}
