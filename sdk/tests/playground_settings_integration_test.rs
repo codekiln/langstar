@@ -12,7 +12,7 @@ use langstar_sdk::playground_settings::{
 use langstar_sdk::{AuthConfig, LangchainClient, LangstarError};
 use serde_json::json;
 
-/// Build a name that no other run holds.
+/// Append a fresh UUID to `base`, so each test run creates its configurations under names of its own.
 ///
 /// LangSmith rejects a second configuration with a name that already exists
 /// in the workspace, and it reports that as a 500. Configurations left behind
