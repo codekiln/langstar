@@ -26,7 +26,7 @@
 
 ```bash
 $ langstar prompt list --limit 5
-ℹ Scope: Workspace (6f52dd84) | Visibility: private only
+ℹ Scope: Workspace (00000000) | Visibility: private only
 ℹ Fetching prompts (limit: 5, offset: 0)...
 Found 0 prompts
 ```
