@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Run the pre-commit chain: fmt, check, clippy, then every test (fails on any)"
+#MISE depends=["rust:fmt", "rust:check", "rust:clippy"]
+set -euo pipefail
+
+# Integration tests need the LangSmith secrets, so the test step runs under
+# `fnox exec`, which fails before the tests start when any secret is missing
+# (#660) instead of skipping them in silence.
+exec mise run rust:test

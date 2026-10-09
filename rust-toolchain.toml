@@ -1,0 +1,5 @@
+# Same version as `rust` in mise.toml, so rustup users, mise users and CI
+# build with one compiler. rustup's default 1.85 cannot compile the
+# let-chains the code uses.
+[toolchain]
+channel = "1.99.0"

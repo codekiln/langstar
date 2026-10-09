@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Run the workspace tests with nextest, with LangSmith secrets from fnox"
+#USAGE arg "[nextest_args]..." help="Extra arguments passed to cargo nextest run"
+set -euo pipefail
+
+# fnox exec supplies LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID and
+# LANGSMITH_WORKSPACE_ID, which the integration tests require.
+# shellcheck disable=SC2154 # usage_nextest_args is set by mise from #USAGE
+eval "set -- ${usage_nextest_args:-}"
+exec fnox exec -- cargo nextest run --profile ci --all-features --workspace "$@"

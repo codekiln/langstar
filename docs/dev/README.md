@@ -143,11 +143,7 @@ When working on multi-phase features, **always review prerequisite phases before
 **Always run these checks locally before committing** to catch issues before CI fails:
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace && \
-cargo fmt --check
+mise run check
 ```
 
 **Critical points:**
