@@ -698,7 +698,7 @@ fn test_cli_push_prompt_update_with_auto_parent() {
     let first_stdout = push("First version: {query}");
     let first_hash = extract_hash(&first_stdout);
 
-    // TEST Step 2: update to the same repo; without auto-parent this is a 409
+    // TEST Step 2: push an update to the same repo; before this fix the API answered 409 because the push sent no parent commit
     let second_stdout = push("Second version: {query}");
     let second_hash = extract_hash(&second_stdout);
 
@@ -706,7 +706,7 @@ fn test_cli_push_prompt_update_with_auto_parent() {
     assert_ne!(first_hash, second_hash, "update should create a new commit");
     assert!(
         second_stdout.contains(&format!("Latest commit: {}", first_hash)),
-        "auto-parent should have fetched the first commit ({}); output:\n{}",
+        "the second push should have fetched the first commit ({}) as its parent; output:\n{}",
         first_hash,
         second_stdout
     );

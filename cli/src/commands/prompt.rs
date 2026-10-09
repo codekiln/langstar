@@ -647,9 +647,9 @@ impl PromptCommands {
                             Err(e) => {
                                 eprintln!("⚠ Warning: Could not create repository: {}", e);
                                 eprintln!(
-                                    "  Will attempt to push anyway, but auto-parent will be disabled..."
+                                    "  Will attempt to push anyway, without a parent commit..."
                                 );
-                                false // Repository creation failed; treat as non-existent for auto-parent
+                                false // Repository creation failed, so no parent commit is fetched
                             }
                         }
                     }
