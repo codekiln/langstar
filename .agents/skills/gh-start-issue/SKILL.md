@@ -155,10 +155,10 @@ echo "✅ Worktree created successfully"
 
 **Step 4b:** Link secrets into the worktree
 
-The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740), links the worktree's `fnox.local.toml` to the root checkout's copy, so every worktree reads the same fnox cache and none asks for a sync or a 1Password prompt. Skip this step until that task exists.
+The `worktree:link-secrets` mise task, added by [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740), makes the worktree's `fnox.local.toml` a link to the root checkout's copy. Every worktree then reads the same locally stored secrets, and nobody signs in to 1Password again in each new worktree. Skip this step until that task exists.
 
 ```bash
-!# Link fnox.local.toml from the root checkout, if the task exists
+# Link fnox.local.toml from the root checkout, if the task exists
 if mise tasks ls 2>/dev/null | grep -q 'worktree:link-secrets'; then
   (cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
 else

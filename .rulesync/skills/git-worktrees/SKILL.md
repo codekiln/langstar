@@ -81,13 +81,13 @@ A worktree that one agent keeps for many tasks takes the agent's name, such as `
 
 ### Link secrets after creating a worktree
 
-After [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740) adds the `worktree:link-secrets` mise task, run it from the new worktree right after `git worktree add`:
+Run `mise run worktree:link-secrets` from the new worktree right after `git worktree add`. The task comes from the pull request that closes [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740); until that pull request merges, skip this step.
 
 ```bash
 mise run worktree:link-secrets
 ```
 
-The task makes the worktree's `fnox.local.toml` a link to the root checkout's copy, so every worktree shares the root checkout's fnox cache and none of them prompts for 1Password.
+The task makes the worktree's `fnox.local.toml` a link to the root checkout's copy, so every worktree reads the same locally stored secrets and nobody signs in to 1Password again in each new worktree.
 
 ## Core Commands
 
