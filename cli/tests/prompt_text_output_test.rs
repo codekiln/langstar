@@ -50,7 +50,7 @@ fn test_prompt_list_text_output_basic() {
     // Test basic text output format with all columns
     let org_id = get_org_id();
 
-    println!("Testing prompt list -f text with org ID: {}", org_id);
+    println!("Testing prompt list -f text with organization ID set");
 
     let mut cmd = langstar_cmd();
     cmd.args([
