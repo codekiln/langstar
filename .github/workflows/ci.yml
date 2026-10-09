@@ -148,6 +148,15 @@ jobs:
           echo "=== JUnit XML file ==="
           ls -la target/nextest/ci/junit-ci.xml 2>/dev/null || echo "No JUnit XML file found"
 
+      - name: Check test results for organization and workspace IDs
+        # Runs before the results are published or uploaded. Those steps still
+        # run when this one fails, so the results stay available to debug.
+        if: always()
+        run: scripts/check-junit-for-ids.sh target/nextest/ci/junit-ci.xml
+        env:
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
@@ -208,6 +217,15 @@ jobs:
           echo "=== JUnit XML file ==="
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
 
+      - name: Check test results for organization and workspace IDs
+        # Runs before the results are published or uploaded. Those steps still
+        # run when this one fails, so the results stay available to debug.
+        if: always()
+        run: scripts/check-junit-for-ids.sh target/nextest/integration/junit-integration.xml
+        env:
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+
       - name: Publish Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
@@ -266,6 +284,15 @@ jobs:
         run: |
           echo "=== JUnit XML file ==="
           ls -la target/nextest/integration/junit-integration.xml 2>/dev/null || echo "No JUnit XML file found"
+
+      - name: Check test results for organization and workspace IDs
+        # Runs before the results are published or uploaded. Those steps still
+        # run when this one fails, so the results stay available to debug.
+        if: always()
+        run: scripts/check-junit-for-ids.sh target/nextest/integration/junit-integration.xml
+        env:
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
 
       - name: Publish SDK Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
