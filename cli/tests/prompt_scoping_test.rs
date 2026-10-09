@@ -42,12 +42,9 @@ fn get_org_id() -> String {
 #[test]
 fn test_prompt_list_with_org_id_from_env() {
     // Requires LANGSMITH_ORGANIZATION_ID to be set
-    let org_id = get_org_id();
+    get_org_id();
 
-    println!(
-        "Testing prompt list with org ID from environment: {}",
-        org_id
-    );
+    println!("Testing prompt list with organization ID from environment");
 
     let mut cmd = langstar_cmd();
     cmd.args(["prompt", "list", "--limit", "5"]);
@@ -64,13 +61,10 @@ fn test_prompt_list_with_org_id_from_env() {
 #[test]
 fn test_prompt_list_with_workspace_id_from_env() {
     // Requires LANGSMITH_WORKSPACE_ID to be set
-    let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
+    std::env::var("LANGSMITH_WORKSPACE_ID")
         .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
-    println!(
-        "Testing prompt list with workspace ID from environment: {}",
-        workspace_id
-    );
+    println!("Testing prompt list with workspace ID from environment");
 
     let mut cmd = langstar_cmd();
     cmd.args(["prompt", "list", "--limit", "5"]);
@@ -89,10 +83,7 @@ fn test_prompt_list_with_organization_id_flag() {
     // Test that --organization-id flag works
     let org_id = get_org_id();
 
-    println!(
-        "Testing prompt list with --organization-id flag: {}",
-        org_id
-    );
+    println!("Testing prompt list with --organization-id flag");
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -119,10 +110,7 @@ fn test_prompt_list_with_workspace_id_flag() {
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
         .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
 
-    println!(
-        "Testing prompt list with --workspace-id flag: {}",
-        workspace_id
-    );
+    println!("Testing prompt list with --workspace-id flag");
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -149,10 +137,7 @@ fn test_prompt_list_scoped_defaults_to_private() {
     // unless --public flag is specified
     let org_id = get_org_id();
 
-    println!(
-        "Testing that scoped list defaults to private (org ID: {})",
-        org_id
-    );
+    println!("Testing that scoped list defaults to private (organization ID set)");
 
     let mut cmd = langstar_cmd();
     cmd.args([
@@ -182,10 +167,7 @@ fn test_prompt_list_scoped_with_public_flag() {
     // When scoped with --public flag, should list public prompts
     let org_id = get_org_id();
 
-    println!(
-        "Testing scoped list with --public flag (org ID: {})",
-        org_id
-    );
+    println!("Testing scoped list with --public flag (organization ID set)");
 
     let mut cmd = langstar_cmd();
     cmd.args([
