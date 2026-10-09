@@ -45,10 +45,10 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: `config` keeps one API key, organization ID, workspace ID, output format and timezone in a config file, and each can come from the environment instead | Medium |
 | Call any LangSmith API endpoint | LangSmith CLI `api` | Lacks it | Small |
 | Update the tool itself | LangSmith CLI `update` | Lacks it; the install script installs a new version | Small |
-| Billing usage | MCP `get_billing_usage` | Lacks it | Small |
+| Billing usage | MCP `get_billing_usage` | Lacks it | Medium |
 | Hub agent and skill repos, Custom Apps, sandboxes | LangSmith CLI `hub`, `apps`, `sandbox` | Lacks it | Large |
 
-In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, and `project get`, `create` and `update` have no official command. `runs query` filters on traces and trees, selects fields and sorts. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
+In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, and `project get`, `create` and `update` have no official command. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
 
 ## What closing each gap would take
 
@@ -64,7 +64,7 @@ No tool, official or community, keeps assistant definitions in Git and applies t
 
 The LangGraph CLI runs an Agent Server on your machine, builds Docker images and starts projects from templates ([cli.py](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/cli.py#L276)), and [`langgraph deploy`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/deploy.py#L2474-L2695) builds an image from local code before deploying it. These commands run Python and Docker on the user's machine, so langstar, a single Rust binary, would most likely call the installed `langgraph` command rather than reimplement them.
 
-### What only Terraform manages
+### Workspace administration, resource tags and alerts
 
 Workspace administration, resource tags and alerts have resources only in Terraform ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)); outside Terraform they are managed in the UI or by hand-written requests through `langsmith api`. Terraform describes the state a workspace should be in and changes the workspace to match; langstar runs one change per command. To replace Terraform for someone, langstar would need both the commands and a way to apply a file of desired state.
 
@@ -86,7 +86,7 @@ Yes. The provider has `langsmith_model_configuration` and `langsmith_workspace_s
 
 No. Each subcommand is a placeholder that does no work.
 
-### 4 - Can the official CLI reach endpoints that have no command of their own?
+### 4 - Can the LangSmith CLI call LangSmith API endpoints it has no command for?
 
 Yes. `langsmith api` calls any LangSmith REST endpoint directly, so annotation queues, secrets and model configurations are reachable with hand-written JSON. It cannot reach assistants or graphs, which live on each deployment's Agent Server rather than the LangSmith API.
 
@@ -124,7 +124,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 4.
 >
-> Workspace administration, resource tags and alerts are in Terraform only. People who use Terraform for these may not want a second tool changing the same settings. Recommendation: leave the Terraform-only areas until someone asks for them. Spend that effort on a langstar command that reads assistant definitions from a file in Git and creates or updates them on each deployment, which no official tool does.
+> Workspace administration, resource tags and alerts are in Terraform only, and codekiln has no Terraform state backend, so langstar should cover them through the LangSmith API. Recommendation: add them in order of size. Resource tags first, a medium gap, because they label prompts, datasets, projects and deployments that langstar already manages. Then alert rules and gateway policies, also medium. Workspaces, members, roles, access policies and service keys last, the large gap.
 
 <ANSWER_HERE>
 
@@ -140,6 +140,6 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 6.
 >
-> We plan in [ls-cli-output-dx milestone · Issue #529](https://github.com/codekiln/langstar/issues/529) to give every list command table, JSON and text output and a flag to choose columns. The official CLI offers only `pretty` and `json` output and `-o` to write JSON to a file, so this would put langstar ahead. Recommendation: go ahead, and give each new command group the same output options when we add it.
+> We plan in [ls-cli-output-dx milestone · Issue #529](https://github.com/codekiln/langstar/issues/529) to give every list command table, JSON and text output and a flag to choose columns. The LangSmith CLI offers only `pretty` and `json` output, and `-o` to write JSON to a file, so this would put langstar ahead. Recommendation: go ahead, and give each new command group the same output options when we add it.
 
 <ANSWER_HERE>
