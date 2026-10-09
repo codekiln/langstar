@@ -236,11 +236,12 @@ fn test_secrets_delete_accepts_format_flag() {
     let mut cmd = langstar_cmd();
     cmd.args(["secrets", "delete", "TEST_KEY", "--format", "json"]);
 
-    // Should parse --format flag correctly (no argument parsing errors)
-    // Without --yes and with no terminal, the command always fails at the
-    // confirmation check and deletes nothing, but --format should parse
-    let assert = cmd.assert();
-    assert.stderr(predicate::str::contains("--format").not()); // No format parsing error
+    // Without --yes and with no terminal, the command stops at the
+    // confirmation check, so this test never deletes TEST_KEY.
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("not a terminal"))
+        .stderr(predicate::str::contains("--format").not()); // --format parsed
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
