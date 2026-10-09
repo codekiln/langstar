@@ -128,7 +128,7 @@ fi
 
 ```bash
 BRANCH="codekiln/${ISSUE_NUM}-${FEATURE_SLUG}-scout"
-git worktree add -b "$BRANCH" "wip/codekiln-${ISSUE_NUM}-scout" main
+git worktree add -b "$BRANCH" ".worktrees/codekiln-${ISSUE_NUM}-scout" main
 ```
 
 ### 7. Perform Scout Research
@@ -163,7 +163,7 @@ Update `$RESEARCH_FILE` with findings, technical patterns discovered, and insigh
 ### 9. Create PR
 
 ```bash
-cd "wip/codekiln-${ISSUE_NUM}-scout"
+cd ".worktrees/codekiln-${ISSUE_NUM}-scout"
 git add -A
 
 # Use printf to safely pass commit message to avoid command injection

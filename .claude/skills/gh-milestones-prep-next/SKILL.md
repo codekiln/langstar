@@ -4,7 +4,6 @@ description: >-
   Move to the next issue in a milestone: clean up the finished issue, find the
   next one in the hierarchy, label it and create its worktree. Use after an
   issue in a milestone closes and work should continue on the milestone.
-argument-hint: '[milestone-name-or-number]'
 ---
 # gh-milestones-prep-next - Move to Next Issue in Milestone
 
@@ -81,7 +80,7 @@ The script performs the following steps:
 
 ### Step 7: Create Worktree
 - Generates branch name following project conventions: `claude/<issue_num>-<slug>`
-- Creates worktree at `wip/claude-<issue_num>-<slug>`
+- Creates worktree at `.worktrees/claude-<issue_num>-<slug>`
 - Checks for existing branches/worktrees
 - Fetches latest main and creates branch from it
 - Updates tmux window name if in tmux session
@@ -140,9 +139,9 @@ Milestone: Feature X
 
 **Worktree already exists:**
 ```
-⚠️  Worktree already exists at wip/claude-NNN-slug
+⚠️  Worktree already exists at .worktrees/claude-NNN-slug
 ```
-- Remove existing worktree: `git worktree remove wip/claude-NNN-slug`
+- Remove existing worktree: `git worktree remove .worktrees/claude-NNN-slug`
 - Or work in existing worktree
 
 **Branch already exists:**

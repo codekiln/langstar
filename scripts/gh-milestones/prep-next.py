@@ -411,7 +411,7 @@ class MilestoneWorkflow:
         branch_parts.append(issue_slug)
 
         branch_name = "-".join(branch_parts)
-        worktree_path = f"wip/{branch_name}"
+        worktree_path = f".worktrees/{branch_name}"
 
         # Check if worktree already exists
         if os.path.exists(worktree_path):

@@ -204,8 +204,8 @@ def test_worktree_path_generation():
         milestone_id=8,
         parent_id=123
     )
-    worktree_path = f"wip/{branch}"
-    expected = "wip/m8-p123-i234-add-user-auth"
+    worktree_path = f".worktrees/{branch}"
+    expected = ".worktrees/m8-p123-i234-add-user-auth"
 
     if worktree_path == expected:
         print(f"✓ PASS: Generated worktree path '{worktree_path}'")

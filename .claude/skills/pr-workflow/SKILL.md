@@ -4,7 +4,6 @@ description: >-
   Guide a pull request from pre-PR validation through CI monitoring and review
   comments to merge. Use when creating a PR for the current issue branch,
   watching its checks, or working through review feedback until it can merge.
-argument-hint: <issue_number>
 ---
 # PR Workflow
 
@@ -132,9 +131,9 @@ This command provides **highly autonomous** PR management, reducing cognitive lo
 **Actions:**
 1. **Check working directory:**
    ```bash
-   pwd | grep -q "wip/" && echo "✅ In worktree" || echo "❌ Not in wip/ worktree"
+   pwd | grep -q ".worktrees/" && echo "✅ In worktree" || echo "❌ Not in .worktrees/ worktree"
    ```
-   - **MUST** be in a `wip/` worktree, not `/workspace`
+   - **MUST** be in a `.worktrees/` worktree, not the root checkout
    - If not in worktree, **STOP** and instruct user to use `git-worktrees` skill
 
 2. **Verify branch naming convention:**
@@ -658,10 +657,10 @@ EOF
    ```
 
    ```bash
-   cd /workspace
+   cd <repo-root>
    git checkout main
    git pull origin main
-   git worktree remove wip/<branch-name>
+   git worktree remove .worktrees/<branch-name>
    git branch -d <branch-name>
    git worktree prune --verbose
    ```

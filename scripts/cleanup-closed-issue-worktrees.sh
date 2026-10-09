@@ -36,8 +36,9 @@ if ! gh auth status &> /dev/null; then
   exit 1
 fi
 
-# Get repository root and name
-repo_root=$(git rev-parse --show-toplevel)
+# Get the root checkout (not the current worktree) and the repository name.
+# --show-toplevel would return the worktree this runs from, so use the common git dir.
+repo_root=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 repo=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
 
 echo "🔍 Checking worktrees for closed issues..."

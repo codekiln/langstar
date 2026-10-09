@@ -10,7 +10,7 @@ rulesync generates the agent config from `.rulesync/` using `rulesync.jsonc`. `C
 
 - Every change starts from a GitHub issue and lands in one PR whose body says `Fixes #N`. Details are in `docs/dev/github-workflow.md`.
 - Name branches `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that don't apply.
-- Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
+- Work in a git worktree under `.worktrees/<branch-name>` (gitignored) and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
 - Commit messages and PR titles use Conventional Emoji Commits (`✨ feat(scope): ...`), per `docs/dev/git-scm-conventions.md`.
 - Give a PR the milestone of its issue.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.

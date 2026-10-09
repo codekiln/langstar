@@ -48,7 +48,7 @@ When addressing review comments, choose ONE of these options:
 **Project Hygiene Invariant:** Each PR should:
 1. Close exactly one GitHub issue
 2. Include "Fixes #XYZ" (or similar keyword) in PR body
-3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in `/workspace`, which should always be kept up to date with origin main - instead you should be in `wip/<feature branch>`)
+3. Be created from a proper worktree using the `.claude/skills/git-worktrees` skill (you should not be in the root checkout, which should stay on `main` and up to date with origin main - instead you should be in `.worktrees/<feature branch>`)
 4. Follow branch naming convention: `m<milestone_id>-p<parent_issue_id>-i<issue_num>-<slug>` (with appropriate variations)
 5. Use Conventional Emoji Commits for PR title
 
@@ -113,7 +113,7 @@ Run these validations before creating a PR:
 
 ```bash
 # 1. Verify you're in a worktree (not main)
-pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktree"
+pwd | grep -q ".worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
 
 # 2. Check branch name follows convention
 BRANCH=$(git branch --show-current)
@@ -141,11 +141,11 @@ git log origin/main..HEAD --oneline | grep -i "fixes #\|closes #\|resolves #" ||
 # List all worktrees
 git worktree list
 
-# Verify current directory is in wip/
-pwd | grep -q "wip/" && echo "In worktree" || echo "WARNING: Not in wip/ worktree"
+# Verify current directory is in .worktrees/
+pwd | grep -q ".worktrees/" && echo "In worktree" || echo "WARNING: Not in .worktrees/ worktree"
 ```
 
-**Expected:** You should be in a `wip/<branch-name>/` directory.
+**Expected:** You should be in a `.worktrees/<branch-name>/` directory.
 
 #### Branch Naming Convention
 
@@ -380,10 +380,10 @@ gh issue close "$ISSUE_NUM" --comment "Closed via PR #$PR_NUM"
 **After PR merge, clean up the worktree:**
 ```bash
 # Switch to main worktree first
-cd /workspace
+cd <repo-root>
 
 # Remove the worktree
-WORKTREE_PATH="wip/<branch-name>"  # e.g., wip/i42-add-auth or wip/m8-p123-i234-add-auth
+WORKTREE_PATH=".worktrees/<branch-name>"  # e.g., .worktrees/i42-add-auth or .worktrees/m8-p123-i234-add-auth
 git worktree remove "$WORKTREE_PATH"
 
 # Prune stale references
@@ -406,11 +406,11 @@ git branch -d "$BRANCH"
 git push origin --delete "$BRANCH" 2>/dev/null || echo "Remote branch already deleted"
 ```
 
-### Cleanup: Ensure /workspace is up to date
+### Cleanup: Ensure the root checkout is up to date
 
-* `/workspace` should be kept up to date with origin main
-* after merging, `cd /workspace` then ensure workspace is refreshed from origin main
-  * in the unlikely case that another agent has put WIP in `/workspace` (instead of `wip/<feature branch>`) that would be affected by this action, ask user what to do 
+* the root checkout should stay on `main`, up to date with origin main
+* after merging, `cd <repo-root>` then ensure it is refreshed from origin main
+  * in the unlikely case that another agent has put work in the root checkout (instead of `.worktrees/<feature branch>`) that would be affected by this action, ask user what to do 
 
 ### Complete Cleanup Workflow
 
@@ -418,13 +418,13 @@ git push origin --delete "$BRANCH" 2>/dev/null || echo "Remote branch already de
 # Variables
 ISSUE_NUM=225
 BRANCH="claude/225-pr-lifecycle-skill"
-WORKTREE_PATH="wip/claude-225-pr-lifecycle-skill"
+WORKTREE_PATH=".worktrees/claude-225-pr-lifecycle-skill"
 
 # 1. Verify issue closed
 gh issue view "$ISSUE_NUM" --json state -q '.state'
 
 # 2. Switch to main worktree
-cd /workspace
+cd <repo-root>
 
 # 3. Pull latest changes
 git checkout main
@@ -452,7 +452,7 @@ git branch | grep -v "^\*" | grep -v "main\|master"
 
 | Check | Command | Expected |
 |-------|---------|----------|
-| In worktree | `pwd` &#124; `grep wip/` | In wip/ directory |
+| In worktree | `pwd` &#124; `grep .worktrees/` | In .worktrees/ directory |
 | Branch format | `git branch --show-current` | `user/num-slug` |
 | Issue open | `gh issue view N --json state` | `OPEN` |
 | Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |
@@ -508,7 +508,7 @@ gh issue close <num> --comment "Closed via PR #N"
 Use git-worktrees skill to create proper worktrees before starting work:
 ```bash
 # Create worktree for new issue
-git worktree add -b alice/42-new-feature wip/alice-42-new-feature main
+git worktree add -b alice/42-new-feature .worktrees/alice-42-new-feature main
 ```
 
 ### With `gh-sub-issue` Skill

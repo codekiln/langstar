@@ -80,7 +80,7 @@ The script performs the following steps:
 
 ### Step 7: Create Worktree
 - Generates branch name following project conventions: `claude/<issue_num>-<slug>`
-- Creates worktree at `wip/claude-<issue_num>-<slug>`
+- Creates worktree at `.worktrees/claude-<issue_num>-<slug>`
 - Checks for existing branches/worktrees
 - Fetches latest main and creates branch from it
 - Updates tmux window name if in tmux session
@@ -139,9 +139,9 @@ Milestone: Feature X
 
 **Worktree already exists:**
 ```
-⚠️  Worktree already exists at wip/claude-NNN-slug
+⚠️  Worktree already exists at .worktrees/claude-NNN-slug
 ```
-- Remove existing worktree: `git worktree remove wip/claude-NNN-slug`
+- Remove existing worktree: `git worktree remove .worktrees/claude-NNN-slug`
 - Or work in existing worktree
 
 **Branch already exists:**

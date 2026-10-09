@@ -64,15 +64,35 @@ Issue #999 (child of #666)
 
 ## Worktree Location Convention
 
-**Standard location:** `wip/` directory (gitignored)
+**Standard location:** `.worktrees/` directory (gitignored)
 
-**Naming pattern:** `wip/<branch-name>/`
+**Naming pattern:** `.worktrees/<branch-name>/`
 
 **Example mappings:**
-- Branch: `i130-add-authentication` → Worktree: `wip/i130-add-authentication/`
-- Branch: `m8-p123-i234-add-auth` → Worktree: `wip/m8-p123-i234-add-auth/`
+- Branch: `i130-add-authentication` → Worktree: `.worktrees/i130-add-authentication/`
+- Branch: `m8-p123-i234-add-auth` → Worktree: `.worktrees/m8-p123-i234-add-auth/`
 
-The `wip/` directory is already configured in `.gitignore`, keeping worktrees out of version control.
+The `.worktrees/` directory is already configured in `.gitignore`, keeping worktrees out of version control.
+
+**Why `.worktrees/`:** the dot prefix keeps Logseq and other scanners from indexing worktree contents, and one shared location per project means every tool's worktrees are in the same place. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
+
+**Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name. Do not put worktrees beside the project folder.
+
+**Exception:** Claude Desktop stores its worktrees in `.claude/worktrees/` and cannot be pointed elsewhere. That directory is gitignored too.
+
+**Standing worktrees:** a long-lived agent inbox is named after the agent (`.worktrees/reviewer`), not a branch.
+
+**Run from the root checkout.** A relative `.worktrees/` path resolves against the current directory. From inside another worktree, find the root with `git rev-parse --path-format=absolute --git-common-dir` (strip the trailing `/.git`).
+
+### Link secrets after creating a worktree
+
+Once #740 lands, run this from the new worktree right after `git worktree add`:
+
+```bash
+mise run worktree:link-secrets
+```
+
+It symlinks the worktree's `fnox.local.toml` to the root checkout's file, so every worktree reads the one fnox cache and none triggers a sync or a 1Password prompt. Until the task exists, skip this step.
 
 ## Core Commands
 
@@ -84,30 +104,30 @@ Creates a new worktree with a new branch based on the specified target branch.
 
 **Template:**
 ```bash
-git worktree add -b <branch-name> wip/<branch-name> <target-branch>
+git worktree add -b <branch-name> .worktrees/<branch-name> <target-branch>
 ```
 
 **Examples:**
 ```bash
 # Standalone issue
-git worktree add -b i130-add-auth wip/i130-add-auth main
+git worktree add -b i130-add-auth .worktrees/i130-add-auth main
 
 # Issue with milestone and parent
-git worktree add -b m8-p123-i234-add-auth wip/m8-p123-i234-add-auth main
+git worktree add -b m8-p123-i234-add-auth .worktrees/m8-p123-i234-add-auth main
 ```
 
 **Example 1: Top-level issue branching from release branch**
 ```bash
 # Issue #130: Add authentication (top-level)
 # Target: release/v0.2.0
-git worktree add -b codekiln/130-add-authentication wip/codekiln-130-add-authentication release/v0.2.0
+git worktree add -b codekiln/130-add-authentication .worktrees/codekiln-130-add-authentication release/v0.2.0
 ```
 
 **Example 2: Sub-issue branching from parent's feature branch**
 ```bash
 # Issue #135: Implement JWT (child of #130)
 # Target: codekiln/130-add-authentication (parent branch)
-git worktree add -b codekiln/135-implement-jwt wip/codekiln-135-implement-jwt codekiln/130-add-authentication
+git worktree add -b codekiln/135-implement-jwt .worktrees/codekiln-135-implement-jwt codekiln/130-add-authentication
 ```
 
 **What it does:**
@@ -137,9 +157,9 @@ Removes a worktree after PR merge. Must be run from outside the worktree being r
 
 **Usage:**
 ```bash
-git worktree remove wip/codekiln-130-auth              # Standard
-git worktree remove --force wip/codekiln-130-auth     # Force (with changes)
-git worktree remove --force --force wip/locked        # Remove locked
+git worktree remove .worktrees/codekiln-130-auth              # Standard
+git worktree remove --force .worktrees/codekiln-130-auth     # Force (with changes)
+git worktree remove --force --force .worktrees/locked        # Remove locked
 ```
 
 ### Prune Stale Worktrees
@@ -171,7 +191,7 @@ TARGET_BRANCH="release/v0.2.0"
 # Step 2: Determine branch name from issue
 # Issue #130: "Add user authentication" (standalone, no milestone/parent)
 BRANCH_NAME="i130-add-authentication"
-WORKTREE_PATH="wip/i130-add-authentication"
+WORKTREE_PATH=".worktrees/i130-add-authentication"
 
 # Step 3: Create worktree
 git worktree add -b $BRANCH_NAME $WORKTREE_PATH $TARGET_BRANCH
@@ -212,7 +232,7 @@ fi
 
 # Step 4: Create worktree from parent branch
 BRANCH_NAME="codekiln/135-implement-jwt"
-WORKTREE_PATH="wip/codekiln-135-implement-jwt"
+WORKTREE_PATH=".worktrees/codekiln-135-implement-jwt"
 
 git worktree add -b $BRANCH_NAME $WORKTREE_PATH $PARENT_BRANCH
 
@@ -234,14 +254,14 @@ git log -1
 
 ```bash
 # Step 1: Ensure you're in main worktree
-cd /workspace
+cd <repo-root>
 
 # Step 2: Pull latest changes from remote
 git checkout release/v0.2.0
 git pull origin release/v0.2.0
 
 # Step 3: Remove merged worktree
-git worktree remove wip/codekiln-130-add-authentication
+git worktree remove .worktrees/codekiln-130-add-authentication
 
 # Step 4: Delete local branch (optional)
 git branch -d codekiln/130-add-authentication
@@ -275,7 +295,7 @@ git worktree prune --verbose
 
 # Step 4: Remove any remaining worktree directories manually
 # (if needed)
-rm -rf wip/old-worktree-name
+rm -rf .worktrees/old-worktree-name
 
 # Step 5: Verify cleanup
 git worktree list
@@ -299,7 +319,7 @@ gh sub-issue list 135 --relation parent
 
 **Create worktree and link:**
 ```bash
-git worktree add -b codekiln/135-jwt wip/codekiln-135-jwt codekiln/130-add-authentication
+git worktree add -b codekiln/135-jwt .worktrees/codekiln-135-jwt codekiln/130-add-authentication
 gh sub-issue add 130 135  # Link if not already linked
 ```
 
@@ -309,16 +329,16 @@ After breaking down epic into sub-issues, create worktrees from parent branch:
 
 ```bash
 # Epic #100 broken down into #101, #102, #103
-git worktree add -b codekiln/100-auth wip/codekiln-100-auth main
-git worktree add -b codekiln/101-research wip/codekiln-101-research codekiln/100-auth
-git worktree add -b codekiln/102-implement wip/codekiln-102-implement codekiln/100-auth
+git worktree add -b codekiln/100-auth .worktrees/codekiln-100-auth main
+git worktree add -b codekiln/101-research .worktrees/codekiln-101-research codekiln/100-auth
+git worktree add -b codekiln/102-implement .worktrees/codekiln-102-implement codekiln/100-auth
 ```
 
 ### With Project GitHub Workflow
 
 **PR creation from worktrees:**
 ```bash
-cd wip/codekiln-130-add-authentication
+cd .worktrees/codekiln-130-add-authentication
 git push -u origin codekiln/130-add-authentication
 gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 ```
@@ -327,18 +347,18 @@ gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 
 ### Location and Naming
 
-✅ **Always use `wip/` directory**
+✅ **Always use `.worktrees/` directory**
 - Already gitignored
 - Consistent location for all worktrees
 - Easy to find and manage
 
 ✅ **Use consistent naming**
 - Worktree path matches branch name
-- Example: `i130-add-auth` → `wip/i130-add-auth`
+- Example: `i130-add-auth` → `.worktrees/i130-add-auth`
 
 ❌ **Avoid**
 - Random locations (`../temp`, `~/worktrees/random`)
-- Vague names (`wip/test`, `wip/tmp`)
+- Vague names (`.worktrees/test`, `.worktrees/tmp`)
 
 ### Target Branch Selection
 
@@ -360,8 +380,8 @@ gh pr create --title "✨ feat: add authentication" --body "Fixes #130"
 
 ✅ **Remove worktrees after PR merge**
 ```bash
-cd /workspace
-git worktree remove wip/codekiln-130-add-authentication
+cd <repo-root>
+git worktree remove .worktrees/codekiln-130-add-authentication
 ```
 
 ✅ **Run `git worktree prune` periodically**
@@ -383,8 +403,8 @@ git branch -d codekiln/130-add-authentication
 
 ✅ **Switch to main worktree before cleanup**
 ```bash
-cd /workspace  # Main worktree
-git worktree remove wip/old-feature
+cd <repo-root>  # Main worktree
+git worktree remove .worktrees/old-feature
 ```
 
 ✅ **Verify target branch before creating worktree**
@@ -399,7 +419,7 @@ git branch --list codekiln/130-add-authentication
 ❌ **Avoid**
 - Removing worktrees while inside them (causes errors)
 - Creating worktrees from non-existent target branches
-- Mixing conventions (some in `wip/`, some elsewhere)
+- Mixing conventions (some in `.worktrees/`, some elsewhere)
 
 ## Troubleshooting
 
@@ -417,9 +437,9 @@ git branch --list codekiln/130-add-authentication
 
 ## Environment Requirements
 
-**Prerequisites:** Git 2.5+, `wip/` in `.gitignore`, `gh` CLI (for issue queries)
+**Prerequisites:** Git 2.5+, `.worktrees/` in `.gitignore`, `gh` CLI (for issue queries)
 
-**Verification:** `git --version` and `git check-ignore wip/` (should output: wip/)
+**Verification:** `git --version` and `git check-ignore .worktrees/` (should output: .worktrees/)
 
 ## Command Reference
 
@@ -438,16 +458,16 @@ git branch --list codekiln/130-add-authentication
 gh sub-issue list 135 --relation parent
 
 # Create worktree
-git worktree add -b codekiln/135-jwt wip/codekiln-135-jwt codekiln/130-auth
+git worktree add -b codekiln/135-jwt .worktrees/codekiln-135-jwt codekiln/130-auth
 
 # Work and push
-cd wip/codekiln-135-jwt
+cd .worktrees/codekiln-135-jwt
 git push -u origin codekiln/135-jwt
 gh pr create --title "✨ feat: JWT" --body "Fixes #135"
 
 # After merge
-cd /workspace
-git worktree remove wip/codekiln-135-jwt
+cd <repo-root>
+git worktree remove .worktrees/codekiln-135-jwt
 git branch -d codekiln/135-jwt
 git worktree prune
 ```

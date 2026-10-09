@@ -71,7 +71,7 @@ gh issue view {parent-issue-num} --json state --jq '.state'
 ```bash
 git checkout main && git pull
 # If using worktrees:
-git worktree remove wip/{branch}
+git worktree remove .worktrees/{branch}
 git branch -d {branch}
 ```
 

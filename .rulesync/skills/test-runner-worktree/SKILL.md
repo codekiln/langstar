@@ -89,15 +89,15 @@ echo "LANGSMITH_API_KEY=$LANGSMITH_API_KEY"
 **Key Difference:** Tests run from worktrees use the feature branch SDK, while tests from main workspace use the main branch SDK.
 
 **Example from #186:**
-- Background tests ran from `/workspace` (main branch) → **FAILED** (old SDK without `Queued` enum)
-- Worktree tests ran from `/workspace/wip/codekiln-186-test-helpers` → **PASSED** (new SDK with `Queued` from PR #185)
+- Background tests ran from `<repo-root>` (main branch) → **FAILED** (old SDK without `Queued` enum)
+- Worktree tests ran from `<repo-root>/.worktrees/codekiln-186-test-helpers` → **PASSED** (new SDK with `Queued` from PR #185)
 
 **Solution:** Always verify working directory before running tests.
 
 ```bash
 # ✅ CORRECT: Verify and navigate to worktree
 pwd
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Run tests from worktree
 cargo test --test integration_test -- --ignored --nocapture
@@ -137,14 +137,14 @@ When working on a feature branch in a worktree, always run tests from the worktr
 
 ```bash
 # Step 1: Navigate to worktree
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Step 2: Source environment variables (CRITICAL - do this first!)
 source /workspace/.devcontainer/.env
 
 # Step 3: Verify you're in the correct location
 pwd
-# Should output: /workspace/wip/<worktree-name>
+# Should output: <repo-root>/.worktrees/<worktree-name>
 
 # Step 4: Verify environment variables are loaded
 [ -n "$LANGSMITH_API_KEY" ] && echo "✓ LANGSMITH_API_KEY is set" || echo "✗ LANGSMITH_API_KEY not set"
@@ -173,7 +173,7 @@ When testing against the main/release branch SDK, run from main workspace.
 
 ```bash
 # Step 1: Navigate to main workspace
-cd /workspace
+cd <repo-root>
 
 # Step 2: Verify branch
 git branch --show-current
@@ -194,7 +194,7 @@ Before committing, run all checks from the worktree.
 
 ```bash
 # From worktree directory
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # CRITICAL: Source environment variables first!
 source /workspace/.devcontainer/.env
@@ -219,7 +219,7 @@ cargo fmt --check
 **Wrong approach:**
 ```bash
 # Running pre-commit checks immediately in worktree without sourcing
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
 # Tests will fail with "byte index out of bounds" or authentication errors
 ```
@@ -232,7 +232,7 @@ cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace 
 **Correct approach:**
 ```bash
 # ALWAYS source environment variables FIRST in worktrees
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 source /workspace/.devcontainer/.env
 cargo fmt && cargo check --workspace --all-features && cargo clippy --workspace --all-features -- -D warnings && cargo test --workspace --all-features && cargo fmt --check
 ```
@@ -270,7 +270,7 @@ fi
 **Wrong approach:**
 ```bash
 # Running from main workspace when working on feature branch
-cd /workspace
+cd <repo-root>
 cargo test --test integration_deployment_workflow -- --ignored
 # May fail due to old SDK version in main branch
 ```
@@ -279,7 +279,7 @@ cargo test --test integration_deployment_workflow -- --ignored
 ```bash
 # Always verify pwd first
 pwd
-cd /workspace/wip/codekiln-186-test-helpers
+cd <repo-root>/.worktrees/codekiln-186-test-helpers
 cargo test --test integration_deployment_workflow -- --ignored
 ```
 
@@ -303,7 +303,7 @@ echo "Using key: ${LANGSMITH_API_KEY}"
 **Wrong approach:**
 ```bash
 # Running background tests from main workspace while developing in worktree
-cd /workspace
+cd <repo-root>
 cargo test --test integration_test -- --ignored &
 # This will test old SDK from main, not your changes
 ```
@@ -311,7 +311,7 @@ cargo test --test integration_test -- --ignored &
 **Correct approach:**
 ```bash
 # Run from worktree to test your changes
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 cargo test --test integration_test -- --ignored
 ```
 
@@ -351,7 +351,7 @@ fi
 
 ```bash
 # Navigate to worktree
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Source environment (ALWAYS do this first!)
 source /workspace/.devcontainer/.env
@@ -367,7 +367,7 @@ cargo test --test <test_file> <test_name> -- --ignored --nocapture
 
 ```bash
 # Navigate to worktree
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Source environment (ALWAYS do this first!)
 source /workspace/.devcontainer/.env
@@ -380,7 +380,7 @@ cargo test --test integration_deployment_workflow test_list_ -- --ignored --noca
 
 ```bash
 # Navigate to worktree
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Source environment (ALWAYS do this first!)
 source /workspace/.devcontainer/.env
@@ -424,13 +424,13 @@ source /workspace/.devcontainer/.env
 ```bash
 # Check current location
 pwd
-# If output is /workspace, you're in main workspace (may have old SDK)
+# If output is the repo root, you are in the root checkout (may have old SDK)
 ```
 
 **Solution:**
 ```bash
 # Navigate to worktree with feature branch
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # Run tests from worktree
 cargo test --test integration_test -- --ignored --nocapture
@@ -447,7 +447,7 @@ cargo test --test integration_test -- --ignored --nocapture
 **Diagnosis:**
 ```bash
 # Test from main workspace to simulate CI environment
-cd /workspace
+cd <repo-root>
 git checkout main
 git pull origin main
 cargo test --workspace --all-features
@@ -466,7 +466,7 @@ cargo test --workspace --all-features
 **Solution:**
 ```bash
 # Always run from worktree when testing feature branch
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 cargo test --test integration_test -- --ignored --nocapture
 ```
 
@@ -506,10 +506,10 @@ After creating a worktree, use this skill to run tests:
 
 ```bash
 # Create worktree (from git-worktrees skill)
-git worktree add -b codekiln/186-test-helpers wip/codekiln-186-test-helpers main
+git worktree add -b codekiln/186-test-helpers .worktrees/codekiln-186-test-helpers main
 
 # Navigate and run tests (from this skill)
-cd wip/codekiln-186-test-helpers
+cd .worktrees/codekiln-186-test-helpers
 [ -n "$LANGSMITH_API_KEY" ] && echo "Set" || source /workspace/.devcontainer/.env
 cargo test --test integration_test -- --ignored --nocapture
 ```
@@ -519,7 +519,7 @@ cargo test --test integration_test -- --ignored --nocapture
 Before committing, run the pre-commit checklist from worktree:
 
 ```bash
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 cargo fmt && \
 cargo check --workspace --all-features && \
 cargo clippy --workspace --all-features -- -D warnings && \
@@ -538,14 +538,14 @@ cargo fmt --check
 ### Worktree Test One-Liner
 
 ```bash
-cd /workspace/wip/<worktree-name> && [ -n "$LANGSMITH_API_KEY" ] || source /workspace/.devcontainer/.env && cargo test --test integration_test -- --ignored --nocapture
+cd <repo-root>/.worktrees/<worktree-name> && [ -n "$LANGSMITH_API_KEY" ] || source /workspace/.devcontainer/.env && cargo test --test integration_test -- --ignored --nocapture
 ```
 
 ### Complete Test Flow
 
 ```bash
 # 1. Navigate to worktree
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 
 # 2. Source environment variables (CRITICAL FIRST STEP!)
 source /workspace/.devcontainer/.env

@@ -115,7 +115,9 @@ BRANCH_PARTS+=("i${ISSUE_NUM}")
 BRANCH_PARTS+=("${ISSUE_SLUG}")
 
 BRANCH_NAME=$(IFS='-'; echo "${BRANCH_PARTS[*]}")
-WORKTREE_PATH="wip/${BRANCH_NAME}"
+# Worktrees live under the root checkout, whichever worktree this runs from
+REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${BRANCH_NAME}"
 
 echo "🌿 Branch: $BRANCH_NAME"
 echo "📂 Worktree: $WORKTREE_PATH"
@@ -148,6 +150,19 @@ if ! git worktree add -b "$BRANCH_NAME" "$WORKTREE_PATH" "origin/$TARGET_BRANCH"
 fi
 
 echo "✅ Worktree created successfully"
+```
+
+**Step 4b:** Link secrets into the worktree
+
+Once #740 lands, the `worktree:link-secrets` mise task symlinks the worktree's `fnox.local.toml` to the root checkout's file, so every worktree reads the one fnox cache and none triggers a sync or a 1Password prompt. Until the task exists, skip this step.
+
+```bash
+!# Link fnox.local.toml from the root checkout, if the task exists
+if mise tasks ls 2>/dev/null | grep -q 'worktree:link-secrets'; then
+  (cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
+else
+  echo "ℹ️  worktree:link-secrets not available yet (#740); skipping"
+fi
 ```
 
 **Step 5:** Update tmux window name (if in tmux)
