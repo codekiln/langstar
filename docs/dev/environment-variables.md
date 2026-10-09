@@ -19,7 +19,7 @@ On a host machine, the variables come from 1Password through [fnox](https://fnox
 | `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
 | `fnox.local.toml.example` | Yes | Template for the local layer, with a placeholder vault |
 | `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
-| `mise.toml` | Yes | Pins `fnox`, `1password-cli` and `age`. Sets the non-secret fixture names `TEST_GRAPH_ID`, `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
+| `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `TEST_GRAPH_ID`, `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
 
 The vault name stays out of the repository. Only the provider in your `fnox.local.toml` names it.
 

@@ -32,7 +32,7 @@ LangSmith credentials stay in 1Password. The committed `fnox.toml` holds only re
 ### Step 1: Install the Tools
 
 ```bash
-mise install   # installs fnox, 1password-cli and age from mise.toml
+mise install   # installs fnox, 1password-cli, age and cargo-nextest from mise.toml
 op signin      # or turn on the 1Password desktop app integration
 ```
 
