@@ -452,8 +452,9 @@ fn generate_test_prompt_name(prefix: &str) -> String {
 /// The test's own DELETE step calls `delete_now`. When that delete succeeds,
 /// `Drop` has nothing left to delete.
 ///
-/// `delete` is the function that removes a prompt by name. The tests pass one
-/// that calls LangSmith; the unit tests below pass one that records each call.
+/// `delete` is the function that removes a prompt by name. The lifecycle
+/// tests pass `delete_prompt_in_langsmith`; the unit tests below pass a
+/// closure that records each name it receives.
 struct PromptCleanup<D: FnMut(&str) -> Result<(), String>> {
     delete: D,
     name: Option<String>,
@@ -527,7 +528,7 @@ fn test_prompt_cleanup_deletes_once_when_a_step_panics() {
     assert_eq!(calls.into_inner(), vec!["test-prompt".to_string()]);
 }
 
-/// A failed `delete_now` keeps the guard armed, and `Drop` tries again.
+/// When `delete_now` fails, `Drop` deletes the prompt again.
 #[test]
 fn test_prompt_cleanup_retries_a_failed_delete_on_drop() {
     let calls = std::cell::RefCell::new(Vec::new());
