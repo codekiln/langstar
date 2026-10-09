@@ -488,8 +488,11 @@ impl DatasetCommands {
                 "Are you sure you want to delete dataset {}?",
                 args.dataset_id
             );
-            eprintln!("Use --yes (-y) to skip this confirmation.");
-            return Ok(());
+            eprintln!("This action cannot be undone. Use --yes (-y) to skip this prompt.");
+            if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--yes")? {
+                println!("Deletion cancelled.");
+                return Ok(());
+            }
         }
 
         let auth = config.to_auth_config();
