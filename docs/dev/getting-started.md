@@ -4,7 +4,7 @@ This guide covers setting up the Langstar development environment for first-time
 
 ## Prerequisites
 
-- Host machine (primary): a Rust toolchain, [mise](https://mise.jdx.dev), and access to the 1Password vault that holds the LangSmith test credentials
+- Host machine (primary): Rust 1.91 or newer (`rustc --version` shows yours, and `rustup update stable` installs it), [mise](https://mise.jdx.dev), and access to the 1Password vault that holds the LangSmith test credentials
 - Devcontainer (secondary):
   - Docker Desktop installed and running (local development)
   - One of:
