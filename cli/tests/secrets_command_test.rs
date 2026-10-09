@@ -256,7 +256,17 @@ fn test_secrets_delete_yes_skips_confirmation() {
     cmd.env("LANGSMITH_API_KEY", "dummy-key-for-tests")
         .env_remove("LANGSMITH_ORGANIZATION_ID")
         .env_remove("LANGSMITH_WORKSPACE_ID")
-        .args(["secrets", "delete", "LANGSTAR_NO_SUCH_SECRET", "--yes"]);
+        // Table output prints "Deleting secret" to stdout; json and text print
+        // it to stderr, and LANGSTAR_OUTPUT_FORMAT or the config file could
+        // pick either.
+        .args([
+            "secrets",
+            "delete",
+            "LANGSTAR_NO_SUCH_SECRET",
+            "--yes",
+            "--format",
+            "table",
+        ]);
 
     cmd.timeout(std::time::Duration::from_secs(60))
         .assert()
