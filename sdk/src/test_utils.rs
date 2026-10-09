@@ -364,12 +364,9 @@ async fn create_new_deployment(
                 eprintln!("│  3. Re-run the tests                                          │");
                 eprintln!("╰────────────────────────────────────────────────────────────────╯");
                 eprintln!();
-                Err(format!(
-                    "409 Conflict: Orphaned tracing project '{}' blocks deployment creation. \
-                     See instructions above to resolve.",
-                    config.name
-                )
-                .into())
+                // Keep the original error, so a caller can see it is a 409:
+                // `create_fresh_deployment` retries it under a new name.
+                Err(err.into())
             } else if is_conflict_error(&err) {
                 eprintln!();
                 eprintln!("╭────────────────────────────────────────────────────────────────╮");
@@ -538,11 +535,13 @@ async fn reuse_or_create_deployment_with_attempts(
 
         match create_new_deployment(client, config, integration_id).await {
             Ok(created) => return Ok(created),
+            // An orphaned tracing project blocks this exact name, and this
+            // loop retries under the same name, so waiting can't help.
             Err(err)
                 if attempt < attempts
-                    && err
-                        .downcast_ref::<LangstarError>()
-                        .is_some_and(is_conflict_error) =>
+                    && err.downcast_ref::<LangstarError>().is_some_and(|e| {
+                        is_conflict_error(e) && !is_tracing_project_conflict(e)
+                    }) =>
             {
                 eprintln!(
                     "Create collided with an existing deployment (attempt {}/{}); \
@@ -1071,6 +1070,95 @@ mod tests {
         assert_eq!(deployment.name, names[1]);
         create.assert_async().await;
         created.assert_async().await;
+    }
+
+    /// The control plane's 409 when a deleted deployment left its tracing
+    /// project behind under the same name.
+    const TRACING_PROJECT_409: &str =
+        r#"{"detail":"A tracing project with this name already exists."}"#;
+
+    #[tokio::test]
+    async fn test_fresh_create_retries_a_tracing_project_409_under_a_new_name() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::for_release_tests();
+        let names = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let names_seen = names.clone();
+
+        let conflict = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |request| {
+                names_seen.lock().unwrap().push(requested_name(request));
+                TRACING_PROJECT_409.as_bytes().to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+        let names_seen = names.clone();
+        let created = server
+            .mock("POST", "/v2/deployments")
+            .with_status(201)
+            .with_body_from_request(move |request| {
+                let name = requested_name(request);
+                names_seen.lock().unwrap().push(name.clone());
+                deployment_json(&name).to_string().into_bytes()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let deployment = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("the create under a new name should succeed");
+
+        let names = names.lock().unwrap().clone();
+        assert_eq!(names.len(), 2, "two create requests should be sent");
+        assert_ne!(names[1], names[0], "the retry uses a new name");
+        assert_eq!(deployment.name, names[1]);
+        conflict.assert_async().await;
+        created.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_reuse_does_not_retry_a_tracing_project_409() {
+        let mut server = Server::new_async().await;
+        let _list = server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(json!({"resources": [], "offset": 0}).to_string())
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(TRACING_PROJECT_409)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_attempts(
+            &mock_client(&server),
+            &TestDeploymentConfig::default(),
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a tracing-project 409 should not be retried under the same name");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_tracing_project_conflict),
+            "the tracing-project 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
     }
 
     #[tokio::test]
