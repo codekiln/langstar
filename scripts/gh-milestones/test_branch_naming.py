@@ -195,24 +195,52 @@ def test_extract_milestone_and_parent():
 
 
 def test_worktree_path_generation():
-    """Test worktree path generation from branch names."""
+    """Worktree paths land under the root checkout, even when run from a linked worktree."""
     print("\nTest 8: Worktree path generation")
     print("-" * 60)
 
-    branch = generate_branch_name(
-        234, "add-user-auth",
-        milestone_id=8,
-        parent_id=123
-    )
-    worktree_path = f".worktrees/{branch}"
-    expected = ".worktrees/m8-p123-i234-add-user-auth"
+    import importlib.util
+    import os
+    import subprocess
+    import tempfile
 
-    if worktree_path == expected:
-        print(f"✓ PASS: Generated worktree path '{worktree_path}'")
-        return True
-    else:
-        print(f"✗ FAIL: Expected '{expected}', got '{worktree_path}'")
-        return False
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    branch = generate_branch_name(234, "add-user-auth", milestone_id=8, parent_id=123)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.realpath(os.path.join(tmp, "repo"))
+        os.makedirs(root)
+        git = lambda *args, cwd=root: subprocess.run(
+            ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+        )
+        git("init", "-q", "-b", "main")
+        git("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "init")
+        linked = os.path.join(root, ".worktrees", "existing")
+        git("worktree", "add", "-q", "-b", "existing", linked)
+
+        expected = os.path.join(root, ".worktrees", branch)
+        original_cwd = os.getcwd()
+        results = {}
+        try:
+            for label, cwd in (("root checkout", root), ("linked worktree", linked)):
+                os.chdir(cwd)
+                results[label] = os.path.realpath(os.path.dirname(prep_next.worktree_path_for(branch))) + "/" + branch
+        finally:
+            os.chdir(original_cwd)
+
+    ok = True
+    for label, got in results.items():
+        if got == expected:
+            print(f"✓ PASS: from the {label}, path is '{got}'")
+        else:
+            print(f"✗ FAIL: from the {label}, expected '{expected}', got '{got}'")
+            ok = False
+    return ok
 
 
 def main():
