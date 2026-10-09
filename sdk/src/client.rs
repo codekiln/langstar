@@ -1,6 +1,6 @@
 use crate::auth::AuthConfig;
 use crate::error::{LangstarError, Result};
-use crate::runs::{QueryRunsRequest, QueryRunsResponse, Run};
+use crate::runs::{QueriedRun, QueryRunsRequest, QueryRunsResponse};
 use futures_core::Stream;
 use reqwest::{Client as HttpClient, RequestBuilder};
 use serde::{Deserialize, Serialize};
@@ -933,45 +933,50 @@ impl LangchainClient {
 
     /// Query runs from LangSmith with filtering and pagination.
     ///
-    /// Uses `POST /api/v1/runs/query` endpoint with cursor-based pagination.
+    /// Uses the `POST /api/v2/runs/query` endpoint with cursor-based pagination.
     /// Supports the LangSmith filter query language for complex filtering.
     ///
     /// # Arguments
     ///
-    /// * `request` - Query parameters including filters, pagination, and field selection
+    /// * `request` - Query parameters. Set `project_ids` or `reference_dataset_id`,
+    ///   and list the fields you need in `selects`: without it the API returns only `id`.
     ///
     /// # Returns
     ///
-    /// A `QueryRunsResponse` containing the matching runs and pagination cursors.
+    /// A `QueryRunsResponse` with one page of runs, newest first, and the cursor
+    /// for the next page.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunType};
-    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunSelectField, RunType};
+    /// # async fn example(project_id: uuid::Uuid) -> langstar_sdk::Result<()> {
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
     /// let request = QueryRunsRequest {
+    ///     project_ids: Some(vec![project_id]),
     ///     is_root: Some(true),
     ///     run_type: Some(RunType::Llm),
-    ///     limit: Some(50),
+    ///     page_size: Some(50),
+    ///     selects: Some(vec![RunSelectField::Id, RunSelectField::Name]),
     ///     ..Default::default()
     /// };
     ///
     /// let response = client.query_runs(request).await?;
-    /// println!("Found {} runs", response.runs.len());
+    /// println!("Found {} runs", response.items.len());
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// # API Reference
     ///
-    /// - Endpoint: `POST /api/v1/runs/query`
-    /// - Max limit per request: 100 (per OpenAPI spec)
-    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    /// - Endpoint: `POST /api/v2/runs/query`
+    /// - Max `page_size`: 1000; max time window: 401 days
+    /// - Replaces `POST /api/v1/runs/query`, which LangSmith Cloud removes on 31 Jan 2027:
+    ///   <https://docs.langchain.com/langsmith/smithdb-sdk-migration>
     pub async fn query_runs(&self, request: QueryRunsRequest) -> Result<QueryRunsResponse> {
-        let request_builder = self.langsmith_post("/api/v1/runs/query")?.json(&request);
+        let request_builder = self.langsmith_post("/api/v2/runs/query")?.json(&request);
 
         self.execute(request_builder).await
     }
@@ -990,22 +995,23 @@ impl LangchainClient {
     ///
     /// # Returns
     ///
-    /// A `Stream` of `Result<Run>` that yields runs one at a time.
+    /// A `Stream` of `Result<Run>` that yields runs one at a time, newest first.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunType};
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunSelectField};
     /// # use futures_core::Stream;
-    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// # async fn example(project_id: uuid::Uuid) -> langstar_sdk::Result<()> {
     /// use tokio_stream::StreamExt;
     ///
     /// let auth = AuthConfig::from_env()?;
     /// let client = LangchainClient::new(auth)?;
     ///
     /// let request = QueryRunsRequest {
+    ///     project_ids: Some(vec![project_id]),
     ///     is_root: Some(true),
-    ///     run_type: Some(RunType::Llm),
+    ///     selects: Some(vec![RunSelectField::Name, RunSelectField::Status]),
     ///     ..Default::default()
     /// };
     ///
@@ -1014,7 +1020,7 @@ impl LangchainClient {
     ///
     /// while let Some(result) = stream.next().await {
     ///     match result {
-    ///         Ok(run) => println!("Run: {} ({})", run.name, run.status),
+    ///         Ok(run) => println!("Run: {:?} ({:?})", run.name, run.status),
     ///         Err(e) => eprintln!("Error: {}", e),
     ///     }
     /// }
@@ -1024,17 +1030,17 @@ impl LangchainClient {
     ///
     /// # Notes
     ///
-    /// - Each page fetches up to 100 runs (API maximum)
+    /// - Each page fetches `request.page_size` runs (API default 100, maximum 1000)
     /// - The stream continues until either:
     ///   - `total_limit` runs have been yielded
-    ///   - No more pages are available (no `next` cursor)
+    ///   - No more pages are available (no `next_cursor`)
     ///   - An error occurs
     /// - Errors are yielded as `Err` items, allowing partial results
     pub fn query_runs_paginated(
         &self,
         mut request: QueryRunsRequest,
         total_limit: Option<usize>,
-    ) -> Pin<Box<dyn Stream<Item = Result<Run>> + Send + '_>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<QueriedRun>> + Send + '_>> {
         let limit = total_limit.unwrap_or(usize::MAX);
 
         Box::pin(async_stream::try_stream! {
@@ -1043,7 +1049,7 @@ impl LangchainClient {
             loop {
                 let response = self.query_runs(request.clone()).await?;
 
-                for run in response.runs {
+                for run in response.items {
                     if total_yielded >= limit {
                         return;
                     }
@@ -1051,7 +1057,7 @@ impl LangchainClient {
                     yield run;
                 }
 
-                match response.cursors.next {
+                match response.next_cursor {
                     Some(next) if total_yielded < limit => {
                         request.cursor = Some(next);
                     }

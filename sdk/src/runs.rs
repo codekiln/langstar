@@ -5,19 +5,24 @@
 //!
 //! # API Reference
 //!
-//! - Endpoint: `POST /api/v1/runs/query`
+//! - Endpoint: `POST /api/v2/runs/query`
 //! - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+//! - Migration guide from `POST /api/v1/runs/query`:
+//!   <https://docs.langchain.com/langsmith/smithdb-sdk-migration-query-runs>
 //!
 //! # Example
 //!
 //! ```no_run
-//! use langstar_sdk::runs::{QueryRunsRequest, RunType};
+//! use langstar_sdk::runs::{QueryRunsRequest, RunSelectField, RunType};
+//! use uuid::Uuid;
 //!
 //! // Create a query request
 //! let request = QueryRunsRequest {
+//!     project_ids: Some(vec![Uuid::nil()]),
 //!     is_root: Some(true),
 //!     run_type: Some(RunType::Llm),
-//!     limit: Some(10),
+//!     page_size: Some(10),
+//!     selects: Some(RunSelectField::ALL.to_vec()),
 //!     ..Default::default()
 //! };
 //! ```
@@ -29,33 +34,47 @@ use uuid::Uuid;
 
 use crate::serde_utils::deserialize_flexible_datetime_opt;
 
-/// Run type enum matching OpenAPI spec `RunTypeEnum`.
+/// Run type enum matching OpenAPI spec `query.RunType`.
 ///
-/// Represents the type of operation a run performed.
+/// Represents the type of operation a run performed. Serializes as the
+/// lowercase value the v1 endpoints use (`"llm"`) and also accepts the
+/// uppercase value `POST /api/v2/runs/query` returns (`"LLM"`).
+/// [`QueryRunsRequest`] sends the uppercase value.
 ///
 /// # OpenAPI Reference
 ///
 /// Values: `["tool", "chain", "llm", "retriever", "embedding", "prompt", "parser"]`
+/// (`RunTypeEnum`); v2 uses the same values in uppercase (`query.RunType`).
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum RunType {
     /// Tool execution run
+    #[serde(alias = "TOOL")]
     Tool,
     /// Chain execution run
+    #[serde(alias = "CHAIN")]
     Chain,
     /// LLM (Language Model) call run
+    #[serde(alias = "LLM")]
     Llm,
     /// Retriever execution run
+    #[serde(alias = "RETRIEVER")]
     Retriever,
     /// Embedding operation run
+    #[serde(alias = "EMBEDDING")]
     Embedding,
     /// Prompt template run
+    #[serde(alias = "PROMPT")]
     Prompt,
     /// Output parser run
+    #[serde(alias = "PARSER")]
     Parser,
 }
 
-/// Run schema based on OpenAPI `RunSchema` spec.
+/// Run schema based on OpenAPI `RunSchema` spec, as the v1 endpoints return it.
+///
+/// The annotation queue endpoints return this shape. Run queries return
+/// [`QueriedRun`] instead.
 ///
 /// Represents a single run/trace in LangSmith. Contains all 54 fields
 /// from the OpenAPI specification.
@@ -282,94 +301,386 @@ fn default_execution_order() -> i32 {
     1
 }
 
-/// Sort order for run queries.
+/// A run returned by `POST /api/v2/runs/query`, matching OpenAPI `query.RunResponse`.
+///
+/// The API returns only the fields named in [`QueryRunsRequest::selects`]
+/// (only `id` when `selects` is omitted), so every field except `id` is
+/// optional.
 ///
 /// # OpenAPI Reference
 ///
-/// Maps to `RunDateOrder` enum with values `["asc", "desc"]`.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum RunDateOrder {
-    /// Ascending order (oldest first)
-    Asc,
-    /// Descending order (newest first, default)
-    #[default]
-    Desc,
+/// See `query.RunResponse` in `reference/openapi/langchain/langsmith/openapi.json`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueriedRun {
+    /// Unique identifier for the run
+    pub id: Uuid,
+
+    /// Name of the run (typically the component name)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    /// Type of run (LLM, CHAIN, TOOL, etc.)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run_type: Option<RunType>,
+
+    /// Completion status of the run: `SUCCESS`, `ERROR` or `PENDING`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+
+    /// Tracing project this run was logged to (v1 called this `session_id`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<Uuid>,
+
+    /// ID of the root trace this run belongs to; equals `id` for a root run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_id: Option<Uuid>,
+
+    /// Dotted order string for hierarchical ordering within trace
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dotted_order: Option<String>,
+
+    /// Whether this run is the root of its trace
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_root: Option<bool>,
+
+    /// Ancestor run IDs, from the trace root down to the direct parent
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_run_ids: Option<Vec<Uuid>>,
+
+    /// Conversation thread this run belongs to, if any
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+
+    /// Application path identifier
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_path: Option<String>,
+
+    /// When the run started
+    #[serde(
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub start_time: Option<DateTime<Utc>>,
+
+    /// When the run ended
+    #[serde(
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub end_time: Option<DateTime<Utc>>,
+
+    /// When the first token was received (for streaming LLM calls)
+    #[serde(
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub first_token_time: Option<DateTime<Utc>>,
+
+    /// When the run was last queued
+    #[serde(
+        default,
+        deserialize_with = "deserialize_flexible_datetime_opt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_queued_at: Option<DateTime<Utc>>,
+
+    /// Time between start and end, in seconds
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latency_seconds: Option<f64>,
+
+    /// Input data for the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inputs: Option<Value>,
+
+    /// Preview of inputs (truncated string)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub inputs_preview: Option<String>,
+
+    /// Output data from the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outputs: Option<Value>,
+
+    /// Preview of outputs (truncated string)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outputs_preview: Option<String>,
+
+    /// Error message if the run failed
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+
+    /// Preview of the error message (truncated string)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_preview: Option<String>,
+
+    /// Extra data recorded with the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub extra: Option<Value>,
+
+    /// Metadata recorded with the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<Value>,
+
+    /// Events emitted during the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub events: Option<Vec<Value>>,
+
+    /// Serialized manifest of the component
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub manifest: Option<Value>,
+
+    /// Attachment file names mapped to pre-signed download URLs
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attachments: Option<Value>,
+
+    /// Tags attached to the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+
+    /// Total tokens used
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_tokens: Option<i64>,
+
+    /// Prompt tokens used
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt_tokens: Option<i64>,
+
+    /// Completion tokens used
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_tokens: Option<i64>,
+
+    /// Breakdown of prompt tokens
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt_token_details: Option<Value>,
+
+    /// Breakdown of completion tokens
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_token_details: Option<Value>,
+
+    /// Estimated total cost in USD
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_cost: Option<f64>,
+
+    /// Estimated prompt cost in USD
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt_cost: Option<f64>,
+
+    /// Estimated completion cost in USD
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_cost: Option<f64>,
+
+    /// Breakdown of prompt cost
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prompt_cost_details: Option<Value>,
+
+    /// Breakdown of completion cost
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub completion_cost_details: Option<Value>,
+
+    /// Price model used to compute costs
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub price_model_id: Option<Uuid>,
+
+    /// Aggregated feedback scores, keyed by feedback key
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub feedback_stats: Option<Value>,
+
+    /// Dataset example this run references
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_example_id: Option<Uuid>,
+
+    /// Dataset this run references
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_dataset_id: Option<Uuid>,
+
+    /// Whether the run has been added to a dataset (v1 called this `in_dataset`)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_in_dataset: Option<bool>,
+
+    /// Public share URL, if the run is shared
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub share_url: Option<String>,
+
+    /// When the thread evaluation ran
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub thread_evaluation_time: Option<String>,
+
+    /// LangSmith user whose credential traced the run
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ls_user_id: Option<Uuid>,
+
+    /// Metadata about this query result, e.g. `sem_filter_score`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query_metadata: Option<Value>,
 }
 
-/// Request body for `POST /api/v1/runs/query`.
+/// A run property that `POST /api/v2/runs/query` can return, matching
+/// OpenAPI `query.RunSelectField`.
 ///
-/// All fields are optional, allowing flexible querying.
+/// Serializes as the uppercase name the API expects (`"TOTAL_TOKENS"`).
+/// [`RunSelectField::from_name`] accepts the snake_case field name instead.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[allow(missing_docs)]
+pub enum RunSelectField {
+    Id,
+    Name,
+    RunType,
+    Status,
+    StartTime,
+    EndTime,
+    LatencySeconds,
+    FirstTokenTime,
+    Error,
+    ErrorPreview,
+    Extra,
+    Metadata,
+    Events,
+    Inputs,
+    InputsPreview,
+    Outputs,
+    OutputsPreview,
+    Manifest,
+    ParentRunIds,
+    ProjectId,
+    TraceId,
+    ThreadId,
+    DottedOrder,
+    IsRoot,
+    ReferenceExampleId,
+    ReferenceDatasetId,
+    TotalTokens,
+    PromptTokens,
+    CompletionTokens,
+    TotalCost,
+    PromptCost,
+    CompletionCost,
+    PromptTokenDetails,
+    CompletionTokenDetails,
+    PromptCostDetails,
+    CompletionCostDetails,
+    PriceModelId,
+    Tags,
+    AppPath,
+    Attachments,
+    ThreadEvaluationTime,
+    IsInDataset,
+    LastQueuedAt,
+    ShareUrl,
+    FeedbackStats,
+    LsUserId,
+}
+
+impl RunSelectField {
+    /// Every field the API can return, in OpenAPI enum order.
+    pub const ALL: [RunSelectField; 46] = [
+        Self::Id,
+        Self::Name,
+        Self::RunType,
+        Self::Status,
+        Self::StartTime,
+        Self::EndTime,
+        Self::LatencySeconds,
+        Self::FirstTokenTime,
+        Self::Error,
+        Self::ErrorPreview,
+        Self::Extra,
+        Self::Metadata,
+        Self::Events,
+        Self::Inputs,
+        Self::InputsPreview,
+        Self::Outputs,
+        Self::OutputsPreview,
+        Self::Manifest,
+        Self::ParentRunIds,
+        Self::ProjectId,
+        Self::TraceId,
+        Self::ThreadId,
+        Self::DottedOrder,
+        Self::IsRoot,
+        Self::ReferenceExampleId,
+        Self::ReferenceDatasetId,
+        Self::TotalTokens,
+        Self::PromptTokens,
+        Self::CompletionTokens,
+        Self::TotalCost,
+        Self::PromptCost,
+        Self::CompletionCost,
+        Self::PromptTokenDetails,
+        Self::CompletionTokenDetails,
+        Self::PromptCostDetails,
+        Self::CompletionCostDetails,
+        Self::PriceModelId,
+        Self::Tags,
+        Self::AppPath,
+        Self::Attachments,
+        Self::ThreadEvaluationTime,
+        Self::IsInDataset,
+        Self::LastQueuedAt,
+        Self::ShareUrl,
+        Self::FeedbackStats,
+        Self::LsUserId,
+    ];
+
+    /// Looks up a field by its name in either case: `total_tokens` or `TOTAL_TOKENS`.
+    ///
+    /// Returns `None` for a name the API does not offer.
+    pub fn from_name(name: &str) -> Option<Self> {
+        serde_json::from_value(Value::String(name.trim().to_ascii_uppercase())).ok()
+    }
+}
+
+/// Request body for `POST /api/v2/runs/query`, matching OpenAPI
+/// `query.QueryRunsRequestBody`.
 ///
-/// # OpenAPI Reference
-///
-/// See `/workspace/reference/api-specs/langsmith/runs-query-request-schema.json`
+/// Set exactly one of `project_ids` or `reference_dataset_id`. The API
+/// always sorts results by `start_time`, newest first.
 ///
 /// # Example
 ///
 /// ```
-/// use langstar_sdk::runs::{QueryRunsRequest, RunType};
+/// use langstar_sdk::runs::{QueryRunsRequest, RunSelectField, RunType};
+/// use uuid::Uuid;
 ///
 /// let request = QueryRunsRequest {
+///     project_ids: Some(vec![Uuid::nil()]),
 ///     is_root: Some(true),
 ///     run_type: Some(RunType::Llm),
-///     limit: Some(50),
+///     page_size: Some(50),
+///     selects: Some(vec![RunSelectField::Id, RunSelectField::Name]),
 ///     ..Default::default()
 /// };
 /// ```
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct QueryRunsRequest {
-    /// Filter by session/project IDs
+    /// Tracing projects to query. Mutually exclusive with `reference_dataset_id`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub session: Option<Vec<Uuid>>,
+    pub project_ids: Option<Vec<Uuid>>,
 
-    /// Filter by specific run IDs
+    /// Dataset whose experiment projects to query. Mutually exclusive with `project_ids`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<Vec<Uuid>>,
+    pub reference_dataset_id: Option<Uuid>,
 
-    /// Filter by trace ID
+    /// Limit results to these run IDs
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub trace: Option<Uuid>,
+    pub ids: Option<Vec<Uuid>>,
 
-    /// Filter by parent run ID
+    /// Limit results to runs in this trace
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parent_run: Option<Uuid>,
+    pub trace_id: Option<Uuid>,
+
+    /// Limit results to runs linked to these dataset examples
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reference_examples: Option<Vec<Uuid>>,
 
     /// Filter by run type
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_run_type_uppercase"
+    )]
     pub run_type: Option<RunType>,
-
-    /// Filter by reference example IDs
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reference_example: Option<Vec<Uuid>>,
-
-    /// Filter by execution order (must be 1)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub execution_order: Option<i32>,
-
-    /// Filter runs starting after this time
-    #[serde(
-        skip_serializing_if = "Option::is_none",
-        default,
-        deserialize_with = "deserialize_flexible_datetime_opt"
-    )]
-    pub start_time: Option<DateTime<Utc>>,
-
-    /// Filter runs ending before this time
-    #[serde(
-        skip_serializing_if = "Option::is_none",
-        default,
-        deserialize_with = "deserialize_flexible_datetime_opt"
-    )]
-    pub end_time: Option<DateTime<Utc>>,
-
-    /// Filter by error status
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<bool>,
-
-    /// Natural language query (experimental)
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub query: Option<String>,
 
     /// Filter expression using LangSmith filter query language.
     ///
@@ -377,83 +688,71 @@ pub struct QueryRunsRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub filter: Option<String>,
 
-    /// Filter for root run in trace
+    /// Filter applied to the root run of each trace
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trace_filter: Option<String>,
 
-    /// Filter for other runs in trace tree
+    /// Filter matching any run in each trace's tree
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tree_filter: Option<String>,
 
-    /// Only return root runs
+    /// Only root runs (`true`) or only non-root runs (`false`)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_root: Option<bool>,
 
-    /// Data source type filter
+    /// Only errored runs (`true`) or only runs without error (`false`)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub data_source_type: Option<String>,
+    pub has_error: Option<bool>,
 
-    /// Skip pagination and return all results
+    /// Lower bound for run `start_time`. The API defaults to 1 day ago and
+    /// rejects a window longer than 401 days.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub skip_pagination: Option<bool>,
+    pub min_start_time: Option<DateTime<Utc>>,
 
-    /// Alternative search filter syntax
+    /// Upper bound for run `start_time`. The API defaults to now.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub search_filter: Option<String>,
+    pub max_start_time: Option<DateTime<Utc>>,
 
-    /// Enable experimental search features. Defaults to false.
+    /// Runs per page (1-1000). The API defaults to 100.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub use_experimental_search: Option<bool>,
+    pub page_size: Option<u32>,
 
-    /// Cursor for pagination (from previous response)
+    /// Opaque cursor from a previous response's `next_cursor`
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
 
-    /// Maximum number of runs to return (1-100, default: 100)
+    /// Fields to return on each run. The API returns only `id` when omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub limit: Option<u32>,
-
-    /// Fields to select in the response
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub select: Option<Vec<String>>,
-
-    /// Sort order for results. Defaults to descending.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub order: Option<RunDateOrder>,
-
-    /// Skip returning previous cursor. Defaults to false.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub skip_prev_cursor: Option<bool>,
+    pub selects: Option<Vec<RunSelectField>>,
 }
 
-/// Response from `POST /api/v1/runs/query`.
-///
-/// # OpenAPI Reference
-///
-/// See `/workspace/reference/api-specs/langsmith/runs-query-response-schema.json`
+/// Serializes a run type the way `POST /api/v2/runs/query` expects it: `"LLM"`.
+fn serialize_run_type_uppercase<S: serde::Serializer>(
+    run_type: &Option<RunType>,
+    serializer: S,
+) -> std::result::Result<S::Ok, S::Error> {
+    match run_type {
+        Some(rt) => match serde_json::to_value(rt) {
+            Ok(Value::String(name)) => serializer.serialize_str(&name.to_ascii_uppercase()),
+            _ => Err(serde::ser::Error::custom(
+                "run type did not serialize as a string",
+            )),
+        },
+        None => serializer.serialize_none(),
+    }
+}
+
+/// Response from `POST /api/v2/runs/query`, matching OpenAPI
+/// `query.QueryRunsResponseBody`.
 #[derive(Debug, Clone, Deserialize)]
 pub struct QueryRunsResponse {
-    /// List of runs matching the query
-    pub runs: Vec<Run>,
+    /// One page of runs, sorted by `start_time` descending
+    #[serde(default)]
+    pub items: Vec<QueriedRun>,
 
-    /// Pagination cursors
-    pub cursors: Cursors,
-
-    /// Cursors for experimental search (if enabled)
-    pub search_cursors: Option<Value>,
-
-    /// How the query was parsed (for debugging)
-    pub parsed_query: Option<String>,
-}
-
-/// Pagination cursors for runs query response.
-#[derive(Debug, Clone, Deserialize)]
-pub struct Cursors {
-    /// Cursor for the next page of results
-    pub next: Option<String>,
-
-    /// Cursor for the previous page of results
-    pub prev: Option<String>,
+    /// Cursor for the next page; `None` on the last page
+    #[serde(default)]
+    pub next_cursor: Option<String>,
 }
 
 #[cfg(test)]
@@ -461,56 +760,90 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_run_type_serialization() {
-        let llm = RunType::Llm;
-        let json = serde_json::to_string(&llm).unwrap();
-        assert_eq!(json, "\"llm\"");
-
-        let chain = RunType::Chain;
-        let json = serde_json::to_string(&chain).unwrap();
-        assert_eq!(json, "\"chain\"");
-
-        let tool = RunType::Tool;
-        let json = serde_json::to_string(&tool).unwrap();
-        assert_eq!(json, "\"tool\"");
+    fn test_run_type_serializes_lowercase() {
+        assert_eq!(serde_json::to_string(&RunType::Llm).unwrap(), "\"llm\"");
+        assert_eq!(serde_json::to_string(&RunType::Chain).unwrap(), "\"chain\"");
+        assert_eq!(serde_json::to_string(&RunType::Tool).unwrap(), "\"tool\"");
     }
 
     #[test]
-    fn test_run_type_deserialization() {
-        let llm: RunType = serde_json::from_str("\"llm\"").unwrap();
-        assert_eq!(llm, RunType::Llm);
-
-        let retriever: RunType = serde_json::from_str("\"retriever\"").unwrap();
-        assert_eq!(retriever, RunType::Retriever);
-
-        let parser: RunType = serde_json::from_str("\"parser\"").unwrap();
-        assert_eq!(parser, RunType::Parser);
+    fn test_query_runs_request_sends_every_run_type_uppercase() {
+        let all = [
+            RunType::Tool,
+            RunType::Chain,
+            RunType::Llm,
+            RunType::Retriever,
+            RunType::Embedding,
+            RunType::Prompt,
+            RunType::Parser,
+        ];
+        let sent: Vec<Value> = all
+            .iter()
+            .map(|rt| {
+                let request = QueryRunsRequest {
+                    run_type: Some(*rt),
+                    ..Default::default()
+                };
+                serde_json::to_value(&request).unwrap()["run_type"].clone()
+            })
+            .collect();
+        let spec: Value = serde_json::from_str(include_str!(
+            "../../reference/openapi/langchain/langsmith/openapi.json"
+        ))
+        .unwrap();
+        let expected = spec["components"]["schemas"]["query.RunType"]["enum"].clone();
+        assert_eq!(Value::Array(sent), expected);
     }
 
     #[test]
-    fn test_run_date_order_serialization() {
-        let asc = RunDateOrder::Asc;
-        let json = serde_json::to_string(&asc).unwrap();
-        assert_eq!(json, "\"asc\"");
+    fn test_run_type_deserializes_either_case() {
+        let upper: RunType = serde_json::from_str("\"RETRIEVER\"").unwrap();
+        assert_eq!(upper, RunType::Retriever);
+        let lower: RunType = serde_json::from_str("\"parser\"").unwrap();
+        assert_eq!(lower, RunType::Parser);
+    }
 
-        let desc = RunDateOrder::Desc;
-        let json = serde_json::to_string(&desc).unwrap();
-        assert_eq!(json, "\"desc\"");
+    #[test]
+    fn test_all_run_types() {
+        let types = [
+            ("\"TOOL\"", RunType::Tool),
+            ("\"CHAIN\"", RunType::Chain),
+            ("\"LLM\"", RunType::Llm),
+            ("\"RETRIEVER\"", RunType::Retriever),
+            ("\"EMBEDDING\"", RunType::Embedding),
+            ("\"PROMPT\"", RunType::Prompt),
+            ("\"PARSER\"", RunType::Parser),
+        ];
+
+        for (json, expected) in types {
+            let run_type: RunType = serde_json::from_str(json).unwrap();
+            assert_eq!(run_type, expected);
+        }
     }
 
     #[test]
     fn test_query_runs_request_serialization() {
+        let project = Uuid::parse_str("323e4567-e89b-12d3-a456-426614174002").unwrap();
         let request = QueryRunsRequest {
+            project_ids: Some(vec![project]),
             is_root: Some(true),
             run_type: Some(RunType::Llm),
-            limit: Some(50),
+            page_size: Some(50),
+            selects: Some(vec![RunSelectField::Id, RunSelectField::TotalTokens]),
             ..Default::default()
         };
 
-        let json = serde_json::to_string(&request).unwrap();
-        assert!(json.contains("\"is_root\":true"));
-        assert!(json.contains("\"run_type\":\"llm\""));
-        assert!(json.contains("\"limit\":50"));
+        let json: Value = serde_json::to_value(&request).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "project_ids": ["323e4567-e89b-12d3-a456-426614174002"],
+                "is_root": true,
+                "run_type": "LLM",
+                "page_size": 50,
+                "selects": ["ID", "TOTAL_TOKENS"]
+            })
+        );
     }
 
     #[test]
@@ -521,188 +854,100 @@ mod tests {
     }
 
     #[test]
-    fn test_run_deserialization_minimal() {
-        // Minimal required fields only
-        let json = r#"{
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat"
-        }"#;
-
-        let run: Run = serde_json::from_str(json).unwrap();
-        assert_eq!(run.name, "ChatOpenAI");
-        assert_eq!(run.run_type, RunType::Llm);
-        assert_eq!(run.status, "success");
-        assert_eq!(run.total_tokens, 0); // default
-        assert_eq!(run.prompt_tokens, 0); // default
-        assert_eq!(run.completion_tokens, 0); // default
-        assert_eq!(run.execution_order, 1); // default
-        assert!(!run.trace_upgrade); // default false
+    fn test_run_select_field_all_matches_openapi_enum() {
+        let spec: Value = serde_json::from_str(include_str!(
+            "../../reference/openapi/langchain/langsmith/openapi.json"
+        ))
+        .unwrap();
+        let expected = &spec["components"]["schemas"]["query.RunSelectField"]["enum"];
+        assert_eq!(
+            &serde_json::to_value(RunSelectField::ALL.as_slice()).unwrap(),
+            expected
+        );
     }
 
     #[test]
-    fn test_run_deserialization_with_tokens() {
+    fn test_run_select_field_from_name() {
+        assert_eq!(
+            RunSelectField::from_name("total_tokens"),
+            Some(RunSelectField::TotalTokens)
+        );
+        assert_eq!(RunSelectField::from_name(" ID "), Some(RunSelectField::Id));
+        assert_eq!(RunSelectField::from_name("session_id"), None);
+    }
+
+    #[test]
+    fn test_run_deserialization_id_only() {
+        // With no `selects`, the API returns only `id`.
+        let run: QueriedRun =
+            serde_json::from_str(r#"{"id": "123e4567-e89b-12d3-a456-426614174000"}"#).unwrap();
+        assert!(run.name.is_none());
+        assert!(run.status.is_none());
+        assert!(run.total_tokens.is_none());
+    }
+
+    #[test]
+    fn test_run_deserialization_v2_fields() {
         let json = r#"{
             "id": "123e4567-e89b-12d3-a456-426614174000",
             "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat",
+            "run_type": "LLM",
+            "status": "SUCCESS",
+            "project_id": "323e4567-e89b-12d3-a456-426614174002",
+            "trace_id": "123e4567-e89b-12d3-a456-426614174000",
+            "parent_run_ids": [],
+            "start_time": "2024-01-01T12:00:00.000Z",
+            "end_time": "2024-01-01T12:00:05.000Z",
             "total_tokens": 150,
-            "prompt_tokens": 100,
-            "completion_tokens": 50,
-            "total_cost": "0.0015"
+            "total_cost": 0.0015,
+            "tags": ["production"],
+            "is_in_dataset": false
         }"#;
 
-        let run: Run = serde_json::from_str(json).unwrap();
-        assert_eq!(run.total_tokens, 150);
-        assert_eq!(run.prompt_tokens, 100);
-        assert_eq!(run.completion_tokens, 50);
-        assert_eq!(run.total_cost, Some("0.0015".to_string()));
+        let run: QueriedRun = serde_json::from_str(json).unwrap();
+        assert_eq!(run.name.as_deref(), Some("ChatOpenAI"));
+        assert_eq!(run.run_type, Some(RunType::Llm));
+        assert_eq!(run.status.as_deref(), Some("SUCCESS"));
+        assert_eq!(
+            run.project_id.unwrap().to_string(),
+            "323e4567-e89b-12d3-a456-426614174002"
+        );
+        assert_eq!(run.total_tokens, Some(150));
+        assert_eq!(run.total_cost, Some(0.0015));
+        assert!(run.start_time.is_some() && run.end_time.is_some());
+        assert_eq!(run.is_in_dataset, Some(false));
     }
 
     #[test]
-    fn test_run_deserialization_with_timing() {
-        let json = r#"{
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat",
-            "start_time": "2024-01-01T12:00:00Z",
-            "end_time": "2024-01-01T12:00:05Z",
-            "first_token_time": "2024-01-01T12:00:01Z"
-        }"#;
-
-        let run: Run = serde_json::from_str(json).unwrap();
-        assert!(run.start_time.is_some());
-        assert!(run.end_time.is_some());
-        assert!(run.first_token_time.is_some());
-    }
-
-    #[test]
-    fn test_run_deserialization_with_hierarchy() {
-        let json = r#"{
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat",
-            "parent_run_id": "423e4567-e89b-12d3-a456-426614174003",
-            "parent_run_ids": ["423e4567-e89b-12d3-a456-426614174003"],
-            "child_run_ids": ["523e4567-e89b-12d3-a456-426614174004", "623e4567-e89b-12d3-a456-426614174005"]
-        }"#;
-
-        let run: Run = serde_json::from_str(json).unwrap();
-        assert!(run.parent_run_id.is_some());
-        assert_eq!(run.parent_run_ids.as_ref().unwrap().len(), 1);
-        assert_eq!(run.child_run_ids.as_ref().unwrap().len(), 2);
-    }
-
-    #[test]
-    fn test_run_deserialization_with_tags_and_metadata() {
-        let json = r#"{
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat",
-            "tags": ["production", "gpt-4"],
-            "extra": {"model": "gpt-4", "temperature": 0.7}
-        }"#;
-
-        let run: Run = serde_json::from_str(json).unwrap();
-        let tags = run.tags.unwrap();
-        assert_eq!(tags.len(), 2);
-        assert!(tags.contains(&"production".to_string()));
-        assert!(tags.contains(&"gpt-4".to_string()));
-        assert!(run.extra.is_some());
+    fn test_run_serialization_omits_unselected_fields() {
+        let run: QueriedRun =
+            serde_json::from_str(r#"{"id": "123e4567-e89b-12d3-a456-426614174000", "name": "x"}"#)
+                .unwrap();
+        let json: Value = serde_json::to_value(&run).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({"id": "123e4567-e89b-12d3-a456-426614174000", "name": "x"})
+        );
     }
 
     #[test]
     fn test_query_runs_response_deserialization() {
         let json = r#"{
-            "runs": [{
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "name": "ChatOpenAI",
-                "run_type": "llm",
-                "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-                "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-                "status": "success",
-                "session_id": "323e4567-e89b-12d3-a456-426614174002",
-                "app_path": "/chat"
-            }],
-            "cursors": {
-                "next": "cursor_abc123",
-                "prev": null
-            },
-            "parsed_query": "status = success"
+            "items": [{"id": "123e4567-e89b-12d3-a456-426614174000", "name": "ChatOpenAI"}],
+            "next_cursor": "cursor_abc123"
         }"#;
 
         let response: QueryRunsResponse = serde_json::from_str(json).unwrap();
-        assert_eq!(response.runs.len(), 1);
-        assert_eq!(response.runs[0].name, "ChatOpenAI");
-        assert_eq!(response.cursors.next, Some("cursor_abc123".to_string()));
-        assert!(response.cursors.prev.is_none());
-        assert_eq!(response.parsed_query, Some("status = success".to_string()));
+        assert_eq!(response.items.len(), 1);
+        assert_eq!(response.items[0].name.as_deref(), Some("ChatOpenAI"));
+        assert_eq!(response.next_cursor.as_deref(), Some("cursor_abc123"));
     }
 
     #[test]
-    fn test_cursors_deserialization() {
-        let json = r#"{
-            "next": "abc123",
-            "prev": "xyz789"
-        }"#;
-
-        let cursors: Cursors = serde_json::from_str(json).unwrap();
-        assert_eq!(cursors.next, Some("abc123".to_string()));
-        assert_eq!(cursors.prev, Some("xyz789".to_string()));
-    }
-
-    #[test]
-    fn test_cursors_deserialization_nulls() {
-        let json = r#"{
-            "next": null,
-            "prev": null
-        }"#;
-
-        let cursors: Cursors = serde_json::from_str(json).unwrap();
-        assert!(cursors.next.is_none());
-        assert!(cursors.prev.is_none());
-    }
-
-    #[test]
-    fn test_all_run_types() {
-        let types = [
-            ("\"tool\"", RunType::Tool),
-            ("\"chain\"", RunType::Chain),
-            ("\"llm\"", RunType::Llm),
-            ("\"retriever\"", RunType::Retriever),
-            ("\"embedding\"", RunType::Embedding),
-            ("\"prompt\"", RunType::Prompt),
-            ("\"parser\"", RunType::Parser),
-        ];
-
-        for (json, expected) in types {
-            let run_type: RunType = serde_json::from_str(json).unwrap();
-            assert_eq!(run_type, expected);
-        }
+    fn test_query_runs_response_last_page() {
+        let response: QueryRunsResponse =
+            serde_json::from_str(r#"{"items": [], "next_cursor": null}"#).unwrap();
+        assert!(response.items.is_empty());
+        assert!(response.next_cursor.is_none());
     }
 }
