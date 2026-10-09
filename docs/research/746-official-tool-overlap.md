@@ -36,6 +36,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | List the examples in a dataset | LangSmith CLI `example list`; MCP `list_examples` | Has it: `dataset list-examples` | None |
 | Read, create and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example` | Lacks it | Small |
 | List and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
+| Look up a tracing project by name | Terraform `langsmith_project` data source | Has it: `project get` | None |
 | Code and LLM-as-judge evaluators, the rules that attach them, experiment results | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator`, `langsmith_run_rule`; MCP `list_experiments` | Lacks it: every `eval` command is a placeholder | Large |
 | Model configurations | Terraform `langsmith_model_configuration` | Partly: `model-config`, but `create` returns an HTTP 500 | Small |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
@@ -44,9 +45,9 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Alert rules and gateway policies | Terraform `langsmith_alert_rule`, `langsmith_gateway_policy` | Lacks it | Medium |
 | Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: `config` keeps one API key, organization ID, workspace ID, output format and timezone in a config file, and each can come from the environment instead | Medium |
 | Call any LangSmith API endpoint | LangSmith CLI `api` | Lacks it | Small |
-| Update the tool itself | LangSmith CLI `update` | Lacks it; the install script installs a new version | Small |
+| Update the tool itself | LangSmith CLI `self-update` | Lacks it; the install script installs a new version | Small |
 | Billing usage | MCP `get_billing_usage` | Lacks it | Medium |
-| Hub agent and skill repos, Custom Apps, sandboxes | LangSmith CLI `hub`, `apps`, `sandbox` | Lacks it | Large |
+| Hub agent and skill repos, Custom Apps, sandboxes and their image registries | LangSmith CLI `hub`, `apps`, `sandbox`; Terraform `langsmith_sandbox_registry` | Lacks it | Large |
 
 In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, and `project get`, `create` and `update` have no official command. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
 
