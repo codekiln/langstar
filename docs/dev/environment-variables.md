@@ -23,8 +23,6 @@ On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentia
 
 Write your vault's name only in the `vault` setting of `[providers.langsmith]` in your gitignored `fnox.local.toml`, so it stays out of every commit.
 
-`langstar deployment create` looks up the GitHub integration ID from the workspace's existing GitHub deployments, so developers keep no integration ID in 1Password. The lookup needs at least one GitHub deployment in the workspace; in a workspace with none, the command stops with an error.
-
 ### One-time machine setup
 
 Do this once per machine. Every project on the machine then shares the key and the provider.
