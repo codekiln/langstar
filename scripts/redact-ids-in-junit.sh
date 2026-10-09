@@ -4,7 +4,7 @@
 #
 # CI uploads JUnit files as artifacts, and anyone signed in to GitHub can
 # download them from this public repository. GitHub masks secrets in job logs
-# but not in uploaded files, so a test that prints either ID publishes it.
+# but not in uploaded files, so CI publishes any ID a test prints.
 #
 # When a file contains a value, the script replaces it with [redacted VAR] in
 # place and exits 1, which fails the CI job. The publish and upload steps that

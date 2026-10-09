@@ -56,8 +56,9 @@ fn redact_ids(body: &str, sent: &[(&str, &str)]) -> String {
     uuid.replace_all(&redacted, "<uuid>").into_owned()
 }
 
-/// The experiments print error bodies only when the API rejects a request, so
-/// a run against a healthy API never reaches `redact_ids`. This test does.
+/// Run `redact_ids` on an error body that names both sent IDs and another
+/// UUID. The experiments call it only when the API rejects a request, which a
+/// healthy API never does.
 #[test]
 fn test_redact_ids_replaces_sent_ids_and_other_uuids() {
     let org = "11111111-1111-1111-1111-111111111111";
