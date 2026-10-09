@@ -6,7 +6,7 @@ python = "3.11"
 # rulesync generates CLAUDE.md, AGENTS.md and the skills from .rulesync/.
 # https://github.com/dyoshikawa/rulesync
 "npm:rulesync" = "27.0.0"
-# OpenSpec holds feature designs and specs under openspec/; its skills are in .rulesync/skills/.
+# The openspec CLI creates, validates and archives the feature designs and command-group specs under openspec/. The openspec-* skills in .rulesync/skills/ run it.
 # https://github.com/Fission-AI/OpenSpec
 "npm:@fission-ai/openspec" = "1.14.1"
 

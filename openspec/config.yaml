@@ -17,7 +17,7 @@ rules:
     - Write each citation as a Markdown link to the page on the `main` branch on GitHub, with the logical page name as the link text. Build the URL by joining the namespace segments with `___`, encoding spaces as `%20` and adding `.md` under `pages/`. For example, `[My/Principle/CLI/Centricity/Offline Tools](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Principle___CLI___Centricity___Offline%20Tools.md)`.
   design:
     - Keep the current state of the design in `## Decisions`, as prose you rewrite whenever the design changes.
-    - Under Non-Goals, list only goals codekiln would weigh against this change right now, each stated as the goal itself. Write "None." when there are none.
+    - Under Non-Goals, list only the goals codekiln might work on instead of this change right now, each written as the goal itself. Write "None." when there are none.
     - End with `## Resolved Questions` followed by `## Open Questions`. Give each question its own heading, `### N - <question text>`.
     - Follow a resolved question with its answer as prose. Resolved Questions is an append-only log. Give a new question the next number, and keep the numbers and order of earlier ones.
     - Under an open question, put any background you add in a blockquote that opens with `> Context from the drafting agent, for question N.`. Put `<ANSWER_HERE>` on its own line below the blockquote. Each open question has exactly one `<ANSWER_HERE>` and no prose outside the blockquote.
