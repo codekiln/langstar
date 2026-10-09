@@ -7,6 +7,9 @@ python = "3.11"
 # The generated files are gitignored; lefthook regenerates them.
 # https://github.com/dyoshikawa/rulesync
 "npm:rulesync" = "27.0.0"
+# The openspec CLI creates, validates and archives the feature designs and command-group specs under openspec/. The openspec-* skills in .rulesync/skills/ run it.
+# https://github.com/Fission-AI/OpenSpec
+"npm:@fission-ai/openspec" = "1.14.1"
 # lefthook runs the git hooks in lefthook.yml.
 # https://github.com/evilmartians/lefthook
 lefthook = "2.2.1"
