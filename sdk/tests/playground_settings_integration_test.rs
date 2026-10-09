@@ -364,7 +364,7 @@ async fn test_create_with_various_providers() {
         }
     }
 
-    // Cleanup before asserting, so a failure does not leave configs behind
+    // Delete the configs this test created before asserting, so a failing run still removes them.
     for id in &created_ids {
         if let Err(e) = client.delete_playground_settings(*id).await {
             eprintln!("⚠ Warning: Failed to cleanup {}: {:?}", id, e);
