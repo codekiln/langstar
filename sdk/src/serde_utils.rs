@@ -47,8 +47,8 @@ where
 /// Deserialize a JSON `null` as the type's default value.
 ///
 /// `#[serde(default)]` covers a missing field but not an explicit `null`.
-/// Use this for a field the API may send as `null` when the SDK keeps a
-/// non-optional type, such as a deployment's `name`.
+/// Use this on a field such as `Deployment::name`, which the SDK reads into a
+/// `String` and the API may send as `null`.
 pub fn deserialize_null_as_default<'de, D, T>(d: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
