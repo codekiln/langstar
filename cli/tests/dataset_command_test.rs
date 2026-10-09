@@ -649,10 +649,10 @@ enum DeleteAttempt {
 
 /// Decide what to do after one `langstar dataset delete` attempt.
 ///
-/// A server error (5xx) is retried until the attempts run out. A 404 counts
-/// as deleted only after an earlier attempt, because a delete that answered
-/// 500 may still have removed the dataset. A 404 on the first attempt, or
-/// any other error, is a real failure.
+/// `delete_dataset` retries a server error (5xx) until the attempts run out.
+/// A 404 after a retry counts as deleted, because LangSmith may have removed
+/// the dataset even when it answered the earlier delete with a 500. A 404 on
+/// the first attempt, or any other error, fails the test.
 #[cfg_attr(not(feature = "integration-tests"), allow(dead_code))]
 fn delete_attempt_outcome(
     attempt: u32,
@@ -722,10 +722,8 @@ mod integration {
     /// In CI, LangSmith sometimes answers `DELETE /api/v1/datasets/{id}` with
     /// HTTP 500; see issue #773, "dataset delete returns HTTP 500 intermittently
     /// in CLI integration tests" (https://github.com/codekiln/langstar/issues/773).
-    /// A delete that answered 500 may still have removed the dataset, so a retry
-    /// that gets 404 counts as deleted; `delete_attempt_outcome` holds those
-    /// rules. A delete that fails any other way, or fails three times, fails the
-    /// test.
+    /// `delete_attempt_outcome` decides after each attempt whether to stop,
+    /// retry or fail the test.
     fn delete_dataset(dataset_id: &str) {
         const ATTEMPTS: u32 = 3;
         for attempt in 1..=ATTEMPTS {
