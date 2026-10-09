@@ -588,6 +588,44 @@ impl<'a> PromptClient<'a> {
         self.push(owner, repo, &commit_request).await
     }
 
+    /// Get commit metadata including hash and manifest.
+    ///
+    /// This retrieves the full commit response including the commit hash,
+    /// which is needed when creating child commits with parent references.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `commit` - The commit hash or tag (e.g., "latest", "main", commit SHA)
+    ///
+    /// # Returns
+    /// The full commit response including commit_hash and manifest
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    /// let prompts = client.prompts();
+    ///
+    /// let commit_info = prompts.get_commit("owner", "my-prompt", "latest").await?;
+    /// println!("Latest commit hash: {}", commit_info.commit_hash);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_commit(
+        &self,
+        owner: &str,
+        repo: &str,
+        commit: &str,
+    ) -> Result<CommitManifestResponse> {
+        let path = format!("/api/v1/commits/{}/{}/{}", owner, repo, commit);
+        let request = self.client.langsmith_get(&path)?;
+        let response: CommitManifestResponse = self.client.execute(request).await?;
+        Ok(response)
+    }
+
     /// Pull a prompt commit from the PromptHub.
     ///
     /// This retrieves a specific commit from the prompt repository.
@@ -613,15 +651,11 @@ impl<'a> PromptClient<'a> {
     /// # }
     /// ```
     pub async fn pull(&self, owner: &str, repo: &str, commit: &str) -> Result<Value> {
+        // Deserialize only the manifest so pull() stays tolerant of responses that
+        // omit commit_hash (get_commit() enforces it).
         let path = format!("/api/v1/commits/{}/{}/{}", owner, repo, commit);
         let request = self.client.langsmith_get(&path)?;
-
-        #[derive(Deserialize)]
-        struct CommitManifestResponse {
-            manifest: Value,
-        }
-
-        let response: CommitManifestResponse = self.client.execute(request).await?;
+        let response: ManifestOnlyResponse = self.client.execute(request).await?;
         Ok(response.manifest)
     }
 
@@ -766,6 +800,27 @@ pub struct CommitData {
     /// URL to the commit
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+}
+
+/// Response from getting commit metadata
+///
+/// Returned by the GET /api/v1/commits/{owner}/{repo}/{commit} endpoint.
+/// Includes both the commit hash and the full manifest.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitManifestResponse {
+    /// The commit hash
+    pub commit_hash: String,
+    /// The commit manifest (prompt template/schema)
+    pub manifest: serde_json::Value,
+    /// Optional example run records (serialized RepoExampleResponse objects)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub examples: Option<Vec<serde_json::Value>>,
+}
+
+/// Minimal commit response used by `pull()`, which only needs the manifest
+#[derive(Debug, Deserialize)]
+struct ManifestOnlyResponse {
+    manifest: serde_json::Value,
 }
 
 /// Data for creating/updating a prompt (deprecated, use CommitRequest)
