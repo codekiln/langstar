@@ -68,13 +68,17 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
     LangchainClient::new(auth).map_err(|e| format!("Client creation error: {}", e))
 }
 
-/// Generate a unique test repo name to avoid conflicts between tests
+/// Generate a unique test repo name to avoid conflicts between tests.
+///
+/// Every suite run on every machine shares one LangSmith workspace, so a name
+/// built from a millisecond timestamp can repeat when two runs start the same
+/// test at once. A random UUID cannot.
 fn generate_unique_repo_name(prefix: &str) -> String {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    format!("{}-{}", prefix, timestamp)
+    format!(
+        "{}-{}",
+        prefix,
+        &uuid::Uuid::new_v4().simple().to_string()[..12]
+    )
 }
 
 /// Test fixture that creates a unique repo and cleans it up on drop
