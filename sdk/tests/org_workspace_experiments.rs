@@ -56,6 +56,25 @@ fn redact_ids(body: &str, sent: &[(&str, &str)]) -> String {
     uuid.replace_all(&redacted, "<uuid>").into_owned()
 }
 
+/// The experiments print error bodies only when the API rejects a request, so
+/// a run against a healthy API never reaches `redact_ids`. This test does.
+#[test]
+fn test_redact_ids_replaces_sent_ids_and_other_uuids() {
+    let org = "11111111-1111-1111-1111-111111111111";
+    let ws = "22222222-2222-2222-2222-222222222222";
+    let other = "3333AAAA-3333-3333-3333-333333333333";
+    let body = format!(
+        r#"{{"detail":"workspace {ws} is not in organization {org}","tenant_id":"{other}"}}"#
+    );
+
+    let redacted = redact_ids(&body, &[(org, "<org-id>"), (ws, "<workspace-id>")]);
+
+    assert_eq!(
+        redacted,
+        r#"{"detail":"workspace <workspace-id> is not in organization <org-id>","tenant_id":"<uuid>"}"#
+    );
+}
+
 /// Test 1: Request with x-organization-id header only
 ///
 /// This tests whether the API accepts organization-level scoping via the
