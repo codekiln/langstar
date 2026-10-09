@@ -2269,6 +2269,9 @@ impl LangchainClient {
     ///
     /// Permanently removes a saved model configuration.
     ///
+    /// Returns `LangstarError::ApiError` with status 404 when no configuration
+    /// has this ID.
+    ///
     /// # Arguments
     ///
     /// * `settings_id` - The UUID of the playground settings to delete

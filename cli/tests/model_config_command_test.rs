@@ -226,9 +226,15 @@ fn test_model_config_create_update_delete_cycle() {
     use std::io::Write;
     use tempfile::NamedTempFile;
 
+    // LangSmith rejects a duplicate configuration name with a 500, and
+    // configs left by an earlier failed run would collide with a fixed name.
+    let suffix = uuid::Uuid::new_v4().simple().to_string();
+    let created_name = format!("CLI Test Config {}", suffix);
+    let updated_name = format!("CLI Test Config - Updated {}", suffix);
+
     // Create a test configuration file
     let create_config = serde_json::json!({
-        "name": "CLI Test Config",
+        "name": created_name,
         "description": "Test configuration created by CLI tests",
         "settings": {
             "lc": 1,
@@ -267,6 +273,11 @@ fn test_model_config_create_update_delete_cycle() {
     let config_id = create_json["id"]
         .as_str()
         .expect("Missing 'id' in create response");
+    assert_eq!(
+        create_json["name"].as_str(),
+        Some(created_name.as_str()),
+        "Create should return the requested name"
+    );
 
     // Update the configuration
     let mut update_cmd = langstar_cmd();
@@ -275,7 +286,7 @@ fn test_model_config_create_update_delete_cycle() {
         "update",
         config_id,
         "--name",
-        "CLI Test Config - Updated",
+        &updated_name,
         "--format",
         "json",
     ]);
@@ -286,7 +297,7 @@ fn test_model_config_create_update_delete_cycle() {
         serde_json::from_slice(&update_output).expect("Failed to parse update output as JSON");
     assert_eq!(
         update_json["name"].as_str(),
-        Some("CLI Test Config - Updated"),
+        Some(updated_name.as_str()),
         "Update should change the name"
     );
 
@@ -314,15 +325,17 @@ fn test_model_config_get_nonexistent() {
 
 #[test]
 fn test_model_config_delete_nonexistent() {
-    // Try to delete a non-existent config (random UUID)
-    // Note: The API supports idempotent deletes, so this returns success even for nonexistent UUIDs
+    // Try to delete a non-existent config (all-zero UUID).
+    // Since 2026 the API answers this with 404; it used to return 200.
     let fake_id = "00000000-0000-0000-0000-000000000000";
 
     let mut cmd = langstar_cmd();
     cmd.args(["model-config", "delete", fake_id, "--yes"]);
 
-    // The delete operation is idempotent and succeeds even for nonexistent resources
-    cmd.assert().success();
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("404"))
+        .stderr(predicate::str::contains("not found"));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
