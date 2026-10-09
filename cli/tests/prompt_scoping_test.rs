@@ -431,13 +431,68 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
     LangchainClient::new(auth).map_err(|e| format!("Client creation error: {}", e))
 }
 
-/// Generate a unique test prompt name to avoid collisions
-fn generate_test_prompt_name() -> String {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    format!("test-crud-lifecycle-{}", timestamp)
+/// Generate a unique test prompt name.
+///
+/// Every run that uses the same LangSmith workspace shares its prompts, so a
+/// name built from a timestamp or a process ID can repeat across runs. The
+/// first 12 hex characters of a random UUID make a repeat vanishingly unlikely.
+fn generate_test_prompt_name(prefix: &str) -> String {
+    format!(
+        "{}-{}",
+        prefix,
+        &uuid::Uuid::new_v4().simple().to_string()[..12]
+    )
+}
+
+/// Deletes a test prompt when dropped, so a test that fails after creating
+/// its prompt still removes it and a later run never finds it left behind.
+///
+/// The test's own DELETE step calls `delete_now`, which deletes the prompt
+/// and disarms the guard.
+struct PromptCleanup<'a> {
+    runtime: &'a tokio::runtime::Runtime,
+    client: &'a LangchainClient,
+    name: Option<String>,
+}
+
+impl<'a> PromptCleanup<'a> {
+    fn new(runtime: &'a tokio::runtime::Runtime, client: &'a LangchainClient, name: &str) -> Self {
+        Self {
+            runtime,
+            client,
+            name: Some(name.to_string()),
+        }
+    }
+
+    /// Delete the prompt now and disarm the guard.
+    fn delete_now(&mut self) -> Result<(), langstar_sdk::LangstarError> {
+        match self.name.take() {
+            Some(name) => self
+                .runtime
+                .block_on(async { self.client.prompts().delete(&name).await }),
+            None => Ok(()),
+        }
+    }
+}
+
+impl Drop for PromptCleanup<'_> {
+    fn drop(&mut self) {
+        if let Some(name) = self.name.take() {
+            println!(
+                "[CLEANUP] Deleting test prompt left by a failed step: {}",
+                name
+            );
+            if let Err(e) = self
+                .runtime
+                .block_on(async { self.client.prompts().delete(&name).await })
+            {
+                println!(
+                    "   ⚠ Warning: Failed to delete test prompt '{}': {}",
+                    name, e
+                );
+            }
+        }
+    }
 }
 
 /// CRUD Lifecycle Test: Full Create → Read → List → Delete cycle
@@ -466,7 +521,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
         }
     };
 
-    let test_prompt_name = generate_test_prompt_name();
+    let test_prompt_name = generate_test_prompt_name("test-crud-lifecycle");
     println!("Test prompt name: {}", test_prompt_name);
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -497,6 +552,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
             panic!("Failed to create test prompt: {}", e);
         }
     };
+    let mut cleanup = PromptCleanup::new(&runtime, &client, &test_prompt_name);
 
     // Store handle for cleanup
     let prompt_handle = prompt.repo_handle.clone();
@@ -630,8 +686,7 @@ fn test_prompt_crud_lifecycle_private_visibility() {
     // ═══════════════════════════════════════════════════════════════════════
     println!("\n[DELETE] Cleaning up test prompt via SDK...");
 
-    let delete_result =
-        runtime.block_on(async { client.prompts().delete(&test_prompt_name).await });
+    let delete_result = cleanup.delete_now();
 
     match delete_result {
         Ok(()) => {
@@ -677,7 +732,7 @@ fn test_prompt_search_crud_lifecycle() {
     };
 
     // Create a unique searchable prompt
-    let unique_term = format!("searchtest{}", std::process::id());
+    let unique_term = generate_test_prompt_name("searchtest");
     let test_prompt_name = format!("test-search-{}", unique_term);
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -702,6 +757,7 @@ fn test_prompt_search_crud_lifecycle() {
     });
 
     let prompt = created.expect("Failed to create searchable test prompt");
+    let mut cleanup = PromptCleanup::new(&runtime, &client, &test_prompt_name);
     println!("   ✓ Created: {}", prompt.repo_handle);
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -754,8 +810,7 @@ fn test_prompt_search_crud_lifecycle() {
     // ═══════════════════════════════════════════════════════════════════════
     println!("\n[DELETE] Cleaning up test prompt via SDK...");
 
-    let delete_result =
-        runtime.block_on(async { client.prompts().delete(&test_prompt_name).await });
+    let delete_result = cleanup.delete_now();
 
     match delete_result {
         Ok(()) => {
