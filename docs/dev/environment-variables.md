@@ -88,7 +88,7 @@ mise run worktree:link-secrets
 fnox exec -- cargo nextest run --profile ci --all-features --workspace
 ```
 
-`fnox exec` decrypts the cache with your age key and does not call 1Password. When fnox cannot find a secret, `fnox exec` stops before the command starts, so the test run fails instead of quietly skipping the integration tests, which is the problem [#660 Final testing verification for ls-prompt-structured-outputs milestone](https://github.com/codekiln/langstar/issues/660) set out to fix. For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
+`fnox exec` decrypts the cache with your age key and does not call 1Password. When fnox cannot find a secret, `fnox exec` stops before the command starts, so the test run fails instead of quietly skipping the integration tests. Quietly skipped tests are one of the testing problems listed in [#660 Final testing verification for ls-prompt-structured-outputs milestone](https://github.com/codekiln/langstar/issues/660). For an interactive shell, `eval "$(fnox activate zsh)"` loads the secrets when you `cd` into the project. See [fnox shell integration](https://fnox.jdx.dev/guide/shell-integration.html).
 
 ### Re-sync after a rotation
 
