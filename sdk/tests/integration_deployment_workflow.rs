@@ -154,7 +154,7 @@ async fn test_deployment_workflow() {
 /// Full lifecycle integration test for pre-release validation
 ///
 /// This test performs a **complete create/delete cycle** with a uniquely-named deployment.
-/// Uses `TestDeploymentConfig::for_release_tests()` which creates a `release-integration-test-{ts}`
+/// Uses `TestDeploymentConfig::for_release_tests()` which creates a `release-integration-test-<12 hex characters>`
 /// deployment that is always fresh (no prefix-based reuse).
 ///
 /// **What this test validates:**
@@ -198,7 +198,7 @@ async fn test_deployment_workflow_full_lifecycle() {
     // Create client
     let client = LangchainClient::new(auth).expect("Failed to create LangchainClient");
 
-    // Use release test config (release-integration-test-{ts}, always creates fresh)
+    // Use release test config (release-integration-test-<12 hex characters>, always creates fresh)
     let config = TestDeploymentConfig::for_release_tests();
     println!("🚀 Starting FULL LIFECYCLE deployment workflow test");
     println!("   Config name: {}", config.name);
