@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Fail when a JUnit file contains the value of LANGSMITH_ORGANIZATION_ID or
-# LANGSMITH_WORKSPACE_ID.
+# Replace the values of LANGSMITH_ORGANIZATION_ID and LANGSMITH_WORKSPACE_ID
+# in JUnit files with <redacted VAR>, and fail when either value was there.
 #
 # CI uploads JUnit files as artifacts, and anyone signed in to GitHub can
 # download them from this public repository. GitHub masks secrets in job logs
@@ -11,7 +11,7 @@
 # and upload the results for debugging without publishing the ID. The script
 # names the file and the variable, and never prints the value.
 #
-# Usage: scripts/check-junit-for-ids.sh <junit-file>...
+# Usage: scripts/redact-ids-in-junit.sh <junit-file>...
 
 set -euo pipefail
 

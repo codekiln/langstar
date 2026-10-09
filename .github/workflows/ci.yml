@@ -153,7 +153,7 @@ jobs:
         # it redacts it in the file and fails the job; the later steps still run,
         # so the results stay available to debug without the ID.
         if: always()
-        run: scripts/check-junit-for-ids.sh target/nextest/ci/junit-ci.xml
+        run: scripts/redact-ids-in-junit.sh target/nextest/ci/junit-ci.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
@@ -223,7 +223,7 @@ jobs:
         # it redacts it in the file and fails the job; the later steps still run,
         # so the results stay available to debug without the ID.
         if: always()
-        run: scripts/check-junit-for-ids.sh target/nextest/integration/junit-integration.xml
+        run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
@@ -292,7 +292,7 @@ jobs:
         # it redacts it in the file and fails the job; the later steps still run,
         # so the results stay available to debug without the ID.
         if: always()
-        run: scripts/check-junit-for-ids.sh target/nextest/integration/junit-integration.xml
+        run: scripts/redact-ids-in-junit.sh target/nextest/integration/junit-integration.xml
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
