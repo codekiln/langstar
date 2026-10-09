@@ -95,8 +95,9 @@ pub use projects::{
     ListProjectsParams, Project, ProjectCreate, ProjectSortColumn, ProjectUpdate, TraceTier,
 };
 pub use prompts::{
-    CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs, Prompt, PromptClient,
-    PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt, Visibility,
+    CommitManifestResponse, CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs,
+    Prompt, PromptClient, PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt,
+    Visibility,
 };
 pub use runs::{Cursors, QueryRunsRequest, QueryRunsResponse, Run, RunDateOrder, RunType};
 pub use secrets::{SecretKey, SecretUpsert};
