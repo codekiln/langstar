@@ -502,7 +502,7 @@ For more information, see the [Claude Code GitHub Actions FAQ](https://github.co
 - Follow Conventional Emoji Commits format
 - Write clear, descriptive commit messages
 - Make atomic commits (one logical change per commit)
-- Reference issue numbers in commit messages when relevant
+- End every commit message with the issue's `#N Issue Title` line
 
 ### For Pull Requests
 
@@ -586,9 +586,7 @@ touch docs/dev/github-workflow.md
 
 # Stage and commit
 git add docs/dev/github-workflow.md
-git commit -m "📚 docs: add GitHub workflow documentation
-
-Fixes #7"
+git commit -m "📚 docs: add GitHub workflow documentation" -m "#7 Add GitHub workflow documentation"
 
 # Push changes
 git push origin i7-document-workflow

@@ -81,7 +81,7 @@ echo "Issue number: $ISSUE_NUM"
 gh issue view "$ISSUE_NUM" --json state,title
 
 # 5. Check commit messages for the "#N Issue Title" footer or a closing keyword
-git log origin/main..HEAD --pretty=format:"%B" | grep -iE "^#[0-9]+ |(fix(es)?|close[sd]?|resolve[sd]?) +#[0-9]+" || echo "WARNING: No '#N Issue Title' footer or closing keyword found in commit messages"
+git log origin/main..HEAD --pretty=format:"%B" | grep -iE "^#${ISSUE_NUM}( |$)|(fix(es)?|close[sd]?|resolve[sd]?) +#${ISSUE_NUM}\b" || echo "WARNING: No '#${ISSUE_NUM} Issue Title' footer or closing keyword for #${ISSUE_NUM} found in commit messages"
 ```
 
 ### Validation Details
@@ -147,10 +147,10 @@ fi
 
 **Verify commits reference the issue:**
 ```bash
-# Check the whole message (%B) for the "#N Issue Title" footer or a GitHub closing keyword
+# Check the whole message (%B) for this issue's "#N Issue Title" footer or a GitHub closing keyword
 git log origin/main..HEAD --pretty=format:"%B" | \
-  grep -iE "^#[0-9]+ |(fix(es)?|close[sd]?|resolve[sd]?) +#[0-9]+" || \
-  echo "WARNING: No '#N Issue Title' footer or closing keyword found in commit messages"
+  grep -iE "^#${ISSUE_NUM}( |$)|(fix(es)?|close[sd]?|resolve[sd]?) +#${ISSUE_NUM}\b" || \
+  echo "WARNING: No '#${ISSUE_NUM} Issue Title' footer or closing keyword for #${ISSUE_NUM} found in commit messages"
 ```
 
 **GitHub closing keywords:** `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`

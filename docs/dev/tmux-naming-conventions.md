@@ -69,5 +69,4 @@ Ask codekiln to review a PR only after these two steps:
 - [GitHub Workflow](./github-workflow.md) - issue-driven development process
 - [Git SCM Conventions](./git-scm-conventions.md) - commit message conventions
 - [Debugging Tests](./testing/debugging-tests.md) - includes `claude --chrome` for LangSmith UI state
-- `.rulesync/skills/tmux/SKILL.md` - driving tmux from an agent
 - `.devcontainer/.tmux.conf` - tmux configuration

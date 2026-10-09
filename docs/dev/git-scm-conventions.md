@@ -66,6 +66,8 @@ For ticket-based projects, end the commit message with a line holding the ticket
 #738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
 ```
 
+Git strips lines that start with `#` from a message written in an editor, which would delete this line. Pass the message with `-m`, or commit with `git commit --cleanup=whitespace`.
+
 For a Jira ticket:
 
 ```
