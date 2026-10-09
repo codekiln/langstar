@@ -9,7 +9,7 @@ minimum_release_age = "5d"
 [tools]
 python = "3.11"
 # Same version as rust-toolchain.toml, so mise and rustup users get one compiler.
-# rustup's default 1.85 cannot compile the let-chains the code uses.
+# The code uses let-chains (`if let ... && ...`), which compile only on Rust 1.88 or newer.
 rust = "1.99.0"
 # Secrets: fnox resolves fnox.toml's 1Password references (op) into an
 # age-encrypted local cache. See docs/dev/environment-variables.md.

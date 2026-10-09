@@ -1,5 +1,5 @@
 # Same version as `rust` in mise.toml, so rustup users, mise users and CI
-# build with one compiler. rustup's default 1.85 cannot compile the
-# let-chains the code uses.
+# build with one compiler. The code uses let-chains (`if let ... && ...`), which
+# compile only on Rust 1.88 or newer.
 [toolchain]
 channel = "1.99.0"
