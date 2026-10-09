@@ -27,8 +27,9 @@ pub enum DeploymentSource {
 
 /// Current status of a deployment
 ///
-/// `#[non_exhaustive]` lets the SDK add a variant when the control plane adds
-/// a status, without breaking code that matches on this enum.
+/// Because of `#[non_exhaustive]`, the compiler requires a `_` arm in every
+/// `match` on this enum outside `langstar-sdk`, so that code still compiles
+/// when a developer adds a variant for a new control-plane status.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 #[non_exhaustive]
@@ -47,7 +48,6 @@ pub enum DeploymentStatus {
     ///
     /// When the control plane adds a status, `#[serde(other)]` reads it as
     /// `Unknown`, so the SDK can still read the rest of the deployment list.
-    /// The control plane last added one with `AWAITING_FINAL_DELETE`.
     #[default]
     #[serde(other)]
     Unknown,
