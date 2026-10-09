@@ -2,7 +2,6 @@ mod common;
 
 use assert_cmd::Command;
 use common::fixtures::TestDeployment;
-use escargot::CargoBuild;
 use serial_test::serial;
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -40,13 +39,7 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 /// sequentially to avoid resource conflicts. Other tests can run in parallel.
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    Command::new(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper to generate unique test names using microsecond timestamp + UUID suffix.

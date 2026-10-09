@@ -1,5 +1,4 @@
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use langstar_sdk::{AuthConfig, LangchainClient};
 use predicates::prelude::*;
 use serde_json::Value;
@@ -21,13 +20,7 @@ use serde_json::Value;
 /// Run locally with: cargo test --test prompt_scoping_test
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    Command::new(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper function to get organization ID from environment, or panic if not available
