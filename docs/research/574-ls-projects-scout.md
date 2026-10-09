@@ -260,7 +260,7 @@ To further validate the API capabilities at scale, ran additional testing:
 ✅ Total projects found: 162
 ✅ Found project: test-deployment-cli-48499
    Project ID: 98e12dc6-2171-4bf3-80fb-1153041d6cbf
-   Tenant ID: 6f52dd84-9870-4f3a-b42d-4eea5fc9dfde
+   Tenant ID: <your-workspace-id>
    Start time: 2025-12-03 12:10:56 UTC
 ✅ Total runs in project: 0
 ```
