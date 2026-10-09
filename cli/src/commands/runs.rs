@@ -119,8 +119,8 @@ pub struct QueryArgs {
     /// Widen the default 7-day time window to the last 400 days
     ///
     /// By default, runs query returns runs from the last 7 days.
-    /// The LangSmith runs API rejects a window longer than 401 days, so
-    /// --no-time-filter asks for the last 400 days.
+    /// The LangSmith runs API rejects a window longer than 401 days;
+    /// 400 days keeps a day of margin under that limit.
     #[arg(long)]
     pub no_time_filter: bool,
 
@@ -217,7 +217,10 @@ pub enum OrderArg {
 /// Largest `page_size` the runs API accepts.
 const MAX_PAGE_SIZE: u32 = 1000;
 
-/// Window --no-time-filter asks for. The API rejects windows over 401 days.
+/// Days --no-time-filter asks for. The API rejects a window longer than
+/// 401 days. The CLI sends a start time and no end time, so the API measures
+/// the window up to the moment the request arrives; 400 days keeps a day of
+/// margin under the limit.
 const NO_TIME_FILTER_DAYS: i64 = 400;
 
 /// Fields the table columns read; added to --select for table output.
@@ -448,7 +451,7 @@ impl RunsCommands {
     /// 4. Default (7 days)
     ///
     /// --no-time-filter overrides all of these with the last
-    /// [`NO_TIME_FILTER_DAYS`] days, one day inside the API's 401-day limit.
+    /// [`NO_TIME_FILTER_DAYS`] days.
     ///
     /// Returns (start_time, end_time, description).
     fn resolve_time_filters(
@@ -457,9 +460,8 @@ impl RunsCommands {
     ) -> (Option<DateTime<Utc>>, Option<DateTime<Utc>>, String) {
         let now = Utc::now();
 
-        // The API searches only the last day when no start time is sent, and it
-        // rejects windows over 401 days. --no-time-filter asks for the last 400 days,
-        // one day inside that limit.
+        // The API searches only the last day when no start time is sent, so
+        // --no-time-filter sends a start time NO_TIME_FILTER_DAYS ago.
         if args.no_time_filter {
             return (
                 Some(now - chrono::Duration::days(NO_TIME_FILTER_DAYS)),
@@ -1142,7 +1144,7 @@ mod tests {
         let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
         let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
 
-        // The API rejects windows over 401 days, so --no-time-filter asks for 400.
+        // --no-time-filter asks for NO_TIME_FILTER_DAYS (400) days.
         let days = (chrono::Utc::now() - start.expect("--no-time-filter sends a start")).num_days();
         assert!(
             (399..=400).contains(&days),
