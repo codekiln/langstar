@@ -40,7 +40,7 @@ eval "$(mise activate zsh)"
 Then install the tools:
 
 ```bash
-mise install   # installs fnox, 1password-cli, age and cargo-nextest from mise.toml
+mise install   # installs every tool pinned in mise.toml
 op signin      # or turn on the 1Password desktop app integration
 ```
 
