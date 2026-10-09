@@ -3,6 +3,7 @@ use crate::error::{CliError, Result};
 use crate::time::ConfiguredTimezone;
 use clap::{Args, Subcommand};
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use toml_edit::DocumentMut;
 
@@ -607,16 +608,30 @@ hide_workspace_and_org_id_message = false
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        fs::write(config_path, doc.to_string())?;
-
-        // The file can hold the API key, so give a new one the same permissions
-        // as `config create` (0600 - owner read/write only) on Unix platforms
-        #[cfg(unix)]
         if is_new_file {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(config_path, fs::Permissions::from_mode(0o600))?;
+            Self::write_new_private_file(config_path, &doc.to_string())?;
+        } else {
+            fs::write(config_path, doc.to_string())?;
         }
 
+        Ok(())
+    }
+
+    /// Create the file at `path` holding `content`, readable and writable only
+    /// by its owner (0600) on Unix platforms, as `config create` makes it.
+    ///
+    /// The file can hold the API key, so it gets that mode when it is created,
+    /// before any content is written.
+    fn write_new_private_file(path: &Path, content: &str) -> Result<()> {
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(path)?;
+        file.write_all(content.as_bytes())?;
         Ok(())
     }
 }
