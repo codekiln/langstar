@@ -42,10 +42,9 @@ async fn make_request_with_headers(
     Ok(request.send().await?)
 }
 
-/// Error bodies from `/repos` can name the organization or workspace, and CI
-/// stores test output where anyone signed in to GitHub can read it. This
-/// replaces each ID the test sent with its label, then any other UUID with
-/// `<uuid>`, so the printed body keeps the API's message without an ID.
+/// Replace each ID in `sent` with the label paired with it, such as
+/// `<org-id>`, and any other UUID with `<uuid>`, so a test can print a
+/// `/repos` error body without putting an ID in the JUnit file CI uploads.
 fn redact_ids(body: &str, sent: &[(&str, &str)]) -> String {
     let mut redacted = body.to_string();
     for (value, label) in sent {
