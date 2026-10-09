@@ -1,4 +1,4 @@
-# Testing Checklist for /gh-milestones-test-plan Command
+# Testing Checklist for the gh-milestones-test-plan Skill
 
 ## Pre-Merge Verification
 
@@ -8,7 +8,7 @@
 - [x] Files have correct frontmatter (description, argument-hint)
 
 ### Content Validation
-- [x] Command specification is complete
+- [x] Skill specification is complete
 - [x] All 6 steps are documented
 - [x] Progressive disclosure pattern is enforced
 - [x] Example output is provided
@@ -18,12 +18,9 @@
 
 After this PR is merged and a new Claude Code session starts:
 
-### 1. Command Discovery
-```bash
-# Verify command appears in available commands
-/help
-# Should show: /gh-milestones-test-plan
-```
+### 1. Skill Discovery
+
+In Claude Code, type `/gh-milestones`. The completion list should show `/gh-milestones-test-plan`.
 
 ### 2. Basic Invocation
 ```bash
@@ -36,7 +33,7 @@ After this PR is merged and a new Claude Code session starts:
 
 ### 3. Verify Behavior
 
-The command should:
+The skill should:
 - [ ] Load `@docs/dev/testing/README.md` first
 - [ ] Fetch milestone information via `gh api`
 - [ ] Identify milestone type correctly
@@ -81,16 +78,16 @@ Review generated test plan document:
 ## Success Criteria
 
 All checks must pass:
-- [x] Command file exists with correct structure
-- [x] README documents the command
-- [x] HIGH_LEVEL_TESTING_GUIDELINES.md references command
-- [ ] Post-merge: Command invocable
+- [x] Skill file exists with correct structure
+- [x] README documents the skill
+- [x] HIGH_LEVEL_TESTING_GUIDELINES.md references the skill
+- [ ] Post-merge: Skill invocable
 - [ ] Post-merge: Generated test plans follow standards
 - [ ] Post-merge: Context usage <5000 tokens verified
 
 ## Notes
 
-- Slash commands are loaded at CLI startup, not dynamically
+- Skills are loaded when a Claude Code session starts, not dynamically
 - Testing must occur after PR merge in a new Claude Code session
 - Context window monitoring is critical for progressive disclosure
 - Generated test plans should be reviewed for quality and specificity
