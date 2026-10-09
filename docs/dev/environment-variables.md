@@ -69,10 +69,10 @@ Re-sync after you switch keys, because the old cache is encrypted to the old key
 
 ### Per-checkout setup
 
-fnox lets a config in a child directory override the same secret in a parent directory, so a worktree's committed `fnox.toml` hides a cache that sits only in the main checkout. To share one cache across every worktree, keep the real `fnox.local.toml` in the main checkout and symlink it from each worktree:
+Keep the real `fnox.local.toml` in the main clone and link to it from each worktree, so one `fnox sync` fills the cache for every worktree. A worktree sits inside the main clone, and fnox lets the worktree's own `fnox.toml` replace each secret from the main clone's cache, so without the link fnox in a worktree asks 1Password for every secret:
 
 ```bash
-# In the main checkout
+# In the main clone
 cp fnox.local.toml.example fnox.local.toml
 "${EDITOR:-vi}" fnox.local.toml               # set vault = "<your-1password-vault>"
 fnox sync --provider sync-age --local-file    # asks 1Password once
