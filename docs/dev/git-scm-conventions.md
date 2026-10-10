@@ -58,7 +58,7 @@ BREAKING CHANGE: removes legacy authentication endpoints
 
 ## Ticket References
 
-For ticket-based projects, end the commit message with a line holding the ticket's ID and title. For a GitHub issue that line is `#<N> <Issue Title>`:
+For ticket-based projects, add a line holding the ticket's ID and title after the body and before any trailers such as `Co-Authored-By`. For a GitHub issue that line is `#<N> <Issue Title>`:
 
 ```
 ✨ feat: add tmux workflow docs

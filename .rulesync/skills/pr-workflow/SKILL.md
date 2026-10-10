@@ -625,7 +625,8 @@ EOF
    git checkout main
    git pull origin main
    git worktree remove wip/<branch-name>
-   git branch -d <branch-name>
+   # -D: a squash merge leaves the tip outside main, so -d refuses
+   git branch -D <branch-name>
    git worktree prune --verbose
    ```
 

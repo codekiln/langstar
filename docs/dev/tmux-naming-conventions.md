@@ -28,14 +28,14 @@ The manager picks the issues, records which worker owns which, and answers worke
 
 ## Workers reach the manager with SendMessage
 
-A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the manager's name exactly as `ListAgents` prints it. The display name from `claude -n` can differ from that routable name, so a worker looks the manager up with `ListAgents` (or uses the address the manager gave it in its brief) instead of guessing; a guess fails with "No agent named ... is reachable". It never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
+A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the manager's name exactly as `ListAgents` prints it. The display name from `claude -n` can differ from that routable name, so a worker looks the manager up with `ListAgents` (or uses the address the manager gave it in its brief) instead of guessing; a guess fails with "No agent named ... is reachable". A worker never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
 
 Claude Code does not load the `SendMessage` tool until it is asked to. Run `ToolSearch` with the query `select:SendMessage` before the first message.
 
 ## Worker lifecycle
 
 1. **Start.** Work from one GitHub issue, in a worktree whose branch name carries the issue (`m<milestone>-p<parent>-i<issue>-<slug>`). See [GitHub Workflow](./github-workflow.md#step-2-branch-creation).
-2. **Commit.** Use Conventional Emoji Commits, with the last line `#<N> <Issue Title>`. See [Git SCM Conventions](./git-scm-conventions.md#ticket-references).
+2. **Commit.** Use Conventional Emoji Commits, with a `#<N> <Issue Title>` line before any trailers. See [Git SCM Conventions](./git-scm-conventions.md#ticket-references).
 3. **Open the PR** with `Fixes #<N>` in the body and the issue's milestone.
 4. **Open it in the browser** (`gh pr view --web`) so codekiln can read it. Then tell the manager the PR is ready with `SendMessage`.
 5. **Answer review comments.** codekiln leaves comments in the browser. The worker fixes each one, pushes, replies to the comment and resolves the thread.

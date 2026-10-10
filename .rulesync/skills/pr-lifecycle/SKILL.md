@@ -81,7 +81,8 @@ echo "Issue number: $ISSUE_NUM"
 gh issue view "$ISSUE_NUM" --json state,title
 
 # 5. Check that every commit message has this issue's "#N Issue Title" line (against the PR's base branch, so a stacked PR skips its parent's commits)
-BASE=$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)
+# Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
+BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
 for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
   git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
     echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
@@ -153,7 +154,8 @@ fi
 ```bash
 # Check that every commit message has this issue's "#N Issue Title" line, against the PR's base branch (main before a PR exists)
 ISSUE_NUM=$(git branch --show-current | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
-BASE=$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)
+# Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
+BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
 for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
   git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
     echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
@@ -356,8 +358,8 @@ git worktree prune --verbose
 ```bash
 BRANCH="<branch_name>"  # e.g., i42-add-auth or m8-p123-i234-add-auth
 
-# Delete local branch
-git branch -d "$BRANCH"
+# Delete local branch (-D: a squash merge leaves the tip outside main, so -d refuses)
+git branch -D "$BRANCH"
 
 # If not fully merged, force delete
 # git branch -D "$BRANCH"
@@ -393,8 +395,8 @@ git pull origin main
 # 4. Remove worktree
 git worktree remove "$WORKTREE_PATH"
 
-# 5. Delete local branch
-git branch -d "$BRANCH"
+# 5. Delete local branch (-D: a squash merge leaves the tip outside main, so -d refuses)
+git branch -D "$BRANCH"
 
 # 6. Prune
 git worktree prune --verbose
@@ -415,7 +417,7 @@ git branch | grep -v "^\*" | grep -v "main\|master"
 | In worktree | `pwd` &#124; `grep wip/` | In wip/ directory |
 | Branch format | `git branch --show-current` | `user/num-slug` |
 | Issue open | `gh issue view N --json state` | `OPEN` |
-| Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |
+| Every commit has the issue line | the per-commit `#N Issue Title` check above | No warnings |
 
 ### GitHub Closing Keywords
 

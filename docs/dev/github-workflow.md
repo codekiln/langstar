@@ -240,12 +240,12 @@ This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](.
 
 [optional body]
 
-[optional footer(s)]
-
 #<N> <Issue Title>
+
+[optional trailers, such as Co-Authored-By]
 ```
 
-The last line names the issue the commit belongs to: `#` and the issue number, then the issue title.
+The `#<N> <Issue Title>` line names the issue the commit belongs to: `#` and the issue number, then the issue title. Put it before any trailers such as `Co-Authored-By`, so GitHub still recognizes the trailer block.
 
 **Common Types:**
 - `✨ feat` - New feature
