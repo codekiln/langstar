@@ -85,7 +85,6 @@ The script performs the following steps:
 - Creates worktree at `wip/claude-<issue_num>-<slug>`
 - Checks for existing branches/worktrees
 - Fetches latest main and creates branch from it
-- Updates tmux window name if in tmux session
 
 ### Step 8: Display Context
 - Shows comprehensive summary with issue details
@@ -203,7 +202,6 @@ Milestone: Feature X
 # 📂 Creating worktree for #374...
 #    Fetching latest main...
 #    ✓ Worktree created successfully
-#    ✓ Tmux window renamed to: 💻i374
 #
 # ============================================================
 # ✅ Ready to Start Next Issue

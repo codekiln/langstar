@@ -240,8 +240,12 @@ This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](.
 
 [optional body]
 
-[optional footer(s)]
+#<N> <Issue Title>
+
+[optional trailers, such as Co-Authored-By]
 ```
+
+The `#<N> <Issue Title>` line names the issue the commit belongs to: `#` and the issue number, then the issue title. Put it before any trailers such as `Co-Authored-By`, so GitHub still recognizes the trailer block.
 
 **Common Types:**
 - `✨ feat` - New feature
@@ -253,9 +257,9 @@ This project uses **Conventional Emoji Commits**. See [git-scm-conventions.md](.
 
 **Examples:**
 ```bash
-git commit -m "✨ feat(auth): add JWT authentication"
-git commit -m "🩹 fix: resolve database connection timeout"
-git commit -m "📚 docs: update API documentation"
+git commit -m "✨ feat(auth): add JWT authentication" -m "#123 Add JWT authentication"
+git commit -m "🩹 fix: resolve database connection timeout" -m "#124 Database connection timeout"
+git commit -m "📚 docs: update API documentation" -m "#125 Update API documentation"
 ```
 
 ### Making Changes
@@ -268,7 +272,7 @@ git commit -m "📚 docs: update API documentation"
 git add .
 
 # Commit with conventional format
-git commit -m "✨ feat: add user authentication endpoints"
+git commit -m "✨ feat: add user authentication endpoints" -m "#123 Add user authentication endpoints"
 
 # Push to remote
 git push origin <branch_name>
@@ -403,18 +407,27 @@ Generated with [Claude Code](https://claude.ai/code)
 
 1. **Issue Closure**: If you used `Fixes #N`, the issue closes automatically
 2. **Branch Cleanup**: Delete the merged branch (GitHub offers this option)
-3. **Local Cleanup**: Update your local repository
+3. **Local Cleanup**: Sync the root checkout and remove the worktree
 
 ```bash
-# Switch to main branch
-git checkout main
+# Sync the root checkout, which stays on main
+git -C <root> pull --ff-only
 
-# Pull latest changes
-git pull origin main
-
-# Delete local branch
-git branch -d <branch_name>
+# Remove the worktree and delete the local branch
+git -C <root> worktree remove .worktrees/<branch_name>
+# Squash merge leaves the branch tip outside main, so -d refuses; -D is safe once the PR is merged
+git -C <root> branch -D <branch_name>
 ```
+
+### Working as a Tmux Worker
+
+A worker agent started by the manager follows the steps above, plus these:
+
+- After opening the PR, open it in the browser with `gh pr view --web`, then report it to the manager with `SendMessage`.
+- Answer each review comment: push the fix, reply to the comment and resolve the thread.
+- After merge, clean up as above and tell the manager the job is done.
+
+See [Tmux Manager/Worker Workflow](./tmux-naming-conventions.md) for the session layout and how workers reach the manager.
 
 ---
 
@@ -489,7 +502,7 @@ For more information, see the [Claude Code GitHub Actions FAQ](https://github.co
 - Follow Conventional Emoji Commits format
 - Write clear, descriptive commit messages
 - Make atomic commits (one logical change per commit)
-- Reference issue numbers in commit messages when relevant
+- End every commit message with the issue's `#N Issue Title` line
 
 ### For Pull Requests
 
@@ -573,9 +586,7 @@ touch docs/dev/github-workflow.md
 
 # Stage and commit
 git add docs/dev/github-workflow.md
-git commit -m "📚 docs: add GitHub workflow documentation
-
-Fixes #7"
+git commit -m "📚 docs: add GitHub workflow documentation" -m "#7 Add GitHub workflow documentation"
 
 # Push changes
 git push origin i7-document-workflow

@@ -56,54 +56,7 @@ When addressing review comments, choose ONE of these options:
 
 ## Tmux Window Naming Convention
 
-When working in a tmux session, window names reflect the current PR lifecycle phase for quick visual reference.
-
-**Format:** `<emoji><prefix><number>`
-
-**Prefix Conventions:**
-- `i` = Issue number (e.g., `💻i483` = coding on issue #483)
-- `pr` = Pull request number (e.g., `🔧pr485` = maintaining PR #485)
-
-**Examples:**
-- `💻i483` - Coding on issue #483
-- `🚀i483` - Submitting PR for issue #483
-- `🔧pr485` - Maintaining PR #485
-- `⏳pr485` - Waiting for tests on PR #485
-
-**Phase Emojis:**
-
-| Phase | Emoji | When Used | Format Example | Command |
-|-------|-------|-----------|----------------|---------|
-| 1. Gathering information | 🔍 | Research/discovery | `🔍i483` | Manual |
-| 2. Coding | 💻 | Active development | `💻i483` | `/gh-start-issue` |
-| 3. Waiting for tests | ⏳ | CI/CD checks running | `⏳pr485` | `/pr-workflow` |
-| 4. Waiting for user | ❓ | Needs input/clarification | `❓i483` or `❓pr485` | Manual |
-| 5. Submitting PR | 🚀 | Creating/pushing PR | `🚀i483` | `/pr-workflow` |
-| 6. PR maintenance | 🔧 | Addressing feedback/fixes | `🔧pr485` | `/pr-workflow` |
-| 7. Cleanup | 🧹 | Post-merge cleanup | `🧹pr485` | Manual |
-
-**Automatic Updates:**
-- `/gh-start-issue` sets tmux to `💻i<issue_num>` (coding phase on issue)
-- `/pr-workflow` updates tmux through phases:
-  - `🚀i<issue_num>` → (PR created) → `🔧pr<pr_num>` → `⏳pr<pr_num>` → `🔧pr<pr_num>`
-  - Note: Transitions from issue number to PR number after PR is created
-
-**Manual Updates:**
-```bash
-# Update tmux window name manually for issue work
-ISSUE_NUM=<your_issue_number>
-tmux rename-window "🔍i${ISSUE_NUM}"  # Research phase on issue
-
-# Update tmux window name manually for PR work
-PR_NUM=<your_pr_number>
-tmux rename-window "🔧pr${PR_NUM}"  # PR maintenance
-```
-
-**Why This Convention:**
-- **Information density**: Maximizes useful info in limited tmux window title space (5-7 chars vs 50+)
-- **Clear distinction**: Instantly know if you're working on issue or PR
-- **Visual status**: Emoji provides at-a-glance phase indication
-- **WCAG compliance**: Window title colors meet AAA accessibility standards (see `.devcontainer/.tmux.conf`)
+A manager agent in window 0 starts each worker in its own window, named for the job, running `claude -n` with the same name. The window keeps the name the manager gave it until the worker finishes. See `docs/dev/tmux-naming-conventions.md` for the layout and the worker's PR lifecycle.
 
 ## Phase 1: Before Creating PR
 
@@ -121,14 +74,20 @@ echo "Current branch: $BRANCH"
 # Should match: m<id>-p<id>-i<num>-<slug> or variants (p<id>-i<num>-<slug>, i<num>-<slug>)
 
 # 3. Extract issue number from branch (look for i<num> pattern)
-ISSUE_NUM=$(echo "$BRANCH" | grep -oP 'i\K[0-9]+' || echo "$BRANCH" | grep -oE '[0-9]+' | head -1)
+ISSUE_NUM=$(echo "$BRANCH" | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
 echo "Issue number: $ISSUE_NUM"
 
 # 4. Verify issue exists and is open
 gh issue view "$ISSUE_NUM" --json state,title
 
-# 5. Check commits for "Fixes #" keyword
-git log origin/main..HEAD --oneline | grep -i "fixes #\|closes #\|resolves #" || echo "WARNING: No 'Fixes #' keyword found in commits"
+# 5. Check that every commit message has this issue's "#N Issue Title" line (against the PR's base branch, so a stacked PR skips its parent's commits)
+# Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
+BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title -q .title)
+for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
+  git log -1 --format=%B "$sha" | grep -qxF "#${ISSUE_NUM} ${ISSUE_TITLE}" || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} ${ISSUE_TITLE}' line"
+done
 ```
 
 ### Validation Details
@@ -194,10 +153,15 @@ fi
 
 **Verify commits reference the issue:**
 ```bash
-# Check for GitHub closing keywords in commits
-git log origin/main..HEAD --pretty=format:"%s" | \
-  grep -iE "(fix(es)?|close[sd]?|resolve[sd]?)\s*#\d+" || \
-  echo "WARNING: No GitHub closing keywords found in commit messages"
+# Check that every commit message has this issue's "#N Issue Title" line, against the PR's base branch (main before a PR exists)
+ISSUE_NUM=$(git branch --show-current | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
+# Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
+BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title -q .title)
+for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
+  git log -1 --format=%B "$sha" | grep -qxF "#${ISSUE_NUM} ${ISSUE_TITLE}" || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} ${ISSUE_TITLE}' line"
+done
 ```
 
 **GitHub closing keywords:** `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`
@@ -396,8 +360,8 @@ git worktree prune --verbose
 ```bash
 BRANCH="<branch_name>"  # e.g., i42-add-auth or m8-p123-i234-add-auth
 
-# Delete local branch
-git branch -d "$BRANCH"
+# Delete local branch (-D: a squash merge leaves the tip outside main, so -d refuses)
+git branch -D "$BRANCH"
 
 # If not fully merged, force delete
 # git branch -D "$BRANCH"
@@ -433,8 +397,8 @@ git pull origin main
 # 4. Remove worktree
 git worktree remove "$WORKTREE_PATH"
 
-# 5. Delete local branch
-git branch -d "$BRANCH"
+# 5. Delete local branch (-D: a squash merge leaves the tip outside main, so -d refuses)
+git branch -D "$BRANCH"
 
 # 6. Prune
 git worktree prune --verbose
@@ -455,7 +419,7 @@ git branch | grep -v "^\*" | grep -v "main\|master"
 | In worktree | `pwd` &#124; `grep wip/` | In wip/ directory |
 | Branch format | `git branch --show-current` | `user/num-slug` |
 | Issue open | `gh issue view N --json state` | `OPEN` |
-| Has "Fixes #" | `git log` &#124; `grep -i "fixes #"` | Found keyword |
+| Every commit has the issue line | the per-commit `#N Issue Title` check above | No warnings |
 
 ### GitHub Closing Keywords
 
