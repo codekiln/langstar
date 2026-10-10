@@ -2,7 +2,7 @@
 
 codekiln wants langstar to be the one command line tool a LangSmith user needs, so they never have to work out whether a task calls for the LangSmith CLI, the LangGraph CLI, an MCP server or Terraform. This document lists what each of those official tools can do, says whether langstar can do it too, and sizes each gap. The open questions at the end ask codekiln which gaps to close first.
 
-Langstar is ahead on assistants, graphs and annotation queues, which no official command line tool manages, and on building a structured-output prompt from a template and a JSON Schema file. It is furthest behind on evaluators and experiments, where its `eval` commands are placeholders, and on what only Terraform manages: workspace administration, resource tags and alerts.
+Langstar is ahead on assistants and graphs, which no official command line tool manages, on annotation queues, which the LangSmith CLI reaches only through hand-written `langsmith api` requests, and on building a structured-output prompt from a template and a JSON Schema file. It is furthest behind on evaluators and experiments, where its `eval` commands are placeholders, and on what only Terraform manages: workspace administration, resource tags and alerts.
 
 The official tools were read from source on 2026-10-09 at these commits, the same ones pinned on the garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%253F.md):
 
@@ -25,14 +25,16 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Small |
 | Show a deployed graph's structure | None; only the LangGraph SDKs | Has it: `graph` | Langstar is ahead |
 | List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment` | None |
+| Change a deployment's source revision, environment variables and secrets | Terraform `langsmith_deployment` | Lacks it; the SDK has the update call ([`deployments.rs`](../../sdk/src/deployments.rs#L385)) but no command uses it | Small |
 | Deployment logs and revisions | LangGraph CLI `deploy logs`, `deploy revisions list`; Terraform revision data sources | Lacks it | Small |
 | Build an image from local code and deploy it | LangGraph CLI `deploy` | Lacks it | Large |
 | Run a local Agent Server, build images, start a project from a template | LangGraph CLI `dev`, `up`, `build`, `dockerfile`, `new`, `validate` | Lacks it | Large |
 | Query runs with filters | LangSmith CLI `run list`; MCP `fetch_runs` | Has it: `runs query` | None |
 | Get one run, export runs, read traces as trees, read thread messages | LangSmith CLI `run`, `trace`, `thread`; MCP `get_thread_history` | Lacks it | Medium |
 | Charts, insight reports and issues for a tracing project | LangSmith CLI `chart`, `insights`, `project issues` | Lacks it | Medium |
-| Manage annotation queues and their runs | None | Has it: `queue` | Langstar is ahead |
-| List, get, create and delete datasets, and import and export them as JSON | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset` | None |
+| Manage annotation queues and their runs | None; the LangSmith CLI reaches them only through hand-written `langsmith api` requests | Has it: `queue` | Langstar is ahead |
+| List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset` | None |
+| Upload and export a dataset as one JSON file | LangSmith CLI `dataset upload`, `export` | Partly: `dataset import` and `export` read and write JSONL and CSV, so a file from `langsmith dataset export` cannot be imported as it is | Small |
 | List the examples in a dataset | LangSmith CLI `example list`; MCP `list_examples` | Has it: `dataset list-examples` | None |
 | Read, create and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example` | Lacks it | Small |
 | List and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
@@ -49,7 +51,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Billing usage | MCP `get_billing_usage` | Lacks it | Medium |
 | Hub agent and skill repos, Custom Apps, sandboxes and their image registries | LangSmith CLI `hub`, `apps`, `sandbox`; Terraform `langsmith_sandbox_registry` | Lacks it | Large |
 
-In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. `dataset update`, CSV and JSONL import and export, and `project get`, `create` and `update` have no official command. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
+In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. Only langstar can update a dataset, import and export one as CSV or JSONL, and create or update a tracing project, with `dataset update`, `dataset import` and `export`, and `project create` and `update`. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
 
 ## What closing each gap would take
 
@@ -67,7 +69,7 @@ The LangGraph CLI runs an Agent Server on your machine, builds Docker images and
 
 ### Workspace administration, resource tags and alerts
 
-Workspace administration, resource tags and alerts have resources only in Terraform ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)); outside Terraform they are managed in the UI or by hand-written requests through `langsmith api`. Terraform applies a file that describes how a whole workspace should look; langstar changes one setting per command. Once langstar has these commands, a team that wants its workspace described in one file and applied in one step will still need Terraform.
+Langstar can close these gaps by calling the same LangSmith API endpoints the Terraform provider calls ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)). Today people manage workspaces, members, roles, tags and alerts in the LangSmith UI, in Terraform, or with hand-written requests through `langsmith api`. Terraform applies a file that describes how a whole workspace should look, while langstar changes one setting per command, so a team that wants its workspace described in one file and applied in one step will keep using Terraform.
 
 ### Model configurations
 
@@ -121,7 +123,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 <ANSWER_HERE>
 
-### 4 - Should langstar add commands for workspace administration, resource tags and alerts, which only Terraform has resources for?
+### 4 - In what order should langstar add workspace administration, resource tags and alerts?
 
 > Context from the drafting agent, for question 4.
 >
