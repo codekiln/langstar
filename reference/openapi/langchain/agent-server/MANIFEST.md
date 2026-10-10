@@ -3,8 +3,8 @@
 ## Source
 
 - **URL Pattern**: `https://<deployment-url>/openapi.json`
-- **Test Deployment**: `pr-integration-test-1764940-7a241d0b197b5ecfa646acb9f75eea50.us.langgraph.app`
-- **Fetched**: 2025-12-05
+- **Test Deployment**: the shared `pr-integration-test-*` deployment that the integration tests reuse, built from `tests/fixtures/test-graph-deployment/langgraph.json`. `langstar deployment list -f json` gives its URL in `source_config.custom_url`; the refresh command below looks it up by name.
+- **Fetched**: 2026-10-09
 - **Version**: 0.1.0
 
 ## Nature of This API
@@ -26,11 +26,21 @@ curl -H "x-api-key: $LANGSMITH_API_KEY" "https://<deployment-url>/openapi.json"
 
 ## Refresh Command
 
+Needs `LANGSMITH_API_KEY` and `LANGSMITH_WORKSPACE_ID`, which `langstar deployment list` uses to read the control plane.
+
 ```bash
-# Fetch from any active deployment
-DEPLOYMENT_URL=$(langstar graph list --limit 1 -f json | jq -r '.resources[0].source_config.custom_url')
-curl -H "x-api-key: $LANGSMITH_API_KEY" "$DEPLOYMENT_URL/openapi.json" \
-  -o reference/openapi/langchain/agent-server/openapi.json
+# Fetch from the shared pr-integration-test-* deployment and indent with 2 spaces.
+# The spec is replaced only after the fetch and jq both succeed, so a failed
+# request or invalid JSON leaves the committed file as it was.
+set -euo pipefail
+SPEC=reference/openapi/langchain/agent-server/openapi.json
+DEPLOYMENT_URL=$(langstar deployment list --name-contains pr-integration-test- -f json \
+  | jq -er '[.resources[] | select(.name | startswith("pr-integration-test-"))][0].source_config.custom_url')
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
+curl -fsS -H "x-api-key: $LANGSMITH_API_KEY" "$DEPLOYMENT_URL/openapi.json" \
+  | jq --indent 2 . > "$TMP"
+mv "$TMP" "$SPEC"
 ```
 
 ## Related
