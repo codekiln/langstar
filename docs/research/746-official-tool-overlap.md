@@ -36,7 +36,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Set up Claude Code or Codex to send their traces to LangSmith | LangSmith CLI `trace setup` | Lacks it; this writes the coding agent's local settings rather than calling LangSmith | Medium |
 | Charts, insight reports and issues for a tracing project | LangSmith CLI `chart`, `insights`, `project issues` | Lacks it | Medium |
 | Manage annotation queues and their runs | None; the LangSmith CLI reaches them only through hand-written `langsmith api` requests | Has it: `queue` | Langstar is ahead |
-| List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset`, `create_dataset` | Has it: `dataset` | None |
+| List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset`, `create_dataset` | Has it: `dataset`, but `dataset get` and `delete` take only a dataset's UUID ([`dataset.rs`](../../cli/src/commands/dataset.rs#L93)), where the official commands also take its name | Small |
 | Upload and export a dataset as one JSON file | LangSmith CLI `dataset upload`, `export` | Partly: `dataset import` and `export` read and write JSONL and CSV, so a file from `langsmith dataset export` cannot be imported as it is | Small |
 | List the examples in a dataset | LangSmith CLI `example list`; MCP `list_examples` | Has it: `dataset list-examples` | None |
 | Read, create, update and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example`, `update_examples` | Lacks it | Small |
