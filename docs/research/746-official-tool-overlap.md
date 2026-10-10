@@ -15,7 +15,7 @@ Langstar was read at `main` as of [`7b09eb2` document tmux manager/worker and PR
 
 ## Parity map
 
-Each row is something an official tool can do. A gap is small when langstar needs a few more commands against an API it already calls, medium when it needs a new command group against an API it does not call yet, and large when it needs a new area of LangSmith or a different kind of tool.
+Each row is something an official tool can do. A gap is small when langstar needs one new command or a few more commands in a group it already has, medium when it needs a new command group, and large when it needs a new area of LangSmith or a different kind of tool.
 
 | Capability | Official tool | Langstar | Gap |
 |---|---|---|---|
@@ -55,7 +55,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Read the LangSmith server's version, license expiry and instance settings | Terraform `langsmith_info` data source | Lacks it | Small |
 | Hub agent and skill repos, Custom Apps, sandboxes and their image registries | LangSmith CLI `hub`, `apps`, `sandbox`; Terraform `langsmith_sandbox_registry` | Lacks it | Large |
 
-In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. Only langstar can update a dataset with `dataset update`, import and export a dataset as CSV or JSONL with `dataset import` and `dataset export`, and create or update a tracing project with `project create` and `project update`. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` asks the LangSmith API for the workspace's GitHub integrations and picks the one that can reach the repository ([`deployment.rs`](../../cli/src/commands/deployment.rs#L610-L634)), where Terraform's `langsmith_deployment` makes you supply the integration ID.
+In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. Only langstar can update a dataset with `dataset update`, import and export a dataset as CSV or JSONL with `dataset import` and `dataset export`, and create or update a tracing project with `project create` and `project update`. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` asks the LangSmith Deployment Control Plane API for the workspace's GitHub integrations and picks the one that can reach the repository ([`deployment.rs`](../../cli/src/commands/deployment.rs#L610-L634)), where Terraform's `langsmith_deployment` makes you supply the integration ID.
 
 ## What closing each gap would take
 
