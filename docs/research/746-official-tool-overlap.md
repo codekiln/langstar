@@ -25,7 +25,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Small |
 | Show a deployed graph's structure | None; only the LangGraph SDKs | Has it: `graph` | Langstar is ahead |
 | List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment` | None |
-| Change a deployment's source revision, environment variables and secrets | Terraform `langsmith_deployment` | Lacks it; the SDK has the update call ([`deployments.rs`](../../sdk/src/deployments.rs#L385)) but no command uses it | Small |
+| Change a deployment's source revision, environment variables and secrets | Terraform `langsmith_deployment` | Lacks it; the SDK's update call ([`deployments.rs`](../../sdk/src/deployments.rs#L385)) changes only the source settings, its request has no environment variables or secrets ([`PatchDeploymentRequest`](../../sdk/src/deployments.rs#L231-L238)), and no command uses it | Small |
 | Deployment logs and revisions, and the self-hosted Kubernetes clusters a deployment can be placed in (LangSmith calls the program it runs in each cluster a listener) | LangGraph CLI `deploy logs`, `deploy revisions list`, `deploy listeners list`; Terraform revision data sources | Lacks it | Small |
 | Build an image from local code and deploy it | LangGraph CLI `deploy` | Lacks it | Large |
 | Run a local Agent Server, build images, start a project from a template | LangGraph CLI `dev`, `up`, `build`, `dockerfile`, `new`, `validate` | Lacks it | Large |
