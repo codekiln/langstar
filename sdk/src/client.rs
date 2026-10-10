@@ -976,6 +976,8 @@ impl LangchainClient {
     ///   response; the OpenAPI spec does not state it)
     /// - Replaces `POST /api/v1/runs/query`, which LangSmith Cloud removes on 31 Jan 2027:
     ///   <https://docs.langchain.com/langsmith/smithdb-sdk-migration>
+    /// - Requires LangSmith Cloud or self-hosted LangSmith `v0.16` or later. Self-hosted
+    ///   LangSmith deprecated v1 in `v0.16` and removes it in `v0.18` (same page).
     pub async fn query_runs(&self, request: QueryRunsRequest) -> Result<QueryRunsResponse> {
         let request_builder = self.langsmith_post("/api/v2/runs/query")?.json(&request);
 
