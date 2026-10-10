@@ -19,7 +19,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 
 | Capability | Official tool | Langstar | Gap |
 |---|---|---|---|
-| List, get, search, push and pull prompts | LangSmith CLI `prompt`; MCP `list_prompts`, `get_prompt_by_name` | Has it: `prompt` | None |
+| List, get, search, push and pull prompts | LangSmith CLI `prompt`; MCP `list_prompts`, `get_prompt_by_name` | Has it: `prompt`, though `prompt get` shows only the prompt's details and `prompt pull` fetches its manifest, where the official `get` returns both | None |
 | Delete prompts, read commit history, manage tags | LangSmith CLI `prompt delete`, `commits`, `tag` | Lacks it | Small |
 | Create, read, update and delete assistants | None; only the LangGraph SDKs and the Agent Server API | Has it: `assistant` | Langstar is ahead |
 | Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Small |
