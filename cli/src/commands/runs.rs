@@ -9,7 +9,7 @@ use crate::output::{OutputFormat, OutputFormatter};
 use chrono::{DateTime, Utc};
 use clap::{Args, Subcommand, ValueEnum};
 use futures_util::StreamExt;
-use langstar_sdk::{LangchainClient, QueryRunsRequest, Run, RunDateOrder, RunType};
+use langstar_sdk::{LangchainClient, QueriedRun, QueryRunsRequest, RunSelectField, RunType};
 use serde::Serialize;
 use tabled::Tabled;
 use uuid::Uuid;
@@ -28,9 +28,10 @@ pub enum RunsCommands {
 /// Arguments for the `runs query` command
 #[derive(Debug, Args)]
 pub struct QueryArgs {
-    /// Project name or UUID to query runs from
+    /// Project UUID to query runs from (required)
     ///
     /// Can be specified multiple times to query from multiple projects.
+    /// The LangSmith runs API needs at least one project UUID.
     #[arg(short, long = "project", value_name = "PROJECT")]
     pub projects: Vec<String>,
 
@@ -115,10 +116,11 @@ pub struct QueryArgs {
     #[arg(long, value_enum)]
     pub preset: Option<crate::time::TimePreset>,
 
-    /// Disable the default 7-day time filter
+    /// Widen the default 7-day time window to the last 400 days
     ///
     /// By default, runs query returns runs from the last 7 days.
-    /// Use --no-time-filter to query all runs without a time constraint.
+    /// The LangSmith runs API rejects a window longer than 401 days;
+    /// 400 days keeps a day of margin under that limit.
     #[arg(long)]
     pub no_time_filter: bool,
 
@@ -127,6 +129,9 @@ pub struct QueryArgs {
     pub limit: usize,
 
     /// Sort order for results
+    ///
+    /// The LangSmith runs API always returns the newest runs first, so
+    /// `asc` fetches the newest --limit runs and prints them oldest first.
     #[arg(long, default_value = "desc", value_enum)]
     pub order: OrderArg,
 
@@ -138,7 +143,12 @@ pub struct QueryArgs {
 
     /// Fields to select (comma-separated)
     ///
-    /// Limits the fields returned in the response.
+    /// Limits the fields returned in the response. Without it, the CLI asks
+    /// for the table's columns when printing a table. When printing JSON, it
+    /// asks for every field the API offers except `share_url` and
+    /// `attachments`, links that open the run or its files without an API
+    /// key; name them here to get them. When printing a table, the CLI always
+    /// adds the fields its columns need.
     /// Example: --select id,name,status,total_tokens
     #[arg(long)]
     pub select: Option<String>,
@@ -200,21 +210,48 @@ impl From<RunTypeArg> for RunType {
 /// Sort order argument for CLI
 #[derive(Debug, Clone, Copy, Default, ValueEnum)]
 pub enum OrderArg {
-    /// Ascending order (oldest first)
+    /// Ascending order (oldest first, among the newest --limit runs)
     Asc,
     /// Descending order (newest first)
     #[default]
     Desc,
 }
 
-impl From<OrderArg> for RunDateOrder {
-    fn from(arg: OrderArg) -> Self {
-        match arg {
-            OrderArg::Asc => RunDateOrder::Asc,
-            OrderArg::Desc => RunDateOrder::Desc,
-        }
-    }
-}
+/// Largest `page_size` the runs API accepts.
+const MAX_PAGE_SIZE: u32 = 1000;
+
+/// Days --no-time-filter asks for.
+///
+/// `POST /api/v2/runs/query` rejects a longer window with HTTP 400:
+/// `time_range duration exceeds maximum of 401 days`. Neither the OpenAPI
+/// spec nor LangChain's migration guide states this limit; a live request
+/// returned that error. The CLI sends a start time and no end time, so the
+/// API measures the window up to the moment the request arrives; 400 days
+/// keeps a day of margin under the limit.
+const NO_TIME_FILTER_DAYS: i64 = 400;
+
+/// Fields the table columns read; added to --select for table output.
+const TABLE_FIELDS: [RunSelectField; 7] = [
+    RunSelectField::Id,
+    RunSelectField::Name,
+    RunSelectField::RunType,
+    RunSelectField::Status,
+    RunSelectField::TotalTokens,
+    RunSelectField::StartTime,
+    RunSelectField::EndTime,
+];
+
+/// Fields that hold a link anyone can open without an API key. The CLI asks
+/// for them only when --select names them.
+///
+/// - `share_url`: the OpenAPI spec says anyone with it "can view the run
+///   anonymously, so treat it as a secret and do not log it".
+/// - `attachments`: the spec says it maps each file name "to a pre-signed
+///   HTTPS download URL".
+///
+/// These are the only `query.RunResponse` fields the spec describes as
+/// URLs that grant access.
+const SECRET_FIELDS: [RunSelectField; 2] = [RunSelectField::ShareUrl, RunSelectField::Attachments];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Filter Builder
@@ -275,14 +312,6 @@ impl FilterBuilder {
         self
     }
 
-    /// Add an error filter: `eq(error, true)`
-    ///
-    /// Named to match the CLI flag `--errors-only`.
-    pub fn errors_only(mut self) -> Self {
-        self.conditions.push("eq(error, true)".to_string());
-        self
-    }
-
     /// Add a raw filter expression
     pub fn raw(mut self, filter: &str) -> Self {
         if !filter.is_empty() {
@@ -339,7 +368,7 @@ impl RunRow {
     ///
     /// * `run` - The run to convert
     /// * `tz` - The timezone to use for formatting the time column
-    fn from_run_with_timezone(run: &Run, tz: &crate::time::ConfiguredTimezone) -> Self {
+    fn from_run_with_timezone(run: &QueriedRun, tz: &crate::time::ConfiguredTimezone) -> Self {
         // Calculate duration if we have both start and end times
         let duration = match (&run.start_time, &run.end_time) {
             (Some(start), Some(end)) => {
@@ -361,24 +390,34 @@ impl RunRow {
             .unwrap_or_else(|| "-".to_string());
 
         // Truncate name if too long (unicode-safe)
-        let name = if run.name.chars().count() > 30 {
-            format!("{}...", run.name.chars().take(27).collect::<String>())
+        let name = run.name.as_deref().unwrap_or("-");
+        let name = if name.chars().count() > 30 {
+            format!("{}...", name.chars().take(27).collect::<String>())
         } else {
-            run.name.clone()
+            name.to_string()
         };
 
         // Format tokens
-        let tokens = if run.total_tokens > 0 {
-            run.total_tokens.to_string()
-        } else {
-            "-".to_string()
+        let tokens = match run.total_tokens {
+            Some(tokens) if tokens > 0 => tokens.to_string(),
+            _ => "-".to_string(),
         };
 
         Self {
-            id: run.id.to_string().chars().take(8).collect::<String>(), // Short UUID
+            id: run
+                .id
+                .map(|id| id.to_string().chars().take(8).collect::<String>()) // Short UUID
+                .unwrap_or_else(|| "-".to_string()),
             name,
-            run_type: format!("{:?}", run.run_type).to_lowercase(),
-            status: run.status.clone(),
+            run_type: run
+                .run_type
+                .map(|rt| format!("{:?}", rt).to_lowercase())
+                .unwrap_or_else(|| "-".to_string()),
+            status: run
+                .status
+                .as_deref()
+                .map(str::to_lowercase)
+                .unwrap_or_else(|| "-".to_string()),
             tokens,
             duration,
             time,
@@ -428,7 +467,10 @@ impl RunsCommands {
     /// 1. --since/--until with ISO 8601 timestamps
     /// 2. --since with relative duration (e.g., "15m", "1h", "7d")
     /// 3. --preset
-    /// 4. Default (7 days) - unless --no-time-filter is set
+    /// 4. Default (7 days)
+    ///
+    /// --no-time-filter overrides all of these with the last
+    /// [`NO_TIME_FILTER_DAYS`] days.
     ///
     /// Returns (start_time, end_time, description).
     fn resolve_time_filters(
@@ -437,9 +479,14 @@ impl RunsCommands {
     ) -> (Option<DateTime<Utc>>, Option<DateTime<Utc>>, String) {
         let now = Utc::now();
 
-        // If --no-time-filter is set, skip all time filtering
+        // The API searches only the last day when no start time is sent, so
+        // --no-time-filter sends a start time NO_TIME_FILTER_DAYS ago.
         if args.no_time_filter {
-            return (None, None, "none (--no-time-filter)".to_string());
+            return (
+                Some(now - chrono::Duration::days(NO_TIME_FILTER_DAYS)),
+                None,
+                format!("last {} days (--no-time-filter)", NO_TIME_FILTER_DAYS),
+            );
         }
 
         // Parse --until first (it's always ISO 8601 if present)
@@ -511,6 +558,80 @@ impl RunsCommands {
         (Some(start), end_time, "last 7 days (default)".to_string())
     }
 
+    /// Fields to request from the API.
+    ///
+    /// Without --select, the CLI asks for the table's columns when printing a
+    /// table, and for every field except [`SECRET_FIELDS`] when printing JSON.
+    /// With --select, it asks for the named fields, plus the ones the table
+    /// columns read when printing a table.
+    fn resolve_selects(
+        args: &QueryArgs,
+        formatter: &OutputFormatter,
+    ) -> Result<Vec<RunSelectField>> {
+        let Some(select) = &args.select else {
+            return Ok(match args.output {
+                RunsOutputFormat::Table => TABLE_FIELDS.to_vec(),
+                RunsOutputFormat::Json | RunsOutputFormat::JsonPretty => RunSelectField::ALL
+                    .into_iter()
+                    .filter(|f| !SECRET_FIELDS.contains(f))
+                    .collect(),
+            });
+        };
+
+        let mut fields = Vec::new();
+        for name in select.split(',').map(str::trim).filter(|n| !n.is_empty()) {
+            match RunSelectField::from_name(name) {
+                Some(field) if !fields.contains(&field) => fields.push(field),
+                Some(_) => {}
+                None => {
+                    return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                        "Unknown --select field '{}'. Valid fields: {}",
+                        name,
+                        RunSelectField::ALL
+                            .iter()
+                            .map(|f| {
+                                serde_json::to_value(f)
+                                    .ok()
+                                    .and_then(|v| v.as_str().map(str::to_lowercase))
+                                    .unwrap_or_default()
+                            })
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    )));
+                }
+            }
+        }
+
+        if args.output == RunsOutputFormat::Table {
+            for field in TABLE_FIELDS {
+                if !fields.contains(&field) {
+                    fields.push(field);
+                }
+            }
+        } else if fields.is_empty() {
+            // The API returns only `id` when `selects` is left out, but the
+            // CLI always sends `selects`, so it names the ID itself.
+            formatter.warning("--select named no fields; returning run IDs only");
+            fields.push(RunSelectField::Id);
+        }
+
+        Ok(fields)
+    }
+
+    /// Put runs in the requested order. The API always returns the newest
+    /// runs first, so ascending order reverses them.
+    fn order_runs(mut runs: Vec<QueriedRun>, order: OrderArg) -> Vec<QueriedRun> {
+        if matches!(order, OrderArg::Asc) {
+            runs.reverse();
+        }
+        runs
+    }
+
+    /// Runs to request per page: --limit, capped at the API maximum.
+    fn page_size(limit: usize) -> u32 {
+        limit.clamp(1, MAX_PAGE_SIZE as usize) as u32
+    }
+
     /// Execute the runs command
     pub async fn execute(&self, config: &Config, format: OutputFormat) -> Result<()> {
         match self {
@@ -562,11 +683,6 @@ impl RunsCommands {
             filter_builder = filter_builder.status(status);
         }
 
-        // Add error filter
-        if args.errors_only {
-            filter_builder = filter_builder.errors_only();
-        }
-
         // Add raw filter (if provided)
         if let Some(raw_filter) = &args.filter {
             filter_builder = filter_builder.raw(raw_filter);
@@ -575,7 +691,7 @@ impl RunsCommands {
         let combined_filter = filter_builder.build();
 
         // Parse project IDs/names (warn if not valid UUIDs)
-        let session_ids: Vec<Uuid> = args
+        let project_ids: Vec<Uuid> = args
             .projects
             .iter()
             .filter_map(|p| match Uuid::parse_str(p) {
@@ -587,6 +703,13 @@ impl RunsCommands {
             })
             .collect();
 
+        if project_ids.is_empty() {
+            return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "runs query needs at least one project UUID: pass --project <UUID>. \
+                 The LangSmith runs API cannot query across all projects."
+            )));
+        }
+
         // Parse time filters with precedence:
         // --since/--until (explicit) > --since (relative) > --preset > default (7d)
         //
@@ -594,22 +717,14 @@ impl RunsCommands {
         let (start_time, end_time, time_filter_source) =
             Self::resolve_time_filters(args, &formatter);
 
-        // Parse select fields
-        let select: Option<Vec<String>> = args
-            .select
-            .as_ref()
-            .map(|s| s.split(',').map(|f| f.trim().to_string()).collect());
+        let selects = Self::resolve_selects(args, &formatter)?;
 
         // Show query info (only for table output to keep JSON clean)
         if args.output == RunsOutputFormat::Table {
-            if !args.projects.is_empty() {
-                formatter.info(&format!(
-                    "Querying runs from projects: {}",
-                    args.projects.join(", ")
-                ));
-            } else {
-                formatter.info("Querying runs from all projects...");
-            }
+            formatter.info(&format!(
+                "Querying runs from projects: {}",
+                args.projects.join(", ")
+            ));
 
             // Show time filter info
             formatter.info(&format!("Time filter: {}", time_filter_source));
@@ -623,38 +738,31 @@ impl RunsCommands {
 
         // Build the request (combined_filter is moved, not cloned)
         let request = QueryRunsRequest {
-            session: if session_ids.is_empty() {
-                None
-            } else {
-                Some(session_ids)
-            },
+            project_ids: Some(project_ids),
             filter: combined_filter,
             trace_filter: args.trace_filter.clone(),
             tree_filter: args.tree_filter.clone(),
             is_root: if args.is_root { Some(true) } else { None },
             run_type: args.run_type.map(|rt| rt.into()),
-            // Note: errors_only is handled via filter_builder.errors_only(), not the error field
-            start_time,
-            end_time,
-            select,
-            order: Some(args.order.into()),
-            limit: Some(100.min(args.limit as u32)), // API max is 100 per page
+            // The v2 filter language cannot compare `error`, so --errors-only
+            // uses the request's has_error field.
+            has_error: args.errors_only.then_some(true),
+            min_start_time: start_time,
+            max_start_time: end_time,
+            selects: Some(selects),
+            page_size: Some(Self::page_size(args.limit)),
             ..Default::default()
         };
 
         // Execute query with pagination
         let mut stream = client.query_runs_paginated(request, Some(args.limit));
-        let mut runs: Vec<Run> = Vec::new();
+        let mut runs: Vec<QueriedRun> = Vec::new();
 
         while let Some(result) = stream.next().await {
-            match result {
-                Ok(run) => runs.push(run),
-                Err(e) => {
-                    formatter.error(&format!("Error fetching runs: {}", e));
-                    break;
-                }
-            }
+            runs.push(result?);
         }
+
+        let runs = Self::order_runs(runs, args.order);
 
         // Output results
         match args.output {
@@ -735,12 +843,6 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_builder_errors_only() {
-        let filter = FilterBuilder::new().errors_only().build();
-        assert_eq!(filter, Some("eq(error, true)".to_string()));
-    }
-
-    #[test]
     fn test_filter_builder_combined() {
         let filter = FilterBuilder::new()
             .tag("production")
@@ -812,69 +914,70 @@ mod tests {
         assert!(matches!(RunType::from(RunTypeArg::Parser), RunType::Parser));
     }
 
+    fn run_started_at(start: &str) -> QueriedRun {
+        serde_json::from_value(serde_json::json!({
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "start_time": start
+        }))
+        .unwrap()
+    }
+
     #[test]
-    fn test_order_arg_conversion() {
-        assert!(matches!(
-            RunDateOrder::from(OrderArg::Asc),
-            RunDateOrder::Asc
-        ));
-        assert!(matches!(
-            RunDateOrder::from(OrderArg::Desc),
-            RunDateOrder::Desc
-        ));
+    fn test_order_runs_desc_keeps_api_order() {
+        let newest_first = vec![
+            run_started_at("2024-01-03T00:00:00Z"),
+            run_started_at("2024-01-02T00:00:00Z"),
+            run_started_at("2024-01-01T00:00:00Z"),
+        ];
+        let ordered = RunsCommands::order_runs(newest_first, OrderArg::Desc);
+        let days: Vec<u32> = ordered
+            .iter()
+            .map(|r| chrono::Datelike::day(&r.start_time.unwrap()))
+            .collect();
+        assert_eq!(days, vec![3, 2, 1]);
+    }
+
+    #[test]
+    fn test_order_runs_asc_puts_oldest_first() {
+        let newest_first = vec![
+            run_started_at("2024-01-03T00:00:00Z"),
+            run_started_at("2024-01-02T00:00:00Z"),
+            run_started_at("2024-01-01T00:00:00Z"),
+        ];
+        let ordered = RunsCommands::order_runs(newest_first, OrderArg::Asc);
+        let days: Vec<u32> = ordered
+            .iter()
+            .map(|r| chrono::Datelike::day(&r.start_time.unwrap()))
+            .collect();
+        assert_eq!(days, vec![1, 2, 3]);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // RunRow conversion tests
     // ═══════════════════════════════════════════════════════════════════════
 
-    fn create_test_run(name: &str, total_tokens: i64) -> Run {
-        let json = format!(
-            r#"{{
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "name": "{}",
-                "run_type": "llm",
-                "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-                "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-                "status": "success",
-                "session_id": "323e4567-e89b-12d3-a456-426614174002",
-                "app_path": "/chat",
-                "total_tokens": {},
-                "start_time": null,
-                "end_time": null,
-                "first_token_time": null,
-                "last_queued_at": null,
-                "trace_first_received_at": null,
-                "trace_min_start_time": null,
-                "trace_max_start_time": null
-            }}"#,
-            name, total_tokens
-        );
-        serde_json::from_str(&json).unwrap()
+    fn create_test_run(name: &str, total_tokens: i64) -> QueriedRun {
+        serde_json::from_value(serde_json::json!({
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": name,
+            "run_type": "LLM",
+            "status": "SUCCESS",
+            "project_id": "323e4567-e89b-12d3-a456-426614174002",
+            "total_tokens": total_tokens
+        }))
+        .unwrap()
     }
 
-    fn create_test_run_with_timing(start: &str, end: &str) -> Run {
-        let json = format!(
-            r#"{{
-                "id": "123e4567-e89b-12d3-a456-426614174000",
-                "name": "ChatOpenAI",
-                "run_type": "llm",
-                "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-                "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-                "status": "success",
-                "session_id": "323e4567-e89b-12d3-a456-426614174002",
-                "app_path": "/chat",
-                "start_time": "{}",
-                "end_time": "{}",
-                "first_token_time": null,
-                "last_queued_at": null,
-                "trace_first_received_at": null,
-                "trace_min_start_time": null,
-                "trace_max_start_time": null
-            }}"#,
-            start, end
-        );
-        serde_json::from_str(&json).unwrap()
+    fn create_test_run_with_timing(start: &str, end: &str) -> QueriedRun {
+        serde_json::from_value(serde_json::json!({
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "name": "ChatOpenAI",
+            "run_type": "LLM",
+            "status": "SUCCESS",
+            "start_time": start,
+            "end_time": end
+        }))
+        .unwrap()
     }
 
     #[test]
@@ -933,6 +1036,32 @@ mod tests {
     }
 
     #[test]
+    fn test_run_row_lowercases_v2_type_and_status() {
+        let run = create_test_run("Test", 0);
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
+        assert_eq!(row.run_type, "llm");
+        assert_eq!(row.status, "success");
+    }
+
+    #[test]
+    fn test_run_row_shows_dash_for_unselected_fields() {
+        let run: QueriedRun =
+            serde_json::from_str(r#"{"id": "123e4567-e89b-12d3-a456-426614174000"}"#).unwrap();
+        let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
+        assert_eq!(
+            (
+                row.name.as_str(),
+                row.run_type.as_str(),
+                row.status.as_str(),
+                row.tokens.as_str(),
+                row.duration.as_str(),
+                row.time.as_str()
+            ),
+            ("-", "-", "-", "-", "-", "-")
+        );
+    }
+
+    #[test]
     fn test_run_row_uuid_truncation() {
         let run = create_test_run("Test", 0);
         let row = RunRow::from_run_with_timezone(&run, &crate::time::ConfiguredTimezone::Utc);
@@ -973,32 +1102,19 @@ mod tests {
     // Pagination limit tests
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// Helper to calculate the per-page limit (mirrors the logic in execute_query)
-    fn calculate_per_page_limit(args_limit: usize) -> u32 {
-        100.min(args_limit as u32)
+    #[test]
+    fn test_page_size_follows_limit_below_max() {
+        assert_eq!(RunsCommands::page_size(1), 1);
+        assert_eq!(RunsCommands::page_size(100), 100);
+        assert_eq!(RunsCommands::page_size(999), 999);
     }
 
     #[test]
-    fn test_per_page_limit_below_max() {
-        // When user requests less than 100, use their limit
-        assert_eq!(calculate_per_page_limit(50), 50);
-        assert_eq!(calculate_per_page_limit(1), 1);
-        assert_eq!(calculate_per_page_limit(99), 99);
-    }
-
-    #[test]
-    fn test_per_page_limit_at_max() {
-        // When user requests exactly 100, use 100
-        assert_eq!(calculate_per_page_limit(100), 100);
-    }
-
-    #[test]
-    fn test_per_page_limit_above_max() {
-        // When user requests more than 100, clamp to API max of 100
-        // The SDK's query_runs_paginated handles fetching additional pages
-        assert_eq!(calculate_per_page_limit(101), 100);
-        assert_eq!(calculate_per_page_limit(500), 100);
-        assert_eq!(calculate_per_page_limit(1000), 100);
+    fn test_page_size_clamps_to_api_range() {
+        // The SDK's query_runs_paginated fetches further pages past 1000.
+        assert_eq!(RunsCommands::page_size(1000), 1000);
+        assert_eq!(RunsCommands::page_size(5000), 1000);
+        assert_eq!(RunsCommands::page_size(0), 1);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1054,9 +1170,15 @@ mod tests {
         let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
         let (start, end, desc) = RunsCommands::resolve_time_filters(&args, &formatter);
 
-        assert!(start.is_none(), "--no-time-filter should have no start");
+        // --no-time-filter asks for NO_TIME_FILTER_DAYS (400) days.
+        let days = (chrono::Utc::now() - start.expect("--no-time-filter sends a start")).num_days();
+        assert!(
+            (399..=400).contains(&days),
+            "expected ~400 days, got {}",
+            days
+        );
         assert!(end.is_none(), "--no-time-filter should have no end");
-        assert_eq!(desc, "none (--no-time-filter)");
+        assert_eq!(desc, "last 400 days (--no-time-filter)");
     }
 
     #[test]
@@ -1129,5 +1251,100 @@ mod tests {
         // --since should take precedence over --preset
         assert!(start.is_some());
         assert_eq!(desc, "last 1h (relative)");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // resolve_selects tests
+    // ═══════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_resolve_selects_default_table_asks_for_its_columns() {
+        let args = create_test_query_args();
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(selects, TABLE_FIELDS.to_vec());
+    }
+
+    #[test]
+    fn test_resolve_selects_default_json_leaves_out_secret_fields() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert!(!selects.contains(&RunSelectField::ShareUrl));
+        assert!(!selects.contains(&RunSelectField::Attachments));
+        assert_eq!(
+            selects.len(),
+            RunSelectField::ALL.len() - SECRET_FIELDS.len()
+        );
+    }
+
+    #[test]
+    fn test_resolve_selects_secret_fields_only_when_named() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        args.select = Some("id,share_url,attachments".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(
+            selects,
+            vec![
+                RunSelectField::Id,
+                RunSelectField::ShareUrl,
+                RunSelectField::Attachments
+            ]
+        );
+    }
+
+    #[test]
+    fn test_resolve_selects_json_keeps_only_named_fields() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        args.select = Some("id, total_tokens,ID".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(
+            selects,
+            vec![RunSelectField::Id, RunSelectField::TotalTokens]
+        );
+    }
+
+    #[test]
+    fn test_resolve_selects_table_adds_column_fields() {
+        let mut args = create_test_query_args();
+        args.select = Some("tags".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(selects[0], RunSelectField::Tags);
+        for field in TABLE_FIELDS {
+            assert!(selects.contains(&field), "table needs {:?}", field);
+        }
+        assert_eq!(selects.len(), 1 + TABLE_FIELDS.len());
+    }
+
+    #[test]
+    fn test_resolve_selects_empty_json_asks_for_id() {
+        let mut args = create_test_query_args();
+        args.output = RunsOutputFormat::Json;
+        args.select = Some(" , ".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Json);
+        let selects = RunsCommands::resolve_selects(&args, &formatter).unwrap();
+        assert_eq!(selects, vec![RunSelectField::Id]);
+    }
+
+    #[test]
+    fn test_resolve_selects_rejects_unknown_field() {
+        let mut args = create_test_query_args();
+        args.select = Some("id,session_id".to_string());
+        let formatter = crate::output::OutputFormatter::new(crate::output::OutputFormat::Table);
+        let err = RunsCommands::resolve_selects(&args, &formatter)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("Unknown --select field 'session_id'"),
+            "{}",
+            err
+        );
+        assert!(err.contains("project_id"), "{}", err);
     }
 }

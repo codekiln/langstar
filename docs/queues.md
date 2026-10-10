@@ -301,6 +301,9 @@ on:
         description: 'Annotation queue name'
         required: true
         default: 'CI Review'
+      project_id:
+        description: 'UUID of the tracing project to read error runs from'
+        required: true
 
 jobs:
   triage:
@@ -315,22 +318,27 @@ jobs:
         id: queue
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          # Passed through env so the shell and jq read the input as data, not code
+          QUEUE_NAME: ${{ inputs.queue_name }}
         run: |
           QUEUE_ID=$(langstar queue list --json | \
-            jq -r '.[] | select(.name == "${{ inputs.queue_name }}") | .id')
+            jq -r --arg name "$QUEUE_NAME" '.[] | select(.name == $name) | .id')
           echo "queue_id=$QUEUE_ID" >> $GITHUB_OUTPUT
 
       - name: Query error runs and add to queue
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          # Passed through env so the shell reads these values as data, not code
+          PROJECT_ID: ${{ inputs.project_id }}
+          QUEUE_ID: ${{ steps.queue.outputs.queue_id }}
         run: |
-          # Get recent error runs
-          langstar runs query --errors-only --limit 10 --output json | \
+          # Get recent error runs from the project named in the workflow input
+          langstar runs query -p "$PROJECT_ID" --errors-only --limit 10 --output json | \
             jq -r '.[].id' > error_runs.txt
 
           # Add to annotation queue
           if [ -s error_runs.txt ]; then
-            langstar queue add-runs ${{ steps.queue.outputs.queue_id }} --runs-file error_runs.txt
+            langstar queue add-runs "$QUEUE_ID" --runs-file error_runs.txt
             echo "Added $(wc -l < error_runs.txt) runs to queue"
           else
             echo "No error runs found"
@@ -440,7 +448,7 @@ let request = CreateAnnotationQueueRequest {
 2. **Query recent errors and add to queue:**
    ```bash
    # Save error run IDs to file
-   langstar runs query --errors-only --limit 100 --output json | \
+   langstar runs query -p "<project-uuid>" --errors-only --limit 100 --output json | \
      jq -r '.[].id' > errors.txt
 
    # Add to queue
@@ -549,7 +557,7 @@ langstar config
 
 ### "Run not found"
 
-- Verify the run ID exists: `langstar runs query --filter 'eq(id, "<run-id>")'`
+- Verify the run ID exists: `langstar runs query -p "<project-uuid>" --filter 'eq(id, "<run-id>")'`
 - Ensure the run belongs to a project accessible by your API key
 
 ### Empty queue items

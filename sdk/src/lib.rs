@@ -99,5 +99,5 @@ pub use prompts::{
     Prompt, PromptClient, PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt,
     Visibility,
 };
-pub use runs::{Cursors, QueryRunsRequest, QueryRunsResponse, Run, RunDateOrder, RunType};
+pub use runs::{QueriedRun, QueryRunsRequest, QueryRunsResponse, Run, RunSelectField, RunType};
 pub use secrets::{SecretKey, SecretUpsert};

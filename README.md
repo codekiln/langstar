@@ -368,43 +368,51 @@ langstar graph list my-deployment --format json
 #### LangSmith Runs/Traces
 
 Query and filter LangSmith runs (traces) to analyze LLM application execution.
+`runs query` works with LangSmith Cloud and with self-hosted LangSmith `v0.16` or later.
+Each query needs at least one project UUID (`-p`, repeatable). `langstar project get <name>` prints a project's full UUID; the `langstar project list` table shortens IDs to 8 characters, which `-p` does not accept.
 
 ```bash
+PROJECT='<your-project-uuid>'
+
 # Query recent runs (root traces only)
-langstar runs query --is-root --limit 10
+langstar runs query -p "$PROJECT" --is-root --limit 10
 
 # Query with JSON output
-langstar runs query --limit 5 --output json
+langstar runs query -p "$PROJECT" --limit 5 --output json
 
 # Filter by run type (llm, chain, tool, retriever, embedding, prompt, parser)
-langstar runs query --run-type llm --limit 10
+langstar runs query -p "$PROJECT" --run-type llm --limit 10
 
 # Filter by status
-langstar runs query --status error --limit 20
-langstar runs query --errors-only  # Shorthand for error runs
+langstar runs query -p "$PROJECT" --status error --limit 20
+langstar runs query -p "$PROJECT" --errors-only  # Shorthand for error runs
 
 # Filter by tags
-langstar runs query --tag production --tag gpt-4
+langstar runs query -p "$PROJECT" --tag production --tag gpt-4
 
 # Filter by metadata
-langstar runs query --meta environment=production --meta model=gpt-4
+langstar runs query -p "$PROJECT" --meta environment=production --meta model=gpt-4
 
 # Use raw filter expressions (LangSmith filter query language)
-langstar runs query --filter 'eq(status, "error")'
-langstar runs query --filter 'gt(total_tokens, 1000)'
-langstar runs query --filter 'has(tags, "production")'
+langstar runs query -p "$PROJECT" --filter 'eq(status, "error")'
+langstar runs query -p "$PROJECT" --filter 'gt(total_tokens, 1000)'
+langstar runs query -p "$PROJECT" --filter 'has(tags, "production")'
 
 # Combine filters
-langstar runs query --tag production --status error --run-type llm
+langstar runs query -p "$PROJECT" --tag production --status error --run-type llm
 
 # Time-based filtering
-langstar runs query --since 2024-01-01T00:00:00Z --until 2024-01-31T23:59:59Z
+langstar runs query -p "$PROJECT" --since 2024-01-01T00:00:00Z --until 2024-01-31T23:59:59Z
 
-# Sort order (asc or desc)
-langstar runs query --order asc --limit 10
+# Sort order: the API returns the newest runs first, so asc prints
+# the newest --limit runs oldest first
+langstar runs query -p "$PROJECT" --order asc --limit 10
+
+# Widen the default 7-day window to the last 400 days, a day of margin under the API's 401-day limit
+langstar runs query -p "$PROJECT" --no-time-filter
 
 # Pretty-printed JSON output
-langstar runs query --limit 5 --output json-pretty
+langstar runs query -p "$PROJECT" --limit 5 --output json-pretty
 ```
 
 **Run Types:**
