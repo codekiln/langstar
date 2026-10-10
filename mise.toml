@@ -10,6 +10,16 @@ minimum_release_age = "5d"
 
 [tools]
 python = "3.11"
+# rulesync generates CLAUDE.md, AGENTS.md and the skills from .rulesync/.
+# The generated files are gitignored; lefthook regenerates them.
+# https://github.com/dyoshikawa/rulesync
+"npm:rulesync" = "27.0.0"
+# The openspec CLI creates, validates and archives the feature designs and command-group specs under openspec/. The openspec-* skills in .rulesync/skills/ run it.
+# https://github.com/Fission-AI/OpenSpec
+"npm:@fission-ai/openspec" = "1.14.1"
+# lefthook runs the git hooks in lefthook.yml.
+# https://github.com/evilmartians/lefthook
+lefthook = "2.2.1"
 # Same version as rust-toolchain.toml, so mise and rustup users get one compiler.
 # The workspace needs Rust 1.89 or newer (uuid 1.27's minimum), and the code uses let-chains
 # (`if let ... && ...`), which older compilers reject.
@@ -27,12 +37,15 @@ age = "1.3.2"
 git-cliff = "2.14.2"
 # GitHub CLI, used by the worktree cleanup task and the issue workflow skills.
 gh = "2.102.0"
-# Generates the per-agent config files from .rulesync/. Pinned because an older
-# copy silently drops skill frontmatter (license, argument-hint, allowed-tools).
-"npm:rulesync" = "27.0.0"
 # rulesync is a Node CLI (v27 declares node >=22); without Node its executable
 # cannot run on a clean host.
 node = "22"
+
+# Install the lefthook git hooks on entering this repo. Running it again is
+# harmless.
+# https://mise.jdx.dev/hooks.html
+[hooks]
+enter = "lefthook install"
 
 [env]
 # Test fixture names are not secrets, so they live here rather than in 1Password.

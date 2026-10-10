@@ -7,6 +7,12 @@ This document codifies the best practices and standard phases for implementing n
 - **#334 ls-annotation-queues** - Annotation queue management
 - **#201 devcontainer-feature** - Infrastructure milestone (different pattern)
 
+## Design new features with OpenSpec
+
+Design each new feature as an [OpenSpec](https://github.com/Fission-AI/OpenSpec) change under `openspec/changes/`. Start one from the feature's GitHub issue with the `openspec-propose` skill, or with `openspec new change <slug>`. The change holds a proposal, a design, a task list, and the edits it makes to the specs in `openspec/specs/`; `openspec/config.yaml` sets what each file must contain. `openspec validate <slug> --strict` checks the change. When the implementation is done, and before the feature's PR merges, run the `openspec-archive-change` skill. It moves the change into `openspec/changes/archive/` and applies the change's spec edits to `openspec/specs/`, which describe what each langstar command group does today.
+
+Write the Phase 2 design in the change's `design.md` and the steps to build it in the change's `tasks.md`. `docs/implementation/` keeps the design documents written before langstar adopted OpenSpec, and the test plans that the `gh-milestones-test-plan` skill writes in Phase 7.
+
 ---
 
 ## Overview
@@ -18,15 +24,15 @@ Each API → CLI feature follows a **12-phase process** (plus optional scouting 
 | **0.0** | **Pre-Epic Scouting (Optional)** | **Gather research and technical context** | **Scout research report** |
 | 0 | Epic Setup | Establish tracking structure | Parent issue, milestone, sub-issues |
 | 1 | Research | Understand SDK precedent | Research report in `reference/research/` |
-| 2 | Design | Ensure DX consistency and integration | Design decisions documented in research report |
+| 2 | Design | Ensure DX consistency and integration | OpenSpec change in `openspec/changes/` |
 | 3 | OpenAPI Validation | Verify design against spec | Validation report + extracted schemas |
 | 4 | SDK Types | Implement Rust types | `sdk/src/{feature}.rs` types |
 | 5 | SDK Client | Implement client methods | Client methods in SDK |
 | 6 | CLI Commands | Implement CLI commands | `cli/src/commands/{feature}.rs` |
-| 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones:test-plan` |
+| 7 | Test Planning | Generate comprehensive test plan | Test plan document via `/gh-milestones-test-plan` |
 | 8 | Testing | Ensure quality | Unit tests (mocked) + integration tests |
-| 9 | Test Audit | Verify test compliance | Audit report via `/gh-milestones:test-audit` |
-| 10 | Documentation | Document usage | README updates, implementation docs |
+| 9 | Test Audit | Verify test compliance | Audit report via `/gh-milestones-test-audit` |
+| 10 | Documentation | Document usage | README updates, archived OpenSpec change |
 | **11** | **Milestone Release** | **Mark milestone as shipped** | **Closed milestone linked to GitHub release** |
 
 **Note**: Phase 0.0 (Pre-Epic Scouting) and Phase 11 (Milestone Release) are recent additions based on lessons learned from milestone #7 (ls-prompt-structured-outputs). See [Issue #448](https://github.com/codekiln/langstar/issues/448) for detailed analysis. Phase 7 (Test Planning) and Phase 9 (Test Audit) were added to formalize comprehensive test planning and compliance verification (Issue #634).
@@ -260,7 +266,7 @@ Evaluate how the feature aligns with existing Langstar commands and patterns:
 - `cli/src/config.rs` - Configuration loading patterns
 - Existing command help text (`langstar <command> --help`)
 
-**Document in research report**:
+**Write in the change's `design.md`**:
 - Consistency decisions (which patterns to follow)
 - Intentional deviations (with rationale)
 - New patterns being introduced (if any)
@@ -301,33 +307,14 @@ Understand what this feature accomplishes from a user's perspective in the LangS
 - Review official documentation for the feature
 - Consider common user scenarios and edge cases
 
-**Document in research report**:
+**Write in the change's `design.md`**:
 - UI workflow description (what users do in the web interface)
 - Key user scenarios (the "jobs to be done")
 - How the CLI can improve or complement the UI workflow
 
 ### 2.4 Design Decisions Summary
 
-Add a "Design Decisions" section to your research report:
-
-```markdown
-## Design Decisions
-
-### DX Consistency
-- Following `runs query` pattern for [reason]
-- Using `-f/--filter` flag consistent with [existing command]
-- Output formats: json (default for piping), table (default for terminal)
-
-### Configuration
-- Requires: LANGSMITH_API_KEY (existing), LANGSMITH_PROJECT_NAME (existing)
-- New env var: [none / LANGSMITH_NEW_VAR for reason]
-- Defaults: [list sensible defaults]
-
-### Business Purpose
-- Supports workflow: [describe UI workflow]
-- Key scenarios: [list 2-3 primary use cases]
-- CLI advantage: [why CLI is better than UI for this]
-```
+Write the decisions as prose in the `## Decisions` section of the OpenSpec change's `design.md`. Say which existing langstar command the new one follows and why, which settings and environment variables it reads, and which LangSmith workflow it serves that a user would rather run from the command line than from the web interface.
 
 ---
 
@@ -603,7 +590,7 @@ Use the established config pattern from `cli/src/config.rs`:
 
 ## Phase 7: Test Planning
 
-Before implementing tests, generate a comprehensive test plan that ensures complete coverage of the feature's functionality, error conditions, and edge cases. This phase uses the `/gh-milestones:test-plan` command to automate test plan generation.
+Before implementing tests, generate a comprehensive test plan that ensures complete coverage of the feature's functionality, error conditions, and edge cases. This phase uses the `/gh-milestones-test-plan` command to automate test plan generation.
 
 ### 7.1 Review Assets from Prior Phases
 
@@ -624,24 +611,24 @@ Before generating the test plan, review all deliverables from previous phases:
 - OpenAPI validation identifies edge cases
 - Implementation details reveal error conditions to test
 
-### 7.2 Generate Test Plan with /gh-milestones:test-plan
+### 7.2 Generate Test Plan with /gh-milestones-test-plan
 
 Use the test planning command to generate a comprehensive test plan:
 
 ```bash
-/gh-milestones:test-plan <milestone-name-or-number>
+/gh-milestones-test-plan <milestone-name-or-number>
 ```
 
 **Examples**:
 ```bash
 # Using milestone name
-/gh-milestones:test-plan ls-runs-query
+/gh-milestones-test-plan ls-runs-query
 
 # Using milestone number
-/gh-milestones:test-plan 8
+/gh-milestones-test-plan 8
 
 # Using milestone URL
-/gh-milestones:test-plan https://github.com/codekiln/langstar/milestone/8
+/gh-milestones-test-plan https://github.com/codekiln/langstar/milestone/8
 ```
 
 **What the command does**:
@@ -856,19 +843,19 @@ Experience has shown that test implementations often deviate from test plans in 
 
 ### 9.2 Run Test Audit Command
 
-Use the `/gh-milestones:test-audit` command to verify test compliance:
+Use the `/gh-milestones-test-audit` command to verify test compliance:
 
 ```bash
-/gh-milestones:test-audit <milestone-name-or-number>
+/gh-milestones-test-audit <milestone-name-or-number>
 ```
 
 **Examples:**
 ```bash
 # Using milestone name
-/gh-milestones:test-audit ls-runs-query
+/gh-milestones-test-audit ls-runs-query
 
 # Using milestone number
-/gh-milestones:test-audit 8
+/gh-milestones-test-audit 8
 ```
 
 **What the command does:**
@@ -955,7 +942,7 @@ If the audit finds issues:
 
 1. **Critical issues** must be fixed before merge
 2. **Warnings** should be addressed unless explicitly justified
-3. Re-run audit after fixes: `/gh-milestones:test-audit <milestone>`
+3. Re-run audit after fixes: `/gh-milestones-test-audit <milestone>`
 4. Update test plan if new test cases were discovered
 
 ### 9.6 Benefits of Test Audit Phase
@@ -979,14 +966,9 @@ If the audit finds issues:
 
 ## Phase 10: Documentation
 
-### 10.1 Implementation Plan
+### 10.1 Archive the OpenSpec Change
 
-Create `docs/implementation/{issue-num}-{slug}-implementation-plan.md`:
-- Executive summary
-- Research sources with links
-- Implementation phases with code snippets
-- Testing plan
-- Future enhancements
+Check off the change's `tasks.md`, then run the `openspec-archive-change` skill. It applies the change's spec edits to `openspec/specs/` and moves the change into `openspec/changes/archive/`. Commit the archive in the feature's PR, before it merges.
 
 ### 10.2 Update README
 
@@ -1005,7 +987,7 @@ Add new commands to main README:
 
 ## Phase 11: Milestone Release
 
-When the milestone's features ship in a GitHub release, use the `/gh-milestones:release` slash command to automate milestone cleanup.
+When the milestone's features ship in a GitHub release, use the `gh-milestones-release` skill to automate milestone cleanup.
 
 ### 11.1 Prerequisites
 
@@ -1020,21 +1002,21 @@ Before running milestone release:
 ### 11.2 Release Command
 
 ```bash
-/gh-milestones:release <milestone> <version>
+/gh-milestones-release <milestone> <version>
 ```
 
 **Examples**:
 ```bash
 # Using milestone name
-/gh-milestones:release ls-prompt-structured-outputs v0.10.0
+/gh-milestones-release ls-prompt-structured-outputs v0.10.0
 
 # Using milestone URL
-/gh-milestones:release https://github.com/codekiln/langstar/milestone/7 v0.10.0
+/gh-milestones-release https://github.com/codekiln/langstar/milestone/7 v0.10.0
 ```
 
 ### 11.3 What Gets Automated
 
-The `/gh-milestones:release` command performs the following actions:
+The `/gh-milestones-release` command performs the following actions:
 
 1. **Validates Release Exists**: Confirms GitHub release is published
 2. **Checks Sub-Issue Completion**: Warns if any sub-issues are still open (requires `gh-sub-issue` extension)
@@ -1065,7 +1047,7 @@ The `/gh-milestones:release` command performs the following actions:
 If sub-issues are intentionally still open, force the release:
 
 ```bash
-FORCE_RELEASE=true /gh-milestones:release <milestone> <version>
+FORCE_RELEASE=true /gh-milestones-release <milestone> <version>
 ```
 
 **Note**: Not recommended. Best practice is to close all sub-issues before releasing.
@@ -1081,7 +1063,7 @@ gh pr merge 385 --squash
 gh release create v0.10.0 --generate-notes
 
 # 3. Mark milestone as released
-/gh-milestones:release "ls-prompt-structured-outputs" v0.10.0
+/gh-milestones-release "ls-prompt-structured-outputs" v0.10.0
 ```
 
 ### 11.6 Benefits
@@ -1096,8 +1078,8 @@ gh release create v0.10.0 --generate-notes
 
 ### 11.7 References
 
-- **PR #442**: `/gh-milestones:release` command implementation
-- **Command Documentation**: `.claude/commands/gh-milestones:release.md`
+- **PR #442**: `/gh-milestones-release` command implementation
+- **Command Documentation**: `.rulesync/skills/gh-milestones-release/SKILL.md`
 - **Example**: Milestone #7 (ls-prompt-structured-outputs) released in v0.10.0
 
 ---
@@ -1132,7 +1114,7 @@ gh release create v0.10.0 --generate-notes
 - [ ] MANIFEST.md updated with provenance for spec fetches
 - [ ] Extracted fragments in `reference/api-specs/{api}/`
 - [ ] FRAGMENTS.md updated with jq queries for extractions
-- [ ] Implementation plans in `docs/implementation/`
+- [ ] OpenSpec change archived, with its spec edits applied to `openspec/specs/`
 - [ ] Same markdown structure
 
 ---
@@ -1223,7 +1205,7 @@ Is this a new API feature needing research and technical context?
    - Sub-issues closed as PRs merge
 
 4. **Released** (Phase 11): Milestone closed, linked to GitHub release
-   - `/gh-milestones:release` automates cleanup
+   - `/gh-milestones-release` automates cleanup
    - Parent issue closed with release comment
    - Milestone description shows release link
    - Audit trail: issue → milestone → release
@@ -1236,7 +1218,7 @@ Is this a new API feature needing research and technical context?
 - ❌ `Structured Output Prompts Feature` (spaces, verbose)
 
 **Benefits**:
-- Easy to reference in commands: `/gh-milestones:release ls-evals-basic v0.10.0`
+- Easy to reference in commands: `/gh-milestones-release ls-evals-basic v0.10.0`
 - Grep-able in code and documentation
 - Works well with GitHub API and CLI tools
 
@@ -1272,5 +1254,5 @@ A feature is complete when:
 6. Integration tests passing
 7. Documentation updated
 8. GitHub release published
-9. **Milestone closed via `/gh-milestones:release` (Phase 11)**
+9. **Milestone closed via `/gh-milestones-release` (Phase 11)**
 10. **Parent issue closed with release link**

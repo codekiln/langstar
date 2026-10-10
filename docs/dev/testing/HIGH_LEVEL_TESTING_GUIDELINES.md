@@ -252,12 +252,12 @@ Before marking a test as complete, verify:
 - [ ] Is the test deterministic (no race conditions, no flaky behavior)?
 - [ ] Are test names descriptive of what they verify?
 
-## Using /gh-milestones:test-plan
+## Using /gh-milestones-test-plan
 
 Before implementing tests for a milestone, generate a comprehensive test plan:
 
 ```bash
-/gh-milestones:test-plan <milestone-name-or-number>
+/gh-milestones-test-plan <milestone-name-or-number>
 ```
 
 **What it does:**
@@ -266,7 +266,7 @@ Before implementing tests for a milestone, generate a comprehensive test plan:
 - Generates test plan at `docs/implementation/<milestone>-test-plan.md`
 - Ensures compliance with these guidelines
 
-**Example:** `/gh-milestones:test-plan ls-runs-query`
+**Example:** `/gh-milestones-test-plan ls-runs-query`
 
 **When to use:** At the start of any milestone before writing tests
 

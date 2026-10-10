@@ -1,15 +1,14 @@
-# Testing Checklist for /gh-milestones:test-plan Command
+# Testing Checklist for the gh-milestones-test-plan Skill
 
 ## Pre-Merge Verification
 
 ### File Structure
-- [x] `.claude/commands/gh-milestones/test-plan.md` created
-- [x] `.claude/commands/gh-milestones/README.md` created/updated
+- [x] `.rulesync/skills/gh-milestones-test-plan/SKILL.md` created
 - [x] `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md` updated
 - [x] Files have correct frontmatter (description, argument-hint)
 
 ### Content Validation
-- [x] Command specification is complete
+- [x] Skill specification is complete
 - [x] All 6 steps are documented
 - [x] Progressive disclosure pattern is enforced
 - [x] Example output is provided
@@ -17,27 +16,24 @@
 
 ## Post-Merge Testing
 
-After this PR is merged and a new Claude Code session starts:
+After this PR is merged and you pull `main`:
 
-### 1. Command Discovery
-```bash
-# Verify command appears in available commands
-/help
-# Should show: /gh-milestones:test-plan
-```
+### 1. Skill Discovery
+
+In Claude Code, type `/gh-milestones`. The completion list should show `/gh-milestones-test-plan`.
 
 ### 2. Basic Invocation
 ```bash
 # Test with milestone name
-/gh-milestones:test-plan ls-test-improvement
+/gh-milestones-test-plan ls-test-improvement
 
 # Test with milestone number
-/gh-milestones:test-plan 14
+/gh-milestones-test-plan 14
 ```
 
 ### 3. Verify Behavior
 
-The command should:
+The skill should:
 - [ ] Load `@docs/dev/testing/README.md` first
 - [ ] Fetch milestone information via `gh api`
 - [ ] Identify milestone type correctly
@@ -82,16 +78,15 @@ Review generated test plan document:
 ## Success Criteria
 
 All checks must pass:
-- [x] Command file exists with correct structure
-- [x] README documents the command
-- [x] HIGH_LEVEL_TESTING_GUIDELINES.md references command
-- [ ] Post-merge: Command invocable
+- [x] Skill file exists with correct structure
+- [x] README documents the skill
+- [x] HIGH_LEVEL_TESTING_GUIDELINES.md references the skill
+- [ ] Post-merge: Skill invocable
 - [ ] Post-merge: Generated test plans follow standards
 - [ ] Post-merge: Context usage <5000 tokens verified
 
 ## Notes
 
-- Slash commands are loaded at CLI startup, not dynamically
-- Testing must occur after PR merge in a new Claude Code session
+- Claude Code picks up the skills rulesync writes to `.claude/skills/` without a restart ([skills docs](https://code.claude.com/docs/en/skills.md)), so the session you pulled from can run these checks. If `.claude/skills/` did not exist when that session started, run `/reload-skills` first.
 - Context window monitoring is critical for progressive disclosure
 - Generated test plans should be reviewed for quality and specificity
