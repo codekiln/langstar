@@ -67,9 +67,17 @@ mise trust
 echo "[post-create] Installing mise tools (Rust, Python, etc.)..."
 mise install
 
+# Step 3b: Install the git hooks and generate the agent config
+# CLAUDE.md, AGENTS.md, .claude/skills/ and .agents/skills/ are gitignored and
+# generated from .rulesync/. lefthook regenerates them after each pull and
+# checkout; this first run covers the fresh clone.
+echo "[post-create] Installing lefthook git hooks and generating agent config..."
+"$(mise which lefthook)" install
+"$(mise which rulesync)" generate
+
 # Step 4: Install cargo tools
 # After mise install, cargo should be available via ~/.cargo/env
-echo "[post-create] Installing cargo tools (cargo-release, git-cliff)..."
+echo "[post-create] Installing cargo tools (cargo-release)..."
 
 # Check if cargo env exists and source it
 if [[ -f ~/.cargo/env ]]; then
@@ -91,7 +99,10 @@ echo "[post-create] cargo found at: $(command -v cargo)"
 echo "[post-create] cargo version: $(cargo --version)"
 
 # Install cargo tools
-cargo install cargo-release git-cliff cargo-nextest --locked
+# git-cliff and cargo-nextest come from mise.toml, pinned. Installing them
+# again here would build unpinned copies that shells without mise activation
+# could pick up instead.
+cargo install cargo-release --locked
 
 # Step 6: gh CLI extensions
 # NOTE: gh CLI extensions requiring authentication are installed in setup-github-auth.sh

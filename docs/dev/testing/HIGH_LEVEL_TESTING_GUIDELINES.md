@@ -58,12 +58,10 @@ If CI is green on main, the failure is **your responsibility** to fix, not a pre
 **ALWAYS run before committing:**
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace && \
-cargo fmt --check
+mise run check
 ```
+
+On your own computer, start the test step with `fnox exec --` so the integration tests get the LangSmith credentials: `fnox exec -- cargo nextest run --profile ci --all-features --workspace`. See [Loading the Variables Locally](../environment-variables.md#loading-the-variables-locally). In the devcontainer, `.devcontainer/.env` already sets them.
 
 **Why each step matters:**
 
@@ -254,12 +252,12 @@ Before marking a test as complete, verify:
 - [ ] Is the test deterministic (no race conditions, no flaky behavior)?
 - [ ] Are test names descriptive of what they verify?
 
-## Using /gh-milestones:test-plan
+## Using /gh-milestones-test-plan
 
 Before implementing tests for a milestone, generate a comprehensive test plan:
 
 ```bash
-/gh-milestones:test-plan <milestone-name-or-number>
+/gh-milestones-test-plan <milestone-name-or-number>
 ```
 
 **What it does:**
@@ -268,7 +266,7 @@ Before implementing tests for a milestone, generate a comprehensive test plan:
 - Generates test plan at `docs/implementation/<milestone>-test-plan.md`
 - Ensures compliance with these guidelines
 
-**Example:** `/gh-milestones:test-plan ls-runs-query`
+**Example:** `/gh-milestones-test-plan ls-runs-query`
 
 **When to use:** At the start of any milestone before writing tests
 

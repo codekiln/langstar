@@ -28,8 +28,8 @@
 //! ```
 
 use crate::{
-    CreateDeploymentRequest, DeploymentFilters, LangchainClient, LangstarError, Revision,
-    RevisionStatus,
+    CreateDeploymentRequest, DeploymentFilters, DeploymentStatus, LangchainClient, LangstarError,
+    Revision, RevisionStatus,
 };
 use serde_json::json;
 use std::time::Duration;
@@ -385,6 +385,175 @@ async fn create_new_deployment(
     }
 }
 
+/// How many times `reuse_or_create_deployment` looks for, or tries to create,
+/// the shared deployment before giving up.
+const REUSE_ATTEMPTS: u32 = 10;
+
+/// How long to wait before looking again while another CI run's deployment,
+/// or one still being deleted, takes up the test graph's agent environment.
+const REUSE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
+
+/// True for a deployment that is being deleted and can't be reused.
+fn is_being_deleted(deployment: &crate::Deployment) -> bool {
+    matches!(
+        deployment.status,
+        DeploymentStatus::AwaitingDelete | DeploymentStatus::AwaitingFinalDelete
+    )
+}
+
+/// True when the deployment builds from the repository and graph config in `config`.
+fn deploys_test_graph(deployment: &crate::Deployment, config: &TestDeploymentConfig) -> bool {
+    let repo_url = format!(
+        "https://github.com/{}/{}",
+        config.repository_owner, config.repository_name
+    );
+    let same_repo = deployment
+        .source_config
+        .as_ref()
+        .and_then(|c| c.get("repo_url"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|url| url.trim_end_matches(".git") == repo_url);
+    let same_graph = deployment
+        .source_revision_config
+        .as_ref()
+        .and_then(|c| c.get("langgraph_config_path"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|path| path == config.config_path);
+    same_repo && same_graph
+}
+
+/// True when the PR tests can reuse this deployment of the test graph.
+///
+/// The release lifecycle test deletes its `release-integration-test-*`
+/// deployment when it finishes, so this skips those deployments as well as
+/// deployments being deleted.
+fn is_reusable_by_source(deployment: &crate::Deployment, config: &TestDeploymentConfig) -> bool {
+    deploys_test_graph(deployment, config)
+        && !is_being_deleted(deployment)
+        && !deployment.name.starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX)
+}
+
+/// Find a live deployment to reuse: first by name prefix, then by source.
+///
+/// The control plane allows one deployment per agent environment, so a
+/// deployment of the test graph under any name blocks creating another one
+/// (409 "A deployment already exists for this agent environment").
+async fn find_reusable_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+) -> Result<Option<crate::Deployment>, Box<dyn std::error::Error + Send + Sync>> {
+    let prefix = config.name_prefix.clone().unwrap_or_default();
+
+    let by_name = client
+        .deployments()
+        .list(
+            Some(100),
+            None,
+            Some(DeploymentFilters {
+                name_contains: Some(prefix.clone()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+    if let Some(existing) = by_name
+        .resources
+        .into_iter()
+        .find(|d| d.name.starts_with(&prefix) && !is_being_deleted(d))
+    {
+        return Ok(Some(existing));
+    }
+
+    // The control plane allows one deployment of the test graph per agent
+    // environment across the whole workspace, so read every page.
+    const PAGE: u32 = 100;
+    let mut offset = 0;
+    loop {
+        let page = client
+            .deployments()
+            .list(Some(PAGE), Some(offset), None)
+            .await?;
+        let count = page.resources.len();
+        if let Some(found) = page
+            .resources
+            .into_iter()
+            .find(|d| is_reusable_by_source(d, config))
+        {
+            return Ok(Some(found));
+        }
+        if count < PAGE as usize {
+            return Ok(None);
+        }
+        offset += PAGE;
+    }
+}
+
+/// Reuse whatever live deployment of the test graph exists, or create one.
+///
+/// Between this function's lookup and its create request, another CI run can
+/// create the test deployment, or the scheduled cleanup job can still be
+/// deleting an old one. The control plane answers either case with 409, and
+/// this function waits and looks again.
+async fn reuse_or_create_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    reuse_or_create_deployment_with_attempts(
+        client,
+        config,
+        integration_id,
+        REUSE_ATTEMPTS,
+        REUSE_RETRY_INTERVAL,
+    )
+    .await
+}
+
+/// Reuse or create the test deployment, trying up to `attempts` times and
+/// sleeping `retry_interval` after each 409. `reuse_or_create_deployment`
+/// passes `REUSE_ATTEMPTS` and `REUSE_RETRY_INTERVAL`; the mocked tests pass
+/// a zero wait.
+async fn reuse_or_create_deployment_with_attempts(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+    attempts: u32,
+    retry_interval: Duration,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    for attempt in 1..=attempts {
+        if let Some(existing) = find_reusable_deployment(client, config).await? {
+            eprintln!(
+                "Found existing deployment: {} (status: {:?})",
+                existing.name, existing.status
+            );
+            return Ok(existing);
+        }
+
+        match create_new_deployment(client, config, integration_id).await {
+            Ok(created) => return Ok(created),
+            Err(err)
+                if attempt < attempts
+                    && err
+                        .downcast_ref::<LangstarError>()
+                        .is_some_and(is_conflict_error) =>
+            {
+                eprintln!(
+                    "Create collided with an existing deployment (attempt {}/{}); \
+                     waiting {}s and looking again...",
+                    attempt,
+                    attempts,
+                    retry_interval.as_secs()
+                );
+                tokio::time::sleep(retry_interval).await;
+            }
+            Err(err) => return Err(err),
+        }
+    }
+    Err(
+        format!("no attempt to reuse or create the test deployment ran (attempts = {attempts})")
+            .into(),
+    )
+}
+
 /// Get or create a test deployment by name
 ///
 /// This function implements the "get-or-create" pattern:
@@ -429,41 +598,11 @@ pub async fn get_or_create_deployment(
         .integrations()
         .find_integration_for_repo(&config.repository_owner, &config.repository_name)
         .await?;
-    eprintln!("Found integration ID: {}", integration_id);
+    eprintln!("Found GitHub integration");
 
-    // Step 2: Look for existing deployment by prefix or name
-    let search_pattern = config
-        .name_prefix
-        .as_ref()
-        .map(|p| p.to_string())
-        .unwrap_or_else(|| config.name.clone());
-
-    let filters = DeploymentFilters {
-        name_contains: Some(search_pattern.clone()),
-        ..Default::default()
-    };
-    let deployments = client
-        .deployments()
-        .list(Some(100), None, Some(filters))
-        .await?;
-
-    // Find deployment matching prefix (for reuse) or exact name
+    // Step 2: Reuse a matching deployment, or create one
     let deployment = if config.name_prefix.is_some() {
-        // Prefix-based search: find ANY matching deployment for reuse
-        if let Some(existing) = deployments
-            .resources
-            .iter()
-            .find(|d| d.name.starts_with(&search_pattern))
-        {
-            eprintln!(
-                "Found existing deployment: {} ({})",
-                existing.name, existing.id
-            );
-            existing.clone()
-        } else {
-            // Create new with the generated name
-            create_new_deployment(client, config, &integration_id).await?
-        }
+        reuse_or_create_deployment(client, config, &integration_id).await?
     } else {
         // No prefix: always create fresh
         create_new_deployment(client, config, &integration_id).await?
@@ -537,6 +676,251 @@ mod tests {
         );
         assert_eq!(config.branch, "main");
         assert!(config.config_path.contains("langgraph.json"));
+    }
+
+    fn deployment_from(status: &str, repo_url: &str, config_path: &str) -> crate::Deployment {
+        serde_json::from_value(json!({
+            "id": "test-id",
+            "name": "some-other-name",
+            "source": "github",
+            "source_config": {"repo_url": repo_url},
+            "source_revision_config": {"langgraph_config_path": config_path},
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "status": status
+        }))
+        .expect("test deployment JSON should deserialize")
+    }
+
+    #[test]
+    fn test_deploys_test_graph_matches_repo_and_config_path() {
+        let config = TestDeploymentConfig::default();
+        let repo = format!(
+            "https://github.com/{}/{}",
+            config.repository_owner, config.repository_name
+        );
+
+        assert!(deploys_test_graph(
+            &deployment_from("READY", &repo, &config.config_path),
+            &config
+        ));
+        assert!(deploys_test_graph(
+            &deployment_from("READY", &format!("{repo}.git"), &config.config_path),
+            &config
+        ));
+        assert!(!deploys_test_graph(
+            &deployment_from(
+                "READY",
+                "https://github.com/other/repo",
+                &config.config_path
+            ),
+            &config
+        ));
+        assert!(!deploys_test_graph(
+            &deployment_from("READY", &repo, "other/langgraph.json"),
+            &config
+        ));
+    }
+
+    #[test]
+    fn test_is_reusable_by_source_skips_release_lifecycle_deployments() {
+        let config = TestDeploymentConfig::default();
+        let repo = format!(
+            "https://github.com/{}/{}",
+            config.repository_owner, config.repository_name
+        );
+        let mut d = deployment_from("READY", &repo, &config.config_path);
+        assert!(is_reusable_by_source(&d, &config));
+
+        d.name = format!("{}-1234", RELEASE_TEST_DEPLOYMENT_PREFIX);
+        assert!(!is_reusable_by_source(&d, &config));
+
+        let deleting = deployment_from("AWAITING_DELETE", &repo, &config.config_path);
+        assert!(!is_reusable_by_source(&deleting, &config));
+    }
+
+    #[test]
+    fn test_is_being_deleted() {
+        let config = TestDeploymentConfig::default();
+        let path = config.config_path.as_str();
+        assert!(is_being_deleted(&deployment_from(
+            "AWAITING_DELETE",
+            "",
+            path
+        )));
+        assert!(is_being_deleted(&deployment_from(
+            "AWAITING_FINAL_DELETE",
+            "",
+            path
+        )));
+        assert!(!is_being_deleted(&deployment_from("READY", "", path)));
+        assert!(!is_being_deleted(&deployment_from(
+            "AWAITING_DATABASE",
+            "",
+            path
+        )));
+    }
+
+    // ── reuse_or_create_deployment_with_attempts against a mocked control plane ──
+
+    use mockito::{Matcher, Server};
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    fn mock_client(server: &Server) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            crate::AuthConfig::new(
+                Some("test-key".to_string()),
+                None,
+                Some("test-workspace".to_string()),
+            ),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .expect("client")
+    }
+
+    fn deployment_json(name: &str) -> serde_json::Value {
+        json!({
+            "id": "existing-id",
+            "name": name,
+            "source": "github",
+            "created_at": "2026-01-01T00:00:00Z",
+            "updated_at": "2026-01-01T00:00:00Z",
+            "status": "READY"
+        })
+    }
+
+    #[tokio::test]
+    async fn test_retry_reuses_deployment_that_appears_after_409() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+        let existing_name = format!("{}-other-run", config.name_prefix.clone().unwrap());
+
+        // The list is empty until a create has been rejected, as when another
+        // CI run creates the deployment between our lookup and our create.
+        let creates = Arc::new(AtomicUsize::new(0));
+        let creates_seen = creates.clone();
+        let list = server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body_from_request(move |_| {
+                let resources = if creates_seen.load(Ordering::SeqCst) == 0 {
+                    json!([])
+                } else {
+                    json!([deployment_json(&existing_name)])
+                };
+                json!({"resources": resources, "offset": 0})
+                    .to_string()
+                    .into_bytes()
+            })
+            .expect_at_least(3)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |_| {
+                creates.fetch_add(1, Ordering::SeqCst);
+                br#"{"detail":"A deployment already exists for this agent environment."}"#.to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let found = reuse_or_create_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("should reuse the deployment found after the 409");
+
+        assert_eq!(found.id, "existing-id");
+        create.assert_async().await;
+        list.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_gives_up_after_last_attempt() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+
+        server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(r#"{"resources": [], "offset": 0}"#)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(2)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            2,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("two 409s with two attempts should fail");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the last 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_returns_500_on_first_attempt() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::default();
+
+        server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(r#"{"resources": [], "offset": 0}"#)
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(500)
+            .with_body(r#"{"detail":"Internal server error"}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            5,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a 500 should not be retried");
+
+        assert!(
+            matches!(
+                err.downcast_ref::<LangstarError>(),
+                Some(LangstarError::ApiError { status: 500, .. })
+            ),
+            "the 500 should be returned unchanged, got: {err}"
+        );
+        create.assert_async().await;
     }
 
     #[test]

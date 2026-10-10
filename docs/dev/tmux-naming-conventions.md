@@ -198,8 +198,8 @@ All colors meet WCAG 2.1 Level AAA standards (7:1 contrast minimum), ensuring re
 ## Related Files
 
 - `.devcontainer/.tmux.conf` - Tmux configuration with WCAG-compliant colors
-- `.claude/commands/gh-start-issue.md` - Automatically sets `💻i<num>` when starting issue work
-- `.claude/commands/pr-workflow.md` - Manages transitions through PR lifecycle phases
+- `.rulesync/skills/gh-start-issue/SKILL.md` - Automatically sets `💻i<num>` when starting issue work
+- `.rulesync/skills/pr-workflow/SKILL.md` - Manages transitions through PR lifecycle phases
 - `.claude/skills/pr-lifecycle/SKILL.md` - Documents PR lifecycle with tmux integration
 
 ## Examples from Real Development

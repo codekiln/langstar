@@ -9,8 +9,18 @@ use langstar_sdk::playground_settings::{
     ListPlaygroundSettingsParams, PlaygroundSavedOptions, PlaygroundSettingsCreateRequest,
     PlaygroundSettingsUpdateRequest,
 };
-use langstar_sdk::{AuthConfig, LangchainClient};
+use langstar_sdk::{AuthConfig, LangchainClient, LangstarError};
 use serde_json::json;
+
+/// Append a fresh UUID to `base`, so each test run creates its configurations under names of its own.
+///
+/// LangSmith rejects a second configuration with a name that already exists
+/// in the workspace, and it reports that as a 500. Configurations left behind
+/// by an earlier failed run would collide with fixed names, so every test name
+/// carries a fresh suffix.
+fn unique_name(base: &str) -> String {
+    format!("{} {}", base, uuid::Uuid::new_v4().simple())
+}
 
 /// Helper to create a test client with organization ID
 async fn create_integration_test_client() -> LangchainClient {
@@ -24,10 +34,7 @@ async fn create_integration_test_client() -> LangchainClient {
     match client.get_current_organization().await {
         Ok(org) => {
             if let Some(org_id) = org.id {
-                println!(
-                    "✓ Using organization: {}",
-                    org.display_name.unwrap_or_default()
-                );
+                println!("✓ Organization resolved");
                 client = client.with_organization_id(org_id);
             }
         }
@@ -146,8 +153,10 @@ async fn test_create_update_delete_cycle() {
 
     // Step 1: Create a new playground setting
     println!("Creating playground setting...");
+    let created_name = unique_name("Test Config - Integration Test");
+    let updated_name = unique_name("Test Config - Updated");
     let create_request = PlaygroundSettingsCreateRequest {
-        name: Some("Test Config - Integration Test".to_string()),
+        name: Some(created_name.clone()),
         description: Some("This is a test configuration created by integration tests".to_string()),
         settings: json!({
             "lc": 1,
@@ -174,10 +183,7 @@ async fn test_create_update_delete_cycle() {
         created.name.as_deref().unwrap_or("-"),
         created.id
     );
-    assert_eq!(
-        created.name,
-        Some("Test Config - Integration Test".to_string())
-    );
+    assert_eq!(created.name, Some(created_name));
     assert_eq!(
         created.options.as_ref().unwrap().requests_per_second,
         Some(5)
@@ -186,7 +192,7 @@ async fn test_create_update_delete_cycle() {
     // Step 2: Update the playground setting
     println!("Updating playground setting...");
     let update_request = PlaygroundSettingsUpdateRequest {
-        name: Some("Test Config - Updated".to_string()),
+        name: Some(updated_name.clone()),
         description: Some("Updated description".to_string()),
         settings: None,
         options: Some(PlaygroundSavedOptions {
@@ -204,7 +210,7 @@ async fn test_create_update_delete_cycle() {
         updated.name.as_deref().unwrap_or("-")
     );
     assert_eq!(updated.id, created.id);
-    assert_eq!(updated.name, Some("Test Config - Updated".to_string()));
+    assert_eq!(updated.name, Some(updated_name));
     assert_eq!(
         updated.options.as_ref().unwrap().requests_per_second,
         Some(10)
@@ -222,7 +228,7 @@ async fn test_create_update_delete_cycle() {
     // Step 4: Verify deletion - attempt to update should fail with 404
     println!("Verifying deletion...");
     let verify_request = PlaygroundSettingsUpdateRequest {
-        name: Some("Should Not Exist".to_string()),
+        name: Some(unique_name("Should Not Exist")),
         ..Default::default()
     };
 
@@ -267,9 +273,16 @@ async fn test_delete_nonexistent_setting() {
 
     let result = client.delete_playground_settings(nonexistent_id).await;
 
-    // API accepts idempotent deletes (returns 200 even if resource doesn't exist)
-    assert!(result.is_ok(), "API should accept idempotent deletes");
-    println!("✓ Idempotent delete succeeded (API returns 200 for nonexistent resources)");
+    // LangSmith answers a delete of a missing setting with 404.
+    match result {
+        Err(LangstarError::ApiError { status: 404, .. }) => {
+            println!("✓ Delete of nonexistent setting returned 404");
+        }
+        other => panic!(
+            "Expected 404 for delete of nonexistent setting, got {:?}",
+            other
+        ),
+    }
 }
 
 // ============================================================================
@@ -320,40 +333,49 @@ async fn test_create_with_various_providers() {
     ];
 
     let mut created_ids = Vec::new();
+    let mut failures = Vec::new();
 
     for (name, settings) in test_cases {
         println!("Testing {}...", name);
 
         let request = PlaygroundSettingsCreateRequest {
-            name: Some(format!("{} - Integration Test", name)),
+            name: Some(unique_name(&format!("{} - Integration Test", name))),
             description: Some(format!("Integration test for {}", name)),
             settings,
             options: PlaygroundSavedOptions::default(),
         };
 
-        match client.create_playground_settings(request).await {
+        let expected_name = request.name.clone();
+        let result = client.create_playground_settings(request).await;
+        match result {
             Ok(created) => {
                 println!("✓ Created {}: {}", name, created.id);
                 created_ids.push(created.id);
+                if created.name != expected_name {
+                    failures.push(format!(
+                        "{}: created with name {:?}, expected {:?}",
+                        name, created.name, expected_name
+                    ));
+                }
             }
             Err(e) => {
-                eprintln!("✗ Failed to create {}: {:?}", name, e);
+                failures.push(format!("{}: {:?}", name, e));
             }
         }
     }
 
-    // Ensure at least one configuration was created successfully
-    assert!(
-        !created_ids.is_empty(),
-        "At least one provider configuration should be created successfully"
-    );
-
-    // Cleanup: delete all created configs
-    for id in created_ids {
-        if let Err(e) = client.delete_playground_settings(id).await {
+    // Delete the configs this test created before asserting, so a failing run still removes them.
+    for id in &created_ids {
+        if let Err(e) = client.delete_playground_settings(*id).await {
             eprintln!("⚠ Warning: Failed to cleanup {}: {:?}", id, e);
         }
     }
+
+    assert!(
+        failures.is_empty(),
+        "Every provider configuration should be created: {:?}",
+        failures
+    );
 }
 
 // ============================================================================
@@ -366,7 +388,7 @@ async fn test_partial_update_name_only() {
 
     // Create a config
     let create_request = PlaygroundSettingsCreateRequest {
-        name: Some("Original Name".to_string()),
+        name: Some(unique_name("Original Name")),
         description: Some("Original Description".to_string()),
         settings: json!({"key": "value"}),
         options: PlaygroundSavedOptions {
@@ -383,8 +405,9 @@ async fn test_partial_update_name_only() {
     let original_rate_limit = created.options.as_ref().unwrap().requests_per_second;
 
     // Update only the name
+    let new_name = unique_name("New Name Only");
     let update_request = PlaygroundSettingsUpdateRequest {
-        name: Some("New Name Only".to_string()),
+        name: Some(new_name.clone()),
         description: None,
         settings: None,
         options: None,
@@ -396,7 +419,7 @@ async fn test_partial_update_name_only() {
         .expect("Failed to update");
 
     // Name should be updated, other fields should remain
-    assert_eq!(updated.name, Some("New Name Only".to_string()));
+    assert_eq!(updated.name, Some(new_name));
     assert_eq!(updated.description, original_description);
     assert_eq!(
         updated.options.as_ref().unwrap().requests_per_second,

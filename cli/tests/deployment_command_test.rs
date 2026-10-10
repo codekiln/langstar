@@ -16,7 +16,6 @@
 //! Deployments are organization-level resources managed via the Control Plane.
 
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use serial_test::serial;
 use std::sync::OnceLock;
 
@@ -28,13 +27,9 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", common::home::empty_home());
+    cmd
 }
 
 /// Helper to check if environment variables are set

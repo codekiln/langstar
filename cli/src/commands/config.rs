@@ -3,6 +3,8 @@ use crate::error::{CliError, Result};
 use crate::time::ConfiguredTimezone;
 use clap::{Args, Subcommand};
 use std::fs;
+use std::io::Write;
+use std::path::Path;
 use toml_edit::DocumentMut;
 
 /// Message constants for DRY principle
@@ -91,6 +93,12 @@ impl ConfigCommands {
 
         println!("Configuration file: {}", config_path.display());
         println!("  File exists: {}", config_path.exists());
+        if let Some(path) = Config::file_to_read()?.filter(|path| *path != config_path) {
+            println!(
+                "  Reading instead: {} (where langstar kept it before v2.2.0)",
+                path.display()
+            );
+        }
 
         println!("\nCurrent configuration:");
 
@@ -157,14 +165,6 @@ impl ConfigCommands {
             config.workspace_id.as_deref().unwrap_or("not set"),
             &std::env::var("LANGSMITH_WORKSPACE_ID"),
             "LANGSMITH_WORKSPACE_ID",
-        );
-
-        // GitHub Integration ID
-        Self::show_setting_with_source(
-            "github_integration_id",
-            config.github_integration_id.as_deref().unwrap_or("not set"),
-            &std::env::var("LANGGRAPH_GITHUB_INTEGRATION_ID"),
-            "LANGGRAPH_GITHUB_INTEGRATION_ID",
         );
 
         // Show active scope
@@ -245,10 +245,6 @@ impl ConfigCommands {
 # Environment variable: LANGSMITH_WORKSPACE_ID
 # workspace_id = "your-workspace-id"
 
-# Optional GitHub integration ID for deployment creation
-# Environment variable: LANGGRAPH_GITHUB_INTEGRATION_ID
-# github_integration_id = "your-integration-id"
-
 # CLI Display Settings
 # --------------------
 
@@ -296,11 +292,29 @@ hide_workspace_and_org_id_message = false
         println!("Validating configuration...");
         println!("  Config file: {}", config_path.display());
 
-        // Check if config file exists
-        if !config_path.exists() {
-            println!("  ⚠ Config file does not exist");
-            println!("\n💡 Tip: Run 'langstar config create' to create one");
-            return Ok(());
+        // Check which config file langstar reads, if any
+        let path = match Config::file_to_read()? {
+            Some(path) => path,
+            None => {
+                println!("  ⚠ Config file does not exist");
+                println!("\n💡 Tip: Run 'langstar config create' to create one");
+                return Ok(());
+            }
+        };
+        if path != config_path {
+            println!("  File exists: false");
+            println!(
+                "  Reading instead: {} (where langstar kept it before v2.2.0)",
+                path.display()
+            );
+        }
+
+        // Config::load below uses the defaults when it can't parse the file, so
+        // parse the file here first to report the error
+        if let Err(e) = Config::read_file(&path) {
+            println!("  ✗ Config file validation FAILED");
+            println!("\nError: {}", e);
+            return Err(e);
         }
 
         // Try to load and parse the config file
@@ -376,11 +390,6 @@ hide_workspace_and_org_id_message = false
                 "workspace_id",
                 "LANGSMITH_WORKSPACE_ID",
                 "Workspace ID for narrower scoping",
-            ),
-            (
-                "github_integration_id",
-                "LANGGRAPH_GITHUB_INTEGRATION_ID",
-                "GitHub integration ID for deployments",
             ),
             (
                 "output_format",
@@ -551,21 +560,50 @@ hide_workspace_and_org_id_message = false
 
     fn set_config_value(key: &str, new_value: &str) -> Result<()> {
         let config_path = Config::config_file_path()?;
+        let old_path = Config::old_config_file_path();
+        Self::set_value_in_file(&config_path, old_path.as_deref(), key, new_value)
+    }
 
-        // Create config file if it doesn't exist
-        if !config_path.exists() {
-            if let Some(parent) = config_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            // Create empty config file - toml_edit handles empty documents
-            fs::write(&config_path, "")?;
-        }
+    /// Set `key` in the config file at `config_path`, creating the file if needed.
+    ///
+    /// When the file at `config_path` is missing, this copies the pre-v2.2.0
+    /// macOS file at `old_path` into it first, if that file exists. langstar
+    /// reads only the new file once it exists, so if this function wrote an
+    /// empty new file, langstar would stop loading every setting in the old one.
+    fn set_value_in_file(
+        config_path: &Path,
+        old_path: Option<&Path>,
+        key: &str,
+        new_value: &str,
+    ) -> Result<()> {
+        let is_new_file = !config_path.exists();
+        // The errors below name this file, the one langstar read the settings
+        // from. On a Mac with no new file yet it is the old file, and these
+        // errors are the only place `config set` shows that path.
+        let source_path = if is_new_file {
+            old_path.filter(|path| path.exists())
+        } else {
+            Some(config_path)
+        };
+        let config_content = match source_path {
+            Some(path) => fs::read_to_string(path)?,
+            // toml_edit handles empty documents
+            None => String::new(),
+        };
+        let parse_error = |e: &dyn std::fmt::Display| {
+            CliError::Config(format!(
+                "Failed to parse config file {}: {}",
+                source_path.unwrap_or(config_path).display(),
+                e
+            ))
+        };
 
-        // Read and parse the config file
-        let config_content = fs::read_to_string(&config_path)?;
+        // Parse first: when the old file is malformed, this function returns the
+        // parse error before it creates the new file, so langstar keeps reading
+        // the old file on the next run
         let mut doc = config_content
             .parse::<DocumentMut>()
-            .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
+            .map_err(|e| parse_error(&e))?;
 
         // Set the value based on type
         match key {
@@ -580,9 +618,131 @@ hide_workspace_and_org_id_message = false
             }
         }
 
+        // Check the result the way Config::load will read it, so a value of the
+        // wrong type in the file is reported here instead of being written and
+        // then replaced by the defaults on every run
+        toml::from_str::<Config>(&doc.to_string()).map_err(|e| parse_error(&e))?;
+
         // Write the updated config
-        fs::write(&config_path, doc.to_string())?;
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if is_new_file {
+            Self::write_new_private_file(config_path, &doc.to_string())?;
+        } else {
+            fs::write(config_path, doc.to_string())?;
+        }
 
         Ok(())
+    }
+
+    /// Create the file at `path` holding `content`, readable and writable only
+    /// by its owner (0600) on Unix platforms, as `config create` makes it.
+    ///
+    /// The file can hold the API key, so it gets that mode when it is created,
+    /// before any content is written.
+    fn write_new_private_file(path: &Path, content: &str) -> Result<()> {
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(path)?;
+        if let Err(e) = file.write_all(content.as_bytes()) {
+            // A partly written file would win over the old one on every later
+            // run, so remove it and return the write error
+            drop(file);
+            let _ = fs::remove_file(path);
+            return Err(e.into());
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_set_starts_new_file_from_old_macos_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+        let old_path = dir
+            .path()
+            .join("Library/Application Support/langstar/config.toml");
+        fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+        fs::write(&old_path, "langsmith_api_key = \"old-key\"\n").unwrap();
+
+        ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC")
+            .unwrap();
+
+        let config: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+        assert_eq!(config.langsmith_api_key.as_deref(), Some("old-key"));
+        assert_eq!(config.timezone, "UTC");
+        // The copy can hold the API key, so only the owner can read it
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(&config_path).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o600);
+        }
+        // The old file is copied, not moved
+        assert_eq!(
+            fs::read_to_string(&old_path).unwrap(),
+            "langsmith_api_key = \"old-key\"\n"
+        );
+    }
+
+    #[test]
+    fn test_set_leaves_no_new_file_when_old_file_is_malformed() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+        let old_path = dir
+            .path()
+            .join("Library/Application Support/langstar/config.toml");
+        fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+        fs::write(&old_path, "langsmith_api_key = \"unterminated\n").unwrap();
+
+        let result =
+            ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC");
+
+        assert!(result.is_err());
+        // With no new file, langstar keeps reading the old one on the next run
+        assert!(!config_path.exists());
+    }
+
+    #[test]
+    fn test_set_leaves_no_new_file_when_old_file_has_a_wrong_type() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+        let old_path = dir
+            .path()
+            .join("Library/Application Support/langstar/config.toml");
+        fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+        // Valid TOML, but Config needs a string here
+        fs::write(&old_path, "output_format = 1\n").unwrap();
+
+        let result =
+            ConfigCommands::set_value_in_file(&config_path, Some(&old_path), "timezone", "UTC");
+
+        let error = result.unwrap_err().to_string();
+        assert!(error.contains("Failed to parse config file"), "{error}");
+        // The error names the old file, the one the user has to fix
+        assert!(error.contains(&old_path.display().to_string()), "{error}");
+        assert!(!config_path.exists());
+    }
+
+    #[test]
+    fn test_set_starts_empty_file_without_old_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config_path = dir.path().join(".config/langstar/config.toml");
+
+        ConfigCommands::set_value_in_file(&config_path, None, "timezone", "UTC").unwrap();
+
+        let config: Config = toml::from_str(&fs::read_to_string(&config_path).unwrap()).unwrap();
+        assert!(config.langsmith_api_key.is_none());
+        assert_eq!(config.timezone, "UTC");
     }
 }
