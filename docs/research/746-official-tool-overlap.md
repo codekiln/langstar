@@ -69,7 +69,7 @@ To keep assistant definitions in Git and apply them to each deployment, langstar
 
 ### Local development and deploying from local code
 
-The LangGraph CLI runs an Agent Server on your machine, builds Docker images and starts projects from templates ([cli.py](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/cli.py#L276)), and [`langgraph deploy`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/deploy.py#L2474-L2695) builds an image from local code before deploying it. These commands run Python and Docker on the user's machine, so langstar, a single Rust binary, would most likely call the installed `langgraph` command rather than reimplement them.
+The LangGraph CLI runs an Agent Server on your machine, builds Docker images and starts projects from templates ([cli.py](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/cli.py#L276)), and [`langgraph deploy`](https://github.com/langchain-ai/langgraph/blob/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs/cli/langgraph_cli/deploy.py#L2474-L2695) builds an image from local code before deploying it. The LangGraph CLI is a Python program, and its commands need different things on the user's machine: `up`, `build` and `deploy` run Docker, `dev` runs the Agent Server as a Python process, and `new` copies a project template. So langstar, a single Rust binary, would most likely call the installed `langgraph` command rather than reimplement them.
 
 ### Workspace administration, resource tags and alerts
 
@@ -119,7 +119,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 3.
 >
-> `langgraph dev`, `up`, `build` and `new` need Python and Docker on the user's machine. Recommendation: have langstar call the installed `langgraph` command for these, so a user can stay inside langstar, rather than reimplementing them in Rust. This could wait until the LangSmith API gaps are closed.
+> `langgraph dev`, `up`, `build` and `new` run inside the LangGraph CLI's Python program, and `up` and `build` also need Docker. Recommendation: have langstar call the installed `langgraph` command for these, so a user can stay inside langstar, rather than reimplementing them in Rust. This could wait until the LangSmith API gaps are closed.
 
 <ANSWER_HERE>
 
