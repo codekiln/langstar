@@ -6,12 +6,12 @@ Langstar is ahead on assistants and graphs, which no official command line tool 
 
 The official tools were read from source on 2026-10-09 at these commits, the same ones pinned on the garden page [LangSmith/Q/Which LangChain tools manage each part of a LangSmith setup?](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/LangSmith___Q___Which%20LangChain%20tools%20manage%20each%20part%20of%20a%20LangSmith%20setup%253F.md):
 
-- LangSmith CLI v0.3.0 at [`596db1e`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/root.go#L76-L95), written in Go. The link goes to the list of its command groups.
-- LangSmith Terraform provider v0.0.16 at [`0896d0f`](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources).
+- LangSmith CLI at [`596db1e`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/root.go#L76-L95), written in Go, five commits after the v0.3.0 release. The link goes to the list of its command groups.
+- LangSmith Terraform provider at [`0896d0f`](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources), two commits after the v0.0.16 release.
 - LangGraph CLI and SDK at [`40a2e6d`](https://github.com/langchain-ai/langgraph/tree/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs).
 - The LangSmith Remote MCP server's tool list, from the LangChain docs at [`1da22ee`](https://github.com/langchain-ai/docs/blob/1da22ee8525f1a71b17b86974f74f4f28da45347/src/langsmith/langsmith-remote-mcp.mdx#L165-L174).
 
-Langstar was read at `main` as of [`1704f1e` design AI-first command structure for prompt UX](https://github.com/codekiln/langstar/commit/1704f1e).
+Langstar was read at `main` as of [`7b09eb2` document tmux manager/worker and PR workflow (#759)](https://github.com/codekiln/langstar/commit/7b09eb2).
 
 ## Parity map
 
@@ -42,7 +42,7 @@ Each row is something an official tool can do. A gap is small when langstar need
 | List and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
 | Look up a tracing project by name | Terraform `langsmith_project` data source | Has it: `project get` | None |
 | Code and LLM-as-judge evaluators, the rules that attach them, experiment results | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator`, `langsmith_run_rule`; MCP `list_experiments` | Lacks it: every `eval` command is a placeholder | Large |
-| Model configurations | Terraform `langsmith_model_configuration` | Partly: `model-config`, but `create` returns an HTTP 500 | Small |
+| Model configurations | Terraform `langsmith_model_configuration` | Has it: `model-config` | None |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
 | Resource tags | Terraform `langsmith_tag_key`, `langsmith_tag_value`, `langsmith_tagging` | Lacks it | Medium |
 | Workspaces, organization and workspace members, roles, access policies and the roles they attach to, and service keys | Terraform `langsmith_workspace`, `langsmith_org_membership`, `langsmith_workspace_membership`, `langsmith_workspace_role`, `langsmith_access_policy`, `langsmith_access_policy_attachment`, `langsmith_service_key`; the LangSmith CLI's `workspace` only lists workspaces and sets the default one | Lacks it | Large |
@@ -74,10 +74,6 @@ The LangGraph CLI runs an Agent Server on your machine, builds Docker images and
 ### Workspace administration, resource tags and alerts
 
 Langstar can close these gaps by calling the same LangSmith API endpoints the Terraform provider calls ([resource list](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources)). Today people manage workspaces, members, roles, tags and alerts in the LangSmith UI, in Terraform, or with hand-written requests through `langsmith api`. Terraform applies a file that describes how a whole workspace should look, while langstar changes one setting per command, so a team that wants its workspace described in one file and applied in one step will keep using Terraform.
-
-### Model configurations
-
-`model-config create` now fails with an HTTP 500 server error, one of the breakages listed in [reboot milestone · Issue #746](https://github.com/codekiln/langstar/issues/746). The Terraform [`langsmith_model_configuration`](https://github.com/langchain-ai/terraform-provider-langsmith/blob/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources/model_configuration.md) resource calls the same endpoint, `api/v1/playground-settings`, and LangChain keeps it working, so its source shows the request langstar's `create` should send.
 
 ## Resolved Questions
 
