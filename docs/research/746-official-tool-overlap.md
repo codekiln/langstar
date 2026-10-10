@@ -26,11 +26,13 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Show a deployed graph's structure | None; only the LangGraph SDKs | Has it: `graph` | Langstar is ahead |
 | List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment` | None |
 | Change a deployment's source revision, environment variables and secrets | Terraform `langsmith_deployment` | Lacks it; the SDK has the update call ([`deployments.rs`](../../sdk/src/deployments.rs#L385)) but no command uses it | Small |
-| Deployment logs and revisions | LangGraph CLI `deploy logs`, `deploy revisions list`; Terraform revision data sources | Lacks it | Small |
+| Deployment logs, revisions and the listeners a deployment can run through | LangGraph CLI `deploy logs`, `deploy revisions list`, `deploy listeners list`; Terraform revision data sources | Lacks it | Small |
 | Build an image from local code and deploy it | LangGraph CLI `deploy` | Lacks it | Large |
 | Run a local Agent Server, build images, start a project from a template | LangGraph CLI `dev`, `up`, `build`, `dockerfile`, `new`, `validate` | Lacks it | Large |
 | Query runs with filters | LangSmith CLI `run list`; MCP `fetch_runs` | Has it: `runs query` | None |
-| Get one run, export runs, read traces as trees, read thread messages | LangSmith CLI `run`, `trace`, `thread`; MCP `get_thread_history` | Lacks it | Medium |
+| Get one run, export runs, read traces as trees, read thread messages | LangSmith CLI `run`, `trace list`, `get`, `export`, `messages`, `thread`; MCP `get_thread_history` | Lacks it | Medium |
+| Total the tokens, latency, costs and feedback of a project's traces | LangSmith CLI `trace stats` | Lacks it | Small |
+| Set up Claude Code or Codex to send their traces to LangSmith | LangSmith CLI `trace setup` | Lacks it; this writes the coding agent's local settings rather than calling LangSmith | Medium |
 | Charts, insight reports and issues for a tracing project | LangSmith CLI `chart`, `insights`, `project issues` | Lacks it | Medium |
 | Manage annotation queues and their runs | None; the LangSmith CLI reaches them only through hand-written `langsmith api` requests | Has it: `queue` | Langstar is ahead |
 | List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset` | None |
@@ -43,12 +45,13 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Model configurations | Terraform `langsmith_model_configuration` | Partly: `model-config`, but `create` returns an HTTP 500 | Small |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
 | Resource tags | Terraform `langsmith_tag_key`, `langsmith_tag_value`, `langsmith_tagging` | Lacks it | Medium |
-| Workspaces, members, roles, access policies and service keys | Terraform `langsmith_workspace`, `langsmith_workspace_membership`, `langsmith_workspace_role`, `langsmith_access_policy`, `langsmith_service_key`; the LangSmith CLI's `workspace` only lists workspaces and sets the default one | Lacks it | Large |
+| Workspaces, organization and workspace members, roles, access policies and the roles they attach to, and service keys | Terraform `langsmith_workspace`, `langsmith_org_membership`, `langsmith_workspace_membership`, `langsmith_workspace_role`, `langsmith_access_policy`, `langsmith_access_policy_attachment`, `langsmith_service_key`; the LangSmith CLI's `workspace` only lists workspaces and sets the default one | Lacks it | Large |
 | Alert rules and gateway policies | Terraform `langsmith_alert_rule`, `langsmith_gateway_policy` | Lacks it | Medium |
 | Sign in with OAuth, keep named profiles | LangSmith CLI `auth`, `profile` | Partly: `config` keeps one API key, organization ID, workspace ID, output format and timezone in a config file, and each can come from the environment instead | Medium |
 | Call any LangSmith API endpoint | LangSmith CLI `api` | Lacks it | Small |
 | Update the tool itself | LangSmith CLI `self-update` | Lacks it; the install script installs a new version | Small |
 | Billing usage | MCP `get_billing_usage` | Lacks it | Medium |
+| Read the LangSmith server's version, license expiry and instance settings | Terraform `langsmith_info` data source | Lacks it | Small |
 | Hub agent and skill repos, Custom Apps, sandboxes and their image registries | LangSmith CLI `hub`, `apps`, `sandbox`; Terraform `langsmith_sandbox_registry` | Lacks it | Large |
 
 In the areas it shares with the official tools, langstar has commands they lack. `prompt push --schema` builds a structured-output prompt from a template and a JSON Schema file, where the official `push` takes a finished manifest. Only langstar can update a dataset, import and export one as CSV or JSONL, and create or update a tracing project, with `dataset update`, `dataset import` and `export`, and `project create` and `update`. `runs query` takes one filter for the root run of each trace and another for the runs beneath it, and lets you choose which fields to print and how to sort them. `deployment create` finds the GitHub integration ID from existing deployments, where Terraform's `langsmith_deployment` makes you supply it.
