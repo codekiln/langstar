@@ -83,9 +83,10 @@ gh issue view "$ISSUE_NUM" --json state,title
 # 5. Check that every commit message has this issue's "#N Issue Title" line (against the PR's base branch, so a stacked PR skips its parent's commits)
 # Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
 BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title -q .title)
 for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
-  git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
-    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
+  git log -1 --format=%B "$sha" | grep -qxF "#${ISSUE_NUM} ${ISSUE_TITLE}" || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} ${ISSUE_TITLE}' line"
 done
 ```
 
@@ -156,9 +157,10 @@ fi
 ISSUE_NUM=$(git branch --show-current | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
 # Before a stacked PR exists, set BASE=<parent-branch> yourself; with no PR and no BASE this assumes main
 BASE=${BASE:-$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)}
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title -q .title)
 for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
-  git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
-    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} Issue Title' line"
+  git log -1 --format=%B "$sha" | grep -qxF "#${ISSUE_NUM} ${ISSUE_TITLE}" || \
+    echo "WARNING: $(git log -1 --format=%h' '%s "$sha") has no '#${ISSUE_NUM} ${ISSUE_TITLE}' line"
 done
 ```
 
