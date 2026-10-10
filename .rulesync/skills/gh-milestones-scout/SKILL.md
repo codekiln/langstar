@@ -169,7 +169,8 @@ cd "wip/codekiln-${ISSUE_NUM}-scout"
 git add -A
 
 # Use printf to safely pass commit message to avoid command injection
-COMMIT_MSG=$(printf "docs: scout %s research\n\nFixes #%s" "$FEATURE_NAME" "$ISSUE_NUM")
+ISSUE_TITLE=$(gh issue view "$ISSUE_NUM" --json title -q .title)
+COMMIT_MSG=$(printf "docs: scout %s research\n\n#%s %s" "$FEATURE_NAME" "$ISSUE_NUM" "$ISSUE_TITLE")
 git commit -m "$COMMIT_MSG"
 
 # Use printf to safely construct PR body

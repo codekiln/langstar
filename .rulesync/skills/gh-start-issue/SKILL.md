@@ -152,21 +152,9 @@ fi
 echo "✅ Worktree created successfully"
 ```
 
-**Step 5:** Update tmux window name (if in tmux)
+**Step 5:** Leave the tmux window name alone
 
-```bash
-# Update tmux window name if in tmux session
-# Format: <emoji>i<issue_num> where emoji indicates phase and 'i' prefix indicates issue
-# Example: 💻i483 = coding on issue #483
-# 💻 = coding (initial phase when starting issue)
-# See pr-lifecycle skill for all phase emojis
-if [ -n "$TMUX" ]; then
-  TMUX_NAME="💻i${ISSUE_NUM}"
-  tmux rename-window "$TMUX_NAME" 2>/dev/null && echo "✅ Tmux window renamed to: $TMUX_NAME" || echo "ℹ️  Could not rename tmux window"
-else
-  echo "ℹ️  Not in tmux session - skipping window rename"
-fi
-```
+The manager names the window for the job when it starts the worker (see `docs/dev/tmux-naming-conventions.md`). Do not rename it.
 
 **Step 6:** Display issue context and next steps
 
