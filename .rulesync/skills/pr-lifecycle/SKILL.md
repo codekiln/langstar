@@ -74,7 +74,7 @@ echo "Current branch: $BRANCH"
 # Should match: m<id>-p<id>-i<num>-<slug> or variants (p<id>-i<num>-<slug>, i<num>-<slug>)
 
 # 3. Extract issue number from branch (look for i<num> pattern)
-ISSUE_NUM=$(echo "$BRANCH" | sed -nE 's/(^|.*-)i([0-9]+)(-.*|$)/\2/p')
+ISSUE_NUM=$(echo "$BRANCH" | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
 echo "Issue number: $ISSUE_NUM"
 
 # 4. Verify issue exists and is open
@@ -152,7 +152,7 @@ fi
 **Verify commits reference the issue:**
 ```bash
 # Check that every commit message has this issue's "#N Issue Title" line, against the PR's base branch (main before a PR exists)
-ISSUE_NUM=$(git branch --show-current | sed -nE 's/(^|.*-)i([0-9]+)(-.*|$)/\2/p')
+ISSUE_NUM=$(git branch --show-current | sed -nE 's/^(m[0-9]+-)?(p[0-9]+-)?i([0-9]+)(-.*)?$/\3/p')
 BASE=$(gh pr view --json baseRefName -q .baseRefName 2>/dev/null || echo main)
 for sha in $(git rev-list --no-merges "origin/$BASE..HEAD"); do
   git log -1 --format=%B "$sha" | grep -qE "^#${ISSUE_NUM} ." || \
