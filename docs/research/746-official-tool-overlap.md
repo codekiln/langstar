@@ -9,7 +9,7 @@ The official tools were read from source on 2026-10-09 at these commits, the sam
 - LangSmith CLI at [`596db1e`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/root.go#L76-L95), written in Go, five commits after the v0.3.0 release. The link goes to the list of its command groups.
 - LangSmith Terraform provider at [`0896d0f`](https://github.com/langchain-ai/terraform-provider-langsmith/tree/0896d0f6fa7e882493389c4b3b53acb713fab03f/docs/resources), two commits after the v0.0.16 release.
 - LangGraph CLI and SDK at [`40a2e6d`](https://github.com/langchain-ai/langgraph/tree/40a2e6d845054cc0cc17a6a169ca6e7394e5231c/libs).
-- The LangSmith Remote MCP server's tool list, from the LangChain docs at [`1da22ee`](https://github.com/langchain-ai/docs/blob/1da22ee8525f1a71b17b86974f74f4f28da45347/src/langsmith/langsmith-remote-mcp.mdx#L165-L174).
+- The LangSmith Remote MCP server's tool list, from the LangChain docs at [`1da22ee`](https://github.com/langchain-ai/docs/blob/1da22ee8525f1a71b17b86974f74f4f28da45347/src/langsmith/langsmith-remote-mcp.mdx#L165-L174). Its `push_prompt`, `create_dataset`, `update_examples` and `run_experiment` tools only return documentation ([standalone server reference](https://github.com/langchain-ai/docs/blob/1da22ee8525f1a71b17b86974f74f4f28da45347/src/langsmith/langsmith-mcp-server.mdx#L77-L102)), so the map leaves them out.
 
 Langstar was read at `main` as of [`7b09eb2` document tmux manager/worker and PR workflow (#759)](https://github.com/codekiln/langstar/commit/7b09eb2).
 
@@ -19,12 +19,12 @@ Each row is something an official tool can do. A gap is small when langstar need
 
 | Capability | Official tool | Langstar | Gap |
 |---|---|---|---|
-| List, get, search, push and pull prompts | LangSmith CLI `prompt`; MCP `list_prompts`, `get_prompt_by_name`, `push_prompt` | Has it: `prompt`, though `prompt get` shows only the prompt's details and `prompt pull` fetches its manifest, where the official `get` returns both | None |
+| List, get, search, push and pull prompts | LangSmith CLI `prompt`; MCP `list_prompts`, `get_prompt_by_name` | Has it: `prompt`, though `prompt get` shows only the prompt's details and `prompt pull` fetches its manifest, where the official `get` returns both | None |
 | Delete prompts, read commit history, manage tags | LangSmith CLI `prompt delete`, `commits`, `tag` | Lacks it | Small |
 | Create, read, update and delete assistants | None; only the LangGraph SDKs and the Agent Server API | Has it: `assistant` | Langstar is ahead |
 | Assistant versions, fixed assistant IDs, create-if-missing | None; only the LangGraph SDKs | Lacks it | Small |
 | Show a deployed graph's structure | None; only the LangGraph SDKs | Has it: `graph` | Langstar is ahead |
-| List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment`, but `deployment create` builds only from GitHub. Its `external_docker` source takes no image to deploy, and it rejects LangChain templates, where Terraform's `image_uri` and `internal_template` cover both ([`deployment.rs`](../../cli/src/commands/deployment.rs#L456-L465)) | Small |
+| List, get, create and delete deployments | LangGraph CLI `deploy`; Terraform `langsmith_deployment` | Has it: `deployment`, but `deployment create` can deploy only code from a GitHub repository. Its `external_docker` source has no option for naming the image, and it refuses any source type other than GitHub and Docker ([`deployment.rs`](../../cli/src/commands/deployment.rs#L442-L465)). Terraform deploys an image with `image_uri` and a LangChain template with `internal_template`. | Small |
 | Change a deployment's source revision, environment variables and secrets | Terraform `langsmith_deployment` | Lacks it; the SDK's update call ([`deployments.rs`](../../sdk/src/deployments.rs#L385)) changes only the source settings, its request has no environment variables or secrets ([`PatchDeploymentRequest`](../../sdk/src/deployments.rs#L231-L238)), and no command uses it | Small |
 | Set a deployment's display name, build and install commands, custom URL, the self-hosted Kubernetes cluster and namespace it runs in, Kubernetes secret references and compute resources | Terraform `langsmith_deployment` | Lacks it; `deployment create` sends no custom URL or compute resources ([`deployment.rs`](../../cli/src/commands/deployment.rs#L438-L439)) | Small |
 | Deployment logs and revisions, and the self-hosted Kubernetes clusters a deployment can be placed in (LangSmith calls the program it runs in each cluster a listener) | LangGraph CLI `deploy logs`, `deploy revisions list`, `deploy listeners list`; Terraform revision data sources | Lacks it | Small |
@@ -36,13 +36,13 @@ Each row is something an official tool can do. A gap is small when langstar need
 | Set up Claude Code or Codex to send their traces to LangSmith | LangSmith CLI `trace setup` | Lacks it; this writes the coding agent's local settings rather than calling LangSmith | Medium |
 | Charts, insight reports and issues for a tracing project | LangSmith CLI `chart`, `insights`, `project issues` | Lacks it | Medium |
 | Manage annotation queues and their runs | None; the LangSmith CLI reaches them only through hand-written `langsmith api` requests | Has it: `queue` | Langstar is ahead |
-| List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset`, `create_dataset` | Has it: `dataset`, but `dataset get` and `delete` take only a dataset's UUID ([`dataset.rs`](../../cli/src/commands/dataset.rs#L93)), where the official commands also take its name | Small |
+| List, get, create and delete datasets | LangSmith CLI `dataset`; MCP `list_datasets`, `read_dataset` | Has it: `dataset`, but `dataset get` and `delete` take only a dataset's UUID ([`dataset.rs`](../../cli/src/commands/dataset.rs#L93)), where the official commands also take its name | Small |
 | Upload and export a dataset as one JSON file | LangSmith CLI `dataset upload`, `export` | Partly: `dataset import` and `export` read and write JSONL and CSV, so a file from `langsmith dataset export` cannot be imported as it is | Small |
 | List the examples in a dataset | LangSmith CLI `example list`; MCP `list_examples` | Has it: `dataset list-examples` | None |
-| Read, create, update and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example`, `update_examples` | Lacks it | Small |
+| Read, create and delete single examples | LangSmith CLI `example create`, `delete`; MCP `read_example` | Lacks it | Small |
 | List and delete tracing projects | LangSmith CLI `project list`, `delete`; MCP `list_projects` | Has it: `project` | None |
 | Look up a tracing project by name | Terraform `langsmith_project` data source | Has it: `project get` | None |
-| Code and LLM-as-judge evaluators, the rules that attach them, running experiments and reading their results | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator`, `langsmith_run_rule`; MCP `list_experiments`, `run_experiment` | Lacks it: every `eval` command is a placeholder | Large |
+| Code and LLM-as-judge evaluators, the rules that attach them, experiment results | LangSmith CLI `evaluator`, `experiment`; Terraform `langsmith_evaluator`, `langsmith_run_rule`; MCP `list_experiments` | Lacks it: every `eval` command is a placeholder | Large |
 | Model configurations | Terraform `langsmith_model_configuration` | Has it: `model-config` | None |
 | Workspace secrets | Terraform `langsmith_workspace_secret` | Has it: `secrets` | None |
 | Resource tags | Terraform `langsmith_tag_key`, `langsmith_tag_value`, `langsmith_tagging` | Lacks it | Medium |
@@ -62,7 +62,7 @@ In the areas it shares with the official tools, langstar has commands they lack.
 
 ### Evaluators and experiments
 
-Every langstar `eval` subcommand (`create`, `run`, `list`, `get`, `export`) has a `TODO` where the work should be, and `list` returns an empty list ([cli/src/commands/eval.rs#L413](../../cli/src/commands/eval.rs#L413)). The official [`langsmith evaluator`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/evaluator.go#L22) lists, gets and deletes evaluators, uploads code evaluators, creates LLM-as-judge rules, and manages the rules that attach evaluators to projects and datasets. [`langsmith experiment`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/experiment.go#L15) lists and gets experiment results, and the Remote MCP server's `run_experiment` tool starts an experiment. Langstar's `eval` was designed around running evaluations itself; among the official tools, only that MCP tool does the same.
+Every langstar `eval` subcommand (`create`, `run`, `list`, `get`, `export`) has a `TODO` where the work should be, and `list` returns an empty list ([cli/src/commands/eval.rs#L413](../../cli/src/commands/eval.rs#L413)). The official [`langsmith evaluator`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/evaluator.go#L22) lists, gets and deletes evaluators, uploads code evaluators, creates LLM-as-judge rules, and manages the rules that attach evaluators to projects and datasets. [`langsmith experiment`](https://github.com/langchain-ai/langsmith-cli/blob/596db1ef1f320252f9148cc9ed4cd41392d0daee/internal/cmd/experiment.go#L15) lists and gets experiment results. Langstar's `eval` was designed around running evaluations itself, and none of the official tools does that: the Remote MCP server's `run_experiment` tool only returns documentation on how to run an experiment.
 
 ### Assistants kept in Git
 
@@ -112,7 +112,7 @@ codekiln, on 2026-10-09: "the main goal of this one cli 'langstar' is to be the 
 
 > Context from the drafting agent, for question 2.
 >
-> The `eval` placeholders were designed for langstar to run evaluations itself. The official `evaluator` and `experiment` groups manage the evaluators LangSmith runs and read the results, and only the Remote MCP server's `run_experiment` tool starts an experiment. Recommendation: replace the placeholders with commands for evaluators, the rules that attach them, and experiment results first, and add a command that starts an experiment, as `run_experiment` does, after those.
+> The `eval` placeholders were designed for langstar to run evaluations itself. The official `evaluator` and `experiment` groups manage the evaluators LangSmith runs and read the results. No official tool starts an experiment; the Remote MCP server's `run_experiment` tool only returns documentation on how to run one. Recommendation: replace the placeholders with commands for evaluators, the rules that attach them, and experiment results. Once those exist, decide whether langstar should also start experiments.
 
 <ANSWER_HERE>
 
