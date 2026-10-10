@@ -50,7 +50,7 @@ jobs:
         with:
           version: 2026.10.2
           install: true
-          install_args: npm:rulesync
+          install_args: node npm:rulesync
 
       - name: Generate agent config
         run: mise x -- rulesync generate

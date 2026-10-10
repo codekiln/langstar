@@ -430,17 +430,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "escargot"
-version = "0.5.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11c3aea32bc97b500c9ca6a72b768a26e558264303d101d3409cf6d57a9ed0cf"
-dependencies = [
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "fancy-regex"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -954,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "langstar"
-version = "2.1.2"
+version = "2.2.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -964,9 +953,9 @@ dependencies = [
  "colored 2.2.0",
  "csv",
  "dirs",
- "escargot",
  "futures-util",
  "langstar-sdk",
+ "mockito",
  "predicates",
  "rpassword",
  "serde",
@@ -983,7 +972,7 @@ dependencies = [
 
 [[package]]
 name = "langstar-sdk"
-version = "2.1.2"
+version = "2.2.0"
 dependencies = [
  "async-stream",
  "base64 0.22.1",

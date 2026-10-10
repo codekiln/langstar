@@ -1,0 +1,36 @@
+schema: spec-driven
+
+# Shown to the agent that writes each artifact.
+# https://github.com/Fission-AI/OpenSpec/blob/main/docs/customization.md
+context: |
+  codekiln states langstar's goal this way: "the main goal of this one cli 'langstar' is to be the one stop shop so people don't need to go to multiple tools to do things in langsmith (e.g. do I need mcp, langsmith cli, langgraph cli, etc)". Weigh every change against that goal.
+  Langstar is a Rust SDK (sdk/) and a CLI (cli/) over three APIs: the LangSmith API, the LangSmith Deployments control plane API, and the Agent Server API that each deployment runs. reference/api-specs/LANGSMITH_API_OVERVIEW.md summarizes them.
+  Each change starts from a GitHub issue in codekiln/langstar. Name the change after the issue's slug and link the issue in proposal.md.
+  codekiln reviews every artifact. Follow codekiln's AI rules and writing preferences, the pages under My/AI/Rule and My/Pref/Writing in https://github.com/codekiln/logseq-encode-garden/tree/main/pages. After drafting proposal.md, design.md and tasks.md, check each one against those pages and revise it before asking codekiln to review.
+  Write one line per paragraph. Leave the wrapping to the viewer.
+
+# Per-artifact rules, from My/Pref/Dev/AI/OpenSpec:
+# https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___AI___OpenSpec.md
+rules:
+  proposal:
+    - End with a `## Citations` section listing the codekiln preferences and principles (pages under `My/` in logseq-encode-garden) that shaped the proposal.
+    - Write each citation as a Markdown link to the page on the `main` branch on GitHub, with the logical page name as the link text. Build the URL by joining the namespace segments with `___`, encoding spaces as `%20` and adding `.md` under `pages/`. For example, `[My/Principle/CLI/Centricity/Offline Tools](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Principle___CLI___Centricity___Offline%20Tools.md)`.
+  design:
+    - Keep the current state of the design in `## Decisions`, as prose you rewrite whenever the design changes.
+    - Under Non-Goals, list only the goals codekiln might work on instead of this change right now, each written as the goal itself. Write "None." when there are none.
+    - End with `## Resolved Questions` followed by `## Open Questions`. Give each question its own heading, `### N - <question text>`.
+    - Follow a resolved question with its answer as prose. Resolved Questions is an append-only log. Give a new question the next number, and keep the numbers and order of earlier ones.
+    - Under an open question, put any background you add in a blockquote that opens with `> Context from the drafting agent, for question N.`. Put `<ANSWER_HERE>` on its own line below the blockquote. Each open question has exactly one `<ANSWER_HERE>` and no prose outside the blockquote.
+    - When codekiln answers an open question, move it to Resolved Questions with the next number, drop the blockquote, and put the answer in place of `<ANSWER_HERE>`.
+    - Put a prototype in its own folder under `experiments/` in the change directory, such as `experiments/hierarchical-help-sample-cli/`, with a `README.md` that says what the prototype is for and how to run it.
+    - When another CLI or project shaped a decision, add a note on it under `references/` in the change directory, one file per source, showing the samples or behavior that influenced the change.
+  specs:
+    - Name a capability after the langstar command group it covers, such as `assistant` for `langstar assistant`.
+    - Write requirements in terms of what a langstar user types and sees, such as arguments, flags, output and errors.
+  tasks:
+    - Include tasks for the unit and integration tests that docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md calls for.
+
+operations:
+  archive:
+    guidance:
+      - Run `openspec validate <name> --strict` before syncing or archiving the change, and stop when it fails.

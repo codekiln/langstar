@@ -19,8 +19,10 @@
 /// - LANGSMITH_WORKSPACE_ID environment variable (for private prompt tests)
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
+#[path = "common/home.rs"]
+mod home;
+
 use assert_cmd::Command;
-use escargot::CargoBuild;
 use langstar_sdk::auth::AuthConfig;
 use langstar_sdk::client::LangchainClient;
 use predicates::prelude::*;
@@ -68,13 +70,167 @@ fn create_sdk_client() -> Result<LangchainClient, String> {
     LangchainClient::new(auth).map_err(|e| format!("Client creation error: {}", e))
 }
 
-/// Generate a unique test repo name to avoid conflicts between tests
+/// Generate a unique test repo name to avoid conflicts between tests.
+///
+/// Suite runs that use the same LangSmith workspace share its prompt repos, so a
+/// name built from a millisecond timestamp can repeat when two runs start the
+/// same test at the same moment. The name ends in the first 12 hex characters
+/// of a random UUID instead.
 fn generate_unique_repo_name(prefix: &str) -> String {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    format!("{}-{}", prefix, timestamp)
+    format!(
+        "{}-{}",
+        prefix,
+        &uuid::Uuid::new_v4().simple().to_string()[..12]
+    )
+}
+
+/// What `create_test_repo` does after one `create_repo` attempt.
+#[derive(Debug, PartialEq)]
+enum CreateAttempt {
+    Created,
+    Retry,
+    Failed,
+}
+
+/// The kinds of `create_repo` failure that `create_failure_kind` sorts an SDK error into.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum CreateFailure {
+    /// No answer within the SDK client's 30-second request timeout.
+    Timeout,
+    /// LangSmith answered 5xx.
+    ServerError,
+    /// LangSmith answered 409: a repo with this name already exists.
+    AlreadyExists,
+    /// Any other error.
+    Other,
+}
+
+fn create_failure_kind(err: &langstar_sdk::LangstarError) -> CreateFailure {
+    match err {
+        langstar_sdk::LangstarError::HttpError(e) if e.is_timeout() => CreateFailure::Timeout,
+        langstar_sdk::LangstarError::ApiError {
+            status: 500..=599, ..
+        } => CreateFailure::ServerError,
+        langstar_sdk::LangstarError::ApiError { status: 409, .. } => CreateFailure::AlreadyExists,
+        _ => CreateFailure::Other,
+    }
+}
+
+/// Decide what to do after one `create_repo` attempt.
+///
+/// A timeout or a 5xx is retried until the attempts run out. LangSmith may
+/// have made the repo even when the SDK client gave up waiting or LangSmith
+/// answered 5xx, so a 409 after an earlier attempt counts as created. A 409
+/// on the first attempt, or any other error, fails the test.
+fn create_attempt_outcome(
+    attempt: u32,
+    attempts: u32,
+    failure: Option<CreateFailure>,
+) -> CreateAttempt {
+    match failure {
+        None => CreateAttempt::Created,
+        Some(CreateFailure::AlreadyExists) if attempt > 1 => CreateAttempt::Created,
+        Some(CreateFailure::Timeout | CreateFailure::ServerError) if attempt < attempts => {
+            CreateAttempt::Retry
+        }
+        Some(_) => CreateAttempt::Failed,
+    }
+}
+
+/// Create a prompt repo for a test, retrying a timeout or a 5xx.
+///
+/// In local runs, setup for `test_cli_push_prompt_update_with_auto_parent`
+/// panicked after 30 seconds, the SDK client's request timeout, so LangSmith
+/// most likely took longer than that to answer `create_repo`. https://github.com/codekiln/langstar/issues/787
+/// ("prompt_structured_test setup panics without the error when creating its
+/// repo takes over 30 seconds") describes those runs. This function tries up
+/// to three times, waiting 2s and then 4s, and panics with the SDK error when
+/// it gives up.
+fn create_test_repo(
+    runtime: &tokio::runtime::Runtime,
+    client: &LangchainClient,
+    repo_name: &str,
+    description: String,
+    is_public: bool,
+) {
+    const ATTEMPTS: u32 = 3;
+    for attempt in 1..=ATTEMPTS {
+        let result = runtime.block_on(async {
+            client
+                .prompts()
+                .create_repo(repo_name, Some(description.clone()), None, is_public, None)
+                .await
+        });
+        let failure = result.as_ref().err().map(create_failure_kind);
+        match create_attempt_outcome(attempt, ATTEMPTS, failure) {
+            CreateAttempt::Created => return,
+            CreateAttempt::Retry => {
+                if let Err(err) = &result {
+                    eprintln!(
+                        "[SETUP] create_repo for {repo_name} failed on attempt {attempt} \
+                         of {ATTEMPTS}: {err}; retrying"
+                    );
+                }
+                std::thread::sleep(std::time::Duration::from_secs(2u64.pow(attempt)));
+            }
+            CreateAttempt::Failed => {
+                let Err(err) = result else {
+                    unreachable!("Failed means create_repo returned an error");
+                };
+                panic!(
+                    "Failed to create test repo {repo_name} on attempt {attempt} of {ATTEMPTS}: {err}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn test_create_attempt_outcome() {
+    use CreateFailure::*;
+
+    assert_eq!(create_attempt_outcome(1, 3, None), CreateAttempt::Created);
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(Timeout)),
+        CreateAttempt::Retry
+    );
+    assert_eq!(
+        create_attempt_outcome(2, 3, Some(ServerError)),
+        CreateAttempt::Retry
+    );
+    assert_eq!(
+        create_attempt_outcome(3, 3, Some(Timeout)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(3, 3, Some(ServerError)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(2, 3, Some(AlreadyExists)),
+        CreateAttempt::Created
+    );
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(AlreadyExists)),
+        CreateAttempt::Failed
+    );
+    assert_eq!(
+        create_attempt_outcome(1, 3, Some(Other)),
+        CreateAttempt::Failed
+    );
+}
+
+#[test]
+fn test_create_failure_kind_reads_api_status() {
+    let api = |status| langstar_sdk::LangstarError::ApiError {
+        status,
+        message: String::new(),
+    };
+    assert_eq!(create_failure_kind(&api(500)), CreateFailure::ServerError);
+    assert_eq!(create_failure_kind(&api(503)), CreateFailure::ServerError);
+    assert_eq!(create_failure_kind(&api(409)), CreateFailure::AlreadyExists);
+    assert_eq!(create_failure_kind(&api(403)), CreateFailure::Other);
+    assert_eq!(create_failure_kind(&api(600)), CreateFailure::Other);
 }
 
 /// Test fixture that creates a unique repo and cleans it up on drop
@@ -94,19 +250,13 @@ impl PromptRepoFixture {
 
         // Create the repo via SDK
         println!("[SETUP] Creating private repo: -/{}", repo_name);
-        runtime.block_on(async {
-            client
-                .prompts()
-                .create_repo(
-                    &repo_name,
-                    Some(format!("Test repo for {}", prefix)),
-                    None,
-                    false, // is_public = false (private)
-                    None,
-                )
-                .await
-                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
-        });
+        create_test_repo(
+            &runtime,
+            &client,
+            &repo_name,
+            format!("Test repo for {}", prefix),
+            false, // is_public = false (private)
+        );
 
         Self {
             repo_name,
@@ -124,19 +274,13 @@ impl PromptRepoFixture {
 
         // Create the repo via SDK
         println!("[SETUP] Creating public repo: {}/{}", TEST_OWNER, repo_name);
-        runtime.block_on(async {
-            client
-                .prompts()
-                .create_repo(
-                    &repo_name,
-                    Some(format!("Test repo for {}", prefix)),
-                    None,
-                    true, // is_public = true
-                    None,
-                )
-                .await
-                .unwrap_or_else(|_| panic!("Failed to create test repo: {}", repo_name));
-        });
+        create_test_repo(
+            &runtime,
+            &client,
+            &repo_name,
+            format!("Test repo for {}", prefix),
+            true, // is_public = true
+        );
 
         Self {
             repo_name,
@@ -171,14 +315,9 @@ impl Drop for PromptRepoFixture {
     }
 }
 
-/// Helper to build and get the langstar binary path
+/// Path to the langstar binary Cargo built for this integration test run
 fn get_langstar_bin() -> std::path::PathBuf {
-    CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned()
+    std::path::PathBuf::from(env!("CARGO_BIN_EXE_langstar"))
 }
 
 /// Helper to create a temporary valid JSON schema file
@@ -237,6 +376,7 @@ fn test_cli_push_private_prompt() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -283,6 +423,7 @@ fn test_cli_push_public_prompt_invalid_schema() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -317,6 +458,7 @@ fn test_cli_push_public_prompt_missing_schema() {
     // TEST: Push with nonexistent schema file path
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -354,6 +496,7 @@ fn test_cli_push_public_prompt_invalid_method() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -393,6 +536,7 @@ fn test_cli_push_private_prompt_function_calling_method() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -432,6 +576,7 @@ fn test_cli_pull_private_prompt() {
     let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
+    push_cmd.env("HOME", home::empty_home());
     push_cmd.args([
         "prompt",
         "push",
@@ -450,6 +595,7 @@ fn test_cli_pull_private_prompt() {
 
     // TEST: Pull the structured prompt
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args(["prompt", "pull", "--", &fixture.handle()]);
 
     // VERIFY: CLI command succeeds with expected output
@@ -478,6 +624,7 @@ fn test_cli_private_prompt_round_trip() {
 
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
+    push_cmd.env("HOME", home::empty_home());
     push_cmd.args([
         "prompt",
         "push",
@@ -512,6 +659,7 @@ fn test_cli_private_prompt_round_trip() {
 
     // TEST Step 2: Pull it back
     let mut pull_cmd = Command::new(&bin);
+    pull_cmd.env("HOME", home::empty_home());
     pull_cmd.args([
         "prompt",
         "pull",
@@ -549,6 +697,7 @@ fn test_cli_push_private_prompt_json_output() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "push",
@@ -605,6 +754,7 @@ fn test_cli_pull_private_prompt_json_output() {
     let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
+    push_cmd.env("HOME", home::empty_home());
     push_cmd.args([
         "prompt",
         "push",
@@ -623,6 +773,7 @@ fn test_cli_pull_private_prompt_json_output() {
 
     // TEST: Pull with JSON output format
     let mut cmd = Command::new(&bin);
+    cmd.env("HOME", home::empty_home());
     cmd.args([
         "prompt",
         "pull",
@@ -665,6 +816,7 @@ fn test_cli_push_prompt_update_with_auto_parent() {
 
     let push = |template: &str| {
         let mut cmd = Command::new(&bin);
+        cmd.env("HOME", home::empty_home());
         cmd.args([
             "prompt",
             "push",

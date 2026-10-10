@@ -12,7 +12,7 @@ Langstar is a Rust SDK (`sdk/`) and CLI (`cli/`) for the LangSmith and LangGraph
 
 ## Agent config
 
-To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run `"$(mise which rulesync)" generate`, and commit only the `.rulesync/` source. Git ignores the files rulesync writes (`CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`), and the lefthook hooks in `lefthook.yml` regenerate them after every pull and checkout. In a new clone, run `mise install`, then `"$(mise which lefthook)" install` and `"$(mise which rulesync)" generate` once; the devcontainer does this for you. Agents get skills only, never commands. `mise which rulesync` prints the path of the rulesync version pinned in `mise.toml`, so `"$(mise which rulesync)" generate` runs that version even when an older rulesync is earlier on `PATH`. An older rulesync drops `license`, `argument-hint` and `allowed-tools` from the generated skills and writes a `.codex/` directory.
+To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run `"$(mise which rulesync)" generate`, and commit only the `.rulesync/` source. Git ignores the files rulesync writes (`CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`), and the lefthook hooks in `lefthook.yml` regenerate them after every pull and checkout. In a new clone, or right after the pull that first brings rulesync into an older clone, run `mise install`, then `"$(mise which lefthook)" install` and `"$(mise which rulesync)" generate` once; the devcontainer does this for you. Agents get skills only, never commands. `mise which rulesync` prints the path of the rulesync version pinned in `mise.toml`, so `"$(mise which rulesync)" generate` runs that version even when an older rulesync is earlier on `PATH`. An older rulesync drops `license`, `argument-hint` and `allowed-tools` from the generated skills and writes a `.codex/` directory.
 
 ## Workflow
 
@@ -21,6 +21,7 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 - Work in a git worktree and leave the root checkout on `main`. The `git-worktrees` and `gh-start-issue` skills set one up.
 - Write commit messages and PR titles as Conventional Emoji Commits (`✨ feat(scope): ...`), following `docs/dev/git-scm-conventions.md`.
 - Give a PR the milestone of its issue.
+- Design a new feature as an OpenSpec change under `openspec/changes/`, using the `openspec-propose` skill. `openspec/specs/` describes what each command group does today. `docs/dev/feature-development-process.md` has the process.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.
 
 ## Testing
@@ -28,11 +29,10 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 Merge a PR only when every test passes, including a test that was already failing before your change. Run this before every commit:
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace
+mise run check
 ```
+
+`mise run check` runs `cargo fmt`, `cargo check`, `cargo clippy` and the nextest suite under `fnox exec`, which supplies the three test credentials below, then `cargo fmt --check`, and stops at the first failure.
 
 Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`; `docs/dev/environment-variables.md` maps them to API headers. Each test asserts on what the CLI command or SDK call returned, such as fields in its JSON output or the resource it created, as well as on its exit code. `docs/dev/testing/README.md` indexes the testing docs: read `HIGH_LEVEL_TESTING_GUIDELINES.md` and the one or two others your task needs. The `test-runner-worktree` skill runs the tests inside a worktree.
 
