@@ -304,6 +304,13 @@ def test_link_secrets():
         else:
             print(f"✗ FAIL: exit {returncode} -> {got}, command {command}, cwd {cwd}")
             ok = False
+    with mock.patch.object(prep_next.subprocess, "run", side_effect=FileNotFoundError("mise")):
+        got = prep_next.link_secrets("/tmp/wt")
+    if got is False:
+        print("✓ PASS: a missing mise executable returns False")
+    else:
+        print(f"✗ FAIL: a missing mise executable returned {got}")
+        ok = False
     return ok
 
 
