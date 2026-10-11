@@ -293,12 +293,13 @@ def test_link_secrets():
 
     ok = True
     for returncode, expected in ((0, True), (1, False)):
-        completed = subprocess.CompletedProcess([], returncode, stdout="", stderr="boom")
+        completed = subprocess.CompletedProcess([], returncode)
         with mock.patch.object(prep_next.subprocess, "run", return_value=completed) as run:
             got = prep_next.link_secrets("/tmp/wt")
         command = run.call_args.args[0]
         cwd = run.call_args.kwargs.get("cwd")
-        if got == expected and command == ["mise", "run", "worktree:link-secrets"] and cwd == "/tmp/wt":
+        captured = run.call_args.kwargs.get("capture_output") or run.call_args.kwargs.get("stdout")
+        if got == expected and command == ["mise", "run", "worktree:link-secrets"] and cwd == "/tmp/wt" and not captured:
             print(f"✓ PASS: exit {returncode} -> {got}, ran {' '.join(command)} in {cwd}")
         else:
             print(f"✗ FAIL: exit {returncode} -> {got}, command {command}, cwd {cwd}")

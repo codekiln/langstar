@@ -38,12 +38,11 @@ def link_secrets(worktree_path: str) -> bool:
     Run from the root checkout it would link nothing, so the working directory
     is the worktree. A failure prints a warning and returns False.
     """
-    result = subprocess.run(
-        ["mise", "run", "worktree:link-secrets"],
-        cwd=worktree_path, capture_output=True, text=True
-    )
+    # No capture: the task exits 0 with a warning when the root checkout has no
+    # fnox.local.toml, and that warning must reach the terminal.
+    result = subprocess.run(["mise", "run", "worktree:link-secrets"], cwd=worktree_path)
     if result.returncode != 0:
-        print(f"   ⚠️  worktree:link-secrets failed: {result.stderr.strip()}", file=sys.stderr)
+        print("   ⚠️  worktree:link-secrets failed", file=sys.stderr)
         return False
     return True
 

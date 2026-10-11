@@ -71,7 +71,7 @@ The `.worktrees/` directory is already configured in `.gitignore`, keeping workt
 
 Worktrees go in `.worktrees/` because Logseq and other scanners skip directories whose names start with a dot. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
 
-**Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
+**Naming:** name the directory after the branch: drop a leading branch-type prefix (`feature/`, `fix/`, `docs/`), then replace each remaining `/` with `-`. Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
 
 **Exception:** Claude Desktop's Worktree location setting keeps worktrees inside the project but cannot be set to `.worktrees/`, so its worktrees live in `.claude/worktrees/` ([My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md)). That directory is gitignored too.
 
@@ -99,10 +99,10 @@ Creates a new worktree with a new branch based on the specified target branch.
 
 **Template:**
 ```bash
-git worktree add -b <branch-name> .worktrees/<branch-name-with-slashes-replaced-by-dashes> <target-branch>
+git worktree add -b <branch-name> .worktrees/<directory-name> <target-branch>
 ```
 
-The directory name replaces every `/` in the branch name with `-`: branch `codekiln/130-add-auth` gets `.worktrees/codekiln-130-add-auth`.
+`<directory-name>` follows the Naming rule above: drop a leading branch-type prefix (`feature/`, `fix/`, `docs/`), then replace each remaining `/` with `-`. Branch `feature/add-auth` gets `.worktrees/add-auth`, and branch `codekiln/130-add-auth` gets `.worktrees/codekiln-130-add-auth`.
 
 **Examples:**
 ```bash
