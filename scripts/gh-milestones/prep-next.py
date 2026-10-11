@@ -32,6 +32,22 @@ def issue_number_from_branch(branch_name: str) -> Optional[int]:
     return int(match.group(1)) if match else None
 
 
+def link_secrets(worktree_path: str) -> bool:
+    """Run `mise run worktree:link-secrets` inside the new worktree.
+
+    Run from the root checkout it would link nothing, so the working directory
+    is the worktree. A failure prints a warning and returns False.
+    """
+    result = subprocess.run(
+        ["mise", "run", "worktree:link-secrets"],
+        cwd=worktree_path, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"   ⚠️  worktree:link-secrets failed: {result.stderr.strip()}", file=sys.stderr)
+        return False
+    return True
+
+
 def worktree_path_for(branch_name: str) -> str:
     """Return the worktree path under the root checkout, wherever this runs.
 
@@ -478,13 +494,7 @@ class MilestoneWorkflow:
 
         print("   ✓ Worktree created successfully")
 
-        # Share the root checkout's fnox cache with the new worktree
-        link = subprocess.run(
-            ["mise", "run", "worktree:link-secrets"],
-            cwd=worktree_path, capture_output=True, text=True
-        )
-        if link.returncode != 0:
-            print(f"   ⚠️  worktree:link-secrets failed: {link.stderr.strip()}", file=sys.stderr)
+        link_secrets(worktree_path)
 
         return branch_name, worktree_path
 

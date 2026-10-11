@@ -275,6 +275,37 @@ def test_issue_number_from_branch():
     return ok
 
 
+def test_link_secrets():
+    """link-secrets runs `mise run worktree:link-secrets` in the worktree and reports failure."""
+    print("\nTest 10: Secret linking in the new worktree")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+    import subprocess
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    ok = True
+    for returncode, expected in ((0, True), (1, False)):
+        completed = subprocess.CompletedProcess([], returncode, stdout="", stderr="boom")
+        with mock.patch.object(prep_next.subprocess, "run", return_value=completed) as run:
+            got = prep_next.link_secrets("/tmp/wt")
+        command = run.call_args.args[0]
+        cwd = run.call_args.kwargs.get("cwd")
+        if got == expected and command == ["mise", "run", "worktree:link-secrets"] and cwd == "/tmp/wt":
+            print(f"✓ PASS: exit {returncode} -> {got}, ran {' '.join(command)} in {cwd}")
+        else:
+            print(f"✗ FAIL: exit {returncode} -> {got}, command {command}, cwd {cwd}")
+            ok = False
+    return ok
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -291,6 +322,7 @@ def main():
         test_extract_milestone_and_parent,
         test_worktree_path_generation,
         test_issue_number_from_branch,
+        test_link_secrets,
     ]
 
     results = [test() for test in tests]
