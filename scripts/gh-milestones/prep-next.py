@@ -457,15 +457,6 @@ class MilestoneWorkflow:
 
         print("   ✓ Worktree created successfully")
 
-        # Update tmux window name if in tmux
-        if os.environ.get("TMUX"):
-            tmux_name = f"💻i{issue['number']}"
-            self.run_command(
-                ["tmux", "rename-window", tmux_name],
-                check=False
-            )
-            print(f"   ✓ Tmux window renamed to: {tmux_name}")
-
         return branch_name, worktree_path
 
     def display_summary(self, issue: Dict, branch_name: str, worktree_path: str):

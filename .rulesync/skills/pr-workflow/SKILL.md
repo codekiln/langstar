@@ -78,41 +78,6 @@ $ARGUMENTS
 
 If arguments are provided, parse the issue number. Otherwise, extract from the current branch name.
 
-## Tmux Status Helper
-
-Throughout the workflow, update tmux window name to reflect current phase.
-
-```bash
-# Helper function to update tmux status
-# Usage: update_tmux_status <emoji> <prefix> <number>
-# Examples:
-#   update_tmux_status "💻" "i" "483"  -> 💻i483 (coding on issue #483)
-#   update_tmux_status "🔧" "pr" "485" -> 🔧pr485 (maintaining PR #485)
-update_tmux_status() {
-  local EMOJI="$1"
-  local PREFIX="$2"
-  local NUMBER="$3"
-
-  if [ -n "$TMUX" ]; then
-    TMUX_NAME="${EMOJI}${PREFIX}${NUMBER}"
-    tmux rename-window "$TMUX_NAME" 2>/dev/null
-  fi
-}
-
-# Phase emojis:
-# 🔍 = gathering information
-# 💻 = coding
-# ⏳ = waiting for tests
-# ❓ = waiting for user (need more info)
-# 🚀 = submitting pr
-# 🔧 = pr maintenance
-# 🧹 = cleanup
-
-# Prefix conventions:
-# i = issue number (e.g., i483 for issue #483)
-# pr = pull request number (e.g., pr485 for PR #485)
-```
-
 ## Overview
 
 This command provides **highly autonomous** PR management, reducing cognitive load by:
@@ -297,17 +262,12 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 **Goal:** Create PR with proper formatting and configuration.
 
 **Actions:**
-1. **Update tmux status to "submitting PR":**
-   ```bash
-   update_tmux_status "🚀" "i" "$ISSUE_NUM"
-   ```
-
-2. **Push branch to remote (if not already pushed):**
+1. **Push branch to remote (if not already pushed):**
    ```bash
    git push -u origin $(git branch --show-current)
    ```
 
-3. **Create PR using gh CLI:**
+2. **Create PR using gh CLI:**
    ```bash
    ISSUE_NUM=<extracted_issue_num>
    BASE_BRANCH=<determined_base_branch>
@@ -325,7 +285,7 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$')
    ```
 
-4. **Add milestone to PR (if issue has milestone):**
+3. **Add milestone to PR (if issue has milestone):**
    ```bash
    MILESTONE=$(gh issue view "$ISSUE_NUM" --json milestone -q '.milestone.title')
 
@@ -334,14 +294,14 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    fi
    ```
 
-5. **Verify PR will close issue:**
+4. **Verify PR will close issue:**
    ```bash
    gh pr view "$PR_NUM" --json closingIssuesReferences -q '.closingIssuesReferences[].number'
    ```
    - Should output the issue number
    - If not, **WARN** and fix PR body
 
-6. **Report PR creation:**
+5. **Report PR creation:**
    ```
    ✅ **PR Created:** #$PR_NUM
    📍 URL: <pr_url>
@@ -362,12 +322,6 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
 - Each run checks current state and only acts on what's needed
 - Safe to restart if interrupted - will pick up where it left off
 - Safe to run in parallel with manual changes - will sync and continue
-
-**Update tmux status to "PR maintenance" (using PR number):**
-```bash
-# After PR is created, switch from issue number to PR number
-update_tmux_status "🔧" "pr" "$PR_NUM"
-```
 
 **Order of operations (priority):**
 1. Review comments FIRST (most important - human feedback)
@@ -443,6 +397,8 @@ update_tmux_status "🔧" "pr" "$PR_NUM"
 - Improved error messages for user clarity
 
 Addresses review comment: https://github.com/owner/repo/pull/385#discussion_r123456
+
+#<N> <Issue Title>
 EOF
 )"
    ```
@@ -498,9 +454,6 @@ EOF
    gh pr checks "$PR_NUM" --json name,state,completedAt,workflow \
      --jq '.[] | "\(.name): \(.state) (\(.workflow))"'
 
-   # Update tmux status to "waiting for tests"
-   update_tmux_status "⏳" "pr" "$PR_NUM"
-
    # Wait for all checks to complete, and give up after 60 minutes
    deadline=$(( $(date +%s) + 3600 ))
    timed_out=false
@@ -519,9 +472,6 @@ EOF
      echo "⏳ Checks still running, waiting 30 seconds..."
      sleep 30
    done
-
-   # Return to PR maintenance status
-   update_tmux_status "🔧" "pr" "$PR_NUM"
 
    # After completion, check for failures
    checks_failed=$(gh pr checks "$PR_NUM" --json state --jq '[.[] | select(.state == "FAILURE")] | length')
@@ -586,6 +536,8 @@ EOF
 
 - Fixed clippy warnings in src/main.rs
 - Resolved test failures in authentication module
+
+#<N> <Issue Title>
 EOF
 )"
 
@@ -673,7 +625,8 @@ EOF
    git checkout main
    git pull origin main
    git worktree remove wip/<branch-name>
-   git branch -d <branch-name>
+   # -D: a squash merge leaves the tip outside main, so -d refuses
+   git branch -D <branch-name>
    git worktree prune --verbose
    ```
 

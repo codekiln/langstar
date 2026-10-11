@@ -1,300 +1,72 @@
-# Tmux Window Naming Conventions
+# Tmux Manager/Worker Workflow
 
-This document describes the tmux window naming conventions used in the Langstar project to maximize information density and provide at-a-glance status during development.
+A manager agent in window 0 of a tmux session starts one worker agent per window, and each worker takes one GitHub issue to a merged pull request. The layout follows two of codekiln's AI rules in the `logseq-encode-garden` repository: [My/AI/Rule/Dev/Workflow/Git Worktree PR](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR.md) and [My/AI/Rule/Dev/Workflow/Git Worktree PR/Tmux](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___AI___Rule___Dev___Workflow___Git%20Worktree%20PR___Tmux.md).
 
-## Overview
+The point of the layout: opening the tmux session picker shows everything the agents are working on, one line per agent.
 
-When working with GitHub issues and pull requests in tmux, window names follow a compact format that conveys:
-1. **Current workflow phase** (via emoji)
-2. **Type of work** (issue vs PR)
-3. **GitHub number** (issue # or PR #)
+## Layout
 
-This approach reduces tmux window titles from 50+ characters (full branch names) to 5-7 characters while maintaining clarity.
+| Tmux thing | Rule | Example |
+|------------|------|---------|
+| Session | Named for an area of responsibility: a whole repository, or an area within one | `langstar` |
+| Window 0 | The manager agent, started with `claude -n langstar-manager` | `langstar-manager` |
+| Window 1..n | One worker agent per window, named for its job | `i738-tmux-workflow` |
+| Pane 0 of a window | The agent | `claude -n i738-tmux-workflow` |
 
-## Format
+- At most one agent per window, and the agent is always in the first pane. Other panes (logs, a shell) come after it.
+- The window name tells you what the agent is for. Name the window for the job, for example `i738-tmux-workflow`.
+- Each agent runs `claude -n <name>`, where `<name>` matches its window name. The Claude session name and the window name then identify the same agent.
 
-```
-<emoji><prefix><number>
-```
+## Manager
 
-### Components
+The manager is the agent in window 0. It wakes workers up and puts them to sleep:
 
-| Component | Description | Examples |
-|-----------|-------------|----------|
-| `<emoji>` | Visual indicator of current workflow phase | 💻 🔍 🚀 🔧 ⏳ ❓ 🧹 |
-| `<prefix>` | Type: `i` for issue, `pr` for pull request | `i` `pr` |
-| `<number>` | GitHub issue or PR number | `483` `485` |
+- **Wake a worker:** create a window named for the job, start `claude -n <same name>` in its first pane, and hand it a brief (the issue, the branch name, the finish line).
+- **Put a worker to sleep:** once its PR has merged and it reports done, close its window.
 
-### Complete Examples
+The manager picks the issues, records which worker owns which, and answers worker questions.
 
-| Window Name | Meaning |
-|-------------|---------|
-| `💻i483` | Coding on issue #483 |
-| `🚀i483` | Submitting PR for issue #483 |
-| `🔧pr485` | Maintaining PR #485 |
-| `⏳pr485` | Waiting for CI tests on PR #485 |
-| `🔍i123` | Researching/gathering info for issue #123 |
-| `🧹pr485` | Cleaning up after PR #485 merge |
+## Workers reach the manager with SendMessage
 
-## Phase Emojis
+A worker sends a message to the manager with Claude's `SendMessage` tool, addressed to the manager's name exactly as `ListAgents` prints it. The display name from `claude -n` can differ from that routable name, so a worker looks the manager up with `ListAgents` (or uses the address the manager gave it in its brief) instead of guessing; a guess fails with "No agent named ... is reachable". A worker never uses `tmux send-keys`. `tmux send-keys -t <manager pane>` types into the manager's input box, where the text lands in the middle of whatever the human is typing. `SendMessage` delivers a separate message that the manager reads in turn.
 
-The workflow consists of 7 distinct phases, each with its own emoji:
+Claude Code does not load the `SendMessage` tool until it is asked to. Run `ToolSearch` with the query `select:SendMessage` before the first message.
 
-| Phase | Emoji | When Used | Typical Prefix | Automated By |
-|-------|-------|-----------|----------------|--------------|
-| 1. Gathering information | 🔍 | Research, reading docs, exploring codebase | `i` | Manual |
-| 2. Coding | 💻 | Active development on issue | `i` | `/gh-start-issue` |
-| 3. Waiting for tests | ⏳ | CI/CD checks running | `pr` | `/pr-workflow` |
-| 4. Waiting for user | ❓ | Needs user input or clarification | `i` or `pr` | Manual |
-| 5. Submitting PR | 🚀 | Creating and pushing pull request | `i` | `/pr-workflow` |
-| 6. PR maintenance | 🔧 | Addressing review comments, fixing issues | `pr` | `/pr-workflow` |
-| 7. Cleanup | 🧹 | Post-merge cleanup (delete branch, worktree) | `pr` | Manual |
+## Worker lifecycle
 
-## Prefix Conventions
+1. **Start.** Work from one GitHub issue, in a worktree whose branch name carries the issue (`m<milestone>-p<parent>-i<issue>-<slug>`). See [GitHub Workflow](./github-workflow.md#step-2-branch-creation).
+2. **Commit.** Use Conventional Emoji Commits, with a `#<N> <Issue Title>` line before any trailers. See [Git SCM Conventions](./git-scm-conventions.md#ticket-references).
+3. **Open the PR** with `Fixes #<N>` in the body and the issue's milestone.
+4. **Open it in the browser** (`gh pr view --web`) so codekiln can read it. Then tell the manager the PR is ready with `SendMessage`.
+5. **Answer review comments.** codekiln leaves comments in the browser. The worker fixes each one, pushes, replies to the comment and resolves the thread.
+6. **After merge, clean up.** Sync the root checkout with `git pull --ff-only` on `main`, remove the worktree with `git worktree remove`, delete the local branch, and tell the manager the job is done.
 
-### Issue Prefix: `i`
+The root checkout stays on `main` and clean throughout. A worker never edits or commits there.
 
-Use the `i` prefix when working on a GitHub issue before a PR exists.
+If codekiln asks for tuicr, a terminal tool for reviewing a diff, the worker opens the PR diff in tuicr in a new pane of its own window, after the agent's first pane.
 
-**Examples:**
-- `💻i483` - Coding on issue #483
-- `🔍i256` - Researching solution for issue #256
-- `🚀i483` - About to submit PR for issue #483
+## Stacked PRs
 
-### Pull Request Prefix: `pr`
+When a branch builds on another unmerged branch (its parent):
 
-Use the `pr` prefix once a pull request has been created.
+1. Branch the child from the parent's branch, not from `main`.
+2. Open the child's PR with `--base <parent-branch>`. CI runs on a pull request into any base branch, since [🔧 build(ci): run CI on stacked PRs whose base is not main (#758)](https://github.com/codekiln/langstar/pull/758) merged.
+3. When the parent squash-merges, fetch the merged `main` tip with `git fetch origin`, then rebase the child onto it, dropping the parent's commits: `git rebase --onto origin/main <old-parent-tip>`.
+4. Push the rebased child with `git push --force-with-lease`, so the PR's remote head no longer holds the parent's commits.
+5. Retarget the PR with `gh pr edit --base main`.
 
-**Examples:**
-- `🔧pr485` - Working on feedback for PR #485
-- `⏳pr485` - Waiting for CI checks on PR #485
-- `🧹pr485` - Cleaning up after PR #485 was merged
+## Ready checklist
 
-### Transition from `i` to `pr`
+Open each PR ready for review. When a PR starts as a draft, run `gh pr ready <n>` before reporting it: Copilot does not review drafts, and codekiln reviews only PRs that are ready.
 
-The transition happens automatically when using `/pr-workflow`:
+Ask codekiln to review a PR only after these two steps:
 
-```
-💻i483 (coding)
-  ↓
-🚀i483 (submitting PR)
-  ↓
-🔧pr485 (PR #485 created, now in maintenance mode)
-  ↓
-⏳pr485 (waiting for tests)
-  ↓
-🔧pr485 (back to maintenance after tests complete)
-```
+1. Resolve every Copilot review thread.
+2. Run the `codekiln-review` skill on the PR: `/codekiln-review codekiln/langstar <n>`. It is codekiln's personal skill, installed at `~/.claude/skills/codekiln-review`, not part of this repository.
 
-## Automated Updates
+## Related files
 
-### `/gh-start-issue` Command
-
-When starting work on an issue:
-
-```bash
-/gh-start-issue 483
-```
-
-**Tmux window automatically set to:** `💻i483`
-
-**Rationale:** You're beginning the coding phase on issue #483.
-
-### `/pr-workflow` Command
-
-When creating and managing a PR:
-
-**Phase 1 - Submitting:**
-```bash
-# Before creating PR
-# Tmux: 🚀i483
-```
-
-**Phase 2 - After PR Created:**
-```bash
-# PR #485 created for issue #483
-# Tmux automatically updates to: 🔧pr485
-```
-
-**Phase 3 - During CI:**
-```bash
-# While CI checks are running
-# Tmux: ⏳pr485
-```
-
-**Phase 4 - Back to Maintenance:**
-```bash
-# After CI completes (pass or fail)
-# Tmux: 🔧pr485
-```
-
-## Manual Updates
-
-You can manually update tmux window names when commands don't automatically handle it:
-
-### For Issue Work
-
-```bash
-# Gathering information phase
-ISSUE_NUM=483
-tmux rename-window "🔍i${ISSUE_NUM}"
-
-# Waiting for user input
-tmux rename-window "❓i${ISSUE_NUM}"
-```
-
-### For PR Work
-
-```bash
-# Post-merge cleanup
-PR_NUM=485
-tmux rename-window "🧹pr${PR_NUM}"
-
-# Waiting for user to review
-tmux rename-window "❓pr${PR_NUM}"
-```
-
-## Visual Styling
-
-Window names are styled for maximum visibility and accessibility (WCAG 2.1 Level AAA):
-
-### Active Window
-- **Background:** colour17 `#00005f` (navy blue)
-- **Text:** colour15 (white)
-- **Contrast ratio:** ~12:1 ✓ WCAG AAA
-- **Effect:** Active window (e.g., `💻i483`) appears with navy blue background
-
-### Inactive Windows
-- **Background:** colour235 `#262626` (dark grey)
-- **Text:** colour250 `#bcbcbc` (light grey)
-- **Contrast ratio:** ~10:1 ✓ WCAG AAA
-- **Effect:** Inactive windows have subtle grey appearance
-
-### Pane Borders
-- **Active:** colour39 `#00afff` (bright cyan-blue)
-- **Inactive:** colour240 (dark grey)
-
-Configuration file: `.devcontainer/.tmux.conf`
-
-## Benefits
-
-### 1. Information Density
-- **Old format:** `claude/483-gh-start-issue-and-pr-workflow-tmux-clean-up-pane-` (56 chars)
-- **New format:** `💻i483` (6 chars including emoji)
-- **Space saved:** 50 characters per window
-
-### 2. At-a-Glance Status
-Instantly see:
-- What phase you're in (emoji)
-- Whether it's issue work or PR work (i vs pr)
-- Which GitHub number you're working on
-
-### 3. Context Switching
-When switching between multiple issues/PRs in different tmux windows, the compact format helps you quickly identify which window to switch to.
-
-### 4. Accessibility
-All colors meet WCAG 2.1 Level AAA standards (7:1 contrast minimum), ensuring readability for users with visual impairments.
-
-## Related Files
-
-- `.devcontainer/.tmux.conf` - Tmux configuration with WCAG-compliant colors
-- `.rulesync/skills/gh-start-issue/SKILL.md` - Automatically sets `💻i<num>` when starting issue work
-- `.rulesync/skills/pr-workflow/SKILL.md` - Manages transitions through PR lifecycle phases
-- `.claude/skills/pr-lifecycle/SKILL.md` - Documents PR lifecycle with tmux integration
-
-## Examples from Real Development
-
-### Example 1: Working on Issue #483
-
-```
-# Start working on issue
-/gh-start-issue 483
-# Tmux: 💻i483
-
-# Make changes, commit code
-# Tmux: 💻i483 (still coding)
-
-# Ready to create PR
-/pr-workflow
-# Tmux: 🚀i483 (submitting)
-# PR #485 gets created
-# Tmux: 🔧pr485 (now maintaining PR)
-
-# CI checks start running
-# Tmux: ⏳pr485 (waiting for tests)
-
-# CI completes, need to fix issues
-# Tmux: 🔧pr485 (back to maintenance)
-
-# PR merged, time to clean up
-tmux rename-window "🧹pr485"
-```
-
-### Example 2: Multiple Issues in Parallel
-
-```
-Window 1: 💻i483 (coding on issue 483)
-Window 2: 🔍i490 (researching issue 490)
-Window 3: 🔧pr485 (maintaining PR 485)
-Window 4: ⏳pr487 (waiting for tests on PR 487)
-```
-
-With this setup, you can quickly identify which window contains which work without reading full branch names.
-
-## Troubleshooting
-
-### Window name not updating automatically
-
-**Cause:** Not in a tmux session, or tmux config not loaded.
-
-**Solution:**
-```bash
-# Verify you're in tmux
-echo $TMUX
-
-# Reload tmux config
-tmux source-file ~/.tmux.conf
-
-# Verify symlink exists
-ls -la ~/.tmux.conf
-# Should point to: /workspace/.devcontainer/.tmux.conf
-```
-
-### Colors not showing correctly
-
-**Cause:** Terminal doesn't support 256 colors.
-
-**Solution:**
-```bash
-# Check terminal color support
-echo $TERM
-
-# Should be one of: screen-256color, tmux-256color, xterm-256color
-# If not, add to .tmux.conf:
-set -g default-terminal "screen-256color"
-```
-
-### Can't see emoji in window names
-
-**Cause:** Font doesn't support emoji characters.
-
-**Solution:** Use a font with emoji support:
-- Noto Color Emoji
-- Segoe UI Emoji
-- Apple Color Emoji
-- Or any "Nerd Font" which includes emoji support
-
-## Future Enhancements
-
-Potential future additions to the naming convention:
-
-1. **Branch indicator:** Add prefix for feature vs hotfix branches
-2. **Priority indicator:** Use additional emoji for high-priority work
-3. **Conflict indicator:** Show when merge conflicts need resolution
-4. **Team member indicator:** Show who's working on what (for shared tmux sessions)
-
-## See Also
-
-- [GitHub Workflow Documentation](./github-workflow.md) - Issue-driven development process
-- [Git SCM Conventions](./git-scm-conventions.md) - Commit message conventions
-- [Procedures](./procedures.md) - Detailed operational procedures
+- [GitHub Workflow](./github-workflow.md) - issue-driven development process
+- [Git SCM Conventions](./git-scm-conventions.md) - commit message conventions
+- [Debugging Tests](./testing/debugging-tests.md) - includes `claude --chrome` for LangSmith UI state
+- `.devcontainer/.tmux.conf` - tmux configuration
