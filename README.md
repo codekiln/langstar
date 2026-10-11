@@ -6,7 +6,7 @@
 
 > **⚠️ Alpha Status**: This project is in early development. APIs and features may change. Use with caution.
 
-**Langstar** is a unified CLI for the LangChain ecosystem, providing ergonomic access to LangSmith, LangGraph Cloud, and other LangChain services.
+**Langstar** is a CLI for LangSmith and LangGraph Cloud. Its goal is to cover everything you do there, so you can use one tool instead of choosing among the LangSmith MCP server, the LangSmith CLI and the LangGraph CLI.
 
 ## Features
 
@@ -805,6 +805,18 @@ LangGraph uses deployment-level resources:
 For detailed architecture documentation, see [docs/architecture.md](./docs/architecture.md).
 
 ## Development
+
+### Agent Config
+
+Coding agents read `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. [rulesync](https://github.com/dyoshikawa/rulesync) generates them from `.rulesync/`, and git ignores them. After you clone the repository outside the devcontainer, generate them and install the git hooks that keep them current. In a clone made before rulesync, run the same steps right after the pull that brings it in: that pull deletes the committed `CLAUDE.md` and `AGENTS.md`, and no hook is installed yet to regenerate them.
+
+```bash
+mise install
+"$(mise which lefthook)" install
+"$(mise which rulesync)" generate
+```
+
+The devcontainer runs these steps when it is created.
 
 ### Building
 
