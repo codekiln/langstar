@@ -135,8 +135,8 @@ jobs:
 
           echo "✅ Version validation passed: $TAG_VERSION"
 
-      # prepare-release.yml writes this section with git-cliff, and a maintainer
-      # edits it in the release pull request before merging.
+      # prepare-release.yml writes this version's section of CHANGELOG.md with
+      # git-cliff, and a maintainer edits it in the release pull request before merging.
       - name: Take the release notes from CHANGELOG.md
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
