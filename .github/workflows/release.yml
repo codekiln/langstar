@@ -15,8 +15,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
-# A run started by hand builds the tag it was given, not the branch it was started from,
-# so a fix to this workflow on another branch can rebuild a release that already exists.
+# When someone starts this workflow by hand with `-f tag=<tag>`, every job works on
+# that tag's commit, whichever branch the workflow file came from. A maintainer can
+# then run a corrected copy of this workflow from another branch to rebuild a
+# release that already exists.
 jobs:
   verify-ci:
     name: Verify CI Passed
@@ -133,8 +135,8 @@ jobs:
 
           echo "✅ Version validation passed: $TAG_VERSION"
 
-      # The release notes are the version's section of CHANGELOG.md, which the release
-      # pull request curated, rather than a fresh git-cliff run over every commit.
+      # prepare-release.yml writes this section with git-cliff, and a maintainer
+      # edits it in the release pull request before merging.
       - name: Take the release notes from CHANGELOG.md
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
@@ -148,8 +150,9 @@ jobs:
           fi
           cat CHANGELOG_ENTRY.md
 
-      # A new release starts as a draft for a maintainer to publish. A run that rebuilds
-      # an existing release replaces its notes and leaves its draft and pre-release state alone.
+      # If the tag has no release yet, create a draft for a maintainer to publish.
+      # If it has one, replace only the notes, so rebuilding a published release
+      # doesn't turn it back into a draft.
       - name: Create or update the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -206,9 +209,9 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # rust-toolchain.toml pins the compiler version, so cargo builds with that
-      # toolchain rather than the one the step above installed. rustup adds the
-      # target to the pinned toolchain when it runs inside the checkout.
+      # cargo builds with the Rust version that rust-toolchain.toml pins, not the
+      # stable toolchain the step above installed. Run inside the checkout,
+      # `rustup target add` adds the build target to that pinned version.
       - name: Add the build target to the pinned toolchain
         run: rustup target add ${{ matrix.target }}
 
@@ -268,24 +271,22 @@ jobs:
           sha256sum "$ASSET_NAME.zip" > "$ASSET_NAME.zip.sha256"
           mv "$ASSET_NAME.zip" "$ASSET_NAME.zip.sha256" ../../..
 
+      # `gh release upload` adds or replaces the files and leaves the release's draft
+      # state alone, so a new release stays a draft until a maintainer publishes it.
       - name: Upload release asset (Unix)
         if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.create-release.outputs.tag_name }}
-          files: |
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz.sha256
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSET: langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz
+        run: |
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$ASSET" "$ASSET.sha256" --clobber
 
       - name: Upload release asset (Windows)
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.create-release.outputs.tag_name }}
-          files: |
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip.sha256
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSET: langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip
+        run: |
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$ASSET" "$ASSET.sha256" --clobber
