@@ -81,8 +81,8 @@ The script performs the following steps:
 - Applies `ready` label to next issue
 
 ### Step 7: Create Worktree
-- Generates branch name following project conventions: `claude/<issue_num>-<slug>`
-- Creates worktree at `.worktrees/<branch-name>` (`m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that do not apply)
+- Generates branch name following project conventions: `m<milestone>-p<parent>-i<issue>-<slug>`, dropping the parts that do not apply
+- Creates worktree at `.worktrees/<branch-name>`
 - Checks for existing branches/worktrees
 - Fetches latest main and creates branch from it
 
@@ -147,10 +147,10 @@ Milestone: Feature X
 
 **Branch already exists:**
 ```
-⚠️  Branch claude/NNN-slug already exists
+⚠️  Branch <branch-name> already exists
 ```
-- Delete branch locally: `git branch -D claude/NNN-slug`
-- Delete remotely: `git push origin --delete claude/NNN-slug`
+- Delete branch locally: `git branch -D <branch-name>`
+- Delete remotely: `git push origin --delete <branch-name>`
 
 **No more open issues:**
 ```
@@ -173,7 +173,7 @@ Milestone: Feature X
 ### Example 1: Auto-detect Milestone
 
 ```bash
-# Currently on branch: claude/373-implement-feature
+# Currently on branch: m18-p734-i373-implement-feature
 # Issue #373 is part of milestone "ls-evals-basic"
 
 /gh-milestones-prep-next
