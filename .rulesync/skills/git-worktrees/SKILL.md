@@ -73,7 +73,7 @@ Worktrees go in `.worktrees/` because Logseq and other scanners skip directories
 
 **Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
 
-**Exception:** Claude Desktop stores its worktrees in `.claude/worktrees/` and cannot be pointed elsewhere. That directory is gitignored too.
+**Exception:** Claude Desktop's Worktree location setting keeps worktrees inside the project but cannot be set to `.worktrees/`, so its worktrees live in `.claude/worktrees/` ([My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md)). That directory is gitignored too.
 
 A worktree that one agent keeps for many tasks takes the agent's name, such as `.worktrees/reviewer`.
 
