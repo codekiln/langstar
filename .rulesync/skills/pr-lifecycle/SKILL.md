@@ -473,6 +473,7 @@ Use git-worktrees skill to create proper worktrees before starting work:
 ```bash
 # Create worktree for new issue
 git worktree add -b alice/42-new-feature .worktrees/alice-42-new-feature main
+(cd .worktrees/alice-42-new-feature && mise run worktree:link-secrets)
 ```
 
 ### With `gh-sub-issue` Skill

@@ -470,6 +470,14 @@ class MilestoneWorkflow:
 
         print("   ✓ Worktree created successfully")
 
+        # Share the root checkout's fnox cache with the new worktree
+        link = subprocess.run(
+            ["mise", "run", "worktree:link-secrets"],
+            cwd=worktree_path, capture_output=True, text=True
+        )
+        if link.returncode != 0:
+            print(f"   ⚠️  worktree:link-secrets failed: {link.stderr.strip()}", file=sys.stderr)
+
         return branch_name, worktree_path
 
     def display_summary(self, issue: Dict, branch_name: str, worktree_path: str):

@@ -507,6 +507,7 @@ After creating a worktree, use this skill to run tests:
 ```bash
 # Create worktree (from git-worktrees skill)
 git worktree add -b codekiln/186-test-helpers .worktrees/codekiln-186-test-helpers main
+(cd .worktrees/codekiln-186-test-helpers && mise run worktree:link-secrets)
 
 # Navigate and run tests (from this skill)
 cd .worktrees/codekiln-186-test-helpers

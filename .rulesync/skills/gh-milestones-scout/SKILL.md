@@ -134,6 +134,7 @@ BRANCH="codekiln/${ISSUE_NUM}-${FEATURE_SLUG}-scout"
 REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
 WORKTREE_PATH="${REPO_ROOT}/.worktrees/${BRANCH//\//-}"
 git worktree add -b "$BRANCH" "$WORKTREE_PATH" main
+(cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
 ```
 
 ### 7. Perform Scout Research

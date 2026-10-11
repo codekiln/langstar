@@ -81,10 +81,10 @@ A worktree that one agent keeps for many tasks takes the agent's name, such as `
 
 ### Link secrets after creating a worktree
 
-Run `mise run worktree:link-secrets` from the new worktree right after `git worktree add`.
+Right after `git worktree add`, run `mise run worktree:link-secrets` with the new worktree as the working directory. Run from the root checkout, it links nothing.
 
 ```bash
-mise run worktree:link-secrets
+(cd <path> && mise run worktree:link-secrets)
 ```
 
 The task makes the worktree's `fnox.local.toml` a link to the root checkout's copy, so every worktree reads the same locally stored secrets and nobody signs in to 1Password again in each new worktree.
@@ -190,6 +190,7 @@ WORKTREE_PATH=".worktrees/i130-add-authentication"
 
 # Step 3: Create worktree
 git worktree add -b $BRANCH_NAME $WORKTREE_PATH $TARGET_BRANCH
+(cd $WORKTREE_PATH && mise run worktree:link-secrets)
 
 # Step 4: Navigate to worktree
 cd $WORKTREE_PATH
@@ -230,6 +231,7 @@ BRANCH_NAME="codekiln/135-implement-jwt"
 WORKTREE_PATH=".worktrees/codekiln-135-implement-jwt"
 
 git worktree add -b $BRANCH_NAME $WORKTREE_PATH $PARENT_BRANCH
+(cd $WORKTREE_PATH && mise run worktree:link-secrets)
 
 # Step 5: Link issues (if not already linked)
 gh sub-issue add 130 135
@@ -315,6 +317,7 @@ gh sub-issue list 135 --relation parent
 **Create worktree and link:**
 ```bash
 git worktree add -b codekiln/135-jwt .worktrees/codekiln-135-jwt codekiln/130-add-authentication
+(cd .worktrees/codekiln-135-jwt && mise run worktree:link-secrets)
 gh sub-issue add 130 135  # Link if not already linked
 ```
 
@@ -327,6 +330,7 @@ After breaking down epic into sub-issues, create worktrees from parent branch:
 git worktree add -b codekiln/100-auth .worktrees/codekiln-100-auth main
 git worktree add -b codekiln/101-research .worktrees/codekiln-101-research codekiln/100-auth
 git worktree add -b codekiln/102-implement .worktrees/codekiln-102-implement codekiln/100-auth
+for w in codekiln-100-auth codekiln-101-research codekiln-102-implement; do (cd .worktrees/$w && mise run worktree:link-secrets); done
 ```
 
 ### With Project GitHub Workflow
@@ -454,6 +458,7 @@ gh sub-issue list 135 --relation parent
 
 # Create worktree
 git worktree add -b codekiln/135-jwt .worktrees/codekiln-135-jwt codekiln/130-auth
+(cd .worktrees/codekiln-135-jwt && mise run worktree:link-secrets)
 
 # Work and push
 cd .worktrees/codekiln-135-jwt
