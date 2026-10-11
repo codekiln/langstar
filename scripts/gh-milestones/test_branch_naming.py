@@ -244,7 +244,7 @@ def test_worktree_path_generation():
 
 
 def test_issue_number_from_branch():
-    """Milestone auto-detection reads both branch formats."""
+    """`issue_number_from_branch` returns the issue number from `m<milestone>-p<parent>-i<issue>-<slug>` branch names and from the older `user/<issue>-<slug>` names, and None for any other name."""
     print("\nTest 9: Issue number from the current branch")
     print("-" * 60)
 

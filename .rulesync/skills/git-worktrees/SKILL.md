@@ -73,7 +73,7 @@ Worktrees go in `.worktrees/` because Logseq and other scanners skip directories
 
 **Naming:** name the directory after the branch: drop a leading branch-type prefix (`feature/`, `fix/`, `docs/`), then replace each remaining `/` with `-`. Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
 
-**Exception:** Claude Desktop's Worktree location setting keeps worktrees inside the project but cannot be set to `.worktrees/`, so its worktrees live in `.claude/worktrees/` ([My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md)). That directory is gitignored too.
+Claude Desktop puts its worktrees in `.claude/worktrees/` instead of `.worktrees/`, because its Worktree location setting cannot be set to `.worktrees/` ([My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md)). That directory is gitignored too.
 
 A worktree that one agent keeps for many tasks takes the agent's name, such as `.worktrees/reviewer`.
 
@@ -102,7 +102,7 @@ Creates a new worktree with a new branch based on the specified target branch.
 git worktree add -b <branch-name> .worktrees/<directory-name> <target-branch>
 ```
 
-`<directory-name>` follows the Naming rule above: drop a leading branch-type prefix (`feature/`, `fix/`, `docs/`), then replace each remaining `/` with `-`. Branch `feature/add-auth` gets `.worktrees/add-auth`, and branch `codekiln/130-add-auth` gets `.worktrees/codekiln-130-add-auth`.
+`<directory-name>` is the directory name the Naming rule above gives. Branch `feature/add-auth` gets `.worktrees/add-auth`, and branch `codekiln/130-add-auth` gets `.worktrees/codekiln-130-add-auth`.
 
 **Examples:**
 ```bash

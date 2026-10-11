@@ -43,10 +43,18 @@ def link_secrets(worktree_path: str) -> bool:
     try:
         result = subprocess.run(["mise", "run", "worktree:link-secrets"], cwd=worktree_path)
     except OSError as error:
-        print(f"   ⚠️  worktree:link-secrets could not run: {error}", file=sys.stderr)
+        print(
+            f"   ⚠️  worktree:link-secrets could not run: {error}, so this worktree has no link to the shared fnox.local.toml."
+            " Fix the error above, then run `mise run worktree:link-secrets` inside the worktree.",
+            file=sys.stderr,
+        )
         return False
     if result.returncode != 0:
-        print("   ⚠️  worktree:link-secrets failed", file=sys.stderr)
+        print(
+            "   ⚠️  worktree:link-secrets failed, so this worktree has no link to the shared fnox.local.toml."
+            " Fix the error above, then run `mise run worktree:link-secrets` inside the worktree.",
+            file=sys.stderr,
+        )
         return False
     return True
 
