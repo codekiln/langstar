@@ -69,7 +69,7 @@ Issue #999 (child of #666)
 
 The `.worktrees/` directory is already configured in `.gitignore`, keeping worktrees out of version control.
 
-Logseq and other scanners skip directories whose names start with a dot, and one `.worktrees/` directory holds the worktrees of every tool. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
+Worktrees go in `.worktrees/` because Logseq and other scanners skip directories whose names start with a dot. Preference: [My/Pref/Dev/Tool/git/Worktree](https://github.com/codekiln/logseq-encode-garden/blob/main/pages/My___Pref___Dev___Tool___git___Worktree.md).
 
 **Naming:** name the directory after the branch, replacing `/` with `-` and dropping any branch-type prefix (`feature/`, `fix/`, `docs/`). Branches named `m<milestone>-p<parent>-i<issue>-<slug>` have no slash, so the directory name equals the branch name.
 
