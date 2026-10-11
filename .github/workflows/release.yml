@@ -15,6 +15,8 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+# A run started by hand builds the tag it was given, not the branch it was started from,
+# so a fix to this workflow on another branch can rebuild a release that already exists.
 jobs:
   verify-ci:
     name: Verify CI Passed
@@ -23,7 +25,7 @@ jobs:
       - name: Wait for Check job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Check'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -32,7 +34,7 @@ jobs:
       - name: Wait for Test job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Test'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -41,7 +43,7 @@ jobs:
       - name: Wait for Clippy job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Clippy'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -50,7 +52,7 @@ jobs:
       - name: Wait for Build jobs
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-regexp: 'Build \(.*\)'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -64,6 +66,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -88,15 +92,13 @@ jobs:
     permissions:
       contents: write
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
       tag_name: ${{ steps.get_version.outputs.tag_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for changelog generation
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Get version from tag
         id: get_version
@@ -131,31 +133,36 @@ jobs:
 
           echo "✅ Version validation passed: $TAG_VERSION"
 
-      - name: Install git-cliff
-        uses: taiki-e/install-action@v2
-        with:
-          tool: git-cliff
-
-      - name: Generate changelog
-        id: changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The release notes are the version's section of CHANGELOG.md, which the release
+      # pull request curated, rather than a fresh git-cliff run over every commit.
+      - name: Take the release notes from CHANGELOG.md
         run: |
-          git-cliff --latest --strip header > CHANGELOG_ENTRY.md
-          echo "Changelog generated:"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          awk -v heading="## [$VERSION]" '
+            /^## \[/ { if (found) exit; if (index($0, heading) == 1) found = 1 }
+            found
+          ' CHANGELOG.md > CHANGELOG_ENTRY.md
+          if [ ! -s CHANGELOG_ENTRY.md ]; then
+            echo "❌ CHANGELOG.md has no section headed '## [$VERSION]'" >&2
+            exit 1
+          fi
           cat CHANGELOG_ENTRY.md
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.get_version.outputs.tag_name }}
-          name: Release ${{ steps.get_version.outputs.tag_name }}
-          body_path: CHANGELOG_ENTRY.md
-          draft: true
-          prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-alpha') || contains(steps.get_version.outputs.tag_name, '-beta') || contains(steps.get_version.outputs.tag_name, '-rc') }}
+      # A new release starts as a draft for a maintainer to publish. A run that rebuilds
+      # an existing release replaces its notes and leaves its draft and pre-release state alone.
+      - name: Create or update the GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.get_version.outputs.tag_name }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file CHANGELOG_ENTRY.md
+          else
+            PRERELEASE=()
+            case "$TAG" in *-alpha*|*-beta*|*-rc*) PRERELEASE=(--prerelease) ;; esac
+            gh release create "$TAG" --verify-tag --draft --title "Release $TAG" \
+              --notes-file CHANGELOG_ENTRY.md "${PRERELEASE[@]}"
+          fi
 
   build-release:
     name: Build ${{ matrix.target }}
@@ -193,11 +200,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      # rust-toolchain.toml pins the compiler version, so cargo builds with that
+      # toolchain rather than the one the step above installed. rustup adds the
+      # target to the pinned toolchain when it runs inside the checkout.
+      - name: Add the build target to the pinned toolchain
+        run: rustup target add ${{ matrix.target }}
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
