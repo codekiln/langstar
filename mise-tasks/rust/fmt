@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Format the workspace with cargo fmt"
+set -euo pipefail
+
+cargo fmt

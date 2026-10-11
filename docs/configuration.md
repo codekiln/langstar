@@ -78,6 +78,16 @@ The configuration file is located at:
 - **macOS and Linux**: `~/.config/langstar/config.toml`
 - **Windows**: `%APPDATA%\langstar\config.toml`
 
+#### Moving a config file from before v2.2.0 on macOS
+
+Before v2.2.0, langstar on macOS kept its config file at `~/Library/Application Support/langstar/config.toml`. If `~/.config/langstar/config.toml` doesn't exist, langstar still reads the old file and, every time it runs, prints a warning with the command that moves it:
+
+```bash
+mkdir -p ~/.config/langstar && mv ~/Library/Application\ Support/langstar/config.toml ~/.config/langstar/config.toml
+```
+
+Once `~/.config/langstar/config.toml` exists, langstar reads only that file. `langstar config <key> set` creates it as a copy of the old file, so your other settings carry over. `langstar config create` writes a fresh file with the defaults instead.
+
 To create a config file with all available options, run:
 ```bash
 langstar config create
@@ -468,7 +478,6 @@ Authentication and scoping:
   langsmith_api_key: lsv2_sk_ab... (from env: LANGSMITH_API_KEY)
   organization_id: <your-org-id> (from config file)
   workspace_id: <your-workspace-id> (from config file)
-  github_integration_id: not set
 
   Active scope: Workspace (narrower)
   → Operations will be scoped to the workspace

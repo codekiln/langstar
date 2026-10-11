@@ -1,0 +1,9 @@
+# Same version as `rust` in mise.toml, so rustup users, mise users and CI
+# build with one compiler. The workspace needs Rust 1.89 or newer (uuid 1.27's
+# minimum), and the code uses let-chains (`if let ... && ...`), which older
+# compilers reject.
+[toolchain]
+channel = "1.99.0"
+# CI installs clippy and rustfmt for `stable`, and this file switches cargo to
+# 1.99.0, so the components must be named here for rustup to fetch them.
+components = ["clippy", "rustfmt"]

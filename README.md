@@ -808,7 +808,7 @@ For detailed architecture documentation, see [docs/architecture.md](./docs/archi
 
 ### Agent Config
 
-Coding agents read `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. [rulesync](https://github.com/dyoshikawa/rulesync) generates them from `.rulesync/`, and git ignores them. After you clone the repository outside the devcontainer, generate them and install the git hooks that keep them current:
+Coding agents read `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skills/`. [rulesync](https://github.com/dyoshikawa/rulesync) generates them from `.rulesync/`, and git ignores them. After you clone the repository outside the devcontainer, generate them and install the git hooks that keep them current. In a clone made before rulesync, run the same steps right after the pull that brings it in: that pull deletes the committed `CLAUDE.md` and `AGENTS.md`, and no hook is installed yet to regenerate them.
 
 ```bash
 mise install

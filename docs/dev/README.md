@@ -10,7 +10,7 @@ This directory contains instructions and conventions for developing the Langstar
 - [Git SCM Conventions](./git-scm-conventions.md) - Guidelines for commit messages and version control practices
 - [Feature Development Process](./feature-development-process.md) - **Standard 8-phase process** for API → CLI features (includes OpenAPI spec management pattern)
 - [Procedures & Troubleshooting](./procedures.md) - Detailed step-by-step procedures and operational guides
-- [Tmux Naming Conventions](./tmux-naming-conventions.md) - Window naming format for issue/PR workflow phases with emoji status indicators
+- [Tmux Manager/Worker Workflow](./tmux-naming-conventions.md) - Session and window layout for the manager agent and its workers, and the worker's PR lifecycle
 - [Testing Standards](./testing/README.md) - Progressive disclosure TOC
 
 ## Purpose
@@ -143,12 +143,10 @@ When working on multi-phase features, **always review prerequisite phases before
 **Always run these checks locally before committing** to catch issues before CI fails:
 
 ```bash
-cargo fmt && \
-cargo check --workspace --all-features && \
-cargo clippy --workspace --all-features -- -D warnings && \
-cargo nextest run --profile ci --all-features --workspace && \
-cargo fmt --check
+mise run check
 ```
+
+On your own computer, start the test step with `fnox exec --` so the integration tests get the LangSmith credentials: `fnox exec -- cargo nextest run --profile ci --all-features --workspace`. See [Loading the Variables Locally](./environment-variables.md#loading-the-variables-locally). In the devcontainer, `.devcontainer/.env` already sets them.
 
 **Critical points:**
 - Test at **workspace level** (not just individual crates)

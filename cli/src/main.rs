@@ -97,6 +97,14 @@ async fn main() {
 async fn run() -> Result<()> {
     let cli = Cli::parse();
 
+    // `config` commands don't use the output format, and they are how a user
+    // finds and fixes an unsupported one in the config file, so run them
+    // before the configured format is parsed
+    let command = match cli.command {
+        Commands::Config(config_cmd) => return config_cmd.execute(),
+        command => command,
+    };
+
     // Load configuration
     let config = Config::load()?;
 
@@ -108,7 +116,7 @@ async fn run() -> Result<()> {
     };
 
     // Execute command
-    match cli.command {
+    match command {
         Commands::Prompt(prompt_cmd) => {
             prompt_cmd.execute(&config, format).await?;
         }
@@ -142,8 +150,8 @@ async fn run() -> Result<()> {
         Commands::Secrets(secrets_cmd) => {
             secrets_cmd.execute(&config, format).await?;
         }
-        Commands::Config(config_cmd) => {
-            config_cmd.execute()?;
+        Commands::Config(_) => {
+            unreachable!("config commands run before the output format is parsed")
         }
         Commands::Version => {
             println!("langstar {}", env!("CARGO_PKG_VERSION"));

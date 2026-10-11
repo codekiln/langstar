@@ -81,7 +81,7 @@ A worktree that one agent keeps for many tasks takes the agent's name, such as `
 
 ### Link secrets after creating a worktree
 
-Run `mise run worktree:link-secrets` from the new worktree right after `git worktree add`. The task comes from the pull request that closes [#740 Load LangSmith secrets through the fnox golden path with 1Password](https://github.com/codekiln/langstar/issues/740); until that pull request merges, skip this step.
+Run `mise run worktree:link-secrets` from the new worktree right after `git worktree add`.
 
 ```bash
 mise run worktree:link-secrets

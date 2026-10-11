@@ -1,5 +1,7 @@
 use assert_cmd::Command;
-use escargot::CargoBuild;
+#[path = "common/home.rs"]
+mod home;
+
 use predicates::prelude::*;
 
 /// CLI Integration tests for text output format (`-f text`) with column selection
@@ -27,13 +29,9 @@ use predicates::prelude::*;
 /// Reference: Issue #587, Parent #584
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
-    let bin = CargoBuild::new()
-        .bin("langstar")
-        .run()
-        .expect("Failed to build langstar binary")
-        .path()
-        .to_owned();
-    Command::new(bin)
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("HOME", home::empty_home());
+    cmd
 }
 
 /// Helper function to get organization ID from environment
@@ -50,7 +48,7 @@ fn test_prompt_list_text_output_basic() {
     // Test basic text output format with all columns
     let org_id = get_org_id();
 
-    println!("Testing prompt list -f text with org ID: {}", org_id);
+    println!("Testing prompt list -f text with organization ID set");
 
     let mut cmd = langstar_cmd();
     cmd.args([

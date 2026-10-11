@@ -1,14 +1,16 @@
 # Getting Started
 
-This guide covers setting up the Langstar development environment for first-time contributors. The project uses devcontainers for consistent development environments across different IDEs and platforms.
+This guide covers setting up the Langstar development environment for first-time contributors. The primary path is the host machine, with [mise](https://mise.jdx.dev) for tools and [fnox](https://fnox.jdx.dev) for LangSmith secrets. Devcontainers and Codespaces remain available as a secondary path.
 
 ## Prerequisites
 
-- Docker Desktop installed and running (local development)
-- One of:
-  - VS Code with Dev Containers extension
-  - JetBrains IDE with Gateway/Remote Development
-  - GitHub account (for Codespaces)
+- Host machine (primary): Rust 1.89 or newer (`rustc --version` shows yours, and `rustup update stable` installs it), [mise](https://mise.jdx.dev), and access to the 1Password vault that holds the LangSmith test credentials
+- Devcontainer (secondary):
+  - Docker Desktop installed and running (local development)
+  - One of:
+    - VS Code with Dev Containers extension
+    - JetBrains IDE with Gateway/Remote Development
+    - GitHub account (for Codespaces)
 
 ## Quick Start by Environment
 
@@ -16,13 +18,60 @@ Choose your development environment:
 
 | Environment | Setup Time | Best For |
 |-------------|-----------|----------|
-| [GitHub Codespaces](#github-codespaces) | ~5 min | Quick start, no local setup |
-| [VS Code Devcontainer](#vs-code-devcontainer) | ~10 min | Full-featured local development |
-| [JetBrains Devcontainer](#jetbrains-devcontainer) | ~10 min | RustRover, IntelliJ users |
+| [Host machine with fnox](#host-machine-with-fnox) | ~10 min | Primary path. Worktrees, local integration tests |
+| [GitHub Codespaces](#github-codespaces-secondary) | ~5 min | Quick start, no local setup |
+| [VS Code Devcontainer](#vs-code-devcontainer-secondary) | ~10 min | Full-featured local development |
+| [JetBrains Devcontainer](#jetbrains-devcontainer-secondary) | ~10 min | RustRover, IntelliJ users |
 
 ---
 
-## GitHub Codespaces
+## Host Machine with fnox
+
+LangSmith credentials stay in 1Password. The committed `fnox.toml` holds only references, and `fnox sync` keeps an age-encrypted copy in a gitignored `fnox.local.toml`. [environment-variables.md](./environment-variables.md#loading-the-variables-locally) explains each step and how to share one cache across worktrees.
+
+### Step 1: Install the Tools
+
+Add mise to your shell first, so the tools it installs are on `PATH`. For zsh, add this line to `~/.zshrc`, then open a new terminal (use `bash` and `~/.bashrc` for bash). See [mise: activate](https://mise.jdx.dev/getting-started.html#activate-mise).
+
+```bash
+eval "$(mise activate zsh)"
+```
+
+Then install the tools:
+
+```bash
+mise install   # installs every tool pinned in mise.toml
+op signin      # or turn on the 1Password desktop app integration
+```
+
+### Step 2: One-Time Machine Setup
+
+Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.
+
+### Step 3: Point fnox at Your Vault and Sync
+
+Run these commands in the main clone:
+
+```bash
+cp fnox.local.toml.example fnox.local.toml
+"${EDITOR:-vi}" fnox.local.toml               # set vault = "<your-1password-vault>"
+fnox sync --provider sync-age --local-file
+fnox check --all
+```
+
+In each worktree, run `mise run worktree:link-secrets` right after `git worktree add`, so every worktree reads the same cache.
+
+### Step 4: Verify Setup
+
+```bash
+fnox exec -- cargo nextest run --profile ci --all-features --workspace
+```
+
+After a credential rotates in 1Password, run `fnox sync --provider sync-age --local-file --force`.
+
+---
+
+## GitHub Codespaces (secondary)
 
 The fastest way to get started. No local Docker installation required.
 
@@ -71,7 +120,7 @@ cargo check --workspace
 
 ---
 
-## VS Code Devcontainer
+## VS Code Devcontainer (secondary)
 
 For local development with full Docker support.
 
@@ -138,7 +187,7 @@ VS Code offers a streamlined workflow that handles cloning automatically:
 
 ---
 
-## JetBrains Devcontainer
+## JetBrains Devcontainer (secondary)
 
 For RustRover, IntelliJ IDEA, and other JetBrains IDEs.
 
@@ -201,6 +250,8 @@ See `.devcontainer/docker-compose.override.yml.template` for detailed instructio
 ## Understanding the Architecture
 
 ### Secrets Flow
+
+On a host machine, fnox loads the LangSmith secrets (see [Host Machine with fnox](#host-machine-with-fnox)). The diagram below shows the devcontainer path.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐

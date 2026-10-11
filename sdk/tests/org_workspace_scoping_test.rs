@@ -23,23 +23,21 @@ async fn test_org_id_from_environment() {
 
     // Load auth from environment
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
-    assert_eq!(
-        auth.organization_id,
-        Some(org_id.clone()),
+    assert!(
+        auth.organization_id == Some(org_id.clone()),
         "AuthConfig should load organization_id from environment"
     );
 
     // Create client and verify org_id is set
     let client = LangchainClient::new(auth).expect("Failed to create client");
-    assert_eq!(
-        client.organization_id(),
-        Some(org_id.as_str()),
+    assert!(
+        client.organization_id() == Some(org_id.as_str()),
         "Client should have organization_id set"
     );
 
     // Make API call to verify headers are sent correctly
     // We'll list prompts as a simple test that exercises the headers
-    println!("Testing API call with organization ID: {}", org_id);
+    println!("✓ Organization ID set");
     let result = client.prompts().list(Some(5), None, None).await;
 
     match result {
@@ -70,22 +68,20 @@ async fn test_workspace_id_from_environment() {
 
     // Load auth from environment
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
-    assert_eq!(
-        auth.workspace_id,
-        Some(workspace_id.clone()),
+    assert!(
+        auth.workspace_id == Some(workspace_id.clone()),
         "AuthConfig should load workspace_id from environment"
     );
 
     // Create client and verify workspace_id is set
     let client = LangchainClient::new(auth).expect("Failed to create client");
-    assert_eq!(
-        client.workspace_id(),
-        Some(workspace_id.as_str()),
+    assert!(
+        client.workspace_id() == Some(workspace_id.as_str()),
         "Client should have workspace_id set"
     );
 
     // Make API call to verify headers are sent correctly
-    println!("Testing API call with workspace ID: {}", workspace_id);
+    println!("✓ Workspace ID set");
     let result = client.prompts().list(Some(5), None, None).await;
 
     match result {
@@ -118,14 +114,12 @@ async fn test_both_org_and_workspace_ids() {
 
     // Load auth from environment
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
-    assert_eq!(
-        auth.organization_id,
-        Some(org_id.clone()),
+    assert!(
+        auth.organization_id == Some(org_id.clone()),
         "AuthConfig should load organization_id from environment"
     );
-    assert_eq!(
-        auth.workspace_id,
-        Some(workspace_id.clone()),
+    assert!(
+        auth.workspace_id == Some(workspace_id.clone()),
         "AuthConfig should load workspace_id from environment"
     );
 
@@ -134,10 +128,7 @@ async fn test_both_org_and_workspace_ids() {
 
     // Per Phase 1 research findings, both headers should be sent together
     // x-organization-id and X-Tenant-Id (workspace_id)
-    println!(
-        "Testing API call with both org ID ({}) and workspace ID ({})",
-        org_id, workspace_id
-    );
+    println!("✓ Organization ID and workspace ID set");
 
     let result = client.prompts().list(Some(5), None, None).await;
 
@@ -168,16 +159,13 @@ async fn test_visibility_filtering_default_private_when_scoped() {
     // This test verifies Phase 4 requirement:
     // When scoped (org or workspace ID set), default to private prompts
 
-    let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
 
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
-    println!(
-        "Testing default visibility (should be Private) with org ID: {}",
-        org_id
-    );
+    println!("Testing default visibility (should be Private) with organization ID set");
 
     // Call list with None visibility - should default to Private when scoped
     let result = client.prompts().list(Some(20), None, None).await;
@@ -211,16 +199,13 @@ async fn test_visibility_filtering_default_private_when_scoped() {
 
 #[tokio::test]
 async fn test_visibility_filtering_explicit_private() {
-    let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
 
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
-    println!(
-        "Testing explicit Private visibility with org ID: {}",
-        org_id
-    );
+    println!("Testing explicit Private visibility with organization ID set");
 
     // Explicitly request private prompts
     let result = client
@@ -249,13 +234,13 @@ async fn test_visibility_filtering_explicit_private() {
 
 #[tokio::test]
 async fn test_visibility_filtering_explicit_public() {
-    let org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+    std::env::var("LANGSMITH_ORGANIZATION_ID")
         .expect("LANGSMITH_ORGANIZATION_ID must be set for this test");
 
     let auth = AuthConfig::from_env().expect("Failed to load auth from environment");
     let client = LangchainClient::new(auth).expect("Failed to create client");
 
-    println!("Testing explicit Public visibility with org ID: {}", org_id);
+    println!("Testing explicit Public visibility with organization ID set");
 
     // Explicitly request public prompts
     let result = client
@@ -304,9 +289,8 @@ async fn test_with_organization_id_builder() {
 
     // Add org ID using builder
     let client = client.with_organization_id(org_id.clone());
-    assert_eq!(
-        client.organization_id(),
-        Some(org_id.as_str()),
+    assert!(
+        client.organization_id() == Some(org_id.as_str()),
         "Client should have org ID after with_organization_id"
     );
 
@@ -338,9 +322,8 @@ async fn test_with_workspace_id_builder() {
 
     // Add workspace ID using builder
     let client = client.with_workspace_id(workspace_id.clone());
-    assert_eq!(
-        client.workspace_id(),
-        Some(workspace_id.as_str()),
+    assert!(
+        client.workspace_id() == Some(workspace_id.as_str()),
         "Client should have workspace ID after with_workspace_id"
     );
 

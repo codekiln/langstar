@@ -38,6 +38,10 @@ pub enum LangstarError {
     #[error("Invalid structured output method: {0}. Valid methods: json_schema, function_calling")]
     InvalidMethodError(String),
 
+    /// Every GitHub integration listed its repositories, and none includes this one
+    #[error("No GitHub integration has access to {owner}/{repo}")]
+    NoGitHubIntegrationForRepo { owner: String, repo: String },
+
     /// Invalid input provided
     #[error("Invalid input: {0}")]
     InvalidInput(String),

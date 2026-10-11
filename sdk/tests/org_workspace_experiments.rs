@@ -30,16 +30,50 @@ async fn make_request_with_headers(
     let mut request = client.http_client().get(&url).header("x-api-key", api_key);
 
     if let Some(org) = org_id {
-        println!("  Adding x-organization-id: {}", org);
+        println!("  Adding x-organization-id header");
         request = request.header("x-organization-id", org);
     }
 
     if let Some(ws) = workspace_id {
-        println!("  Adding X-Tenant-Id: {}", ws);
+        println!("  Adding X-Tenant-Id header");
         request = request.header("X-Tenant-Id", ws);
     }
 
     Ok(request.send().await?)
+}
+
+/// Replace each ID in `sent` with the label paired with it, such as
+/// `<org-id>`, and any other UUID with `<uuid>`, so a test can print a
+/// `/repos` error body without putting an ID in the JUnit file CI uploads.
+fn redact_ids(body: &str, sent: &[(&str, &str)]) -> String {
+    let mut redacted = body.to_string();
+    for (value, label) in sent {
+        redacted = redacted.replace(value, label);
+    }
+    let uuid =
+        regex::Regex::new(r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+            .expect("UUID pattern compiles");
+    uuid.replace_all(&redacted, "<uuid>").into_owned()
+}
+
+/// Run `redact_ids` on an error body that names both sent IDs and another
+/// UUID. The experiments call it only when the API rejects a request, which a
+/// healthy API never does.
+#[test]
+fn test_redact_ids_replaces_sent_ids_and_other_uuids() {
+    let org = "11111111-1111-1111-1111-111111111111";
+    let ws = "22222222-2222-2222-2222-222222222222";
+    let other = "3333AAAA-3333-3333-3333-333333333333";
+    let body = format!(
+        r#"{{"detail":"workspace {ws} is not in organization {org}","tenant_id":"{other}"}}"#
+    );
+
+    let redacted = redact_ids(&body, &[(org, "<org-id>"), (ws, "<workspace-id>")]);
+
+    assert_eq!(
+        redacted,
+        r#"{"detail":"workspace <workspace-id> is not in organization <org-id>","tenant_id":"<uuid>"}"#
+    );
 }
 
 /// Test 1: Request with x-organization-id header only
@@ -66,11 +100,7 @@ async fn test_org_id_header_only() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
-    println!(
-        "Organization name: {}",
-        org.display_name.unwrap_or_default()
-    );
+    println!("✓ Organization resolved");
 
     // Make a request to list prompts with only org ID header
     println!("\nMaking request with x-organization-id only...");
@@ -79,18 +109,15 @@ async fn test_org_id_header_only() {
         .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
         println!("\n✓ SUCCESS: API accepts x-organization-id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!(
+            "Error response: {}",
+            redact_ids(&body, &[(org_id, "<org-id>")])
+        );
         println!("\n✗ FAILED: API rejected x-organization-id header");
     }
 }
@@ -124,7 +151,7 @@ async fn test_workspace_id_header_only() {
     }
 
     let workspace_id = workspace_id.unwrap();
-    println!("Workspace ID: {}", workspace_id);
+    println!("✓ Workspace ID set");
 
     // Make a request to list prompts with only workspace ID header
     println!("\nMaking request with X-Tenant-Id only...");
@@ -134,18 +161,15 @@ async fn test_workspace_id_header_only() {
             .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
         println!("\n✓ SUCCESS: API accepts X-Tenant-Id header");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!(
+            "Error response: {}",
+            redact_ids(&body, &[(&workspace_id, "<workspace-id>")])
+        );
         println!("\n✗ FAILED: API rejected X-Tenant-Id header");
     }
 }
@@ -177,7 +201,7 @@ async fn test_both_headers() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
+    println!("✓ Organization resolved");
 
     // Get workspace ID from environment
     let workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID").ok();
@@ -189,7 +213,7 @@ async fn test_both_headers() {
     }
 
     let workspace_id = workspace_id.unwrap();
-    println!("Workspace ID: {}", workspace_id);
+    println!("✓ Workspace ID set");
 
     // Make a request with both headers
     println!("\nMaking request with both headers...");
@@ -203,19 +227,19 @@ async fn test_both_headers() {
     .expect("Request failed");
 
     println!("Response status: {}", response.status());
-    println!("Response headers: {:#?}", response.headers());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
         println!("\n✓ SUCCESS: API accepts both headers");
         println!("  NOTE: Need to determine which header takes precedence");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!(
+            "Error response: {}",
+            redact_ids(
+                &body,
+                &[(org_id, "<org-id>"), (&workspace_id, "<workspace-id>")]
+            )
+        );
         println!("\n✗ FAILED: API rejected the header combination");
     }
 }
@@ -246,7 +270,7 @@ async fn test_mismatched_ids() {
         .as_ref()
         .expect("Organization must have an ID")
         .as_str();
-    println!("Organization ID: {}", org_id);
+    println!("✓ Organization resolved");
 
     // Use a fake/mismatched workspace ID
     let fake_workspace_id = "00000000-0000-0000-0000-000000000000";
@@ -265,10 +289,20 @@ async fn test_mismatched_ids() {
 
     let status = response.status();
     println!("Response status: {}", status);
-    println!("Response headers: {:#?}", response.headers());
 
-    let body = response.text().await.unwrap();
-    println!("Response body: {}", body);
+    if status != StatusCode::OK {
+        let body = response.text().await.unwrap();
+        println!(
+            "Error response: {}",
+            redact_ids(
+                &body,
+                &[
+                    (org_id, "<org-id>"),
+                    (fake_workspace_id, "<fake-workspace-id>")
+                ]
+            )
+        );
+    }
 
     match status {
         StatusCode::BAD_REQUEST | StatusCode::FORBIDDEN | StatusCode::NOT_FOUND => {
@@ -306,16 +340,11 @@ async fn test_no_headers_baseline() {
     println!("Response status: {}", response.status());
 
     if response.status().is_success() {
-        let body = response.text().await.unwrap();
-        println!(
-            "Response body (first 500 chars): {}",
-            &body[..body.len().min(500)]
-        );
         println!("\n✓ SUCCESS: Baseline request works");
         println!("  This shows what results are returned without scoping");
     } else {
         let body = response.text().await.unwrap();
-        println!("Error response: {}", body);
+        println!("Error response: {}", redact_ids(&body, &[]));
         println!("\n✗ FAILED: Even baseline request failed");
     }
 }

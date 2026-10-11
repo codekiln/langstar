@@ -1,9 +1,8 @@
-#!/bin/bash
-#
-# Cleanup worktrees tied to closed GitHub issues
+#!/usr/bin/env bash
+#MISE description="Remove worktrees whose GitHub issue is closed"
 #
 # Usage:
-#   ./cleanup-closed-issue-worktrees.sh
+#   mise run worktree:cleanup
 #
 # Requirements:
 #   - GitHub CLI (gh) must be installed and authenticated

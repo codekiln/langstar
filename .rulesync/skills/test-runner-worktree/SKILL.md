@@ -391,8 +391,8 @@ cargo test --test integration_deployment_workflow test_deployment_workflow -- --
 # Save PID
 echo $! > test_pid.txt
 
-# Monitor progress
-tail -f test_output.log
+# Check progress: print the last lines, and run it again until the tests finish
+tail -n 50 test_output.log
 ```
 
 ## Troubleshooting
