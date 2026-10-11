@@ -22,6 +22,16 @@ from typing import Optional, Dict, List, Tuple
 
 
 
+def issue_number_from_branch(branch_name: str) -> Optional[int]:
+    """Return the issue number in a branch name, or None.
+
+    Reads `m<milestone>-p<parent>-i<issue>-<slug>` (the `i<issue>` part) and the
+    legacy `user/<issue>-<slug>`.
+    """
+    match = re.search(r'(?:^|-)i(\d+)-', branch_name) or re.search(r'/(\d+)-', branch_name)
+    return int(match.group(1)) if match else None
+
+
 def worktree_path_for(branch_name: str) -> str:
     """Return the worktree path under the root checkout, wherever this runs.
 
@@ -85,10 +95,8 @@ class MilestoneWorkflow:
             # Try to detect from current branch
             current_branch = self.run_command(["git", "branch", "--show-current"]).stdout.strip()
 
-            # Extract issue number from branch (format: user/NNN-slug)
-            match = re.search(r'/(\d+)-', current_branch)
-            if match:
-                issue_num = int(match.group(1))
+            issue_num = issue_number_from_branch(current_branch)
+            if issue_num is not None:
 
                 # Get milestone from this issue
                 result = self.run_command([

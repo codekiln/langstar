@@ -243,6 +243,38 @@ def test_worktree_path_generation():
     return ok
 
 
+def test_issue_number_from_branch():
+    """Milestone auto-detection reads both branch formats."""
+    print("\nTest 9: Issue number from the current branch")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    cases = {
+        "m18-p734-i373-implement-feature": 373,
+        "p123-i234-add-auth": 234,
+        "i42-add-auth": 42,
+        "codekiln/373-implement-feature": 373,
+        "main": None,
+    }
+    ok = True
+    for branch, expected in cases.items():
+        got = prep_next.issue_number_from_branch(branch)
+        if got == expected:
+            print(f"✓ PASS: '{branch}' -> {got}")
+        else:
+            print(f"✗ FAIL: '{branch}' expected {expected}, got {got}")
+            ok = False
+    return ok
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -258,6 +290,7 @@ def main():
         test_extract_issue_from_full_format,
         test_extract_milestone_and_parent,
         test_worktree_path_generation,
+        test_issue_number_from_branch,
     ]
 
     results = [test() for test in tests]
