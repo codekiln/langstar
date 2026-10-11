@@ -210,8 +210,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       # cargo builds with the Rust version that rust-toolchain.toml pins, not the
-      # stable toolchain the step above installed. Run inside the checkout,
-      # `rustup target add` adds the build target to that pinned version.
+      # stable toolchain the step above installed. `rustup target add` reads
+      # rust-toolchain.toml from the checkout and adds the build target to that version.
       - name: Add the build target to the pinned toolchain
         run: rustup target add ${{ matrix.target }}
 
