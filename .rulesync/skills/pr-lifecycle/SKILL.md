@@ -347,7 +347,8 @@ gh issue close "$ISSUE_NUM" --comment "Closed via PR #$PR_NUM"
 cd <repo-root>
 
 # Remove the worktree
-WORKTREE_PATH=".worktrees/<branch-name>"  # e.g., .worktrees/i42-add-auth or .worktrees/m8-p123-i234-add-auth
+# The path git registered, so Claude Desktop worktrees in .claude/worktrees/ work too
+WORKTREE_PATH=$(git worktree list --porcelain | awk -v b="refs/heads/<branch-name>" '$1=="worktree"{p=$2} $1=="branch"&&$2==b{print p}')
 git worktree remove "$WORKTREE_PATH"
 
 # Prune stale references
@@ -382,7 +383,7 @@ git push origin --delete "$BRANCH" 2>/dev/null || echo "Remote branch already de
 # Variables
 ISSUE_NUM=225
 BRANCH="claude/225-pr-lifecycle-skill"
-WORKTREE_PATH=".worktrees/claude-225-pr-lifecycle-skill"
+WORKTREE_PATH=$(git worktree list --porcelain | awk -v b="refs/heads/$BRANCH" '$1=="worktree"{p=$2} $1=="branch"&&$2==b{print p}')
 
 # 1. Verify issue closed
 gh issue view "$ISSUE_NUM" --json state -q '.state'

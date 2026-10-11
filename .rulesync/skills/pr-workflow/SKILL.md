@@ -624,7 +624,8 @@ EOF
    cd <repo-root>
    git checkout main
    git pull origin main
-   git worktree remove .worktrees/<branch-name>
+   # The path git registered, so Claude Desktop worktrees in .claude/worktrees/ work too
+   git worktree remove "$(git worktree list --porcelain | awk -v b="refs/heads/<branch-name>" '$1=="worktree"{p=$2} $1=="branch"&&$2==b{print p}')"
    # -D: a squash merge leaves the tip outside main, so -d refuses
    git branch -D <branch-name>
    git worktree prune --verbose

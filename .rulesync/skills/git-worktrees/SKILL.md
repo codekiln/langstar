@@ -99,8 +99,10 @@ Creates a new worktree with a new branch based on the specified target branch.
 
 **Template:**
 ```bash
-git worktree add -b <branch-name> .worktrees/<branch-name> <target-branch>
+git worktree add -b <branch-name> .worktrees/<branch-name-with-slashes-replaced-by-dashes> <target-branch>
 ```
+
+The directory name replaces every `/` in the branch name with `-`: branch `codekiln/130-add-auth` gets `.worktrees/codekiln-130-add-auth`.
 
 **Examples:**
 ```bash
