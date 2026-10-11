@@ -15,10 +15,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
-# When someone starts this workflow by hand with `-f tag=<tag>`, every job works on
-# that tag's commit, whichever branch the workflow file came from. A maintainer can
-# then run a corrected copy of this workflow from another branch to rebuild a
-# release that already exists.
+# To rebuild a release that already exists, run this workflow by hand from the
+# branch that holds your fix and pass the release's tag with `-f tag=<tag>`.
+# GitHub takes the steps from that branch, and the jobs build and test the code
+# at that tag.
 jobs:
   verify-ci:
     name: Verify CI Passed
