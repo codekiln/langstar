@@ -539,7 +539,7 @@ cargo fmt --check
 ### Worktree Test One-Liner
 
 ```bash
-cd <repo-root>/.worktrees/<worktree-name> && [ -n "$LANGSMITH_API_KEY" ] || source /workspace/.devcontainer/.env && cargo test --test integration_test -- --ignored --nocapture
+cd <repo-root>/.worktrees/<worktree-name> && { [ -n "$LANGSMITH_API_KEY" ] || source /workspace/.devcontainer/.env; } && cargo test --test integration_test -- --ignored --nocapture
 ```
 
 ### Complete Test Flow
