@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Test the bump-release skill scripts: commit parsing, exit codes and JSON mode"
+#MISE description="Test the bump-release scripts: how commit subjects map to a bump, and what bump_release.sh does with each exit code of analyze_commits.py"
 set -euo pipefail
 
 exec python3 -I -m unittest discover -v -s tests/bump_release
