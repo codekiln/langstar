@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Test the bump-release skill scripts: commit parsing, exit codes and JSON mode"
+set -euo pipefail
+
+exec python3 -I -m unittest discover -v -s tests/bump_release
