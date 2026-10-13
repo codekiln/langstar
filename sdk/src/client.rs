@@ -12,8 +12,9 @@ pub const LANGSMITH_API_BASE: &str = "https://api.smith.langchain.com";
 pub const LANGGRAPH_API_BASE: &str = "https://api.langgraph.cloud";
 pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 
-/// Statuses worth retrying on a read request: gateway errors plus timeouts and
-/// too-early responses. These match the statuses langsmith-py retries.
+/// The HTTP statuses a read request is sent again on: 502 Bad Gateway, 503 Service
+/// Unavailable, 504 Gateway Timeout, 408 Request Timeout and 425 Too Early.
+/// langsmith-py's documentation lists the same five statuses.
 const RETRYABLE_STATUSES: [u16; 5] = [502, 503, 504, 408, 425];
 
 /// Bounded retry settings for read requests.
