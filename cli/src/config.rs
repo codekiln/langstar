@@ -91,11 +91,24 @@ impl Config {
     ///
     /// Priority order (highest to lowest):
     /// 1. Environment variables
-    /// 2. Config file (~/.config/langstar/config.toml)
+    /// 2. Config file (`config.toml` in the config directory, see `config_file_path`)
     /// 3. Default values
+    ///
+    /// A config file that exists but cannot be read or parsed is ignored with a
+    /// warning, so `config show` and `config set` can still be used to fix it;
+    /// `config validate` fails on it instead.
     pub fn load() -> Result<Self> {
         // Start with file config if it exists
-        let mut config = Self::load_from_file().unwrap_or_default();
+        let mut config = Self::load_from_file().unwrap_or_else(|e| {
+            // Commands such as `config show` load the config more than once per run
+            static WARN_ONCE: Once = Once::new();
+            WARN_ONCE.call_once(|| {
+                eprintln!(
+                    "Warning: Ignoring the config file and using defaults: {e}\n  Run 'langstar config validate' to check it."
+                )
+            });
+            Self::default()
+        });
 
         // Override with environment variables
         if let Ok(key) = std::env::var("LANGSMITH_API_KEY") {
@@ -166,11 +179,21 @@ impl Config {
     /// `load` uses the default config when this returns an error; `config validate`
     /// calls this to report the error.
     pub fn read_file(path: &Path) -> Result<Self> {
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| CliError::Config(format!("Failed to read config file: {}", e)))?;
+        let content = std::fs::read_to_string(path).map_err(|e| {
+            CliError::Config(format!(
+                "Failed to read config file {}: {}",
+                path.display(),
+                e
+            ))
+        })?;
 
-        let config: Config = toml::from_str(&content)
-            .map_err(|e| CliError::Config(format!("Failed to parse config file: {}", e)))?;
+        let config: Config = toml::from_str(&content).map_err(|e| {
+            CliError::Config(format!(
+                "Failed to parse config file {}: {}",
+                path.display(),
+                e
+            ))
+        })?;
 
         Ok(config)
     }
