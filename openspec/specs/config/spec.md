@@ -127,7 +127,10 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 
 - **WHEN** the config file does not parse
 - **AND** a user runs `langstar config show`
-- **THEN** langstar warns on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file or the value the message quotes, and says it is using the default settings, shows the defaults and exits successfully
+- **THEN** langstar warns on stderr with the file's path and the line, column and message of the parse error
+- **AND** the warning says langstar is using the default settings
+- **AND** the warning leaves out the quoted line of the file and the value the message quotes
+- **AND** langstar prints the default settings and exits successfully
 
 ### Requirement: Stop checking when the config file is missing
 
