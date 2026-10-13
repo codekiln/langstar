@@ -6,26 +6,28 @@ set -euo pipefail
 # back, so a bug shared by langstar's push and pull cannot hide. The LangSmith
 # credentials come from fnox, so the check re-runs itself under `fnox exec`.
 # What each official tool can check: docs/dev/testing/official-tool-checks.md
-if [ -z "${LANGSMITH_API_KEY:-}" ]; then
+if [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z "${LANGSMITH_ORGANIZATION_ID:-}" ] || [ -z "${LANGSMITH_WORKSPACE_ID:-}" ]; then
   exec fnox exec -- "$0" "$@"
 fi
 
-repo="oracle-roundtrip-$(date +%s)-$$"
+repo="oracle-roundtrip-$(date +%s)-$$-$RANDOM"
 template="Answer this question: {question}"
 # `-` is the owner handle of a private prompt in the workspace.
 handle="-/${repo}"
-
-cleanup() {
-  langsmith prompt delete --yes -- "$handle" >/dev/null 2>&1 || echo "could not delete ${handle}; delete it by hand" >&2
-}
-trap cleanup EXIT
 
 # The official CLI creates the repo. langstar's own create-on-push sends "-/<repo>"
 # as the handle, which the API rejects, so letting langstar create it would fail here.
 langsmith prompt create --name "$repo" >/dev/null
 
+# Registered only after create succeeds, so a name collision can never delete
+# another run's prompt.
 schema="$(mktemp)"
-trap 'rm -f "$schema"; cleanup' EXIT
+cleanup() {
+  rm -f "$schema"
+  langsmith prompt delete --yes -- "$handle" >/dev/null 2>&1 || echo "could not delete ${handle}; delete it by hand" >&2
+}
+trap cleanup EXIT
+
 printf '%s' '{"type":"object","title":"Out","properties":{"answer":{"type":"string"}},"required":["answer"]}' >"$schema"
 
 # --schema matches the path cli/tests/prompt_structured_test.rs exercises; a push
