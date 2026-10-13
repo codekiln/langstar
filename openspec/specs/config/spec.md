@@ -103,7 +103,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the invalid output format
 
-### Requirement: Fail when the config file does not parse
+### Requirement: Fail `config validate` and `config <setting> set` on a config file that does not parse, and warn in every other command
 
 When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. Every other langstar command that loads the settings SHALL ignore the file, use the defaults and the environment, and warn on stderr with the same error. Those commands are every command outside the `config` group, `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, run without a warning. `langstar config <setting> set` SHALL exit with the parse error and leave the file unchanged.
 
@@ -113,7 +113,7 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the config file and the TOML parse error
 
-#### Scenario: Another command meets an unparsable config file
+#### Scenario: `config show` warns and shows the defaults when the config file does not parse
 
 - **WHEN** the config file does not parse
 - **AND** a user runs `langstar config show`
