@@ -649,7 +649,7 @@ See `sdk/src/datasets.rs` for complete type definitions and field documentation.
 
 ### Error Handling
 
-- **Check Limits**: `dataset export` returns every example unless you pass `--limit`; other list commands have their own limits
+- **Check Limits**: `dataset export` returns every example unless you pass `--limit`; `dataset list` and `dataset list-examples` return at most 100 unless you pass `--limit`
 - **Handle Failures**: Import operations skip invalid records with warnings
 - **Verify Results**: Always verify example counts after import
 - **Use --json**: Use JSON output for error handling in scripts
