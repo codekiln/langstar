@@ -684,9 +684,9 @@ impl DatasetCommands {
         let mut examples = client.list_examples_paginated(params, total_limit);
 
         // Request the first page before opening --out, so a bad dataset id or
-        // API key leaves an existing file untouched. A failure on a later page
-        // leaves the examples written so far in the file, and the command exits
-        // with an error.
+        // API key leaves an existing file untouched. If a later page fails, the
+        // command exits with an error and the file keeps the examples written
+        // so far.
         let mut next = examples.next().await.transpose()?;
 
         // Prepare output
