@@ -119,11 +119,12 @@ Use the `gh api` command to reply to the PR comment:
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -f body="{body}" \
+  -f body="$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' '{body}')" \
   -F in_reply_to={comment_id}
 ```
 
 **Important:**
+- The reply starts with the AI header from the root rule, so the command puts it before `{body}`; fill in the model and session name.
 - The endpoint is: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments`
 - Parameters:
   - `body` (string, required): The reply text

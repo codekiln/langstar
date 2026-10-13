@@ -267,7 +267,7 @@ echo ""
 echo "📝 Updating parent issue #$PARENT_ISSUE..."
 
 # Create comment body
-COMMENT_BODY="Shipped in [release $VERSION]($RELEASE_URL)"
+COMMENT_BODY=$(printf '%s\n\nShipped in [release %s](%s)' '## from AI(claude-code, <model-slug>, <session-name>)' "$VERSION" "$RELEASE_URL")
 
 # Add comment to issue
 gh issue comment "$PARENT_ISSUE" --body "$COMMENT_BODY"

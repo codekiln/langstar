@@ -71,7 +71,7 @@ gh sub-issue create --parent 92 --title "Implement authentication"
 # With body text
 gh sub-issue create --parent 92 \
   --title "Add user login" \
-  --body "Implement JWT-based authentication"
+  --body "$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' 'Implement JWT-based authentication')"
 
 # With labels and assignees
 gh sub-issue create --parent 92 \
@@ -267,7 +267,7 @@ gh sub-issue add 92 104
 ```bash
 # Step 1: Create epic issue manually or with gh
 gh issue create --title "Epic: User Authentication System" \
-  --body "Complete authentication system with OAuth, JWT, and 2FA"
+  --body "$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' 'Complete authentication system with OAuth, JWT, and 2FA')"
 # Created issue #100
 
 # Step 2: Create phase issues
@@ -493,7 +493,7 @@ gh sub-issue add 92 103 --repo owner/name
 # Create with all options
 gh sub-issue create --parent 92 \
   --title "Title" \
-  --body "Description" \
+  --body "$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' 'Description')" \
   --label "bug" \
   --label "priority:high" \
   --assignee "username"

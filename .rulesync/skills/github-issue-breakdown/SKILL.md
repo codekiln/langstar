@@ -44,9 +44,7 @@ gh issue create --title "Phase 2" --body "Sub-task of #42"
 ✅ **CORRECT - Creates official sub-issues WITH parent-child links:**
 ```bash
 # Create epic with task list
-gh issue create --title "Epic: Feature X" --body "## Tasks
-- [ ] Phase 1: Setup
-- [ ] Phase 2: Implementation"
+gh issue create --title "Epic: Feature X" --body "$(printf '%s\n\n## Tasks\n- [ ] Phase 1: Setup\n- [ ] Phase 2: Implementation' '## from AI(claude-code, <model-slug>, <session-name>)')"
 
 # IMMEDIATELY use this skill to create official sub-issues
 python scripts/create_subissues.py --issue 42 --yes

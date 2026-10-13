@@ -38,10 +38,10 @@ When addressing review comments, choose ONE of these options:
 ### Option 2: Defer with Issue (Expensive - use sparingly)
 **When:** Change is large AND worth doing AND not critical to current PR.
 **Action:**
-1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
+1. Create GitHub issue NOW: `gh issue create --title "..." --body "$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\n...')"`
 2. Add to same milestone: `gh issue edit <num> --milestone "<milestone>"`
 3. Add as sub-issue: `gh sub-issue add <parent> <new-issue>`
-4. Reply: "Created #XYZ to track this. Not addressing in this PR because {reason}."
+4. Reply, starting with the AI header: "Created #XYZ to track this. Not addressing in this PR because {reason}."
 5. Optionally add `// TODO(#XYZ): description` code comment
 
 **Only if:**
@@ -276,6 +276,8 @@ If any validation fails, **STOP** and provide clear instructions to fix the issu
    PR_URL=$(gh pr create \
      --title "<title>" \
      --body "$(cat <<EOF
+   ## from AI(claude-code, <model-slug>, <session-name>)
+
    <body>
    EOF
    )" \
@@ -407,7 +409,7 @@ EOF
    ```bash
    # Create issue
    ISSUE_URL=$(gh issue create --title "Refactor: improve error handling patterns" \
-     --body "Raised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456")
+     --body "$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\nRaised in PR #385 review. See: https://github.com/owner/repo/pull/385#discussion_r123456')")
    NEW_ISSUE=$(echo "$ISSUE_URL" | grep -oE '[0-9]+$')
 
    # Add to milestone (if PR has one)
@@ -888,7 +890,8 @@ gh auth login
 **PR Management:**
 ```bash
 # Create PR
-gh pr create --title "..." --body "..." --base main
+# The body starts with the AI header from the root rule
+gh pr create --title "..." --body "$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\n...')" --base main
 
 # View PR
 gh pr view <num> --json <fields>

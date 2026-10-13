@@ -40,7 +40,7 @@ When replying to comments, each response MUST use ONE of these options:
 ### Option 2: Defer with Issue (Expensive)
 **When:** Change is large AND worth doing AND not critical to PR.
 **Action BEFORE replying:**
-1. Create GitHub issue NOW: `gh issue create --title "..." --body "..."`
+1. Create GitHub issue NOW: `gh issue create --title "..." --body "$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\n...')"`
 2. Add to same milestone as PR's issue
 3. Add as sub-issue of parent ticket
 **Reply format:** "Created #XYZ to track this. Not addressing in this PR because {reason}."
@@ -125,6 +125,8 @@ Depending on user requirements, filter the comments:
 
 ### Step 4: Prepare Reply Content
 
+Every reply starts with the AI header from the root rule; fill in the model and session name before spawning subagents.
+
 Determine what to reply with:
 - **User-provided text**: If user specifies reply text, use it for all comments
 - **Per-comment text**: If user provides mapping of comment → reply text
@@ -151,7 +153,7 @@ Task(
     Execute this EXACT command to reply to a GitHub PR comment:
 
     gh api repos/{owner}/{repo}/pulls/300/comments \
-      -f body="Fixed in commit abc123" \
+      -f body="$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\nFixed in commit abc123')" \
       -F in_reply_to=2565891355
 
     Report success or failure. Do NOT ask questions or do anything else.
@@ -166,7 +168,7 @@ Task(
     Execute this EXACT command to reply to a GitHub PR comment:
 
     gh api repos/{owner}/{repo}/pulls/300/comments \
-      -f body="Fixed in commit abc123" \
+      -f body="$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\nFixed in commit abc123')" \
       -F in_reply_to=2565891356
 
     Report success or failure. Do NOT ask questions or do anything else.
@@ -415,7 +417,7 @@ Returns single comment object.
 
 ```bash
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -f body="Reply text" \
+  -f body="$(printf '## from AI(claude-code, <model-slug>, <session-name>)\n\nReply text')" \
   -F in_reply_to={comment_id}
 ```
 
