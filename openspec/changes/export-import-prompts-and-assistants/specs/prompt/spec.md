@@ -132,7 +132,7 @@ When a commit tag in the file is missing in the destination or points at a diffe
 
 ### Requirement: Record the destination commit
 
-After a successful import, langstar SHALL record the destination workspace, handle and commit hash in a destination record file, `<file stem>.destinations.json` next to the export unless `--record <path>` names another. Each import SHALL add or replace only the entry for its own destination workspace.
+After import writes a commit, langstar SHALL record the destination workspace, handle and commit hash in a destination record file, `<file stem>.destinations.json` next to the export unless `--record <path>` names another, before it reads the commit back. Each import SHALL add or replace only the entry for its own destination workspace.
 
 #### Scenario: Import into two workspaces
 
@@ -162,12 +162,13 @@ When the destination record holds a commit for the destination workspace and the
 
 ### Requirement: Read the prompt back after import
 
-After writing, `langstar prompt import` SHALL read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3.
+After writing, `langstar prompt import` SHALL record the commit hash in the destination record, then read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the hash so that the next import does not report the commit langstar wrote as someone else's change.
 
 #### Scenario: LangSmith drops a field
 
 - **WHEN** the destination commit read back after import lacks a field the file holds
 - **THEN** langstar lists that field as a difference and exits with status 3
+- **AND** the destination record holds the new commit hash
 
 ### Requirement: Compare a prompt with its export file
 
