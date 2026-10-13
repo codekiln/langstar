@@ -24,7 +24,7 @@ Langstar reads one API key and one workspace at a time, from flags, environment 
 
 ## Decisions
 
-### Export writes a file with the source's credentials, and import reads it with the destination's
+### Export and import run at different times, each with its own environment's API key
 
 Export runs with the source environment's credentials and writes a file. Import runs later with the destination's credentials and reads it. Each run uses langstar's existing settings, so a user moving a prompt to another organization sets a different `LANGSMITH_API_KEY` for the import. Langstar needs no second set of credentials and no profiles. The file sits in Git between the two runs, so a reviewer sees the prompt or assistant change in a pull request.
 
@@ -42,7 +42,7 @@ One prompt export looks like this:
   "format_version": 1,
   "source": { "workspace_id": "<source-workspace-id>", "handle": "my-prompt", "commit_hash": "<hash>", "ref": "prod" },
   "repo": { "handle": "my-prompt", "description": "...", "readme": "...", "tags": ["support"], "is_public": false },
-  "commit": { "description": "...", "manifest": { "lc": 1, "type": "constructor", "id": ["langchain", "schema", "runnable", "RunnableSequence"], "kwargs": { "first": {}, "last": {} } }, "model_config": {}, "model_provider": "ChatOpenAI", "tags": ["prod"] },
+  "commit": { "description": "...", "manifest": { "lc": 1, "type": "constructor", "id": ["langsmith", "playground", "PromptPlayground"], "kwargs": { "first": {}, "last": {} } }, "model_config": {}, "model_provider": "ChatOpenAI", "tags": ["prod"] },
   "requires": { "secrets": ["OPENAI_API_KEY"], "model_provider": "ChatOpenAI" }
 }
 ```
@@ -53,7 +53,7 @@ The file holds no export time and langstar sorts its keys, so exporting an uncha
 
 ### Export asks LangSmith for the model
 
-Export reads the commit with `include=model`, the form the Go SDK uses (`references/langsmith-go.md`). The Python SDK sends the older `include_model=true`, and the LangSmith OpenAPI spec accepts both. With the model included, the manifest becomes a `RunnableSequence` whose last step binds the chat model and its settings, and the response also carries `model_config` and `model_provider` beside the manifest (`references/langsmith-sdk.md`). No field of the create-commit request holds the model, so the model reaches the destination inside the manifest. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) pushes that manifest to a second workspace and records whether LangSmith returns the same model.
+Export reads the commit with `include=model`, the form the Go SDK uses (`references/langsmith-go.md`). The Python SDK sends the older `include_model=true`, and the LangSmith OpenAPI spec accepts both. With the model included, the manifest wraps the prompt and the chat model with its settings in one constructor, and the response also carries `model_config` and `model_provider` beside the manifest (`references/langsmith-sdk.md`). No field of the create-commit request holds the model, so the model reaches the destination inside the manifest. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) pushes that manifest to a second workspace, records whether LangSmith returns the same model, and records which outer `id` the live API returns.
 
 ### Import records what it created in a separate file
 
@@ -63,7 +63,7 @@ Import writes the destination's IDs to `<file stem>.destinations.json`, keyed by
 
 A prompt that exists in the destination gets a new commit only with `--update`, and its parent is the destination's latest commit, so LangSmith keeps the earlier history. Import sends the file's commit description with each commit it creates. With `--update`, import also sets the destination repo's description, readme, tags and visibility to the file's values through `PATCH /api/v1/repos/{owner}/{repo}` when they differ. When only those repo fields differ and the manifest matches, import updates the repo and adds no commit.
 
-An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. The Agent Server merges the metadata an update sends into the assistant's metadata (`AssistantPatch` in `reference/openapi/langchain/agent-server/openapi.json`), so sending the file's metadata alone would keep every key the destination has and the file lacks. Import sends each such key with a null value and then reads the assistant back. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) checks against the live server whether a null value removes the key. If it does not, the read-back finds the leftover keys, and import reports them as differences and exits with status 2. Import also sends the file's graph ID, so an assistant whose graph changed at the source moves to that graph.
+An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. The Agent Server merges the metadata an update sends into the assistant's metadata (`AssistantPatch` in `reference/openapi/langchain/agent-server/openapi.json`), so sending the file's metadata alone would keep every key the destination has and the file lacks. Import sends each such key with a null value and then reads the assistant back. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks against the live server whether a null value removes the key. If it does not, the read-back finds the leftover keys, and import reports them as differences and exits with status 2. Import also sends the file's graph ID, so an assistant whose graph changed at the source moves to that graph.
 
 Without `--update`, import lists the differences and exits with status 2. `--dry-run` reports the action import would take and writes nothing.
 
@@ -87,7 +87,7 @@ Status 0 means the resource matches and every check passed. Status 2 means langs
 
 ### A Python script checks that an imported structured prompt still returns structured data
 
-A mise task runs a short Python script that pulls the imported prompt with `include_model=True`, invokes it, and checks that the result matches the prompt's schema. The script exists because the LangSmith API has no documented way to run a prompt with its model: the one prompt endpoint in the OpenAPI spec, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no LangSmith SDK calls it. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) tries that endpoint against the live API in case it does more than the spec says. The script needs a model provider API key, which codekiln has to create and add to fnox and CI before the test can run.
+A mise task runs a short Python script that pulls the imported prompt with `include_model=True`, invokes it, and checks that the result matches the prompt's schema. The script exists because the LangSmith API has no documented way to run a prompt with its model: the one prompt endpoint in the OpenAPI spec, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no LangSmith SDK calls it. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) tries that endpoint against the live API in case it does more than the spec says. The script needs a model provider API key, which codekiln has to create and add to fnox and CI before the test can run.
 
 ### Export and import use the same SDK calls as the planned `prompt create`, `get` and `update`
 
@@ -95,9 +95,9 @@ A mise task runs a short Python script that pulls the imported prompt with `incl
 
 ## Risks / Trade-offs
 
-- [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) checks the round trip before the commands are built.
+- [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks the round trip before the commands are built.
 - [Pushing a manifest identical to the latest commit may return 409] → Import compares first and pushes nothing when the prompt matches.
-- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → Task 2.3 changes `resolve_deployment_url` to find the URL of a GitHub-built deployment, before any assistant work in groups 8 to 10 starts.
+- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → [export-import-prompts-and-assistants Task 2.3 Return the URL of a deployment built from GitHub](tasks.md#L14) changes `resolve_deployment_url` before anyone builds the assistant export, compare, verify and import commands.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 
 ## Resolved Questions
@@ -123,7 +123,7 @@ None.
 ### 3 - How should the end-to-end test show that an imported structured prompt still returns structured data?
 
 > Context from the drafting agent, for question 3.
-> The LangSmith OpenAPI spec's only prompt-invoke endpoint, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no SDK calls it. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) tries it live. The draft runs a Python script through a mise task, using the LangSmith Python SDK and LangChain, which is how most users run a prompt. It needs a model provider key, such as `OPENAI_API_KEY`, which codekiln would create and add to fnox and CI. Building the model call into langstar as `prompt verify --invoke` would need langstar to call each provider's API itself. Recommendation: the Python script, with an OpenAI key and a small model.
+> The LangSmith OpenAPI spec's only prompt-invoke endpoint, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no SDK calls it. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) tries it live. The draft runs a Python script through a mise task, using the LangSmith Python SDK and LangChain, which is how most users run a prompt. It needs a model provider key, such as `OPENAI_API_KEY`, which codekiln would create and add to fnox and CI. Building the model call into langstar as `prompt verify --invoke` would need langstar to call each provider's API itself. Recommendation: the Python script, with an OpenAI key and a small model.
 
 <ANSWER_HERE>
 

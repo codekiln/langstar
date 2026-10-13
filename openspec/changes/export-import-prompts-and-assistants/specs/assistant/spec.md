@@ -39,7 +39,7 @@
 - **WHEN** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **AND** the destination record has no entry for `my-agent-prod`
 - **THEN** langstar creates the assistant and prints its new ID
-- **AND** `support-bot.destinations.json` holds `my-agent-prod` with that ID
+- **AND** `support-bot.destinations.json` holds the ID of the `my-agent-prod` deployment, with the new assistant ID under it
 
 ### Requirement: Find the earlier copy instead of creating another
 
