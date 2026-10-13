@@ -23,7 +23,9 @@ const RETRYABLE_STATUSES: [u16; 5] = [502, 503, 504, 408, 425];
 /// `max_retries + 1` times. The wait before retry `n` (from 0) is `base_delay * 2^n`,
 /// or the `Retry-After` header when the server sends one. Each wait is capped at
 /// `max_delay`, which bounds the total wait to `max_retries * max_delay`.
-/// The defaults match langsmith-py: 3 retries with a 0.5s backoff factor.
+/// The defaults copy the retry settings in the documentation of
+/// [langsmith-py](https://github.com/langchain-ai/langsmith-sdk), the LangSmith Python client:
+/// 3 retries with a 0.5 second backoff factor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RetryPolicy {
     pub max_retries: u32,
