@@ -39,7 +39,7 @@ pub enum QueueCommands {
     AddRuns(AddRunsArgs),
     /// Remove a run from an annotation queue
     RemoveRun(RemoveRunArgs),
-    /// List runs in an annotation queue
+    /// List the items in an annotation queue, one review section at a time
     Items(ItemsArgs),
 }
 
