@@ -5,12 +5,18 @@ create_subissues.py
 Break down GitHub issues into sub-issues by parsing task lists from parent issue descriptions.
 
 Usage:
+    # With AI_HARNESS, AI_MODEL and AI_SESSION exported (or pass --harness, --model, --session)
     python create_subissues.py --issue 42
     python create_subissues.py --issue 42 --repo owner/repo
     python create_subissues.py --issue 42 --dry-run
 
 Environment Variables:
     GITHUB_TOKEN or GH_TOKEN - GitHub token with repo scope (required)
+    AI_HARNESS, AI_MODEL, AI_SESSION - harness, model slug and session name for the
+        `## from AI(<harness>, <model-slug>, <session-name>)` header that starts every
+        sub-issue body; each has a matching --harness/--model/--session argument,
+        and the script exits with an error when any of the three is missing,
+        unless --dry-run is set (a dry run creates nothing and needs no header)
 
 """
 
@@ -27,6 +33,9 @@ from typing import Dict, List, Optional, Tuple
 def main():
     """Main entry point for the script."""
     args = parse_arguments()
+
+    # A dry run creates nothing, so it needs no header
+    header = '' if args.dry_run else build_ai_header(args)
 
     # Get GitHub token
     token = get_github_token()
@@ -101,7 +110,8 @@ def main():
         tasks,
         parent_issue,
         inherit_labels=args.inherit_labels,
-        inherit_assignees=args.inherit_assignees
+        inherit_assignees=args.inherit_assignees,
+        header=header
     )
 
     # Show what will be inherited
@@ -230,7 +240,37 @@ def parse_arguments():
         action='store_true',
         help='Disable section filtering and parse all bullets (legacy behavior)'
     )
+    parser.add_argument(
+        '--harness',
+        type=str,
+        default=os.environ.get('AI_HARNESS'),
+        help='Agent harness for the from-AI header (env: AI_HARNESS)'
+    )
+    parser.add_argument(
+        '--model',
+        type=str,
+        default=os.environ.get('AI_MODEL'),
+        help='Model slug for the from-AI header (env: AI_MODEL)'
+    )
+    parser.add_argument(
+        '--session',
+        type=str,
+        default=os.environ.get('AI_SESSION'),
+        help='Session name for the from-AI header (env: AI_SESSION)'
+    )
     return parser.parse_args()
+
+
+def build_ai_header(args) -> str:
+    """Build the `## from AI(...)` header, exiting with an error if a value is missing."""
+    values = {'harness': args.harness, 'model': args.model, 'session': args.session}
+    missing = [name for name, value in values.items() if not value]
+    if missing:
+        print(f"Error: missing {', '.join('--' + m for m in missing)}")
+        print("Pass --harness, --model and --session, or set AI_HARNESS, AI_MODEL and AI_SESSION,")
+        print("so every sub-issue body can start with '## from AI(<harness>, <model-slug>, <session-name>)'")
+        sys.exit(1)
+    return f"## from AI({args.harness}, {args.model}, {args.session})"
 
 
 def get_github_token() -> Optional[str]:
@@ -446,15 +486,16 @@ def prepare_sub_issues(
     tasks: List[str],
     parent_issue: Dict,
     inherit_labels: bool = True,
-    inherit_assignees: bool = True
+    inherit_assignees: bool = True,
+    header: str = ''
 ) -> List[Dict]:
-    """Prepare sub-issue data structures."""
+    """Prepare sub-issue data structures; each body starts with the from-AI header."""
     sub_issues = []
 
     for task in tasks:
         sub_issue = {
             'title': task,
-            'body': f"Sub-task of #{parent_issue['number']}"
+            'body': f"{header}\n\nSub-task of #{parent_issue['number']}"
         }
 
         # Inherit labels

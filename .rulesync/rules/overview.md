@@ -24,6 +24,10 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 - Design a new feature as an OpenSpec change under `openspec/changes/`, using the `openspec-propose` skill. `openspec/specs/` describes what each command group does today. `docs/dev/feature-development-process.md` has the process.
 - Coding conventions are in `docs/dev/README.md`. Prefer an explicit setting to an implicit default, and link the docs for it.
 
+## AI header
+
+Start every PR description, PR or issue comment, review comment, review body and issue body you write with the line `## from AI(<harness>, <model-slug>, <session-name>)`, for example `## from AI(claude-code, claude-opus-5-5, langstar i740-fnox)`. Name the model your session runs and the session name it was launched with. This replaces the older `--AI(...)` trailer and `AI (...): ` prefix. When you edit a body that lacks the header, add it.
+
 ## Testing
 
 Merge a PR only when every test passes, including a test that was already failing before your change. Run this before every commit:
