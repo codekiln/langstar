@@ -515,9 +515,8 @@ pub struct ListAnnotationQueueItemsResponse {
     pub previous_cursor: Option<String>,
 }
 
-/// Query parameters for listing the items of an annotation queue.
-///
-/// Query parameters for `GET /api/v1/platform/annotation-queues/{queue_id}/items`.
+/// Query parameters for `GET /api/v1/platform/annotation-queues/{queue_id}/items`, which
+/// lists the items of one review section of an annotation queue.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ListAnnotationQueueItemsParams {
     /// Review section to list; the API requires one

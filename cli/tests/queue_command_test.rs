@@ -1,6 +1,6 @@
 //! CLI tests for `langstar queue` run commands (`add-runs`, `items`, `remove-run`).
 //!
-//! These move on LangSmith's platform items API,
+//! The commands under test call LangSmith's platform items API,
 //! `/api/v1/platform/annotation-queues/{queue_id}/items`, so the lifecycle test
 //! asserts on the items the CLI and SDK get back, not only on exit codes.
 //!
@@ -271,11 +271,7 @@ fn test_queue_items_lifecycle() {
     println!("[READ] queue items returned {} items", items.len());
 
     // ── READ (SDK): count and placement agree with the list ──
-    let needs_review = items
-        .iter()
-        .map(|i| i["id"].as_str().unwrap().to_string())
-        .next()
-        .unwrap();
+    let first_item_id = items[0]["id"].as_str().unwrap().to_string();
     let counted = runtime
         .block_on(
             client
@@ -300,7 +296,7 @@ fn test_queue_items_lifecycle() {
         .expect("list failed");
     assert_eq!(page.items.len() as u64, counted);
 
-    let item_uuid = Uuid::parse_str(&needs_review).unwrap();
+    let item_uuid = Uuid::parse_str(&first_item_id).unwrap();
     let placement = runtime
         .block_on(client.get_annotation_queue_item_placement(queue_uuid, item_uuid))
         .expect("placement failed");

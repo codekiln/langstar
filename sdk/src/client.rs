@@ -1046,10 +1046,11 @@ impl LangchainClient {
         self.execute(request).await
     }
 
-    /// Returns up to `limit` items, or every item in the section when `limit` is `None`. It
-    /// requests the next page whenever `next_cursor` is non-empty, even after an empty page.
-    /// It returns early if the API
-    /// sends a cursor this call has already used.
+    /// List the items of one review section across pages.
+    ///
+    /// Returns up to `limit` items, or every item in the section when `limit` is `None`.
+    /// The call requests the next page whenever `next_cursor` is non-empty, even after an
+    /// empty page, and stops if the API sends a cursor the call has already used.
     pub async fn collect_annotation_queue_items(
         &self,
         queue_id: uuid::Uuid,
@@ -1142,11 +1143,12 @@ impl LangchainClient {
 
     /// Remove items from an annotation queue by queue item ID.
     ///
-    /// The IDs are the `id` of each [`AnnotationQueueItem`], not run IDs; to remove a
-    /// run by its run ID, use
+    /// The IDs are the `id` of each [`AnnotationQueueItem`] or
+    /// [`AnnotationQueueListItem`], not run IDs; to remove a run by its run ID, use
     /// [`delete_run_from_annotation_queue`](Self::delete_run_from_annotation_queue).
     ///
     /// [`AnnotationQueueItem`]: crate::annotation_queues::AnnotationQueueItem
+    /// [`AnnotationQueueListItem`]: crate::annotation_queues::AnnotationQueueListItem
     ///
     /// # API Reference
     ///
