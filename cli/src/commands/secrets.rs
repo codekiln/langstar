@@ -49,6 +49,10 @@ pub enum SecretsCommands {
         /// Output format (json or table)
         #[arg(short = 'f', long)]
         format: Option<String>,
+
+        /// Skip confirmation prompt
+        #[arg(long, short = 'y')]
+        yes: bool,
     },
 }
 
@@ -170,7 +174,17 @@ impl SecretsCommands {
             SecretsCommands::Delete {
                 key,
                 format: cmd_format,
+                yes,
             } => {
+                if !yes {
+                    eprintln!("Are you sure you want to delete secret '{}'?", key);
+                    eprintln!("This action cannot be undone. Use --yes (-y) to skip this prompt.");
+                    if !crate::confirm::confirm("Type 'yes' to confirm:", &["yes"], "--yes")? {
+                        println!("Deletion cancelled.");
+                        return Ok(());
+                    }
+                }
+
                 let format = if let Some(fmt_str) = cmd_format {
                     OutputFormat::from_str(fmt_str)?
                 } else {
