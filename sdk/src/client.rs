@@ -21,10 +21,10 @@ const RETRYABLE_STATUSES: [u16; 6] = [502, 503, 504, 408, 425, 429];
 /// Bounded retry settings for read requests.
 ///
 /// `max_retries` counts retries after the first attempt, so a request is sent at most
-/// `max_retries + 1` times. The wait before retry `n` (from 0) is `base_delay * 2^n`,
-/// or the `Retry-After` header when the server sends one, which is how a 429 says how
-/// long to back off. A 429 without the header waits the same backoff. Each wait is capped
-/// at `max_delay`, which bounds the total wait to `max_retries * max_delay`.
+/// `max_retries + 1` times. When the server sends a `Retry-After` header, as it does with
+/// a 429 to say how long to wait, the client waits that long before retry `n` (from 0).
+/// Without the header the client waits `base_delay * 2^n`.
+/// Each wait is capped at `max_delay`, which bounds the total wait to `max_retries * max_delay`.
 /// The defaults copy the retry settings in the documentation of
 /// [langsmith-py](https://github.com/langchain-ai/langsmith-sdk), the LangSmith Python client:
 /// 3 retries with a 0.5 second backoff factor.
