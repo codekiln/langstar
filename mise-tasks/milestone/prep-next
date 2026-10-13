@@ -588,6 +588,8 @@ def main():
     parser.add_argument(
         "milestone",
         nargs="?",
+        # mise parses the #USAGE argument and also exports it as usage_milestone.
+        default=os.environ.get("usage_milestone") or None,
         help="Milestone name or number (optional, will auto-detect from current branch)"
     )
 
