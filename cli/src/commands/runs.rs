@@ -625,7 +625,6 @@ impl RunsCommands {
         runs
     }
 
-    /// Runs to request per page: --limit, capped at the API maximum.
     /// Turns a `--project` value into a project ID. A UUID is used as given.
     /// A name is looked up with `GET /api/v1/sessions?name=`, as langsmith-sdk's
     /// `read_project` does, and must match one project exactly.
@@ -636,12 +635,37 @@ impl RunsCommands {
 
         let params = ListProjectsParams {
             name: Some(project.to_string()),
+            // The name filter is exact, so one match is the answer; a second
+            // match is enough to report the name as ambiguous.
+            limit: Some(2),
             ..Default::default()
         };
         let found = client.list_projects(params).await?;
-        pick_exact_project(found, project)
+        Self::pick_exact_project(found, project)
     }
 
+    /// Picks the one project whose name equals `name` from the API's name-filter results.
+    fn pick_exact_project(found: Vec<Project>, name: &str) -> Result<Uuid> {
+        // The name filter is an exact match (langsmith-sdk's `read_project` takes the
+        // first result of `name=` with `limit=1`). Comparing names again keeps a
+        // response with any other project from becoming the one we query.
+        let mut exact = found
+            .into_iter()
+            .filter(|p| p.name.as_deref() == Some(name));
+        match (exact.next(), exact.next()) {
+            (Some(p), None) => Ok(p.id),
+            (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "No project named '{}' found. Pass an existing project name or UUID to --project.",
+                name
+            ))),
+            (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "More than one project is named '{}'. Pass its UUID to --project instead.",
+                name
+            ))),
+        }
+    }
+
+    /// Runs to request per page: --limit, capped at the API maximum.
     fn page_size(limit: usize) -> u32 {
         limit.clamp(1, MAX_PAGE_SIZE as usize) as u32
     }
@@ -807,25 +831,6 @@ impl RunsCommands {
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// Picks the one project whose name equals `name` from the API's name-filter results.
-fn pick_exact_project(found: Vec<Project>, name: &str) -> Result<Uuid> {
-    // The API's name filter may match by substring, so keep exact matches only.
-    let mut exact = found
-        .into_iter()
-        .filter(|p| p.name.as_deref() == Some(name));
-    match (exact.next(), exact.next()) {
-        (Some(p), None) => Ok(p.id),
-        (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
-            "No project named '{}' found. Pass an existing project name or UUID to --project.",
-            name
-        ))),
-        (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
-            "More than one project is named '{}'. Pass its UUID to --project instead.",
-            name
-        ))),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -845,27 +850,27 @@ mod tests {
     #[test]
     fn test_pick_exact_project_one_exact_match() {
         let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project-2")];
-        let id = pick_exact_project(found, "my-project").unwrap();
+        let id = RunsCommands::pick_exact_project(found, "my-project").unwrap();
         assert_eq!(id, Uuid::parse_str(ID_A).unwrap());
     }
 
     #[test]
     fn test_pick_exact_project_rejects_substring_only_match() {
         let found = vec![project(ID_A, "my-project-2")];
-        let err = pick_exact_project(found, "my-project").unwrap_err();
+        let err = RunsCommands::pick_exact_project(found, "my-project").unwrap_err();
         assert!(err.to_string().contains("No project named"), "{err}");
     }
 
     #[test]
     fn test_pick_exact_project_no_match() {
-        let err = pick_exact_project(vec![], "my-project").unwrap_err();
+        let err = RunsCommands::pick_exact_project(vec![], "my-project").unwrap_err();
         assert!(err.to_string().contains("No project named"), "{err}");
     }
 
     #[test]
     fn test_pick_exact_project_ambiguous() {
         let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project")];
-        let err = pick_exact_project(found, "my-project").unwrap_err();
+        let err = RunsCommands::pick_exact_project(found, "my-project").unwrap_err();
         let msg = err.to_string();
         assert!(msg.contains("More than one project"), "{msg}");
         assert!(msg.contains("UUID"), "{msg}");

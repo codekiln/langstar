@@ -8,7 +8,7 @@
 
 ### Requirement: Query runs by project
 
-`langstar runs query` SHALL return runs from the projects the user passes by name or UUID with `-p` or `--project`, which a user can repeat. It SHALL use a UUID as given and resolve any other value to the ID of the project with exactly that name, and SHALL stop with exit status 1, saying that no project has that name, when none does. It SHALL stop with exit status 1 before sending a request, saying that `runs query` needs at least one project, when the user passes none. The v2 endpoint cannot query across all projects. `--is-root` SHALL limit the results to the root run of each trace.
+`langstar runs query` SHALL return runs from the projects the user passes by name or UUID with `-p` or `--project`, which a user can repeat. It SHALL use a UUID as given and resolve any other value to the ID of the project with exactly that name, and SHALL stop with exit status 1, saying that no project has that name, when none does. It SHALL stop with exit status 1, saying that more than one project has that name and asking for the UUID, when two projects share a name. It SHALL stop with exit status 1 before sending a request, saying that `runs query` needs at least one project, when the user passes none. The v2 endpoint cannot query across all projects. `--is-root` SHALL limit the results to the root run of each trace.
 
 #### Scenario: Two projects
 
@@ -26,6 +26,12 @@
 - **WHEN** a user runs `langstar runs query --project no-such-project`
 - **THEN** langstar says that no project is named `no-such-project`
 - **AND** exits with status 1 without querying any other project
+
+#### Scenario: Two projects share a name
+
+- **WHEN** a user runs `langstar runs query --project shared-name` while two projects are named `shared-name`
+- **THEN** langstar says that more than one project has that name and to pass its UUID
+- **AND** exits with status 1
 
 #### Scenario: No project
 
