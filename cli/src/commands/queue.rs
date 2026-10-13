@@ -8,8 +8,9 @@ use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand};
 use langstar_sdk::{
-    AnnotationQueue, CreateAnnotationQueueRequest, LangchainClient, ListAnnotationQueuesParams,
-    QueueType, UpdateAnnotationQueueRequest,
+    AnnotationQueue, AnnotationQueueItemStatus, CreateAnnotationQueueRequest, LangchainClient,
+    ListAnnotationQueueItemsParams, ListAnnotationQueuesParams, QueueType,
+    UpdateAnnotationQueueRequest,
 };
 use serde::Serialize;
 use std::io::{BufRead, BufReader};
@@ -166,6 +167,10 @@ pub struct ItemsArgs {
     #[arg(short, long, default_value = "100")]
     pub limit: u32,
 
+    /// Review section to list: needs-my-review, needs-others-review or archived (default: all)
+    #[arg(long, value_parser = ["needs-my-review", "needs-others-review", "archived"])]
+    pub status: Option<String>,
+
     /// Output as JSON
     #[arg(long)]
     pub json: bool,
@@ -226,12 +231,12 @@ impl From<&AnnotationQueue> for QueueRow {
 /// Queue item row for table display
 #[derive(Debug, Tabled, Serialize)]
 struct QueueItemRow {
-    #[tabled(rename = "Index")]
-    index: u32,
+    #[tabled(rename = "Item ID")]
+    id: String,
     #[tabled(rename = "Run ID")]
     run_id: String,
-    #[tabled(rename = "Name")]
-    name: String,
+    #[tabled(rename = "Type")]
+    item_type: String,
     #[tabled(rename = "Status")]
     status: String,
     #[tabled(rename = "Added")]
@@ -439,11 +444,11 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        client
-            .add_runs_to_annotation_queue(args.queue_id, run_ids.clone())
+        let items = client
+            .add_runs_to_annotation_queue(args.queue_id, run_ids)
             .await?;
 
-        println!("Added {} runs to queue {}", run_ids.len(), args.queue_id);
+        println!("Added {} runs to queue {}", items.len(), args.queue_id);
 
         Ok(())
     }
@@ -452,10 +457,17 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        client
+        let removed = client
             .delete_run_from_annotation_queue(args.queue_id, args.run_id)
             .await?;
 
+        if !removed {
+            return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "Run {} is not in queue {}",
+                args.run_id,
+                args.queue_id
+            )));
+        }
         println!("Removed run {} from queue {}", args.run_id, args.queue_id);
 
         Ok(())
@@ -471,22 +483,33 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        // Fetch items by index (API only supports get by index)
-        // Note: Sequential fetching is required as the API only provides get-by-index
+        let statuses = match args.status.as_deref() {
+            Some("needs-my-review") => vec![AnnotationQueueItemStatus::NeedsMyReview],
+            Some("needs-others-review") => vec![AnnotationQueueItemStatus::NeedsOthersReview],
+            Some("archived") => vec![AnnotationQueueItemStatus::Archived],
+            _ => AnnotationQueueItemStatus::ALL.to_vec(),
+        };
+
+        let limit = args.limit as usize;
         let mut items = Vec::new();
-        for index in 0..args.limit {
-            match client
-                .get_run_from_annotation_queue(args.queue_id, index)
-                .await
-            {
-                Ok(item) => items.push((index, item)),
-                Err(langstar_sdk::LangstarError::ApiError { status: 404, .. }) => {
-                    // 404 means no more items at this index - end of queue
-                    break;
+        'sections: for status in statuses {
+            let mut params = ListAnnotationQueueItemsParams::new(status);
+            params.page_size = Some(args.limit.clamp(1, 100));
+            let mut cursor: Option<String> = None;
+            loop {
+                let page = client
+                    .list_annotation_queue_items(args.queue_id, params, cursor.as_deref())
+                    .await?;
+                let empty = page.items.is_empty();
+                for item in page.items {
+                    if items.len() >= limit {
+                        break 'sections;
+                    }
+                    items.push((status, item));
                 }
-                Err(e) => {
-                    // Propagate other errors (auth failures, network issues, etc.)
-                    return Err(e.into());
+                match page.next_cursor {
+                    Some(next) if !next.is_empty() && !empty => cursor = Some(next),
+                    _ => break,
                 }
             }
         }
@@ -497,11 +520,17 @@ impl QueueCommands {
         } else {
             let rows: Vec<QueueItemRow> = items
                 .iter()
-                .map(|(index, item)| QueueItemRow {
-                    index: *index,
-                    run_id: item.run.id.to_string().chars().take(8).collect(),
-                    name: item.run.name.chars().take(30).collect(),
-                    status: item.run.status.clone(),
+                .map(|(status, item)| QueueItemRow {
+                    id: item.id.to_string().chars().take(8).collect(),
+                    run_id: item
+                        .run_id
+                        .map(|id| id.to_string().chars().take(8).collect())
+                        .unwrap_or_else(|| "-".to_string()),
+                    item_type: item
+                        .item_type
+                        .map(|t| t.as_str().to_string())
+                        .unwrap_or_else(|| "-".to_string()),
+                    status: status.as_str().to_string(),
                     added: item
                         .added_at
                         .map(|t| t.format("%Y-%m-%d").to_string())
@@ -525,11 +554,11 @@ mod tests {
         let json = r#"{
             "id": "12345678-1234-1234-1234-123456789012",
             "name": "Test Queue",
-            "tenantId": "87654321-4321-4321-4321-210987654321",
-            "queueType": "single",
+            "tenant_id": "87654321-4321-4321-4321-210987654321",
+            "queue_type": "single",
             "description": "A very long description that should be truncated for display",
-            "createdAt": "2024-01-01T12:00:00Z",
-            "updatedAt": "2024-01-01T12:00:00Z"
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:00:00Z"
         }"#;
 
         let queue: AnnotationQueue = serde_json::from_str(json).unwrap();

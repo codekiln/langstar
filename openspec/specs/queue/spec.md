@@ -87,16 +87,21 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 
 ### Requirement: Remove a run from a queue
 
-`langstar queue remove-run <queue-id> <run-id>` SHALL remove one run from the queue and print the run and queue IDs.
+`langstar queue remove-run <queue-id> <run-id>` SHALL remove one run from the queue and print the run and queue IDs. If the queue holds no item for the run, it SHALL exit non-zero and say the run is not in the queue.
 
 #### Scenario: Remove a run
 
 - **WHEN** a user runs `langstar queue remove-run <queue-id> <run-id>`
 - **THEN** the run leaves the queue
 
+#### Scenario: Remove a run that is not in the queue
+
+- **WHEN** a user runs `langstar queue remove-run <queue-id> <run-id>` for a run the queue does not hold
+- **THEN** langstar exits non-zero and says the run is not in the queue
+
 ### Requirement: List the runs in a queue
 
-`langstar queue items <queue-id>` SHALL list the runs in the queue in order, up to `--limit` (default 100), stopping at the end of the queue. The table SHALL show each run's position in the queue, short run ID, name, status and the date it was added, followed by how many items it found.
+`langstar queue items <queue-id>` SHALL list the items in the queue, up to `--limit` (default 100), one review section after another (`needs_my_review`, `needs_others_review`, `archived`), or only the section `--status` names. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
 
 #### Scenario: Queue shorter than the limit
 

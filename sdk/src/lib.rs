@@ -55,9 +55,11 @@ pub mod test_utils;
 
 // Re-export commonly used types
 pub use annotation_queues::{
-    AnnotationQueue, AnnotationQueueRubricItem, AnnotationQueueWithDetails,
-    CreateAnnotationQueueRequest, ListAnnotationQueuesParams, QueueType,
-    RunWithAnnotationQueueInfo, UpdateAnnotationQueueRequest,
+    AnnotationQueue, AnnotationQueueItem, AnnotationQueueItemInput, AnnotationQueueItemPlacement,
+    AnnotationQueueItemStatus, AnnotationQueueItemType, AnnotationQueueListItem,
+    AnnotationQueueRubricItem, AnnotationQueueWithDetails, CreateAnnotationQueueRequest,
+    ListAnnotationQueueItemsParams, ListAnnotationQueueItemsResponse, ListAnnotationQueuesParams,
+    PatchAnnotationQueueItemRequest, QueueType, UpdateAnnotationQueueRequest,
 };
 pub use assistants::{
     Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
