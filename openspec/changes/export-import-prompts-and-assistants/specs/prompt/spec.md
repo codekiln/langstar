@@ -60,6 +60,7 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 #### Scenario: Missing destination workspace
 
 - **WHEN** a user runs `langstar prompt import my-prompt.json` without `--workspace-id`
+- **AND** `LANGSMITH_WORKSPACE_ID` is set
 - **THEN** langstar exits with status 1 and an error asking for `--workspace-id`
 
 ### Requirement: Check the destination before importing a prompt
@@ -102,7 +103,7 @@ When the destination prompt exists and its latest commit differs from the file, 
 
 #### Scenario: Destination already matches
 
-- **WHEN** the destination prompt's latest commit matches the file
+- **WHEN** the destination prompt's latest commit and its commit tags match the file
 - **THEN** langstar pushes nothing, reports that the prompt is unchanged and exits with status 0
 
 ### Requirement: Update the repo details only with --update
@@ -115,6 +116,18 @@ When the destination repo's description, readme, tags or visibility differ from 
 - **AND** the destination repo's readme differs from the file's readme
 - **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id> --update`
 - **THEN** langstar sets the destination repo's readme to the file's readme and adds no commit
+- **AND** exits with status 0
+
+### Requirement: Move commit tags only with --update
+
+When a commit tag in the file is missing in the destination or points at a different commit, `langstar prompt import` SHALL list the tag as a difference and exit with status 2. With `--update` it SHALL create or move the tag to the destination commit that matches the file, and add no commit when the latest commit already matches.
+
+#### Scenario: Destination tag points at an older commit
+
+- **WHEN** the destination prompt's latest commit matches the file
+- **AND** the destination's `prod` tag points at an earlier commit
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id> --update`
+- **THEN** langstar moves `prod` to the latest commit and adds no commit
 - **AND** exits with status 0
 
 ### Requirement: Record the destination commit
