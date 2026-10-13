@@ -70,3 +70,72 @@ fn test_config_dir_env_chooses_the_config_file() {
         "{stdout}"
     );
 }
+
+fn langstar_in(dir: &TempDir) -> Command {
+    let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
+    cmd.env("LANGSTAR_CONFIG_DIR", dir.path())
+        .env_remove("LANGSTAR_OUTPUT_FORMAT")
+        .env_remove("LANGSTAR_TIMEZONE");
+    cmd
+}
+
+#[test]
+fn test_config_validate_accepts_a_valid_file() {
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join("config.toml"), "output_format = \"json\"\n").unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "validate"])
+        .output()
+        .unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+}
+
+#[test]
+fn test_config_validate_accepts_a_missing_file() {
+    let dir = TempDir::new().unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "validate"])
+        .output()
+        .unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    assert!(String::from_utf8_lossy(&out.stdout).contains("Config file does not exist"));
+}
+
+#[test]
+fn test_config_validate_fails_on_an_unparsable_file() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("config.toml");
+    fs::write(&path, "output_format = \n").unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "validate"])
+        .output()
+        .unwrap();
+
+    assert!(!out.status.success(), "{out:?}");
+    let all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(all.contains(&path.display().to_string()), "{all}");
+    assert!(all.contains("Failed to parse config file"), "{all}");
+}
+
+#[test]
+fn test_config_show_warns_about_an_unparsable_file() {
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join("config.toml"), "output_format = \n").unwrap();
+
+    let out = langstar_in(&dir).args(["config", "show"]).output().unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("Failed to parse config file"),
+        "{out:?}"
+    );
+}
