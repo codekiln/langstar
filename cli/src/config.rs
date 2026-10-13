@@ -95,8 +95,8 @@ impl Config {
     /// 3. Default values
     ///
     /// A config file that exists but cannot be read or parsed is ignored with a
-    /// warning, so `config show` and `config set` can still be used to fix it;
-    /// `config validate` fails on it instead.
+    /// warning, so `config show` still runs and prints the file's path;
+    /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
         // Start with file config if it exists
         let mut config = Self::load_from_file().unwrap_or_else(|e| {
