@@ -26,7 +26,7 @@ To change what agents read, edit `.rulesync/rules/` or `.rulesync/skills/`, run 
 
 ## AI header
 
-Start every PR description, PR or issue comment, review comment, review body and issue body you write with the line `## from AI(<harness>, <model-slug>, <session-name>)`, for example `## from AI(claude-code, claude-opus-5-5, langstar i740-fnox)`. Name the model your session actually runs, not the one in the example, and the session name it was launched with. This replaces the older `--AI(...)` trailer and `AI (...): ` prefix. When you edit a body that lacks the header, add it.
+Start every PR description, PR or issue comment, review comment, review body and issue body you write with the line `## from AI(<harness>, <model-slug>, <session-name>)`, for example `## from AI(claude-code, claude-opus-5-5, langstar i740-fnox)`. Name the model your session runs and the session name it was launched with. This replaces the older `--AI(...)` trailer and `AI (...): ` prefix. When you edit a body that lacks the header, add it.
 
 ## Testing
 
