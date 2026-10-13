@@ -683,22 +683,32 @@ impl DatasetCommands {
         // one page however large the dataset is.
         let mut examples = client.list_examples_paginated(params, total_limit);
 
-        // Request the first page before opening --out, so a bad dataset id or
-        // API key leaves an existing file untouched. A failure on a later page
-        // leaves the examples written so far in the file and exits non-zero.
-        let mut next = examples.next().await.transpose()?;
-
-        // Prepare output
-        let mut output: Box<dyn Write> = if let Some(path) = &args.out {
-            Box::new(std::fs::File::create(path)?)
-        } else {
-            Box::new(std::io::stdout())
+        // With --out, stage the export in a temporary file in the same
+        // directory and rename it over the target only after the last page
+        // arrives and the final flush succeeds. A failure on any page drops
+        // the temporary file, so an existing --out file is never replaced by
+        // a partial export. Without --out, records stream to stdout as they
+        // arrive.
+        let mut staged = match &args.out {
+            Some(path) => {
+                let dir = match path.parent() {
+                    Some(dir) if !dir.as_os_str().is_empty() => dir,
+                    _ => std::path::Path::new("."),
+                };
+                Some(tempfile::NamedTempFile::new_in(dir)?)
+            }
+            None => None,
+        };
+        let mut stdout = std::io::stdout();
+        let output: &mut dyn Write = match staged.as_mut() {
+            Some(file) => file,
+            None => &mut stdout,
         };
 
         let mut exported = 0usize;
         match args.file_format {
             ExportFormat::Jsonl => {
-                while let Some(example) = next {
+                while let Some(example) = examples.next().await.transpose()? {
                     let record = JsonlRecord {
                         id: Some(example.id),
                         inputs: example.inputs,
@@ -707,15 +717,14 @@ impl DatasetCommands {
                     };
                     writeln!(output, "{}", serde_json::to_string(&record)?)?;
                     exported += 1;
-                    next = examples.next().await.transpose()?;
                 }
                 output.flush()?;
             }
             ExportFormat::Csv => {
                 // CSV format
-                let mut wtr = csv::Writer::from_writer(output);
+                let mut wtr = csv::Writer::from_writer(&mut *output);
                 wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                while let Some(example) = next {
+                while let Some(example) = examples.next().await.transpose()? {
                     wtr.write_record([
                         example.id.to_string(),
                         serde_json::to_string(&example.inputs)?,
@@ -733,10 +742,24 @@ impl DatasetCommands {
                             .unwrap_or_default(),
                     ])?;
                     exported += 1;
-                    next = examples.next().await.transpose()?;
                 }
                 wtr.flush()?;
             }
+        }
+
+        if let (Some(file), Some(path)) = (staged, &args.out) {
+            // A temporary file is created owner-only; give the result the
+            // mode of the file it replaces, or the usual 0644 for a new one.
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mode = std::fs::metadata(path)
+                    .map(|meta| meta.permissions().mode() & 0o777)
+                    .unwrap_or(0o644);
+                file.as_file()
+                    .set_permissions(std::fs::Permissions::from_mode(mode))?;
+            }
+            file.persist(path).map_err(|e| e.error)?;
         }
 
         if let Some(path) = &args.out {

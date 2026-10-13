@@ -47,10 +47,12 @@ dirs = "5.0"
 # Secure input for secrets
 rpassword = "7.4"
 
+# Stage `dataset export --out` in a temporary file, replaced into place on success
+tempfile = "3.12"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.12"
 serial_test = "3"
 mockito = "1.5"
 # Enable test-utils feature for shared test infrastructure
