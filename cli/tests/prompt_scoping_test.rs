@@ -24,7 +24,7 @@ use serde_json::Value;
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", home::empty_config_dir());
     cmd
 }
 

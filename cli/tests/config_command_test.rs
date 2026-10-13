@@ -1,12 +1,9 @@
 //! `langstar config` commands when the config file sets an `output_format` langstar doesn't support
 //!
-//! These tests run the langstar binary with `HOME` set to a temporary
-//! directory, so they read only the config file each test writes. On Windows
-//! the config path doesn't come from `HOME`, so they run only on Unix.
+//! These tests run the langstar binary with `LANGSTAR_CONFIG_DIR` set to a
+//! temporary directory, so they read only the config file each test writes.
 //!
 //! Run with: `cargo test --test config_command_test`
-
-#![cfg(unix)]
 
 use assert_cmd::Command;
 use std::fs;
@@ -15,13 +12,13 @@ use tempfile::TempDir;
 #[test]
 fn test_config_commands_run_despite_unsupported_output_format() {
     let home = TempDir::new().unwrap();
-    let config_path = home.path().join(".config/langstar/config.toml");
+    let config_path = home.path().join("config.toml");
     fs::create_dir_all(config_path.parent().unwrap()).unwrap();
     fs::write(&config_path, "output_format = \"yaml\"\n").unwrap();
 
     let langstar = || {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-        cmd.env("HOME", home.path())
+        cmd.env("LANGSTAR_CONFIG_DIR", home.path())
             .env_remove("LANGSTAR_OUTPUT_FORMAT");
         cmd
     };
@@ -50,5 +47,26 @@ fn test_config_commands_run_despite_unsupported_output_format() {
     assert!(
         String::from_utf8_lossy(&dataset_list.stderr).contains("Invalid output format: yaml"),
         "{dataset_list:?}"
+    );
+}
+
+#[test]
+fn test_config_dir_env_chooses_the_config_file() {
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join("config.toml"), "output_format = \"json\"\n").unwrap();
+
+    let show = Command::new(env!("CARGO_BIN_EXE_langstar"))
+        .env("LANGSTAR_CONFIG_DIR", dir.path())
+        .env_remove("LANGSTAR_OUTPUT_FORMAT")
+        .args(["config", "show"])
+        .output()
+        .unwrap();
+
+    assert!(show.status.success(), "{show:?}");
+    let stdout = String::from_utf8_lossy(&show.stdout);
+    assert!(stdout.contains("output_format: json"), "{stdout}");
+    assert!(
+        stdout.contains(&dir.path().join("config.toml").display().to_string()),
+        "{stdout}"
     );
 }
