@@ -116,7 +116,7 @@ Gather knowledge and technical context for milestone planning.
 EOF
 ```
 
-### 5. Set Up SDK Research (if needed)
+### 5. Clone the upstream projects the feature touches (if needed)
 
 `.rulesync/rules/upstream-references.md` names every upstream project to check (langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server, langgraph). Clone each one the feature touches if it is not already present, for example:
 
