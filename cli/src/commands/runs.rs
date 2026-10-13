@@ -141,14 +141,10 @@ pub struct QueryArgs {
     #[arg(short = 'o', long = "output", default_value = "table", value_enum)]
     pub output: RunsOutputFormat,
 
-    /// Fields to select (comma-separated)
-    ///
-    /// Limits the fields returned in the response. Without it, the CLI asks
-    /// for the table's columns when printing a table. When printing JSON, it
-    /// asks for every field the API offers except `share_url` and
-    /// `attachments`, links that open the run or its files without an API
-    /// key; name them here to get them. When printing a table, the CLI always
-    /// adds the fields its columns need.
+    /// Run fields to return, comma-separated. For a table, the CLI adds the
+    /// fields its columns read. Without `--select`, JSON output includes every
+    /// field except `share_url` and `attachments`, which are links that open
+    /// the run or its files without an API key; name them here to get them.
     /// Example: --select id,name,status,total_tokens
     #[arg(long)]
     pub select: Option<String>,
