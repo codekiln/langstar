@@ -1056,6 +1056,9 @@ impl LangchainClient {
         limit: Option<usize>,
     ) -> Result<Vec<crate::annotation_queues::AnnotationQueueListItem>> {
         let mut items = Vec::new();
+        if limit == Some(0) {
+            return Ok(items);
+        }
         let mut cursor: Option<String> = None;
         loop {
             let page = self
@@ -1063,10 +1066,10 @@ impl LangchainClient {
                 .await?;
             let empty = page.items.is_empty();
             for item in page.items {
+                items.push(item);
                 if limit.is_some_and(|limit| items.len() >= limit) {
                     return Ok(items);
                 }
-                items.push(item);
             }
             match page.next_cursor {
                 Some(next) if !next.is_empty() && !empty => cursor = Some(next),
