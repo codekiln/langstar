@@ -100,7 +100,8 @@ impl Config {
     pub fn load() -> Result<Self> {
         // Start with file config if it exists
         let mut config = Self::load_from_file().unwrap_or_else(|e| {
-            // Commands such as `config show` load the config more than once per run
+            // Warn on the first failed load only, so a process that loads the
+            // config again does not repeat the warning
             static WARN_ONCE: Once = Once::new();
             WARN_ONCE.call_once(|| {
                 eprintln!(
@@ -162,8 +163,8 @@ impl Config {
         let path = match choose_config_file(config_path, old_path) {
             ConfigFile::Current(path) => path,
             ConfigFile::Old(path) => {
-                // Commands such as `config show` load the config more than once
-                // per run; warn on the first load only.
+                // Warn on the first load only, so a process that loads the
+                // config again does not repeat the warning
                 static WARN_ONCE: Once = Once::new();
                 WARN_ONCE.call_once(|| eprintln!("{}", old_config_warning(path, config_path)));
                 path
