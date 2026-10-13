@@ -11,14 +11,14 @@ use tempfile::TempDir;
 
 #[test]
 fn test_config_commands_run_despite_unsupported_output_format() {
-    let home = TempDir::new().unwrap();
-    let config_path = home.path().join("config.toml");
+    let config_dir = TempDir::new().unwrap();
+    let config_path = config_dir.path().join("config.toml");
     fs::create_dir_all(config_path.parent().unwrap()).unwrap();
     fs::write(&config_path, "output_format = \"yaml\"\n").unwrap();
 
     let langstar = || {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-        cmd.env("LANGSTAR_CONFIG_DIR", home.path())
+        cmd.env("LANGSTAR_CONFIG_DIR", config_dir.path())
             .env_remove("LANGSTAR_OUTPUT_FORMAT");
         cmd
     };

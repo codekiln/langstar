@@ -28,7 +28,10 @@ static TEST_DEPLOYMENT: OnceLock<TestDeployment> = OnceLock::new();
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-    cmd.env("LANGSTAR_CONFIG_DIR", common::home::empty_config_dir());
+    cmd.env(
+        "LANGSTAR_CONFIG_DIR",
+        common::config_dir::empty_config_dir(),
+    );
     cmd
 }
 
