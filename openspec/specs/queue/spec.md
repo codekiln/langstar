@@ -101,7 +101,7 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 
 ### Requirement: List the items in a queue
 
-`langstar queue items <queue-id>` SHALL list the items in the queue, up to `--limit` (default 100), one review section after another (`needs_my_review`, `needs_others_review`, `archived`), or only the section `--status` names. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
+`langstar queue items <queue-id>` SHALL list the items in the queue, up to `--limit` (default 100), one review section after another, or only the section `--status` names (`needs-my-review`, `needs-others-review` or `archived`). The table and the JSON `status` field name each item's section with underscores: `needs_my_review`, `needs_others_review`, `archived`. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
 
 #### Scenario: Queue shorter than the limit
 

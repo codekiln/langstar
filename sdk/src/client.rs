@@ -1047,8 +1047,8 @@ impl LangchainClient {
     }
 
     /// Returns up to `limit` items, or every item in the section when `limit` is `None`. It
-    /// requests the next page whenever `next_cursor` is non-empty, even after an empty page, so
-    /// a page that filtering left empty cannot hide later items. It returns early if the API
+    /// requests the next page whenever `next_cursor` is non-empty, even after an empty page.
+    /// It returns early if the API
     /// sends a cursor this call has already used.
     pub async fn collect_annotation_queue_items(
         &self,
