@@ -144,6 +144,21 @@ fn test_config_show_warns_about_an_unparsable_file() {
 }
 
 #[test]
+fn test_config_load_warning_leaves_out_the_line_of_the_file() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("config.toml");
+    fs::write(&path, "langsmith_api_key = lsv2_pt_SECRET123\n").unwrap();
+
+    let out = langstar_in(&dir).arg("version").output().unwrap();
+
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+    assert!(stderr.contains("line 1, column"), "{stderr}");
+    assert!(stderr.contains("langstar config validate"), "{stderr}");
+    assert!(!stderr.contains("SECRET123"), "{stderr}");
+}
+
+#[test]
 fn test_config_set_fails_on_an_unparsable_file_and_leaves_it_unchanged() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join("config.toml");

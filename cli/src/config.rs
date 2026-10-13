@@ -107,7 +107,7 @@ impl Config {
             static WARN_ONCE: Once = Once::new();
             WARN_ONCE.call_once(|| {
                 eprintln!(
-                    "Warning: {e}\n  langstar is using the default settings and any environment variables instead. Run 'langstar config validate' to check the file."
+                    "Warning: {e}\n  langstar is using the default settings and any environment variables instead. Run 'langstar config validate' to see the error."
                 )
             });
             Self::default()
@@ -167,7 +167,9 @@ impl Config {
             ConfigFile::Missing => return Ok(Self::default()),
         };
 
-        Self::read_file(path)
+        // The warning goes to stderr on every command, so it leaves out the line
+        // of the file that failed to parse, which can hold the API key
+        Self::read_file_with(path, false)
     }
 
     /// Read and parse the config file at `path`, returning any read or parse error.
@@ -175,6 +177,12 @@ impl Config {
     /// `load` uses the default config when this returns an error; `config validate`
     /// calls this to report the error.
     pub fn read_file(path: &Path) -> Result<Self> {
+        Self::read_file_with(path, true)
+    }
+
+    /// `read_file`, where `quote_source` chooses whether a parse error quotes the
+    /// line of the file it points at or gives only the line, column and message.
+    fn read_file_with(path: &Path, quote_source: bool) -> Result<Self> {
         let content = std::fs::read_to_string(path).map_err(|e| {
             CliError::Config(format!(
                 "Failed to read config file {}: {}",
@@ -184,10 +192,27 @@ impl Config {
         })?;
 
         let config: Config = toml::from_str(&content).map_err(|e| {
+            if quote_source {
+                return CliError::Config(format!(
+                    "Failed to parse config file {}: {}",
+                    path.display(),
+                    e
+                ));
+            }
+            let position = e
+                .span()
+                .map(|span| {
+                    let before = &content[..span.start.min(content.len())];
+                    let line = before.matches('\n').count() + 1;
+                    let column = before.rsplit('\n').next().map_or(0, |l| l.chars().count()) + 1;
+                    format!(" at line {line}, column {column}")
+                })
+                .unwrap_or_default();
             CliError::Config(format!(
-                "Failed to parse config file {}: {}",
+                "Failed to parse config file {}{}: {}",
                 path.display(),
-                e
+                position,
+                e.message()
             ))
         })?;
 
