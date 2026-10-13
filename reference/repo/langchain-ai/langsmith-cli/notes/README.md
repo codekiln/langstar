@@ -1,7 +1,7 @@
 # langsmith-cli
 
 - Repo: https://github.com/langchain-ai/langsmith-cli
-- Commit read: `2613503` (HEAD of the local clone)
+- Commit read: [2613503 chore: add CODEOWNERS (#379)](https://github.com/langchain-ai/langsmith-cli/commit/26135038671155f05ddd725703de7bdd43c7aa9f); the SDK facts come from tag `v0.27.1`
 - All paths below are relative to `code/`.
 
 ## What it is

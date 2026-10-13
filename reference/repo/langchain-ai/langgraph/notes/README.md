@@ -1,7 +1,7 @@
 # langgraph (orientation: libs/cli and SDK pointers)
 
 - Repo: https://github.com/langchain-ai/langgraph
-- Commit read: `8a77332d0` (`git -C code rev-parse --short HEAD`)
+- Commit read: [8a77332d0 release(cli): 0.4.34 (#9300)](https://github.com/langchain-ai/langgraph/commit/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8); the line numbers below are from this commit.
 - Local clone: `reference/repo/langchain-ai/langgraph/code` (read only)
 - All paths below are relative to `code/`.
 

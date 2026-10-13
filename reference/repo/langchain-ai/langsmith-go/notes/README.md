@@ -1,7 +1,7 @@
 # langsmith-go orientation note
 
 - Repo: https://github.com/langchain-ai/langsmith-go
-- Commit read: 59bb42c (`git rev-parse --short HEAD`); SDK version `0.28.0` (`internal/version.go`)
+- Commit read: [59bb42c release: 0.28.0 (#237)](https://github.com/langchain-ai/langsmith-go/commit/59bb42c30052067fe488f9bb8370df9037c715ef); SDK version `0.28.0` (`internal/version.go`)
 - All paths below are relative to `code/`.
 
 ## What it is
@@ -26,7 +26,7 @@
 - `retryDelay`: if `parseRetryAfterHeader` succeeds, use it (clamped to >= 0). Headers in order: `Retry-After-Ms` (milliseconds), then `Retry-After` (seconds as float, or an HTTP-date parsed with `time.RFC1123`).
 - Otherwise exponential backoff: `0.5s * 2^retryCount`, capped at `maxDelay = 16 * time.Second`, minus random jitter in `[0, delay/4)`.
 - Retry count is sent in `X-Stainless-Retry-Count` unless the caller changed that header.
-- Hand-written extra retry for gateway errors was not found in this repo's `requestconfig.go`; retry code in `sandbox_command_start_retry_test.go` etc. concerns sandbox commands (not read in detail, so not described).
+- langsmith-go retries a 502, 503 or 504 under the same rule as any other status >= 500; it has no separate gateway-error retry. Files such as `sandbox_command_start_retry_test.go` retry sandbox commands, which this note does not cover.
 
 ## Pagination (`packages/pagination/pagination.go`)
 

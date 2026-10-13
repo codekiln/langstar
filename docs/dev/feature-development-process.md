@@ -196,7 +196,7 @@ gh sub-issue list 298 --relation children
 
 ### 1.1 Set Up Research Workspace
 
-The upstream projects to check, and what each is authoritative for, are named in `.rulesync/rules/upstream-references.md`; each has orientation notes under `reference/repo/langchain-ai/<name>/notes/`. Compare your feature with every one that covers it, and record in the PR body where langstar matches and where it differs on purpose.
+The upstream projects to compare with, and what to compare in each, are listed in `.rulesync/rules/upstream-references.md`; each has orientation notes under `reference/repo/langchain-ai/<name>/notes/`. Compare your feature with every one that covers it, and record in the PR body where langstar matches and where it differs on purpose.
 
 Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) to clone one that is missing:
 
@@ -204,7 +204,7 @@ Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo
 # For LangSmith features
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-sdk
 
-# For endpoints, types and pagination, and as the spec-drift check
+# For endpoints, types and pagination, and to find endpoints langstar lacks
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-go
 
 # For CLI behavior
