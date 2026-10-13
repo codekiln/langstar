@@ -179,9 +179,10 @@ impl Config {
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
     /// `config validate` calls this to report the error, and the error includes the
-    /// line of the file that the parse error points at. `load` reads the file
-    /// with `read_file_with` and leaves that line out, and uses the default
-    /// config when that returns an error.
+    /// line of the file that the parse error points at. `load` calls
+    /// `read_file_with` with `quote_source` false, so its error leaves that line
+    /// out, and `load` falls back to the default config when `read_file_with`
+    /// returns an error.
     pub fn read_file(path: &Path) -> Result<Self> {
         Self::read_file_with(path, true)
     }
