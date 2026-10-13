@@ -33,7 +33,7 @@
 
 #### Scenario: Tag and status together
 
-- **WHEN** a user runs `langstar runs query --tag production --status error`
+- **WHEN** a user runs `langstar runs query --project <project-id> --tag production --status error`
 - **THEN** langstar sends the filter `has(tags, "production") and eq(status, "error")`
 
 ### Requirement: Filter runs with LangSmith filter expressions
@@ -42,7 +42,7 @@
 
 #### Scenario: LLM runs only
 
-- **WHEN** a user runs `langstar runs query --run-type llm`
+- **WHEN** a user runs `langstar runs query --project <project-id> --run-type llm`
 - **THEN** every run in the results has the run type `llm`
 
 ### Requirement: Limit runs to a time window
@@ -51,7 +51,7 @@
 
 #### Scenario: Relative start
 
-- **WHEN** a user runs `langstar runs query --since 1h`
+- **WHEN** a user runs `langstar runs query --project <project-id> --since 1h`
 - **THEN** langstar returns runs that started in the last hour
 
 #### Scenario: Unreadable start time
@@ -80,7 +80,7 @@
 
 #### Scenario: More runs than one page
 
-- **WHEN** a user runs `langstar runs query --limit 250`
+- **WHEN** a user runs `langstar runs query --project <project-id> --limit 250`
 - **AND** the projects hold more than 250 matching runs
 - **THEN** langstar returns 250 runs
 
@@ -99,7 +99,7 @@
 
 #### Scenario: JSON for a script
 
-- **WHEN** a user runs `langstar runs query -o json`
+- **WHEN** a user runs `langstar runs query --project <project-id> -o json`
 - **THEN** standard output holds one JSON array of runs, with the v2 field names such as `project_id`, and nothing else
 
 ### Requirement: Scope a query to an organization or workspace
@@ -108,5 +108,5 @@
 
 #### Scenario: Override the workspace
 
-- **WHEN** a user runs `langstar runs query --workspace-id <your-workspace-id>`
+- **WHEN** a user runs `langstar runs query --project <project-id> --workspace-id <your-workspace-id>`
 - **THEN** langstar queries runs in that workspace instead of the configured one
