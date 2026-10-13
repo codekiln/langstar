@@ -8,7 +8,7 @@
 
 ### Requirement: Query runs by project
 
-`langstar runs query` SHALL return runs from the projects whose UUIDs the user passes with `-p` or `--project`, which a user can repeat. It SHALL warn about and skip each `--project` value that is not a UUID, and SHALL stop with exit status 1 before sending a request, saying that `runs query` needs at least one project UUID, when no UUID is left. The v2 endpoint cannot query across all projects. `--is-root` SHALL limit the results to the root run of each trace.
+`langstar runs query` SHALL return runs from the projects the user passes by name or UUID with `-p` or `--project`, which a user can repeat. It SHALL use a UUID as given and resolve any other value to the ID of the project with exactly that name, and SHALL stop with exit status 1, saying that no project has that name, when none does. It SHALL stop with exit status 1 before sending a request, saying that `runs query` needs at least one project, when the user passes none. The v2 endpoint cannot query across all projects. `--is-root` SHALL limit the results to the root run of each trace.
 
 #### Scenario: Two projects
 
@@ -18,13 +18,19 @@
 #### Scenario: Project given by name
 
 - **WHEN** a user runs `langstar runs query --project my-project`
-- **THEN** langstar warns that `my-project` is not a valid UUID
-- **AND** stops with exit status 1 without sending a request
+- **THEN** langstar looks up the ID of the project named `my-project`
+- **AND** returns only that project's runs
+
+#### Scenario: Unknown project name
+
+- **WHEN** a user runs `langstar runs query --project no-such-project`
+- **THEN** langstar says that no project is named `no-such-project`
+- **AND** exits with status 1 without querying any other project
 
 #### Scenario: No project
 
 - **WHEN** a user runs `langstar runs query` with no `--project`
-- **THEN** langstar says `runs query needs at least one project UUID: pass --project <UUID>`
+- **THEN** langstar says `runs query needs at least one project: pass --project <NAME or UUID>`
 - **AND** exits with status 1
 
 ### Requirement: Filter runs with flags

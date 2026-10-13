@@ -9,6 +9,7 @@ use crate::output::{OutputFormat, OutputFormatter};
 use chrono::{DateTime, Utc};
 use clap::{Args, Subcommand, ValueEnum};
 use futures_util::StreamExt;
+use langstar_sdk::projects::ListProjectsParams;
 use langstar_sdk::{LangchainClient, QueriedRun, QueryRunsRequest, RunSelectField, RunType};
 use serde::Serialize;
 use tabled::Tabled;
@@ -28,10 +29,10 @@ pub enum RunsCommands {
 /// Arguments for the `runs query` command
 #[derive(Debug, Args)]
 pub struct QueryArgs {
-    /// Project UUID to query runs from (required)
+    /// Project name or UUID to query runs from (required)
     ///
     /// Can be specified multiple times to query from multiple projects.
-    /// The LangSmith runs API needs at least one project UUID.
+    /// The LangSmith runs API needs at least one project.
     #[arg(short, long = "project", value_name = "PROJECT")]
     pub projects: Vec<String>,
 
@@ -624,6 +625,36 @@ impl RunsCommands {
     }
 
     /// Runs to request per page: --limit, capped at the API maximum.
+    /// Turns a `--project` value into a project ID. A UUID is used as given.
+    /// A name is looked up with `GET /api/v1/sessions?name=`, as langsmith-sdk's
+    /// `read_project` does, and must match one project exactly.
+    async fn resolve_project(client: &LangchainClient, project: &str) -> Result<Uuid> {
+        if let Ok(id) = Uuid::parse_str(project) {
+            return Ok(id);
+        }
+
+        let params = ListProjectsParams {
+            name: Some(project.to_string()),
+            ..Default::default()
+        };
+        let found = client.list_projects(params).await?;
+        // The API's name filter may match by substring, so keep exact matches only.
+        let mut exact = found
+            .into_iter()
+            .filter(|p| p.name.as_deref() == Some(project));
+        match (exact.next(), exact.next()) {
+            (Some(p), None) => Ok(p.id),
+            (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "No project named '{}' found. Pass an existing project name or UUID to --project.",
+                project
+            ))),
+            (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "More than one project is named '{}'. Pass its UUID to --project instead.",
+                project
+            ))),
+        }
+    }
+
     fn page_size(limit: usize) -> u32 {
         limit.clamp(1, MAX_PAGE_SIZE as usize) as u32
     }
@@ -686,24 +717,17 @@ impl RunsCommands {
 
         let combined_filter = filter_builder.build();
 
-        // Parse project IDs/names (warn if not valid UUIDs)
-        let project_ids: Vec<Uuid> = args
-            .projects
-            .iter()
-            .filter_map(|p| match Uuid::parse_str(p) {
-                Ok(uuid) => Some(uuid),
-                Err(_) => {
-                    formatter.warning(&format!("Project '{}' is not a valid UUID, ignoring", p));
-                    None
-                }
-            })
-            .collect();
-
-        if project_ids.is_empty() {
+        if args.projects.is_empty() {
             return Err(crate::error::CliError::Other(anyhow::anyhow!(
-                "runs query needs at least one project UUID: pass --project <UUID>. \
+                "runs query needs at least one project: pass --project <NAME or UUID>. \
                  The LangSmith runs API cannot query across all projects."
             )));
+        }
+
+        // A UUID is used as given; a name is looked up in the workspace.
+        let mut project_ids: Vec<Uuid> = Vec::with_capacity(args.projects.len());
+        for project in &args.projects {
+            project_ids.push(Self::resolve_project(&client, project).await?);
         }
 
         // Parse time filters with precedence:
