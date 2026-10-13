@@ -1624,7 +1624,7 @@ impl LangchainClient {
     ///
     /// # Arguments
     ///
-    /// * `params` - Query parameters; `offset` and `limit` are managed here
+    /// * `params` - Query parameters; the first page starts at `offset`, and `limit` is ignored in favor of `total_limit`
     /// * `total_limit` - Maximum number of examples to yield. `None` yields all.
     ///
     /// # Returns
