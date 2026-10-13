@@ -25,7 +25,7 @@ A prompt belongs to a workspace and an assistant belongs to a deployment, but bo
 
 ### Modified Capabilities
 
-- `assistant`: adds export, import, compare and verify requirements to `langstar assistant`.
+- `assistant`: adds export, import, compare and verify requirements to `langstar assistant`, and lets every assistant command reach a deployment built from GitHub through the deployment's `url`.
 
 ## Impact
 

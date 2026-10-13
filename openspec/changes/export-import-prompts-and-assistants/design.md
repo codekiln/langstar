@@ -97,7 +97,7 @@ A mise task runs a short Python script that pulls the imported prompt with `incl
 
 - [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks the round trip before the commands are built.
 - [Pushing a manifest identical to the latest commit may return 409] → Import compares first and pushes nothing when the prompt matches.
-- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → [export-import-prompts-and-assistants Task 2.3 Return the URL of a deployment built from GitHub](tasks.md#L14) changes `resolve_deployment_url` before anyone builds the assistant export, compare, verify and import commands.
+- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → [export-import-prompts-and-assistants Task 2.3 Return the URL of a deployment built from GitHub](tasks.md#L14) makes `resolve_deployment_url` read the deployment's top-level `url`, which the control plane's `Deployment` schema carries, before anyone builds the assistant export, compare, verify and import commands.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 
 ## Resolved Questions
