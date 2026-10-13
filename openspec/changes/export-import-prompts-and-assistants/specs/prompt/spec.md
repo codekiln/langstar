@@ -62,6 +62,17 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 - **WHEN** a user runs `langstar prompt import my-prompt.json` without `--workspace-id`
 - **THEN** langstar exits with status 1 and an error asking for `--workspace-id`
 
+### Requirement: Check the destination before importing a prompt
+
+Before it writes, `langstar prompt import` SHALL run the checks of `prompt verify` against the destination workspace. When the workspace lacks a secret in `requires.secrets` it SHALL write nothing, name each missing secret and exit with status 2. A missing saved model configuration SHALL be a note, as in `prompt verify`.
+
+#### Scenario: Secret missing at import
+
+- **WHEN** the file lists `OPENAI_API_KEY` under `requires.secrets`
+- **AND** the destination workspace has no secret named `OPENAI_API_KEY`
+- **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
+- **THEN** langstar creates no prompt, reports `OPENAI_API_KEY` as missing and exits with status 2
+
 ### Requirement: Import a prompt that does not exist yet
 
 When the destination workspace has no prompt with the file's handle, `langstar prompt import` SHALL create the prompt with the file's repo details, push the file's manifest and commit description as its first commit, and create the file's commit tags on that commit.

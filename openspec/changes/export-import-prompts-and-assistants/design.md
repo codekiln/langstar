@@ -12,7 +12,7 @@ Langstar reads one API key and one workspace at a time, from flags, environment 
 
 **Goals:**
 
-- Carry every field of a prompt commit and an assistant through a file and back without loss.
+- Carry a prompt's manifest and model, its commit description and tags, and its repo details, and an assistant's name, description, graph ID, configuration, context and metadata, through a file and back without loss.
 - Make a repeated import of the same file safe: it finds its earlier copy and changes nothing until the user asks.
 - Give users one way to check a copy: the same report shape and exit statuses for both resource types.
 
@@ -49,7 +49,7 @@ One prompt export looks like this:
 
 An assistant export has `kind: "assistant"`, a `source` with the deployment, assistant ID and version, an `assistant` object with `name`, `description`, `graph_id`, `config`, `context` and `metadata`, and `requires.prompts`.
 
-The file holds no export time and langstar sorts its keys, so exporting an unchanged resource leaves Git with nothing to commit. Source IDs live only in `source`.
+The file holds no export time and langstar sorts its keys, so exporting an unchanged resource leaves Git with nothing to commit.
 
 ### Export asks LangSmith for the model
 
@@ -63,13 +63,13 @@ Import writes the destination's IDs to `<file stem>.destinations.json`, keyed by
 
 A prompt that exists in the destination gets a new commit only with `--update`, and its parent is the destination's latest commit, so LangSmith keeps the earlier history. Import sends the file's commit description with each commit it creates. With `--update`, import also sets the destination repo's description, readme, tags and visibility to the file's values through `PATCH /api/v1/repos/{owner}/{repo}` when they differ. When only those repo fields differ and the manifest matches, import updates the repo and adds no commit.
 
-An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. The Agent Server merges the metadata an update sends into the assistant's metadata (`AssistantPatch` in `reference/openapi/langchain/agent-server/openapi.json`), so sending the file's metadata alone would keep every key the destination has and the file lacks. Import sends each such key with a null value and then reads the assistant back. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks against the live server whether a null value removes the key. If it does not, the read-back finds the leftover keys, and import reports them as differences and exits with status 2. Import also sends the file's graph ID, so an assistant whose graph changed at the source moves to that graph.
+An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. The Agent Server merges the metadata an update sends into the assistant's metadata (`AssistantPatch` in `reference/openapi/langchain/agent-server/openapi.json`), so sending the file's metadata alone would keep every key the destination has and the file lacks. Import sends each such key with a null value and then reads the assistant back. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks against the live server whether a null value removes the key. If it does not, the read-back finds the leftover keys, and import reports them as differences and exits with status 2. The same `AssistantPatch` takes the description as a string and keeps the destination's description when the request leaves it out, so the OpenAPI spec gives import no documented way to clear one. Import sends the file's configuration and context in full, an empty object when the file holds none, and the same task records whether the Agent Server replaces those objects or merges into them and whether a null or empty description clears one; a description, context or configuration key the file lacks that remains after the update shows up in the read-back as a difference, with status 2. Import also sends the file's graph ID, so an assistant whose graph changed at the source moves to that graph.
 
 Without `--update`, import lists the differences and exits with status 2. `--dry-run` reports the action import would take and writes nothing.
 
 ### Compare reports differences by JSON path
 
-Compare reads the destination, removes the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Each difference names its JSON Pointer path and both values. For a prompt, the comparison covers the commit description and the repo's description, readme, tags and visibility as well as the manifest. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
+Compare reads the destination, removes the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Compare looks only at the `repo`, `commit` and `assistant` objects. The source environment's workspace, deployment and IDs sit in `source`, so they never show up as differences against a copy. Each difference names its JSON Pointer path and both values. For a prompt, the comparison covers the commit description and the repo's description, readme, tags and visibility as well as the manifest. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
 
 ### Verify checks what the copy needs to run
 
@@ -77,9 +77,13 @@ Prompt verify looks up each name in `requires.secrets` among the workspace's sec
 
 Assistant verify checks the graph with `POST /assistants/search` filtered to the graph ID; every graph on a deployment has a default assistant, so an empty result means the deployment does not serve the graph. It checks each prompt in `requires.prompts`, such as `support-system:prod`, by asking LangSmith for the commit that tag points at (`GET /api/v1/commits/{owner}/{repo}/{tag}`, the request `langstar prompt pull --commit prod` already sends). A 404 means the workspace lacks the prompt or its tag.
 
+### Import runs verify's checks before it writes
+
+Before it writes anything, import runs the checks verify runs against the destination, because [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807) asks import to check the destination's dependencies. Prompt import stops when the destination workspace lacks a secret in `requires.secrets`, and assistant import stops when the deployment does not serve the file's graph or the workspace, from `--workspace-id` or the configured workspace, lacks a prompt in `requires.prompts`. Each names what is missing, writes nothing and exits with status 2, and `--dry-run` reports the same failed checks. A user therefore never gets a copy that cannot run, but has to create the destination's secrets and import the prompts before importing an assistant that refers to them; Open Question 8 asks whether import should write anyway and report the failed checks afterwards.
+
 ### The user names an assistant's prompt references
 
-An assistant refers to a prompt through whatever configuration key its graph reads, so langstar cannot find the references by itself. `assistant export --prompt-ref <json-pointer>` names each one. The assistant's configuration should name each prompt by handle and tag, such as `support-system:prod`, because the same prompt gets a different commit hash in each workspace. Import copies the commit tags to the destination workspace, so `support-system:prod` finds the prompt there too.
+An assistant refers to a prompt through whatever configuration key its graph reads, so langstar cannot find the references by itself. `assistant export --prompt-ref <json-pointer>` names each one. The assistant's configuration should name each prompt by handle and tag, such as `support-system:prod`, because the same prompt gets a different commit hash in each workspace. Import copies the commit tags to the destination workspace, so when the graph on the destination deployment asks LangSmith for `support-system:prod`, it gets the same prompt.
 
 ### compare, verify and import exit with 2 when they find a difference
 
@@ -97,7 +101,7 @@ A mise task runs a short Python script that pulls the imported prompt with `incl
 
 - [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) checks the round trip before the commands are built.
 - [Pushing a manifest identical to the latest commit may return 409] → Import compares first and pushes nothing when the prompt matches.
-- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → [export-import-prompts-and-assistants Task 2.3 Return the URL of a deployment built from GitHub](tasks.md#L14) makes `resolve_deployment_url` read the deployment's top-level `url`, which the control plane's `Deployment` schema carries, before anyone builds the assistant export, compare, verify and import commands.
+- [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → [export-import-prompts-and-assistants Task 2.3 Return the URL of a deployment built from GitHub](tasks.md#L14) adds the control plane's top-level `url` to the SDK's `Deployment`, which drops it today, and makes `resolve_deployment_url` use it before anyone builds the assistant export, compare, verify and import commands.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 
 ## Resolved Questions
@@ -152,5 +156,12 @@ None.
 
 > Context from the drafting agent, for question 7.
 > Issue #807 asks import to report missing model configurations, so the draft has prompt verify look for a saved model configuration (`GET /api/v1/playground-settings`) whose settings `id` ends in the prompt's `model_provider` class name, such as `ChatOpenAI`. Nothing fails at run time without one, because the prompt's manifest carries the model and its settings; the secret check is the one that finds a prompt that cannot authenticate. Reporting it as a failure would make verify exit with 2 for a prompt that runs. Recommendation: report a missing saved model configuration as a note that leaves the exit status alone.
+
+<ANSWER_HERE>
+
+### 8 - Should a failed dependency check stop import before it writes?
+
+> Context from the drafting agent, for question 8.
+> Issue #807 asks import to check the destination's dependencies: the secrets a prompt's model reads, and an assistant's graph and referenced prompts. The draft runs those checks before import writes and writes nothing when one fails, so a user never has to find and delete a copy that cannot run. The cost is order: the destination workspace needs its secrets before a prompt import, and its prompts before an assistant import. The other choice writes the copy anyway and reports the failed checks with status 2 afterwards, which lets a user import in any order and fix the destination later. Recommendation: stop before writing.
 
 <ANSWER_HERE>
