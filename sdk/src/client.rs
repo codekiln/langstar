@@ -1614,7 +1614,7 @@ impl LangchainClient {
     /// `GET /api/v1/examples` returns at most 100 examples per request, so this
     /// requests pages at increasing offsets until a page comes back shorter
     /// than requested. Each page asks for `min(100, examples still needed)`,
-    /// so a small `total_limit` does not download a full page. The first page
+    /// so a small `total_limit` does not download a full page.
     ///
     /// The stream keeps one page in memory at a time. A caller that writes each
     /// example as it arrives, as `langstar dataset export` does, therefore uses
