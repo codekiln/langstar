@@ -14,8 +14,8 @@ pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 
 /// The HTTP statuses a read request is sent again on: 502 Bad Gateway, 503 Service
 /// Unavailable, 504 Gateway Timeout, 408 Request Timeout, 425 Too Early and
-/// 429 Too Many Requests. langsmith-py retries the same six (and 500, which langstar
-/// leaves out because a 500 on a read is usually a server bug that repeats).
+/// 429 Too Many Requests. langsmith-py retries these statuses and 500 as well. langstar
+/// does not retry a 500, because a 500 on a read is usually a server bug that repeats.
 const RETRYABLE_STATUSES: [u16; 6] = [502, 503, 504, 408, 425, 429];
 
 /// Bounded retry settings for read requests.
