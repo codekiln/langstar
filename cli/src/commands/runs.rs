@@ -9,6 +9,7 @@ use crate::output::{OutputFormat, OutputFormatter};
 use chrono::{DateTime, Utc};
 use clap::{Args, Subcommand, ValueEnum};
 use futures_util::StreamExt;
+use langstar_sdk::Project;
 use langstar_sdk::projects::ListProjectsParams;
 use langstar_sdk::{LangchainClient, QueriedRun, QueryRunsRequest, RunSelectField, RunType};
 use serde::Serialize;
@@ -638,21 +639,7 @@ impl RunsCommands {
             ..Default::default()
         };
         let found = client.list_projects(params).await?;
-        // The API's name filter may match by substring, so keep exact matches only.
-        let mut exact = found
-            .into_iter()
-            .filter(|p| p.name.as_deref() == Some(project));
-        match (exact.next(), exact.next()) {
-            (Some(p), None) => Ok(p.id),
-            (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
-                "No project named '{}' found. Pass an existing project name or UUID to --project.",
-                project
-            ))),
-            (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
-                "More than one project is named '{}'. Pass its UUID to --project instead.",
-                project
-            ))),
-        }
+        pick_exact_project(found, project)
     }
 
     fn page_size(limit: usize) -> u32 {
@@ -820,9 +807,69 @@ impl RunsCommands {
 // Tests
 // ═══════════════════════════════════════════════════════════════════════════
 
+/// Picks the one project whose name equals `name` from the API's name-filter results.
+fn pick_exact_project(found: Vec<Project>, name: &str) -> Result<Uuid> {
+    // The API's name filter may match by substring, so keep exact matches only.
+    let mut exact = found
+        .into_iter()
+        .filter(|p| p.name.as_deref() == Some(name));
+    match (exact.next(), exact.next()) {
+        (Some(p), None) => Ok(p.id),
+        (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+            "No project named '{}' found. Pass an existing project name or UUID to --project.",
+            name
+        ))),
+        (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+            "More than one project is named '{}'. Pass its UUID to --project instead.",
+            name
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn project(id: &str, name: &str) -> Project {
+        serde_json::from_value(serde_json::json!({
+            "id": id,
+            "tenant_id": "00000000-0000-0000-0000-000000000001",
+            "name": name,
+        }))
+        .unwrap()
+    }
+
+    const ID_A: &str = "11111111-1111-1111-1111-111111111111";
+    const ID_B: &str = "22222222-2222-2222-2222-222222222222";
+
+    #[test]
+    fn test_pick_exact_project_one_exact_match() {
+        let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project-2")];
+        let id = pick_exact_project(found, "my-project").unwrap();
+        assert_eq!(id, Uuid::parse_str(ID_A).unwrap());
+    }
+
+    #[test]
+    fn test_pick_exact_project_rejects_substring_only_match() {
+        let found = vec![project(ID_A, "my-project-2")];
+        let err = pick_exact_project(found, "my-project").unwrap_err();
+        assert!(err.to_string().contains("No project named"), "{err}");
+    }
+
+    #[test]
+    fn test_pick_exact_project_no_match() {
+        let err = pick_exact_project(vec![], "my-project").unwrap_err();
+        assert!(err.to_string().contains("No project named"), "{err}");
+    }
+
+    #[test]
+    fn test_pick_exact_project_ambiguous() {
+        let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project")];
+        let err = pick_exact_project(found, "my-project").unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("More than one project"), "{msg}");
+        assert!(msg.contains("UUID"), "{msg}");
+    }
 
     #[test]
     fn test_filter_builder_empty() {
