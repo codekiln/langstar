@@ -1,6 +1,6 @@
 # Installer Script Testing Checklist
 
-This document is a manual testing checklist for the langstar installer script (`scripts/install.sh`). The script stays in `scripts/` because its raw.githubusercontent.com URL is published in the README, the docs and the devcontainer feature.
+Work through this checklist by hand to test `scripts/install.sh`, the script that installs the langstar CLI.
 
 ## Overview
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#MISE description="Move to the next issue in a milestone: relabel, find the next issue, create its worktree"
+#MISE description="Pick the next issue in a milestone, label it ready and create its worktree"
 #USAGE arg "[milestone]" help="Milestone name or number; defaults to the milestone of the current branch's issue"
 """
 Automate moving to next issue in a GitHub milestone workflow.
