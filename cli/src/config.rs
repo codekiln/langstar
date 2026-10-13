@@ -333,10 +333,10 @@ fn config_file_in(dir: &Path) -> PathBuf {
     dir.join("config.toml")
 }
 
-/// The part of a TOML error message's first line before the first backtick,
-/// where toml quotes the value it rejected, with the trailing separator
-/// trimmed. Later lines, such as `expected` followed by quoted tokens, are
-/// left out so no word is left dangling.
+/// Returns the start of the first line of toml's error message, up to the
+/// backtick that opens the value toml rejected. Later lines, such as `expected`
+/// followed by quoted tokens, are left out, because they would end the message
+/// on a half-sentence.
 fn message_without_value(message: &str) -> &str {
     let first_line = message.lines().next().unwrap_or("");
     let end = first_line.find('`').unwrap_or(first_line.len());
