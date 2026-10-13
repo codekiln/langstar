@@ -54,11 +54,22 @@ impl RetryPolicy {
             .headers()
             .get(reqwest::header::RETRY_AFTER)
             .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.trim().parse::<u64>().ok())
-            .map(Duration::from_secs);
+            .and_then(parse_retry_after);
         let backoff = self.base_delay.saturating_mul(1u32 << retry.min(16));
         retry_after.unwrap_or(backoff).min(self.max_delay)
     }
+}
+
+/// Parse `Retry-After`, which is either delta-seconds or an HTTP-date.
+/// A date in the past means no wait.
+fn parse_retry_after(value: &str) -> Option<Duration> {
+    let value = value.trim();
+    if let Ok(secs) = value.parse::<u64>() {
+        return Some(Duration::from_secs(secs));
+    }
+    let date = chrono::DateTime::parse_from_rfc2822(value).ok()?;
+    let wait = date.signed_duration_since(chrono::Utc::now());
+    Some(wait.to_std().unwrap_or(Duration::ZERO))
 }
 
 /// Whether a request may be sent again after a gateway error without changing server state.
@@ -2789,6 +2800,20 @@ mod tests {
         );
         limited.assert_async().await;
         good.assert_async().await;
+    }
+
+    #[test]
+    fn test_parse_retry_after_accepts_seconds_and_http_dates() {
+        assert_eq!(parse_retry_after(" 7 "), Some(Duration::from_secs(7)));
+        assert_eq!(
+            parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT"),
+            Some(Duration::ZERO)
+        );
+        let future = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let wait =
+            parse_retry_after(&future.format("%a, %d %b %Y %H:%M:%S GMT").to_string()).unwrap();
+        assert!(wait > Duration::from_secs(50) && wait <= Duration::from_secs(60));
+        assert_eq!(parse_retry_after("soon"), None);
     }
 
     #[tokio::test]
