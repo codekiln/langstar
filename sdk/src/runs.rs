@@ -350,7 +350,7 @@ pub struct QueriedRun {
 
     /// Conversation thread this run belongs to, if any
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub thread_id: Option<String>,
+    pub thread_id: Option<Uuid>,
 
     /// Application path identifier
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -506,7 +506,7 @@ pub struct QueriedRun {
 
     /// When the thread evaluation ran
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub thread_evaluation_time: Option<String>,
+    pub thread_evaluation_time: Option<DateTime<Utc>>,
 
     /// LangSmith user whose credential traced the run
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -912,11 +912,21 @@ mod tests {
             "total_tokens": 150,
             "total_cost": 0.0015,
             "tags": ["production"],
-            "is_in_dataset": false
+            "is_in_dataset": false,
+            "thread_id": "423e4567-e89b-12d3-a456-426614174003",
+            "thread_evaluation_time": "2024-01-01T12:00:09.000Z"
         }"#;
 
         let run: QueriedRun = serde_json::from_str(json).unwrap();
         assert_eq!(run.name.as_deref(), Some("ChatOpenAI"));
+        assert_eq!(
+            run.thread_id.unwrap().to_string(),
+            "423e4567-e89b-12d3-a456-426614174003"
+        );
+        assert_eq!(
+            run.thread_evaluation_time.unwrap().to_rfc3339(),
+            "2024-01-01T12:00:09+00:00"
+        );
         assert_eq!(run.run_type, Some(RunType::Llm));
         assert_eq!(run.status.as_deref(), Some("SUCCESS"));
         assert_eq!(
