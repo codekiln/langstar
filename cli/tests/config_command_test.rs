@@ -173,6 +173,7 @@ fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
         assert!(stderr.contains("Failed to parse config file"), "{stderr}");
         assert!(stderr.contains("line 1, column"), "{stderr}");
         assert!(!stderr.contains(value), "{stderr}");
+        assert!(!stderr.contains("\nexpected"), "{stderr}");
     }
 }
 

@@ -607,9 +607,12 @@ mod tests {
     }
 }
 
-/// The part of a TOML error message before the first backtick, where toml
-/// quotes the value it rejected, with the trailing separator trimmed.
+/// The part of a TOML error message's first line before the first backtick,
+/// where toml quotes the value it rejected, with the trailing separator
+/// trimmed. Later lines, such as `expected` followed by quoted tokens, are
+/// left out so no word is left dangling.
 fn message_without_value(message: &str) -> &str {
-    let end = message.find('`').unwrap_or(message.len());
-    message[..end].trim_end_matches([' ', ':', ','])
+    let first_line = message.lines().next().unwrap_or("");
+    let end = first_line.find('`').unwrap_or(first_line.len());
+    first_line[..end].trim_end_matches([' ', ':', ','])
 }
