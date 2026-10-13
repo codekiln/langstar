@@ -129,15 +129,18 @@ fn test_config_validate_fails_on_an_unparsable_file() {
 #[test]
 fn test_config_show_warns_about_an_unparsable_file() {
     let dir = TempDir::new().unwrap();
-    fs::write(dir.path().join("config.toml"), "output_format = \n").unwrap();
+    let path = dir.path().join("config.toml");
+    fs::write(&path, "output_format = \n").unwrap();
 
     let out = langstar_in(&dir).args(["config", "show"]).output().unwrap();
 
     assert!(out.status.success(), "{out:?}");
-    assert!(
-        String::from_utf8_lossy(&out.stderr).contains("Failed to parse config file"),
-        "{out:?}"
-    );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stdout.contains("output_format: table"), "{stdout}");
+    assert!(stdout.contains(&path.display().to_string()), "{stdout}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+    assert!(stderr.contains("Failed to parse config file"), "{stderr}");
 }
 
 #[test]
