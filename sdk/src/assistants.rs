@@ -179,7 +179,7 @@ impl<'a> AssistantClient<'a> {
         let request = self.client.langgraph_post(path)?.json(&request_body);
 
         // LangGraph API returns a raw array of assistants
-        let response: Vec<Assistant> = self.client.execute(request).await?;
+        let response: Vec<Assistant> = self.client.execute_read(request).await?;
         Ok(response)
     }
 
@@ -199,7 +199,7 @@ impl<'a> AssistantClient<'a> {
         let request = self.client.langgraph_post(path)?.json(&request_body);
 
         // LangGraph API returns a raw array of assistants
-        let response: Vec<Assistant> = self.client.execute(request).await?;
+        let response: Vec<Assistant> = self.client.execute_read(request).await?;
         Ok(response)
     }
 
@@ -360,5 +360,54 @@ mod tests {
         let json = serde_json::to_string(&request).unwrap();
         assert!(!json.contains("name")); // Should be omitted when None
         assert!(json.contains("\"limit\":20"));
+    }
+
+    #[tokio::test]
+    async fn test_list_and_search_retry_a_502() {
+        let mut server = mockito::Server::new_async().await;
+        let bad = server
+            .mock("POST", "/assistants/search")
+            .with_status(502)
+            .expect(2)
+            .create_async()
+            .await;
+        let good = server
+            .mock("POST", "/assistants/search")
+            .with_status(200)
+            .with_body("[]")
+            .expect(2)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap()
+        .with_retry_policy(crate::client::RetryPolicy {
+            max_retries: 2,
+            base_delay: std::time::Duration::from_millis(1),
+            max_delay: std::time::Duration::from_millis(5),
+        });
+
+        assert!(
+            client
+                .assistants()
+                .list(None, None)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            client
+                .assistants()
+                .search("x", None)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        bad.assert_async().await;
+        good.assert_async().await;
     }
 }

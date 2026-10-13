@@ -572,9 +572,15 @@ fn test_runs_query_lifecycle() {
     let deadline = Instant::now() + Duration::from_secs(180);
     let all = loop {
         let runs = query_runs_json(&project_id, &["-o", "json"]);
-        if runs.len() >= SEED_RUNS.len() || Instant::now() > deadline {
+        if runs.len() >= SEED_RUNS.len() {
             break runs;
         }
+        assert!(
+            Instant::now() <= deadline,
+            "only {} of {} runs visible after 180s",
+            runs.len(),
+            SEED_RUNS.len()
+        );
         std::thread::sleep(Duration::from_secs(5));
     };
     println!("[READ] Query returned {} runs", all.len());
