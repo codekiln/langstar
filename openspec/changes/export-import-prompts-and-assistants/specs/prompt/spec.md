@@ -45,7 +45,7 @@ Exporting the same commit twice SHALL produce identical files. The file SHALL ho
 
 ### Requirement: List the credentials a prompt needs without their values
 
-The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the model's provider class name as LangSmith returns it, such as `ChatOpenAI`. It SHALL hold no secret values.
+The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the class name at the end of the chat model constructor's `id` in the manifest, such as `ChatOpenAI`. It SHALL hold no secret values.
 
 #### Scenario: Model reads an API key secret
 
