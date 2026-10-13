@@ -52,8 +52,10 @@ jobs:
           install: true
           install_args: node npm:rulesync
 
+      # Call the pinned rulesync directly. A `mise run` task is a script from the
+      # PR checkout, and this job holds write permissions and credentials.
       - name: Generate agent config
-        run: mise run agents:generate
+        run: mise x -- rulesync generate
 
       - name: Run Claude Code
         id: claude
