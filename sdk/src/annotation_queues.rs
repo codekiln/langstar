@@ -423,6 +423,10 @@ pub struct AnnotationQueueItem {
     #[serde(default)]
     pub thread_id: Option<String>,
 
+    /// Suggested example the item was created from
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub source_proposed_example_id: Option<Uuid>,
+
     /// When the run started
     #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub start_time: Option<DateTime<Utc>>,
@@ -463,6 +467,10 @@ pub struct AnnotationQueueListItem {
     /// Thread under review, for `THREAD` items
     #[serde(default)]
     pub thread_id: Option<String>,
+
+    /// Suggested example the item was created from
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub source_proposed_example_id: Option<Uuid>,
 
     /// When the run started
     #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]

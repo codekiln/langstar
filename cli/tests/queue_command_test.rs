@@ -260,6 +260,11 @@ fn test_queue_items_lifecycle() {
     assert_eq!(run_ids(&items), expected);
     for item in &items {
         assert_eq!(item["item_type"], "RUN");
+        assert!(
+            ["needs_my_review", "needs_others_review", "archived"]
+                .contains(&item["status"].as_str().expect("item should carry a status")),
+            "status should name a review section: {item}"
+        );
         assert_eq!(item["queue_id"].as_str(), Some(queue_id.as_str()));
         assert!(item["id"].is_string(), "item should carry a queue item id");
     }

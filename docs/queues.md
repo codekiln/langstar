@@ -267,7 +267,7 @@ langstar queue items <QUEUE_ID> [OPTIONS]
 |--------|-------------|
 | `-l, --limit <N>` | Maximum items to return (default: 100) |
 | `--status <SECTION>` | One review section: `needs-my-review`, `needs-others-review` or `archived` (default: all three) |
-| `--json` | Output as JSON |
+| `--json` | Output as JSON; each item carries a `status` field naming its review section |
 
 **Example:**
 ```bash
@@ -522,6 +522,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     client.add_runs_to_annotation_queue(queue.base.id, run_ids).await?;
 
     // List queue items
+    use langstar_sdk::{AnnotationQueueItemStatus, ListAnnotationQueueItemsParams};
     let params = ListAnnotationQueueItemsParams::new(AnnotationQueueItemStatus::NeedsMyReview);
     let page = client
         .list_annotation_queue_items(queue.base.id, params, None)

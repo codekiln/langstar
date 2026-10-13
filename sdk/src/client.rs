@@ -1046,6 +1046,35 @@ impl LangchainClient {
         self.execute(request).await
     }
 
+    /// List the items in one review section, following cursors across pages.
+    ///
+    /// Stops after `limit` items when one is given, and at the last page otherwise.
+    pub async fn collect_annotation_queue_items(
+        &self,
+        queue_id: uuid::Uuid,
+        params: crate::annotation_queues::ListAnnotationQueueItemsParams,
+        limit: Option<usize>,
+    ) -> Result<Vec<crate::annotation_queues::AnnotationQueueListItem>> {
+        let mut items = Vec::new();
+        let mut cursor: Option<String> = None;
+        loop {
+            let page = self
+                .list_annotation_queue_items(queue_id, params, cursor.as_deref())
+                .await?;
+            let empty = page.items.is_empty();
+            for item in page.items {
+                if limit.is_some_and(|limit| items.len() >= limit) {
+                    return Ok(items);
+                }
+                items.push(item);
+            }
+            match page.next_cursor {
+                Some(next) if !next.is_empty() && !empty => cursor = Some(next),
+                _ => return Ok(items),
+            }
+        }
+    }
+
     /// Count the items in one review section of an annotation queue.
     ///
     /// # API Reference
@@ -1154,22 +1183,15 @@ impl LangchainClient {
         for status in AnnotationQueueItemStatus::ALL {
             let mut params = ListAnnotationQueueItemsParams::new(status);
             params.item_type = Some(AnnotationQueueItemType::Run);
-            let mut cursor: Option<String> = None;
-            loop {
-                let page = self
-                    .list_annotation_queue_items(queue_id, params, cursor.as_deref())
-                    .await?;
-                matches.extend(
-                    page.items
-                        .iter()
-                        .filter(|item| item.run_id == Some(run_id))
-                        .map(|item| item.id),
-                );
-                match page.next_cursor {
-                    Some(next) if !next.is_empty() && !page.items.is_empty() => cursor = Some(next),
-                    _ => break,
-                }
-            }
+            let items = self
+                .collect_annotation_queue_items(queue_id, params, None)
+                .await?;
+            matches.extend(
+                items
+                    .iter()
+                    .filter(|item| item.run_id == Some(run_id))
+                    .map(|item| item.id),
+            );
         }
 
         if matches.is_empty() {

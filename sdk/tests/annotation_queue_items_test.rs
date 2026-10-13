@@ -244,3 +244,110 @@ async fn test_delete_run_returns_false_when_run_not_in_queue() {
     list.assert_async().await;
     delete.assert_async().await;
 }
+
+#[tokio::test]
+async fn test_collect_items_follows_cursor_and_stops_at_limit() {
+    let mut server = Server::new_async().await;
+    let list_path = format!("/api/v1/platform/annotation-queues/{QUEUE}/items");
+    let ids: Vec<Uuid> = (0..4).map(|_| Uuid::new_v4()).collect();
+
+    let page_two = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("status".into(), "archived".into()),
+            Matcher::UrlEncoded("cursor".into(), "page2".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            json!({"items": [list_item(ids[2], ids[2]), list_item(ids[3], ids[3])]}).to_string(),
+        )
+        .expect(2)
+        .create_async()
+        .await;
+    let page_one = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("status".into(), "archived".into()),
+            Matcher::Regex("^status=archived$".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            json!({
+                "items": [list_item(ids[0], ids[0]), list_item(ids[1], ids[1])],
+                "next_cursor": "page2"
+            })
+            .to_string(),
+        )
+        .expect(2)
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server.url());
+    let queue = Uuid::parse_str(QUEUE).unwrap();
+    let params = ListAnnotationQueueItemsParams::new(AnnotationQueueItemStatus::Archived);
+
+    let all = client
+        .collect_annotation_queue_items(queue, params, None)
+        .await
+        .expect("collect failed");
+    assert_eq!(all.iter().map(|i| i.id).collect::<Vec<_>>(), ids);
+
+    let limited = client
+        .collect_annotation_queue_items(queue, params, Some(3))
+        .await
+        .expect("collect failed");
+    assert_eq!(limited.iter().map(|i| i.id).collect::<Vec<_>>(), ids[..3]);
+
+    page_one.assert_async().await;
+    page_two.assert_async().await;
+}
+
+#[tokio::test]
+async fn test_delete_run_finds_item_on_second_page() {
+    let mut server = Server::new_async().await;
+    let list_path = format!("/api/v1/platform/annotation-queues/{QUEUE}/items");
+    let (item_id, run_id) = (Uuid::new_v4(), Uuid::new_v4());
+
+    let _page_two = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::UrlEncoded("cursor".into(), "page2".into()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json!({"items": [list_item(item_id, run_id)]}).to_string())
+        .create_async()
+        .await;
+    let _first_pages = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::Regex(
+            "^status=(needs_my_review|needs_others_review|archived)&item_type=RUN$".into(),
+        ))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            json!({
+                "items": [list_item(Uuid::new_v4(), Uuid::new_v4())],
+                "next_cursor": "page2"
+            })
+            .to_string(),
+        )
+        .create_async()
+        .await;
+    let delete = server
+        .mock("POST", format!("{list_path}/delete").as_str())
+        .match_body(Matcher::PartialJson(json!({"item_ids": [item_id]})))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body("{}")
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server.url());
+    let removed = client
+        .delete_run_from_annotation_queue(Uuid::parse_str(QUEUE).unwrap(), run_id)
+        .await
+        .expect("delete failed");
+    assert!(removed);
+    delete.assert_async().await;
+}

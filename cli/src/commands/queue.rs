@@ -490,32 +490,29 @@ impl QueueCommands {
             _ => AnnotationQueueItemStatus::ALL.to_vec(),
         };
 
-        let limit = args.limit as usize;
         let mut items = Vec::new();
-        'sections: for status in statuses {
+        for status in statuses {
+            let remaining = args.limit as usize - items.len();
+            if remaining == 0 {
+                break;
+            }
             let mut params = ListAnnotationQueueItemsParams::new(status);
             params.page_size = Some(args.limit.clamp(1, 100));
-            let mut cursor: Option<String> = None;
-            loop {
-                let page = client
-                    .list_annotation_queue_items(args.queue_id, params, cursor.as_deref())
-                    .await?;
-                let empty = page.items.is_empty();
-                for item in page.items {
-                    if items.len() >= limit {
-                        break 'sections;
-                    }
-                    items.push((status, item));
-                }
-                match page.next_cursor {
-                    Some(next) if !next.is_empty() && !empty => cursor = Some(next),
-                    _ => break,
-                }
-            }
+            let section = client
+                .collect_annotation_queue_items(args.queue_id, params, Some(remaining))
+                .await?;
+            items.extend(section.into_iter().map(|item| (status, item)));
         }
 
         if args.json {
-            let json_items: Vec<_> = items.iter().map(|(_, item)| item).collect();
+            let json_items = items
+                .iter()
+                .map(|(status, item)| {
+                    let mut value = serde_json::to_value(item)?;
+                    value["status"] = serde_json::json!(status.as_str());
+                    Ok(value)
+                })
+                .collect::<std::result::Result<Vec<_>, serde_json::Error>>()?;
             println!("{}", serde_json::to_string_pretty(&json_items)?);
         } else {
             let rows: Vec<QueueItemRow> = items
