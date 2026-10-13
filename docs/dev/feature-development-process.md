@@ -75,7 +75,7 @@ Create an exploratory research issue using this pattern:
 
 **Focus on research and knowledge gathering, do not implement.** Activities include:
 1. Search existing langstar code in `./cli` and `./sdk` for related implementations
-2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
+2. Analyze upstream precedent in the projects named in `.rulesync/rules/upstream-references.md`, using the `setup-remote-repo-notes-dir` skill
 3. Identify relevant API endpoints and request/response shapes
 4. Run experiments to explore API behavior and validate assumptions
 5. Document technical patterns, conventions, and integration points
@@ -196,11 +196,19 @@ gh sub-issue list 298 --relation children
 
 ### 1.1 Set Up Research Workspace
 
-Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) to clone the relevant SDK:
+The upstream projects to check, and what each is authoritative for, are named in `.rulesync/rules/upstream-references.md`; each has orientation notes under `reference/repo/langchain-ai/<name>/notes/`. Compare your feature with every one that covers it, and record in the PR body where langstar matches and where it differs on purpose.
+
+Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) to clone one that is missing:
 
 ```bash
 # For LangSmith features
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-sdk
+
+# For endpoints, types and pagination, and as the spec-drift check
+.claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-go
+
+# For CLI behavior
+.claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-cli
 
 # For LangGraph features
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langgraph

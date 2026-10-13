@@ -118,7 +118,7 @@ EOF
 
 ### 5. Set Up SDK Research (if needed)
 
-Only clone if not already present:
+`.rulesync/rules/upstream-references.md` names every upstream project to check (langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server, langgraph). Clone each one the feature touches if it is not already present, for example:
 
 ```bash
 if [ ! -d "reference/repo/langchain-ai/langsmith-sdk/code" ]; then
@@ -147,6 +147,7 @@ git worktree add -b "$BRANCH" "$WORKTREE_PATH" main
    ```
 
 2. **Analyze Python SDK**
+   - Read the notes of each reference that covers the feature (`reference/repo/langchain-ai/<name>/notes/README.md`), then its code
    - Read `reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py`
    - Find methods related to the feature
    - Document signatures and patterns
