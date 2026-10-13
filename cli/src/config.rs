@@ -169,9 +169,10 @@ impl Config {
 
         // The warning goes to stderr on every command, so it leaves out the line
         // of the file that failed to parse and the value the message quotes in
-        // backticks (for example "invalid type: integer `5`"), which can hold the
-        // API key. `config validate` and `config <setting> set` print the line
-        // of the file that the parse error points at.
+        // backticks or double quotes (for example "invalid type: integer `5`" or
+        // `invalid type: string "abc"`), which can hold the API key.
+        // `config validate` and `config <setting> set` print the line of the file
+        // that the parse error points at.
         Self::read_file_with(path, false)
     }
 
@@ -188,8 +189,8 @@ impl Config {
     /// Reads and parses the config file at `path`. When `quote_source` is true, a
     /// parse error carries toml's full message, including the quoted line of the
     /// file. When it is false, the error gives the line and column and the part of
-    /// toml's message before the backtick that opens the quoted value, so the
-    /// error leaves out the file's text and the value.
+    /// toml's message before the backtick or double quote that opens the value, so
+    /// the error leaves out the file's text and the value.
     fn read_file_with(path: &Path, quote_source: bool) -> Result<Self> {
         let content = std::fs::read_to_string(path).map_err(|e| {
             CliError::Config(format!(
