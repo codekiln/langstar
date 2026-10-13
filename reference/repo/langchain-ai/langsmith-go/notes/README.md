@@ -6,7 +6,7 @@
 
 ## What it is
 
-- Go client for the LangSmith REST API, module `github.com/langchain-ai/langsmith-go`, package name `langsmith`, Go 1.22+ (`README.md`).
+- Go client for the LangSmith REST API, module `github.com/langchain-ai/langsmith-go`, package name `langsmith`. `README.md` says it requires Go 1.22+, and `go.mod` declares `go 1.26.7`, which is the version Go enforces.
 - `README.md` says it is "generated with Stainless"; most `*.go` files start with "File generated from our OpenAPI spec by Stainless" (`client.go`, `run.go`). `CONTRIBUTING.md` line 16: "Most of the SDK is generated code."
 - `.stats.yml` holds only `configured_endpoints: 174` (no spec URL or hash). `api.md` has 175 `title="..."` method lines.
 - Releases via release-please (`release-please-config.json`, `internal/version.go`).
