@@ -35,7 +35,7 @@ Testing documentation uses **progressive disclosure** for context efficiency:
 
 ## Milestone tasks
 
-`mise run milestone:prep-next` picks the next issue in a milestone and creates its worktree; read `docs/dev/milestone-tasks.md` before changing it.
+`mise run milestone:prep-next` picks the next issue in a milestone and creates its worktree; [Milestone tasks](./milestone-tasks.md) lists its steps, which you should read before changing the task.
 
 ## Tips from Development - Memories
 
