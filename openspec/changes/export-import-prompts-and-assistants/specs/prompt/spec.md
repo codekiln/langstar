@@ -205,6 +205,22 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 - **AND** every secret in `requires.secrets` exists and the prompt matches the file
 - **THEN** langstar notes that no saved model configuration matches `ChatOpenAI` and exits with status 0
 
+### Requirement: Read only a prompt export file this version understands
+
+`prompt import`, `prompt compare` and `prompt verify` SHALL read a file only when its `kind` is `prompt` and its `format_version` is 1. For any other file they SHALL write nothing, exit with status 1 and name the field and the value they found.
+
+#### Scenario: File from a newer format
+
+- **WHEN** a user runs `langstar prompt compare my-prompt.json`
+- **AND** `my-prompt.json` holds `"format_version": 2`
+- **THEN** langstar exits with status 1 and an error naming `format_version` and the value 2
+
+#### Scenario: Assistant file given to a prompt command
+
+- **WHEN** a user runs `langstar prompt import support-bot.json --workspace-id <workspace-id>`
+- **AND** `support-bot.json` holds `"kind": "assistant"`
+- **THEN** langstar creates no prompt, exits with status 1 and names `kind` and the value `assistant`
+
 ### Requirement: Exit with 0 for a match, 3 for a difference and 1 for an error
 
 `prompt compare`, `prompt verify` and `prompt import` SHALL exit with status 0 when the prompt matches and every check passes, 3 when they find a difference or a failed check, and 1 on any other error. A usage error that clap rejects, such as a mistyped flag, SHALL keep clap's status 2. With `-f json` each SHALL print one JSON object with `status`, `differences` and `checks`.

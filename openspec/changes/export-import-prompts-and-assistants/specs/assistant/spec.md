@@ -176,6 +176,16 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **AND** the workspace has no `support-system` prompt with a `prod` tag
 - **THEN** langstar reports `support-system:prod` as missing and exits with status 3
 
+### Requirement: Read only an assistant export file this version understands
+
+`assistant import`, `assistant compare` and `assistant verify` SHALL read a file only when its `kind` is `assistant` and its `format_version` is 1. For any other file they SHALL write nothing, exit with status 1 and name the field and the value they found.
+
+#### Scenario: Prompt file given to an assistant command
+
+- **WHEN** a user runs `langstar assistant import my-prompt.json --deployment my-agent-prod`
+- **AND** `my-prompt.json` holds `"kind": "prompt"`
+- **THEN** langstar creates no assistant, exits with status 1 and names `kind` and the value `prompt`
+
 ### Requirement: Assistant compare, verify and import use the prompt commands' exit statuses and JSON report
 
 `assistant compare`, `assistant verify` and `assistant import` SHALL use the exit statuses and the JSON report shape of `prompt compare`, `prompt verify` and `prompt import`.

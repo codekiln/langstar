@@ -51,6 +51,8 @@ An assistant export has `kind: "assistant"`, a `source` with the deployment, ass
 
 The file holds no export time and langstar sorts its keys, so exporting an unchanged resource leaves Git with nothing to commit.
 
+Import, compare and verify read only files whose `format_version` is 1 and whose `kind` names their own resource. Any other file makes them exit with status 1 and name the field, so a file from a newer langstar, or an assistant file given to a prompt command, is never read as something it is not.
+
 ### Export asks LangSmith for the model
 
 Export reads the commit with `include=model`, the form the Go SDK uses (`references/langsmith-go.md`). The Python SDK sends the older `include_model=true`, and the LangSmith OpenAPI spec accepts both. With the model included, the manifest wraps the prompt and the chat model with its settings in one constructor, and the response also carries `model_config` and `model_provider` beside the manifest (`references/langsmith-sdk.md`). No field of the create-commit request holds the model, so the model reaches the destination inside the manifest. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) pushes that manifest to a second workspace, records whether LangSmith returns the same model, and records which outer `id` the live API returns.
