@@ -536,7 +536,7 @@ impl LangchainClient {
     ///
     /// Use this for read-only POSTs such as `/api/v2/runs/query`. A 502, 503, 504, 408 or
     /// 425 is retried under the client's [`RetryPolicy`]. Never use it for a write.
-    /// [`execute`](Self::execute) already retries GET requests.
+    /// [`execute`](Self::execute) already retries GET and HEAD requests.
     pub async fn execute_read<T: for<'de> Deserialize<'de>>(
         &self,
         request: RequestBuilder,
@@ -594,7 +594,7 @@ impl LangchainClient {
 
     /// Execute a request and parse the response
     ///
-    /// GET requests are retried on 502/503/504/408/425; every other method is sent once.
+    /// GET and HEAD requests are retried on 502/503/504/408/425; every other method is sent once.
     /// For a read-only POST, use [`execute_read`](Self::execute_read).
     pub async fn execute<T: for<'de> Deserialize<'de>>(
         &self,
