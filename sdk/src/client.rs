@@ -1048,7 +1048,9 @@ impl LangchainClient {
 
     /// List the items in one review section, following cursors across pages.
     ///
-    /// Stops after `limit` items when one is given, and at the last page otherwise.
+    /// Stops after `limit` items when one is given. Otherwise it follows every non-empty
+    /// `next_cursor`, even past an empty page, because the API treats the cursor as the only
+    /// signal that more pages exist. It stops early if the API repeats a cursor it already sent.
     pub async fn collect_annotation_queue_items(
         &self,
         queue_id: uuid::Uuid,
@@ -1060,11 +1062,11 @@ impl LangchainClient {
             return Ok(items);
         }
         let mut cursor: Option<String> = None;
+        let mut seen_cursors = std::collections::HashSet::new();
         loop {
             let page = self
                 .list_annotation_queue_items(queue_id, params, cursor.as_deref())
                 .await?;
-            let empty = page.items.is_empty();
             for item in page.items {
                 items.push(item);
                 if limit.is_some_and(|limit| items.len() >= limit) {
@@ -1072,7 +1074,9 @@ impl LangchainClient {
                 }
             }
             match page.next_cursor {
-                Some(next) if !next.is_empty() && !empty => cursor = Some(next),
+                Some(next) if !next.is_empty() && seen_cursors.insert(next.clone()) => {
+                    cursor = Some(next)
+                }
                 _ => return Ok(items),
             }
         }

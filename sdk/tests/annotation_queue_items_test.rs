@@ -305,6 +305,54 @@ async fn test_collect_items_follows_cursor_and_stops_at_limit() {
 }
 
 #[tokio::test]
+async fn test_collect_follows_cursor_past_empty_page_and_stops_on_repeat() {
+    let mut server = Server::new_async().await;
+    let list_path = format!("/api/v1/platform/annotation-queues/{QUEUE}/items");
+    let item_id = Uuid::new_v4();
+
+    let _last = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::UrlEncoded("cursor".into(), "page3".into()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            json!({"items": [list_item(item_id, item_id)], "next_cursor": "page3"}).to_string(),
+        )
+        .expect(1)
+        .create_async()
+        .await;
+    let _empty = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::UrlEncoded("cursor".into(), "page2".into()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json!({"items": [], "next_cursor": "page3"}).to_string())
+        .expect(1)
+        .create_async()
+        .await;
+    let _first = server
+        .mock("GET", list_path.as_str())
+        .match_query(Matcher::Regex("^status=archived$".into()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json!({"items": [], "next_cursor": "page2"}).to_string())
+        .expect(1)
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server.url());
+    let all = client
+        .collect_annotation_queue_items(
+            Uuid::parse_str(QUEUE).unwrap(),
+            ListAnnotationQueueItemsParams::new(AnnotationQueueItemStatus::Archived),
+            None,
+        )
+        .await
+        .expect("collect failed");
+    assert_eq!(all.iter().map(|i| i.id).collect::<Vec<_>>(), vec![item_id]);
+}
+
+#[tokio::test]
 async fn test_delete_run_finds_item_on_second_page() {
     let mut server = Server::new_async().await;
     let list_path = format!("/api/v1/platform/annotation-queues/{QUEUE}/items");
