@@ -100,3 +100,10 @@ See: `playground-settings-patterns.md` for complete SDK implementation patterns 
 - Pagination strategy
 - Error handling approach
 - Comparison with Python SDK patterns
+
+## Retry on 429 (Issue #801 Research)
+
+Read at commit [47c553c](https://github.com/langchain-ai/langsmith-sdk/commit/47c553caf08c1989e2be3ff1886da3eb801f709f):
+
+- Python: after a 429, `request_with_retries` in [python/langsmith/client.py](https://github.com/langchain-ai/langsmith-sdk/blob/47c553caf08c1989e2be3ff1886da3eb801f709f/python/langsmith/client.py#L1979) reads the `retry-after` header, defaults to 30 seconds when it is missing or invalid, and sleeps `retry_after * 2**idx` plus up to one second of jitter, so the wait doubles on each further attempt.
+- JS: `handle429` in [js/src/client.ts](https://github.com/langchain-ai/langsmith-sdk/blob/47c553caf08c1989e2be3ff1886da3eb801f709f/js/src/client.ts#L813) waits `retry-after` seconds, defaulting to 10 when the header is missing, then retries.

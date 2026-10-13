@@ -26,7 +26,7 @@
 - `retryDelay`: if `parseRetryAfterHeader` succeeds, use it (clamped to >= 0). Headers in order: `Retry-After-Ms` (milliseconds), then `Retry-After` (seconds as float, or an HTTP-date parsed with `time.RFC1123`).
 - Otherwise exponential backoff: `0.5s * 2^retryCount`, capped at `maxDelay = 16 * time.Second`, minus random jitter in `[0, delay/4)`.
 - Retry count is sent in `X-Stainless-Retry-Count` unless the caller changed that header.
-- langsmith-go retries a 502, 503 or 504 under the same rule as any other status >= 500; it has no separate gateway-error retry. Files such as `sandbox_command_start_retry_test.go` retry sandbox commands, which this note does not cover.
+- langsmith-go retries 502, 503 and 504 like any other status of 500 or above.
 
 ## Pagination (`packages/pagination/pagination.go`)
 
@@ -59,4 +59,4 @@
 
 - Generated (Stainless header): most resource files, `client.go`, `default_http_client.go`, `option/`, `internal/requestconfig`, `packages/pagination`.
 - No generated header (hand-written, from a header check of root `*.go`): `config.go`, `config_filelock_*.go`, `baseurl.go`, `address.go`, `field.go`, `insights.go`, `oauth_discovery.go`, `tracer.go`, `tracing.go`, and most `sandbox_*.go` (commands, files, tunnel, snapshots, mounts, wait, verify, errors, tracing, internal, resource, service_url).
-- Other hand-written areas: `lib/langsmithtracing/` (run tracing/multipart ingestion client, re-exported by `tracing.go`), `instrumentation/`, `integration/`, `examples/` (not read in detail).
+- Other hand-written areas: `lib/langsmithtracing/` (run tracing/multipart ingestion client, re-exported by `tracing.go`), `instrumentation/`, `integration/`, `examples/` and sandbox command retries (`sandbox_command_start_retry_test.go`) (not read in detail).
