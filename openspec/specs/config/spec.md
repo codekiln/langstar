@@ -105,7 +105,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 
 ### Requirement: Fail `config validate` and `config <setting> set` on a config file that does not parse, and warn in the commands that load the settings
 
-When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. A langstar command that loads the settings SHALL ignore a config file that does not parse, use the defaults and the environment, and warn on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file, which can hold the API key. The commands that load the settings are every command outside the `config` group, `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, run without a warning. `langstar config <setting> set` SHALL exit with the parse error and leave the file unchanged.
+When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. A langstar command that loads the settings SHALL ignore a config file that does not parse, use the defaults and the environment, and warn on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file and without the value the message quotes, because either can hold the API key. The commands that load the settings are every command outside the `config` group, `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, run without a warning. `langstar config <setting> set` SHALL exit with the parse error and leave the file unchanged. `config validate` and `config <setting> set` quote the line of the file the error points at on purpose, because the person who ran them asked for the diagnosis; only the warning, which prints on every command, leaves it out.
 
 #### Scenario: Unparsable config file
 
@@ -117,7 +117,7 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 
 - **WHEN** the config file does not parse
 - **AND** a user runs `langstar config show`
-- **THEN** langstar warns on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file, and says it is using the default settings, shows the defaults and exits successfully
+- **THEN** langstar warns on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file or the value the message quotes, and says it is using the default settings, shows the defaults and exits successfully
 
 #### Scenario: Setting a value in an unparsable config file
 

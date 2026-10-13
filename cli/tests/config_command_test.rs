@@ -159,6 +159,43 @@ fn test_config_load_warning_leaves_out_the_line_of_the_file() {
 }
 
 #[test]
+fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
+    for (line, value) in [
+        ("langsmith_api_key = 12345678", "12345678"),
+        ("timezone = 5", "`5`"),
+    ] {
+        let dir = TempDir::new().unwrap();
+        fs::write(dir.path().join("config.toml"), format!("{line}\n")).unwrap();
+
+        let out = langstar_in(&dir).arg("version").output().unwrap();
+
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(stderr.contains("Failed to parse config file"), "{stderr}");
+        assert!(stderr.contains("line 1, column"), "{stderr}");
+        assert!(!stderr.contains(value), "{stderr}");
+    }
+}
+
+#[test]
+fn test_config_validate_quotes_the_line_the_user_asked_about() {
+    let dir = TempDir::new().unwrap();
+    fs::write(dir.path().join("config.toml"), "output_format = \n").unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "validate"])
+        .output()
+        .unwrap();
+
+    let all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(!out.status.success(), "{out:?}");
+    assert!(all.contains("1 | output_format ="), "{all}");
+}
+
+#[test]
 fn test_config_set_fails_on_an_unparsable_file_and_leaves_it_unchanged() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join("config.toml");

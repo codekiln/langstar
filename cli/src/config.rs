@@ -168,20 +168,25 @@ impl Config {
         };
 
         // The warning goes to stderr on every command, so it leaves out the line
-        // of the file that failed to parse, which can hold the API key
+        // of the file that failed to parse and the value the message quotes in
+        // backticks (for example "invalid type: integer `5`"), which can hold the
+        // API key. `config validate` and `config <setting> set` quote the line
+        // on purpose, because the person who ran them asked for the diagnosis.
         Self::read_file_with(path, false)
     }
 
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
     /// `load` uses the default config when this returns an error; `config validate`
-    /// calls this to report the error.
+    /// calls this to report the error, and quotes the line of the file the error
+    /// points at, because the person who ran it asked for the diagnosis.
     pub fn read_file(path: &Path) -> Result<Self> {
         Self::read_file_with(path, true)
     }
 
     /// `read_file`, where `quote_source` chooses whether a parse error quotes the
-    /// line of the file it points at or gives only the line, column and message.
+    /// line of the file it points at or gives only the line, column and the part of
+    /// the message before the first backtick, where toml quotes the offending value.
     fn read_file_with(path: &Path, quote_source: bool) -> Result<Self> {
         let content = std::fs::read_to_string(path).map_err(|e| {
             CliError::Config(format!(
@@ -212,7 +217,7 @@ impl Config {
                 "Failed to parse config file {}{}: {}",
                 path.display(),
                 position,
-                e.message()
+                message_without_value(e.message())
             ))
         })?;
 
@@ -600,4 +605,11 @@ mod tests {
             std::env::remove_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE");
         }
     }
+}
+
+/// The part of a TOML error message before the first backtick, where toml
+/// quotes the value it rejected, with the trailing separator trimmed.
+fn message_without_value(message: &str) -> &str {
+    let end = message.find('`').unwrap_or(message.len());
+    message[..end].trim_end_matches([' ', ':', ','])
 }
