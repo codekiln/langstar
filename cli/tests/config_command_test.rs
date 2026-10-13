@@ -163,3 +163,21 @@ fn test_config_set_fails_on_an_unparsable_file_and_leaves_it_unchanged() {
     assert!(all.contains("Failed to parse config file"), "{all}");
     assert_eq!(fs::read_to_string(&path).unwrap(), "output_format = \n");
 }
+
+#[test]
+fn test_config_set_names_an_unreadable_config_file() {
+    let dir = TempDir::new().unwrap();
+    // A directory where the file should be cannot be read as a file
+    let path = dir.path().join("config.toml");
+    fs::create_dir(&path).unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "timezone", "set", "UTC"])
+        .output()
+        .unwrap();
+
+    assert!(!out.status.success(), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Failed to read config file"), "{stderr}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+}

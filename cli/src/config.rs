@@ -99,13 +99,17 @@ impl Config {
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
         // Start with file config if it exists
-        let mut config = Self::load_from_file().unwrap_or_else(|e| {
+        // A config directory that cannot be found is an error, not a reason to
+        // use the defaults, so resolve the paths before the fallback
+        let config_path = Self::config_file_path()?;
+        let old_path = Self::old_config_file_path();
+        let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
             // Warn on the first failed load only, so a process that loads the
             // config again does not repeat the warning
             static WARN_ONCE: Once = Once::new();
             WARN_ONCE.call_once(|| {
                 eprintln!(
-                    "Warning: Ignoring the config file and using defaults: {e}\n  Run 'langstar config validate' to check it."
+                    "Warning: Ignoring the config file; using defaults and any environment variables: {e}\n  Run 'langstar config validate' to check it."
                 )
             });
             Self::default()
@@ -145,13 +149,6 @@ impl Config {
         }
 
         Ok(config)
-    }
-
-    /// Load configuration from the config file
-    fn load_from_file() -> Result<Self> {
-        let config_path = Self::config_file_path()?;
-        let old_path = Self::old_config_file_path();
-        Self::load_from_paths(&config_path, old_path.as_deref())
     }
 
     /// Load the config file at `config_path`, or the file at `old_path` when
@@ -423,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_load_ignores_old_file_without_an_old_path() {
-        // On Linux and Windows, `load_from_file` passes no old path, so
+        // On Linux and Windows, `load` passes no old path, so
         // langstar never reads the old macOS file.
         let paths = ConfigPaths::new();
         ConfigPaths::write(&paths.old, "old-key");

@@ -589,7 +589,13 @@ hide_workspace_and_org_id_message = false
             Some(config_path)
         };
         let config_content = match source_path {
-            Some(path) => fs::read_to_string(path)?,
+            Some(path) => fs::read_to_string(path).map_err(|e| {
+                CliError::Config(format!(
+                    "Failed to read config file {}: {}",
+                    path.display(),
+                    e
+                ))
+            })?,
             // toml_edit handles empty documents
             None => String::new(),
         };
