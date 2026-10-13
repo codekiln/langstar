@@ -99,11 +99,16 @@ The `langstar queue` subcommands SHALL print a table or a short summary by defau
 - **WHEN** a user runs `langstar queue remove-run <queue-id> <run-id>` for a run the queue does not hold
 - **THEN** langstar exits non-zero and says the run is not in the queue
 
-### Requirement: List the runs in a queue
+### Requirement: List the items in a queue
 
 `langstar queue items <queue-id>` SHALL list the items in the queue, up to `--limit` (default 100), one review section after another (`needs_my_review`, `needs_others_review`, `archived`), or only the section `--status` names. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
 
 #### Scenario: Queue shorter than the limit
 
-- **WHEN** a queue holds 5 runs and the user runs `langstar queue items <queue-id>`
-- **THEN** langstar lists the 5 runs and says it found 5 items
+- **WHEN** a queue holds 5 items and the user runs `langstar queue items <queue-id>`
+- **THEN** langstar lists the 5 items and says it found 5 items
+
+#### Scenario: One review section
+
+- **WHEN** a queue holds 3 archived items and 2 items that need review, and the user runs `langstar queue items <queue-id> --status archived`
+- **THEN** langstar lists only the 3 archived items and says it found 3 items
