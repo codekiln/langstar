@@ -685,7 +685,8 @@ impl DatasetCommands {
 
         // Request the first page before opening --out, so a bad dataset id or
         // API key leaves an existing file untouched. A failure on a later page
-        // leaves the examples written so far in the file and exits non-zero.
+        // leaves the examples written so far in the file, and the command exits
+        // with an error.
         let mut next = examples.next().await.transpose()?;
 
         // Prepare output

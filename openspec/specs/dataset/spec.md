@@ -135,7 +135,7 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 ### Requirement: Export examples to JSONL or CSV
 
-`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL request the first page before it opens the `--out` file, so a failure on the first request leaves an existing `--out` file untouched; a failure on a later page leaves the examples already written in the file and exits non-zero.
+`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL request the first page before it opens the `--out` file, so a failure on the first request leaves an existing `--out` file untouched; a failure on a later page leaves the examples already written in the file, and langstar exits with an error.
 
 #### Scenario: Export to a CSV file
 

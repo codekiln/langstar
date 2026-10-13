@@ -645,9 +645,10 @@ async fn test_list_examples_paginated_pages_until_a_short_page() {
     };
 
     let mut mocks = Vec::new();
-    // (offset, requested limit, examples returned). The None call and the
-    // Some(150) call both fetch offset 0 with limit 100, so that mock expects
-    // two hits.
+    // Each tuple is (offset, limit in the request, examples the mock returns).
+    // The offset-0 mock expects two requests, one from the stream with no total
+    // limit and one from the stream with a total limit of 150, because both
+    // start with limit=100.
     for (offset, limit, count) in [(0, 100, 100), (100, 100, 100), (200, 100, 5)] {
         mocks.push(
             server

@@ -1618,9 +1618,9 @@ impl LangchainClient {
     /// starts at `params.offset`; `params.limit` is ignored in favor of
     /// `total_limit`.
     ///
-    /// Only one page is held in memory at a time, so a caller that writes each
-    /// example as it arrives, as `langstar dataset export` does, stays bounded
-    /// to one page however large the dataset is.
+    /// The stream keeps one page in memory at a time. A caller that writes each
+    /// example as it arrives, as `langstar dataset export` does, therefore uses
+    /// memory for one page however large the dataset is.
     ///
     /// # Arguments
     ///
