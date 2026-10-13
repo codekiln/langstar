@@ -5,7 +5,8 @@ create_subissues.py
 Break down GitHub issues into sub-issues by parsing task lists from parent issue descriptions.
 
 Usage:
-    python create_subissues.py --issue 42 --harness claude-code --model claude-sonnet-5-5 --session my-session
+    # With AI_HARNESS, AI_MODEL and AI_SESSION exported (or pass --harness, --model, --session)
+    python create_subissues.py --issue 42
     python create_subissues.py --issue 42 --repo owner/repo
     python create_subissues.py --issue 42 --dry-run
 
@@ -14,7 +15,8 @@ Environment Variables:
     AI_HARNESS, AI_MODEL, AI_SESSION - harness, model slug and session name for the
         `## from AI(<harness>, <model-slug>, <session-name>)` header that starts every
         sub-issue body; each has a matching --harness/--model/--session argument,
-        and the script exits with an error when any of the three is missing
+        and the script exits with an error when any of the three is missing,
+        unless --dry-run is set (a dry run creates nothing and needs no header)
 
 """
 
@@ -32,7 +34,8 @@ def main():
     """Main entry point for the script."""
     args = parse_arguments()
 
-    header = build_ai_header(args)
+    # A dry run creates nothing, so it needs no header
+    header = '' if args.dry_run else build_ai_header(args)
 
     # Get GitHub token
     token = get_github_token()

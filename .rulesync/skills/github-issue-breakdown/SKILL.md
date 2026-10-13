@@ -47,7 +47,7 @@ gh issue create --title "Phase 2" --body "Sub-task of #42"
 gh issue create --title "Epic: Feature X" --body "$(printf '%s\n\n## Tasks\n- [ ] Phase 1: Setup\n- [ ] Phase 2: Implementation' '## from AI(<harness>, <model-slug>, <session-name>)')"
 
 # IMMEDIATELY use this skill to create official sub-issues
-python scripts/create_subissues.py --issue 42 --yes --harness <harness> --model <model-slug> --session <session-name>
+python scripts/create_subissues.py --issue 42 --yes
 # Result: Proper sub-issues that show in GitHub UI
 ```
 
@@ -66,7 +66,11 @@ python scripts/create_subissues.py --issue 42 --yes --harness <harness> --model 
 1. **Environment Variables:**
    ```bash
    export GITHUB_TOKEN="ghp_xxxx"      # GitHub token with repo scope
+   export AI_HARNESS="<harness>"       # fill in the actual harness, e.g. claude-code
+   export AI_MODEL="<model-slug>"      # fill in the actual model slug
+   export AI_SESSION="<session-name>"  # fill in the actual session name
    ```
+   The `AI_*` values fill in the `## from AI(<harness>, <model-slug>, <session-name>)` header that starts every sub-issue body. Only a run that creates issues needs them; `--dry-run` needs none.
 
 2. **Token Scopes:**
    - `GITHUB_TOKEN` - Requires `repo` scope for issue operations
@@ -76,15 +80,19 @@ python scripts/create_subissues.py --issue 42 --yes --harness <harness> --model 
    Configure in `.devcontainer/.env` (gitignored):
    ```bash
    GITHUB_TOKEN=your_token_here
+   AI_HARNESS=<harness>
+   AI_MODEL=<model-slug>
+   AI_SESSION=<session-name>
    ```
 
 ### Basic Usage
 
 ```bash
 # Break down an issue (interactive - will show preview)
-# --harness, --model and --session (or AI_HARNESS, AI_MODEL, AI_SESSION) fill in the
-# `## from AI(...)` header that starts every sub-issue body; the script fails without them
-python /workspace/.claude/skills/github-issue-breakdown/scripts/create_subissues.py --issue 42 --harness <harness> --model <model-slug> --session <session-name>
+# AI_HARNESS, AI_MODEL and AI_SESSION (set in Prerequisites; --harness, --model and --session
+# override them) fill in the `## from AI(...)` header that starts every sub-issue body;
+# the script fails without them unless --dry-run is set
+python /workspace/.claude/skills/github-issue-breakdown/scripts/create_subissues.py --issue 42
 
 # Specify repository explicitly
 python /workspace/.claude/skills/github-issue-breakdown/scripts/create_subissues.py --issue 42 --repo owner/repo
@@ -190,11 +198,15 @@ When user wants to see what would be created without actually creating:
 | --max-depth | No | Maximum indentation depth (0 = top-level, default: 0) | `--max-depth 1` |
 | --all-bullets | No | Disable section filtering (legacy behavior) | `--all-bullets` |
 | --yes, -y | No | Auto-confirm creation without prompting | `--yes` |
+| --harness | Unless `--dry-run` | Harness for the from-AI header (env: `AI_HARNESS`) | `--harness claude-code` |
+| --model | Unless `--dry-run` | Model slug for the from-AI header (env: `AI_MODEL`) | `--model claude-sonnet-5-5` |
+| --session | Unless `--dry-run` | Session name for the from-AI header (env: `AI_SESSION`) | `--session my-session` |
 
 ### Environment Variables
 
 **Required:**
 - `GITHUB_TOKEN` - Fine-grained or classic PAT with `repo` scope
+- `AI_HARNESS`, `AI_MODEL`, `AI_SESSION` - harness, model slug and session name for the sub-issue header; fill in the actual values; not needed with `--dry-run`
 
 **Optional:**
 - `GH_TOKEN` - Alternative name for GitHub token (fallback)
