@@ -218,7 +218,7 @@ If the issue that the PR fixes is part of a milestone, add the PR to that milest
 
 ### Create PR Command
 
-Start every PR body and comment with the AI header from the root rule (`## from AI(<harness>, <model-slug>, <session-name>)`), filling in your actual harness, model and session.
+Start every PR body and comment with `## from AI(<harness>, <model-slug>, <session-name>)`, replacing the three placeholders with your harness, model and session name.
 
 **Using gh CLI with proper body:**
 ```bash

@@ -125,7 +125,7 @@ Depending on user requirements, filter the comments:
 
 ### Step 4: Prepare Reply Content
 
-Every reply starts with the AI header from the root rule; fill in the actual harness, model and session name before spawning subagents.
+Before you spawn subagents, replace the three placeholders in the reply header with your harness, model and session name; every reply starts with that header.
 
 Determine what to reply with:
 - **User-provided text**: If user specifies reply text, use it for all comments

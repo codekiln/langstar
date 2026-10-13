@@ -209,7 +209,7 @@ After the bash steps above complete:
    - **If config/YAML changed**: Run relevant validation only
 6. **Commit changes** - Follow conventional emoji commit format
 7. **Push branch** - Push to remote: `git push -u origin <branch_name>`
-8. **Submit PR** - Use `/pr-workflow` or create PR manually with `gh pr create`. Start the PR body and every comment with `## from AI(<harness>, <model-slug>, <session-name>)`, as the root rule says, filling in your actual harness, model and session.
+8. **Submit PR** - Use `/pr-workflow` or create PR manually with `gh pr create`. Start the PR body and every comment with `## from AI(<harness>, <model-slug>, <session-name>)`, replacing the three placeholders with your harness, model and session name.
 
 **DO NOT** stop and say "your worktree is ready" - that creates poor UX. The user expects you to complete the full workflow from setup through PR submission.
 
