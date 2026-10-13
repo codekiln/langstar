@@ -170,16 +170,16 @@ impl Config {
         // The warning goes to stderr on every command, so it leaves out the line
         // of the file that failed to parse and the value the message quotes in
         // backticks (for example "invalid type: integer `5`"), which can hold the
-        // API key. `config validate` and `config <setting> set` quote the line
-        // on purpose, because the person who ran them asked for the diagnosis.
+        // API key. `config validate` and `config <setting> set` print the line
+        // of the file that the parse error points at.
         Self::read_file_with(path, false)
     }
 
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
     /// `load` uses the default config when this returns an error; `config validate`
-    /// calls this to report the error, and quotes the line of the file the error
-    /// points at, because the person who ran it asked for the diagnosis.
+    /// calls this to report the error, and prints the line of the file that the
+    /// parse error points at.
     pub fn read_file(path: &Path) -> Result<Self> {
         Self::read_file_with(path, true)
     }
