@@ -3,22 +3,20 @@
 //! These tests verify the query_runs and query_runs_paginated methods
 //! using mockito to mock the LangSmith API responses.
 
-use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunType};
+use langstar_sdk::{AuthConfig, LangchainClient, QueryRunsRequest, RunSelectField, RunType};
 use mockito::{Matcher, Server};
 use serde_json::json;
 use tokio_stream::StreamExt;
 
-/// Helper function to create a minimal valid Run JSON response
+/// Helper function to create a run as `POST /api/v2/runs/query` returns it
 fn make_run_json(id: &str, name: &str, run_type: &str) -> serde_json::Value {
     json!({
         "id": id,
         "name": name,
-        "run_type": run_type,
+        "run_type": run_type.to_uppercase(),
         "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-        "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-        "status": "success",
-        "session_id": "323e4567-e89b-12d3-a456-426614174002",
-        "app_path": "/test"
+        "status": "SUCCESS",
+        "project_id": "323e4567-e89b-12d3-a456-426614174002"
     })
 }
 
@@ -40,19 +38,15 @@ async fn test_query_runs_single_page() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174000", "ChatOpenAI", "llm"),
             make_run_json("223e4567-e89b-12d3-a456-426614174001", "ToolExecutor", "tool"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": null
-        },
-        "parsed_query": null
+        "next_cursor": null
     });
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(response_body.to_string())
@@ -63,18 +57,18 @@ async fn test_query_runs_single_page() {
 
     let request = QueryRunsRequest {
         is_root: Some(true),
-        limit: Some(10),
+        page_size: Some(10),
         ..Default::default()
     };
 
     let response = client.query_runs(request).await.expect("query_runs failed");
 
-    assert_eq!(response.runs.len(), 2);
-    assert_eq!(response.runs[0].name, "ChatOpenAI");
-    assert_eq!(response.runs[0].run_type, RunType::Llm);
-    assert_eq!(response.runs[1].name, "ToolExecutor");
-    assert_eq!(response.runs[1].run_type, RunType::Tool);
-    assert!(response.cursors.next.is_none());
+    assert_eq!(response.items.len(), 2);
+    assert_eq!(response.items[0].name.as_deref(), Some("ChatOpenAI"));
+    assert_eq!(response.items[0].run_type, Some(RunType::Llm));
+    assert_eq!(response.items[1].name.as_deref(), Some("ToolExecutor"));
+    assert_eq!(response.items[1].run_type, Some(RunType::Tool));
+    assert!(response.next_cursor.is_none());
 
     mock.assert_async().await;
 }
@@ -84,18 +78,14 @@ async fn test_query_runs_with_filter() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174000", "FailedChain", "chain"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": null
-        },
-        "parsed_query": "status = error"
+        "next_cursor": null
     });
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .match_body(Matcher::PartialJson(json!({
             "filter": "eq(status, \"error\")"
         })))
@@ -114,10 +104,9 @@ async fn test_query_runs_with_filter() {
 
     let response = client.query_runs(request).await.expect("query_runs failed");
 
-    assert_eq!(response.runs.len(), 1);
-    assert_eq!(response.runs[0].name, "FailedChain");
-    assert_eq!(response.runs[0].run_type, RunType::Chain);
-    assert_eq!(response.parsed_query, Some("status = error".to_string()));
+    assert_eq!(response.items.len(), 1);
+    assert_eq!(response.items[0].name.as_deref(), Some("FailedChain"));
+    assert_eq!(response.items[0].run_type, Some(RunType::Chain));
 
     mock.assert_async().await;
 }
@@ -127,15 +116,11 @@ async fn test_query_runs_empty_response() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [],
-        "cursors": {
-            "next": null,
-            "prev": null
-        }
-    });
+        "items": [],
+        "next_cursor": null});
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(response_body.to_string())
@@ -148,8 +133,8 @@ async fn test_query_runs_empty_response() {
 
     let response = client.query_runs(request).await.expect("query_runs failed");
 
-    assert!(response.runs.is_empty());
-    assert!(response.cursors.next.is_none());
+    assert!(response.items.is_empty());
+    assert!(response.next_cursor.is_none());
 
     mock.assert_async().await;
 }
@@ -159,18 +144,14 @@ async fn test_query_runs_paginated_single_page() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174000", "Run1", "llm"),
             make_run_json("223e4567-e89b-12d3-a456-426614174001", "Run2", "llm"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": null
-        }
-    });
+        "next_cursor": null});
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(response_body.to_string())
@@ -188,8 +169,8 @@ async fn test_query_runs_paginated_single_page() {
     }
 
     assert_eq!(runs.len(), 2);
-    assert_eq!(runs[0].name, "Run1");
-    assert_eq!(runs[1].name, "Run2");
+    assert_eq!(runs[0].name.as_deref(), Some("Run1"));
+    assert_eq!(runs[1].name.as_deref(), Some("Run2"));
 
     mock.assert_async().await;
 }
@@ -200,32 +181,25 @@ async fn test_query_runs_paginated_multiple_pages() {
 
     // First page response
     let page1_response = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174001", "Run1", "llm"),
             make_run_json("223e4567-e89b-12d3-a456-426614174002", "Run2", "llm"),
         ],
-        "cursors": {
-            "next": "cursor_page2",
-            "prev": null
-        }
+        "next_cursor": "cursor_page2"
     });
 
     // Second page response
     let page2_response = json!({
-        "runs": [
+        "items": [
             make_run_json("323e4567-e89b-12d3-a456-426614174003", "Run3", "llm"),
             make_run_json("423e4567-e89b-12d3-a456-426614174004", "Run4", "llm"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": "cursor_page1"
-        }
-    });
+        "next_cursor": null});
 
     // In mockito, mocks are matched in LIFO order (last created = first matched)
     // Create the cursor mock first so it matches second (when cursor is present)
     let mock2 = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .match_body(Matcher::PartialJson(json!({
             "cursor": "cursor_page2"
         })))
@@ -241,7 +215,7 @@ async fn test_query_runs_paginated_multiple_pages() {
     // mockito's LIFO ordering means this mock is checked first on the initial request
     // (which has no cursor), and the more specific cursor mock is checked on subsequent requests.
     let mock1 = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .match_body(Matcher::PartialJson(json!({})))
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -261,10 +235,10 @@ async fn test_query_runs_paginated_multiple_pages() {
     }
 
     assert_eq!(runs.len(), 4);
-    assert_eq!(runs[0].name, "Run1");
-    assert_eq!(runs[1].name, "Run2");
-    assert_eq!(runs[2].name, "Run3");
-    assert_eq!(runs[3].name, "Run4");
+    assert_eq!(runs[0].name.as_deref(), Some("Run1"));
+    assert_eq!(runs[1].name.as_deref(), Some("Run2"));
+    assert_eq!(runs[2].name.as_deref(), Some("Run3"));
+    assert_eq!(runs[3].name.as_deref(), Some("Run4"));
 
     mock1.assert_async().await;
     mock2.assert_async().await;
@@ -276,19 +250,16 @@ async fn test_query_runs_paginated_with_limit() {
 
     // First page response with next cursor
     let page1_response = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174001", "Run1", "llm"),
             make_run_json("223e4567-e89b-12d3-a456-426614174002", "Run2", "llm"),
             make_run_json("323e4567-e89b-12d3-a456-426614174003", "Run3", "llm"),
         ],
-        "cursors": {
-            "next": "cursor_page2",
-            "prev": null
-        }
+        "next_cursor": "cursor_page2"
     });
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(page1_response.to_string())
@@ -309,8 +280,8 @@ async fn test_query_runs_paginated_with_limit() {
 
     // Should only return 2 runs due to limit
     assert_eq!(runs.len(), 2);
-    assert_eq!(runs[0].name, "Run1");
-    assert_eq!(runs[1].name, "Run2");
+    assert_eq!(runs[0].name.as_deref(), Some("Run1"));
+    assert_eq!(runs[1].name.as_deref(), Some("Run2"));
 
     // Only first page should be requested
     mock.assert_async().await;
@@ -321,7 +292,7 @@ async fn test_query_runs_api_error() {
     let mut server = Server::new_async().await;
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .with_status(401)
         .with_body(r#"{"detail": "Invalid API key"}"#)
         .create_async()
@@ -344,19 +315,15 @@ async fn test_query_runs_with_run_type_filter() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174000", "MyRetriever", "retriever"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": null
-        }
-    });
+        "next_cursor": null});
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .match_body(Matcher::PartialJson(json!({
-            "run_type": "retriever"
+            "run_type": "RETRIEVER"
         })))
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -373,8 +340,8 @@ async fn test_query_runs_with_run_type_filter() {
 
     let response = client.query_runs(request).await.expect("query_runs failed");
 
-    assert_eq!(response.runs.len(), 1);
-    assert_eq!(response.runs[0].run_type, RunType::Retriever);
+    assert_eq!(response.items.len(), 1);
+    assert_eq!(response.items[0].run_type, Some(RunType::Retriever));
 
     mock.assert_async().await;
 }
@@ -384,17 +351,13 @@ async fn test_query_runs_with_is_root_filter() {
     let mut server = Server::new_async().await;
 
     let response_body = json!({
-        "runs": [
+        "items": [
             make_run_json("123e4567-e89b-12d3-a456-426614174000", "RootRun", "chain"),
         ],
-        "cursors": {
-            "next": null,
-            "prev": null
-        }
-    });
+        "next_cursor": null});
 
     let mock = server
-        .mock("POST", "/api/v1/runs/query")
+        .mock("POST", "/api/v2/runs/query")
         .match_body(Matcher::PartialJson(json!({
             "is_root": true
         })))
@@ -413,39 +376,48 @@ async fn test_query_runs_with_is_root_filter() {
 
     let response = client.query_runs(request).await.expect("query_runs failed");
 
-    assert_eq!(response.runs.len(), 1);
-    assert_eq!(response.runs[0].name, "RootRun");
+    assert_eq!(response.items.len(), 1);
+    assert_eq!(response.items[0].name.as_deref(), Some("RootRun"));
 
     mock.assert_async().await;
 }
 
-/// Integration test for querying runs from the live LangSmith API.
-///
-/// This test requires valid credentials and is ignored by default.
-/// Run with: cargo test --test runs_query_test -- --ignored --nocapture
 #[tokio::test]
-#[ignore]
-async fn test_query_runs_live_api() {
-    let auth = AuthConfig::from_env().expect("LANGSMITH_API_KEY must be set");
-    let client = LangchainClient::new(auth).expect("Failed to create client");
+async fn test_query_runs_sends_v2_body() {
+    let mut server = Server::new_async().await;
+
+    let mock = server
+        .mock("POST", "/api/v2/runs/query")
+        .match_body(Matcher::Json(json!({
+            "project_ids": ["323e4567-e89b-12d3-a456-426614174002"],
+            "min_start_time": "2024-01-01T00:00:00Z",
+            "page_size": 25,
+            "selects": ["ID", "NAME", "PROJECT_ID"]
+        })))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json!({"items": [], "next_cursor": null}).to_string())
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server.url());
 
     let request = QueryRunsRequest {
-        is_root: Some(true),
-        limit: Some(5),
+        project_ids: Some(vec![
+            uuid::Uuid::parse_str("323e4567-e89b-12d3-a456-426614174002").unwrap(),
+        ]),
+        min_start_time: Some("2024-01-01T00:00:00Z".parse().unwrap()),
+        page_size: Some(25),
+        selects: Some(vec![
+            RunSelectField::Id,
+            RunSelectField::Name,
+            RunSelectField::ProjectId,
+        ]),
         ..Default::default()
     };
 
-    let response = client.query_runs(request).await;
+    let response = client.query_runs(request).await.expect("query_runs failed");
+    assert!(response.items.is_empty());
 
-    match response {
-        Ok(resp) => {
-            println!("Found {} runs", resp.runs.len());
-            for run in resp.runs.iter().take(3) {
-                println!("  - {} ({:?}): {}", run.name, run.run_type, run.status);
-            }
-        }
-        Err(e) => {
-            panic!("Failed to query runs: {:?}", e);
-        }
-    }
+    mock.assert_async().await;
 }
