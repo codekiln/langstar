@@ -15,6 +15,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+# To rebuild a release that already exists, run this workflow by hand from the
+# branch that holds your fix and pass the release's tag with `-f tag=<tag>`.
+# GitHub takes the steps from that branch, and the jobs build and test the code
+# at that tag.
 jobs:
   verify-ci:
     name: Verify CI Passed
@@ -23,7 +27,7 @@ jobs:
       - name: Wait for Check job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Check'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -32,7 +36,7 @@ jobs:
       - name: Wait for Test job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Test'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -41,7 +45,7 @@ jobs:
       - name: Wait for Clippy job
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-name: 'Clippy'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -50,7 +54,7 @@ jobs:
       - name: Wait for Build jobs
         uses: lewagon/wait-on-check-action@v1.3.4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.tag || github.sha }}
           check-regexp: 'Build \(.*\)'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
@@ -64,6 +68,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -88,15 +94,13 @@ jobs:
     permissions:
       contents: write
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
       tag_name: ${{ steps.get_version.outputs.tag_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for changelog generation
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Get version from tag
         id: get_version
@@ -131,31 +135,37 @@ jobs:
 
           echo "✅ Version validation passed: $TAG_VERSION"
 
-      - name: Install git-cliff
-        uses: taiki-e/install-action@v2
-        with:
-          tool: git-cliff
-
-      - name: Generate changelog
-        id: changelog
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # prepare-release.yml writes this version's section of CHANGELOG.md with
+      # git-cliff, and a maintainer edits it in the release pull request before merging.
+      - name: Take the release notes from CHANGELOG.md
         run: |
-          git-cliff --latest --strip header > CHANGELOG_ENTRY.md
-          echo "Changelog generated:"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          awk -v heading="## [$VERSION]" '
+            /^## \[/ { if (found) exit; if (index($0, heading) == 1) found = 1 }
+            found
+          ' CHANGELOG.md > CHANGELOG_ENTRY.md
+          if [ ! -s CHANGELOG_ENTRY.md ]; then
+            echo "❌ CHANGELOG.md has no section headed '## [$VERSION]'" >&2
+            exit 1
+          fi
           cat CHANGELOG_ENTRY.md
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.get_version.outputs.tag_name }}
-          name: Release ${{ steps.get_version.outputs.tag_name }}
-          body_path: CHANGELOG_ENTRY.md
-          draft: true
-          prerelease: ${{ contains(steps.get_version.outputs.tag_name, '-alpha') || contains(steps.get_version.outputs.tag_name, '-beta') || contains(steps.get_version.outputs.tag_name, '-rc') }}
+      # If the tag has no release yet, create a draft for a maintainer to publish.
+      # If it has one, replace only the notes, so rebuilding a published release
+      # doesn't turn it back into a draft.
+      - name: Create or update the GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.get_version.outputs.tag_name }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file CHANGELOG_ENTRY.md
+          else
+            PRERELEASE=()
+            case "$TAG" in *-alpha*|*-beta*|*-rc*) PRERELEASE=(--prerelease) ;; esac
+            gh release create "$TAG" --verify-tag --draft --title "Release $TAG" \
+              --notes-file CHANGELOG_ENTRY.md "${PRERELEASE[@]}"
+          fi
 
   build-release:
     name: Build ${{ matrix.target }}
@@ -193,11 +203,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      # cargo builds with the Rust version that rust-toolchain.toml pins, not the
+      # stable toolchain the step above installed. `rustup target add` reads
+      # rust-toolchain.toml from the checkout and adds the build target to that version.
+      - name: Add the build target to the pinned toolchain
+        run: rustup target add ${{ matrix.target }}
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
@@ -255,24 +271,22 @@ jobs:
           sha256sum "$ASSET_NAME.zip" > "$ASSET_NAME.zip.sha256"
           mv "$ASSET_NAME.zip" "$ASSET_NAME.zip.sha256" ../../..
 
+      # `gh release upload` adds or replaces the files and leaves the release's draft
+      # state alone, so a new release stays a draft until a maintainer publishes it.
       - name: Upload release asset (Unix)
         if: matrix.os != 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.create-release.outputs.tag_name }}
-          files: |
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz.sha256
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSET: langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.tar.gz
+        run: |
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$ASSET" "$ASSET.sha256" --clobber
 
       - name: Upload release asset (Windows)
         if: matrix.os == 'windows-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.create-release.outputs.tag_name }}
-          files: |
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip
-            langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip.sha256
+        shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ASSET: langstar-${{ needs.create-release.outputs.version }}-${{ matrix.asset_platform }}.zip
+        run: |
+          gh release upload "${{ needs.create-release.outputs.tag_name }}" "$ASSET" "$ASSET.sha256" --clobber
