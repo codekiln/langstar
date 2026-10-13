@@ -14,7 +14,7 @@
 
 - Root and group registration: `internal/cmd/root.go` (`NewRootCmd`). Groups registered there: `feedback`, `project`, `trace`, `run`, `chart`, `thread`, `dataset`, `example`, `evaluator`, `experiment`, `sandbox`, `insights`, `hub`, `apps`, `prompt`, `auth`, `profile`, `workspace`, `self-update`, `api`.
 - One file per group in `internal/cmd/` (`trace.go`, `run.go`, `dataset.go`, `sandbox*.go`, `hub_*.go`, `apps_*.go`, `prompt.go`, ...). Sub-subgroups: `evaluator rule` (`evaluator_rule.go`), `insights config` (`insights_config.go`), `project issues` (`issues.go`), `sandbox snapshot` (`sandbox_snapshot.go`), `prompt tag` (`prompt.go`).
-- `setup`, `setup claude`, `setup codex` exist in `internal/cmd/setup*.go`; `auth login` is in `login.go`, `auth info`/`auth token` in `auth.go`.
+- `trace setup`, `trace setup claude` and `trace setup codex` (`newTraceSetupCmd` in `internal/cmd/setup.go`, registered under the `trace` group in `trace.go`; the agent subcommands are in `setup_claude.go` and `setup_codex.go`). There is no root `langsmith setup`; `auth login` is in `login.go`, `auth info`/`auth token` in `auth.go`.
 - `langsmith api` (`internal/cmd/api/api.go`) is a passthrough: `api ls`, `api info METHOD PATH`, or `api <path>` with `-X`, `-F`, `--input`, `--include`.
 - A declarative helper, `internal/structured/` (`command.go`, `render.go`, `specs.go`), defines some commands as input/result/render specs (used by `sandbox`, `auth`).
 
@@ -45,7 +45,7 @@
 
 The CLI has no retry loop of its own. It uses the SDK's, and turns it off in specific places.
 
-- SDK policy (langsmith-go `internal/requestconfig/requestconfig.go` at v0.27.1): `MaxRetries: 2` by default; retries connection errors (nil response), 408, 409, 429 and >=500; an `x-should-retry` header of `true`/`false` overrides the status check. Delay: `Retry-After-Ms`, then `Retry-After` (seconds or RFC1123 date), used verbatim; otherwise `0.5s * 2^retryCount`, capped at 16s, minus up to 25% jitter. `option.WithMaxRetries(n)` changes it.
+- SDK policy (langsmith-go `internal/requestconfig/requestconfig.go` at v0.27.1): `MaxRetries: 2` by default; retries connection errors (nil response), 408, 409, 429 and >=500; an `x-should-retry` header of `true`/`false` overrides the status check. Delay: `Retry-After-Ms`, then `Retry-After` (seconds or RFC1123 date), clamped to at least 0 (`max(0, retryAfterDelay)` in `retryDelay`, so a past HTTP-date or negative number means no wait); otherwise `0.5s * 2^retryCount`, capped at 16s, minus up to 25% jitter. `option.WithMaxRetries(n)` changes it.
 - Typed SDK calls (e.g. `trace list` via `c.SDK.Runs...`) inherit this unchanged. Comment in `client.go` on `RawPostWithRetries` says so.
 - Raw helpers in `internal/client/client.go`: `doHTTP` sends via `c.SDK.Execute` with `option.WithMaxRetries(0)` unless `sdkRetries` is true. `RawGet/RawPost/RawPatch/RawDelete`, `RawDo` and `FetchCustomAppSource` make one attempt. `RawPostWithRetries` opts into the SDK policy and is documented for read-only POSTs only; used by `trace messages` (`message.go`, `/api/v2/traces/messages`).
 - Raw requests get a 30s timeout (`rawRequestTimeout`, `client.go`).

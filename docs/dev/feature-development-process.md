@@ -86,7 +86,7 @@ Create an exploratory research issue using this pattern:
 1. **Research Report** at `docs/research/{issue-num}-{slug}-scout.md`:
    - Existing langstar implementation analysis
    - API endpoint identification
-   - SDK precedent analysis (Python SDK)
+   - Upstream precedent analysis (each applicable reference in `.rulesync/rules/upstream-references.md`)
    - Technical patterns and conventions discovered
    - Experimentation findings (if applicable)
    - Insights for milestone planning
@@ -221,9 +221,11 @@ reference/repo/langchain-ai/langsmith-sdk/
 └── code/           # Cloned SDK (gitignored)
 ```
 
-### 1.2 Analyze Python SDK
+### 1.2 Analyze each applicable upstream reference
 
-Key files to examine:
+Go through every reference in `.rulesync/rules/upstream-references.md` that covers the feature (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`). For each, read `reference/repo/langchain-ai/<name>/notes/README.md`, then the code it points to.
+
+When `langsmith-sdk` applies, key files to examine:
 - `code/python/langsmith/client.py` - Main client implementation
 - `code/python/langsmith/schemas.py` - Data models
 - `code/python/langsmith/_internal/` - Internal utilities
@@ -1147,7 +1149,7 @@ When creating sub-issues, use this template for scope:
 ```markdown
 ## Scope
 1. Set up research workspace with setup-remote-repo-notes-dir
-2. Analyze Python SDK implementation
+2. Analyze each applicable upstream reference (`.rulesync/rules/upstream-references.md`), including the Python SDK only when `langsmith-sdk` applies
 3. Document method signatures and parameters
 4. Identify pagination patterns
 5. Review tests for usage examples

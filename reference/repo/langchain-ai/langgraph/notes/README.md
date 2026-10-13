@@ -120,9 +120,11 @@
   - `GET`, `PATCH` and `DELETE /v2/deployments/{id}`
   - `POST /v2/deployments/{id}/push-token`
   - `GET /v2/deployments/{id}/revisions`
-  - `GET /v2/listeners`
+  - `GET /v2/listeners` and `GET /v2/listeners/{listener_id}`
+  - `POST /v2/deployments/{id}/upload-url` (signed URL for uploading the source tarball)
+  - `GET /v2/deployments/{id}/revisions/{revision_id}`
   - `POST /v1/projects/{project_id}/revisions/{revision_id}/build_logs`
-  - `POST /v1/projects/{project_id}/deploy_logs`
+  - `POST /v1/projects/{project_id}/revisions/{revision_id}/deploy_logs` (revision-specific) and `POST /v1/projects/{project_id}/deploy_logs`
 
 ## SDK clients: where they live
 
@@ -136,7 +138,7 @@
 ### sdk-py details (`libs/sdk-py/langgraph_sdk`)
 
 - Factories: `get_client(url=...)` in `_async/client.py`, `get_sync_client` in `_sync/client.py`. `url=None` tries an in-process ASGI connection to a running server (`_async/client.py`).
-- API key: `_get_api_key` in `_shared/utilities.py:26-48`. Precedence is explicit string, then `LANGGRAPH_API_KEY`, `LANGSMITH_API_KEY`, `LANGCHAIN_API_KEY`. Passing `api_key=None` skips the environment. Sent as header `x-api-key`. `x-api-key` is in `RESERVED_HEADERS` and custom headers cannot set it. `User-Agent` is `langgraph-sdk-py/<version>`.
+- API key: `_get_api_key` in `_shared/utilities.py:26-48`. Precedence is explicit string, then `LANGGRAPH_API_KEY`, `LANGSMITH_API_KEY`, `LANGCHAIN_API_KEY`. Passing `api_key=None` skips the environment. Sent as header `x-api-key`. `x-api-key` is in `RESERVED_HEADERS`, and `_get_headers` raises `ValueError` if the custom headers contain that exact lowercase key. The check is case-sensitive: a mapping with `X-API-Key` passes it, and the header is sent unless a resolved API key overwrites it. `User-Agent` is `langgraph-sdk-py/<version>`.
 - Retries: `httpx.AsyncHTTPTransport(retries=5)` (async, `_async/client.py`) and `httpx.HTTPTransport(retries=5)` (sync, `_sync/client.py:75`). Connection-level only.
 - Timeout default: `httpx.Timeout(connect=5, read=300, write=300, pool=5)`.
 - Reconnect: `request_reconnect` in `_async/http.py:138-185` follows a `Location` header with `reconnect_limit: int = 5`.

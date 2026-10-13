@@ -146,11 +146,11 @@ git worktree add -b "$BRANCH" "$WORKTREE_PATH" main
    grep -r "$FEATURE_NAME" ./cli ./sdk 2>/dev/null || echo "No existing implementation found"
    ```
 
-2. **Analyze Python SDK**
-   - Read the notes of each reference that covers the feature (`reference/repo/langchain-ai/<name>/notes/README.md`), then its code
-   - Read `reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py`
-   - Find methods related to the feature
-   - Document signatures and patterns
+2. **Analyze each applicable upstream reference**
+   - For each reference in `.rulesync/rules/upstream-references.md` that covers the feature, read its notes (`reference/repo/langchain-ai/<name>/notes/README.md`), then its code
+   - Inspect the Python client (`reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py`) only when `langsmith-sdk` applies
+   - Find the methods, commands or endpoints related to the feature in each
+   - Document signatures and patterns per reference
 
 3. **Identify API endpoints**
    - Check LangSmith API docs via MCP
