@@ -105,7 +105,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 
 ### Requirement: Fail when the config file does not parse
 
-When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. Every other langstar command SHALL ignore the file, use the defaults and the environment, and warn on stderr with the same error. `langstar config show` therefore still prints the config file's path, and `langstar config <setting> set` exits with the parse error and leaves the file unchanged.
+When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. Every langstar command except `config validate` and `config <setting> set` SHALL ignore the file, use the defaults and the environment, and warn on stderr with the same error. `langstar config show` therefore still prints the config file's path. `langstar config <setting> set` SHALL exit with the parse error and leave the file unchanged.
 
 #### Scenario: Unparsable config file
 
