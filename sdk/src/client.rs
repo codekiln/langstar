@@ -1612,8 +1612,10 @@ impl LangchainClient {
     /// List examples across as many pages as it takes, up to an optional total.
     ///
     /// `GET /api/v1/examples` returns at most 100 examples per request, so this
-    /// requests pages of 100 at increasing offsets until a page comes back
-    /// short, as langsmith-sdk's `list_examples` does. `params.offset` is where
+    /// requests pages at increasing offsets until a page comes back shorter
+    /// than requested. Each page asks for `min(100, examples still needed)`,
+    /// as langsmith-sdk's `list_examples` sends `min(limit, 100)`, so a small
+    /// `total_limit` does not download a full page. `params.offset` is where
     /// the first page starts; `params.limit` is ignored in favor of `total_limit`.
     ///
     /// # Arguments
@@ -1633,12 +1635,14 @@ impl LangchainClient {
             if total_limit.is_some_and(|total| examples.len() >= total) {
                 break;
             }
+            let requested =
+                total_limit.map_or(PAGE_SIZE, |total| PAGE_SIZE.min(total - examples.len()));
             params.offset = Some(offset);
-            params.limit = Some(PAGE_SIZE as i64);
+            params.limit = Some(requested as i64);
             let page = self.list_examples(params.clone()).await?;
             let page_len = page.len();
             examples.extend(page);
-            if page_len < PAGE_SIZE {
+            if page_len < requested {
                 break;
             }
             offset += page_len as i64;

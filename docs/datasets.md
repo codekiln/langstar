@@ -327,7 +327,7 @@ langstar dataset export <DATASET_ID> --format <FORMAT> [OPTIONS]
 **Options:**
 - `--format <FORMAT>` - Export format: `jsonl` or `csv` (required)
 - `-o, --out <PATH>` - Output file path (prints to stdout if not specified)
-- `-l, --limit <N>` - Maximum number of examples to export (default: 100)
+- `-l, --limit <N>` - Maximum number of examples to export (default: every example in the dataset)
 
 **Examples:**
 ```bash
@@ -649,7 +649,7 @@ See `sdk/src/datasets.rs` for complete type definitions and field documentation.
 
 ### Error Handling
 
-- **Check Limits**: Be aware of pagination limits (default 100 items)
+- **Check Limits**: `dataset export` returns every example unless you pass `--limit`; other list commands have their own limits
 - **Handle Failures**: Import operations skip invalid records with warnings
 - **Verify Results**: Always verify example counts after import
 - **Use --json**: Use JSON output for error handling in scripts

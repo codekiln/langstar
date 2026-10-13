@@ -644,18 +644,20 @@ async fn test_list_all_examples_pages_until_a_short_page() {
     };
 
     let mut mocks = Vec::new();
-    for (offset, count) in [(0, 100), (100, 100), (200, 5)] {
+    // (offset, requested limit, examples returned); the 100/50 request is the
+    // second page of the `Some(150)` call, which must ask for only 50.
+    for (offset, limit, count) in [(0, 100, 100), (100, 100, 100), (200, 100, 5)] {
         mocks.push(
             server
                 .mock("GET", "/api/v1/examples")
                 .match_query(Matcher::AllOf(vec![
                     Matcher::UrlEncoded("offset".into(), offset.to_string()),
-                    Matcher::UrlEncoded("limit".into(), "100".into()),
+                    Matcher::UrlEncoded("limit".into(), limit.to_string()),
                 ]))
                 .with_status(200)
                 .with_header("content-type", "application/json")
                 .with_body(page(offset, count))
-                .expect(1)
+                .expect(if offset == 0 { 2 } else { 1 })
                 .create_async()
                 .await,
         );
@@ -677,8 +679,42 @@ async fn test_list_all_examples_pages_until_a_short_page() {
         "22345678-1234-1234-1234-000000000204"
     );
 
-    let limited = client.list_all_examples(params, Some(150)).await.unwrap();
+    // Second page asks for limit=50, not 100.
+    let limit_mock = server
+        .mock("GET", "/api/v1/examples")
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("offset".into(), "100".into()),
+            Matcher::UrlEncoded("limit".into(), "50".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(page(100, 50))
+        .expect(1)
+        .create_async()
+        .await;
+    let limited = client
+        .list_all_examples(params.clone(), Some(150))
+        .await
+        .unwrap();
     assert_eq!(limited.len(), 150);
+    limit_mock.assert_async().await;
+
+    // A small total asks for a small page, not 100.
+    let small_mock = server
+        .mock("GET", "/api/v1/examples")
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("offset".into(), "0".into()),
+            Matcher::UrlEncoded("limit".into(), "1".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(page(0, 1))
+        .expect(1)
+        .create_async()
+        .await;
+    let one = client.list_all_examples(params, Some(1)).await.unwrap();
+    assert_eq!(one.len(), 1);
+    small_mock.assert_async().await;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

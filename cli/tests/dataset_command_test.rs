@@ -820,8 +820,7 @@ mod integration {
         println!("✓ Full CRUD lifecycle test passed");
     }
 
-    /// `dataset export` with no `--limit` returns every example, not one page
-    /// of 100, and `--limit` still caps the export (issue #809).
+    /// `dataset export` with no `--limit` returns every example, not one page of 100, and `--limit` still caps the export. See [issue 809, dataset export returns only the first 100 examples](https://github.com/codekiln/langstar/issues/809).
     #[test]
     fn test_dataset_export_returns_more_than_one_page() {
         require_api_credentials();
