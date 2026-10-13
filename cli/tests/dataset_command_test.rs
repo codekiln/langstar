@@ -924,6 +924,31 @@ mod integration {
         }
     }
 
+    /// A failed export leaves an existing `--out` file as it was, because the
+    /// first page is requested before the file is opened.
+    #[test]
+    fn test_dataset_export_failure_leaves_existing_out_file_untouched() {
+        require_api_credentials();
+
+        let temp_dir = TempDir::new().unwrap();
+        let out = temp_dir.path().join("backup.jsonl");
+        let original = "{\"inputs\":{\"keep\":\"me\"}}\n";
+        fs::write(&out, original).unwrap();
+
+        langstar_cmd()
+            .args([
+                "dataset",
+                "export",
+                &Uuid::new_v4().to_string(),
+                "--out",
+                out.to_str().unwrap(),
+            ])
+            .assert()
+            .failure();
+
+        assert_eq!(fs::read_to_string(&out).unwrap(), original);
+    }
+
     /// Test import/export roundtrip for datasets.
     #[test]
     fn test_dataset_import_export_roundtrip() {

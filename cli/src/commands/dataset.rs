@@ -683,6 +683,11 @@ impl DatasetCommands {
         // one page however large the dataset is.
         let mut examples = client.list_examples_paginated(params, total_limit);
 
+        // Request the first page before opening --out, so a bad dataset id or
+        // API key leaves an existing file untouched. A failure on a later page
+        // leaves the examples written so far in the file and exits non-zero.
+        let mut next = examples.next().await.transpose()?;
+
         // Prepare output
         let mut output: Box<dyn Write> = if let Some(path) = &args.out {
             Box::new(std::fs::File::create(path)?)
@@ -693,8 +698,7 @@ impl DatasetCommands {
         let mut exported = 0usize;
         match args.file_format {
             ExportFormat::Jsonl => {
-                while let Some(example) = examples.next().await {
-                    let example = example?;
+                while let Some(example) = next {
                     let record = JsonlRecord {
                         id: Some(example.id),
                         inputs: example.inputs,
@@ -703,6 +707,7 @@ impl DatasetCommands {
                     };
                     writeln!(output, "{}", serde_json::to_string(&record)?)?;
                     exported += 1;
+                    next = examples.next().await.transpose()?;
                 }
                 output.flush()?;
             }
@@ -710,8 +715,7 @@ impl DatasetCommands {
                 // CSV format
                 let mut wtr = csv::Writer::from_writer(output);
                 wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                while let Some(example) = examples.next().await {
-                    let example = example?;
+                while let Some(example) = next {
                     wtr.write_record([
                         example.id.to_string(),
                         serde_json::to_string(&example.inputs)?,
@@ -729,6 +733,7 @@ impl DatasetCommands {
                             .unwrap_or_default(),
                     ])?;
                     exported += 1;
+                    next = examples.next().await.transpose()?;
                 }
                 wtr.flush()?;
             }

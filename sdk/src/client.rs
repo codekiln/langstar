@@ -1614,8 +1614,10 @@ impl LangchainClient {
     /// `GET /api/v1/examples` returns at most 100 examples per request, so this
     /// requests pages at increasing offsets until a page comes back shorter
     /// than requested. Each page asks for `min(100, examples still needed)`,
-    /// as langsmith-sdk's `list_examples` sends `min(limit, 100)`, so a small
-    /// `total_limit` does not download a full page. `params.offset` is where
+    /// so a small `total_limit` does not download a full page. langsmith-sdk's
+    /// `list_examples` also pages by offset and stops on a short page, but sends
+    /// `min(limit, 100)` on every page and drops the surplus after downloading
+    /// it. `params.offset` is where
     /// the first page starts; `params.limit` is ignored in favor of `total_limit`.
     ///
     /// Only one page is held in memory at a time, so a caller that writes each
