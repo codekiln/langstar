@@ -66,9 +66,9 @@ python scripts/create_subissues.py --issue 42 --yes
 1. **Environment Variables:**
    ```bash
    export GITHUB_TOKEN="ghp_xxxx"      # GitHub token with repo scope
-   export AI_HARNESS="<harness>"       # fill in the actual harness, e.g. claude-code
-   export AI_MODEL="<model-slug>"      # fill in the actual model slug
-   export AI_SESSION="<session-name>"  # fill in the actual session name
+   export AI_HARNESS="<harness>"       # replace <harness> with your harness, e.g. claude-code
+   export AI_MODEL="<model-slug>"      # replace <model-slug> with your model slug
+   export AI_SESSION="<session-name>"  # replace <session-name> with your session name
    ```
    The `AI_*` values fill in the `## from AI(<harness>, <model-slug>, <session-name>)` header that starts every sub-issue body. Only a run that creates issues needs them; `--dry-run` needs none.
 
@@ -206,7 +206,7 @@ When user wants to see what would be created without actually creating:
 
 **Required:**
 - `GITHUB_TOKEN` - Fine-grained or classic PAT with `repo` scope
-- `AI_HARNESS`, `AI_MODEL`, `AI_SESSION` - harness, model slug and session name for the sub-issue header; fill in the actual values; not needed with `--dry-run`
+- `AI_HARNESS`, `AI_MODEL`, `AI_SESSION` - your harness, model slug and session name for the sub-issue header; `--dry-run` needs none of them
 
 **Optional:**
 - `GH_TOKEN` - Alternative name for GitHub token (fallback)
