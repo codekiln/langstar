@@ -32,13 +32,13 @@ The table says what a tool can reach, not what a check covers today. Run `langsm
 
 ## Checks
 
-Each check is a mise task under `mise-tasks/oracle/`. It gets its credentials from `fnox exec` and cleans up what it creates.
+Each check is a mise task under `mise-tasks/oracle/`, named for the official tool acting as the reference result. It gets its credentials from `fnox exec` and cleans up what it creates.
 
 | Task | Checks |
 |------|--------|
 | `mise run oracle:prompt-roundtrip` | `langstar prompt push` against `langsmith prompt pull` |
 
-## Findings while writing the first check
+## Bugs the first check found
 
-- `langstar prompt push --owner -` for a repo that does not exist yet fails: the create-on-push step sends `-/<repo>` as the handle and the API answers 400. The task creates the repo with `langsmith prompt create` first.
-- A push without `--schema` to an empty repo got HTTP 400 "Manifest must have an id field". The task pushes with `--schema`, the path the integration tests use.
+- [#820](https://github.com/codekiln/langstar/issues/820): `langstar prompt push --owner -` to a new repo fails. The task creates the repo with `langsmith prompt create` first.
+- [#821](https://github.com/codekiln/langstar/issues/821): a push without `--schema` to an empty repo fails. The task pushes with `--schema`.

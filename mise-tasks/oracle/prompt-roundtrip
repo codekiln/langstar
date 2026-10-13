@@ -2,8 +2,8 @@
 #MISE description="Push a private prompt with langstar, read it back with the official langsmith CLI, then delete it"
 set -euo pipefail
 
-# Outside check for `langstar prompt push`: the official CLI reads the prompt
-# back, so a bug shared by langstar's push and pull cannot hide. The LangSmith
+# Check for `langstar prompt push`: the official CLI reads the prompt
+# back, so a bug that langstar's push and pull share still shows up. The LangSmith
 # credentials come from fnox, so the check re-runs itself under `fnox exec`.
 # What each official tool can check: docs/dev/testing/official-tool-checks.md
 if [ -z "${ORACLE_UNDER_FNOX:-}" ] && { [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z "${LANGSMITH_ORGANIZATION_ID:-}" ] || [ -z "${LANGSMITH_WORKSPACE_ID:-}" ]; }; then
@@ -16,7 +16,7 @@ template="Answer this question: {question}"
 handle="-/${repo}"
 
 # The official CLI creates the repo. langstar's own create-on-push sends "-/<repo>"
-# as the handle, which the API rejects, so letting langstar create it would fail here.
+# as the handle, which the API rejects (https://github.com/codekiln/langstar/issues/820), so letting langstar create it would fail here.
 langsmith prompt create --name "$repo" >/dev/null
 
 # Registered only after create succeeds, so a name collision can never delete
@@ -31,7 +31,7 @@ trap cleanup EXIT
 printf '%s' '{"type":"object","title":"Out","properties":{"answer":{"type":"string"}},"required":["answer"]}' >"$schema"
 
 # --schema matches the path cli/tests/prompt_structured_test.rs exercises; a push
-# without it got HTTP 400 "Manifest must have an id field" when this task was written.
+# without it fails; see https://github.com/codekiln/langstar/issues/821.
 cargo run --quiet --bin langstar -- prompt push \
   --owner - --repo "$repo" --template "$template" --input-variables question \
   --schema "$schema" >/dev/null
