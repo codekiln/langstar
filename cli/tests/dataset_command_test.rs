@@ -820,6 +820,95 @@ mod integration {
         println!("✓ Full CRUD lifecycle test passed");
     }
 
+    /// `dataset export` with no `--limit` returns every example, not one page
+    /// of 100, and `--limit` still caps the export (issue #809).
+    #[test]
+    fn test_dataset_export_returns_more_than_one_page() {
+        require_api_credentials();
+        const EXAMPLES: usize = 105;
+
+        let temp_dir = TempDir::new().unwrap();
+        let unique_name = format!("export-all-test-{}", &Uuid::new_v4().to_string()[..8]);
+        let output = langstar_cmd()
+            .args([
+                "dataset",
+                "create",
+                "--name",
+                &unique_name,
+                "--data-type",
+                "kv",
+                "--json",
+            ])
+            .assert()
+            .success();
+        let created: serde_json::Value =
+            serde_json::from_slice(&output.get_output().stdout).unwrap();
+        let dataset_id = created["id"].as_str().unwrap().to_string();
+
+        let import_file = temp_dir.path().join("import.jsonl");
+        let lines: Vec<String> = (0..EXAMPLES)
+            .map(|i| {
+                format!(
+                    r#"{{"inputs": {{"n": {i}}}, "outputs": {{"double": {}}}}}"#,
+                    i * 2
+                )
+            })
+            .collect();
+        fs::write(&import_file, lines.join("\n")).unwrap();
+
+        // Run the checks in a closure so the dataset is deleted even if one fails.
+        let result = std::panic::catch_unwind(|| {
+            langstar_cmd()
+                .args([
+                    "dataset",
+                    "import",
+                    &dataset_id,
+                    "--file",
+                    import_file.to_str().unwrap(),
+                ])
+                .assert()
+                .success();
+
+            let export = |extra: &[&str]| -> Vec<serde_json::Value> {
+                let out = langstar_cmd()
+                    .args(["dataset", "export", &dataset_id, "--file-format", "jsonl"])
+                    .args(extra)
+                    .assert()
+                    .success();
+                String::from_utf8_lossy(&out.get_output().stdout)
+                    .lines()
+                    .filter(|l| !l.is_empty())
+                    .map(|l| serde_json::from_str(l).unwrap())
+                    .collect()
+            };
+
+            let all = export(&[]);
+            assert_eq!(all.len(), EXAMPLES, "export should return every example");
+            let mut ns: Vec<i64> = all
+                .iter()
+                .map(|r| r["inputs"]["n"].as_i64().expect("inputs.n"))
+                .collect();
+            ns.sort_unstable();
+            assert_eq!(ns, (0..EXAMPLES as i64).collect::<Vec<_>>());
+            for record in &all {
+                let n = record["inputs"]["n"].as_i64().unwrap();
+                assert_eq!(record["outputs"]["double"].as_i64(), Some(n * 2));
+            }
+            let mut ids: Vec<&str> = all.iter().map(|r| r["id"].as_str().unwrap()).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            assert_eq!(ids.len(), EXAMPLES, "no example should repeat across pages");
+
+            assert_eq!(export(&["--limit", "7"]).len(), 7);
+            assert_eq!(export(&["--limit", "101"]).len(), 101);
+        });
+
+        delete_dataset(&dataset_id);
+        if let Err(panic) = result {
+            std::panic::resume_unwind(panic);
+        }
+    }
+
     /// Test import/export roundtrip for datasets.
     #[test]
     fn test_dataset_import_export_roundtrip() {

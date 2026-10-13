@@ -1609,6 +1609,47 @@ impl LangchainClient {
         self.execute(request).await
     }
 
+    /// List examples across as many pages as it takes, up to an optional total.
+    ///
+    /// `GET /api/v1/examples` returns at most 100 examples per request, so this
+    /// requests pages of 100 at increasing offsets until a page comes back
+    /// short, as langsmith-sdk's `list_examples` does. `params.offset` is where
+    /// the first page starts; `params.limit` is ignored in favor of `total_limit`.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters; `offset` and `limit` are managed here
+    /// * `total_limit` - Maximum number of examples to return. `None` returns all.
+    pub async fn list_all_examples(
+        &self,
+        mut params: crate::datasets::ListExamplesParams,
+        total_limit: Option<usize>,
+    ) -> Result<Vec<crate::datasets::Example>> {
+        const PAGE_SIZE: usize = 100;
+        let mut offset = params.offset.unwrap_or(0);
+        let mut examples = Vec::new();
+
+        loop {
+            if total_limit.is_some_and(|total| examples.len() >= total) {
+                break;
+            }
+            params.offset = Some(offset);
+            params.limit = Some(PAGE_SIZE as i64);
+            let page = self.list_examples(params.clone()).await?;
+            let page_len = page.len();
+            examples.extend(page);
+            if page_len < PAGE_SIZE {
+                break;
+            }
+            offset += page_len as i64;
+        }
+
+        if let Some(total) = total_limit {
+            examples.truncate(total);
+        }
+        Ok(examples)
+    }
+
     /// Get an example by ID.
     ///
     /// # Arguments

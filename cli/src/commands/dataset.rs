@@ -661,15 +661,14 @@ impl DatasetCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        // Fetch all examples (with pagination if needed)
-        let limit = args.limit.unwrap_or(100);
+        // No --limit exports every example, paging through the API
         let params = ListExamplesParams {
             dataset: Some(args.dataset_id),
-            limit: Some(limit),
             ..Default::default()
         };
+        let total_limit = args.limit.map(|limit| limit.max(0) as usize);
 
-        let examples = client.list_examples(params).await?;
+        let examples = client.list_all_examples(params, total_limit).await?;
 
         // Prepare output
         let mut output: Box<dyn Write> = if let Some(path) = &args.out {

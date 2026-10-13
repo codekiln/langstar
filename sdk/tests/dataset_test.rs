@@ -631,6 +631,56 @@ async fn test_bulk_create_examples() {
     mock.assert_async().await;
 }
 
+#[tokio::test]
+async fn test_list_all_examples_pages_until_a_short_page() {
+    let mut server = Server::new_async().await;
+    let dataset_id = "12345678-1234-1234-1234-123456789012";
+
+    let page = |start: usize, count: usize| {
+        let examples: Vec<_> = (start..start + count)
+            .map(|i| make_example_json(&format!("22345678-1234-1234-1234-{i:012}"), dataset_id))
+            .collect();
+        json!(examples).to_string()
+    };
+
+    let mut mocks = Vec::new();
+    for (offset, count) in [(0, 100), (100, 100), (200, 5)] {
+        mocks.push(
+            server
+                .mock("GET", "/api/v1/examples")
+                .match_query(Matcher::AllOf(vec![
+                    Matcher::UrlEncoded("offset".into(), offset.to_string()),
+                    Matcher::UrlEncoded("limit".into(), "100".into()),
+                ]))
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(page(offset, count))
+                .expect(1)
+                .create_async()
+                .await,
+        );
+    }
+
+    let client = create_test_client(&server.url());
+    let params = ListExamplesParams {
+        dataset: Some(Uuid::parse_str(dataset_id).unwrap()),
+        ..Default::default()
+    };
+
+    let all = client
+        .list_all_examples(params.clone(), None)
+        .await
+        .unwrap();
+    assert_eq!(all.len(), 205);
+    assert_eq!(
+        all[204].id.to_string(),
+        "22345678-1234-1234-1234-000000000204"
+    );
+
+    let limited = client.list_all_examples(params, Some(150)).await.unwrap();
+    assert_eq!(limited.len(), 150);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Error Handling Tests
 // ═══════════════════════════════════════════════════════════════════════════
