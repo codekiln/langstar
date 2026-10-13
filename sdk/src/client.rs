@@ -1633,10 +1633,7 @@ impl LangchainClient {
     ///
     /// # Notes
     ///
-    /// - The stream continues until either:
-    ///   - `total_limit` examples have been yielded
-    ///   - A page comes back shorter than requested
-    ///   - An error occurs
+    /// - The stream ends when `total_limit` examples have been yielded, when a page comes back shorter than requested, or when an error occurs.
     /// - Errors are yielded as `Err` items, allowing partial results
     pub fn list_examples_paginated(
         &self,
