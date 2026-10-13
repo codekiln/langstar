@@ -249,6 +249,14 @@ git log -1
 
 **Scenario:** PR has been merged, need to clean up worktree.
 
+To remove every worktree whose GitHub issue is closed, run this from any worktree:
+
+```bash
+mise run worktree:cleanup
+```
+
+It reads the issue number from each branch name (`m<milestone>-p<parent>-i<issue>-<slug>`), checks the issue with `gh`, and removes the worktrees of closed issues. It needs `gh` authenticated. It skips a worktree that `git worktree remove` refuses, such as one with uncommitted changes, and prints the manual command, so it never discards work. To remove one worktree by hand, follow these steps.
+
 **Steps:**
 
 ```bash
@@ -394,6 +402,8 @@ git worktree prune --verbose
 ```bash
 git branch -d codekiln/130-add-authentication
 ```
+
+✅ **Run `mise run worktree:cleanup` to remove worktrees of closed issues**
 
 ❌ **Avoid**
 - Leaving stale worktrees around indefinitely

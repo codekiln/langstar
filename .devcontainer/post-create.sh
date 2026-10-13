@@ -73,7 +73,7 @@ mise install
 # checkout; this first run covers the fresh clone.
 echo "[post-create] Installing lefthook git hooks and generating agent config..."
 "$(mise which lefthook)" install
-"$(mise which rulesync)" generate
+mise run agents:generate
 
 # Step 4: Install cargo tools
 # After mise install, cargo should be available via ~/.cargo/env
