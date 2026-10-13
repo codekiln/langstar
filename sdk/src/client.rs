@@ -545,13 +545,16 @@ impl LangchainClient {
         &self,
         request: RequestBuilder,
     ) -> Result<T> {
-        self.execute_with(request, RetryMode::RetryOnGatewayError).await
+        self.execute_with(request, RetryMode::RetryOnGatewayError)
+            .await
     }
 
     /// GET and HEAD requests never change server state, so they are retried by default.
     fn default_retry(request: &RequestBuilder) -> RetryMode {
         match request.try_clone().and_then(|r| r.build().ok()) {
-            Some(r) if matches!(*r.method(), Method::GET | Method::HEAD) => RetryMode::RetryOnGatewayError,
+            Some(r) if matches!(*r.method(), Method::GET | Method::HEAD) => {
+                RetryMode::RetryOnGatewayError
+            }
             _ => RetryMode::SendOnce,
         }
     }
@@ -562,7 +565,8 @@ impl LangchainClient {
         let mut retries = 0;
         let mut request = request;
         loop {
-            let next = (retry == RetryMode::RetryOnGatewayError && retries < self.retry_policy.max_retries)
+            let next = (retry == RetryMode::RetryOnGatewayError
+                && retries < self.retry_policy.max_retries)
                 .then(|| request.try_clone())
                 .flatten();
             let response = request.send().await?;
@@ -2721,7 +2725,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_non_retryable_status_is_not_retried() {
+    async fn test_404_is_sent_once() {
         let mut server = mockito::Server::new_async().await;
         let missing = server
             .mock("GET", "/missing")
@@ -2742,7 +2746,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_writes_are_not_retried() {
+    async fn test_post_and_delete_are_sent_once() {
         let mut server = mockito::Server::new_async().await;
         let post = server
             .mock("POST", "/write")
