@@ -196,9 +196,7 @@ gh sub-issue list 298 --relation children
 
 ### 1.1 Set Up Research Workspace
 
-Compare your feature with every upstream LangChain project that covers it, and record in the PR body where langstar matches and where it differs on purpose. [.rulesync/rules/upstream-references.md](../../.rulesync/rules/upstream-references.md) lists the projects and what to check in each, and each project has orientation notes under `reference/repo/langchain-ai/<name>/notes/`.
-
-Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) to clone one that is missing:
+Clone each upstream LangChain project that covers your feature, with the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) for any that is missing. [.rulesync/rules/upstream-references.md](../../.rulesync/rules/upstream-references.md) lists the projects and what to check in each, and each project has orientation notes under `reference/repo/langchain-ai/<name>/notes/`:
 
 ```bash
 # For LangSmith features
@@ -223,7 +221,7 @@ reference/repo/langchain-ai/langsmith-sdk/
 
 ### 1.2 Analyze each applicable upstream reference
 
-Go through every reference in `.rulesync/rules/upstream-references.md` that covers the feature (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`). For each, read `reference/repo/langchain-ai/<name>/notes/README.md`, then the code it points to.
+Compare your feature with every reference in `.rulesync/rules/upstream-references.md` that covers it (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`), and record in the PR body where langstar matches and where it differs on purpose. For each, read `reference/repo/langchain-ai/<name>/notes/README.md`, then the code it points to.
 
 When `langsmith-sdk` applies, key files to examine:
 - `code/python/langsmith/client.py` - Main client implementation
