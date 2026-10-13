@@ -5,7 +5,7 @@ description: Run the Rust checks and tests in a git worktree with `mise run chec
 
 # Test Runner for Worktrees
 
-Run every check from the worktree you are working in, not from the root checkout. Run `pwd` first; it should print `.worktrees/<branch-name>`.
+Run every check from the worktree you are working in, not from the root checkout. Run `pwd` and `git branch --show-current` first to confirm which worktree and branch you are in. Worktrees normally live under `.worktrees/<branch-name>`, and Claude Desktop puts them under `.claude/worktrees/`.
 
 ## Set up secrets once per worktree
 
