@@ -152,8 +152,12 @@ Task(
   prompt="""
     Execute this EXACT command to reply to a GitHub PR comment:
 
+BODY=$(cat <<'EOF'
+Fixed in commit abc123
+EOF
+)
     gh api repos/{owner}/{repo}/pulls/300/comments \
-      -f body="$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nFixed in commit abc123')" \
+      -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")" \
       -F in_reply_to=2565891355
 
     Report success or failure. Do NOT ask questions or do anything else.
@@ -167,8 +171,12 @@ Task(
   prompt="""
     Execute this EXACT command to reply to a GitHub PR comment:
 
+BODY=$(cat <<'EOF'
+Fixed in commit abc123
+EOF
+)
     gh api repos/{owner}/{repo}/pulls/300/comments \
-      -f body="$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nFixed in commit abc123')" \
+      -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")" \
       -F in_reply_to=2565891356
 
     Report success or failure. Do NOT ask questions or do anything else.
@@ -416,8 +424,12 @@ Returns single comment object.
 ### Post Reply to Comment
 
 ```bash
+BODY=$(cat <<'EOF'
+Reply text
+EOF
+)
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -f body="$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nReply text')" \
+  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")" \
   -F in_reply_to={comment_id}
 ```
 

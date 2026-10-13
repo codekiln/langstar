@@ -294,8 +294,12 @@ COMMENT_ID=<comment_id>
 COMMIT_SHA=$(git rev-parse --short HEAD)
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
+BODY=$(cat <<EOF
+Fixed in commit $COMMIT_SHA: <brief description>
+EOF
+)
 gh api repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies \
-  -f body="$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nFixed in commit %s: <brief description>' "$COMMIT_SHA")"
+  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")"
 ```
 
 ### Check PR Status
@@ -464,7 +468,11 @@ gh pr view --json number,title,state,closingIssuesReferences
 gh api repos/$REPO/pulls/<num>/comments --paginate
 
 # Reply to comment
-gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nmessage')"
+BODY=$(cat <<'EOF'
+message
+EOF
+)
+gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")"
 
 # Close issue manually
 gh issue close <num> --comment "$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nClosed via PR #N')"

@@ -118,8 +118,12 @@ gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}'
 Use the `gh api` command to reply to the PR comment:
 
 ```bash
+BODY=$(cat <<'EOF'
+{body}
+EOF
+)
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' '{body}')" \
+  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")" \
   -F in_reply_to={comment_id}
 ```
 
