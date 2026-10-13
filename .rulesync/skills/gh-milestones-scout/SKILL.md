@@ -55,7 +55,7 @@ fi
 ```bash
 # Escape forward slashes and ampersands for safe sed substitution
 ESCAPED_FEATURE_NAME=$(printf '%s' "$FEATURE_NAME" | sed 's/[\/&]/\\&/g')
-ISSUE_BODY=$(cat docs/templates/scout-issue-template.md | sed "s/{feature-name}/$ESCAPED_FEATURE_NAME/g")
+ISSUE_BODY=$(printf '%s\n\n' '## from AI(<harness>, <model-slug>, <session-name>)' | cat - docs/templates/scout-issue-template.md | sed "s/{feature-name}/$ESCAPED_FEATURE_NAME/g")
 
 ISSUE_URL=$(gh issue create \
   --title "[Scout] Research $FEATURE_NAME API patterns and technical context" \
@@ -178,7 +178,7 @@ COMMIT_MSG=$(printf "docs: scout %s research\n\n#%s %s" "$FEATURE_NAME" "$ISSUE_
 git commit -m "$COMMIT_MSG"
 
 # Use printf to safely construct PR body
-PR_BODY=$(printf "Fixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- SDK analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
+PR_BODY=$(printf "## from AI(<harness>, <model-slug>, <session-name>)\n\nFixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- SDK analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
   "$ISSUE_NUM" "$FEATURE_NAME" "$ISSUE_NUM" "$FEATURE_SLUG")
 
 gh pr create --title "docs: scout $FEATURE_NAME research" --body "$PR_BODY"

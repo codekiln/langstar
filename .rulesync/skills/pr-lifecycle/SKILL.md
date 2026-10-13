@@ -218,6 +218,8 @@ If the issue that the PR fixes is part of a milestone, add the PR to that milest
 
 ### Create PR Command
 
+Start every PR body and comment with `## from AI(<harness>, <model-slug>, <session-name>)`, replacing the three placeholders with your harness, model and session name.
+
 **Using gh CLI with proper body:**
 ```bash
 ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
@@ -225,6 +227,8 @@ ISSUE_NUM=$(git branch --show-current | grep -oE '[0-9]+' | head -1)
 gh pr create \
   --title "✨ feat: <description>" \
   --body "$(cat <<EOF
+## from AI(<harness>, <model-slug>, <session-name>)
+
 ## Summary
 - <summary point>
 
@@ -290,8 +294,12 @@ COMMENT_ID=<comment_id>
 COMMIT_SHA=$(git rev-parse --short HEAD)
 REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
 
+BODY=$(cat <<EOF
+Fixed in commit $COMMIT_SHA: <brief description>
+EOF
+)
 gh api repos/$REPO/pulls/$PR_NUM/comments/$COMMENT_ID/replies \
-  -f body="Fixed in commit $COMMIT_SHA: <brief description>"
+  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")"
 ```
 
 ### Check PR Status
@@ -336,7 +344,7 @@ ISSUE_NUM=<issue_number>
 PR_NUM=<pr_number>
 
 # Close with reference to PR
-gh issue close "$ISSUE_NUM" --comment "Closed via PR #$PR_NUM"
+gh issue close "$ISSUE_NUM" --comment "$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nClosed via PR #%s' "$PR_NUM")"
 ```
 
 ### Cleanup: Remove Worktree
@@ -460,10 +468,14 @@ gh pr view --json number,title,state,closingIssuesReferences
 gh api repos/$REPO/pulls/<num>/comments --paginate
 
 # Reply to comment
-gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="message"
+BODY=$(cat <<'EOF'
+message
+EOF
+)
+gh api repos/$REPO/pulls/<num>/comments/<id>/replies -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")"
 
 # Close issue manually
-gh issue close <num> --comment "Closed via PR #N"
+gh issue close <num> --comment "$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nClosed via PR #N')"
 ```
 
 ## Integration with Other Skills
@@ -496,7 +508,7 @@ gh sub-issue list 42 --relation parent
 **Solution:**
 ```bash
 # Close manually
-gh issue close <num> --comment "Closed via PR #<pr_num>"
+gh issue close <num> --comment "$(printf '## from AI(<harness>, <model-slug>, <session-name>)\n\nClosed via PR #<pr_num>')"
 
 # Prevent future issues: always include "Fixes #N" in PR body
 ```
@@ -528,6 +540,7 @@ git branch --show-current
 
 **Solution:** Edit PR body on GitHub or:
 ```bash
+# updated-body.md starts with the AI header (`## from AI(<harness>, <model-slug>, <session-name>)`)
 gh pr edit <num> --body "$(cat updated-body.md)"
 ```
 

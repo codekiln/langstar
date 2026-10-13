@@ -118,12 +118,17 @@ gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}'
 Use the `gh api` command to reply to the PR comment:
 
 ```bash
+BODY=$(cat <<'EOF'
+{body}
+EOF
+)
 gh api repos/{owner}/{repo}/pulls/{pr_number}/comments \
-  -f body="{body}" \
+  -f body="$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' "$BODY")" \
   -F in_reply_to={comment_id}
 ```
 
 **Important:**
+- The command puts the header from [the AI header section of the root rule](https://github.com/codekiln/langstar/blob/main/.rulesync/rules/overview.md) before `{body}`; replace `<harness>`, `<model-slug>` and `<session-name>` with your own.
 - The endpoint is: `POST /repos/{owner}/{repo}/pulls/{pr_number}/comments`
 - Parameters:
   - `body` (string, required): The reply text
