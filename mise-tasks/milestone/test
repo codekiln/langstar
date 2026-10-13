@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Run the milestone task tests in tests/milestone/"
+set -euo pipefail
+
+cd "${MISE_PROJECT_ROOT:-$(git rev-parse --show-toplevel)}"
+for test_file in tests/milestone/test_*.py; do
+  echo "==> $test_file"
+  python3 "$test_file"
+done

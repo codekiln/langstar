@@ -28,6 +28,7 @@ Testing documentation uses **progressive disclosure** for context efficiency:
 - Writing CLI tests? → `docs/dev/testing/cli-integration-tests.md`
 - Reviewing test quality? → `docs/dev/testing/HIGH_LEVEL_TESTING_GUIDELINES.md`
 - Learning CRUD pattern? → `docs/dev/testing/crud-lifecycle-pattern.md`
+- Changing `mise run milestone:prep-next`? → `docs/dev/milestone-tasks.md`
 
 **Use the Read tool to load these docs.**
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Tests for branch naming convention in prep-next.py.
+Tests for branch naming convention in mise-tasks/milestone/prep-next.
 
 Tests the branch name generation logic that creates names in the format:
 - m<milestone_id>-p<parent_id>-i<issue_num>-<slug> (full)
@@ -9,8 +9,25 @@ Tests the branch name generation logic that creates names in the format:
 - i<issue_num>-<slug> (standalone)
 """
 
+import importlib.machinery
+import importlib.util
+import os
 import sys
 import re
+
+
+PREP_NEXT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "mise-tasks", "milestone", "prep-next"
+)
+
+
+def load_prep_next():
+    """Import the prep-next file task, which has no .py extension."""
+    loader = importlib.machinery.SourceFileLoader("prep_next", PREP_NEXT)
+    spec = importlib.util.spec_from_loader("prep_next", loader)
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
 
 
 def generate_branch_name(
@@ -22,7 +39,7 @@ def generate_branch_name(
     """
     Generate branch name following project conventions.
 
-    This function mirrors the logic in prep-next.py:create_worktree().
+    This function mirrors the logic in mise-tasks/milestone/prep-next:create_worktree().
 
     Args:
         issue_num: GitHub issue number
@@ -204,11 +221,7 @@ def test_worktree_path_generation():
     import subprocess
     import tempfile
 
-    spec = importlib.util.spec_from_file_location(
-        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
-    )
-    prep_next = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(prep_next)
+    prep_next = load_prep_next()
 
     branch = generate_branch_name(234, "add-user-auth", milestone_id=8, parent_id=123)
 
@@ -251,11 +264,7 @@ def test_issue_number_from_branch():
     import importlib.util
     import os
 
-    spec = importlib.util.spec_from_file_location(
-        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
-    )
-    prep_next = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(prep_next)
+    prep_next = load_prep_next()
 
     cases = {
         "m18-p734-i373-implement-feature": 373,
@@ -285,11 +294,7 @@ def test_link_secrets():
     import subprocess
     from unittest import mock
 
-    spec = importlib.util.spec_from_file_location(
-        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
-    )
-    prep_next = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(prep_next)
+    prep_next = load_prep_next()
 
     ok = True
     for returncode, expected in ((0, True), (1, False)):
@@ -324,11 +329,7 @@ def test_create_worktree_links_secrets():
     import subprocess
     from unittest import mock
 
-    spec = importlib.util.spec_from_file_location(
-        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
-    )
-    prep_next = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(prep_next)
+    prep_next = load_prep_next()
 
     ok = True
     for add_returncode in (0, 1):
