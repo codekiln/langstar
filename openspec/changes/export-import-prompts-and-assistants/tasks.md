@@ -24,7 +24,7 @@ Each numbered group is one pull request, in the order listed, except task 2.1. T
 
 - [ ] 4.1 Add the export file types, with sorted keys and no export time, and the destination record file, to a new module in `cli/src/`; verify with unit tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level, and that updating one destination leaves the others unchanged
 - [ ] 4.2 Add the JSON comparison that drops server-set fields and reports differences by JSON Pointer; verify with unit tests on nested objects, arrays, missing keys and ignored fields
-- [ ] 4.3 Add the shared result report and the exit statuses 0, 3 and 1, printing JSON to stdout and progress to stderr, and leave clap's status 2 for usage errors; verify with unit tests of the report and CLI tests that a difference exits with status 3 and that an unknown flag still exits with status 2
+- [ ] 4.3 Add the shared result report and the exit statuses 0, 3 and 1, printing JSON to stdout and progress to stderr, and leave clap's status 2 for usage errors; verify with unit tests of the report and of the exit status each result gives
 - [ ] 4.4 Add the secret reference walk that lists secret names from a manifest; verify with unit tests on a copy of the `prompt_with_model` manifest from the LangSmith Python SDK's integration tests, which `references/langsmith-sdk.md` links, and on a manifest with no secret reference
 
 ## 5. prompt export
@@ -34,7 +34,7 @@ Each numbered group is one pull request, in the order listed, except task 2.1. T
 
 ## 6. prompt compare and verify
 
-- [ ] 6.1 Add `langstar prompt compare`; verify with integration tests that export a prompt, change its model temperature through the SDK, and assert the reported path, both values and exit status 3, and that a changed commit description and a changed repo readme are each reported the same way
+- [ ] 6.1 Add `langstar prompt compare`; verify with integration tests that export a prompt, change its model temperature through the SDK, and assert the reported path, both values and exit status 3, and that a changed commit description and a changed repo readme are each reported the same way, and CLI tests that `langstar -f json prompt compare` prints one JSON object with `status`, `differences` and `checks` to stdout and its progress to stderr, and that `prompt compare` with a mistyped flag exits with status 2
 - [ ] 6.2 Add `langstar prompt verify` with the secret check and the saved model configuration note, matching `requires.model_provider` against the class name at the end of each configuration's settings `id`; verify with integration tests against a workspace that lacks a listed secret and one that has it, and a test that a missing saved model configuration is reported and leaves the exit status at 0
 - [ ] 6.3 Document compare and verify; verify that each documented command runs as written
 
@@ -53,7 +53,7 @@ Each numbered group is one pull request, in the order listed, except task 2.1. T
 ## 9. assistant compare and verify
 
 - [ ] 9.1 Add `langstar assistant compare` with `--assistant-id`, and the lookup of the recorded assistant in the destination record from 4.1; verify with an integration test that exports an assistant, changes its metadata through the SDK, runs compare with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3, and a unit test that compare reads the assistant ID from a destination record written by the 4.1 types
-- [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`; verify with integration tests that run verify with `--assistant-id` against an exported assistant, one with a file whose graph ID the deployment lacks, one with a missing prompt tag, and one that passes `--workspace-id` set to the destination workspace
+- [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`; verify with integration tests that run verify with `--assistant-id` against an exported assistant, one with a file whose graph ID the deployment lacks, one with a missing prompt tag, and one that passes `--workspace-id` set to the destination workspace, and a CLI test that `langstar -f json assistant verify` prints one JSON object with `status`, `differences` and `checks` to stdout
 - [ ] 9.3 Document assistant compare and verify; verify that each documented command runs as written
 
 ## 10. assistant import
