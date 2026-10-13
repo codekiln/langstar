@@ -255,7 +255,7 @@ To remove every worktree whose GitHub issue is closed, run this from any worktre
 mise run worktree:cleanup
 ```
 
-It reads the issue number from each branch name (`m<milestone>-p<parent>-i<issue>-<slug>`), checks the issue with `gh`, and removes the worktrees of closed issues. It needs `gh` authenticated. To remove one worktree by hand, follow these steps.
+It reads the issue number from each branch name (`m<milestone>-p<parent>-i<issue>-<slug>`), checks the issue with `gh`, and removes the worktrees of closed issues. It needs `gh` authenticated. **It force-removes a worktree that `git worktree remove` refuses, which discards uncommitted changes**, so commit or stash anything you want to keep in every worktree of a closed issue before you run it. To remove one worktree by hand, follow these steps.
 
 **Steps:**
 

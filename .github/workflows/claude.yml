@@ -53,7 +53,7 @@ jobs:
           install_args: node npm:rulesync
 
       - name: Generate agent config
-        run: mise x -- rulesync generate
+        run: mise run agents:generate
 
       - name: Run Claude Code
         id: claude
