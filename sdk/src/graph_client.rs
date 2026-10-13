@@ -117,7 +117,7 @@ impl<'a> GraphClient<'a> {
 
         loop {
             let request_body = AssistantSearchRequest {
-                query: None, // Empty query lists all assistants
+                name: None, // No name filter lists all assistants
                 limit: Some(limit),
                 offset: Some(offset),
             };
