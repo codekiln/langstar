@@ -171,7 +171,7 @@ pub struct ExportArgs {
     #[arg(long, short)]
     pub out: Option<PathBuf>,
 
-    /// Maximum number of examples to export (default: all)
+    /// Maximum number of examples to export, at least 1 (default: all)
     #[arg(short, long)]
     pub limit: Option<i64>,
 }
@@ -658,6 +658,16 @@ impl DatasetCommands {
     }
 
     async fn execute_export(args: &ExportArgs, config: &Config) -> Result<()> {
+        // The examples endpoint requires limit >= 1, so a zero or negative
+        // --limit is an error rather than a silently empty export.
+        if let Some(limit) = args.limit
+            && limit < 1
+        {
+            return Err(crate::error::CliError::Config(format!(
+                "--limit must be at least 1, got {limit}"
+            )));
+        }
+
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
@@ -666,7 +676,7 @@ impl DatasetCommands {
             dataset: Some(args.dataset_id),
             ..Default::default()
         };
-        let total_limit = args.limit.map(|limit| limit.max(0) as usize);
+        let total_limit = args.limit.map(|limit| limit as usize);
 
         let examples = client.list_all_examples(params, total_limit).await?;
 

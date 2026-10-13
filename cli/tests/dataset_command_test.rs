@@ -253,6 +253,22 @@ fn test_dataset_import_requires_file() {
 }
 
 #[test]
+fn test_dataset_export_rejects_limit_below_one() {
+    for limit in ["--limit=-1", "--limit=0"] {
+        let mut cmd = langstar_cmd();
+        cmd.env("LANGSMITH_API_KEY", "<your-api-key>").args([
+            "dataset",
+            "export",
+            "12345678-1234-1234-1234-123456789012",
+            limit,
+        ]);
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("--limit must be at least 1"));
+    }
+}
+
+#[test]
 fn test_dataset_list_examples_requires_uuid() {
     let mut cmd = langstar_cmd();
     cmd.args(["dataset", "list-examples"]);

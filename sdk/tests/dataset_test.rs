@@ -644,8 +644,9 @@ async fn test_list_all_examples_pages_until_a_short_page() {
     };
 
     let mut mocks = Vec::new();
-    // (offset, requested limit, examples returned); the 100/50 request is the
-    // second page of the `Some(150)` call, which must ask for only 50.
+    // (offset, requested limit, examples returned). The None call and the
+    // Some(150) call both fetch offset 0 with limit 100, so that mock expects
+    // two hits.
     for (offset, limit, count) in [(0, 100, 100), (100, 100, 100), (200, 100, 5)] {
         mocks.push(
             server
@@ -698,6 +699,9 @@ async fn test_list_all_examples_pages_until_a_short_page() {
         .unwrap();
     assert_eq!(limited.len(), 150);
     limit_mock.assert_async().await;
+    for mock in &mocks {
+        mock.assert_async().await;
+    }
 
     // A small total asks for a small page, not 100.
     let small_mock = server

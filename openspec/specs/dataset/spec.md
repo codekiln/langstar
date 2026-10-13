@@ -143,6 +143,11 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 - **THEN** `examples.csv` holds a header row of `id`, `inputs`, `outputs` and `metadata` and one row per example, with each value as JSON
 - **AND** langstar reports how many examples it exported
 
+#### Scenario: Export with a limit below 1
+
+- **WHEN** a user runs `langstar dataset export <dataset-id> --limit=-1`, or `--limit 0`
+- **THEN** langstar exits with an error saying `--limit` must be at least 1 and exports nothing
+
 #### Scenario: Export JSONL to standard output
 
 - **WHEN** a user runs `langstar dataset export <dataset-id> --file-format jsonl`
