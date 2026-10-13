@@ -118,7 +118,7 @@ EOF
 
 ### 5. Clone the upstream projects the feature touches (if needed)
 
-`.rulesync/rules/upstream-references.md` names every upstream project to check (langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server, langgraph). Clone each one the feature touches if it is not already present, for example:
+Clone each upstream project the feature touches that is not already under `reference/repo/langchain-ai/`: langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server or langgraph. `.rulesync/rules/upstream-references.md` says what to check in each. For example:
 
 ```bash
 if [ ! -d "reference/repo/langchain-ai/langsmith-sdk/code" ]; then
