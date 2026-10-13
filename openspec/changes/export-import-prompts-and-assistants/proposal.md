@@ -10,9 +10,9 @@ A prompt belongs to a workspace and an assistant belongs to a deployment, but bo
 
 ## What Changes
 
-- `langstar prompt export <handle>` writes one JSON file holding a saved prompt commit exactly as LangSmith returns it with the model included: message templates, input variables, output schema, structured output method, model binding, the repo's description, readme and tags, the commit tags, and where it came from.
+- `langstar prompt export <handle>` writes one JSON file holding a saved prompt commit as LangSmith returns it with the model included: message templates, input variables, output schema, structured output method, model binding, the repo's description, readme and tags, the commit tags, and where it came from.
 - `langstar prompt import <file> --workspace-id <id>` creates the prompt in the destination workspace, or adds a commit to an existing prompt when the user passes `--update`. `--dry-run` shows what it would do. After writing, it reads the prompt back and reports any difference.
-- `langstar prompt compare <file>` reports the differences between the file and a prompt in a workspace. `langstar prompt verify <file>` also checks what the prompt needs in that workspace: the secrets its model reads and a model configuration for its provider.
+- `langstar prompt compare <file>` reports the differences between the file and a prompt in a workspace. `langstar prompt verify <file>` also checks that the workspace has the secrets the prompt's model reads, and notes when the workspace has no saved model configuration for the model's provider.
 - `langstar assistant export`, `import`, `compare` and `verify` do the same for assistants on a deployment. The file holds the name, description, graph ID, configuration, context, metadata and any prompt names the assistant refers to. `verify` checks that the destination deployment has the graph and that the destination workspace has the referenced prompts.
 - Import records each destination ID (the new commit hash, or the new assistant ID) in a separate file next to the export, so importing the same file again finds the copy it made earlier instead of creating another one.
 - `compare`, `verify` and `import` share one exit status scheme and print a JSON report with `-f json`.
@@ -21,7 +21,7 @@ A prompt belongs to a workspace and an assistant belongs to a deployment, but bo
 
 ### New Capabilities
 
-- `prompt`: the `langstar prompt` command group. This change adds its export, import, compare and verify requirements; the existing prompt subcommands get their requirements when [#728 Redesign prompt create/get/update commands](https://github.com/codekiln/langstar/issues/728) lands.
+- `prompt`: the `langstar prompt` command group. This change adds its export, import, compare and verify requirements; the existing prompt subcommands get their requirements when [#728 Implement CRUD command structure (create, get, update) for prompt commands](https://github.com/codekiln/langstar/issues/728) lands.
 
 ### Modified Capabilities
 
@@ -29,9 +29,9 @@ A prompt belongs to a workspace and an assistant belongs to a deployment, but bo
 
 ## Impact
 
-- SDK: `sdk/src/prompts.rs` gains a commit read that asks for the model and calls for prompt tags. `sdk/src/assistants.rs` gains the `context` field, and `assistant_id` and `if_exists` on create.
-- CLI: new subcommands in `cli/src/commands/prompt.rs` and `cli/src/commands/assistant.rs`, and a shared module for the export file, the destination record, comparison and the exit status.
-- Tests need a second workspace and a second deployment, and one model provider key for the structured output check. codekiln creates each one; langstar's tests then read them through `fnox.toml` and the CI workflow.
+- SDK: `sdk/src/prompts.rs` gains a commit read that asks for the model and calls for prompt tags. `sdk/src/assistants.rs` gains the `context` and `version` fields, `assistant_id` and `if_exists` on create, and a search by graph ID.
+- CLI: new subcommands in `cli/src/commands/prompt.rs` and `cli/src/commands/assistant.rs`, and a shared module for the export file, the destination record, comparison and the exit status. `resolve_deployment_url` in `cli/src/deployment_utils.rs` learns to find the Agent Server URL of a deployment built from GitHub, which every `langstar assistant` command needs.
+- Tests need a second workspace, a second deployment and one model provider key for the structured output check. codekiln creates the workspace and the key, and langstar's tests read them through `fnox.toml` and the CI workflow; the `TestDeploymentConfig` fixture creates the deployment on the first run and the tests reuse it after that.
 - Docs: a new usage page on moving prompts and assistants between environments.
 
 ## Citations

@@ -112,7 +112,7 @@ After writing, `langstar assistant import` SHALL read the assistant back from th
 - **AND** the workspace has no `support-system` prompt with a `prod` tag
 - **THEN** langstar reports `support-system:prod` as missing and exits with status 2
 
-### Requirement: Assistant transfer results share the prompt transfer shape
+### Requirement: Assistant compare, verify and import use the prompt commands' exit statuses and JSON report
 
 `assistant compare`, `assistant verify` and `assistant import` SHALL use the exit statuses and the JSON report shape of `prompt compare`, `prompt verify` and `prompt import`.
 

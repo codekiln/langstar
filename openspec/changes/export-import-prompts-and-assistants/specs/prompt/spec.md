@@ -44,7 +44,7 @@ Exporting the same commit twice SHALL produce identical files. The file SHALL ho
 
 ### Requirement: List the credentials a prompt needs without their values
 
-The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the model's provider. It SHALL hold no secret values.
+The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the model's provider class name as LangSmith returns it, such as `ChatOpenAI`. It SHALL hold no secret values.
 
 #### Scenario: Model reads an API key secret
 
@@ -147,7 +147,7 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 
 ### Requirement: Verify that a prompt can run in a workspace
 
-`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets` and a model configuration for `requires.model_provider`. It SHALL name each missing secret and provider and exit with status 2 when any check fails.
+`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 2 when any secret is missing. It SHALL also look for a saved model configuration whose settings `id` ends in the class name `requires.model_provider` holds, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
 
 #### Scenario: Secret missing in the destination
 
@@ -155,7 +155,14 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 - **AND** the file lists `OPENAI_API_KEY` under `requires.secrets`
 - **THEN** langstar reports `OPENAI_API_KEY` as missing and exits with status 2
 
-### Requirement: Report results in one shape with one set of exit statuses
+#### Scenario: No saved model configuration for the provider
+
+- **WHEN** the file's `requires.model_provider` is `ChatOpenAI`
+- **AND** no saved model configuration in the destination workspace has a settings `id` ending in `ChatOpenAI`
+- **AND** every secret in `requires.secrets` exists and the prompt matches the file
+- **THEN** langstar notes that no saved model configuration matches `ChatOpenAI` and exits with status 0
+
+### Requirement: Exit with 0 for a match, 2 for a difference and 1 for an error
 
 `prompt compare`, `prompt verify` and `prompt import` SHALL exit with status 0 when the prompt matches and every check passes, 2 when they find a difference or a failed check, and 1 on any other error. With `-f json` each SHALL print one JSON object with `status`, `differences` and `checks`.
 

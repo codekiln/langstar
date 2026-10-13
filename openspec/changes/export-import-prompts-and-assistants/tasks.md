@@ -9,16 +9,17 @@ Each numbered group is one pull request, in the order listed.
 
 ## 2. Test environments
 
-- [ ] 2.1 Add the destination workspace and the model provider key to `fnox.toml`, the CI workflow and `docs/dev/environment-variables.md`, with placeholders only, after codekiln has created the workspace and the key and stored them in 1Password and the repo's CI secrets; verify with `mise run check` and a CI run that reads both
+- [ ] 2.1 Add the destination workspace and the model provider key to `fnox.toml`, the CI workflow and `docs/dev/environment-variables.md`, with placeholders only; verify with `mise run check` and a CI run that reads both. This task waits on codekiln to create a second workspace in the test organization and an OpenAI API key, and to store both in 1Password and the repository's CI secrets. The import tests need the workspace as a place to import into. The key lets the check in 7.3 run each imported structured prompt once against a small OpenAI model, which bills that account on every CI run; it is the one test that shows a copy still returns structured data, where every other test compares text.
 - [ ] 2.2 Add a destination deployment fixture to `sdk/src/test_utils.rs` and `cli/tests/common/fixtures.rs` that returns a deployment with a reachable URL; verify with an integration test that lists assistants on it
+- [ ] 2.3 Make `resolve_deployment_url` in `cli/src/deployment_utils.rs` return the URL of a deployment built from GitHub, which has no `source_config.custom_url`; verify by removing `#[ignore]` from `test_assistant_create_basic` in `cli/tests/assistant_command_test.rs` and running it against the test deployment
 
-## 3. SDK reads and writes the fields a transfer needs
+## 3. SDK reads and writes the fields export and import need
 
 - [ ] 3.1 Add a commit read that sends `include=model` and returns `model_config` and `model_provider` to `sdk/src/prompts.rs`; verify with an httpmock test that asserts the query string and the parsed fields, and an integration test that reads a prompt with a model
 - [ ] 3.2 Add listing and creating prompt tags to `sdk/src/prompts.rs`; verify with httpmock tests and an integration test that creates a tag and reads it back through the SDK
-- [ ] 3.3 Add `context` to `Assistant`, `CreateAssistantRequest` and `UpdateAssistantRequest`, and `assistant_id` and `if_exists` to `CreateAssistantRequest`, in `sdk/src/assistants.rs`; verify with httpmock tests of the request bodies and an integration test that creates an assistant with context and reads it back
+- [ ] 3.3 Add `context` and `version` to `Assistant`, `context` to `CreateAssistantRequest` and `UpdateAssistantRequest`, `assistant_id` and `if_exists` to `CreateAssistantRequest`, and a `graph_id` filter to `AssistantSearchRequest`, in `sdk/src/assistants.rs`; verify with httpmock tests of the request bodies and an integration test that creates an assistant with context, reads it back with its version, and finds it by graph ID
 
-## 4. Shared transfer module
+## 4. Code the prompt and assistant commands share: the export file, the comparison and the report
 
 - [ ] 4.1 Add the export file types, with sorted keys and no export time, and the destination record file, to a new module in `cli/src/`; verify with unit tests that serialize the same value twice to identical text and that updating one destination leaves the others unchanged
 - [ ] 4.2 Add the JSON comparison that drops server-set fields and reports differences by JSON Pointer; verify with unit tests on nested objects, arrays, missing keys and ignored fields
@@ -33,7 +34,7 @@ Each numbered group is one pull request, in the order listed.
 ## 6. prompt compare and verify
 
 - [ ] 6.1 Add `langstar prompt compare`; verify with integration tests that export a prompt, change its model temperature through the SDK, and assert the reported path, both values and exit status 2
-- [ ] 6.2 Add `langstar prompt verify` with the secret and model configuration checks; verify with integration tests against a workspace that lacks a listed secret and one that has it
+- [ ] 6.2 Add `langstar prompt verify` with the secret check and the saved model configuration note, matching `requires.model_provider` against the class name at the end of each configuration's settings `id`; verify with integration tests against a workspace that lacks a listed secret and one that has it, and a test that a missing saved model configuration is reported and leaves the exit status at 0
 - [ ] 6.3 Document compare and verify; verify that each documented command runs as written
 
 ## 7. prompt import
@@ -51,7 +52,7 @@ Each numbered group is one pull request, in the order listed.
 ## 9. assistant compare and verify
 
 - [ ] 9.1 Add `langstar assistant compare`; verify with an integration test that changes metadata through the SDK and asserts the reported path and exit status 2
-- [ ] 9.2 Add `langstar assistant verify` with the graph and prompt checks; verify with integration tests for a missing graph ID and a missing prompt tag
+- [ ] 9.2 Add `langstar assistant verify` with the graph check and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`; verify with integration tests for a missing graph ID and a missing prompt tag
 - [ ] 9.3 Document assistant compare and verify; verify that each documented command runs as written
 
 ## 10. assistant import
@@ -59,7 +60,7 @@ Each numbered group is one pull request, in the order listed.
 - [ ] 10.1 Add `langstar assistant import` with creation, read-back and the destination record; verify with an integration test that imports into the destination deployment and checks name, graph ID, configuration, context, metadata and prompt references through the Agent Server API
 - [ ] 10.2 Add `--update`, `--assistant-id` and `--dry-run`; verify with integration tests that a repeated import creates no assistant, that `--update` changes the recorded one, and that a deleted recorded assistant exits with status 1
 - [ ] 10.3 Add an end-to-end test that imports prompts into the destination workspace and then an assistant that refers to them onto the destination deployment, and runs `assistant verify`; verify that it passes and that it fails after deleting one prompt tag
-- [ ] 10.4 Document assistant import, the deployment scope of assistants, and how export and import relate to #728's `create`, `get` and `update`; verify that each documented command runs as written
+- [ ] 10.4 Document assistant import, the deployment scope of assistants, and how export and import relate to the `create`, `get` and `update` commands of [#728 Implement CRUD command structure (create, get, update) for prompt commands](https://github.com/codekiln/langstar/issues/728); verify that each documented command runs as written
 
 ## Workflow follow-up
 
