@@ -34,7 +34,7 @@ python3 scripts/gh-milestones/prep-next.py 10
 - Git
 - `gh-sub-issue` extension (optional, degrades gracefully)
 
-**Called by:** `.claude/commands/gh-milestones/gh-prep-next.md`
+**Called by:** `.rulesync/skills/gh-milestones-prep-next/SKILL.md`
 
 ## Development
 
