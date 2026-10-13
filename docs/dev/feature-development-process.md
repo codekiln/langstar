@@ -95,8 +95,8 @@ Create an exploratory research issue using this pattern:
    - Open questions for implementation
 
 2. **Updated Reference Notes**:
-   - `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
-   - Document key SDK patterns and method signatures
+   - `reference/repo/langchain-ai/<name>/notes/README.md` for each upstream reference the feature touched, from `.rulesync/rules/upstream-references.md` (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`)
+   - Document the key patterns and method, command or endpoint signatures found in each
 
 3. **Optional: Experiment Scripts**:
    - `reference/experiments/{issue-num}-{slug}/`

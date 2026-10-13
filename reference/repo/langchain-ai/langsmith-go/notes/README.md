@@ -7,7 +7,7 @@
 ## What it is
 
 - Go client for the LangSmith REST API, module `github.com/langchain-ai/langsmith-go`, package name `langsmith`. `README.md` says it requires Go 1.22+, and `go.mod` declares `go 1.26.7`, which is the version Go enforces.
-- `README.md` says it is "generated with Stainless"; most `*.go` files start with "File generated from our OpenAPI spec by Stainless" (`client.go`, `run.go`). `CONTRIBUTING.md` line 16: "Most of the SDK is generated code."
+- `README.md` says it is "generated with Stainless"; 55 of the 131 non-test `*.go` files (48 of the 76 at the repo root) start with "File generated from our OpenAPI spec by Stainless", for example `client.go` and `run.go` (counted at clone commit 59bb42c; command under "Generated vs hand-written"). `CONTRIBUTING.md` line 16: "Most of the SDK is generated code."
 - `.stats.yml` holds only `configured_endpoints: 174` (no spec URL or hash). `api.md` has 175 `title="..."` method lines.
 - Releases via release-please (`release-please-config.json`, `internal/version.go`).
 
@@ -57,6 +57,12 @@
 
 ## Generated vs hand-written
 
-- Generated (Stainless header): most resource files, `client.go`, `default_http_client.go`, `option/`, `internal/requestconfig`, `packages/pagination`.
-- No generated header (hand-written, from a header check of root `*.go`): `config.go`, `config_filelock_*.go`, `baseurl.go`, `address.go`, `field.go`, `insights.go`, `oauth_discovery.go`, `tracer.go`, `tracing.go`, and most `sandbox_*.go` (commands, files, tunnel, snapshots, mounts, wait, verify, errors, tracing, internal, resource, service_url).
+Count the files that carry the header, from the `code/` clone (55 of 131 non-test files at commit 59bb42c; add `-maxdepth 1` after `.` for the repo root, 48 of 76):
+
+```bash
+find . -name '*.go' ! -name '*_test.go' -exec grep -l 'File generated from our OpenAPI spec by Stainless' {} + | wc -l
+```
+
+- Generated (Stainless header): 48 root files, including `client.go`, `default_http_client.go`, `run.go`, `dataset.go`, `feedback.go` and the other resource files (`sandbox.go`, `sandboxbox.go`, `sandboxregistry.go` and `sandboxsnapshot.go` among them), plus `internal/requestconfig/requestconfig.go`, `internal/apierror`, `option/` and `packages/pagination`.
+- No generated header (hand-written): root `config.go`, `config_filelock_*.go`, `baseurl.go`, `address.go`, `field.go`, `insights.go`, `oauth_discovery.go`, `tracer.go`, `tracing.go` and every `sandbox_*.go` file (commands, files, tunnel, snapshots, mounts, wait, verify, errors, tracing, internal, resource, service_url).
 - Other hand-written areas: `lib/langsmithtracing/` (run tracing/multipart ingestion client, re-exported by `tracing.go`), `instrumentation/`, `integration/`, `examples/` and sandbox command retries (`sandbox_command_start_retry_test.go`) (not read in detail).

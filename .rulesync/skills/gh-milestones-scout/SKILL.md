@@ -118,9 +118,7 @@ EOF
 
 ### 5. Clone the upstream projects the feature touches (if needed)
 
-Clone each upstream project the feature touches that is not already under `reference/repo/langchain-ai/`: langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server or langgraph. `.rulesync/rules/upstream-references.md` says what to check in each. For example:
-
-The clone lives in the root checkout, so test for it there; a worktree has `notes/` but no `code/`.
+Clone each upstream project the feature touches that has no `code/` directory in the root checkout: langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server or langgraph. A worktree has `notes/` but no `code/`, so the check below looks in the root checkout. `.rulesync/rules/upstream-references.md` says what to check in each project. This example clones langsmith-sdk:
 
 ```bash
 REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
