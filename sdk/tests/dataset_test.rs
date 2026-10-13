@@ -9,6 +9,7 @@ use langstar_sdk::{
 };
 use mockito::{Matcher, Server};
 use serde_json::json;
+use tokio_stream::StreamExt;
 use uuid::Uuid;
 
 /// Helper function to make a minimal valid Dataset JSON response
@@ -632,7 +633,7 @@ async fn test_bulk_create_examples() {
 }
 
 #[tokio::test]
-async fn test_list_all_examples_pages_until_a_short_page() {
+async fn test_list_examples_paginated_pages_until_a_short_page() {
     let mut server = Server::new_async().await;
     let dataset_id = "12345678-1234-1234-1234-123456789012";
 
@@ -670,9 +671,12 @@ async fn test_list_all_examples_pages_until_a_short_page() {
         ..Default::default()
     };
 
-    let all = client
-        .list_all_examples(params.clone(), None)
+    let all: Vec<_> = client
+        .list_examples_paginated(params.clone(), None)
+        .collect::<Vec<_>>()
         .await
+        .into_iter()
+        .collect::<Result<_, _>>()
         .unwrap();
     assert_eq!(all.len(), 205);
     assert_eq!(
@@ -693,9 +697,12 @@ async fn test_list_all_examples_pages_until_a_short_page() {
         .expect(1)
         .create_async()
         .await;
-    let limited = client
-        .list_all_examples(params.clone(), Some(150))
+    let limited: Vec<_> = client
+        .list_examples_paginated(params.clone(), Some(150))
+        .collect::<Vec<_>>()
         .await
+        .into_iter()
+        .collect::<Result<_, _>>()
         .unwrap();
     assert_eq!(limited.len(), 150);
     limit_mock.assert_async().await;
@@ -716,7 +723,13 @@ async fn test_list_all_examples_pages_until_a_short_page() {
         .expect(1)
         .create_async()
         .await;
-    let one = client.list_all_examples(params, Some(1)).await.unwrap();
+    let one: Vec<_> = client
+        .list_examples_paginated(params, Some(1))
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
     assert_eq!(one.len(), 1);
     small_mock.assert_async().await;
 }

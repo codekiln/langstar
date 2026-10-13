@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{ExportFormat, OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand};
+use futures_util::StreamExt;
 use langstar_sdk::{
     DataType, Dataset, DatasetCreate, DatasetUpdate, Example, ExampleCreate, LangchainClient,
     ListDatasetsParams, ListExamplesParams,
@@ -678,7 +679,9 @@ impl DatasetCommands {
         };
         let total_limit = args.limit.map(|limit| limit as usize);
 
-        let examples = client.list_all_examples(params, total_limit).await?;
+        // Write each example as its page arrives, so memory stays bounded to
+        // one page however large the dataset is.
+        let mut examples = client.list_examples_paginated(params, total_limit);
 
         // Prepare output
         let mut output: Box<dyn Write> = if let Some(path) = &args.out {
@@ -687,23 +690,28 @@ impl DatasetCommands {
             Box::new(std::io::stdout())
         };
 
+        let mut exported = 0usize;
         match args.file_format {
             ExportFormat::Jsonl => {
-                for example in &examples {
+                while let Some(example) = examples.next().await {
+                    let example = example?;
                     let record = JsonlRecord {
                         id: Some(example.id),
-                        inputs: example.inputs.clone(),
-                        outputs: example.outputs.clone(),
-                        metadata: example.metadata.clone(),
+                        inputs: example.inputs,
+                        outputs: example.outputs,
+                        metadata: example.metadata,
                     };
                     writeln!(output, "{}", serde_json::to_string(&record)?)?;
+                    exported += 1;
                 }
+                output.flush()?;
             }
             ExportFormat::Csv => {
                 // CSV format
                 let mut wtr = csv::Writer::from_writer(output);
                 wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                for example in &examples {
+                while let Some(example) = examples.next().await {
+                    let example = example?;
                     wtr.write_record([
                         example.id.to_string(),
                         serde_json::to_string(&example.inputs)?,
@@ -720,13 +728,14 @@ impl DatasetCommands {
                             .transpose()?
                             .unwrap_or_default(),
                     ])?;
+                    exported += 1;
                 }
                 wtr.flush()?;
             }
         }
 
         if let Some(path) = &args.out {
-            eprintln!("Exported {} examples to {:?}", examples.len(), path);
+            eprintln!("Exported {} examples to {:?}", exported, path);
         }
 
         Ok(())

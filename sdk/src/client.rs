@@ -1609,7 +1609,7 @@ impl LangchainClient {
         self.execute(request).await
     }
 
-    /// List examples across as many pages as it takes, up to an optional total.
+    /// Stream examples across as many pages as it takes, up to an optional total.
     ///
     /// `GET /api/v1/examples` returns at most 100 examples per request, so this
     /// requests pages at increasing offsets until a page comes back shorter
@@ -1618,40 +1618,59 @@ impl LangchainClient {
     /// `total_limit` does not download a full page. `params.offset` is where
     /// the first page starts; `params.limit` is ignored in favor of `total_limit`.
     ///
+    /// Only one page is held in memory at a time, so a caller that writes each
+    /// example as it arrives, as `langstar dataset export` does, stays bounded
+    /// to one page however large the dataset is.
+    ///
     /// # Arguments
     ///
     /// * `params` - Query parameters; `offset` and `limit` are managed here
-    /// * `total_limit` - Maximum number of examples to return. `None` returns all.
-    pub async fn list_all_examples(
+    /// * `total_limit` - Maximum number of examples to yield. `None` yields all.
+    ///
+    /// # Returns
+    ///
+    /// A `Stream` of `Result<Example>` that yields examples one at a time.
+    ///
+    /// # Notes
+    ///
+    /// - The stream continues until either:
+    ///   - `total_limit` examples have been yielded
+    ///   - A page comes back shorter than requested
+    ///   - An error occurs
+    /// - Errors are yielded as `Err` items, allowing partial results
+    pub fn list_examples_paginated(
         &self,
         mut params: crate::datasets::ListExamplesParams,
         total_limit: Option<usize>,
-    ) -> Result<Vec<crate::datasets::Example>> {
+    ) -> Pin<Box<dyn Stream<Item = Result<crate::datasets::Example>> + Send + '_>> {
         const PAGE_SIZE: usize = 100;
-        let mut offset = params.offset.unwrap_or(0);
-        let mut examples = Vec::new();
 
-        loop {
-            if total_limit.is_some_and(|total| examples.len() >= total) {
-                break;
-            }
-            let requested =
-                total_limit.map_or(PAGE_SIZE, |total| PAGE_SIZE.min(total - examples.len()));
-            params.offset = Some(offset);
-            params.limit = Some(requested as i64);
-            let page = self.list_examples(params.clone()).await?;
-            let page_len = page.len();
-            examples.extend(page);
-            if page_len < requested {
-                break;
-            }
-            offset += page_len as i64;
-        }
+        Box::pin(async_stream::try_stream! {
+            let mut offset = params.offset.unwrap_or(0);
+            let mut total_yielded = 0usize;
 
-        if let Some(total) = total_limit {
-            examples.truncate(total);
-        }
-        Ok(examples)
+            loop {
+                if total_limit.is_some_and(|total| total_yielded >= total) {
+                    break;
+                }
+                let requested = total_limit
+                    .map_or(PAGE_SIZE, |total| PAGE_SIZE.min(total - total_yielded));
+                params.offset = Some(offset);
+                params.limit = Some(requested as i64);
+                let page = self.list_examples(params.clone()).await?;
+                let page_len = page.len();
+
+                for example in page {
+                    total_yielded += 1;
+                    yield example;
+                }
+
+                if page_len < requested {
+                    break;
+                }
+                offset += page_len as i64;
+            }
+        })
     }
 
     /// Get an example by ID.
