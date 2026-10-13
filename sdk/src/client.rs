@@ -568,7 +568,10 @@ impl LangchainClient {
             if !RETRYABLE_STATUSES.contains(&response.status().as_u16()) {
                 return Ok(response);
             }
-            tokio::time::sleep(self.retry_policy.delay(retries, &response)).await;
+            let delay = self.retry_policy.delay(retries, &response);
+            // Release the connection before waiting out the backoff.
+            drop(response);
+            tokio::time::sleep(delay).await;
             retries += 1;
             request = next;
         }
