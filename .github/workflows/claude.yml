@@ -42,6 +42,19 @@ jobs:
         with:
           fetch-depth: 1
 
+      # CLAUDE.md and .claude/skills/ are gitignored and generated from
+      # .rulesync/, so generate them before Claude reads the checkout.
+      # https://mise.jdx.dev/continuous-integration.html
+      - name: Setup mise
+        uses: jdx/mise-action@v5
+        with:
+          version: 2026.10.2
+          install: true
+          install_args: node npm:rulesync
+
+      - name: Generate agent config
+        run: mise x -- rulesync generate
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1

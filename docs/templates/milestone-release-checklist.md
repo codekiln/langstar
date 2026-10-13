@@ -1,6 +1,6 @@
 # Milestone Release Checklist (Phase 9)
 
-Reference checklist for releasing a milestone. Most steps are automated via `/gh-milestones:release`.
+Reference checklist for releasing a milestone. Most steps are automated via `/gh-milestones-release`.
 
 ## Milestone Info
 
@@ -43,7 +43,7 @@ gh release create v{X.Y.Z} --generate-notes
 ## Milestone Cleanup (Automated)
 
 ```bash
-/gh-milestones:release "{milestone-name}" v{X.Y.Z}
+/gh-milestones-release "{milestone-name}" v{X.Y.Z}
 ```
 
 This command:
@@ -52,7 +52,7 @@ This command:
 - Closes milestone with release link
 - Closes parent issue with release comment
 
-Override for open sub-issues: `FORCE_RELEASE=true /gh-milestones:release ...`
+Override for open sub-issues: `FORCE_RELEASE=true /gh-milestones-release ...`
 
 ## Verification
 
@@ -69,9 +69,11 @@ gh issue view {parent-issue-num} --json state --jq '.state'
 ## Post-Release
 
 ```bash
+# Run from the root checkout, not from the worktree being removed
+cd "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 git checkout main && git pull
 # If using worktrees:
-git worktree remove wip/{branch}
+git worktree remove .worktrees/{branch}
 git branch -d {branch}
 ```
 
@@ -85,6 +87,6 @@ git branch -d {branch}
 
 ## References
 
-- Command: `.claude/commands/gh-milestones:release.md`
+- Command: `.rulesync/skills/gh-milestones-release/SKILL.md`
 - Workflow: `docs/dev/github-workflow.md`
 - CI: `.github/workflows/ci.yml`
