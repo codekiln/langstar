@@ -331,6 +331,16 @@ fn config_file_in(dir: &Path) -> PathBuf {
     dir.join("config.toml")
 }
 
+/// The part of a TOML error message's first line before the first backtick,
+/// where toml quotes the value it rejected, with the trailing separator
+/// trimmed. Later lines, such as `expected` followed by quoted tokens, are
+/// left out so no word is left dangling.
+fn message_without_value(message: &str) -> &str {
+    let first_line = message.lines().next().unwrap_or("");
+    let end = first_line.find('`').unwrap_or(first_line.len());
+    first_line[..end].trim_end_matches([' ', ':', ','])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -605,14 +615,4 @@ mod tests {
             std::env::remove_var("LANGSTAR_HIDE_WORKSPACE_AND_ORG_ID_MESSAGE");
         }
     }
-}
-
-/// The part of a TOML error message's first line before the first backtick,
-/// where toml quotes the value it rejected, with the trailing separator
-/// trimmed. Later lines, such as `expected` followed by quoted tokens, are
-/// left out so no word is left dangling.
-fn message_without_value(message: &str) -> &str {
-    let first_line = message.lines().next().unwrap_or("");
-    let end = first_line.find('`').unwrap_or(first_line.len());
-    first_line[..end].trim_end_matches([' ', ':', ','])
 }
