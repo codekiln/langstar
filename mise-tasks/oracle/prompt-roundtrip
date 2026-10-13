@@ -6,8 +6,8 @@ set -euo pipefail
 # back, so a bug shared by langstar's push and pull cannot hide. The LangSmith
 # credentials come from fnox, so the check re-runs itself under `fnox exec`.
 # What each official tool can check: docs/dev/testing/official-tool-checks.md
-if [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z "${LANGSMITH_ORGANIZATION_ID:-}" ] || [ -z "${LANGSMITH_WORKSPACE_ID:-}" ]; then
-  exec fnox exec -- "$0" "$@"
+if [ -z "${ORACLE_UNDER_FNOX:-}" ] && { [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z "${LANGSMITH_ORGANIZATION_ID:-}" ] || [ -z "${LANGSMITH_WORKSPACE_ID:-}" ]; }; then
+  ORACLE_UNDER_FNOX=1 exec fnox exec -- "$0" "$@"
 fi
 
 repo="oracle-roundtrip-$(date +%s)-$$-$RANDOM"
@@ -38,10 +38,13 @@ cargo run --quiet --bin langstar -- prompt push \
 
 pulled="$(langsmith prompt pull -- "$handle")"
 
-# The manifest is nested JSON, so look for the template text anywhere in it.
-if ! printf '%s' "$pulled" | jq -e --arg t "$template" '[.. | strings | select(. == $t)] | length > 0' >/dev/null; then
-  echo "FAIL: the official CLI did not return the template langstar pushed" >&2
-  printf '%s\n' "$pulled" >&2
-  exit 1
-fi
-echo "OK: langsmith prompt pull returned the template pushed by langstar (${handle})"
+# The manifest is nested JSON, so look for each pushed value anywhere in it:
+# the template text, the input variable, and a property name from the schema.
+for needle in "$template" question answer; do
+  if ! printf '%s' "$pulled" | jq -e --arg t "$needle" '[.. | strings | select(. == $t)] + [.. | objects | keys[] | select(. == $t)] | length > 0' >/dev/null; then
+    echo "FAIL: the official CLI did not return '${needle}', which langstar pushed" >&2
+    printf '%s\n' "$pulled" >&2
+    exit 1
+  fi
+done
+echo "OK: langsmith prompt pull returned the template, variable and schema pushed by langstar (${handle})"

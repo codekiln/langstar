@@ -57,7 +57,7 @@ node = "22"
 enter = "lefthook install"
 
 [env]
-# The LangGraph Python SDK version that the check:* tasks run; see [tools] above.
+# The LangGraph Python SDK version that the oracle:* tasks will run; see [tools] above.
 LANGGRAPH_SDK_VERSION = "0.4.6"
 # Test fixture names are not secrets, so they live here rather than in 1Password.
 REPOSITORY_OWNER = "codekiln"

@@ -24,7 +24,8 @@ Bump a pin by hand and check that the release is older than five days: `minimum_
 | `runs` | `langsmith run`, `langsmith trace` |
 | `eval` | `langsmith evaluator`, `langsmith experiment` |
 | `queue` | none |
-| `deployment`, `assistant`, `graph` | `langgraph` (local server and build), `langgraph-sdk` (assistants, threads, runs on a deployment) |
+| `langsmith thread`, `langsmith hub` | no langstar command yet |
+| `deployment`, `assistant`, `graph` | `langgraph` (local server, build, `deploy list`/`delete`/`logs`/`revisions list`), `langgraph-sdk` (assistants, threads, runs on a deployment) |
 | `secrets`, `model-config`, `config` | none |
 
 The table says what a tool can reach, not what a check covers today. Run `langsmith <group> --help` to confirm a subcommand exists before writing a check.
