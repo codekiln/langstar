@@ -12,7 +12,8 @@ node_modules/
 *.zip
 
 # Git worktrees
-wip/
+.worktrees/
+.claude/worktrees/
 
 # Local dev container overrides (never commit these)
 .devcontainer/devcontainer.local.json

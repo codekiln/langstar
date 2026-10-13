@@ -21,6 +21,56 @@ import traceback
 from typing import Optional, Dict, List, Tuple
 
 
+
+def issue_number_from_branch(branch_name: str) -> Optional[int]:
+    """Return the issue number in a branch name, or None.
+
+    Reads `m<milestone>-p<parent>-i<issue>-<slug>` (the `i<issue>` part) and the
+    legacy `user/<issue>-<slug>`.
+    """
+    match = re.search(r'(?:^|-)i(\d+)-', branch_name) or re.search(r'/(\d+)-', branch_name)
+    return int(match.group(1)) if match else None
+
+
+def link_secrets(worktree_path: str) -> bool:
+    """Run `mise run worktree:link-secrets` inside the new worktree.
+
+    Run from the root checkout it would link nothing, so the working directory
+    is the worktree. A failure prints a warning and returns False.
+    """
+    # No capture: the task exits 0 with a warning when the root checkout has no
+    # fnox.local.toml, and that warning must reach the terminal.
+    try:
+        result = subprocess.run(["mise", "run", "worktree:link-secrets"], cwd=worktree_path)
+    except OSError as error:
+        print(
+            f"   ⚠️  worktree:link-secrets could not run: {error}, so this worktree has no link to the shared fnox.local.toml."
+            " Fix the error above, then run `mise run worktree:link-secrets` inside the worktree.",
+            file=sys.stderr,
+        )
+        return False
+    if result.returncode != 0:
+        print(
+            "   ⚠️  worktree:link-secrets failed, so this worktree has no link to the shared fnox.local.toml."
+            " Fix the error above, then run `mise run worktree:link-secrets` inside the worktree.",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
+def worktree_path_for(branch_name: str) -> str:
+    """Return the worktree path under the root checkout, wherever this runs.
+
+    Running from a linked worktree must not nest a worktree inside it, so the
+    root is the parent of the absolute git common directory.
+    """
+    git_common_dir = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True, check=True
+    ).stdout.strip()
+    return os.path.join(os.path.dirname(git_common_dir), ".worktrees", branch_name)
+
 class MilestoneWorkflow:
     """Manages milestone workflow operations."""
 
@@ -72,10 +122,8 @@ class MilestoneWorkflow:
             # Try to detect from current branch
             current_branch = self.run_command(["git", "branch", "--show-current"]).stdout.strip()
 
-            # Extract issue number from branch (format: user/NNN-slug)
-            match = re.search(r'/(\d+)-', current_branch)
-            if match:
-                issue_num = int(match.group(1))
+            issue_num = issue_number_from_branch(current_branch)
+            if issue_num is not None:
 
                 # Get milestone from this issue
                 result = self.run_command([
@@ -411,7 +459,7 @@ class MilestoneWorkflow:
         branch_parts.append(issue_slug)
 
         branch_name = "-".join(branch_parts)
-        worktree_path = f"wip/{branch_name}"
+        worktree_path = worktree_path_for(branch_name)
 
         # Check if worktree already exists
         if os.path.exists(worktree_path):
@@ -456,6 +504,8 @@ class MilestoneWorkflow:
             sys.exit(1)
 
         print("   ✓ Worktree created successfully")
+
+        link_secrets(worktree_path)
 
         return branch_name, worktree_path
 

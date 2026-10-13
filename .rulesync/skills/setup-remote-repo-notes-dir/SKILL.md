@@ -49,9 +49,9 @@ reference/repo/<github-org-or-user>/<reponame>/
 
 ### Behavior
 
-**When invoked from a git worktree** (e.g., `/workspace/wip/username-123-feature`):
+**When invoked from a git worktree** (e.g., `<repo-root>/.worktrees/username-123-feature`):
 - ✅ **Code cloned to root**: `/workspace/reference/repo/<org>/<repo>/code/` (shared)
-- ✅ **Notes in worktree**: `/workspace/wip/username-123-feature/reference/repo/<org>/<repo>/notes/` (local)
+- ✅ **Notes in worktree**: `<repo-root>/.worktrees/username-123-feature/reference/repo/<org>/<repo>/notes/` (local)
 
 **When invoked from root** (`/workspace`):
 - ✅ **Both in root**: `/workspace/reference/repo/<org>/<repo>/` (current behavior)
@@ -72,20 +72,20 @@ reference/repo/<github-org-or-user>/<reponame>/
 
 ```bash
 # From worktree
-cd /workspace/wip/codekiln-173-fix-skill
+cd <repo-root>/.worktrees/codekiln-173-fix-skill
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/anthropics/claude-code
 
 # Result:
 # Code:  /workspace/reference/repo/anthropics/claude-code/code/ (shared)
-# Notes: /workspace/wip/codekiln-173-fix-skill/reference/repo/anthropics/claude-code/notes/ (local)
+# Notes: <repo-root>/.worktrees/codekiln-173-fix-skill/reference/repo/anthropics/claude-code/notes/ (local)
 
 # From another worktree
-cd /workspace/wip/codekiln-180-another-feature
+cd <repo-root>/.worktrees/codekiln-180-another-feature
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/anthropics/claude-code
 
 # Result:
 # Code:  /workspace/reference/repo/anthropics/claude-code/code/ (reused!)
-# Notes: /workspace/wip/codekiln-180-another-feature/reference/repo/anthropics/claude-code/notes/ (new)
+# Notes: <repo-root>/.worktrees/codekiln-180-another-feature/reference/repo/anthropics/claude-code/notes/ (new)
 ```
 
 ## Usage

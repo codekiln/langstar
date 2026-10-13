@@ -195,24 +195,169 @@ def test_extract_milestone_and_parent():
 
 
 def test_worktree_path_generation():
-    """Test worktree path generation from branch names."""
+    """Worktree paths land under the root checkout, even when run from a linked worktree."""
     print("\nTest 8: Worktree path generation")
     print("-" * 60)
 
-    branch = generate_branch_name(
-        234, "add-user-auth",
-        milestone_id=8,
-        parent_id=123
-    )
-    worktree_path = f"wip/{branch}"
-    expected = "wip/m8-p123-i234-add-user-auth"
+    import importlib.util
+    import os
+    import subprocess
+    import tempfile
 
-    if worktree_path == expected:
-        print(f"✓ PASS: Generated worktree path '{worktree_path}'")
-        return True
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    branch = generate_branch_name(234, "add-user-auth", milestone_id=8, parent_id=123)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = os.path.realpath(os.path.join(tmp, "repo"))
+        os.makedirs(root)
+        git = lambda *args, cwd=root: subprocess.run(
+            ["git", *args], cwd=cwd, check=True, capture_output=True, text=True
+        )
+        git("init", "-q", "-b", "main")
+        git("-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "--allow-empty", "-m", "init")
+        linked = os.path.join(root, ".worktrees", "existing")
+        git("worktree", "add", "-q", "-b", "existing", linked)
+
+        expected = os.path.join(root, ".worktrees", branch)
+        original_cwd = os.getcwd()
+        results = {}
+        try:
+            for label, cwd in (("root checkout", root), ("linked worktree", linked)):
+                os.chdir(cwd)
+                results[label] = os.path.realpath(prep_next.worktree_path_for(branch))
+        finally:
+            os.chdir(original_cwd)
+
+    ok = True
+    for label, got in results.items():
+        if got == expected:
+            print(f"✓ PASS: from the {label}, path is '{got}'")
+        else:
+            print(f"✗ FAIL: from the {label}, expected '{expected}', got '{got}'")
+            ok = False
+    return ok
+
+
+def test_issue_number_from_branch():
+    """`issue_number_from_branch` returns the issue number from `m<milestone>-p<parent>-i<issue>-<slug>` branch names and from the older `user/<issue>-<slug>` names, and None for any other name."""
+    print("\nTest 9: Issue number from the current branch")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    cases = {
+        "m18-p734-i373-implement-feature": 373,
+        "p123-i234-add-auth": 234,
+        "i42-add-auth": 42,
+        "codekiln/373-implement-feature": 373,
+        "main": None,
+    }
+    ok = True
+    for branch, expected in cases.items():
+        got = prep_next.issue_number_from_branch(branch)
+        if got == expected:
+            print(f"✓ PASS: '{branch}' -> {got}")
+        else:
+            print(f"✗ FAIL: '{branch}' expected {expected}, got {got}")
+            ok = False
+    return ok
+
+
+def test_link_secrets():
+    """link-secrets runs `mise run worktree:link-secrets` in the worktree and reports failure."""
+    print("\nTest 10: Secret linking in the new worktree")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+    import subprocess
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    ok = True
+    for returncode, expected in ((0, True), (1, False)):
+        completed = subprocess.CompletedProcess([], returncode)
+        with mock.patch.object(prep_next.subprocess, "run", return_value=completed) as run:
+            got = prep_next.link_secrets("/tmp/wt")
+        command = run.call_args.args[0]
+        cwd = run.call_args.kwargs.get("cwd")
+        captured = run.call_args.kwargs.get("capture_output") or run.call_args.kwargs.get("stdout")
+        if got == expected and command == ["mise", "run", "worktree:link-secrets"] and cwd == "/tmp/wt" and not captured:
+            print(f"✓ PASS: exit {returncode} -> {got}, ran {' '.join(command)} in {cwd}")
+        else:
+            print(f"✗ FAIL: exit {returncode} -> {got}, command {command}, cwd {cwd}")
+            ok = False
+    with mock.patch.object(prep_next.subprocess, "run", side_effect=FileNotFoundError("mise")):
+        got = prep_next.link_secrets("/tmp/wt")
+    if got is False:
+        print("✓ PASS: a missing mise executable returns False")
     else:
-        print(f"✗ FAIL: Expected '{expected}', got '{worktree_path}'")
-        return False
+        print(f"✗ FAIL: a missing mise executable returned {got}")
+        ok = False
+    return ok
+
+
+def test_create_worktree_links_secrets():
+    """create_worktree links secrets in the new worktree only after `git worktree add` succeeds."""
+    print("\nTest 11: create_worktree links secrets")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+    import subprocess
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    ok = True
+    for add_returncode in (0, 1):
+        calls = []
+
+        def fake_run_command(cmd, check=True, capture_output=True):
+            calls.append(cmd[:3])
+            if cmd[:3] == ["git", "worktree", "add"]:
+                return subprocess.CompletedProcess(cmd, add_returncode, "", "")
+            if cmd[:3] == ["git", "show-ref", "--verify"]:
+                return subprocess.CompletedProcess(cmd, 1, "", "")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        workflow = prep_next.MilestoneWorkflow.__new__(prep_next.MilestoneWorkflow)
+        workflow.run_command = fake_run_command
+        with mock.patch.object(prep_next, "worktree_path_for", return_value="/nonexistent/.worktrees/i5-x"), \
+                mock.patch.object(prep_next, "link_secrets") as link:
+            try:
+                workflow.create_worktree({"number": 5, "title": "X"})
+            except SystemExit:
+                pass
+        linked = [c.args[0] for c in link.call_args_list]
+        expected = ["/nonexistent/.worktrees/i5-x"] if add_returncode == 0 else []
+        if linked == expected:
+            print(f"✓ PASS: worktree add exit {add_returncode} -> link_secrets calls {linked}")
+        else:
+            print(f"✗ FAIL: worktree add exit {add_returncode} -> link_secrets calls {linked}, expected {expected}")
+            ok = False
+    return ok
 
 
 def main():
@@ -230,6 +375,9 @@ def main():
         test_extract_issue_from_full_format,
         test_extract_milestone_and_parent,
         test_worktree_path_generation,
+        test_issue_number_from_branch,
+        test_link_secrets,
+        test_create_worktree_links_secrets,
     ]
 
     results = [test() for test in tests]

@@ -117,7 +117,9 @@ BRANCH_PARTS+=("i${ISSUE_NUM}")
 BRANCH_PARTS+=("${ISSUE_SLUG}")
 
 BRANCH_NAME=$(IFS='-'; echo "${BRANCH_PARTS[*]}")
-WORKTREE_PATH="wip/${BRANCH_NAME}"
+# Worktrees live under the root checkout, whichever worktree this runs from
+REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+WORKTREE_PATH="${REPO_ROOT}/.worktrees/${BRANCH_NAME}"
 
 echo "🌿 Branch: $BRANCH_NAME"
 echo "📂 Worktree: $WORKTREE_PATH"
@@ -150,6 +152,14 @@ if ! git worktree add -b "$BRANCH_NAME" "$WORKTREE_PATH" "origin/$TARGET_BRANCH"
 fi
 
 echo "✅ Worktree created successfully"
+```
+
+**Step 4b:** Link secrets into the worktree
+
+The `worktree:link-secrets` mise task makes the worktree's `fnox.local.toml` a link to the root checkout's copy. Every worktree then reads the same locally stored secrets, and nobody signs in to 1Password again in each new worktree.
+
+```bash
+(cd "$WORKTREE_PATH" && mise run worktree:link-secrets)
 ```
 
 **Step 5:** Leave the tmux window name alone

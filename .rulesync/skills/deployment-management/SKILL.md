@@ -354,7 +354,7 @@ Clean up after test runs:
 
 ```bash
 # After integration tests
-cd /workspace/wip/<worktree-name>
+cd <repo-root>/.worktrees/<worktree-name>
 if [ -z "$LANGSMITH_API_KEY" ]; then source /workspace/.devcontainer/.env; fi
 langstar graph list --name-contains "langstar-test"
 ```
@@ -365,9 +365,9 @@ Works in any location - credentials source the same:
 
 ```bash
 # Works in main or worktree
-cd /workspace
+cd <repo-root>
 # or
-cd /workspace/wip/claude-188-deployment-management
+cd <repo-root>/.worktrees/claude-188-deployment-management
 
 # Source once
 if [ -z "$LANGSMITH_API_KEY" ]; then source /workspace/.devcontainer/.env; fi
