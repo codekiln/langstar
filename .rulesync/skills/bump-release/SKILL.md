@@ -631,7 +631,7 @@ gh release edit v1.2.3 --notes "$(git-cliff --latest)"
 
 3. **Verify tests pass:**
    ```bash
-   cargo test --workspace
+   mise run check
    ```
 
 4. **Check for uncommitted changes:**

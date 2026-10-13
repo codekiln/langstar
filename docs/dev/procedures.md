@@ -183,36 +183,17 @@ Running all checks locally takes ~30-60 seconds total:
 
 ### Integration with Git Hooks (Optional)
 
-Consider setting up a pre-commit hook to run these automatically:
+To run the checks on every commit, make `.git/hooks/pre-commit` call the same mise task:
 
 ```bash
-# .git/hooks/pre-commit
 #!/bin/bash
 set -e
-
-echo "Running pre-commit checks..."
-
-echo "→ Formatting code..."
-cargo fmt
-
-echo "→ Checking workspace..."
-cargo check --workspace --all-features
-
-echo "→ Running clippy..."
-cargo clippy --workspace --all-features -- -D warnings
-
-echo "→ Running tests..."
-cargo test --workspace --all-features
-
-echo "→ Verifying formatting..."
-cargo fmt --check
-
-echo "✓ All checks passed!"
+mise run check
 ```
 
 Make it executable: `chmod +x .git/hooks/pre-commit`
 
-**Note**: This runs on every commit. If it's too slow, consider a lighter version that only runs `cargo fmt` and `cargo check --workspace`.
+**Note**: This runs on every commit. If it's too slow, run only `mise run rust:fmt` and `mise run rust:check` in the hook.
 
 ---
 

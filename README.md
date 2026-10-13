@@ -821,7 +821,7 @@ Coding agents read `CLAUDE.md`, `AGENTS.md`, `.claude/skills/` and `.agents/skil
 ```bash
 mise install
 "$(mise which lefthook)" install
-"$(mise which rulesync)" generate
+mise run agents:generate
 ```
 
 The devcontainer runs these steps when it is created.
