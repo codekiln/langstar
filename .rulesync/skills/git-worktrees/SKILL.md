@@ -341,7 +341,7 @@ for w in codekiln-100-auth codekiln-101-research codekiln-102-implement; do (cd 
 ```bash
 cd .worktrees/codekiln-130-add-authentication
 git push -u origin codekiln/130-add-authentication
-gh pr create --title "✨ feat: add authentication" --body "$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' 'Fixes #130')"
+gh pr create --title "✨ feat: add authentication" --body "$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' 'Fixes #130')"
 ```
 
 ## Best Practices
@@ -465,7 +465,7 @@ git worktree add -b codekiln/135-jwt .worktrees/codekiln-135-jwt codekiln/130-au
 # Work and push
 cd .worktrees/codekiln-135-jwt
 git push -u origin codekiln/135-jwt
-gh pr create --title "✨ feat: JWT" --body "$(printf '%s\n\n%s' '## from AI(claude-code, <model-slug>, <session-name>)' 'Fixes #135')"
+gh pr create --title "✨ feat: JWT" --body "$(printf '%s\n\n%s' '## from AI(<harness>, <model-slug>, <session-name>)' 'Fixes #135')"
 
 # After merge
 cd <repo-root>
