@@ -6,13 +6,14 @@
 
 ### Requirement: Export a prompt commit to a file
 
-`langstar prompt export <handle>` SHALL write one JSON file holding the prompt's repo details (handle, description, readme, tags, visibility), the commit's manifest as LangSmith returns it with the model included, the commit's model configuration and provider, the commit tags that point at it, and a `source` object naming the workspace, handle and commit hash. `--output <path>` SHALL choose the file; without it the file goes to stdout.
+`langstar prompt export <handle>` SHALL write one JSON file holding the prompt's repo details (handle, description, readme, tags, visibility), the commit's description, the commit's manifest as LangSmith returns it with the model included, the commit's model configuration and provider, the commit tags that point at it, and a `source` object naming the workspace, handle and commit hash. `--output <path>` SHALL choose the file; without it the file goes to stdout.
 
 #### Scenario: Export the latest commit
 
 - **WHEN** a user runs `langstar prompt export my-prompt --output my-prompt.json`
 - **THEN** langstar writes `my-prompt.json` with the manifest of the latest commit, including the model binding
 - **AND** `source.commit_hash` holds that commit's hash
+- **AND** `commit.description` holds that commit's description
 
 #### Scenario: Export a structured prompt
 
@@ -63,7 +64,7 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Import a prompt that does not exist yet
 
-When the destination workspace has no prompt with the file's handle, `langstar prompt import` SHALL create the prompt with the file's repo details, push the file's manifest as its first commit, and create the file's commit tags on that commit.
+When the destination workspace has no prompt with the file's handle, `langstar prompt import` SHALL create the prompt with the file's repo details, push the file's manifest and commit description as its first commit, and create the file's commit tags on that commit.
 
 #### Scenario: First import
 
@@ -74,7 +75,7 @@ When the destination workspace has no prompt with the file's handle, `langstar p
 
 ### Requirement: Change an existing prompt only with --update
 
-When the destination prompt exists and its latest commit differs from the file, `langstar prompt import` SHALL change nothing and exit with status 2, listing the differences, unless the user passes `--update`. With `--update` it SHALL push the file's manifest as a new commit whose parent is the destination's latest commit, and move the file's tags to it.
+When the destination prompt exists and its latest commit differs from the file, `langstar prompt import` SHALL change nothing and exit with status 2, listing the differences, unless the user passes `--update`. With `--update` it SHALL push the file's manifest and commit description as a new commit whose parent is the destination's latest commit, and move the file's tags to it.
 
 #### Scenario: Destination differs and --update is missing
 
@@ -87,10 +88,23 @@ When the destination prompt exists and its latest commit differs from the file, 
 - **WHEN** the user runs the same import with `--update`
 - **THEN** langstar adds a commit to the destination prompt holding the file's manifest
 
+
 #### Scenario: Destination already matches
 
 - **WHEN** the destination prompt's latest commit matches the file
 - **THEN** langstar pushes nothing, reports that the prompt is unchanged and exits with status 0
+
+### Requirement: Update the repo details only with --update
+
+When the destination repo's description, readme, tags or visibility differ from the file, `langstar prompt import` SHALL treat them as differences. With `--update` it SHALL set those fields to the file's values. When only those fields differ and the latest commit matches the file, it SHALL update the repo and add no commit.
+
+#### Scenario: Only the repo readme differs
+
+- **WHEN** the destination prompt's latest commit matches the file
+- **AND** the destination repo's readme differs from the file's readme
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id> --update`
+- **THEN** langstar sets the destination repo's readme to the file's readme and adds no commit
+- **AND** exits with status 0
 
 ### Requirement: Record the destination commit
 
@@ -133,7 +147,7 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 
 ### Requirement: Compare a prompt with its export file
 
-`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with the model included, and list each difference by its JSON path with the file's value and the workspace's value. `--commit <hash-or-tag>` SHALL choose the commit; without it langstar SHALL read the latest commit. Fields the server sets, such as IDs and timestamps, SHALL be left out of the comparison.
+`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with the model included, and its repo details, and list each difference by its JSON path with the file's value and the workspace's value. `--commit <hash-or-tag>` SHALL choose the commit; without it langstar SHALL read the latest commit. Fields the server sets, such as IDs and timestamps, SHALL be left out of the comparison.
 
 #### Scenario: Prompt matches
 
@@ -144,6 +158,11 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 
 - **WHEN** someone changed the model temperature in the workspace's prompt
 - **THEN** langstar lists the temperature's JSON path with both values and exits with status 2
+
+#### Scenario: Repo readme changed
+
+- **WHEN** someone changed the readme of the workspace's prompt
+- **THEN** langstar lists the readme's JSON path with both values and exits with status 2
 
 ### Requirement: Verify that a prompt can run in a workspace
 

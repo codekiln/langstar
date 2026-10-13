@@ -42,7 +42,7 @@ One prompt export looks like this:
   "format_version": 1,
   "source": { "workspace_id": "<source-workspace-id>", "handle": "my-prompt", "commit_hash": "<hash>", "ref": "prod" },
   "repo": { "handle": "my-prompt", "description": "...", "readme": "...", "tags": ["support"], "is_public": false },
-  "commit": { "manifest": { "lc": 1, "type": "constructor", "id": ["langchain", "schema", "runnable", "RunnableSequence"], "kwargs": { "first": {}, "last": {} } }, "model_config": {}, "model_provider": "ChatOpenAI", "tags": ["prod"] },
+  "commit": { "description": "...", "manifest": { "lc": 1, "type": "constructor", "id": ["langchain", "schema", "runnable", "RunnableSequence"], "kwargs": { "first": {}, "last": {} } }, "model_config": {}, "model_provider": "ChatOpenAI", "tags": ["prod"] },
   "requires": { "secrets": ["OPENAI_API_KEY"], "model_provider": "ChatOpenAI" }
 }
 ```
@@ -61,11 +61,15 @@ Import writes the destination's IDs to `<file stem>.destinations.json`, keyed by
 
 ### Import changes an existing resource only with --update
 
-A prompt that exists in the destination gets a new commit only with `--update`, and its parent is the destination's latest commit, so LangSmith keeps the earlier history. An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. Without `--update`, import lists the differences and exits with status 2. `--dry-run` reports the action import would take and writes nothing.
+A prompt that exists in the destination gets a new commit only with `--update`, and its parent is the destination's latest commit, so LangSmith keeps the earlier history. Import sends the file's commit description with each commit it creates. With `--update`, import also sets the destination repo's description, readme, tags and visibility to the file's values through `PATCH /api/v1/repos/{owner}/{repo}` when they differ. When only those repo fields differ and the manifest matches, import updates the repo and adds no commit.
+
+An assistant that exists gets updated only with `--update`, which makes the Agent Server save a new version. The Agent Server merges the metadata an update sends into the assistant's metadata (`AssistantPatch` in `reference/openapi/langchain/agent-server/openapi.json`), so sending the file's metadata alone would keep every key the destination has and the file lacks. Import sends each such key with a null value and then reads the assistant back. [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](https://github.com/codekiln/langstar/blob/aeb831e1e048a24a6c2c9ea7761d5131fc3ad2c2/openspec/changes/export-import-prompts-and-assistants/tasks.md#L8) checks against the live server whether a null value removes the key. If it does not, the read-back finds the leftover keys, and import reports them as differences and exits with status 2. Import also sends the file's graph ID, so an assistant whose graph changed at the source moves to that graph.
+
+Without `--update`, import lists the differences and exits with status 2. `--dry-run` reports the action import would take and writes nothing.
 
 ### Compare reports differences by JSON path
 
-Compare reads the destination, removes the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Each difference names its JSON Pointer path and both values. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
+Compare reads the destination, removes the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Each difference names its JSON Pointer path and both values. For a prompt, the comparison covers the commit description and the repo's description, readme, tags and visibility as well as the manifest. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
 
 ### Verify checks what the copy needs to run
 

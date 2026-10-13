@@ -57,7 +57,7 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 ### Requirement: Update an existing assistant only on request
 
-`langstar assistant import --update` SHALL update the recorded assistant, or the assistant named by `--assistant-id <id>`, with the file's name, description, graph ID, configuration, context and metadata. `--assistant-id` SHALL take precedence over the destination record.
+`langstar assistant import --update` SHALL update the recorded assistant, or the assistant named by `--assistant-id <id>`, with the file's name, description, graph ID, configuration, context and metadata. `--assistant-id` SHALL take precedence over the destination record. It SHALL remove each metadata key the destination assistant has and the file lacks. When such a key remains after the update, it SHALL list that key as a difference and exit with status 2.
 
 #### Scenario: Update the recorded assistant
 
@@ -69,6 +69,19 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 - **WHEN** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update --assistant-id <dest-assistant-id>`
 - **THEN** langstar updates that assistant and records its ID for `my-agent-prod`
+
+#### Scenario: Remove a metadata key the file lacks
+
+- **WHEN** the recorded assistant's metadata is `{"kept": 1, "stale": 2}`
+- **AND** the file's metadata is `{"kept": 1}`
+- **AND** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update`
+- **THEN** the assistant's metadata read back from the deployment is `{"kept": 1}`
+- **AND** langstar exits with status 0
+
+#### Scenario: Deployment keeps a removed metadata key
+
+- **WHEN** the Agent Server keeps `stale` in the assistant's metadata after the update
+- **THEN** langstar lists `/metadata/stale` as a difference and exits with status 2
 
 ### Requirement: Dry run an assistant import
 
