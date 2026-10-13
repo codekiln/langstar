@@ -119,8 +119,8 @@ pub struct QueryArgs {
     /// Widen the default 7-day time window to the last 400 days
     ///
     /// By default, runs query returns runs from the last 7 days.
-    /// The LangSmith runs API rejects a window longer than 401 days;
-    /// 400 days keeps a day of margin under that limit.
+    /// The LangSmith runs API rejects a window longer than 401 days, so the
+    /// CLI asks for 400.
     #[arg(long)]
     pub no_time_filter: bool,
 
@@ -221,9 +221,9 @@ const MAX_PAGE_SIZE: u32 = 1000;
 /// `POST /api/v2/runs/query` rejects a longer window with HTTP 400:
 /// `time_range duration exceeds maximum of 401 days`. Neither the OpenAPI
 /// spec nor LangChain's migration guide states this limit; a live request
-/// returned that error. The CLI sends a start time and no end time, so the
-/// API measures the window up to the moment the request arrives; 400 days
-/// keeps a day of margin under the limit.
+/// returned that error. The CLI sends a start time 400 days ago and no end
+/// time, so the window ends when the API receives the request and stays under
+/// the 401-day limit.
 const NO_TIME_FILTER_DAYS: i64 = 400;
 
 /// Fields the table columns read; added to --select for table output.
