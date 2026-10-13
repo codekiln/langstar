@@ -74,7 +74,7 @@ Focus on **functional correctness, security, and maintainability** over minor do
 ### Testing Philosophy
 
 - Follow the **Toyota Andon Cord principle**: any failing test stops the merge
-- Pre-commit requirements are enforced (see `CLAUDE.md`)
+- Pre-commit requirements are enforced (see the Testing section of `.rulesync/rules/overview.md`)
 - Focus on test correctness, not minor test style variations
 
 ### Documentation Patterns

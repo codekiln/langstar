@@ -59,7 +59,7 @@ jobs:
           if [ "$BUMP_TYPE" = "auto" ]; then
             # Use Python script to analyze commits (only use exit code, not stdout)
             set +e  # Temporarily disable exit on error to capture exit code
-            python3 .claude/skills/bump-release/scripts/analyze_commits.py \
+            python3 .rulesync/skills/bump-release/scripts/analyze_commits.py \
               --current-version "$CURRENT" > /dev/null
             BUMP_TYPE_AUTO=$?
             set -e  # Re-enable exit on error

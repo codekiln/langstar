@@ -86,24 +86,32 @@ impl Default for TestDeploymentConfig {
 impl TestDeploymentConfig {
     /// Create configuration for release/lifecycle tests
     ///
-    /// Uses a timestamped name to ensure a fresh deployment is created,
-    /// allowing the full create → test → delete lifecycle to be verified.
+    /// Uses a fresh `release-integration-test-*` name, so the full
+    /// create → test → delete lifecycle runs against a deployment of its own.
     /// These deployments should be cleaned up after the test completes.
     ///
     /// Sets `name_prefix: None` so get-or-create always creates fresh.
     pub fn for_release_tests() -> Self {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_secs();
-
         Self {
-            name: format!("{}-{}", RELEASE_TEST_DEPLOYMENT_PREFIX, timestamp),
+            name: release_test_deployment_name(),
             name_prefix: None, // No prefix search - always create fresh
             ..Default::default()
         }
     }
+}
+
+/// A new `release-integration-test-*` name.
+///
+/// Every run that uses the same workspace shares its deployments, so a name
+/// built from a seconds timestamp repeats when two runs start in the same
+/// second. The first 12 hex characters of a random UUID make a repeat
+/// vanishingly unlikely.
+fn release_test_deployment_name() -> String {
+    format!(
+        "{}-{}",
+        RELEASE_TEST_DEPLOYMENT_PREFIX,
+        &uuid::Uuid::new_v4().simple().to_string()[..12]
+    )
 }
 
 /// RAII guard to remind about deployment cleanup
@@ -333,55 +341,64 @@ async fn create_new_deployment(
             );
             Ok(new_deployment)
         }
-        Err(err) => {
-            // Provide actionable guidance for 409 conflicts
-            if is_tracing_project_conflict(&err) {
-                eprintln!();
-                eprintln!("╭────────────────────────────────────────────────────────────────╮");
-                eprintln!("│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ A previous deployment was deleted but its associated tracing  │");
-                eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
-                eprintln!("│ deployment with the same name.                                │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ To fix this issue:                                            │");
-                eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
-                // Truncate long names to fit in the 24-char column; show full name in error below
-                let display_name = if config.name.len() > 24 {
-                    format!("{}...", &config.name[..21])
-                } else {
-                    config.name.clone()
-                };
-                eprintln!("│  2. Find and delete project named: {:24} │", display_name);
-                eprintln!("│  3. Re-run the tests                                          │");
-                eprintln!("╰────────────────────────────────────────────────────────────────╯");
-                eprintln!();
-                Err(format!(
-                    "409 Conflict: Orphaned tracing project '{}' blocks deployment creation. \
-                     See instructions above to resolve.",
-                    config.name
-                )
-                .into())
-            } else if is_conflict_error(&err) {
-                eprintln!();
-                eprintln!("╭────────────────────────────────────────────────────────────────╮");
-                eprintln!("│ ⚠️  409 CONFLICT ERROR                                          │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ A resource conflict occurred. This may indicate:              │");
-                eprintln!("│  - A concurrent test is using the same deployment name        │");
-                eprintln!("│  - An orphaned resource needs manual cleanup                  │");
-                eprintln!("├────────────────────────────────────────────────────────────────┤");
-                eprintln!("│ Suggested actions:                                            │");
-                eprintln!("│  1. Check if another CI run is in progress                    │");
-                eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
-                eprintln!("│  3. Wait and retry if concurrent access suspected             │");
-                eprintln!("╰────────────────────────────────────────────────────────────────╯");
-                eprintln!();
-                Err(err.into())
-            } else {
-                Err(err.into())
-            }
-        }
+        // Keep the original error, so a caller can see it is a 409. The
+        // callers print `print_create_conflict_guidance` only once they stop
+        // retrying, so a create that a later retry fixes prints no advice.
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Print what to do about a 409 from a deployment create named `name`.
+///
+/// Callers print this once they stop retrying. It prints nothing for an error
+/// that isn't a 409.
+fn print_create_conflict_guidance(
+    err: &(dyn std::error::Error + Send + Sync + 'static),
+    name: &str,
+) {
+    let Some(err) = err.downcast_ref::<LangstarError>() else {
+        return;
+    };
+    if is_tracing_project_conflict(err) {
+        eprintln!();
+        eprintln!("╭────────────────────────────────────────────────────────────────╮");
+        eprintln!("│ ⚠️  ORPHANED TRACING PROJECT DETECTED                           │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ A previous deployment was deleted but its associated tracing  │");
+        eprintln!("│ project in LangSmith was not. This blocks creating a new      │");
+        eprintln!("│ deployment with the same name.                                │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ To fix this issue:                                            │");
+        eprintln!("│  1. Go to LangSmith UI → Projects tab                         │");
+        // Truncate long names to fit in the 24-char column; the full name follows the box
+        // Count characters, not bytes: slicing a multibyte name by bytes panics.
+        let display_name = if name.chars().count() > 24 {
+            format!("{}...", name.chars().take(21).collect::<String>())
+        } else {
+            name.to_string()
+        };
+        eprintln!("│  2. Find and delete project named: {:24} │", display_name);
+        eprintln!("│  3. Re-run the tests                                          │");
+        eprintln!("╰────────────────────────────────────────────────────────────────╯");
+        // Release names share their first 24 characters, and the API's error
+        // doesn't name the project, so print the whole name.
+        eprintln!("   Project to delete: {}", name);
+        eprintln!();
+    } else if is_conflict_error(err) {
+        eprintln!();
+        eprintln!("╭────────────────────────────────────────────────────────────────╮");
+        eprintln!("│ ⚠️  409 CONFLICT ERROR                                          │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ A resource conflict occurred. This may indicate:              │");
+        eprintln!("│  - A concurrent test is using the same deployment name        │");
+        eprintln!("│  - An orphaned resource needs manual cleanup                  │");
+        eprintln!("├────────────────────────────────────────────────────────────────┤");
+        eprintln!("│ Suggested actions:                                            │");
+        eprintln!("│  1. Check if another CI run is in progress                    │");
+        eprintln!("│  2. Check LangSmith UI for orphaned projects/deployments      │");
+        eprintln!("│  3. Wait and retry if concurrent access suspected             │");
+        eprintln!("╰────────────────────────────────────────────────────────────────╯");
+        eprintln!();
     }
 }
 
@@ -530,11 +547,13 @@ async fn reuse_or_create_deployment_with_attempts(
 
         match create_new_deployment(client, config, integration_id).await {
             Ok(created) => return Ok(created),
+            // An orphaned tracing project blocks this exact name, and this
+            // loop retries under the same name, so waiting can't help.
             Err(err)
                 if attempt < attempts
-                    && err
-                        .downcast_ref::<LangstarError>()
-                        .is_some_and(is_conflict_error) =>
+                    && err.downcast_ref::<LangstarError>().is_some_and(|e| {
+                        is_conflict_error(e) && !is_tracing_project_conflict(e)
+                    }) =>
             {
                 eprintln!(
                     "Create collided with an existing deployment (attempt {}/{}); \
@@ -545,13 +564,99 @@ async fn reuse_or_create_deployment_with_attempts(
                 );
                 tokio::time::sleep(retry_interval).await;
             }
-            Err(err) => return Err(err),
+            Err(err) => {
+                print_create_conflict_guidance(err.as_ref(), &config.name);
+                return Err(err);
+            }
         }
     }
     Err(
         format!("no attempt to reuse or create the test deployment ran (attempts = {attempts})")
             .into(),
     )
+}
+
+/// How many times `create_fresh_deployment` tries to create the release test
+/// deployment before giving up.
+const FRESH_CREATE_ATTEMPTS: u32 = 5;
+
+/// How long `create_fresh_deployment` waits after a 409 before trying again.
+const FRESH_CREATE_RETRY_INTERVAL: Duration = Duration::from_secs(30);
+
+/// Create a fresh deployment for a config with no `name_prefix`.
+///
+/// A config whose name starts with `release-integration-test-`, which
+/// `TestDeploymentConfig::for_release_tests` builds, gets a retry: when the
+/// control plane answers the create with 409, this waits and tries again under
+/// a new `release-integration-test-*` name. The retry is a precaution. CI in
+/// [🩹 fix(api): adapt the SDK and tests to LangSmith API drift · PR #755](https://github.com/codekiln/langstar/pull/755)
+/// got 409 "A deployment already exists for this agent environment" when
+/// concurrent runs created the shared `pr-integration-test-*` deployment,
+/// which this function never creates. Nobody has seen the release test get
+/// it. A new name covers two release runs that pick the same name, and the
+/// wait covers a release deployment that is still being deleted. Any other
+/// config is created once, under the name the caller chose.
+async fn create_fresh_deployment(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    create_fresh_deployment_with_attempts(
+        client,
+        config,
+        integration_id,
+        FRESH_CREATE_ATTEMPTS,
+        FRESH_CREATE_RETRY_INTERVAL,
+    )
+    .await
+}
+
+/// Create a fresh deployment, trying up to `attempts` times with a new name
+/// and a `retry_interval` wait after each 409. `create_fresh_deployment`
+/// passes `FRESH_CREATE_ATTEMPTS` and `FRESH_CREATE_RETRY_INTERVAL`; the
+/// mocked tests pass a zero wait.
+async fn create_fresh_deployment_with_attempts(
+    client: &LangchainClient,
+    config: &TestDeploymentConfig,
+    integration_id: &str,
+    attempts: u32,
+    retry_interval: Duration,
+) -> Result<crate::Deployment, Box<dyn std::error::Error + Send + Sync>> {
+    if !config
+        .name
+        .starts_with(&format!("{RELEASE_TEST_DEPLOYMENT_PREFIX}-"))
+    {
+        return create_new_deployment(client, config, integration_id)
+            .await
+            .inspect_err(|err| print_create_conflict_guidance(err.as_ref(), &config.name));
+    }
+    let mut attempt_config = config.clone();
+    for attempt in 1..=attempts {
+        match create_new_deployment(client, &attempt_config, integration_id).await {
+            Ok(created) => return Ok(created),
+            Err(err)
+                if attempt < attempts
+                    && err
+                        .downcast_ref::<LangstarError>()
+                        .is_some_and(is_conflict_error) =>
+            {
+                attempt_config.name = release_test_deployment_name();
+                eprintln!(
+                    "Create returned 409 (attempt {}/{}); waiting {}s and trying again as {}...",
+                    attempt,
+                    attempts,
+                    retry_interval.as_secs(),
+                    attempt_config.name
+                );
+                tokio::time::sleep(retry_interval).await;
+            }
+            Err(err) => {
+                print_create_conflict_guidance(err.as_ref(), &attempt_config.name);
+                return Err(err);
+            }
+        }
+    }
+    Err(format!("no attempt to create the fresh deployment ran (attempts = {attempts})").into())
 }
 
 /// Get or create a test deployment by name
@@ -577,7 +682,9 @@ async fn reuse_or_create_deployment_with_attempts(
 /// * `Err(...)` - If creation or waiting failed
 ///
 /// Note: The returned `deployment_name` may differ from `config.name` when an existing
-/// deployment is reused via prefix matching. Always use the returned name for assertions.
+/// deployment is reused via prefix matching, or when a release config's create got a 409
+/// and was retried under a new `release-integration-test-*` name. Always use the returned
+/// name for assertions.
 ///
 /// # Example
 ///
@@ -605,7 +712,7 @@ pub async fn get_or_create_deployment(
         reuse_or_create_deployment(client, config, &integration_id).await?
     } else {
         // No prefix: always create fresh
-        create_new_deployment(client, config, &integration_id).await?
+        create_fresh_deployment(client, config, &integration_id).await?
     };
 
     let deployment_id = deployment.id.clone();
@@ -923,12 +1030,259 @@ mod tests {
         create.assert_async().await;
     }
 
+    // ── create_fresh_deployment_with_attempts against a mocked control plane ──
+
+    /// The deployment name in a create request body.
+    fn requested_name(request: &mockito::Request) -> String {
+        let body: serde_json::Value =
+            serde_json::from_slice(request.body().expect("request body")).expect("JSON body");
+        body["name"].as_str().expect("name").to_string()
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_retries_a_409_under_a_new_name() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::for_release_tests();
+        let names = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let names_seen = names.clone();
+
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |request| {
+                names_seen.lock().unwrap().push(requested_name(request));
+                br#"{"detail":"A deployment already exists for this agent environment."}"#.to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+        let names_seen = names.clone();
+        let created = server
+            .mock("POST", "/v2/deployments")
+            .with_status(201)
+            .with_body_from_request(move |request| {
+                let name = requested_name(request);
+                names_seen.lock().unwrap().push(name.clone());
+                deployment_json(&name).to_string().into_bytes()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let deployment = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("the second create should succeed");
+
+        let names = names.lock().unwrap().clone();
+        assert_eq!(names.len(), 2, "two create requests should be sent");
+        assert_eq!(
+            names[0], config.name,
+            "the first create uses the config's name"
+        );
+        assert_ne!(names[1], names[0], "the retry uses a new name");
+        assert!(names[1].starts_with(RELEASE_TEST_DEPLOYMENT_PREFIX));
+        assert_eq!(deployment.name, names[1]);
+        create.assert_async().await;
+        created.assert_async().await;
+    }
+
+    /// The control plane's 409 when a deleted deployment left its tracing
+    /// project behind under the same name.
+    const TRACING_PROJECT_409: &str =
+        r#"{"detail":"A tracing project with this name already exists."}"#;
+
+    #[tokio::test]
+    async fn test_fresh_create_retries_a_tracing_project_409_under_a_new_name() {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig::for_release_tests();
+        let names = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let names_seen = names.clone();
+
+        let conflict = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body_from_request(move |request| {
+                names_seen.lock().unwrap().push(requested_name(request));
+                TRACING_PROJECT_409.as_bytes().to_vec()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+        let names_seen = names.clone();
+        let created = server
+            .mock("POST", "/v2/deployments")
+            .with_status(201)
+            .with_body_from_request(move |request| {
+                let name = requested_name(request);
+                names_seen.lock().unwrap().push(name.clone());
+                deployment_json(&name).to_string().into_bytes()
+            })
+            .expect(1)
+            .create_async()
+            .await;
+
+        let deployment = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect("the create under a new name should succeed");
+
+        let names = names.lock().unwrap().clone();
+        assert_eq!(names.len(), 2, "two create requests should be sent");
+        assert_ne!(names[1], names[0], "the retry uses a new name");
+        assert_eq!(deployment.name, names[1]);
+        conflict.assert_async().await;
+        created.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_reuse_does_not_retry_a_tracing_project_409() {
+        let mut server = Server::new_async().await;
+        let _list = server
+            .mock("GET", "/v2/deployments")
+            .match_query(Matcher::Any)
+            .with_status(200)
+            .with_body(json!({"resources": [], "offset": 0}).to_string())
+            .create_async()
+            .await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(TRACING_PROJECT_409)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = reuse_or_create_deployment_with_attempts(
+            &mock_client(&server),
+            &TestDeploymentConfig::default(),
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a tracing-project 409 should not be retried under the same name");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_tracing_project_conflict),
+            "the tracing-project 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_gives_up_after_the_last_409() {
+        let mut server = Server::new_async().await;
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(2)
+            .create_async()
+            .await;
+
+        let err = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &TestDeploymentConfig::for_release_tests(),
+            "integration",
+            2,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("two 409s with two attempts should fail");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the last 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    /// Send a fresh create for a config named `name` to a control plane that
+    /// answers 409, and check that one create goes out, under `name`, and that
+    /// the 409 comes back.
+    async fn assert_fresh_create_sends_one_create_under(name: &str) {
+        let mut server = Server::new_async().await;
+        let config = TestDeploymentConfig {
+            name: name.to_string(),
+            name_prefix: None,
+            ..Default::default()
+        };
+        let create = server
+            .mock("POST", "/v2/deployments")
+            .match_body(Matcher::PartialJson(json!({ "name": name })))
+            .with_status(409)
+            .with_body(r#"{"detail":"A deployment already exists for this agent environment."}"#)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let err = create_fresh_deployment_with_attempts(
+            &mock_client(&server),
+            &config,
+            "integration",
+            3,
+            Duration::ZERO,
+        )
+        .await
+        .expect_err("a custom-named fresh create should not be retried");
+
+        assert!(
+            err.downcast_ref::<LangstarError>()
+                .is_some_and(is_conflict_error),
+            "the 409 should be returned, got: {err}"
+        );
+        create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_keeps_a_custom_name_and_does_not_retry() {
+        assert_fresh_create_sends_one_create_under("custom-fresh-deployment").await;
+    }
+
+    #[tokio::test]
+    async fn test_fresh_create_does_not_retry_a_name_that_lacks_the_release_hyphen() {
+        // Starts with `release-integration-test` but not `release-integration-test-`.
+        assert_fresh_create_sends_one_create_under("release-integration-testing").await;
+    }
+
+    #[test]
+    fn test_conflict_guidance_truncates_a_multibyte_name_without_panicking() {
+        let err = LangstarError::ApiError {
+            status: 409,
+            message: TRACING_PROJECT_409.to_string(),
+        };
+        // The first "é" takes bytes 20 and 21, so the old byte slice `&name[..21]`
+        // cut it in half and panicked.
+        let name = format!("{}éé{}", "a".repeat(20), "b".repeat(10));
+        print_create_conflict_guidance(&err, &name);
+    }
+
     #[test]
     fn test_deployment_config_for_release() {
         let config = TestDeploymentConfig::for_release_tests();
-        assert!(
-            config.name.starts_with("release-integration-test-"),
-            "Release name should start with release-integration-test-"
+        let suffix = config
+            .name
+            .strip_prefix("release-integration-test-")
+            .expect("Release name should start with release-integration-test-");
+        assert_eq!(suffix.len(), 12, "suffix should be 12 hex characters");
+        assert!(suffix.chars().all(|c| c.is_ascii_hexdigit()));
+        assert_ne!(
+            config.name,
+            TestDeploymentConfig::for_release_tests().name,
+            "two release configs should get different names"
         );
         // name_prefix is None for release tests - always create fresh
         assert_eq!(
