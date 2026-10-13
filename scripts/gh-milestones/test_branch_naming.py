@@ -314,6 +314,52 @@ def test_link_secrets():
     return ok
 
 
+def test_create_worktree_links_secrets():
+    """create_worktree links secrets in the new worktree only after `git worktree add` succeeds."""
+    print("\nTest 11: create_worktree links secrets")
+    print("-" * 60)
+
+    import importlib.util
+    import os
+    import subprocess
+    from unittest import mock
+
+    spec = importlib.util.spec_from_file_location(
+        "prep_next", os.path.join(os.path.dirname(os.path.abspath(__file__)), "prep-next.py")
+    )
+    prep_next = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(prep_next)
+
+    ok = True
+    for add_returncode in (0, 1):
+        calls = []
+
+        def fake_run_command(cmd, check=True, capture_output=True):
+            calls.append(cmd[:3])
+            if cmd[:3] == ["git", "worktree", "add"]:
+                return subprocess.CompletedProcess(cmd, add_returncode, "", "")
+            if cmd[:3] == ["git", "show-ref", "--verify"]:
+                return subprocess.CompletedProcess(cmd, 1, "", "")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        workflow = prep_next.MilestoneWorkflow.__new__(prep_next.MilestoneWorkflow)
+        workflow.run_command = fake_run_command
+        with mock.patch.object(prep_next, "worktree_path_for", return_value="/nonexistent/.worktrees/i5-x"), \
+                mock.patch.object(prep_next, "link_secrets") as link:
+            try:
+                workflow.create_worktree({"number": 5, "title": "X"})
+            except SystemExit:
+                pass
+        linked = [c.args[0] for c in link.call_args_list]
+        expected = ["/nonexistent/.worktrees/i5-x"] if add_returncode == 0 else []
+        if linked == expected:
+            print(f"✓ PASS: worktree add exit {add_returncode} -> link_secrets calls {linked}")
+        else:
+            print(f"✗ FAIL: worktree add exit {add_returncode} -> link_secrets calls {linked}, expected {expected}")
+            ok = False
+    return ok
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -331,6 +377,7 @@ def main():
         test_worktree_path_generation,
         test_issue_number_from_branch,
         test_link_secrets,
+        test_create_worktree_links_secrets,
     ]
 
     results = [test() for test in tests]
