@@ -229,6 +229,8 @@ langstar queue add-runs 12345678-... run-id-1 run-id-2 run-id-3
 langstar queue add-runs 12345678-... --runs-file runs.txt
 ```
 
+A run that LangSmith cannot find yet is rejected with a 404, so after ingesting a run, retry until it succeeds.
+
 **runs.txt format:**
 ```
 # Comments are ignored
@@ -567,7 +569,7 @@ langstar config
 ### Empty queue items
 
 If you see fewer items than expected:
-- Pass `--status` to see one review section, or leave it off to see all three
+- If you passed `--status`, items in the other two review sections are left out; drop `--status` to see all three
 - Raise `--limit` (default 100)
 - The queue may be empty
 
@@ -588,6 +590,6 @@ The annotation queue commands use the LangSmith REST API:
 | `queue remove-run` | GET, then POST | `/api/v1/platform/annotation-queues/{id}/items`, then `.../items/delete` |
 | `queue items` | GET | `/api/v1/platform/annotation-queues/{id}/items` |
 
-LangSmith deprecated the `/api/v1/annotation-queues/{id}/runs*` and `/run/{index}` endpoints. `add-runs` sends each run as a `RUN` item with only its `run_id`, so the run must already be queryable.
+LangSmith deprecated the `/api/v1/annotation-queues/{id}/runs*` and `/run/{index}` endpoints. `add-runs` sends each run as a `RUN` item with only its `run_id`.
 
 For complete API documentation, see the [LangSmith OpenAPI spec](https://api.smith.langchain.com/redoc).
