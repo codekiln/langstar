@@ -75,11 +75,12 @@ fn parse_retry_after(value: &str) -> Option<Duration> {
     Some(wait.to_std().unwrap_or(Duration::ZERO))
 }
 
-/// Whether a request may be sent again after a gateway error without changing server state.
+/// Whether the client sends a request again after a 502, 503, 504, 408 or 425. Only requests
+/// that leave server state unchanged may be sent again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Retry {
-    Safe,
-    Never,
+enum RetryMode {
+    RetryOnGatewayError,
+    SendOnce,
 }
 
 /// HTTP client for interacting with LangChain APIs
@@ -544,24 +545,24 @@ impl LangchainClient {
         &self,
         request: RequestBuilder,
     ) -> Result<T> {
-        self.execute_with(request, Retry::Safe).await
+        self.execute_with(request, RetryMode::RetryOnGatewayError).await
     }
 
     /// GET and HEAD requests never change server state, so they are retried by default.
-    fn default_retry(request: &RequestBuilder) -> Retry {
+    fn default_retry(request: &RequestBuilder) -> RetryMode {
         match request.try_clone().and_then(|r| r.build().ok()) {
-            Some(r) if matches!(*r.method(), Method::GET | Method::HEAD) => Retry::Safe,
-            _ => Retry::Never,
+            Some(r) if matches!(*r.method(), Method::GET | Method::HEAD) => RetryMode::RetryOnGatewayError,
+            _ => RetryMode::SendOnce,
         }
     }
 
     /// Send a request, retrying retryable statuses when `retry` is `Safe`.
     /// Returns the last response once retries run out, whatever its status.
-    async fn send(&self, request: RequestBuilder, retry: Retry) -> Result<Response> {
+    async fn send(&self, request: RequestBuilder, retry: RetryMode) -> Result<Response> {
         let mut retries = 0;
         let mut request = request;
         loop {
-            let next = (retry == Retry::Safe && retries < self.retry_policy.max_retries)
+            let next = (retry == RetryMode::RetryOnGatewayError && retries < self.retry_policy.max_retries)
                 .then(|| request.try_clone())
                 .flatten();
             let response = request.send().await?;
@@ -610,7 +611,7 @@ impl LangchainClient {
     async fn execute_with<T: for<'de> Deserialize<'de>>(
         &self,
         request: RequestBuilder,
-        retry: Retry,
+        retry: RetryMode,
     ) -> Result<T> {
         let response = self.send(request, retry).await?;
         let status = response.status();
