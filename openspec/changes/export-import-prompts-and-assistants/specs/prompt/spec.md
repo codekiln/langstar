@@ -65,7 +65,7 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Check the destination before importing a prompt
 
-Before it writes, `langstar prompt import` SHALL run the checks of `prompt verify` against the destination workspace. When the workspace lacks a secret in `requires.secrets` it SHALL write nothing, name each missing secret and exit with status 3. A missing saved model configuration SHALL be a note, as in `prompt verify`.
+Before it writes, `langstar prompt import` SHALL run the secret check and the saved model configuration check of `prompt verify` against the destination workspace, and not its comparison, because the destination may have no prompt yet. When the workspace lacks a secret in `requires.secrets` it SHALL write nothing, name each missing secret and exit with status 3. A missing saved model configuration SHALL be a note, as in `prompt verify`.
 
 #### Scenario: Secret missing at import
 

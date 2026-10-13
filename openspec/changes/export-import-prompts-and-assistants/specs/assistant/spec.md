@@ -111,12 +111,13 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 ### Requirement: Remove on update what the file lacks
 
-`langstar assistant import --update` SHALL remove each metadata key the destination assistant has and the file lacks, and clear a description or context the file lacks. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
+`langstar assistant import --update` SHALL ask the Agent Server to remove each metadata key the destination assistant has and the file lacks, and to clear a description or context the file lacks, then read the assistant back. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
 
 #### Scenario: Remove a metadata key the file lacks
 
 - **WHEN** the recorded assistant's metadata is `{"kept": 1, "stale": 2}`
 - **AND** the file's metadata is `{"kept": 1}`
+- **AND** the Agent Server removes a metadata key that an update sends with a null value
 - **AND** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update`
 - **THEN** the assistant's metadata read back from the deployment is `{"kept": 1}`
 - **AND** langstar exits with status 0

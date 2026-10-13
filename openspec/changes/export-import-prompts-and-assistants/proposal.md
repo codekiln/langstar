@@ -15,7 +15,7 @@ A prompt belongs to a workspace and an assistant belongs to a deployment, but bo
 - `langstar prompt compare <file>` reports the differences between the file and a prompt in a workspace. `langstar prompt verify <file>` also checks that the workspace has the secrets the prompt's model reads, and notes when the workspace has no saved model configuration for the model's provider.
 - `langstar assistant export`, `import`, `compare` and `verify` do the same for assistants on a deployment. The file holds the name, description, graph ID, configuration, context, metadata and any prompt names the assistant refers to. `verify` checks that the destination deployment has the graph and that the destination workspace has the referenced prompts.
 - Import records each destination ID (the new commit hash, or the new assistant ID) in a separate file next to the export, so importing the same file again finds the copy it made earlier instead of creating another one.
-- Import runs the checks of `verify` before it writes, and writes nothing when one fails.
+- Import runs the dependency checks of `verify` before it writes, and writes nothing when one fails.
 - `compare`, `verify` and `import` share one exit status scheme, 0 for a match, 3 for a difference or a failed check and 1 for any other error, and print a JSON report with `-f json`. Status 2 stays clap's usage error.
 
 ## Capabilities
