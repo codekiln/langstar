@@ -98,9 +98,7 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // Start with file config if it exists
-        // A config directory that cannot be found is an error, not a reason to
-        // use the defaults, so resolve the paths before the fallback
+        // Find the config file first: when langstar cannot find the config directory, `load` returns that error
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
@@ -109,7 +107,7 @@ impl Config {
             static WARN_ONCE: Once = Once::new();
             WARN_ONCE.call_once(|| {
                 eprintln!(
-                    "Warning: Ignoring the config file; using defaults and any environment variables: {e}\n  Run 'langstar config validate' to check it."
+                    "Warning: {e}\n  langstar is using the default settings and any environment variables instead. Run 'langstar config validate' to check the file."
                 )
             });
             Self::default()
