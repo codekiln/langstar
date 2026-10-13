@@ -21,12 +21,13 @@ langsmith prompt create --name "$repo" >/dev/null
 
 # Registered only after create succeeds, so a name collision can never delete
 # another run's prompt.
-schema="$(mktemp)"
+schema=""
 cleanup() {
-  rm -f "$schema"
+  [ -z "$schema" ] || rm -f "$schema"
   langsmith prompt delete --yes -- "$handle" >/dev/null 2>&1 || echo "could not delete ${handle}; delete it by hand" >&2
 }
 trap cleanup EXIT
+schema="$(mktemp)"
 
 printf '%s' '{"type":"object","title":"Out","properties":{"answer":{"type":"string"}},"required":["answer"]}' >"$schema"
 

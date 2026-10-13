@@ -46,6 +46,8 @@ gh = "2.102.0"
 # executable, so tasks run it with `uv run --with langgraph-sdk==$LANGGRAPH_SDK_VERSION`.
 uv = "0.12.23"
 "pipx:langgraph-cli" = "0.4.33"
+# The oracle:* tasks parse the official CLI's JSON with jq.
+jq = "1.8.1"
 # rulesync is a Node CLI (v27 declares node >=22); without Node its executable
 # cannot run on a clean host.
 node = "22"
