@@ -71,18 +71,18 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 
 ### Requirement: Check the destination before importing an assistant
 
-Before it writes, `langstar assistant import` SHALL run the graph check and the prompt check of `assistant verify`, reading prompts from `--workspace-id` or the configured workspace. When a check fails it SHALL write nothing, name each missing graph and prompt, and exit with status 2.
+Before it writes, `langstar assistant import` SHALL run the graph check and the prompt check of `assistant verify`, reading prompts from `--workspace-id` or the configured workspace. When a check fails it SHALL write nothing, name each missing graph and prompt, and exit with status 3.
 
 #### Scenario: Referenced prompt missing at import
 
 - **WHEN** the file lists `support-system:prod` under `requires.prompts`
 - **AND** the workspace has no `support-system` prompt with a `prod` tag
 - **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
-- **THEN** langstar creates no assistant, reports `support-system:prod` as missing and exits with status 2
+- **THEN** langstar creates no assistant, reports `support-system:prod` as missing and exits with status 3
 
 ### Requirement: Find the earlier copy instead of creating another
 
-When the destination record holds an assistant ID for the deployment, `langstar assistant import` SHALL compare the file with that assistant and create nothing. It SHALL exit with status 0 when they match, and list the differences and exit with status 2 when they differ, unless the user passes `--update`. When the recorded assistant no longer exists, it SHALL exit with status 1 and say so.
+When the destination record holds an assistant ID for the deployment, `langstar assistant import` SHALL compare the file with that assistant and create nothing. It SHALL exit with status 0 when they match, and list the differences and exit with status 3 when they differ, unless the user passes `--update`. When the recorded assistant no longer exists, it SHALL exit with status 1 and say so.
 
 #### Scenario: Import the same file again
 
@@ -111,7 +111,7 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 ### Requirement: Remove on update what the file lacks
 
-`langstar assistant import --update` SHALL remove each metadata key the destination assistant has and the file lacks, and clear a description or context the file lacks. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 2.
+`langstar assistant import --update` SHALL remove each metadata key the destination assistant has and the file lacks, and clear a description or context the file lacks. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
 
 #### Scenario: Remove a metadata key the file lacks
 
@@ -124,13 +124,13 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 #### Scenario: Deployment keeps a removed metadata key
 
 - **WHEN** the Agent Server keeps `stale` in the assistant's metadata after the update
-- **THEN** langstar lists `/metadata/stale` as a difference and exits with status 2
+- **THEN** langstar lists `/metadata/stale` as a difference and exits with status 3
 
 #### Scenario: Deployment keeps a description the file lacks
 
 - **WHEN** the recorded assistant has a description and the file has none
 - **AND** the Agent Server keeps that description after the update
-- **THEN** langstar lists `/description` as a difference and exits with status 2
+- **THEN** langstar lists `/description` as a difference and exits with status 3
 
 ### Requirement: Dry run an assistant import
 
@@ -143,12 +143,12 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 ### Requirement: Read the assistant back after import
 
-After writing, `langstar assistant import` SHALL read the assistant back from the deployment and compare it with the file. When they differ it SHALL list the differences and exit with status 2.
+After writing, `langstar assistant import` SHALL read the assistant back from the deployment and compare it with the file. When they differ it SHALL list the differences and exit with status 3.
 
 #### Scenario: Deployment drops a configuration key
 
 - **WHEN** the assistant read back lacks a configuration key the file holds
-- **THEN** langstar lists that key as a difference and exits with status 2
+- **THEN** langstar lists that key as a difference and exits with status 3
 
 ### Requirement: Compare an assistant with its export file
 
@@ -157,22 +157,22 @@ After writing, `langstar assistant import` SHALL read the assistant back from th
 #### Scenario: Metadata changed on the deployment
 
 - **WHEN** someone changed a metadata value on the deployment's assistant
-- **THEN** langstar lists that metadata path with both values and exits with status 2
+- **THEN** langstar lists that metadata path with both values and exits with status 3
 
 ### Requirement: Verify that an assistant can run on a deployment
 
-`langstar assistant verify <file> --deployment <name-or-id>` SHALL do what `compare` does and also check that the deployment serves the file's graph ID and that the workspace, from `--workspace-id` or the configured workspace, has each prompt under `requires.prompts`. It SHALL name each missing graph and prompt and exit with status 2 when any check fails.
+`langstar assistant verify <file> --deployment <name-or-id>` SHALL do what `compare` does and also check that the deployment serves the file's graph ID and that the workspace, from `--workspace-id` or the configured workspace, has each prompt under `requires.prompts`. It SHALL name each missing graph and prompt and exit with status 3 when any check fails.
 
 #### Scenario: Graph missing on the destination
 
 - **WHEN** the destination deployment serves no graph with the file's graph ID
-- **THEN** langstar reports the missing graph ID and exits with status 2
+- **THEN** langstar reports the missing graph ID and exits with status 3
 
 #### Scenario: Referenced prompt missing
 
 - **WHEN** the file lists `support-system:prod` under `requires.prompts`
 - **AND** the workspace has no `support-system` prompt with a `prod` tag
-- **THEN** langstar reports `support-system:prod` as missing and exits with status 2
+- **THEN** langstar reports `support-system:prod` as missing and exits with status 3
 
 ### Requirement: Assistant compare, verify and import use the prompt commands' exit statuses and JSON report
 

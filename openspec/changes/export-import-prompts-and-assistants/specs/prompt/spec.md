@@ -55,24 +55,24 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Import names its destination workspace
 
-`langstar prompt import <file>` SHALL require `--workspace-id`. It SHALL refuse to run when the flag is missing, even when `LANGSMITH_WORKSPACE_ID` is set.
+`langstar prompt import <file>` SHALL require `--workspace-id`. It SHALL refuse to run when the flag is missing, even when `LANGSMITH_WORKSPACE_ID` is set, and exit with status 1 and an error naming the flag.
 
 #### Scenario: Missing destination workspace
 
 - **WHEN** a user runs `langstar prompt import my-prompt.json` without `--workspace-id`
 - **AND** `LANGSMITH_WORKSPACE_ID` is set
-- **THEN** langstar exits with status 1 and an error asking for `--workspace-id`
+- **THEN** langstar exits with status 1 and an error naming `--workspace-id`
 
 ### Requirement: Check the destination before importing a prompt
 
-Before it writes, `langstar prompt import` SHALL run the checks of `prompt verify` against the destination workspace. When the workspace lacks a secret in `requires.secrets` it SHALL write nothing, name each missing secret and exit with status 2. A missing saved model configuration SHALL be a note, as in `prompt verify`.
+Before it writes, `langstar prompt import` SHALL run the checks of `prompt verify` against the destination workspace. When the workspace lacks a secret in `requires.secrets` it SHALL write nothing, name each missing secret and exit with status 3. A missing saved model configuration SHALL be a note, as in `prompt verify`.
 
 #### Scenario: Secret missing at import
 
 - **WHEN** the file lists `OPENAI_API_KEY` under `requires.secrets`
 - **AND** the destination workspace has no secret named `OPENAI_API_KEY`
 - **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
-- **THEN** langstar creates no prompt, reports `OPENAI_API_KEY` as missing and exits with status 2
+- **THEN** langstar creates no prompt, reports `OPENAI_API_KEY` as missing and exits with status 3
 
 ### Requirement: Import a prompt that does not exist yet
 
@@ -87,13 +87,13 @@ When the destination workspace has no prompt with the file's handle, `langstar p
 
 ### Requirement: Change an existing prompt only with --update
 
-When the destination prompt exists and its latest commit differs from the file, `langstar prompt import` SHALL change nothing and exit with status 2, listing the differences, unless the user passes `--update`. With `--update` it SHALL push the file's manifest and commit description as a new commit whose parent is the destination's latest commit, and move the file's tags to it.
+When the destination prompt exists and its latest commit differs from the file, `langstar prompt import` SHALL change nothing and exit with status 3, listing the differences, unless the user passes `--update`. With `--update` it SHALL push the file's manifest and commit description as a new commit whose parent is the destination's latest commit, and move the file's tags to it.
 
 #### Scenario: Destination differs and --update is missing
 
 - **WHEN** the destination prompt's latest commit differs from the file
 - **AND** the user runs `langstar prompt import` without `--update`
-- **THEN** langstar pushes nothing, lists the differences and exits with status 2
+- **THEN** langstar pushes nothing, lists the differences and exits with status 3
 
 #### Scenario: Update an existing prompt
 
@@ -120,7 +120,7 @@ When the destination repo's description, readme, tags or visibility differ from 
 
 ### Requirement: Move commit tags only with --update
 
-When a commit tag in the file is missing in the destination or points at a different commit, `langstar prompt import` SHALL list the tag as a difference and exit with status 2. With `--update` it SHALL create or move the tag to the destination commit that matches the file, and add no commit when the latest commit already matches.
+When a commit tag in the file is missing in the destination or points at a different commit, `langstar prompt import` SHALL list the tag as a difference and exit with status 3. With `--update` it SHALL create or move the tag to the destination commit that matches the file, and add no commit when the latest commit already matches.
 
 #### Scenario: Destination tag points at an older commit
 
@@ -148,7 +148,7 @@ When the destination record holds a commit for the destination workspace and the
 
 - **WHEN** a user edited the destination prompt in the web interface after the last import
 - **AND** runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
-- **THEN** langstar reports that the destination changed since the last recorded import and exits with status 2
+- **THEN** langstar reports that the destination changed since the last recorded import and exits with status 3
 
 ### Requirement: Dry run an import
 
@@ -162,12 +162,12 @@ When the destination record holds a commit for the destination workspace and the
 
 ### Requirement: Read the prompt back after import
 
-After writing, `langstar prompt import` SHALL read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 2.
+After writing, `langstar prompt import` SHALL read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3.
 
 #### Scenario: LangSmith drops a field
 
 - **WHEN** the destination commit read back after import lacks a field the file holds
-- **THEN** langstar lists that field as a difference and exits with status 2
+- **THEN** langstar lists that field as a difference and exits with status 3
 
 ### Requirement: Compare a prompt with its export file
 
@@ -181,22 +181,22 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 #### Scenario: Model temperature changed
 
 - **WHEN** someone changed the model temperature in the workspace's prompt
-- **THEN** langstar lists the temperature's JSON path with both values and exits with status 2
+- **THEN** langstar lists the temperature's JSON path with both values and exits with status 3
 
 #### Scenario: Repo readme changed
 
 - **WHEN** someone changed the readme of the workspace's prompt
-- **THEN** langstar lists the readme's JSON path with both values and exits with status 2
+- **THEN** langstar lists the readme's JSON path with both values and exits with status 3
 
 ### Requirement: Verify that a prompt can run in a workspace
 
-`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 2 when any secret is missing. It SHALL also look for a saved model configuration whose settings `id` ends in the class name `requires.model_provider` holds, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
+`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 3 when any secret is missing. It SHALL also look for a saved model configuration whose settings `id` ends in the class name `requires.model_provider` holds, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
 
 #### Scenario: Secret missing in the destination
 
 - **WHEN** the destination workspace has no secret named `OPENAI_API_KEY`
 - **AND** the file lists `OPENAI_API_KEY` under `requires.secrets`
-- **THEN** langstar reports `OPENAI_API_KEY` as missing and exits with status 2
+- **THEN** langstar reports `OPENAI_API_KEY` as missing and exits with status 3
 
 #### Scenario: No saved model configuration for the provider
 
@@ -205,12 +205,17 @@ After writing, `langstar prompt import` SHALL read the destination commit back w
 - **AND** every secret in `requires.secrets` exists and the prompt matches the file
 - **THEN** langstar notes that no saved model configuration matches `ChatOpenAI` and exits with status 0
 
-### Requirement: Exit with 0 for a match, 2 for a difference and 1 for an error
+### Requirement: Exit with 0 for a match, 3 for a difference and 1 for an error
 
-`prompt compare`, `prompt verify` and `prompt import` SHALL exit with status 0 when the prompt matches and every check passes, 2 when they find a difference or a failed check, and 1 on any other error. With `-f json` each SHALL print one JSON object with `status`, `differences` and `checks`.
+`prompt compare`, `prompt verify` and `prompt import` SHALL exit with status 0 when the prompt matches and every check passes, 3 when they find a difference or a failed check, and 1 on any other error. A usage error that clap rejects, such as a mistyped flag, SHALL keep clap's status 2. With `-f json` each SHALL print one JSON object with `status`, `differences` and `checks`.
 
 #### Scenario: Machine-readable compare
 
 - **WHEN** a user runs `langstar -f json prompt compare my-prompt.json`
 - **THEN** stdout holds one JSON object with `status`, `differences` and `checks`
 - **AND** progress messages go to stderr
+
+#### Scenario: Mistyped flag
+
+- **WHEN** a user runs `langstar prompt compare my-prompt.json --wrkspace-id <workspace-id>`
+- **THEN** langstar prints clap's usage error and exits with status 2
