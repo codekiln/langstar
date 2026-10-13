@@ -2,7 +2,7 @@ use crate::auth::AuthConfig;
 use crate::error::{LangstarError, Result};
 use crate::runs::{QueriedRun, QueryRunsRequest, QueryRunsResponse};
 use futures_core::Stream;
-use reqwest::{Client as HttpClient, RequestBuilder};
+use reqwest::{Client as HttpClient, Method, RequestBuilder, Response};
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
 use std::time::Duration;
@@ -11,6 +11,77 @@ use std::time::Duration;
 pub const LANGSMITH_API_BASE: &str = "https://api.smith.langchain.com";
 pub const LANGGRAPH_API_BASE: &str = "https://api.langgraph.cloud";
 pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
+
+/// The HTTP statuses a read request is sent again on: 502 Bad Gateway, 503 Service
+/// Unavailable, 504 Gateway Timeout, 408 Request Timeout and 425 Too Early.
+/// langsmith-py's documentation lists the same five statuses.
+const RETRYABLE_STATUSES: [u16; 5] = [502, 503, 504, 408, 425];
+
+/// Bounded retry settings for read requests.
+///
+/// `max_retries` counts retries after the first attempt, so a request is sent at most
+/// `max_retries + 1` times. The wait before retry `n` (from 0) is `base_delay * 2^n`,
+/// or the `Retry-After` header when the server sends one. Each wait is capped at
+/// `max_delay`, which bounds the total wait to `max_retries * max_delay`.
+/// The defaults copy the retry settings in the documentation of
+/// [langsmith-py](https://github.com/langchain-ai/langsmith-sdk), the LangSmith Python client:
+/// 3 retries with a 0.5 second backoff factor.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RetryPolicy {
+    pub max_retries: u32,
+    pub base_delay: Duration,
+    pub max_delay: Duration,
+}
+
+impl Default for RetryPolicy {
+    fn default() -> Self {
+        Self {
+            max_retries: 3,
+            base_delay: Duration::from_millis(500),
+            max_delay: Duration::from_secs(30),
+        }
+    }
+}
+
+impl RetryPolicy {
+    /// A policy that sends every request once.
+    pub fn none() -> Self {
+        Self {
+            max_retries: 0,
+            ..Self::default()
+        }
+    }
+
+    fn delay(&self, retry: u32, response: &Response) -> Duration {
+        let retry_after = response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|v| v.to_str().ok())
+            .and_then(parse_retry_after);
+        let backoff = self.base_delay.saturating_mul(1u32 << retry.min(16));
+        retry_after.unwrap_or(backoff).min(self.max_delay)
+    }
+}
+
+/// Parse `Retry-After`, which is either delta-seconds or an HTTP-date.
+/// A date in the past means no wait.
+fn parse_retry_after(value: &str) -> Option<Duration> {
+    let value = value.trim();
+    if let Ok(secs) = value.parse::<u64>() {
+        return Some(Duration::from_secs(secs));
+    }
+    let date = chrono::DateTime::parse_from_rfc2822(value).ok()?;
+    let wait = date.signed_duration_since(chrono::Utc::now());
+    Some(wait.to_std().unwrap_or(Duration::ZERO))
+}
+
+/// Whether the client sends a request again after a 502, 503, 504, 408 or 425. Only requests
+/// that leave server state unchanged may be sent again.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RetryMode {
+    RetryOnGatewayError,
+    SendOnce,
+}
 
 /// HTTP client for interacting with LangChain APIs
 #[derive(Clone)]
@@ -24,6 +95,7 @@ pub struct LangchainClient {
     organization_id: Option<String>,
     /// Optional workspace ID for narrower scoping (used in X-Tenant-Id header)
     workspace_id: Option<String>,
+    retry_policy: RetryPolicy,
 }
 
 impl LangchainClient {
@@ -47,7 +119,14 @@ impl LangchainClient {
             control_plane_base_url: CONTROL_PLANE_API_BASE.to_string(),
             organization_id,
             workspace_id,
+            retry_policy: RetryPolicy::default(),
         })
+    }
+
+    /// Set the retry policy for read requests (see [`RetryPolicy`]).
+    pub fn with_retry_policy(mut self, policy: RetryPolicy) -> Self {
+        self.retry_policy = policy;
+        self
     }
 
     /// Set the organization ID for API requests
@@ -124,6 +203,7 @@ impl LangchainClient {
             control_plane_base_url,
             organization_id,
             workspace_id,
+            retry_policy: RetryPolicy::default(),
         })
     }
 
@@ -450,9 +530,63 @@ impl LangchainClient {
     /// * `Ok(())` if the request succeeds (2xx status)
     /// * `Err(LangstarError::ApiError)` if the request fails
     pub async fn execute_status_only_request(&self, request: RequestBuilder) -> Result<()> {
-        let response = request.send().await?;
-        let status = response.status();
+        let retry = Self::default_retry(&request);
+        let response = self.send(request, retry).await?;
+        Self::check_status(response).await?;
+        Ok(())
+    }
 
+    /// Execute a read-only request that is safe to send again, and parse the response.
+    ///
+    /// Use this for read-only POSTs such as `/api/v2/runs/query`. A 502, 503, 504, 408 or
+    /// 425 is retried under the client's [`RetryPolicy`]. Never use it for a write.
+    /// [`execute`](Self::execute) already retries GET and HEAD requests.
+    pub async fn execute_read<T: for<'de> Deserialize<'de>>(
+        &self,
+        request: RequestBuilder,
+    ) -> Result<T> {
+        self.execute_with(request, RetryMode::RetryOnGatewayError)
+            .await
+    }
+
+    /// GET and HEAD requests never change server state, so they are retried by default.
+    fn default_retry(request: &RequestBuilder) -> RetryMode {
+        match request.try_clone().and_then(|r| r.build().ok()) {
+            Some(r) if matches!(*r.method(), Method::GET | Method::HEAD) => {
+                RetryMode::RetryOnGatewayError
+            }
+            _ => RetryMode::SendOnce,
+        }
+    }
+
+    /// Send a request, retrying retryable statuses when `retry` is `Safe`.
+    /// Returns the last response once retries run out, whatever its status.
+    async fn send(&self, request: RequestBuilder, retry: RetryMode) -> Result<Response> {
+        let mut retries = 0;
+        let mut request = request;
+        loop {
+            let next = (retry == RetryMode::RetryOnGatewayError
+                && retries < self.retry_policy.max_retries)
+                .then(|| request.try_clone())
+                .flatten();
+            let response = request.send().await?;
+            let Some(next) = next else {
+                return Ok(response);
+            };
+            if !RETRYABLE_STATUSES.contains(&response.status().as_u16()) {
+                return Ok(response);
+            }
+            let delay = self.retry_policy.delay(retries, &response);
+            // Release the connection before waiting out the backoff.
+            drop(response);
+            tokio::time::sleep(delay).await;
+            retries += 1;
+            request = next;
+        }
+    }
+
+    async fn check_status(response: Response) -> Result<Response> {
+        let status = response.status();
         if !status.is_success() {
             let error_text = response
                 .text()
@@ -463,28 +597,29 @@ impl LangchainClient {
                 message: error_text,
             });
         }
-
-        Ok(())
+        Ok(response)
     }
 
     /// Execute a request and parse the response
+    ///
+    /// GET and HEAD requests are retried on 502/503/504/408/425; every other method is sent once.
+    /// For a read-only POST, use [`execute_read`](Self::execute_read).
     pub async fn execute<T: for<'de> Deserialize<'de>>(
         &self,
         request: RequestBuilder,
     ) -> Result<T> {
-        let response = request.send().await?;
+        let retry = Self::default_retry(&request);
+        self.execute_with(request, retry).await
+    }
 
+    async fn execute_with<T: for<'de> Deserialize<'de>>(
+        &self,
+        request: RequestBuilder,
+        retry: RetryMode,
+    ) -> Result<T> {
+        let response = self.send(request, retry).await?;
         let status = response.status();
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
+        let response = Self::check_status(response).await?;
 
         // DEBUG: Log response details before parsing (for #509 investigation)
         // Check for LANGSTAR_DEBUG_HTTP environment variable
@@ -982,7 +1117,7 @@ impl LangchainClient {
     pub async fn query_runs(&self, request: QueryRunsRequest) -> Result<QueryRunsResponse> {
         let request_builder = self.langsmith_post("/api/v2/runs/query")?.json(&request);
 
-        self.execute(request_builder).await
+        self.execute_read(request_builder).await
     }
 
     /// Query runs with automatic pagination, returning a stream of runs.
@@ -2490,6 +2625,236 @@ mod tests {
             );
         }
         post.assert_async().await;
+    }
+
+    fn retry_test_client(url: String, max_retries: u32) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            url.clone(),
+            url.clone(),
+            url,
+        )
+        .unwrap()
+        .with_retry_policy(RetryPolicy {
+            max_retries,
+            base_delay: Duration::from_millis(1),
+            max_delay: Duration::from_secs(5),
+        })
+    }
+
+    #[tokio::test]
+    async fn test_get_retries_502_then_succeeds() {
+        let mut server = mockito::Server::new_async().await;
+        let bad = server
+            .mock("GET", "/ok")
+            .with_status(502)
+            .with_body("bad gateway")
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("GET", "/ok")
+            .with_status(200)
+            .with_body(r#"{"v": 1}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_get("/ok").unwrap();
+        let value: serde_json::Value = client.execute(request).await.unwrap();
+
+        assert_eq!(value["v"], 1);
+        bad.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_read_post_retries_503_then_succeeds() {
+        let mut server = mockito::Server::new_async().await;
+        let bad = server
+            .mock("POST", "/api/v2/runs/query")
+            .with_status(503)
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("POST", "/api/v2/runs/query")
+            .match_body(mockito::Matcher::Json(serde_json::json!({"q": 1})))
+            .with_status(200)
+            .with_body(r#"{"v": 2}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client
+            .langsmith_post("/api/v2/runs/query")
+            .unwrap()
+            .json(&serde_json::json!({"q": 1}));
+        let value: serde_json::Value = client.execute_read(request).await.unwrap();
+
+        assert_eq!(value["v"], 2);
+        bad.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_gives_up_after_max_retries_with_last_error() {
+        let mut server = mockito::Server::new_async().await;
+        let always = server
+            .mock("GET", "/down")
+            .with_status(504)
+            .with_body("gateway timeout")
+            .expect(4)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_get("/down").unwrap();
+        let result: Result<serde_json::Value> = client.execute(request).await;
+
+        match result {
+            Err(LangstarError::ApiError { status, message }) => {
+                assert_eq!(status, 504);
+                assert_eq!(message, "gateway timeout");
+            }
+            other => panic!("expected ApiError 504, got {:?}", other),
+        }
+        always.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_404_is_sent_once() {
+        let mut server = mockito::Server::new_async().await;
+        let missing = server
+            .mock("GET", "/missing")
+            .with_status(404)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_get("/missing").unwrap();
+        let result: Result<serde_json::Value> = client.execute(request).await;
+
+        assert!(matches!(
+            result,
+            Err(LangstarError::ApiError { status: 404, .. })
+        ));
+        missing.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_post_and_delete_are_sent_once() {
+        let mut server = mockito::Server::new_async().await;
+        let post = server
+            .mock("POST", "/write")
+            .with_status(502)
+            .expect(1)
+            .create_async()
+            .await;
+        let delete = server
+            .mock("DELETE", "/write")
+            .with_status(503)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_post("/write").unwrap();
+        let result: Result<serde_json::Value> = client.execute(request).await;
+        assert!(matches!(
+            result,
+            Err(LangstarError::ApiError { status: 502, .. })
+        ));
+
+        let request = client.langsmith_delete("/write").unwrap();
+        let result = client.execute_status_only_request(request).await;
+        assert!(matches!(
+            result,
+            Err(LangstarError::ApiError { status: 503, .. })
+        ));
+
+        post.assert_async().await;
+        delete.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_after_header_is_honoured() {
+        let mut server = mockito::Server::new_async().await;
+        let limited = server
+            .mock("GET", "/slow")
+            .with_status(503)
+            .with_header("Retry-After", "1")
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("GET", "/slow")
+            .with_status(200)
+            .with_body("{}")
+            .expect(1)
+            .create_async()
+            .await;
+        // base_delay is 1ms, so only Retry-After can explain a wait of a second.
+        let client = retry_test_client(server.url(), 3);
+
+        let start = std::time::Instant::now();
+        let request = client.langsmith_get("/slow").unwrap();
+        let _: serde_json::Value = client.execute(request).await.unwrap();
+
+        assert!(
+            start.elapsed() >= Duration::from_secs(1),
+            "waited only {:?}",
+            start.elapsed()
+        );
+        limited.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[test]
+    fn test_parse_retry_after_accepts_seconds_and_http_dates() {
+        assert_eq!(parse_retry_after(" 7 "), Some(Duration::from_secs(7)));
+        assert_eq!(
+            parse_retry_after("Wed, 21 Oct 2015 07:28:00 GMT"),
+            Some(Duration::ZERO)
+        );
+        let future = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let wait =
+            parse_retry_after(&future.format("%a, %d %b %Y %H:%M:%S GMT").to_string()).unwrap();
+        assert!(wait > Duration::from_secs(50) && wait <= Duration::from_secs(60));
+        assert_eq!(parse_retry_after("soon"), None);
+    }
+
+    #[tokio::test]
+    async fn test_retry_after_is_capped_by_max_delay() {
+        let mut server = mockito::Server::new_async().await;
+        let limited = server
+            .mock("GET", "/capped")
+            .with_status(503)
+            .with_header("Retry-After", "3600")
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("GET", "/capped")
+            .with_status(200)
+            .with_body("{}")
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3).with_retry_policy(RetryPolicy {
+            max_retries: 3,
+            base_delay: Duration::from_millis(1),
+            max_delay: Duration::from_millis(20),
+        });
+
+        let request = client.langsmith_get("/capped").unwrap();
+        let _: serde_json::Value = client.execute(request).await.unwrap();
+
+        limited.assert_async().await;
+        good.assert_async().await;
     }
 
     #[test]

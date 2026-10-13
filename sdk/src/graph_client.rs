@@ -124,7 +124,7 @@ impl<'a> GraphClient<'a> {
 
             let path = "/assistants/search";
             let request = self.client.langgraph_post(path)?.json(&request_body);
-            let mut assistants: Vec<Assistant> = self.client.execute(request).await?;
+            let mut assistants: Vec<Assistant> = self.client.execute_read(request).await?;
 
             let count = assistants.len();
             all_assistants.append(&mut assistants);
@@ -272,6 +272,40 @@ mod tests {
         let auth = AuthConfig::new(Some("test".to_string()), None, None);
         let client = LangchainClient::new(auth).unwrap();
         let _graph_client = client.graphs();
+    }
+
+    #[tokio::test]
+    async fn test_list_retries_a_502() {
+        let mut server = mockito::Server::new_async().await;
+        let bad = server
+            .mock("POST", "/assistants/search")
+            .with_status(502)
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("POST", "/assistants/search")
+            .with_status(200)
+            .with_body("[]")
+            .expect(1)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap()
+        .with_retry_policy(crate::client::RetryPolicy {
+            max_retries: 2,
+            base_delay: std::time::Duration::from_millis(1),
+            max_delay: std::time::Duration::from_millis(5),
+        });
+
+        assert!(client.graphs().list(false).await.unwrap().is_empty());
+        bad.assert_async().await;
+        good.assert_async().await;
     }
 
     #[test]
