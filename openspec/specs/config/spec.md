@@ -121,7 +121,7 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 
 ### Requirement: Warn on stderr and use the defaults when a command that loads the settings cannot parse the config file
 
-A langstar command that loads the settings SHALL ignore a config file that does not parse, use the defaults and the environment, and warn on stderr with the file's path and the line, column and message of the parse error, without the quoted line of the file and without the value the message quotes, because the warning prints on every command and either can hold the API key. The commands that load the settings are every command outside the `config` group, `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, print no warning.
+A langstar command that loads the settings SHALL warn on stderr and run on the defaults and the environment variables when the config file does not parse. The warning gives the file's path and the line, column and message of the parse error, and leaves out the quoted line of the file and the value the message quotes, because either can hold the API key. The commands that load the settings are every command outside the `config` group, `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, print no warning.
 
 #### Scenario: `config show` warns and shows the defaults when the config file does not parse
 
