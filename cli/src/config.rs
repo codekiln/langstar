@@ -184,10 +184,11 @@ impl Config {
         Self::read_file_with(path, true)
     }
 
-    /// Reads and parses the config file the way `read_file` does. When
-    /// `quote_source` is false, a parse error gives only the line, column and the
-    /// part of toml's message before its first backtick, because toml quotes the
-    /// offending value after that.
+    /// Reads and parses the config file at `path`. When `quote_source` is true, a
+    /// parse error carries toml's full message, including the quoted line of the
+    /// file. When it is false, the error gives the line and column and the first
+    /// line of toml's message up to its first backtick, where toml quotes the
+    /// rejected value.
     fn read_file_with(path: &Path, quote_source: bool) -> Result<Self> {
         let content = std::fs::read_to_string(path).map_err(|e| {
             CliError::Config(format!(
