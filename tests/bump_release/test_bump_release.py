@@ -1,6 +1,7 @@
 """Tests for .rulesync/skills/bump-release/scripts, run by `mise run skills:test-bump-release`."""
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -102,6 +103,24 @@ class JsonModeTest(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Failed to analyze commits", result.stderr)
+
+    def test_shell_function_fails_on_an_exit_code_above_3_even_with_valid_json(self):
+        # Copy bump_release.sh next to a fake analyzer, since it runs the
+        # analyze_commits.py in its own directory.
+        scripts = tempfile.TemporaryDirectory()
+        self.addCleanup(scripts.cleanup)
+        shutil.copy(SCRIPTS / "bump_release.sh", scripts.name)
+        fake = Path(scripts.name) / "analyze_commits.py"
+        fake.write_text("#!/usr/bin/env python3\nimport sys\nprint('{}')\nsys.exit(4)\n")
+        fake.chmod(0o755)
+
+        result = subprocess.run(
+            ["bash", "-c", f'source "{scripts.name}/bump_release.sh"; analyze_commits'],
+            capture_output=True, text=True,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Failed to analyze commits (exit 4)", result.stderr)
 
 
 if __name__ == "__main__":
