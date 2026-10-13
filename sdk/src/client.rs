@@ -13,16 +13,18 @@ pub const LANGGRAPH_API_BASE: &str = "https://api.langgraph.cloud";
 pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 
 /// The HTTP statuses a read request is sent again on: 502 Bad Gateway, 503 Service
-/// Unavailable, 504 Gateway Timeout, 408 Request Timeout and 425 Too Early.
-/// langsmith-py's documentation lists the same five statuses.
-const RETRYABLE_STATUSES: [u16; 5] = [502, 503, 504, 408, 425];
+/// Unavailable, 504 Gateway Timeout, 408 Request Timeout, 425 Too Early and
+/// 429 Too Many Requests. langsmith-py retries these statuses and 500 as well. langstar
+/// does not retry a 500, because a 500 on a read is usually a server bug that repeats.
+const RETRYABLE_STATUSES: [u16; 6] = [502, 503, 504, 408, 425, 429];
 
 /// Bounded retry settings for read requests.
 ///
 /// `max_retries` counts retries after the first attempt, so a request is sent at most
-/// `max_retries + 1` times. The wait before retry `n` (from 0) is `base_delay * 2^n`,
-/// or the `Retry-After` header when the server sends one. Each wait is capped at
-/// `max_delay`, which bounds the total wait to `max_retries * max_delay`.
+/// `max_retries + 1` times. When the server sends a `Retry-After` header, as it does with
+/// a 429 to say how long to wait, the client waits that long before retry `n` (from 0).
+/// Without the header the client waits `base_delay * 2^n`.
+/// Each wait is capped at `max_delay`, which bounds the total wait to `max_retries * max_delay`.
 /// The defaults copy the retry settings in the documentation of
 /// [langsmith-py](https://github.com/langchain-ai/langsmith-sdk), the LangSmith Python client:
 /// 3 retries with a 0.5 second backoff factor.
@@ -75,7 +77,7 @@ fn parse_retry_after(value: &str) -> Option<Duration> {
     Some(wait.to_std().unwrap_or(Duration::ZERO))
 }
 
-/// Whether the client sends a request again after a 502, 503, 504, 408 or 425. Only requests
+/// Whether the client sends a request again after a 502, 503, 504, 408, 425 or 429. Only requests
 /// that leave server state unchanged may be sent again.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RetryMode {
@@ -538,8 +540,8 @@ impl LangchainClient {
 
     /// Execute a read-only request that is safe to send again, and parse the response.
     ///
-    /// Use this for read-only POSTs such as `/api/v2/runs/query`. A 502, 503, 504, 408 or
-    /// 425 is retried under the client's [`RetryPolicy`]. Never use it for a write.
+    /// Use this for read-only POSTs such as `/api/v2/runs/query`. A 502, 503, 504, 408,
+    /// 425 or 429 is retried under the client's [`RetryPolicy`]. Never use it for a write.
     /// [`execute`](Self::execute) already retries GET and HEAD requests.
     pub async fn execute_read<T: for<'de> Deserialize<'de>>(
         &self,
@@ -602,7 +604,7 @@ impl LangchainClient {
 
     /// Execute a request and parse the response
     ///
-    /// GET and HEAD requests are retried on 502/503/504/408/425; every other method is sent once.
+    /// GET and HEAD requests are retried on 502/503/504/408/425/429; every other method is sent once.
     /// For a read-only POST, use [`execute_read`](Self::execute_read).
     pub async fn execute<T: for<'de> Deserialize<'de>>(
         &self,
@@ -2811,6 +2813,180 @@ mod tests {
         );
         limited.assert_async().await;
         good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_get_retries_429_then_succeeds() {
+        let mut server = mockito::Server::new_async().await;
+        let limited = server
+            .mock("GET", "/limited")
+            .with_status(429)
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("GET", "/limited")
+            .with_status(200)
+            .with_body(r#"{"v": 3}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_get("/limited").unwrap();
+        let value: serde_json::Value = client.execute(request).await.unwrap();
+
+        assert_eq!(value["v"], 3);
+        limited.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_read_post_retries_429_then_succeeds() {
+        let mut server = mockito::Server::new_async().await;
+        let limited = server
+            .mock("POST", "/api/v2/runs/query")
+            .with_status(429)
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("POST", "/api/v2/runs/query")
+            .with_status(200)
+            .with_body(r#"{"v": 4}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_post("/api/v2/runs/query").unwrap();
+        let value: serde_json::Value = client.execute_read(request).await.unwrap();
+
+        assert_eq!(value["v"], 4);
+        limited.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_429_retry_after_header_is_honoured() {
+        let mut server = mockito::Server::new_async().await;
+        let limited = server
+            .mock("GET", "/rate")
+            .with_status(429)
+            .with_header("Retry-After", "1")
+            .expect(1)
+            .create_async()
+            .await;
+        let good = server
+            .mock("GET", "/rate")
+            .with_status(200)
+            .with_body("{}")
+            .expect(1)
+            .create_async()
+            .await;
+        // base_delay is 1ms, so only Retry-After can explain a wait of a second.
+        let client = retry_test_client(server.url(), 3);
+
+        let start = std::time::Instant::now();
+        let request = client.langsmith_get("/rate").unwrap();
+        let _: serde_json::Value = client.execute(request).await.unwrap();
+
+        assert!(
+            start.elapsed() >= Duration::from_secs(1),
+            "waited only {:?}",
+            start.elapsed()
+        );
+        limited.assert_async().await;
+        good.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_429_gives_up_after_max_retries_with_last_error() {
+        let mut server = mockito::Server::new_async().await;
+        let always = server
+            .mock("GET", "/rate")
+            .with_status(429)
+            .with_body("slow down")
+            .expect(4)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_get("/rate").unwrap();
+        let result: Result<serde_json::Value> = client.execute(request).await;
+
+        match result {
+            Err(LangstarError::ApiError { status, message }) => {
+                assert_eq!(status, 429);
+                assert_eq!(message, "slow down");
+            }
+            other => panic!("expected ApiError 429, got {:?}", other),
+        }
+        always.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_write_that_gets_429_is_sent_once() {
+        let mut server = mockito::Server::new_async().await;
+        let post = server
+            .mock("POST", "/write")
+            .with_status(429)
+            .expect(1)
+            .create_async()
+            .await;
+        let delete = server
+            .mock("DELETE", "/write")
+            .with_status(429)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        let request = client.langsmith_post("/write").unwrap();
+        let result: Result<serde_json::Value> = client.execute(request).await;
+        assert!(matches!(
+            result,
+            Err(LangstarError::ApiError { status: 429, .. })
+        ));
+
+        let request = client.langsmith_delete("/write").unwrap();
+        let result = client.execute_status_only_request(request).await;
+        assert!(matches!(
+            result,
+            Err(LangstarError::ApiError { status: 429, .. })
+        ));
+
+        post.assert_async().await;
+        delete.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_500_and_409_are_sent_once() {
+        let mut server = mockito::Server::new_async().await;
+        let internal = server
+            .mock("GET", "/internal")
+            .with_status(500)
+            .expect(1)
+            .create_async()
+            .await;
+        let conflict = server
+            .mock("GET", "/conflict")
+            .with_status(409)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 3);
+
+        for (path, status) in [("/internal", 500), ("/conflict", 409)] {
+            let request = client.langsmith_get(path).unwrap();
+            let result: Result<serde_json::Value> = client.execute(request).await;
+            match result {
+                Err(LangstarError::ApiError { status: got, .. }) => assert_eq!(got, status),
+                other => panic!("expected ApiError {status}, got {:?}", other),
+            }
+        }
+        internal.assert_async().await;
+        conflict.assert_async().await;
     }
 
     #[test]
