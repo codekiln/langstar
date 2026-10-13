@@ -163,6 +163,10 @@ fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
     for (line, value) in [
         ("langsmith_api_key = 12345678", "12345678"),
         ("timezone = 5", "`5`"),
+        (
+            "hide_workspace_and_org_id_message = \"lsv2_pt_SECRET123\"",
+            "SECRET123",
+        ),
     ] {
         let dir = TempDir::new().unwrap();
         fs::write(dir.path().join("config.toml"), format!("{line}\n")).unwrap();
