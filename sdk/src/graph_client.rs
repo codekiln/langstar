@@ -124,7 +124,7 @@ impl<'a> GraphClient<'a> {
 
             let path = "/assistants/search";
             let request = self.client.langgraph_post(path)?.json(&request_body);
-            let mut assistants: Vec<Assistant> = self.client.execute(request).await?;
+            let mut assistants: Vec<Assistant> = self.client.execute_read(request).await?;
 
             let count = assistants.len();
             all_assistants.append(&mut assistants);
