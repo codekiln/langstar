@@ -144,12 +144,13 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 
 ### Requirement: Read the assistant back after import
 
-After writing, `langstar assistant import` SHALL read the assistant back from the deployment and compare it with the file. When they differ it SHALL list the differences and exit with status 3.
+After writing, `langstar assistant import` SHALL record the assistant ID in the destination record, then read the assistant back from the deployment and compare it with the file. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the ID so that the next import finds that assistant instead of creating another.
 
 #### Scenario: Deployment drops a configuration key
 
 - **WHEN** the assistant read back lacks a configuration key the file holds
 - **THEN** langstar lists that key as a difference and exits with status 3
+- **AND** the destination record holds the new assistant ID, so importing the file again creates no assistant
 
 ### Requirement: Compare an assistant with its export file
 

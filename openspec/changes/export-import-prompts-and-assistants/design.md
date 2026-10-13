@@ -57,7 +57,7 @@ Export reads the commit with `include=model`, the form the Go SDK uses (`referen
 
 ### Import records what it created in a separate file
 
-Import writes the destination's IDs to `<file stem>.destinations.json`, keyed by destination workspace ID for prompts and by deployment ID for assistants. The export file stays the same after any number of imports, and a fresh export never wipes out the record of earlier imports. A repeated import reads the record to find the copy it made. For a prompt, langstar finds the copy by its handle, and compares the commit hash in the record with the destination's latest commit to tell whether someone changed the prompt since the last import. For an assistant, whose ID differs on every deployment, the record is the only link from the file to its copy.
+Import writes the destination's IDs to `<file stem>.destinations.json`, keyed by destination workspace ID for prompts and by deployment ID for assistants. The export file stays the same after any number of imports, and a fresh export never wipes out the record of earlier imports. A repeated import reads the record to find the copy it made. For a prompt, langstar finds the copy by its handle, and compares the commit hash in the record with the destination's latest commit to tell whether someone changed the prompt since the last import. For an assistant, whose ID differs on every deployment, the record is the only link from the file to its copy. Assistant import therefore writes the new ID to the record before it reads the assistant back, so an import whose read-back finds a difference still leaves the link, and the next import finds that assistant instead of creating a second one.
 
 ### Import changes an existing resource only with --update
 
