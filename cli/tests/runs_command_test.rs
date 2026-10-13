@@ -710,7 +710,7 @@ fn test_runs_query_lifecycle() {
 }
 
 /// `runs query --project <name>` returns that project's runs and no others,
-/// and an unknown name fails instead of querying every project.
+/// and an unknown name exits with an error that says no project has that name.
 ///
 /// Pattern: CREATE two projects (SDK) → INGEST → READ by name (CLI) → VERIFY → DELETE
 #[test]
@@ -781,7 +781,7 @@ fn test_runs_query_project_by_name() {
     let by_uuid = query_runs_json(&ids[0], &["-o", "json"]);
     assert_eq!(names(&by_uuid), names(&by_name), "UUID still works");
 
-    // An unknown name fails with a clear error and no fallback to other projects.
+    // An unknown name exits with an error that says no project has that name, and prints no runs.
     let mut cmd = langstar_cmd();
     cmd.args([
         "runs",

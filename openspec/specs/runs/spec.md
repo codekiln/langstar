@@ -25,7 +25,7 @@
 
 - **WHEN** a user runs `langstar runs query --project no-such-project`
 - **THEN** langstar says that no project is named `no-such-project`
-- **AND** exits with status 1 without querying any other project
+- **AND** exits with status 1 and prints no runs
 
 #### Scenario: Two projects share a name
 
