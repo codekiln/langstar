@@ -318,7 +318,7 @@ jobs:
         id: queue
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-          # Passed through env so the shell and jq read the input as data, not code
+          # Read the queue name from an environment variable so a name containing quotes or $(...) cannot run as a command
           QUEUE_NAME: ${{ inputs.queue_name }}
         run: |
           QUEUE_ID=$(langstar queue list --json | \
@@ -328,7 +328,7 @@ jobs:
       - name: Query error runs and add to queue
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
-          # Passed through env so the shell reads these values as data, not code
+          # Read these values from environment variables so a value containing quotes or $(...) cannot run as a command
           PROJECT_ID: ${{ inputs.project_id }}
           QUEUE_ID: ${{ steps.queue.outputs.queue_id }}
         run: |
