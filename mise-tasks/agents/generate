@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Fetch declared skill sources and regenerate CLAUDE.md, AGENTS.md and the skills from .rulesync/"
+set -euo pipefail
+
+# The one way to regenerate agent config. `mise exec` runs the rulesync
+# pinned in mise.toml, even from a git hook's minimal PATH.
+cd "$(git rev-parse --show-toplevel)"
+mise exec -- rulesync install
+mise exec -- rulesync generate

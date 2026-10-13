@@ -3,22 +3,22 @@
 # (post-checkout), fetch any declared skill sources and regenerate CLAUDE.md,
 # AGENTS.md, .claude/skills/ and .agents/skills/.
 #
-# `mise x --` runs the rulesync pinned in mise.toml, even from a hook's
-# minimal PATH.
+# `mise run agents:generate` is the one way to regenerate; it runs the rulesync
+# pinned in mise.toml, even from a hook's minimal PATH.
 # https://lefthook.dev/configuration/
 
 post-merge:
   commands:
     rulesync:
-      run: mise x -- rulesync install && mise x -- rulesync generate
+      run: mise run agents:generate
 
 post-checkout:
   commands:
     rulesync:
-      run: mise x -- rulesync install && mise x -- rulesync generate
+      run: mise run agents:generate
 
 # `git pull --rebase` and `git rebase` run post-rewrite instead of post-merge.
 post-rewrite:
   commands:
     rulesync:
-      run: mise x -- rulesync install && mise x -- rulesync generate
+      run: mise run agents:generate

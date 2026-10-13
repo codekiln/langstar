@@ -108,11 +108,10 @@ while IFS= read -r line; do
 
             # Optionally delete the branch (commented out by default)
             # git branch -D "$branch" 2>/dev/null && echo "  ✓ Deleted branch: $branch"
-          elif git worktree remove --force "$path" 2>/dev/null; then
-            echo -e "  ${YELLOW}✓ Force removed (had uncommitted changes)${NC}"
           else
-            echo -e "  ${RED}✗ Failed to remove${NC}"
-            echo "  Try manually: git worktree remove --force $path"
+            echo -e "  ${YELLOW}⚠ Skipped: the worktree has uncommitted changes or could not be removed${NC}"
+            echo "  Commit or stash its changes, then run: git worktree remove $path"
+            echo "  To discard them instead: git worktree remove --force $path"
           fi
         else
           echo -e "${GREEN}OPEN${NC}"
