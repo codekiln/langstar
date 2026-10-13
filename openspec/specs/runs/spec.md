@@ -47,7 +47,7 @@
 
 ### Requirement: Limit runs to a time window
 
-`langstar runs query` SHALL return runs from the last 7 days unless the user picks another window. `--since` SHALL take a relative duration such as `15m`, `1h`, `7d` or `2w`, or an ISO 8601 timestamp. `--until` SHALL take an ISO 8601 timestamp. `--preset` SHALL take one of `1h`, `3h`, `6h`, `12h`, `1d`, `2d`, `7d` or `14d`, and `--since` SHALL win over it. `--no-time-filter` SHALL widen the window to the last 400 days, because v2 returns only the last day when it gets no start time and rejects a window longer than 401 days.
+`langstar runs query` SHALL return runs from the last 7 days unless the user picks another window. `--since` SHALL take a relative duration such as `15m`, `1h`, `7d` or `2w`, or an ISO 8601 timestamp. `--until` SHALL take an ISO 8601 timestamp. `--preset` SHALL take one of `1h`, `3h`, `6h`, `12h`, `1d`, `2d`, `7d` or `14d`, and `--since` SHALL win over it.
 
 #### Scenario: Relative start
 
@@ -60,9 +60,18 @@
 - **THEN** langstar warns that it cannot read the value
 - **AND** uses `--preset`, or the last 7 days when there is no preset
 
-### Requirement: Page, sort and trim the results
+### Requirement: Widen the time window with --no-time-filter
 
-`langstar runs query` SHALL return up to `-l` or `--limit` runs (default 100), fetching as many pages from LangSmith as that takes. `--order` SHALL show runs by start time, newest first (`desc`, the default) or oldest first (`asc`). The v2 endpoint always returns the newest runs first and has no sort field, so `--order asc` SHALL fetch the newest `--limit` runs and print them oldest first. `--select` SHALL take a comma-separated list of fields and ask LangSmith to return only those fields. Without `--select`, a table SHALL ask for the fields its columns read, and JSON SHALL ask for every field except `share_url` and `attachments`, which carry credential-bearing URLs and appear only when `--select` names them.
+`--no-time-filter` SHALL widen the time window to the last 400 days. The v2 endpoint returns only the last day when it gets no start time and rejects a window longer than 401 days.
+
+#### Scenario: No time filter
+
+- **WHEN** a user runs `langstar runs query --project <project-id> --no-time-filter`
+- **THEN** langstar queries runs that started in the last 400 days
+
+### Requirement: Page and sort the results
+
+`langstar runs query` SHALL return up to `-l` or `--limit` runs (default 100), fetching as many pages from LangSmith as that takes. `--order` SHALL show runs by start time, newest first (`desc`, the default) or oldest first (`asc`). The v2 endpoint always returns the newest runs first and has no sort field, so `--order asc` SHALL fetch the newest `--limit` runs and print them oldest first.
 
 #### Scenario: Oldest first
 
@@ -74,6 +83,15 @@
 - **WHEN** a user runs `langstar runs query --limit 250`
 - **AND** the projects hold more than 250 matching runs
 - **THEN** langstar returns 250 runs
+
+### Requirement: Choose the fields to return
+
+`--select` SHALL take a comma-separated list of fields and ask LangSmith to return only those fields. Without `--select`, a table SHALL ask for the fields its columns read, and JSON SHALL ask for every field except `share_url` and `attachments`, which carry credential-bearing URLs and appear only when `--select` names them.
+
+#### Scenario: Secret fields stay out by default
+
+- **WHEN** a user runs `langstar runs query --project <project-id> -o json`
+- **THEN** no run in the output has a `share_url` or `attachments` field
 
 ### Requirement: Show runs as a table or JSON
 
