@@ -368,7 +368,8 @@ fn test_runs_query_without_project_errors() {
 
     assert!(!output.status.success(), "should exit non-zero");
     assert!(
-        stderr.contains("needs at least one project UUID") && stderr.contains("--project <UUID>"),
+        stderr.contains("needs at least one project")
+            && stderr.contains("--project <NAME or UUID>"),
         "should ask for --project: {}",
         stderr
     );
@@ -706,4 +707,93 @@ fn test_runs_query_lifecycle() {
     );
     assert!(stdout.contains("Found 3 runs"), "table: {}", stdout);
     println!("[VERIFY] Table output lists the seeded runs");
+}
+
+/// `runs query --project <name>` returns that project's runs and no others,
+/// and an unknown name exits with an error that says no project has that name.
+///
+/// Pattern: CREATE two projects (SDK) → INGEST → READ by name (CLI) → VERIFY → DELETE
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+fn test_runs_query_project_by_name() {
+    let _api_key = std::env::var("LANGSMITH_API_KEY")
+        .expect("LANGSMITH_API_KEY must be set for integration tests");
+    let _org_id = std::env::var("LANGSMITH_ORGANIZATION_ID")
+        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
+    let _workspace_id = std::env::var("LANGSMITH_WORKSPACE_ID")
+        .expect("LANGSMITH_WORKSPACE_ID must be set for integration tests");
+
+    let runtime = tokio::runtime::Runtime::new().expect("Failed to create runtime");
+    let auth = AuthConfig::from_env().expect("Auth config required");
+    let client = LangchainClient::new(auth).expect("SDK client required");
+
+    // ── CREATE ──
+    let suffix = &Uuid::new_v4().to_string()[..12];
+    let name_a = format!("test-runs-by-name-a-{}", suffix);
+    let name_b = format!("test-runs-by-name-b-{}", suffix);
+    let mut cleanups = Vec::new();
+    let mut ids = Vec::new();
+    for name in [&name_a, &name_b] {
+        let project = runtime
+            .block_on(client.create_project(ProjectCreate {
+                name: Some(name.clone()),
+                description: Some("Test project for runs query by name".to_string()),
+                ..Default::default()
+            }))
+            .expect("Failed to create test project");
+        cleanups.push(ProjectCleanup {
+            client: client.clone(),
+            project_id: project.id,
+        });
+        ids.push(project.id.to_string());
+    }
+
+    // ── INGEST: project A gets the first two seeded runs, project B the third ──
+    runtime.block_on(async {
+        ingest_run(&client, &name_a, &SEED_RUNS[0]).await;
+        ingest_run(&client, &name_a, &SEED_RUNS[1]).await;
+        ingest_run(&client, &name_b, &SEED_RUNS[2]).await;
+    });
+
+    // ── READ by name: wait until project A's runs are queryable ──
+    let deadline = Instant::now() + Duration::from_secs(180);
+    let by_name = loop {
+        let runs = query_runs_json(&name_a, &["-o", "json"]);
+        if runs.len() >= 2 {
+            break runs;
+        }
+        assert!(
+            Instant::now() <= deadline,
+            "only {} of 2 runs visible after 180s",
+            runs.len()
+        );
+        std::thread::sleep(Duration::from_secs(5));
+    };
+
+    // ── VERIFY ──
+    assert_eq!(
+        names(&by_name),
+        vec!["seed-middle-llm", "seed-oldest-chain"]
+    );
+    for run in &by_name {
+        assert_eq!(run["project_id"].as_str(), Some(ids[0].as_str()));
+    }
+    let by_uuid = query_runs_json(&ids[0], &["-o", "json"]);
+    assert_eq!(names(&by_uuid), names(&by_name), "UUID still works");
+
+    // An unknown name exits with an error that says no project has that name, and prints no runs.
+    let mut cmd = langstar_cmd();
+    cmd.args([
+        "runs",
+        "query",
+        "-p",
+        &format!("no-such-project-{}", suffix),
+        "-o",
+        "json",
+    ]);
+    let output = cmd.output().expect("Failed to execute CLI");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(!output.status.success(), "unknown name should fail");
+    assert!(stderr.contains("No project named"), "stderr: {}", stderr);
+    assert!(output.stdout.is_empty(), "no runs should be printed");
 }
