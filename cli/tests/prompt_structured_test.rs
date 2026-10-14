@@ -865,3 +865,88 @@ fn test_cli_push_prompt_update_with_auto_parent() {
 
     // CLEANUP: Automatic via Drop trait
 }
+
+/// Deletes a repo by name on drop without creating it first, for tests where the CLI creates the repo.
+struct NewRepoCleanup {
+    repo_name: String,
+    runtime: tokio::runtime::Runtime,
+    client: LangchainClient,
+}
+
+impl NewRepoCleanup {
+    fn new(repo_name: &str) -> Self {
+        Self {
+            repo_name: repo_name.to_string(),
+            runtime: create_runtime(),
+            client: create_sdk_client().expect("Failed to create SDK client"),
+        }
+    }
+}
+
+impl Drop for NewRepoCleanup {
+    fn drop(&mut self) {
+        println!("[CLEANUP] Deleting repo: {}", self.repo_name);
+        let _ = self
+            .runtime
+            .block_on(async { self.client.prompts().delete(&self.repo_name).await });
+    }
+}
+
+/// `prompt push --owner -` to a repo that does not exist must create the repo and the commit, the bug reported in <https://github.com/codekiln/langstar/issues/820> (create-on-push sent the handle as `-/<repo>` and the API returned 400).
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
+fn test_cli_push_creates_new_repo_with_owner_dash() {
+    check_env_vars_private_prompts();
+
+    let repo_name = generate_unique_repo_name("test-push-owner-dash");
+    // CLEANUP: declared before the push so the repo is deleted even if an assertion fails
+    let _cleanup = NewRepoCleanup::new(&repo_name);
+
+    let schema_file = create_temp_schema_file();
+    let schema_path = schema_file.path().to_str().unwrap();
+    let bin = get_langstar_bin();
+
+    // TEST: push to a repo that does not exist yet
+    let mut push_cmd = Command::new(&bin);
+    push_cmd.env("HOME", home::empty_home());
+    push_cmd.args([
+        "prompt",
+        "push",
+        "--owner",
+        "-",
+        "--repo",
+        &repo_name,
+        "--template",
+        "Owner dash push: {input}",
+        "--input-variables",
+        "input",
+        "--schema",
+        schema_path,
+    ]);
+    push_cmd.assert().success();
+
+    // VERIFY: the pulled manifest has the pushed template and schema
+    let mut pull_cmd = Command::new(&bin);
+    pull_cmd.env("HOME", home::empty_home());
+    pull_cmd.args([
+        "prompt",
+        "pull",
+        "--format",
+        "json",
+        "--",
+        &format!("-/{}", repo_name),
+    ]);
+    let output = pull_cmd.assert().success();
+    let stdout = String::from_utf8_lossy(&output.get_output().stdout);
+    assert!(
+        stdout.contains("Owner dash push: {input}"),
+        "pulled manifest should contain the pushed template, got: {}",
+        stdout
+    );
+    assert!(
+        stdout.contains("TestOutput"),
+        "pulled manifest should contain the pushed schema title, got: {}",
+        stdout
+    );
+}
