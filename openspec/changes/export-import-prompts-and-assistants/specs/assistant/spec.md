@@ -176,7 +176,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **AND** the workspace has no `support-system` prompt with a `prod` tag
 - **THEN** langstar reports `support-system:prod` as missing and exits with status 3
 
-### Requirement: Read only an assistant export file this version understands
+### Requirement: Reject an export file of another kind or format version
 
 `assistant import`, `assistant compare` and `assistant verify` SHALL read a file only when its `kind` is `assistant` and its `format_version` is 1. For any other file they SHALL write nothing, exit with status 1 and name the field and the value they found.
 

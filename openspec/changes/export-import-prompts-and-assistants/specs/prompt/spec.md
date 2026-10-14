@@ -162,7 +162,7 @@ When the destination record holds a commit for the destination workspace and the
 
 ### Requirement: Read the prompt back after import
 
-After writing, `langstar prompt import` SHALL record the commit hash in the destination record, then read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the hash so that the next import does not report the commit langstar wrote as someone else's change.
+After writing, `langstar prompt import` SHALL record the commit hash in the destination record, then read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the hash, so that the next import reports a change only when someone pushed a commit after the one langstar wrote.
 
 #### Scenario: LangSmith drops a field
 
@@ -206,7 +206,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **AND** every secret in `requires.secrets` exists and the prompt matches the file
 - **THEN** langstar notes that no saved model configuration matches `ChatOpenAI` and exits with status 0
 
-### Requirement: Read only a prompt export file this version understands
+### Requirement: Reject an export file of another kind or format version
 
 `prompt import`, `prompt compare` and `prompt verify` SHALL read a file only when its `kind` is `prompt` and its `format_version` is 1. For any other file they SHALL write nothing, exit with status 1 and name the field and the value they found.
 
