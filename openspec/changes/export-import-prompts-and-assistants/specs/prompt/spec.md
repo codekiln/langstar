@@ -205,7 +205,7 @@ When the destination record holds a commit for the destination workspace and the
 
 ### Requirement: Read the prompt back after import
 
-After writing, `langstar prompt import` SHALL record the commit hash in the destination record, then read the destination commit back with the model included and compare it with the file. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the hash, so that the next import reports a change only when someone pushed a commit after the one langstar wrote.
+After writing, `langstar prompt import` SHALL record the commit hash in the destination record, then read the destination commit back with the model included and compare it with the file as `langstar prompt compare` does. When they differ it SHALL list the differences and exit with status 3, and the record SHALL keep the hash, so that the next import reports a change only when someone pushed a commit after the one langstar wrote.
 
 #### Scenario: LangSmith drops a field
 
@@ -215,7 +215,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Compare a prompt with its export file
 
-`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with its model and repo details, and list each difference by its JSON path with both values. `--commit <hash-or-tag>` SHALL choose the commit, and without it langstar SHALL read the latest. It SHALL compare every field in the file's `repo` and `commit`, including every manifest key and its `id` arrays. Those hold no IDs or timestamps LangSmith sets, so compare never reports them.
+`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with its model and repo details, and list each difference by its JSON path with both values. `--commit <hash-or-tag>` SHALL choose the commit, and without it the latest. It SHALL compare every field in the file's `repo` and `commit`, including every manifest key and its `id` arrays, except `commit.model_config` and `commit.model_provider`, which import cannot set.
 
 #### Scenario: Prompt matches
 
@@ -231,6 +231,11 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 - **WHEN** someone changed the workspace's prompt to use `ChatAnthropic` where the file's manifest names `ChatOpenAI`
 - **THEN** langstar lists the JSON path of the model's `id` array with both values and exits with status 3
+
+#### Scenario: Destination fills the model configuration differently
+
+- **WHEN** the workspace's prompt has the file's manifest and a `model_config` or `model_provider` that differs from the file's
+- **THEN** langstar reports no differences and exits with status 0
 
 #### Scenario: Repo readme changed
 
