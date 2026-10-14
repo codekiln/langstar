@@ -260,6 +260,27 @@ fn test_config_set_replaces_a_value_of_the_wrong_type() {
 }
 
 #[test]
+fn test_config_set_fails_while_another_setting_holds_a_value_of_the_wrong_type() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("config.toml");
+    fs::write(&path, "timezone = 5\n").unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "output_format", "set", "json"])
+        .output()
+        .unwrap();
+
+    assert!(!out.status.success(), "{out:?}");
+    let all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(all.contains("Failed to parse config file"), "{all}");
+    assert_eq!(fs::read_to_string(&path).unwrap(), "timezone = 5\n");
+}
+
+#[test]
 fn test_config_set_names_an_unreadable_config_file() {
     let dir = TempDir::new().unwrap();
     // A directory where the file should be cannot be read as a file
