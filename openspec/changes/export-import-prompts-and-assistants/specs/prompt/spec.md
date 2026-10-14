@@ -59,6 +59,17 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 - **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
 - **THEN** langstar creates no prompt, names `requires.secrets` and exits with status 1
 
+### Requirement: Export, import and verify a prompt without a model
+
+When the manifest holds no chat model constructor, `langstar prompt export` SHALL write `requires.model_provider` as null. Import and verify SHALL accept null when the manifest they read again holds no chat model, skip the saved model configuration check, report no note for it, and still run the secret check.
+
+#### Scenario: Prompt saved without a model
+
+- **WHEN** a user exports a prompt saved without a model and imports the file with `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
+- **THEN** the file holds null under `requires.model_provider`
+- **AND** langstar creates the prompt without a saved model configuration check and exits with status 0
+- **AND** `langstar prompt verify my-prompt.json` against the destination reports no saved model configuration note and exits with status 0
+
 ### Requirement: Import requires --workspace-id
 
 `langstar prompt import <file>` SHALL require `--workspace-id`. It SHALL refuse to run when the flag is missing, even when `LANGSMITH_WORKSPACE_ID` is set, and exit with status 1 and an error naming the flag.
@@ -202,7 +213,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Verify that a prompt can run in a workspace
 
-`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 3 when any secret is missing. It SHALL also look for a saved model configuration whose settings `id` ends in the class name `requires.model_provider` holds, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
+`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 3 when any secret is missing. When `requires.model_provider` is not null, it SHALL also look for a saved model configuration whose settings `id` ends in that class name, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
 
 #### Scenario: Secret missing in the destination
 
