@@ -98,7 +98,7 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // Find the config file first: when langstar cannot find the config directory, `load` returns that error
+        // Look up the config file's path first: when the home directory is unknown, `load` returns that error instead of running on the defaults
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {

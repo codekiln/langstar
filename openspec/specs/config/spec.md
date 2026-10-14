@@ -132,7 +132,7 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 - **AND** the warning leaves out the quoted line of the file and the value the message quotes
 - **AND** langstar prints the default settings and exits successfully
 
-### Requirement: Exit with an error when a command that loads the settings cannot find the config directory
+### Requirement: Exit with an error when a command that loads the settings cannot determine where the config file belongs
 
 A langstar command that loads the settings SHALL exit with an error when langstar cannot work out where the config file belongs, which happens when the home directory is unknown, instead of running on the defaults.
 
