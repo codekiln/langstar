@@ -183,8 +183,9 @@ impl Config {
     ///
     /// `config validate` calls this function to show the user the full parse
     /// error, including the line of the file that the parse error points at.
-    /// `Config::load` calls `read_file_with` instead, so that its warning leaves
-    /// that line out; `load` then runs on the default config.
+    /// `Config::load` reaches `read_file_with` through `load_from_paths`, which
+    /// passes `quote_source` as false so that the warning leaves that line out;
+    /// `load` then runs on the default config.
     pub fn read_file(path: &Path) -> Result<Self> {
         Self::read_file_with(path, true)
     }
