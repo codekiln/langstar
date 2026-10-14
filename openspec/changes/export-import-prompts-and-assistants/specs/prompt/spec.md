@@ -109,6 +109,17 @@ When the destination workspace has no prompt with the file's handle, `langstar p
 - **THEN** langstar creates `my-prompt` in the destination with the file's manifest, model and tags
 - **AND** prints the new commit hash
 
+### Requirement: Finish an import that stopped before its first commit
+
+When the destination workspace has a prompt with the file's handle and no commit, `langstar prompt import` SHALL push the file's manifest and commit description as the first commit and create the file's commit tags, as for a prompt that does not exist yet, without `--update`. Repo details that differ from the file SHALL still need `--update`.
+
+#### Scenario: Earlier import created the repo and stopped
+
+- **WHEN** an earlier import created `my-prompt` in the destination and stopped before it pushed the commit
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>` again
+- **THEN** langstar pushes the file's manifest as the prompt's first commit and creates the file's tags
+- **AND** exits with status 0
+
 ### Requirement: Change an existing prompt only with --update
 
 When the destination prompt exists and its latest commit differs from the file, `langstar prompt import` SHALL change nothing and exit with status 3, listing the differences, unless the user passes `--update`. With `--update` it SHALL push the file's manifest and commit description as a new commit whose parent is the destination's latest commit, and move the file's tags to it.
@@ -144,7 +155,7 @@ When the destination repo's description, readme, tags or visibility differ from 
 
 ### Requirement: Move commit tags only with --update
 
-When a commit tag in the file is missing in the destination or points at a different commit, `langstar prompt import` SHALL list the tag as a difference and exit with status 3. With `--update` it SHALL create or move the tag to the destination commit that matches the file, and add no commit when the latest commit already matches.
+`prompt compare` and `prompt import` SHALL list as a difference a file tag the destination lacks or points at another commit, and a tag on the destination's matching commit that the file lacks; import SHALL then exit with status 3. With `--update`, import SHALL create or move each file tag to that commit, delete each tag on it the file lacks, and add no commit when the latest commit already matches.
 
 #### Scenario: Destination tag points at an older commit
 
@@ -152,6 +163,14 @@ When a commit tag in the file is missing in the destination or points at a diffe
 - **AND** the destination's `prod` tag points at an earlier commit
 - **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id> --update`
 - **THEN** langstar moves `prod` to the latest commit and adds no commit
+- **AND** exits with status 0
+
+#### Scenario: Destination commit has a tag the file lacks
+
+- **WHEN** the destination prompt's latest commit matches the file
+- **AND** that commit carries a `staging` tag that the file's `commit.tags` lacks
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id> --update`
+- **THEN** langstar deletes the destination's `staging` tag and adds no commit
 - **AND** exits with status 0
 
 ### Requirement: Record the destination commit
