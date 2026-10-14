@@ -205,7 +205,7 @@ After import writes a commit, langstar SHALL record the destination workspace, h
 
 ### Requirement: Warn when the destination changed since the last import
 
-When the destination record holds a commit for the destination workspace and the destination's latest commit is a different one that also differs from the file, `langstar prompt import` SHALL say that someone changed the prompt after the last import, in addition to listing the differences.
+When the destination record holds a commit for the destination workspace, and the destination's latest commit is not that commit and differs from the file, `langstar prompt import` SHALL say that someone changed the prompt after the last import, and list the differences.
 
 #### Scenario: Someone edited the destination prompt
 
@@ -294,7 +294,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **AND** the file lists `OPENAI_API_KEY` under `requires.secrets`
 - **THEN** langstar reports `OPENAI_API_KEY` as missing and exits with status 3
 
-#### Scenario: No saved model configuration for the provider
+#### Scenario: No saved model configuration for the model class
 
 - **WHEN** the file's `requires.model_class` is `ChatOpenAI`
 - **AND** no saved model configuration in the destination workspace has a settings `id` ending in `ChatOpenAI`
