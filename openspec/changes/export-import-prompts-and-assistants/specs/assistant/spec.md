@@ -83,6 +83,16 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 - **THEN** langstar sends the create with that ID and `if_exists` set to `do_nothing`, so the deployment still holds one assistant from the file
 - **AND** the destination record marks that ID created
 
+### Requirement: Replace the destination record in one step
+
+`langstar assistant import` SHALL write each new destination record to a temporary file in the record's directory and rename it over the old record, so that a langstar that stops during a write leaves the earlier record whole, with its pending assistant IDs.
+
+#### Scenario: Import stopped while marking the ID created
+
+- **WHEN** langstar stops while it writes the record that marks a new assistant ID created
+- **THEN** the destination record still holds that ID marked pending
+- **AND** the next `langstar assistant import support-bot.json --deployment my-agent-prod` sends the create with that ID and creates no second assistant
+
 ### Requirement: Check the destination before importing an assistant
 
 Before it writes, `langstar assistant import` SHALL run the graph check and the prompt check of `assistant verify`, reading prompts from `--workspace-id` or the configured workspace. When a check fails it SHALL write nothing, name each missing graph and prompt, and exit with status 3.

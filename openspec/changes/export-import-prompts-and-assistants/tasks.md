@@ -29,7 +29,11 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
 
 ## 4. Shared code for the prompt and assistant commands: the export file, the comparison and the report
 
-- [ ] 4.1 Add the export file types, with sorted keys, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, to a new module in `cli/src/`; verify with unit tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level, and that updating one destination leaves the others unchanged, and that reading a file whose `format_version` is 2, or whose `kind` names the other resource, returns an error naming the field and its value
+- [ ] 4.1 Add the export file types, with sorted keys, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, which langstar replaces by writing a temporary file in the same directory and renaming it over the old one, to a new module in `cli/src/`. Verify with these unit tests:
+  - Tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level.
+  - A test that updating one destination leaves the others unchanged.
+  - A test that a record write that fails before the rename leaves the earlier record file unchanged, its pending entries included.
+  - A test that reading a file whose `format_version` is 2, or whose `kind` names the other resource, returns an error naming the field and its value.
 - [ ] 4.2 Add the JSON comparison, which compares every key under the `repo`, `commit` and `assistant` objects except `commit.model_config` and `commit.model_provider`, and reports differences by JSON Pointer. Verify with these tests:
   - Unit tests on nested objects, arrays and missing keys.
   - A test that a changed `id` array inside `commit.manifest`, such as `ChatOpenAI` replaced by `ChatAnthropic`, is reported at its path.
@@ -95,7 +99,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - An error test for a pointer that names nothing.
   - An error test that exporting an assistant ID the deployment lacks exits with status 1, names the ID and writes no file.
   - A CLI test that runs `assistant export` without `--output`, parses all of stdout as one JSON document, and asserts that its `source.assistant_id` is the exported assistant's ID and that any progress message is on stderr.
-- [ ] 8.2 Document assistant export; verify that each documented command runs as written
+- [ ] 8.2 Document assistant export, including that export writes the assistant's configuration, context and metadata as the Agent Server returns them, so a credential kept there reaches the file; verify that each documented command runs as written
 
 ## 9. assistant compare and verify
 
