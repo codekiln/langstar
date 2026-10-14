@@ -167,7 +167,7 @@ impl Config {
             ConfigFile::Missing => return Ok(Self::default()),
         };
 
-        // The warning goes to stderr on every command, so it leaves out the line
+        // The warning goes to stderr on every command that loads the settings, so it leaves out the line
         // of the file that failed to parse and the value the message quotes in
         // backticks or double quotes (for example "invalid type: integer `5`" or
         // `invalid type: string "abc"`), which can hold the API key.
