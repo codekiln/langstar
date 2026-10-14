@@ -704,7 +704,7 @@ A command prints a warning with the path of the config file and the error, with 
 
 **Solution:**
 
-The config file cannot be read or does not parse, so the command ran on the default settings and your environment variables. The warning leaves out the line that failed and its value because an API key may sit on that line. Run `langstar config validate` to see the full error, then fix the file.
+The config file cannot be looked up or read, or does not parse, so the command ran on the default settings and your environment variables. The warning leaves out the line that failed and its value because an API key may sit on that line. Run `langstar config validate` to see the full error, then fix the file.
 
 ## Security Best Practices
 
