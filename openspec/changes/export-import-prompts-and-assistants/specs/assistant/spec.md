@@ -213,3 +213,13 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 - **WHEN** a user runs `langstar -f json assistant verify support-bot.json --deployment my-agent-prod`
 - **THEN** stdout holds one JSON object with `status`, `differences` and `checks`
+
+### Requirement: Redact an API key written into a destination assistant's configuration
+
+When `assistant compare`, `assistant verify` or `assistant import` prints a value on either side of a difference, langstar SHALL print `<redacted>`, in the text and JSON reports, in place of each string that a key ending in `api_key` holds as its value, whether that key sits at the difference's path or inside the value.
+
+#### Scenario: Destination configuration holds a literal API key
+
+- **WHEN** someone updated the destination assistant so `config.configurable.openai_api_key` holds a string
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
+- **THEN** langstar reports `/assistant/config/configurable/openai_api_key` with `<redacted>` in place of the string and exits with status 3
