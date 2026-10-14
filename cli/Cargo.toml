@@ -20,6 +20,7 @@ clap.workspace = true
 # Async runtime
 tokio.workspace = true
 futures-util = "0.3"
+# Anonymous temporary file that holds a dataset export until every page has arrived
 tempfile = "3.12"
 
 # Date/time and UUID

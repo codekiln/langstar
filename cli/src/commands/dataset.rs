@@ -733,9 +733,12 @@ where
             output.flush()?;
         }
         ExportFormat::Csv => {
+            // Wait for the first page before printing the header, so a failing
+            // first request prints nothing. An empty dataset still gets the header.
+            let mut next = examples.next().await.transpose()?;
             let mut wtr = csv::Writer::from_writer(output);
             wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-            while let Some(example) = examples.next().await.transpose()? {
+            while let Some(example) = next {
                 wtr.write_record([
                     example.id.to_string(),
                     serde_json::to_string(&example.inputs)?,
@@ -753,6 +756,7 @@ where
                         .unwrap_or_default(),
                 ])?;
                 exported += 1;
+                next = examples.next().await.transpose()?;
             }
             wtr.flush()?;
         }
@@ -764,8 +768,8 @@ where
 /// way `>` does (create and truncate) and copy the temporary file into it.
 ///
 /// A failure on any page returns before `path` is opened, so an existing file
-/// is untouched. Only a crash or kill during the final copy can leave `path`
-/// partly written.
+/// is untouched. Once the copy starts, an error or a kill leaves `path` partly
+/// written; before it starts, `path` is untouched.
 async fn export_to_file<S, E>(
     examples: S,
     format: ExportFormat,
@@ -843,6 +847,89 @@ mod tests {
 
         assert!(err.to_string().contains("page 2 failed"), "{err}");
         assert_eq!(std::fs::read_to_string(&out).unwrap(), "old\n");
+    }
+
+    #[tokio::test]
+    async fn export_to_file_csv_with_no_examples_writes_only_the_header() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.csv");
+        let stream = futures_util::stream::iter(Vec::<
+            std::result::Result<Example, crate::error::CliError>,
+        >::new());
+
+        let n = export_to_file(stream, ExportFormat::Csv, &out)
+            .await
+            .unwrap();
+
+        assert_eq!(n, 0);
+        assert_eq!(
+            std::fs::read_to_string(&out).unwrap(),
+            "id,inputs,outputs,metadata\n"
+        );
+    }
+
+    #[tokio::test]
+    async fn export_to_file_csv_writes_one_row_per_example() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.csv");
+        let stream = futures_util::stream::iter(vec![
+            Ok::<_, crate::error::CliError>(fake_example(1)),
+            Ok(fake_example(2)),
+            Ok(fake_example(3)),
+        ]);
+
+        let n = export_to_file(stream, ExportFormat::Csv, &out)
+            .await
+            .unwrap();
+
+        assert_eq!(n, 3);
+        let text = std::fs::read_to_string(&out).unwrap();
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines.len(), 4, "{text}");
+        assert_eq!(lines[0], "id,inputs,outputs,metadata");
+        assert!(
+            lines[1].starts_with("00000000-0000-0000-0000-000000000001,"),
+            "{text}"
+        );
+        assert!(
+            lines[3].starts_with("00000000-0000-0000-0000-000000000003,"),
+            "{text}"
+        );
+    }
+
+    #[tokio::test]
+    async fn write_export_csv_failing_first_page_prints_no_header() {
+        let stream = futures_util::stream::iter(vec![Err::<Example, _>(
+            crate::error::CliError::Config("page 1 failed".into()),
+        )]);
+        let mut buf: Vec<u8> = Vec::new();
+
+        let err = write_export(stream, ExportFormat::Csv, &mut buf)
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("page 1 failed"), "{err}");
+        assert!(buf.is_empty(), "{}", String::from_utf8_lossy(&buf));
+    }
+
+    #[tokio::test]
+    async fn export_to_file_unopenable_path_fails_after_the_stream_is_read() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("missing-dir").join("export.jsonl");
+        let read = std::sync::atomic::AtomicUsize::new(0);
+        let stream = futures_util::stream::iter(vec![
+            Ok::<_, crate::error::CliError>(fake_example(1)),
+            Ok(fake_example(2)),
+        ])
+        .inspect(|_| {
+            read.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        let result = export_to_file(stream, ExportFormat::Jsonl, &out).await;
+
+        assert!(result.is_err());
+        assert_eq!(read.load(std::sync::atomic::Ordering::SeqCst), 2);
+        assert!(!out.exists());
     }
 
     #[test]
