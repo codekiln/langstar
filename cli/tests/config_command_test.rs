@@ -202,7 +202,7 @@ fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
 }
 
 #[test]
-fn test_config_validate_quotes_the_line_the_user_asked_about() {
+fn test_config_validate_prints_the_line_the_parse_error_points_at() {
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("config.toml"), "output_format = \n").unwrap();
 
