@@ -75,7 +75,7 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 - **THEN** langstar creates the assistant and prints its new ID
 - **AND** `support-bot.destinations.json` holds the ID of the `my-agent-prod` deployment, with the new assistant ID under it, marked created
 
-#### Scenario: Import stopped after the create and before the record write
+#### Scenario: Import stopped after the create and before marking the ID created
 
 - **WHEN** the destination record holds a pending assistant ID for `my-agent-prod`
 - **AND** the deployment already has an assistant with that ID

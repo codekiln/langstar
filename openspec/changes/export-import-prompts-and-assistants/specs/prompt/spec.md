@@ -42,7 +42,7 @@
 
 ### Requirement: Write the same file for the same commit
 
-Exporting the same commit twice SHALL produce identical files when nobody changed the repo details or the tags that point at the commit in between, since those change without a new commit. The file SHALL hold no export time, and langstar SHALL write object keys in a fixed order.
+Exporting the same commit twice SHALL produce identical files when nobody changed the repo details or the tags that point at the commit in between, since those change without a new commit. The file SHALL hold no export time, and langstar SHALL write object keys in a fixed order and the commit's tags sorted by name.
 
 #### Scenario: Export twice
 
