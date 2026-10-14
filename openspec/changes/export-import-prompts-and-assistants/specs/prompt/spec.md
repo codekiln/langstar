@@ -172,7 +172,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Compare a prompt with its export file
 
-`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with the model included, and its repo details, and list each difference by its JSON path with the file's value and the workspace's value. `--commit <hash-or-tag>` SHALL choose the commit; without it langstar SHALL read the latest commit. Fields the server sets, such as IDs and timestamps, SHALL be left out of the comparison.
+`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with the model included, and its repo details, and list each difference by its JSON path with the file's value and the workspace's value. `--commit <hash-or-tag>` SHALL choose the commit; without it langstar SHALL read the latest commit. It SHALL compare only the fields the file holds, leaving out server-set IDs and timestamps, and every key in the manifest, its `id` arrays included.
 
 #### Scenario: Prompt matches
 
@@ -183,6 +183,11 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 - **WHEN** someone changed the model temperature in the workspace's prompt
 - **THEN** langstar lists the temperature's JSON path with both values and exits with status 3
+
+#### Scenario: Model class changed
+
+- **WHEN** someone changed the workspace's prompt to use `ChatAnthropic` where the file's manifest names `ChatOpenAI`
+- **THEN** langstar lists the JSON path of the model's `id` array with both values and exits with status 3
 
 #### Scenario: Repo readme changed
 

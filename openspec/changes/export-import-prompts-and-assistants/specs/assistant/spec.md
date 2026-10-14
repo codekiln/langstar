@@ -154,7 +154,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Compare an assistant with its export file
 
-`langstar assistant compare <file> --deployment <name-or-id>` SHALL compare the file with the recorded assistant, or the one named by `--assistant-id`, and list each difference by its JSON path with both values. Fields the server sets, such as the assistant ID, version and timestamps, SHALL be left out of the comparison.
+`langstar assistant compare <file> --deployment <name-or-id>` SHALL compare the file with the recorded assistant, or the one named by `--assistant-id`, and list each difference by its JSON path with both values. It SHALL compare only the fields the export file holds, leaving out the assistant ID, version and timestamps the server sets.
 
 #### Scenario: Metadata changed on the deployment
 
@@ -185,6 +185,17 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **WHEN** a user runs `langstar assistant import my-prompt.json --deployment my-agent-prod`
 - **AND** `my-prompt.json` holds `"kind": "prompt"`
 - **THEN** langstar creates no assistant, exits with status 1 and names `kind` and the value `prompt`
+
+### Requirement: Reject a file whose prompt reference no longer matches its assistant
+
+`assistant import`, `assistant compare` and `assistant verify` SHALL resolve each pointer under `requires.prompts` against the file's `assistant` object when they read the file. When a pointer resolves to no string, or to a string other than the prompt name recorded with it, they SHALL write nothing, exit with status 1 and name the pointer and both values.
+
+#### Scenario: Configuration edited after export
+
+- **WHEN** `requires.prompts` records `/config/configurable/system_prompt` with `support-system:prod`
+- **AND** the file's `assistant.config.configurable.system_prompt` is `support-system:staging`
+- **AND** the user runs `langstar assistant verify support-bot.json --deployment my-agent-prod`
+- **THEN** langstar exits with status 1 and names the pointer, `support-system:prod` and `support-system:staging`
 
 ### Requirement: Assistant compare, verify and import use the prompt commands' exit statuses and JSON report
 

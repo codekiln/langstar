@@ -71,7 +71,7 @@ Without `--update`, import lists the differences and exits with status 3. `--dry
 
 ### Compare reports differences by JSON path
 
-Compare reads the destination, removes the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Compare looks only at the `repo`, `commit` and `assistant` objects. The source environment's workspace, deployment and IDs sit in `source`, so they never show up as differences against a copy. Each difference names its JSON Pointer path and both values. For a prompt, the comparison covers the commit description, the commit tags and the commit each one points at, and the repo's description, readme, tags and visibility as well as the manifest. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
+Compare reads the destination into the export file's `repo`, `commit` and `assistant` objects, which hold none of the fields the server sets (IDs, version numbers, timestamps, owner and like counts), and walks both JSON documents. Compare drops no key by name inside those objects, so the `id` arrays inside a manifest, which name the prompt and model classes such as `ChatOpenAI`, count as differences. The source environment's workspace, deployment and IDs sit in `source`, so they never show up as differences against a copy. Each difference names its JSON Pointer path and both values. For a prompt, the comparison covers the commit description, the commit tags and the commit each one points at, and the repo's description, readme, tags and visibility as well as the manifest. Import runs the same comparison after it writes, so a field LangSmith or the Agent Server drops shows up as a difference.
 
 ### Verify checks what the copy needs to run
 
@@ -87,7 +87,7 @@ Before it writes anything, import checks that the destination has the secrets, t
 
 ### The user names an assistant's prompt references
 
-An assistant refers to a prompt through whatever configuration key its graph reads, so langstar cannot find the references by itself. `assistant export --prompt-ref <json-pointer>` names each one. The assistant's configuration should name each prompt by handle and tag, such as `support-system:prod`, because the same prompt gets a different commit hash in each workspace. Import copies the commit tags to the destination workspace, so when the graph on the destination deployment asks LangSmith for `support-system:prod`, it gets the same prompt.
+An assistant refers to a prompt through whatever configuration key its graph reads, so langstar cannot find the references by itself. `assistant export --prompt-ref <json-pointer>` names each one. The assistant's configuration should name each prompt by handle and tag, such as `support-system:prod`, because the same prompt gets a different commit hash in each workspace. Import copies the commit tags to the destination workspace, so when the graph on the destination deployment asks LangSmith for `support-system:prod`, it gets the same prompt. Because `requires.prompts` repeats a value the configuration already holds, someone can edit one in Git and not the other, so compare, verify and import resolve each pointer against the file's `assistant` object when they read the file, and stop with status 1 when the value there differs from the recorded prompt name.
 
 ### compare, verify and import exit with 3 when they find a difference
 
@@ -106,6 +106,7 @@ A mise task runs a short Python script that pulls the imported prompt with `incl
 - [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and in [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) a developer checks the round trip against the live API before anyone builds the commands.
 - [Pushing a manifest identical to the latest commit may return 409] → Import compares first and pushes nothing when the prompt matches.
 - [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → In [export-import-prompts-and-assistants Task 2.2 Return the URL of a deployment built from GitHub](tasks.md#L13), a developer adds the control plane's top-level `url` to the SDK's `Deployment`, which drops it today, and makes `resolve_deployment_url` use it, before anyone builds the assistant export, compare, verify and import commands.
+- [Tasks 2.2 and 3.1 to 3.4 add public fields to SDK structs, so a crate that builds one of those structs with a struct literal stops compiling] → Each of those pull requests updates every struct literal of the changed struct in this repository and carries a `BREAKING CHANGE:` footer, which `docs/dev/git-scm-conventions.md` says triggers a major version bump.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 
 ## Resolved Questions
