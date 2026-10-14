@@ -103,7 +103,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the invalid output format
 
-### Requirement: `config validate` and `config <setting> set` exit with the parse error on a config file that does not parse
+### Requirement: `config validate` and `config <setting> set` exit with the error on a config file that cannot be read or parsed
 
 When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and the parse error, before checking any setting. `langstar config <setting> set` SHALL exit with the parse error and leave the file unchanged. `config validate` and `config <setting> set` print the line of the file that the parse error points at.
 
@@ -119,9 +119,9 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 - **AND** a user runs `langstar config output_format set json`
 - **THEN** langstar exits with the parse error and leaves the config file unchanged
 
-### Requirement: Warn on stderr and use the defaults when a command that loads the settings cannot parse the config file
+### Requirement: Warn on stderr and use the defaults when a command that loads the settings cannot read or parse the config file
 
-A langstar command that loads the settings SHALL warn on stderr and run on the defaults and the environment variables when the config file does not parse. The warning gives the file's path and the line, column and message of the parse error, and leaves out the quoted line of the file and the value the message quotes, because either can hold the API key. Every command outside the `config` group loads the settings, and so do `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, print no warning.
+A langstar command that loads the settings SHALL warn on stderr and run on the defaults and the environment variables when the config file cannot be read or does not parse. The warning gives the file's path and the error message, with the line and column of a parse error, and leaves out the quoted line of the file and the value the message quotes, because either can hold the API key. Every command outside the `config` group loads the settings, and so do `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, print no warning.
 
 #### Scenario: `config show` warns and shows the defaults when the config file does not parse
 
