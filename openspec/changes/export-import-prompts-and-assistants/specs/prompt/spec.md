@@ -251,7 +251,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Redact an API key written into a destination prompt's model
 
-When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of the value of each key whose name ends in `api_key` when that value is a string. langstar matches the name without regard to case. This holds when the difference is at that key and when it is at an object that contains the key.
+When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of the value of each key whose name ends in `api_key` when that value is a string. langstar SHALL match the name without regard to case. langstar SHALL redact the string both when the difference is at the key and when the difference is at an object that contains the key.
 
 #### Scenario: Destination model holds a literal API key
 
