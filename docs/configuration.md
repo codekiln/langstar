@@ -700,11 +700,11 @@ Config file exists but settings aren't applied.
 
 **Symptom:**
 
-A command prints a warning with the path of the config file and the line, column and message of a parse error, followed by "langstar is using the default settings and any environment variables instead".
+A command prints a warning with the path of the config file and the error, with the line and column when the file does not parse, followed by "langstar is using the default settings and any environment variables instead".
 
 **Solution:**
 
-The config file does not parse, so the command ran on the default settings and your environment variables. The warning leaves out the file's text and the value that failed to parse, because it can hold your API key. Run `langstar config validate` to see the full error, then fix the file.
+The config file cannot be read or does not parse, so the command ran on the default settings and your environment variables. The warning leaves out the line that failed and its value because an API key may sit on that line. Run `langstar config validate` to see the full error, then fix the file.
 
 ## Security Best Practices
 
