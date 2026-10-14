@@ -75,7 +75,7 @@ Create an exploratory research issue using this pattern:
 
 **Focus on research and knowledge gathering, do not implement.** Activities include:
 1. Search existing langstar code in `./cli` and `./sdk` for related implementations
-2. Analyze Python SDK precedent using `setup-remote-repo-notes-dir` skill
+2. Analyze upstream precedent in the projects named in `.rulesync/rules/upstream-references.md`, using the `setup-remote-repo-notes-dir` skill
 3. Identify relevant API endpoints and request/response shapes
 4. Run experiments to explore API behavior and validate assumptions
 5. Document technical patterns, conventions, and integration points
@@ -86,7 +86,7 @@ Create an exploratory research issue using this pattern:
 1. **Research Report** at `docs/research/{issue-num}-{slug}-scout.md`:
    - Existing langstar implementation analysis
    - API endpoint identification
-   - SDK precedent analysis (Python SDK)
+   - Upstream precedent analysis (each applicable reference in `.rulesync/rules/upstream-references.md`)
    - Technical patterns and conventions discovered
    - Experimentation findings (if applicable)
    - Insights for milestone planning
@@ -95,8 +95,8 @@ Create an exploratory research issue using this pattern:
    - Open questions for implementation
 
 2. **Updated Reference Notes**:
-   - `reference/repo/langchain-ai/langsmith-sdk/notes/README.md`
-   - Document key SDK patterns and method signatures
+   - `reference/repo/langchain-ai/<name>/notes/README.md` for each upstream reference the feature touched, from `.rulesync/rules/upstream-references.md` (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`)
+   - Document the key patterns and method, command or endpoint signatures found in each
 
 3. **Optional: Experiment Scripts**:
    - `reference/experiments/{issue-num}-{slug}/`
@@ -196,11 +196,17 @@ gh sub-issue list 298 --relation children
 
 ### 1.1 Set Up Research Workspace
 
-Use the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) to clone the relevant SDK:
+Clone each upstream LangChain project that covers your feature, with the **setup-remote-repo-notes-dir skill** (`.claude/skills/setup-remote-repo-notes-dir/SKILL.md`) for any that is missing. [.rulesync/rules/upstream-references.md](../../.rulesync/rules/upstream-references.md) lists the projects and what to check in each, and each project has orientation notes under `reference/repo/langchain-ai/<name>/notes/`:
 
 ```bash
 # For LangSmith features
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-sdk
+
+# For endpoints, types and pagination, and to find endpoints langstar lacks
+.claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-go
+
+# For CLI behavior
+.claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-cli
 
 # For LangGraph features
 .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langgraph
@@ -213,9 +219,11 @@ reference/repo/langchain-ai/langsmith-sdk/
 └── code/           # Cloned SDK (gitignored)
 ```
 
-### 1.2 Analyze Python SDK
+### 1.2 Analyze each applicable upstream reference
 
-Key files to examine:
+Compare your feature with every reference in `.rulesync/rules/upstream-references.md` that covers it (`langsmith-go`, `langsmith-cli`, `langsmith-sdk`, `langsmith-mcp-server`, `langgraph`), and record in the PR body where langstar matches and where it differs on purpose. For each, read `reference/repo/langchain-ai/<name>/notes/README.md`, then the code it points to.
+
+When `langsmith-sdk` applies, key files to examine:
 - `code/python/langsmith/client.py` - Main client implementation
 - `code/python/langsmith/schemas.py` - Data models
 - `code/python/langsmith/_internal/` - Internal utilities
@@ -1139,7 +1147,7 @@ When creating sub-issues, use this template for scope:
 ```markdown
 ## Scope
 1. Set up research workspace with setup-remote-repo-notes-dir
-2. Analyze Python SDK implementation
+2. Analyze each applicable upstream reference (`.rulesync/rules/upstream-references.md`), including the Python SDK only when `langsmith-sdk` applies
 3. Document method signatures and parameters
 4. Identify pagination patterns
 5. Review tests for usage examples
