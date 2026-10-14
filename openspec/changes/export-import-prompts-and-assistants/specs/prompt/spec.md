@@ -215,7 +215,7 @@ When the destination record holds a commit for the destination workspace and the
 
 ### Requirement: Record a matching commit that an earlier import pushed
 
-When the destination's latest commit matches the file and the destination record holds no commit for the destination workspace or a different one, `langstar prompt import` without `--dry-run` SHALL write that commit's hash to the record, whatever hash the record held, and SHALL NOT say that someone changed the prompt. When the commit tags match the file too, it SHALL report the prompt unchanged and exit with status 0.
+When the destination's latest commit matches the file, `langstar prompt import` without `--dry-run` SHALL write that commit's hash to the destination record under the destination workspace. When the commit tags match the file too, it SHALL report the prompt unchanged and exit with status 0.
 
 #### Scenario: Earlier import stopped before it wrote the record
 
