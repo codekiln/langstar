@@ -865,3 +865,79 @@ fn test_cli_push_prompt_update_with_auto_parent() {
 
     // CLEANUP: Automatic via Drop trait
 }
+
+/// A plain prompt (no `--schema`) pushed to an empty repo must reach the API as a `ChatPromptTemplate` with an LC-JSON `id`, the bug reported in <https://github.com/codekiln/langstar/issues/821> (prompt push without --schema to an empty repo fails with "Manifest must have an id field").
+#[test]
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
+#[serial]
+fn test_cli_push_plain_prompt_to_empty_repo_round_trips_manifest() {
+    check_env_vars_private_prompts();
+
+    // CREATE: Setup an empty test repo (cleaned up automatically on drop)
+    let fixture = PromptRepoFixture::new_private("test-plain-push");
+
+    // TEST Step 1: Push a plain prompt, without --schema
+    let bin = get_langstar_bin();
+    let mut push_cmd = Command::new(&bin);
+    push_cmd.env("HOME", home::empty_home());
+    push_cmd.args([
+        "prompt",
+        "push",
+        "--owner",
+        "-",
+        "--repo",
+        fixture.repo_name(),
+        "--template",
+        "Plain push test: {query}",
+        "--input-variables",
+        "query",
+    ]);
+
+    let push_output = push_cmd.assert().success();
+    let push_stdout = String::from_utf8_lossy(&push_output.get_output().stdout);
+    let commit_hash = push_stdout
+        .lines()
+        .find(|l| l.contains("Commit hash:"))
+        .and_then(|l| l.split("Commit hash:").nth(1))
+        .map(|s| s.trim().to_string())
+        .expect("Commit hash not found in push output");
+
+    // TEST Step 2: Pull the commit back as JSON
+    let mut pull_cmd = Command::new(&bin);
+    pull_cmd.env("HOME", home::empty_home());
+    pull_cmd.args([
+        "prompt",
+        "pull",
+        "--commit",
+        &commit_hash,
+        "--format",
+        "json",
+        "--",
+        &fixture.handle(),
+    ]);
+    let pull_output = pull_cmd.assert().success();
+    let pull_stdout = String::from_utf8_lossy(&pull_output.get_output().stdout);
+    let manifest: serde_json::Value =
+        serde_json::from_str(&pull_stdout).expect("pull output should be valid JSON");
+
+    // VERIFY: the manifest is a ChatPromptTemplate carrying what was pushed
+    let id = manifest["id"]
+        .as_array()
+        .expect("manifest should have an id array");
+    assert_eq!(
+        id.last().and_then(|v| v.as_str()),
+        Some("ChatPromptTemplate"),
+        "manifest id should end in ChatPromptTemplate: {manifest}"
+    );
+    let first_message = &manifest["kwargs"]["messages"][0]["kwargs"]["prompt"]["kwargs"];
+    assert_eq!(
+        first_message["template"].as_str(),
+        Some("Plain push test: {query}")
+    );
+    assert_eq!(
+        first_message["input_variables"],
+        serde_json::json!(["query"])
+    );
+
+    // CLEANUP: Automatic via Drop trait
+}

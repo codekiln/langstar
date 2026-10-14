@@ -169,6 +169,62 @@ pub struct PromptTemplateKwargs {
     pub template_format: String,
 }
 
+/// Kwargs for a `ChatPromptTemplate`, the manifest of a plain (non-structured) prompt.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ChatPromptKwargs {
+    /// Input variables across all messages
+    pub input_variables: Vec<String>,
+    /// Message templates (system, human, etc.)
+    pub messages: Vec<LcJson<MessagePromptTemplateKwargs>>,
+}
+
+/// Build the manifest of a plain prompt: a `ChatPromptTemplate` holding one human message.
+///
+/// The LangSmith API rejects a manifest without an LC-JSON `id` with a 400
+/// ("Manifest must have an id field"), so a plain prompt is pushed in the same
+/// LC-JSON shape as `ChatPromptTemplate.from_template(template)` in LangChain.
+/// The ids use the `langchain_core` module path, as [`StructuredPrompt`] does.
+pub fn plain_prompt_manifest(
+    template: &str,
+    input_variables: &[String],
+    template_format: &str,
+) -> LcJson<ChatPromptKwargs> {
+    let prompt = LcJson::new(
+        vec![
+            "langchain_core".to_string(),
+            "prompts".to_string(),
+            "prompt".to_string(),
+            "PromptTemplate".to_string(),
+        ],
+        PromptTemplateKwargs {
+            input_variables: input_variables.to_vec(),
+            template: template.to_string(),
+            template_format: template_format.to_string(),
+        },
+    );
+    let message = LcJson::new(
+        vec![
+            "langchain_core".to_string(),
+            "prompts".to_string(),
+            "chat".to_string(),
+            "HumanMessagePromptTemplate".to_string(),
+        ],
+        MessagePromptTemplateKwargs { prompt },
+    );
+    LcJson::new(
+        vec![
+            "langchain_core".to_string(),
+            "prompts".to_string(),
+            "chat".to_string(),
+            "ChatPromptTemplate".to_string(),
+        ],
+        ChatPromptKwargs {
+            input_variables: input_variables.to_vec(),
+            messages: vec![message],
+        },
+    )
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // Schema Validation
 // ═══════════════════════════════════════════════════════════════════════
@@ -883,6 +939,44 @@ mod tests {
         let json = serde_json::to_string(&prompt).unwrap();
         assert!(json.contains("test-id"));
         assert!(json.contains("owner/prompt"));
+    }
+
+    #[test]
+    fn test_plain_prompt_manifest_is_a_chat_prompt_template() {
+        let manifest = plain_prompt_manifest("Hi {name}", &["name".to_string()], "f-string");
+        let value = serde_json::to_value(&manifest).unwrap();
+
+        assert_eq!(
+            value["id"],
+            json!(["langchain_core", "prompts", "chat", "ChatPromptTemplate"])
+        );
+        assert_eq!(value["lc"], 1);
+        assert_eq!(value["type"], "constructor");
+        assert_eq!(value["kwargs"]["input_variables"], json!(["name"]));
+
+        let message = &value["kwargs"]["messages"][0];
+        assert_eq!(
+            message["id"],
+            json!([
+                "langchain_core",
+                "prompts",
+                "chat",
+                "HumanMessagePromptTemplate"
+            ])
+        );
+        let prompt = &message["kwargs"]["prompt"];
+        assert_eq!(
+            prompt["id"],
+            json!(["langchain_core", "prompts", "prompt", "PromptTemplate"])
+        );
+        assert_eq!(
+            prompt["kwargs"],
+            json!({
+                "input_variables": ["name"],
+                "template": "Hi {name}",
+                "template_format": "f-string"
+            })
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
