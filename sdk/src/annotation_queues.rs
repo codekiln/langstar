@@ -364,6 +364,31 @@ impl AnnotationQueueItemStatus {
     }
 }
 
+/// Bucket to count with `GET .../items/count`: one review section, or every item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationQueueItemCountStatus {
+    /// Items in one review section
+    Section(AnnotationQueueItemStatus),
+    /// Every item in the queue
+    All,
+}
+
+impl AnnotationQueueItemCountStatus {
+    /// The wire value LangSmith expects in the `status` query parameter.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Section(status) => status.as_str(),
+            Self::All => "all",
+        }
+    }
+}
+
+impl From<AnnotationQueueItemStatus> for AnnotationQueueItemCountStatus {
+    fn from(status: AnnotationQueueItemStatus) -> Self {
+        Self::Section(status)
+    }
+}
+
 /// One item to add to an annotation queue.
 ///
 /// Maps to `annotationqueues.AnnotationQueueItemInput`. A `RUN` item needs `run_id`;

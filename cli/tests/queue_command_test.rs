@@ -16,8 +16,9 @@ mod home;
 use assert_cmd::Command;
 use chrono::Utc;
 use langstar_sdk::{
-    AnnotationQueueItemStatus, AnnotationQueueItemType, AuthConfig, LangchainClient,
-    ListAnnotationQueueItemsParams, PatchAnnotationQueueItemRequest, ProjectCreate,
+    AnnotationQueueItemCountStatus, AnnotationQueueItemStatus, AnnotationQueueItemType, AuthConfig,
+    LangchainClient, ListAnnotationQueueItemsParams, PatchAnnotationQueueItemRequest,
+    ProjectCreate,
 };
 use serde_json::{Value, json};
 use std::time::{Duration, Instant};
@@ -286,6 +287,12 @@ fn test_queue_items_lifecycle() {
             ))
             .expect("count failed");
     assert_eq!(counted + others, 2, "count should match the two items");
+    let total = runtime
+        .block_on(
+            client.count_annotation_queue_items(queue_uuid, AnnotationQueueItemCountStatus::All),
+        )
+        .expect("count all failed");
+    assert_eq!(total, 2, "count with status all should cover every item");
 
     let page = runtime
         .block_on(client.list_annotation_queue_items(

@@ -1082,7 +1082,10 @@ impl LangchainClient {
         }
     }
 
-    /// Count the items in one review section of an annotation queue.
+    /// Count the items in one review section of an annotation queue, or every item with
+    /// [`AnnotationQueueItemCountStatus::All`].
+    ///
+    /// [`AnnotationQueueItemCountStatus::All`]: crate::annotation_queues::AnnotationQueueItemCountStatus::All
     ///
     /// # API Reference
     ///
@@ -1090,8 +1093,9 @@ impl LangchainClient {
     pub async fn count_annotation_queue_items(
         &self,
         queue_id: uuid::Uuid,
-        status: crate::annotation_queues::AnnotationQueueItemStatus,
+        status: impl Into<crate::annotation_queues::AnnotationQueueItemCountStatus>,
     ) -> Result<u64> {
+        let status = status.into();
         let path = format!(
             "/api/v1/platform/annotation-queues/{}/items/count",
             queue_id

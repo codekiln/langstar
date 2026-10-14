@@ -399,3 +399,30 @@ async fn test_delete_run_finds_item_on_second_page() {
     assert!(removed);
     delete.assert_async().await;
 }
+
+#[tokio::test]
+async fn test_count_items_all_sends_status_all() {
+    let mut server = Server::new_async().await;
+    let mock = server
+        .mock(
+            "GET",
+            format!("/api/v1/platform/annotation-queues/{QUEUE}/items/count").as_str(),
+        )
+        .match_query(Matcher::UrlEncoded("status".into(), "all".into()))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(json!({"count": 9}).to_string())
+        .create_async()
+        .await;
+
+    let client = create_test_client(&server.url());
+    let count = client
+        .count_annotation_queue_items(
+            Uuid::parse_str(QUEUE).unwrap(),
+            langstar_sdk::AnnotationQueueItemCountStatus::All,
+        )
+        .await
+        .expect("count failed");
+    assert_eq!(count, 9);
+    mock.assert_async().await;
+}
