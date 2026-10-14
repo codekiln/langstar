@@ -765,7 +765,7 @@ where
 }
 
 /// Fetch every example into an anonymous temporary file, then open `path` the
-/// way `>` does (create and truncate) and copy the temporary file into it.
+/// way the shell's `>` does (create and truncate) and copy the temporary file into it.
 ///
 /// If a page request fails, or `path` cannot be opened, an existing file keeps
 /// its old contents. An error or a kill during the copy may leave `path` partly
