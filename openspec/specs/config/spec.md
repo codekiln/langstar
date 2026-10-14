@@ -105,7 +105,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 
 ### Requirement: `config validate` and `config <setting> set` fail with an error that names the config file when it cannot be read or parsed
 
-When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and says why langstar could not read or parse it, before checking any setting. `langstar config <setting> set` SHALL exit with the same error and leave the file unchanged. When the file does not parse, both commands also print the line of the file that the parse error points at.
+When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and says why langstar could not read or parse it, before checking any setting. `langstar config <setting> set` SHALL exit with the same error and leave the file unchanged when the file is not valid TOML, or when the file still holds a value of the wrong type after langstar writes the new value. When the file does not parse, both commands also print the line of the file that the parse error points at.
 
 #### Scenario: Unparsable config file
 
@@ -118,6 +118,12 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 - **WHEN** the config file does not parse
 - **AND** a user runs `langstar config output_format set json`
 - **THEN** langstar exits with the parse error and leaves the config file unchanged
+
+#### Scenario: Setting a value that replaces a value of the wrong type
+
+- **WHEN** the config file sets `output_format = 5`
+- **AND** a user runs `langstar config output_format set json`
+- **THEN** langstar replaces the value with `output_format = "json"` and exits successfully
 
 ### Requirement: Warn on stderr and use the defaults when a command that loads the settings cannot read or parse the config file
 

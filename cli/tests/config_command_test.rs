@@ -222,6 +222,24 @@ fn test_config_set_fails_on_an_unparsable_file_and_leaves_it_unchanged() {
 }
 
 #[test]
+fn test_config_set_replaces_a_value_of_the_wrong_type() {
+    let dir = TempDir::new().unwrap();
+    let path = dir.path().join("config.toml");
+    fs::write(&path, "output_format = 5\n").unwrap();
+
+    let out = langstar_in(&dir)
+        .args(["config", "output_format", "set", "json"])
+        .output()
+        .unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        fs::read_to_string(&path).unwrap().trim(),
+        "output_format = \"json\""
+    );
+}
+
+#[test]
 fn test_config_set_names_an_unreadable_config_file() {
     let dir = TempDir::new().unwrap();
     // A directory where the file should be cannot be read as a file
