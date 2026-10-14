@@ -955,7 +955,9 @@ mod tests {
                 .file_type()
                 .is_symlink()
         );
-        assert_eq!(std::fs::read_to_string(&target).unwrap().lines().count(), 1);
+        let text = std::fs::read_to_string(&target).unwrap();
+        assert!(text.contains("\"q\":1"), "{text}");
+        assert!(!text.contains("old"), "{text}");
         assert_eq!(
             std::fs::metadata(&target).unwrap().permissions().mode() & 0o777,
             0o640
