@@ -377,7 +377,13 @@ fn config_file_in(dir: &Path) -> PathBuf {
     dir.join("config.toml")
 }
 
-/// Returns the start of toml's error message, before the value toml quotes, because that value can be the API key. toml quotes the value between backticks, or between double quotes for a string, and quotes the file's lines after the first line of the message. The function therefore keeps the first line up to the first backtick or double quote, drops a trailing `expected`, and returns `invalid TOML` when nothing is left.
+/// Returns the start of toml's error message, before any value toml quotes,
+/// because that value can be the API key.
+///
+/// toml quotes a rejected value between backticks, or between double quotes
+/// when it is a string. The function keeps the first line of `message` up to
+/// the first backtick or double quote, drops a trailing `expected`, and
+/// returns `invalid TOML` when nothing is left.
 fn message_without_value(message: &str) -> &str {
     let first_line = message.lines().next().unwrap_or("");
     let end = first_line.find(['`', '"']).unwrap_or(first_line.len());

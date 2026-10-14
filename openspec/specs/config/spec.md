@@ -166,7 +166,7 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 
 - **WHEN** `config.toml` is a symbolic link to itself
 - **AND** a user runs `langstar config show`
-- **THEN** langstar prints `File exists: unknown` and exits successfully
+- **THEN** langstar prints `File exists: unknown (langstar could not check; see the warning above)` and exits successfully
 
 ### Requirement: Exit with an error when a command that loads the settings cannot determine where the config file belongs
 
