@@ -86,9 +86,9 @@ Gather knowledge and technical context for milestone planning.
 
 <!-- Search ./cli and ./sdk -->
 
-## 2. Python SDK Precedent
+## 2. Upstream References
 
-<!-- Analyze python/langsmith/client.py -->
+<!-- For each applicable project in .rulesync/rules/upstream-references.md (langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server, langgraph), record the methods, commands or endpoints related to the feature, with file paths -->
 
 ## 3. API Endpoints
 
@@ -116,12 +116,13 @@ Gather knowledge and technical context for milestone planning.
 EOF
 ```
 
-### 5. Set Up SDK Research (if needed)
+### 5. Clone the upstream projects the feature touches (if needed)
 
-Only clone if not already present:
+Clone each upstream project the feature touches that has no `code/` directory in the root checkout: langsmith-go, langsmith-cli, langsmith-sdk, langsmith-mcp-server or langgraph. A worktree has `notes/` but no `code/`, so the check below looks in the root checkout. `.rulesync/rules/upstream-references.md` says what to check in each project. This example clones langsmith-sdk:
 
 ```bash
-if [ ! -d "reference/repo/langchain-ai/langsmith-sdk/code" ]; then
+REPO_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+if [ ! -d "$REPO_ROOT/reference/repo/langchain-ai/langsmith-sdk/code" ]; then
   .claude/skills/setup-remote-repo-notes-dir/scripts/setup_repo_notes.sh https://github.com/langchain-ai/langsmith-sdk
 fi
 ```
@@ -146,10 +147,11 @@ git worktree add -b "$BRANCH" "$WORKTREE_PATH" main
    grep -r "$FEATURE_NAME" ./cli ./sdk 2>/dev/null || echo "No existing implementation found"
    ```
 
-2. **Analyze Python SDK**
-   - Read `reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py`
-   - Find methods related to the feature
-   - Document signatures and patterns
+2. **Analyze each applicable upstream reference**
+   - For each reference in `.rulesync/rules/upstream-references.md` that covers the feature, read its notes (`reference/repo/langchain-ai/<name>/notes/README.md`), then its code
+   - Inspect the Python client (`$REPO_ROOT/reference/repo/langchain-ai/langsmith-sdk/code/python/langsmith/client.py`) only when `langsmith-sdk` applies
+   - Find the methods, commands or endpoints related to the feature in each
+   - Document signatures and patterns per reference
 
 3. **Identify API endpoints**
    - Check LangSmith API docs via MCP
@@ -178,7 +180,7 @@ COMMIT_MSG=$(printf "docs: scout %s research\n\n#%s %s" "$FEATURE_NAME" "$ISSUE_
 git commit -m "$COMMIT_MSG"
 
 # Use printf to safely construct PR body
-PR_BODY=$(printf "## from AI(<harness>, <model-slug>, <session-name>)\n\nFixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- SDK analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
+PR_BODY=$(printf "## from AI(<harness>, <model-slug>, <session-name>)\n\nFixes #%s\n\n## Summary\nPreliminary research for %s implementation.\n\n## Deliverables\n- Research report at docs/research/%s-%s-scout.md\n- Upstream reference analysis notes (if applicable)\n- Technical patterns and insights for milestone planning" \
   "$ISSUE_NUM" "$FEATURE_NAME" "$ISSUE_NUM" "$FEATURE_SLUG")
 
 gh pr create --title "docs: scout $FEATURE_NAME research" --body "$PR_BODY"
