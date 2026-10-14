@@ -103,7 +103,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 - **AND** a user runs `langstar config validate`
 - **THEN** langstar exits with an error that names the invalid output format
 
-### Requirement: `config validate` and `config <setting> set` exit with the error on a config file that cannot be read or parsed
+### Requirement: `config validate` and `config <setting> set` fail with an error that names the config file when it cannot be read or parsed
 
 When the config file exists but cannot be read or parsed, `langstar config validate` SHALL exit with an error that names the file and says why langstar could not read or parse it, before checking any setting. `langstar config <setting> set` SHALL exit with the same error and leave the file unchanged. When the file does not parse, both commands also print the line of the file that the parse error points at.
 
