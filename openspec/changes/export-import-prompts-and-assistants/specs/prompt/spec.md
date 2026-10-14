@@ -52,7 +52,7 @@ Exporting the same commit twice SHALL produce identical files when nobody change
 
 ### Requirement: List the credentials a prompt needs without their values
 
-The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_class`, the class name that ends the chat model constructor's `id`, such as `ChatOpenAI`. It SHALL hold no secret values. Import and verify SHALL read the secret names and the model class out of the file's manifest again, and when either differs from `requires.secrets` or `requires.model_class`, write nothing, name the field and exit with status 1.
+The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_class`, the class name that ends the chat model constructor's `id`, such as `ChatOpenAI`. It SHALL hold no value of a secret the manifest refers to. Import and verify SHALL read both again from the file's manifest, and when either differs from `requires.secrets` or `requires.model_class`, write nothing, name the field and exit with status 1.
 
 #### Scenario: Model reads an API key secret
 

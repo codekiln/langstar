@@ -49,7 +49,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - An error test that exports a handle the workspace has no prompt for, and asserts that it exits with status 1, names the handle and writes no file.
   - A CLI test that runs `prompt export` without `--output`, parses all of stdout as one JSON document, and asserts that its `source.commit_hash` matches the SDK's read and that any progress message is on stderr.
   - An integration test that gives one commit two tags, exports it twice, and asserts that the two files are identical.
-- [ ] 5.2 Document `prompt export` in `docs/usage/` and the README; verify that each documented command runs as written
+- [ ] 5.2 Document `prompt export` in `docs/usage/` and the README. The page says that export writes the manifest as LangSmith returns it, so a credential written into a model setting as a literal value, rather than as a secret reference, reaches the file; tells users to keep credentials in the workspace's secrets; and tells them to read an export file before they commit it. Verify that each documented command runs as written.
 
 ## 6. prompt compare and verify
 
