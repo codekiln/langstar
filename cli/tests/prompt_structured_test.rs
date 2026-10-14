@@ -892,7 +892,7 @@ impl Drop for NewRepoCleanup {
     }
 }
 
-/// `prompt push --owner -` to a repo that does not exist must create the repo and the commit, the bug reported in <https://github.com/codekiln/langstar/issues/820> (create-on-push sent the handle as `-/<repo>` and the API returned 400).
+/// Guards [Issue #820 prompt push --owner - fails when it creates a new repo](https://github.com/codekiln/langstar/issues/820): pushing with `--owner -` to a repo that does not exist creates the repo and its first commit.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[serial]
