@@ -117,12 +117,12 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // When langstar cannot work out where the config file belongs, `load`
-        // returns an error even if the environment variables hold every setting,
-        // because a config file the user wrote would otherwise be skipped without
-        // a word. That happens when `LANGSTAR_CONFIG_DIR` is unset and the
-        // operating system reports no home directory (macOS, Linux) or config
-        // directory (Windows).
+        // `load` returns an error when langstar cannot find the directory that holds
+        // the config file, even if environment variables set every setting, so that
+        // langstar tells the user instead of silently skipping a config file they
+        // wrote. This happens when `LANGSTAR_CONFIG_DIR` is unset and the operating
+        // system reports no home directory (macOS, Linux) or no config directory
+        // (Windows).
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
@@ -197,18 +197,18 @@ impl Config {
         // either can hold the API key and every command that loads the settings
         // prints this warning. `config validate` and `config <setting> set` print
         // the line the parse error points at.
-        Self::read_file_with(path, false)
+        Self::parse_config_file(path, false)
     }
 
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
     /// `config validate` calls this function to show the user the full parse
     /// error, including the line of the file that the parse error points at.
-    /// `Config::load` reaches `read_file_with` through `load_from_paths`, which
+    /// `Config::load` reaches `parse_config_file` through `load_from_paths`, which
     /// passes `quote_source` as false so that the warning leaves that line out;
     /// `load` then runs on the default config.
     pub fn read_file(path: &Path) -> Result<Self> {
-        Self::read_file_with(path, true)
+        Self::parse_config_file(path, true)
     }
 
     /// Reads and parses the config file at `path`. When `quote_source` is true, a
@@ -216,7 +216,7 @@ impl Config {
     /// file. When it is false, the error gives the line and column and the part of
     /// toml's message before the backtick or double quote that opens the value, so
     /// the error leaves out the file's text and the value.
-    fn read_file_with(path: &Path, quote_source: bool) -> Result<Self> {
+    fn parse_config_file(path: &Path, quote_source: bool) -> Result<Self> {
         let content = std::fs::read_to_string(path).map_err(|e| {
             CliError::Config(format!(
                 "Failed to read config file {}: {}",
@@ -311,9 +311,10 @@ impl Config {
         dirs::home_dir()
     }
 
-    /// Where the config file belongs under `base_dir`, the directory
-    /// `default_base_dir` returns: `<config dir>\langstar\config.toml` on Windows,
-    /// `~/.config/langstar/config.toml` on macOS and Linux.
+    /// Returns the config file's path under `base_dir`:
+    /// `<config dir>\langstar\config.toml` on Windows and
+    /// `~/.config/langstar/config.toml` on macOS and Linux. `default_base_dir`
+    /// supplies `base_dir`.
     ///
     /// Takes `base_dir` as an argument so a unit test can pass `None`, which
     /// `dirs` cannot be made to report: `dirs::home_dir` falls back to the passwd
