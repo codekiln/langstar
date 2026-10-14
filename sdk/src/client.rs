@@ -3132,4 +3132,72 @@ mod tests {
         assert_eq!(client.organization_id(), Some("new_org"));
         assert_eq!(client.workspace_id(), Some("new_workspace"));
     }
+
+    #[tokio::test]
+    async fn test_list_examples_paginated_yields_page_one_then_errors_when_page_two_fails() {
+        use tokio_stream::StreamExt;
+
+        let dataset_id = uuid::Uuid::from_u128(0xd5);
+        let page_one: Vec<serde_json::Value> = (1..=100u128)
+            .map(|n| {
+                serde_json::json!({
+                    "id": uuid::Uuid::from_u128(n).to_string(),
+                    "dataset_id": dataset_id.to_string(),
+                    "inputs": {"n": n},
+                    "name": format!("example-{n}"),
+                })
+            })
+            .collect();
+        let expected_ids: Vec<uuid::Uuid> = (1..=100u128).map(uuid::Uuid::from_u128).collect();
+
+        let mut server = mockito::Server::new_async().await;
+        let first_page = server
+            .mock("GET", "/api/v1/examples")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("offset".into(), "0".into()),
+                mockito::Matcher::UrlEncoded("limit".into(), "100".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(serde_json::Value::Array(page_one).to_string())
+            .expect(1)
+            .create_async()
+            .await;
+        let second_page = server
+            .mock("GET", "/api/v1/examples")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("offset".into(), "100".into()),
+                mockito::Matcher::UrlEncoded("limit".into(), "100".into()),
+            ]))
+            .with_status(400)
+            .with_body("bad request")
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 0);
+
+        let mut stream =
+            client.list_examples_paginated(crate::datasets::ListExamplesParams::default(), None);
+
+        let mut yielded_ids = Vec::new();
+        for _ in 0..100 {
+            let example = stream
+                .next()
+                .await
+                .expect("stream ended before page one was yielded")
+                .expect("page one examples should be Ok");
+            yielded_ids.push(example.id);
+        }
+        assert_eq!(yielded_ids, expected_ids);
+
+        let failure = stream
+            .next()
+            .await
+            .expect("expected an Err item for page two");
+        assert!(failure.is_err(), "page two failure should surface as Err");
+        assert!(stream.next().await.is_none(), "stream should end after Err");
+
+        first_page.assert_async().await;
+        second_page.assert_async().await;
+    }
 }
