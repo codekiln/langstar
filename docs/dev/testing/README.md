@@ -6,6 +6,7 @@ Load this TOC first, then 1-3 docs relevant to your task. **Do not load all docs
 |----------|--------------|
 | `HIGH_LEVEL_TESTING_GUIDELINES.md` | Always - PR requirements, andon cord |
 | `crud-lifecycle-pattern.md` | CRUD features - CLI & SDK verification |
+| `official-tool-checks.md` | Checking a langstar result with the official `langsmith` / `langgraph` tools |
 | `sdk-integration-tests.md` / `cli-integration-tests.md` | SDK or CLI integration tests |
 | `devcontainer-feature-tests.md` | Infrastructure/devcontainer testing |
 | `test-fixtures.md` | Test deployment & fixture management |

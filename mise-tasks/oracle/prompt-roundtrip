@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+#MISE description="Push a private prompt with langstar, read it back with the official langsmith CLI, then delete it"
+set -euo pipefail
+
+# This task checks `langstar prompt push`. The official CLI reads the prompt
+# back, so a bug that langstar's push and pull share still shows up. The LangSmith
+# credentials come from fnox, so the check re-runs itself under `fnox exec`.
+# What each official tool can check: docs/dev/testing/official-tool-checks.md
+if [ -z "${ORACLE_UNDER_FNOX:-}" ] && { [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z "${LANGSMITH_ORGANIZATION_ID:-}" ] || [ -z "${LANGSMITH_WORKSPACE_ID:-}" ]; }; then
+  ORACLE_UNDER_FNOX=1 exec fnox exec -- "$0" "$@"
+fi
+
+# langstar's prompt commands always call this endpoint (LANGSMITH_API_BASE in
+# sdk/src/client.rs), but the official CLI would otherwise take LANGSMITH_ENDPOINT or a
+# saved profile. --api-url on every official call keeps both tools on the same server.
+api_url="https://api.smith.langchain.com"
+official=(langsmith --api-url "$api_url")
+
+repo="oracle-roundtrip-$(date +%s)-$$-$RANDOM"
+template="Answer this question: {question}"
+# `-` is the owner handle of a private prompt in the workspace.
+handle="-/${repo}"
+
+# The official CLI creates the repo. langstar's own create-on-push sends "-/<repo>"
+# as the handle, which the API rejects, so letting langstar create it would fail here.
+# https://github.com/codekiln/langstar/issues/820
+"${official[@]}" prompt create --name "$repo" >/dev/null
+
+# Registered only after create succeeds, so a name collision can never delete
+# another run's prompt.
+schema=""
+# A failed delete turns a passing run into a failure and keeps an earlier failure's status.
+cleanup() {
+  local status=$?
+  [ -z "$schema" ] || rm -f "$schema"
+  if ! "${official[@]}" prompt delete --yes -- "$handle" >/dev/null 2>&1; then
+    echo "could not delete ${handle}; delete it by hand" >&2
+    [ "$status" -ne 0 ] || status=1
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+schema="$(mktemp)"
+
+printf '%s' '{"type":"object","title":"Out","properties":{"answer":{"type":"string"}},"required":["answer"]}' >"$schema"
+
+# --schema matches the path cli/tests/prompt_structured_test.rs exercises; a push
+# without it fails (https://github.com/codekiln/langstar/issues/821).
+cargo run --quiet --bin langstar -- prompt push \
+  --owner - --repo "$repo" --template "$template" --input-variables question \
+  --schema "$schema" >/dev/null
+
+pulled="$("${official[@]}" prompt pull -- "$handle")"
+
+# The manifest is nested JSON, so look for each pushed value anywhere in it:
+# the template text, the input variable, and a property name from the schema.
+for needle in "$template" question answer; do
+  if ! printf '%s' "$pulled" | jq -e --arg t "$needle" '[.. | strings | select(. == $t)] + [.. | objects | keys[] | select(. == $t)] | length > 0' >/dev/null; then
+    echo "FAIL: the official CLI did not return '${needle}', which langstar pushed" >&2
+    printf '%s\n' "$pulled" >&2
+    exit 1
+  fi
+done
+echo "OK: langsmith prompt pull returned the template, variable and schema pushed by langstar (${handle})"
