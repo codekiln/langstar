@@ -109,7 +109,7 @@ When the destination record holds an assistant ID for the deployment, `langstar 
 - **WHEN** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update --assistant-id <dest-assistant-id>`
 - **THEN** langstar updates that assistant and records its ID for `my-agent-prod`
 
-### Requirement: Remove on update what the file lacks
+### Requirement: Import with --update asks the Agent Server to remove the metadata, description and context the file lacks
 
 `langstar assistant import --update` SHALL ask the Agent Server to remove each metadata key the destination assistant has and the file lacks, and to clear a description or context the file lacks, then read the assistant back. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
 
