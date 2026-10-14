@@ -66,6 +66,16 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 - **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
 - **THEN** langstar creates no prompt, names `requires.secrets` and exits with status 1
 
+### Requirement: Refuse to export an API key written into a prompt's model
+
+When a chat model constructor in the manifest holds a string, rather than a secret reference, under a setting whose name ends in `api_key`, such as `openai_api_key`, `langstar prompt export` SHALL write no file and nothing to stdout, name that setting's JSON Pointer path without its value, and exit with status 1.
+
+#### Scenario: Model holds a literal API key
+
+- **WHEN** the prompt's `ChatOpenAI` constructor holds a string under `openai_api_key`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes no file, names the path of `openai_api_key` without its value and exits with status 1
+
 ### Requirement: Export, import and verify a prompt without a model
 
 When the manifest holds no chat model constructor, `langstar prompt export` SHALL write `requires.model_class` as null. Import and verify SHALL accept null when the manifest they read again holds no chat model, skip the saved model configuration check, report no note for it, and still run the secret check.

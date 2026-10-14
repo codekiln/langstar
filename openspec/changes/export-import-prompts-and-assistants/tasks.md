@@ -39,7 +39,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - A test that a changed `id` array inside `commit.manifest`, such as `ChatOpenAI` replaced by `ChatAnthropic`, is reported at its path.
   - A test that a destination whose `commit.model_config` and `commit.model_provider` differ from the file's, while the manifest matches, is reported as a match.
 - [ ] 4.3 Add the shared result report and the exit statuses 0, 3 and 1, printing JSON to stdout and progress to stderr, and leave clap's status 2 for usage errors; verify with unit tests of the report and of the exit status each result gives
-- [ ] 4.4 Add the secret reference walk that lists secret names from a manifest; verify with unit tests on a copy of the `prompt_with_model` manifest from the LangSmith Python SDK's integration tests, which `references/langsmith-sdk.md` links, and on a manifest with no secret reference
+- [ ] 4.4 Add the secret reference walk that lists secret names from a manifest and returns the JSON Pointer path of each chat model setting whose name ends in `api_key` and holds a string instead of a secret reference, which `prompt export` from 5.1 refuses with status 1; verify with unit tests on a copy of the `prompt_with_model` manifest from the LangSmith Python SDK's integration tests, which `references/langsmith-sdk.md` links, on a manifest with no secret reference, and on a manifest whose `openai_api_key` holds a string, asserting that the walk returns that setting's path and that the error message holds the path and not the string
 
 ## 5. prompt export
 
