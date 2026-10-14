@@ -767,8 +767,8 @@ where
 /// Fetch every example into an anonymous temporary file, then open `path` the
 /// way `>` does (create and truncate) and copy the temporary file into it.
 ///
-/// A failure on any page returns before `path` is opened, so an existing file
-/// is untouched. Once the copy starts, an error or a kill leaves `path` partly
+/// If a page request fails, or `path` cannot be opened, an existing file keeps
+/// its old contents. An error or a kill during the copy may leave `path` partly
 /// written.
 async fn export_to_file<S, E>(
     examples: S,
