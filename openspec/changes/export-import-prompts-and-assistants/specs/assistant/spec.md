@@ -2,7 +2,7 @@
 
 ### Requirement: Every assistant command targets one deployment
 
-Every `langstar assistant` subcommand SHALL take a required `--deployment` flag holding a deployment name or ID. Langstar SHALL look the deployment up through the control plane API and send the assistant request to the deployment's `url`, or to its `source_config.custom_url` when `url` is empty.
+Every `langstar assistant` subcommand SHALL take a required `--deployment` flag holding a deployment name or ID. Langstar SHALL look the deployment up through the control plane API and send the assistant request to the deployment's `url`, or to its `source_config.custom_url` when `url` is null, missing or empty.
 
 #### Scenario: Deployment found by name
 
