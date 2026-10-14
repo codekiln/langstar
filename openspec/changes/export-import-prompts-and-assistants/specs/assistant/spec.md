@@ -226,7 +226,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Redact an API key written into a destination assistant's configuration
 
-When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of every string stored under a key whose name ends in `api_key`, compared without regard to case, so `openai_api_key` and `OPENAI_API_KEY` both match. This holds when the difference is at that key and when the key sits deeper inside the printed object.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` wherever a key whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, has a string as its value, whether the difference is at that key or at an object that contains it.
 
 #### Scenario: Destination configuration holds a literal API key
 
@@ -239,3 +239,13 @@ When `assistant compare`, `assistant verify` or `assistant import` prints either
 - **WHEN** someone updated the destination assistant so `config.configurable.OPENAI_API_KEY` holds a string
 - **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
 - **THEN** langstar reports `/assistant/config/configurable/OPENAI_API_KEY` with `<redacted>` in place of the string and exits with status 3
+
+### Requirement: Print a secret reference in a destination assistant's configuration unchanged
+
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, and a key whose name ends in `api_key`, compared without regard to case, holds a LangChain secret reference, such as `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, langstar SHALL print the reference unchanged, so the report names the secret.
+
+#### Scenario: Destination configuration reads its key from a secret
+
+- **WHEN** someone updated the destination assistant so `config.configurable.openai_api_key` refers to the secret `OPENAI_API_KEY`
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
+- **THEN** langstar reports `/assistant/config/configurable/openai_api_key` with the secret reference and `OPENAI_API_KEY` in it, and exits with status 3
