@@ -352,3 +352,16 @@ fn test_config_set_names_a_config_file_it_cannot_look_up() {
     assert!(stderr.contains("Failed to look up config file"), "{stderr}");
     assert!(stderr.contains(&path.display().to_string()), "{stderr}");
 }
+
+#[cfg(unix)]
+#[test]
+fn test_config_show_does_not_say_a_config_file_it_cannot_look_up_is_missing() {
+    let (dir, _path) = dir_with_config_symlink_loop();
+
+    let out = langstar_in(&dir).args(["config", "show"]).output().unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(stdout.contains("File exists: unknown"), "{stdout}");
+    assert!(!stdout.contains("File exists: false"), "{stdout}");
+}

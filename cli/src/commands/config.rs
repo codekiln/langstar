@@ -92,8 +92,14 @@ impl ConfigCommands {
         let config_path = Config::config_file_path()?;
 
         println!("Configuration file: {}", config_path.display());
-        println!("  File exists: {}", config_path.exists());
-        // `Config::load` above has already warned when the lookup fails
+        // `Config::load` above already warned about a config file langstar cannot
+        // look up, so `.ok()` drops the same error from `file_to_read` here.
+        match config_file_exists(&config_path) {
+            Ok(exists) => println!("  File exists: {exists}"),
+            Err(_) => {
+                println!("  File exists: unknown (langstar could not check; see the warning above)")
+            }
+        }
         if let Some(path) = Config::file_to_read()
             .ok()
             .flatten()

@@ -62,10 +62,11 @@ fn old_config_warning(old_path: &Path, config_path: &Path) -> String {
     )
 }
 
-/// Whether a file exists at `path`. Unlike `Path::exists`, which says `false` when
-/// the lookup fails, this returns an error that names the path when the lookup
-/// fails (a symlink loop, or a parent directory langstar cannot search), so a
-/// config file langstar cannot look up is not taken for a missing one.
+/// Returns whether a file exists at `path`, or an error that names the path when
+/// langstar cannot check, as with a symlink that points at itself or a parent
+/// directory langstar cannot search. A config file langstar cannot check is an
+/// error here, where `Path::exists` would return `false` and langstar would run
+/// as if the file were absent.
 pub(crate) fn config_file_exists(path: &Path) -> Result<bool> {
     path.try_exists().map_err(|e| {
         CliError::Config(format!(
@@ -116,11 +117,12 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // With `LANGSTAR_CONFIG_DIR` unset and no home directory (macOS, Linux) or
-        // config directory (Windows), langstar cannot say which file to read, so
-        // `load` returns the error even if the environment variables hold every
-        // setting; a config file in a place langstar never looked would otherwise
-        // be ignored without a word.
+        // `load` returns an error when langstar cannot find the config file's
+        // directory, even if the environment variables hold every setting. Without
+        // that error, a config file in a directory langstar never looked in would
+        // be ignored silently. The directory is unknown when `LANGSTAR_CONFIG_DIR`
+        // is unset and the operating system reports no home directory (macOS,
+        // Linux) or config directory (Windows).
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
@@ -319,14 +321,14 @@ impl Config {
     #[cfg(target_os = "windows")]
     fn config_file_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
         let config_dir = base_dir
-            .ok_or_else(|| CliError::Config("Could not determine config directory".to_string()))?;
+            .ok_or_else(|| CliError::Config("langstar cannot find your config directory, so it cannot tell where the config file belongs. Set LANGSTAR_CONFIG_DIR to the directory that holds config.toml.".to_string()))?;
         Ok(config_dir.join("langstar").join("config.toml"))
     }
 
     #[cfg(not(target_os = "windows"))]
     fn config_file_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
         let home_dir = base_dir
-            .ok_or_else(|| CliError::Config("Could not determine home directory".to_string()))?;
+            .ok_or_else(|| CliError::Config("langstar cannot find your home directory, so it cannot tell where the config file belongs. Set HOME, or set LANGSTAR_CONFIG_DIR to the directory that holds config.toml.".to_string()))?;
         Ok(home_dir
             .join(".config")
             .join("langstar")
@@ -377,13 +379,12 @@ fn config_file_in(dir: &Path) -> PathBuf {
     dir.join("config.toml")
 }
 
-/// Returns the first line of toml's error message, cut before the first backtick
-/// or double quote, because toml writes the rejected value between backticks or,
-/// for a string, between double quotes, and the value can be the API key. The
-/// function drops the later lines too, because toml puts quoted tokens there as
-/// well. When the cut leaves a trailing `expected`, which names nothing once
-/// the quoted token is gone, the function drops it too, and returns
-/// `invalid TOML` when nothing else is left, as for a line with no `=`.
+/// Returns toml's error message without the value toml rejected, which can be the
+/// API key. toml writes that value between backticks, or between double quotes for
+/// a string, so the function stops at the first of either on the first line and
+/// drops the later lines, which quote tokens too. When the cut leaves a trailing
+/// `expected`, which names nothing without the token, the function drops that as
+/// well, and returns `invalid TOML` when nothing is left.
 fn message_without_value(message: &str) -> &str {
     let first_line = message.lines().next().unwrap_or("");
     let end = first_line.find(['`', '"']).unwrap_or(first_line.len());
@@ -418,9 +419,9 @@ mod tests {
     fn test_config_file_path_fails_without_a_home_or_config_directory() {
         let err = Config::config_file_under(None).unwrap_err().to_string();
         let expected = if cfg!(target_os = "windows") {
-            "Could not determine config directory"
+            "langstar cannot find your config directory"
         } else {
-            "Could not determine home directory"
+            "langstar cannot find your home directory"
         };
         assert!(err.contains(expected), "{err}");
     }
