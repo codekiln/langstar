@@ -67,6 +67,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - A CLI test that `prompt compare` of a file whose handle the workspace lacks exits with status 1 and names the handle.
 - [ ] 6.2 Add `langstar prompt verify` with the secret check and the saved model configuration note, which matches `requires.model_class` against the class name at the end of each configuration's settings `id`. Verify with these tests:
   - An integration test against a workspace that lacks a secret the file lists, asserting that verify names the secret and exits with status 3, and one against a workspace that has every listed secret, asserting that verify exits with status 0.
+  - An integration test that exports a prompt, changes its model temperature through the SDK, runs verify, and asserts that it reports the path and both values as `prompt compare` does and exits with status 3.
   - A test that a missing saved model configuration is reported as a note and leaves the exit status at 0.
   - A test that verify of a prompt without a model, whose `requires.model_class` is null, reports no saved model configuration note and exits with status 0.
   - A test that a file whose manifest refers to a secret its `requires.secrets` leaves out exits with status 1 and names `requires.secrets`.
@@ -116,6 +117,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - A unit test that a file whose configuration names another prompt at a pointer under `requires.prompts` exits with status 1 and names the pointer and both values.
 - [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. Verify with these tests:
   - An integration test that runs verify with `--assistant-id` against an exported assistant and exits with status 0.
+  - An integration test that exports an assistant, changes its metadata through the SDK, runs verify with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
   - An integration test of a file whose graph ID the deployment lacks, which reports the graph ID and exits with status 3.
   - An integration test of a file whose prompt tag the workspace lacks, which reports the prompt and exits with status 3.
   - An integration test that runs verify with `--workspace-id` set to the destination workspace, for an assistant whose referenced prompt tag exists only in that workspace, and asserts that verify exits with status 0 and that `checks` reports the prompt as found.
