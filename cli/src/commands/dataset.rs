@@ -768,8 +768,8 @@ where
 /// way the shell's `>` does (create and truncate) and copy the temporary file into it.
 ///
 /// If a page request fails, or `path` cannot be opened, an existing file keeps
-/// its old contents. An error or a kill during the copy may leave `path` partly
-/// written.
+/// its old contents. If the disk fills, or someone stops langstar while it
+/// copies, `path` may hold only part of the export.
 async fn export_to_file<S, E>(
     examples: S,
     format: ExportFormat,
