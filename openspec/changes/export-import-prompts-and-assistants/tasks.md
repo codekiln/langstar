@@ -1,6 +1,6 @@
 # Tasks
 
-Each numbered group below is one pull request, merged in the order listed. Task 2.1, which adds the destination workspace and the model provider key, waits on codekiln to create that workspace and an OpenAI key, so it gets a pull request of its own and the rest of group 2 goes ahead without it. Task 2.3, the destination test graph's `langgraph.json`, also gets a pull request of its own, because the control plane builds test deployments from `main` and task 2.4's fixture needs that file there. That pull request merges before group 6, prompt compare and verify, whose tests are the first to use the destination workspace.
+Each numbered group below is one pull request, merged in the order listed. Task 2.3, which adds the destination test graph's `langgraph.json`, gets a pull request of its own that merges before the rest of group 2, because the control plane builds test deployments from `main` and task 2.4's fixture needs that file there. Task 2.1, which adds the destination workspace and the model provider key, also gets a pull request of its own, because it waits on codekiln to create that workspace and an OpenAI key. It merges before group 6, prompt compare and verify, whose tests are the first to use the destination workspace.
 
 ## 1. Check the API round trip before building on it
 
