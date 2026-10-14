@@ -134,7 +134,7 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 
 ### Requirement: Exit with an error when a command that loads the settings cannot determine where the config file belongs
 
-A langstar command that loads the settings SHALL exit with an error when langstar cannot work out where the config file belongs, which happens when `LANGSTAR_CONFIG_DIR` is unset and the operating system reports no home directory on macOS and Linux or no config directory on Windows, instead of running on the defaults.
+A langstar command that loads the settings SHALL exit with an error when langstar cannot determine where the config file belongs. That happens when `LANGSTAR_CONFIG_DIR` is unset and the operating system reports no home directory on macOS and Linux, or no config directory on Windows.
 
 #### Scenario: `config show` fails on macOS and Linux when langstar cannot determine the home directory
 
