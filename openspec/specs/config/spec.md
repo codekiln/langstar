@@ -125,6 +125,12 @@ When the config file exists but cannot be read or parsed, `langstar config valid
 - **AND** a user runs `langstar config output_format set json`
 - **THEN** langstar replaces the value with `output_format = "json"` and exits successfully
 
+#### Scenario: Setting a value while another setting holds a value of the wrong type
+
+- **WHEN** the config file sets `timezone = 5`
+- **AND** a user runs `langstar config output_format set json`
+- **THEN** langstar exits with the parse error and leaves the config file unchanged
+
 ### Requirement: Warn on stderr and use the defaults when a command that loads the settings cannot read or parse the config file
 
 A langstar command that loads the settings SHALL warn on stderr and run on the defaults and the environment variables when the config file cannot be read or does not parse. The warning gives the file's path and the error message, with the line and column of a parse error, and leaves out the quoted line of the file and the value the message quotes, because either can hold the API key. Every command outside the `config` group loads the settings, and so do `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` therefore still prints the config file's path, and `langstar config create` and `langstar config env`, which never load the settings, print no warning.
