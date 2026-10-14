@@ -170,12 +170,12 @@ impl Config {
             ConfigFile::Missing => return Ok(Self::default()),
         };
 
-        // The warning goes to stderr on every command that loads the settings, so it leaves out the line
-        // of the file that failed to parse and the value the message quotes in
-        // backticks or double quotes (for example "invalid type: integer `5`" or
-        // `invalid type: string "abc"`), which can hold the API key.
-        // `config validate` and `config <setting> set` print the line of the file
-        // that the parse error points at.
+        // The warning leaves out the line of the file that failed to parse and the
+        // value the message quotes, in backticks or double quotes (for example
+        // "invalid type: integer `5`" or `invalid type: string "abc"`), because
+        // either can hold the API key and every command that loads the settings
+        // prints this warning. `config validate` and `config <setting> set` print
+        // the line the parse error points at.
         Self::read_file_with(path, false)
     }
 
