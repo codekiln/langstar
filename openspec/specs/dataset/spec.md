@@ -135,7 +135,7 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 ### Requirement: Export examples to JSONL or CSV
 
-`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL replace the `--out` file only when the whole export succeeds: when any page request or write fails, langstar SHALL exit with an error, leave an existing `--out` file unchanged and remove its temporary file. A command that is killed, for example by Ctrl-C, can leave a hidden `.<name>.<pid>.<nanos>.tmp` file in the directory, which is safe to delete. A new `--out` file SHALL get the permissions a plain create gives it under the user's umask, a replaced file SHALL keep its permissions, and an `--out` that is a symlink SHALL remain a symlink with its target replaced. `--out` SHALL name a file in a directory that exists and is writable. An `--out` that is a directory, or an existing read-only file, SHALL fail at once with an error before any request is made. An existing `--out` that is not a regular file, such as `/dev/stdout`, `/dev/null` or a named pipe, SHALL be written in place with no temporary file. Replacing a regular file SHALL break hard links to it.
+`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. With `--out`, it SHALL fetch every page into a temporary file first and only after the last page succeeds open `--out` as a plain write does (create and truncate) and copy the export into it. When any page request fails, langstar SHALL exit with an error and leave an existing `--out` file unchanged. An `--out` that cannot be opened SHALL fail after the download. A crash or kill during the final copy can leave `--out` partly written.
 
 #### Scenario: Export to a CSV file
 
@@ -147,23 +147,7 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 - **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.jsonl` over an existing `examples.jsonl` and a request for a later page fails
 - **THEN** langstar exits with an error
-- **AND** `examples.jsonl` holds what it held before, and langstar has removed its temporary file from the directory
-
-#### Scenario: Export to a symlink
-
-- **WHEN** `--out` names a symlink and the export succeeds
-- **THEN** the symlink still points at its target and the target holds the exported examples
-
-#### Scenario: Export to a directory, a special file or a read-only file
-
-- **WHEN** `--out` names a directory, or an existing file with read-only permissions
-- **THEN** langstar exits with an error naming the path before it requests any example
-- **AND** when `--out` names `/dev/stdout`, `/dev/null` or a named pipe, langstar writes the export to it in place
-
-#### Scenario: Export to a directory that does not exist
-
-- **WHEN** a user runs `langstar dataset export <dataset-id> --out missing-dir/examples.jsonl`
-- **THEN** langstar exits with an error naming the directory and writes nothing
+- **AND** `examples.jsonl` holds what it held before
 
 #### Scenario: Export with a limit below 1
 
