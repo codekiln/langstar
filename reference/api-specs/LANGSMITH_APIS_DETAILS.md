@@ -21,8 +21,8 @@ See [langsmith/FRAGMENTS.md](./langsmith/FRAGMENTS.md) for extraction commands.
 
 | Schema | File Path | Size | Purpose |
 |--------|-----------|------|---------|
-| Annotation Queue Endpoints | `langsmith/annotation-queue-endpoints.json` | 2.3K | HITL annotation queue API endpoints |
-| Annotation Queue Schemas | `langsmith/annotation-queue-schemas.json` | 45K | Data types for annotation queues |
+| Annotation Queue Endpoints | `langsmith/annotation-queue-endpoints.json` | 64K | Annotation queue endpoints, including the platform items endpoints |
+| Annotation Queue Schemas | `langsmith/annotation-queue-schemas.json` | 47K | Data types for annotation queues |
 | Run Schema | `langsmith/run-schema.json` | 9.8K | Run/trace data structures |
 | Runs Query Endpoint | `langsmith/runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint spec |
 | Runs Query Request | `langsmith/runs-query-request-schema.json` | 5.5K | Request payload for runs query |
