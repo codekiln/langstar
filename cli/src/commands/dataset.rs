@@ -683,23 +683,25 @@ impl DatasetCommands {
         // one page however large the dataset is.
         let mut examples = client.list_examples_paginated(params, total_limit);
 
-        // Request the first page before opening --out, so a bad dataset id or
-        // API key leaves an existing file untouched. If a later page fails, the
-        // command exits with an error and the file keeps the examples written
-        // so far.
-        let mut next = examples.next().await.transpose()?;
-
-        // Prepare output
-        let mut output: Box<dyn Write> = if let Some(path) = &args.out {
-            Box::new(std::fs::File::create(path)?)
-        } else {
-            Box::new(std::io::stdout())
+        // With --out, stage the export in a temporary file next to the target
+        // and rename it into place only after the last page arrives and the
+        // final flush succeeds. A failure on any page, or a write error, drops
+        // the temporary file and leaves an existing --out file as it was.
+        // Without --out, records stream to stdout as they arrive.
+        let mut staged = match &args.out {
+            Some(path) => Some(StagedOut::create(path)?),
+            None => None,
+        };
+        let mut stdout = std::io::stdout();
+        let output: &mut dyn Write = match staged.as_mut() {
+            Some(file) => file,
+            None => &mut stdout,
         };
 
         let mut exported = 0usize;
         match args.file_format {
             ExportFormat::Jsonl => {
-                while let Some(example) = next {
+                while let Some(example) = examples.next().await.transpose()? {
                     let record = JsonlRecord {
                         id: Some(example.id),
                         inputs: example.inputs,
@@ -708,15 +710,14 @@ impl DatasetCommands {
                     };
                     writeln!(output, "{}", serde_json::to_string(&record)?)?;
                     exported += 1;
-                    next = examples.next().await.transpose()?;
                 }
                 output.flush()?;
             }
             ExportFormat::Csv => {
                 // CSV format
-                let mut wtr = csv::Writer::from_writer(output);
+                let mut wtr = csv::Writer::from_writer(&mut *output);
                 wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                while let Some(example) = next {
+                while let Some(example) = examples.next().await.transpose()? {
                     wtr.write_record([
                         example.id.to_string(),
                         serde_json::to_string(&example.inputs)?,
@@ -734,13 +735,13 @@ impl DatasetCommands {
                             .unwrap_or_default(),
                     ])?;
                     exported += 1;
-                    next = examples.next().await.transpose()?;
                 }
                 wtr.flush()?;
             }
         }
 
-        if let Some(path) = &args.out {
+        if let (Some(file), Some(path)) = (staged, &args.out) {
+            file.commit()?;
             eprintln!("Exported {} examples to {:?}", exported, path);
         }
 
@@ -748,9 +749,278 @@ impl DatasetCommands {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Staged --out file
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// A file staged next to its destination, renamed over it only by `commit`.
+///
+/// The staged file is created like a plain `File::create`, so a new
+/// destination gets the mode the umask allows. Replacing an existing file
+/// keeps that file's mode, as `>` would; its owner is not preserved. A
+/// destination that is a symlink is resolved first, so the link keeps pointing
+/// at its target and the target is what gets replaced. Dropping the value
+/// without calling `commit` removes the staged file.
+struct StagedOut {
+    file: std::fs::File,
+    temp: PathBuf,
+    target: PathBuf,
+    committed: bool,
+}
+
+impl StagedOut {
+    fn create(out: &std::path::Path) -> std::io::Result<Self> {
+        let target = resolve_symlink(out)?;
+        let dir = match target.parent() {
+            Some(dir) if !dir.as_os_str().is_empty() => dir.to_path_buf(),
+            _ => PathBuf::from("."),
+        };
+        let name = target.file_name().ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("{} is not a file path", out.display()),
+            )
+        })?;
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |d| d.subsec_nanos());
+        for attempt in 0..32u32 {
+            let temp = dir.join(format!(
+                ".{}.{}.{}.tmp",
+                name.to_string_lossy(),
+                std::process::id(),
+                nanos.wrapping_add(attempt)
+            ));
+            match std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temp)
+            {
+                Ok(file) => {
+                    return Ok(Self {
+                        file,
+                        temp,
+                        target,
+                        committed: false,
+                    });
+                }
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(e) => {
+                    return Err(std::io::Error::new(
+                        e.kind(),
+                        format!(
+                            "cannot create a temporary file in directory {}: {e}; \
+                             --out needs a directory that exists and is writable",
+                            dir.display()
+                        ),
+                    ));
+                }
+            }
+        }
+        Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!(
+                "cannot find an unused temporary file name in {}",
+                dir.display()
+            ),
+        ))
+    }
+
+    /// Flush the staged file and rename it over the destination.
+    fn commit(mut self) -> std::io::Result<()> {
+        self.file.flush()?;
+        self.file.sync_all()?;
+        // `metadata` follows symlinks, but `target` is already resolved.
+        if let Ok(existing) = std::fs::metadata(&self.target) {
+            self.file.set_permissions(existing.permissions())?;
+        }
+        std::fs::rename(&self.temp, &self.target)?;
+        self.committed = true;
+        Ok(())
+    }
+}
+
+impl Write for StagedOut {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.file.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.file.flush()
+    }
+}
+
+impl Drop for StagedOut {
+    fn drop(&mut self) {
+        if !self.committed {
+            let _ = std::fs::remove_file(&self.temp);
+        }
+    }
+}
+
+/// Follow `path` when it is a symlink, including one whose target does not
+/// exist yet, so the staged file lands next to the real target.
+fn resolve_symlink(path: &std::path::Path) -> std::io::Result<PathBuf> {
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) if meta.file_type().is_symlink() => match std::fs::canonicalize(path) {
+            Ok(resolved) => Ok(resolved),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                let link = std::fs::read_link(path)?;
+                Ok(path
+                    .parent()
+                    .unwrap_or(std::path::Path::new("."))
+                    .join(link))
+            }
+            Err(e) => Err(e),
+        },
+        _ => Ok(path.to_path_buf()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn dir_entries(dir: &std::path::Path) -> usize {
+        std::fs::read_dir(dir).unwrap().count()
+    }
+
+    #[test]
+    fn staged_out_dropped_without_commit_leaves_existing_file_and_no_temp() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old\n").unwrap();
+
+        let mut staged = StagedOut::create(&out).unwrap();
+        staged.write_all(b"partial").unwrap();
+        drop(staged);
+
+        assert_eq!(std::fs::read_to_string(&out).unwrap(), "old\n");
+        assert_eq!(dir_entries(dir.path()), 1);
+    }
+
+    #[test]
+    fn staged_out_commit_replaces_file_and_leaves_no_temp() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old\n").unwrap();
+
+        let mut staged = StagedOut::create(&out).unwrap();
+        staged.write_all(b"new\n").unwrap();
+        staged.commit().unwrap();
+
+        assert_eq!(std::fs::read_to_string(&out).unwrap(), "new\n");
+        assert_eq!(dir_entries(dir.path()), 1);
+    }
+
+    #[test]
+    fn staged_out_missing_directory_is_a_clear_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("no-such-dir").join("export.jsonl");
+
+        let err = StagedOut::create(&out).err().unwrap();
+
+        assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
+        assert!(err.to_string().contains("no-such-dir"), "{err}");
+        assert!(err.to_string().contains("writable"), "{err}");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_unwritable_directory_is_a_clear_error() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o555)).unwrap();
+        let out = dir.path().join("export.jsonl");
+
+        let result = StagedOut::create(&out);
+
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+        // root ignores directory permissions, so only assert when it applied
+        if let Err(err) = result {
+            assert!(err.to_string().contains("writable"), "{err}");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_new_file_mode_follows_the_umask_like_a_plain_create() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let plain = dir.path().join("plain");
+        std::fs::File::create(&plain).unwrap();
+        let out = dir.path().join("export.jsonl");
+
+        let mut staged = StagedOut::create(&out).unwrap();
+        staged.write_all(b"new\n").unwrap();
+        staged.commit().unwrap();
+
+        let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&out), mode(&plain));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_replacing_a_file_keeps_its_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old\n").unwrap();
+        std::fs::set_permissions(&out, std::fs::Permissions::from_mode(0o640)).unwrap();
+
+        let mut staged = StagedOut::create(&out).unwrap();
+        staged.write_all(b"new\n").unwrap();
+        staged.commit().unwrap();
+
+        let mode = std::fs::metadata(&out).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o640);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_symlink_stays_a_symlink_and_target_gets_the_content() {
+        let dir = tempfile::tempdir().unwrap();
+        let real_dir = dir.path().join("real");
+        std::fs::create_dir(&real_dir).unwrap();
+        let target = real_dir.join("export.jsonl");
+        std::fs::write(&target, "old\n").unwrap();
+        let link = dir.path().join("link.jsonl");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let mut staged = StagedOut::create(&link).unwrap();
+        staged.write_all(b"new\n").unwrap();
+        staged.commit().unwrap();
+
+        assert!(
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new\n");
+        assert_eq!(dir_entries(&real_dir), 1);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_dangling_symlink_gets_its_target_created() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.jsonl");
+        let link = dir.path().join("link.jsonl");
+        std::os::unix::fs::symlink("target.jsonl", &link).unwrap();
+
+        let mut staged = StagedOut::create(&link).unwrap();
+        staged.write_all(b"new\n").unwrap();
+        staged.commit().unwrap();
+
+        assert!(
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(std::fs::read_to_string(&target).unwrap(), "new\n");
+    }
 
     #[test]
     fn test_dataset_row_truncation() {

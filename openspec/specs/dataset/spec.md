@@ -135,13 +135,29 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 ### Requirement: Export examples to JSONL or CSV
 
-`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL request the first page before it opens the `--out` file. When that request fails, langstar SHALL exit with an error and leave an existing `--out` file unchanged; when a later page fails, langstar SHALL exit with an error and leave the examples already written in the file.
+`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL replace the `--out` file only when the whole export succeeds: when any page request or write fails, langstar SHALL exit with an error, leave an existing `--out` file unchanged and leave no temporary file behind. A new `--out` file SHALL get the permissions a plain create gives it under the user's umask, a replaced file SHALL keep its permissions, and an `--out` that is a symlink SHALL remain a symlink with its target replaced. `--out` SHALL name a file in a directory that exists and is writable.
 
 #### Scenario: Export to a CSV file
 
 - **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.csv`
 - **THEN** `examples.csv` holds a header row of `id`, `inputs`, `outputs` and `metadata` and one row per example, with each value as JSON
 - **AND** langstar reports how many examples it exported
+
+#### Scenario: Export fails partway
+
+- **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.jsonl` over an existing `examples.jsonl` and a request for a later page fails
+- **THEN** langstar exits with an error
+- **AND** `examples.jsonl` holds what it held before, and no temporary file remains in its directory
+
+#### Scenario: Export to a symlink
+
+- **WHEN** `--out` names a symlink and the export succeeds
+- **THEN** the symlink still points at its target and the target holds the exported examples
+
+#### Scenario: Export to a directory that does not exist
+
+- **WHEN** a user runs `langstar dataset export <dataset-id> --out missing-dir/examples.jsonl`
+- **THEN** langstar exits with an error naming the directory and writes nothing
 
 #### Scenario: Export with a limit below 1
 
