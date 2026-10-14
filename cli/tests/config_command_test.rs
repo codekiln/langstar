@@ -297,3 +297,58 @@ fn test_config_set_names_an_unreadable_config_file() {
     assert!(stderr.contains("Failed to read config file"), "{stderr}");
     assert!(stderr.contains(&path.display().to_string()), "{stderr}");
 }
+
+#[cfg(unix)]
+fn dir_with_config_symlink_loop() -> (TempDir, std::path::PathBuf) {
+    let dir = TempDir::new().unwrap();
+    // A symlink to itself makes the metadata lookup fail with a "too many
+    // levels of symbolic links" error, where `Path::exists` says false
+    let path = dir.path().join("config.toml");
+    std::os::unix::fs::symlink(&path, &path).unwrap();
+    (dir, path)
+}
+
+#[cfg(unix)]
+#[test]
+fn test_config_load_warns_about_a_config_file_it_cannot_look_up() {
+    let (dir, path) = dir_with_config_symlink_loop();
+
+    let out = langstar_in(&dir).arg("version").output().unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Failed to look up config file"), "{stderr}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+}
+
+#[cfg(unix)]
+#[test]
+fn test_config_validate_names_a_config_file_it_cannot_look_up() {
+    let (dir, path) = dir_with_config_symlink_loop();
+
+    let out = langstar_in(&dir)
+        .args(["config", "validate"])
+        .output()
+        .unwrap();
+
+    assert!(!out.status.success(), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Failed to look up config file"), "{stderr}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+}
+
+#[cfg(unix)]
+#[test]
+fn test_config_set_names_a_config_file_it_cannot_look_up() {
+    let (dir, path) = dir_with_config_symlink_loop();
+
+    let out = langstar_in(&dir)
+        .args(["config", "timezone", "set", "UTC"])
+        .output()
+        .unwrap();
+
+    assert!(!out.status.success(), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Failed to look up config file"), "{stderr}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+}

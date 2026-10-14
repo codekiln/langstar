@@ -62,14 +62,32 @@ fn old_config_warning(old_path: &Path, config_path: &Path) -> String {
     )
 }
 
-/// Pick the current config file when it exists, otherwise the old one when it exists
-fn choose_config_file<'a>(config_path: &'a Path, old_path: Option<&'a Path>) -> ConfigFile<'a> {
-    if config_path.exists() {
-        ConfigFile::Current(config_path)
-    } else if let Some(old_path) = old_path.filter(|path| path.exists()) {
-        ConfigFile::Old(old_path)
-    } else {
-        ConfigFile::Missing
+/// Whether a file exists at `path`. Unlike `Path::exists`, which says `false` when
+/// the lookup fails, this returns an error that names the path when the lookup
+/// fails (a symlink loop, or a parent directory langstar cannot search), so a
+/// config file langstar cannot look up is not taken for a missing one.
+pub(crate) fn config_file_exists(path: &Path) -> Result<bool> {
+    path.try_exists().map_err(|e| {
+        CliError::Config(format!(
+            "Failed to look up config file {}: {}",
+            path.display(),
+            e
+        ))
+    })
+}
+
+/// Pick the current config file when it exists, otherwise the old one when it
+/// exists. Returns an error when looking up either file fails.
+fn choose_config_file<'a>(
+    config_path: &'a Path,
+    old_path: Option<&'a Path>,
+) -> Result<ConfigFile<'a>> {
+    if config_file_exists(config_path)? {
+        return Ok(ConfigFile::Current(config_path));
+    }
+    match old_path {
+        Some(old_path) if config_file_exists(old_path)? => Ok(ConfigFile::Old(old_path)),
+        _ => Ok(ConfigFile::Missing),
     }
 }
 
@@ -94,7 +112,7 @@ impl Config {
     /// 2. Config file (`config.toml` in the config directory, see `config_file_path`)
     /// 3. Default values
     ///
-    /// A config file that exists but cannot be read or parsed is ignored with a
+    /// A config file that exists but cannot be looked up, read or parsed is ignored with a
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
@@ -159,7 +177,7 @@ impl Config {
     /// Takes both paths as arguments so tests on any platform can point it at
     /// temporary directories.
     fn load_from_paths(config_path: &Path, old_path: Option<&Path>) -> Result<Self> {
-        let path = match choose_config_file(config_path, old_path) {
+        let path = match choose_config_file(config_path, old_path)? {
             ConfigFile::Current(path) => path,
             ConfigFile::Old(path) => {
                 // Warn on the first load only, so a process that loads the
@@ -234,12 +252,13 @@ impl Config {
     }
 
     /// The config file `load` reads: the current one, or on macOS the one from
-    /// before v2.2.0 when only that one exists. `None` when neither exists.
+    /// before v2.2.0 when only that one exists. `None` when neither exists, and
+    /// an error that names the file when looking one up fails.
     pub fn file_to_read() -> Result<Option<PathBuf>> {
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         Ok(
-            match choose_config_file(&config_path, old_path.as_deref()) {
+            match choose_config_file(&config_path, old_path.as_deref())? {
                 ConfigFile::Current(path) | ConfigFile::Old(path) => Some(path.to_path_buf()),
                 ConfigFile::Missing => None,
             },
@@ -462,7 +481,7 @@ mod tests {
         ConfigPaths::write(&paths.current, "current-key");
 
         assert_eq!(
-            choose_config_file(&paths.current, Some(&paths.old)),
+            choose_config_file(&paths.current, Some(&paths.old)).unwrap(),
             ConfigFile::Current(&paths.current)
         );
         assert_eq!(
@@ -477,7 +496,7 @@ mod tests {
         ConfigPaths::write(&paths.old, "old-key");
 
         assert_eq!(
-            choose_config_file(&paths.current, Some(&paths.old)),
+            choose_config_file(&paths.current, Some(&paths.old)).unwrap(),
             ConfigFile::Old(&paths.old)
         );
         assert_eq!(paths.load().langsmith_api_key.as_deref(), Some("old-key"));
@@ -490,7 +509,7 @@ mod tests {
         ConfigPaths::write(&paths.old, "old-key");
 
         assert_eq!(
-            choose_config_file(&paths.current, Some(&paths.old)),
+            choose_config_file(&paths.current, Some(&paths.old)).unwrap(),
             ConfigFile::Current(&paths.current)
         );
         assert_eq!(
@@ -504,7 +523,7 @@ mod tests {
         let paths = ConfigPaths::new();
 
         assert_eq!(
-            choose_config_file(&paths.current, Some(&paths.old)),
+            choose_config_file(&paths.current, Some(&paths.old)).unwrap(),
             ConfigFile::Missing
         );
         let config = paths.load();
@@ -520,11 +539,34 @@ mod tests {
         ConfigPaths::write(&paths.old, "old-key");
 
         assert_eq!(
-            choose_config_file(&paths.current, None),
+            choose_config_file(&paths.current, None).unwrap(),
             ConfigFile::Missing
         );
         let config = Config::load_from_paths(&paths.current, None).unwrap();
         assert!(config.langsmith_api_key.is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_load_names_a_config_file_it_cannot_look_up() {
+        // A symlink to itself makes the metadata lookup fail, where
+        // `Path::exists` would say the file is missing
+        let paths = ConfigPaths::new();
+        std::fs::create_dir_all(paths.current.parent().unwrap()).unwrap();
+        std::os::unix::fs::symlink(&paths.current, &paths.current).unwrap();
+
+        let message = choose_config_file(&paths.current, Some(&paths.old))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            message.contains("Failed to look up config file"),
+            "{message}"
+        );
+        assert!(
+            message.contains(&paths.current.display().to_string()),
+            "{message}"
+        );
+        assert!(Config::load_from_paths(&paths.current, Some(&paths.old)).is_err());
     }
 
     #[test]
