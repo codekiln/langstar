@@ -369,7 +369,8 @@ async fn test_delete_run_finds_item_on_second_page() {
     let _first_pages = server
         .mock("GET", list_path.as_str())
         .match_query(Matcher::Regex(
-            "^status=(needs_my_review|needs_others_review|archived)&item_type=RUN$".into(),
+            "^status=(needs_my_review|needs_others_review|archived)&page_size=100&item_type=RUN$"
+                .into(),
         ))
         .with_status(200)
         .with_header("content-type", "application/json")

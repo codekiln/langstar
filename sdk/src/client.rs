@@ -1195,6 +1195,7 @@ impl LangchainClient {
         for status in AnnotationQueueItemStatus::ALL {
             let mut params = ListAnnotationQueueItemsParams::new(status);
             params.item_type = Some(AnnotationQueueItemType::Run);
+            params.page_size = Some(100);
             let items = self
                 .collect_annotation_queue_items(queue_id, params, None)
                 .await?;
