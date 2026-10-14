@@ -249,6 +249,16 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **THEN** langstar lists that field as a difference and exits with status 3
 - **AND** the destination record holds the new commit hash
 
+### Requirement: Redact an API key written into a destination prompt's model
+
+When `prompt compare`, `prompt verify` or `prompt import` reports a difference at a chat model setting whose name ends in `api_key` and either side holds a string there, langstar SHALL print `<redacted>` in place of that string in the text and JSON reports.
+
+#### Scenario: Destination model holds a literal API key
+
+- **WHEN** someone saved the destination prompt with an `openai_api_key` written as a string
+- **AND** a user runs `langstar prompt compare my-prompt.json`
+- **THEN** langstar reports the setting's path with `<redacted>` in place of the string and exits with status 3
+
 ### Requirement: Compare a prompt with its export file
 
 `langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with its model and repo details, and list each difference by its JSON path with both values. `--commit <hash-or-tag>` SHALL choose the commit, and without it the latest. It SHALL compare every field in the file's `repo` and `commit`, including every manifest key and its `id` arrays, except `commit.model_config` and `commit.model_provider`, which import cannot set.
