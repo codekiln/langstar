@@ -150,7 +150,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Compare an assistant with its export file
 
-`langstar assistant compare <file> --deployment <name-or-id>` SHALL compare the file with the recorded assistant, or the one named by `--assistant-id`, and list each difference by its JSON path with both values. It SHALL compare only the fields the export file holds, leaving out the assistant ID, version and timestamps the server sets.
+`langstar assistant compare <file> --deployment <name-or-id>` SHALL compare the file with the assistant recorded in the destination record (`<file stem>.destinations.json` unless `--record <path>` names another), or the one named by `--assistant-id`, and list each difference by its JSON path with both values. It SHALL compare only the fields the export file holds, leaving out the assistant ID, version and timestamps the server sets.
 
 #### Scenario: Metadata changed on the deployment
 
@@ -162,6 +162,12 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **WHEN** the destination record has no entry for `my-agent-prod`
 - **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod` without `--assistant-id`
 - **THEN** langstar exits with status 1 and an error that names the deployment and suggests `--assistant-id`
+
+#### Scenario: Record kept at another path
+
+- **WHEN** a user imported `support-bot.json` with `--record records/prod.json`
+- **AND** runs `langstar assistant compare support-bot.json --deployment my-agent-prod --record records/prod.json`
+- **THEN** langstar compares the file with the assistant that import recorded in `records/prod.json`
 
 ### Requirement: Verify that an assistant can run on a deployment
 

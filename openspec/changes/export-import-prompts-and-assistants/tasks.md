@@ -31,13 +31,13 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 
 ## 4. Shared code for the prompt and assistant commands: the export file, the comparison and the report
 
-- [ ] 4.1 Add the export file types, with sorted keys, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, which langstar replaces by writing a temporary file in the same directory and renaming it over the old one, to a new module in `cli/src/`. Verify with these unit tests:
-  - Tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level.
+- [ ] 4.1 Add the export file types, with sorted keys, sorted `commit.tags`, `repo.tags` and `requires.secrets`, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, which langstar replaces by writing a temporary file in the same directory and renaming it over the old one, to a new module in `cli/src/`. Verify with these unit tests:
+  - Tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level, and a test that `commit.tags`, `repo.tags` and `requires.secrets` given in different orders serialize to the same text.
   - A test that updating one destination leaves the others unchanged.
   - A test that a record write that fails before the rename leaves the earlier record file unchanged, its pending entries included.
   - A test that reading a file whose `format_version` is 2, or whose `kind` names the other resource, returns an error naming the field and its value.
 - [ ] 4.2 Add the JSON comparison, which compares every key under the `repo`, `commit` and `assistant` objects except `commit.model_config` and `commit.model_provider`, and reports differences by JSON Pointer. Verify with these tests:
-  - Unit tests on nested objects, arrays and missing keys.
+  - Unit tests on nested objects, arrays, missing keys, and keys holding `/` or `~`, which the report escapes as RFC 6901 requires, so `a/b` appears as `/a~1b` and `a~b` as `/a~0b`.
   - A test that a changed `id` array inside `commit.manifest`, such as `ChatOpenAI` replaced by `ChatAnthropic`, is reported at its path.
   - A test that a destination whose `commit.model_config` and `commit.model_provider` differ from the file's, while the manifest matches, is reported as a match.
 - [ ] 4.3 Add the shared result report and the exit statuses 0, 3 and 1, printing JSON to stdout and progress to stderr, and leave clap's status 2 for usage errors; verify with unit tests of the report and of the exit status each result gives
@@ -110,12 +110,12 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 
 ## 9. assistant compare and verify
 
-- [ ] 9.1 Add `langstar assistant compare` with `--assistant-id`, the lookup of the recorded assistant in the destination record from 4.1, and the check, shared by assistant compare, verify and import, that each pointer under `requires.prompts` still resolves in the file's `assistant` object to the prompt name recorded with it. Verify with these tests:
+- [ ] 9.1 Add `langstar assistant compare` with `--assistant-id`, `--record`, the lookup of the recorded assistant in the destination record from 4.1, and the check, shared by assistant compare, verify and import, that each pointer under `requires.prompts` still resolves in the file's `assistant` object to the prompt name recorded with it. Verify with these tests:
   - An integration test that exports an assistant, changes its metadata through the SDK, runs compare with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
-  - A unit test that compare reads the assistant ID from a destination record written by the 4.1 types.
+  - Unit tests that compare reads the assistant ID from a destination record written by the 4.1 types, once at the default path and once at a path passed with `--record`.
   - An integration test that `assistant compare` with no destination record entry and no `--assistant-id` exits with status 1 and names the deployment.
   - A unit test that a file whose configuration names another prompt at a pointer under `requires.prompts` exits with status 1 and names the pointer and both values.
-- [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. Verify with these tests:
+- [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--record`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. Verify with these tests:
   - An integration test that runs verify with `--assistant-id` against an exported assistant and exits with status 0.
   - An integration test that exports an assistant, changes its metadata through the SDK, runs verify with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
   - An integration test of a file whose graph ID the deployment lacks, which reports the graph ID and exits with status 3.
