@@ -1,135 +1,2585 @@
-[
-  {
-    "path": "/api/v1/annotation-queues",
-    "methods": [
-      "get",
-      "post"
-    ]
+{
+  "/api/v1/annotation-queues": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Annotation Queues",
+      "operationId": "get_annotation_queues_api_v1_annotation_queues_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "ids",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ids"
+          }
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        {
+          "name": "name_contains",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name Contains"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "tag_value_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Value Id"
+          }
+        },
+        {
+          "name": "dataset_id",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Id"
+          }
+        },
+        {
+          "name": "queue_type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "single",
+                  "pairwise"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Queue Type"
+          }
+        },
+        {
+          "name": "assigned_to_me",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Assigned To Me"
+          }
+        },
+        {
+          "name": "sort_by",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort By"
+          }
+        },
+        {
+          "name": "sort_by_desc",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": true,
+            "title": "Sort By Desc"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnnotationQueueSchemaWithSize"
+                },
+                "title": "Response Get Annotation Queues Api V1 Annotation Queues Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Create Annotation Queue",
+      "operationId": "create_annotation_queue_api_v1_annotation_queues_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AnnotationQueueCreateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationQueueSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "delete": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Delete Annotation Queues",
+      "description": "Delete multiple annotation queues with partial success support.\n\nReturns:\n    - 200: All queues deleted successfully\n    - 207: Some queues deleted successfully, some failed",
+      "operationId": "delete_annotation_queues_api_v1_annotation_queues_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_ids",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 100,
+            "title": "Queue Ids"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/populate",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/annotation-queues/populate": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Populate Annotation Queue",
+      "description": "Populate annotation queue with runs from an experiment.",
+      "operationId": "populate_annotation_queue_api_v1_annotation_queues_populate_post",
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/PopulateAnnotationQueueSchema"
+            }
+          }
+        },
+        "required": true
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}",
-    "methods": [
-      "delete",
-      "get",
-      "patch"
-    ]
+  "/api/v1/annotation-queues/{queue_id}": {
+    "delete": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Delete Annotation Queue",
+      "operationId": "delete_annotation_queue_api_v1_annotation_queues__queue_id__delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "patch": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Update Annotation Queue",
+      "operationId": "update_annotation_queue_api_v1_annotation_queues__queue_id__patch",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AnnotationQueueUpdateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Annotation Queue",
+      "operationId": "get_annotation_queue_api_v1_annotation_queues__queue_id__get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationQueueSchemaWithRubric"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/runs",
-    "methods": [
-      "get",
-      "post"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/runs": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Add Runs To Annotation Queue",
+      "operationId": "add_runs_to_annotation_queue_api_v1_annotation_queues__queue_id__runs_post",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "extend_trace_retention",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Extend Trace Retention"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AddRunToQueueRequest"
+                  }
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnnotationQueueRunAddSchema"
+                  }
+                }
+              ],
+              "title": "Runs"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnnotationQueueRunSchema"
+                },
+                "title": "Response Add Runs To Annotation Queue Api V1 Annotation Queues  Queue Id  Runs Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Runs From Annotation Queue",
+      "operationId": "get_runs_from_annotation_queue_api_v1_annotation_queues__queue_id__runs_get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "default": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "name": "archived",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived"
+          }
+        },
+        {
+          "name": "include_stats",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include Stats"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "needs_my_review",
+                  "needs_others_review",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RunSchemaWithAnnotationQueueInfo"
+                },
+                "title": "Response Get Runs From Annotation Queue Api V1 Annotation Queues  Queue Id  Runs Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/export",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/runs/by-key": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Add Runs To Annotation Queue By Key",
+      "description": "Self-hosted deployments require LangSmith `v0.16` or later.",
+      "operationId": "add_runs_to_annotation_queue_by_key_api_v1_annotation_queues__queue_id__runs_by_key_post",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "extend_trace_retention",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Extend Trace Retention"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AddRunToQueueByKeyRequest"
+              },
+              "title": "Runs"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnnotationQueueRunSchema"
+                },
+                "title": "Response Add Runs To Annotation Queue By Key Api V1 Annotation Queues  Queue Id  Runs By Key Post"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/run/{index}",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/export": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Export Annotation Queue Archived Runs",
+      "operationId": "export_annotation_queue_archived_runs_api_v1_annotation_queues__queue_id__export_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ExportAnnotationQueueRunsRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{run_id}/queues",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/run/{index}": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Run From Annotation Queue",
+      "description": "Get a run from an annotation queue",
+      "operationId": "get_run_from_annotation_queue_api_v1_annotation_queues__queue_id__run__index__get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "index",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "title": "Index"
+          }
+        },
+        {
+          "name": "include_extra",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Include Extra"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunSchemaWithAnnotationQueueInfo"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/runs/{queue_run_id}",
-    "methods": [
-      "delete",
-      "patch"
-    ]
+  "/api/v1/annotation-queues/{run_id}/queues": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Annotation Queues For Run",
+      "operationId": "get_annotation_queues_for_run_api_v1_annotation_queues__run_id__queues_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Run Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnnotationQueueSchema"
+                },
+                "title": "Response Get Annotation Queues For Run Api V1 Annotation Queues  Run Id  Queues Get"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/runs/delete",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/runs/{queue_run_id}": {
+    "patch": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Update Run In Annotation Queue",
+      "operationId": "update_run_in_annotation_queue_api_v1_annotation_queues__queue_id__runs__queue_run_id__patch",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "queue_run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Run Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AnnotationQueueRunUpdateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "delete": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Delete Run From Annotation Queue",
+      "operationId": "delete_run_from_annotation_queue_api_v1_annotation_queues__queue_id__runs__queue_run_id__delete",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "queue_run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Run Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/total_size",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/runs/delete": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Delete Runs From Annotation Queue",
+      "operationId": "delete_runs_from_annotation_queue_api_v1_annotation_queues__queue_id__runs_delete_post",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AnnotationQueueBulkDeleteRunsRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/total_archived",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/total_size": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Total Size From Annotation Queue",
+      "operationId": "get_total_size_from_annotation_queue_api_v1_annotation_queues__queue_id__total_size_get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationQueueSizeSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/{queue_id}/size",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/total_archived": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Total Archived From Annotation Queue",
+      "operationId": "get_total_archived_from_annotation_queue_api_v1_annotation_queues__queue_id__total_archived_get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "start_time",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          }
+        },
+        {
+          "name": "end_time",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationQueueSizeSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/status/{annotation_queue_run_id}",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/size": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Get Size From Annotation Queue",
+      "operationId": "get_size_from_annotation_queue_api_v1_annotation_queues__queue_id__size_get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "needs_my_review",
+                  "needs_others_review",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationQueueSizeSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise",
-    "methods": [
-      "get",
-      "post"
-    ]
+  "/api/v1/annotation-queues/status/{annotation_queue_run_id}": {
+    "post": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Create Identity Annotation Queue Run Status",
+      "operationId": "create_identity_annotation_queue_run_status_api_v1_annotation_queues_status__annotation_queue_run_id__post",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "annotation_queue_run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Annotation Queue Run Id"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/IdentityAnnotationQueueRunStatusCreateSchema"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/{queue_id}",
-    "methods": [
-      "get",
-      "patch"
-    ]
+  "/api/v1/annotation-queues/{queue_id}/runs/resolve/{queue_run_id}": {
+    "get": {
+      "tags": [
+        "annotation-queues"
+      ],
+      "summary": "Resolve Annotation Queue Run",
+      "description": "Resolve a queue run ID to its section and run data for deep linking.",
+      "operationId": "resolve_annotation_queue_run_api_v1_annotation_queues__queue_id__runs_resolve__queue_run_id__get",
+      "deprecated": true,
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Id"
+          }
+        },
+        {
+          "name": "queue_run_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Queue Run Id"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolvedAnnotationQueueRunSchema"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/populate",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/platform/annotation-queues/items/{queue_item_id}/status": {
+    "post": {
+      "description": "Log the caller's reviewer status for a RUN or THREAD annotation queue item. A null status re-shows the item for this reviewer.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Create annotation queue item status",
+      "parameters": [
+        {
+          "description": "Annotation queue item ID",
+          "name": "queue_item_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.CreateAnnotationQueueItemStatusResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/annotationqueues.CreateAnnotationQueueItemStatusRequest"
+            }
+          }
+        }
+      }
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/populate",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/platform/annotation-queues/{queue_id}/items": {
+    "get": {
+      "description": "List RUN and THREAD items in a single annotation queue for one review status section, with opaque cursor pagination. Optional item_type=RUN|THREAD filters the page. Optional min_start_time/max_start_time bound the item's trace start time; items with no start time are excluded when either bound is set. direction=backward returns items before the supplied cursor. The response contains item metadata only, not expanded run or thread payloads. status=archived returns items whose queue review requirements have been satisfied, not merely items the caller personally marked completed.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "List annotation queue items",
+      "parameters": [
+        {
+          "description": "Annotation queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Review section: needs_my_review, needs_others_review, or archived",
+          "name": "status",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "needs_my_review",
+              "needs_others_review",
+              "archived"
+            ],
+            "title": "Status"
+          }
+        },
+        {
+          "description": "Page size (max 100)",
+          "name": "page_size",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "default": 20,
+            "title": "Page Size"
+          }
+        },
+        {
+          "description": "Opaque pagination cursor",
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "title": "Cursor"
+          }
+        },
+        {
+          "description": "Filter to RUN or THREAD",
+          "name": "item_type",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "RUN",
+              "THREAD"
+            ],
+            "title": "Item Type"
+          }
+        },
+        {
+          "description": "Only items whose trace start time is at or after this timestamp. Omit or send the zero time for no bound",
+          "name": "min_start_time",
+          "in": "query",
+          "schema": {
+            "format": "date-time",
+            "type": "string",
+            "title": "Min Start Time"
+          }
+        },
+        {
+          "description": "Only items whose trace start time is at or before this timestamp. Omit or send the zero time for no bound",
+          "name": "max_start_time",
+          "in": "query",
+          "schema": {
+            "format": "date-time",
+            "type": "string",
+            "title": "Max Start Time"
+          }
+        },
+        {
+          "description": "Pagination direction. backward requires cursor",
+          "name": "direction",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "forward",
+              "backward"
+            ],
+            "default": "forward",
+            "title": "Direction"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.ListAnnotationQueueItemsResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    },
+    "post": {
+      "description": "Add RUN or THREAD items to a single annotation queue. RUN items require run_id unless they are created from a suggested example. THREAD items require thread_id and project_id.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Add annotation queue items",
+      "parameters": [
+        {
+          "description": "Annotation queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Extend trace retention for added run items",
+          "name": "extend_trace_retention",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "title": "Extend Trace Retention"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Created",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.AddAnnotationQueueItemsResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/annotationqueues.AddAnnotationQueueItemsRequest"
+            }
+          }
+        }
+      }
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/entries",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/platform/annotation-queues/{queue_id}/items/count": {
+    "get": {
+      "description": "Returns the number of annotation queue items in one status bucket. The two time windows are independent: start_time/end_time bound when an item was archived, min_start_time/max_start_time bound when its trace ran. Items with no trace start time are excluded when either of the latter is set.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Get the annotation queue item count",
+      "parameters": [
+        {
+          "description": "Queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Count bucket: all, needs_my_review, needs_others_review, or archived.",
+          "name": "status",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        {
+          "description": "Archived strictly after this time. Only used when status=archived",
+          "name": "start_time",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "title": "Start Time"
+          }
+        },
+        {
+          "description": "Archived strictly before this time. Only used when status=archived",
+          "name": "end_time",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "title": "End Time"
+          }
+        },
+        {
+          "description": "Trace started at or after this time",
+          "name": "min_start_time",
+          "in": "query",
+          "schema": {
+            "format": "date-time",
+            "type": "string",
+            "title": "Min Start Time"
+          }
+        },
+        {
+          "description": "Trace started at or before this time",
+          "name": "max_start_time",
+          "in": "query",
+          "schema": {
+            "format": "date-time",
+            "type": "string",
+            "title": "Max Start Time"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemCountResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/entries/delete",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/platform/annotation-queues/{queue_id}/items/delete": {
+    "post": {
+      "description": "Remove RUN or THREAD items from a single annotation queue by item ID. Both active and completed items can be removed.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Delete annotation queue items",
+      "parameters": [
+        {
+          "description": "Annotation queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/annotationqueues.DeleteAnnotationQueueItemsRequest"
+            }
+          }
+        }
+      }
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/status/{queue_entry_id}",
-    "methods": [
-      "post"
-    ]
+  "/api/v1/platform/annotation-queues/{queue_id}/items/{item_id}": {
+    "patch": {
+      "description": "Partially update mutable timestamps (added_at, last_reviewed_time) for a RUN or THREAD annotation queue item. Omit a field, or pass JSON null, to leave it unchanged.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Update an annotation queue item",
+      "parameters": [
+        {
+          "description": "Annotation queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Annotation queue item ID",
+          "name": "item_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItem"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Unprocessable Entity",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/annotationqueues.PatchAnnotationQueueItemRequest"
+            }
+          }
+        }
+      }
+    }
   },
-  {
-    "path": "/api/v1/annotation-queues/pairwise/{queue_id}/size",
-    "methods": [
-      "get"
-    ]
+  "/api/v1/platform/annotation-queues/{queue_id}/items/{item_id}/placement": {
+    "get": {
+      "description": "Resolve a RUN or THREAD item to its current review section and zero-based position for deep linking. The returned cursor counts RUN and THREAD items together, so it is only valid for a list request with no item_type or start-time filter.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Get annotation queue item placement",
+      "parameters": [
+        {
+          "description": "Annotation queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Annotation queue item ID",
+          "name": "item_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemPlacementResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shared.ProblemDetails"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    }
+  },
+  "/api/v1/platform/annotation-queues/{queue_id}/reviewers": {
+    "post": {
+      "description": "Assigns a single identity as a reviewer for the queue. Idempotent.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Add a reviewer to an annotation queue",
+      "parameters": [
+        {
+          "description": "Queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Created",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/annotationqueues.AddReviewerResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/annotationqueues.AddReviewerRequest"
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/v1/platform/annotation-queues/{queue_id}/reviewers/{identity_id}": {
+    "delete": {
+      "description": "Unassigns an identity as a reviewer for the queue. Idempotent.",
+      "tags": [
+        "annotation_queues"
+      ],
+      "summary": "Remove a reviewer from an annotation queue",
+      "parameters": [
+        {
+          "description": "Queue ID",
+          "name": "queue_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Identity ID of the reviewer to remove",
+          "name": "identity_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "204": {
+          "description": "No Content"
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    }
   }
-]
+}
