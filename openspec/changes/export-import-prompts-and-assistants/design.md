@@ -106,7 +106,7 @@ A mise task runs a short Python script that pulls the imported prompt with `incl
 - [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and in [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) a developer checks the round trip against the live API before anyone builds the commands.
 - [Pushing a manifest identical to the latest commit may return 409] → Import compares first and pushes nothing when the prompt matches.
 - [langstar finds a deployment's Agent Server URL only in `source_config.custom_url` (`resolve_deployment_url` in `cli/src/deployment_utils.rs`), and a deployment built from GitHub has none, so every `langstar assistant` command, the new ones included, fails on such a deployment] → In [export-import-prompts-and-assistants Task 2.2 Return the URL of a deployment built from GitHub](tasks.md#L13), a developer adds the control plane's top-level `url` to the SDK's `Deployment`, which drops it today, and makes `resolve_deployment_url` use it, before anyone builds the assistant export, compare, verify and import commands.
-- [Tasks 2.2 and 3.1 to 3.4 add public fields to SDK structs, so a crate that builds one of those structs with a struct literal stops compiling] → Each of those pull requests updates every struct literal of the changed struct in this repository and carries a `BREAKING CHANGE:` footer, which `docs/dev/git-scm-conventions.md` says triggers a major version bump.
+- [Tasks 2.2 and 3.1 to 3.4 add public fields to SDK structs, so a crate that builds one of those structs with a struct literal stops compiling] → Each of those pull requests updates every struct literal of the changed struct in this repository. [Open Question 9](#9---should-the-sdk-field-additions-count-as-a-breaking-change) asks whether they also carry a `BREAKING CHANGE:` footer, which `docs/dev/git-scm-conventions.md` says triggers a major version bump.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 
 ## Resolved Questions
@@ -168,5 +168,12 @@ None.
 
 > Context from the drafting agent, for question 8.
 > [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807) asks import to check the destination's dependencies: the secrets a prompt's model reads, and an assistant's graph and referenced prompts. The draft runs those checks before import writes and writes nothing when one fails, so a user never has to find and delete a copy that cannot run. The cost is order: the destination workspace needs its secrets before a prompt import, and its prompts before an assistant import. The other choice writes the copy anyway and reports the failed checks with status 3 afterwards, which lets a user import in any order and fix the destination later. Recommendation: stop before writing.
+
+<ANSWER_HERE>
+
+### 9 - Should the SDK field additions count as a breaking change?
+
+> Context from the drafting agent, for question 9.
+> Tasks 2.2 and 3.1 to 3.4 add public fields to `Deployment`, `CommitData`, `CommitRequest`, `Assistant` and the assistant request structs. A crate that builds one of those structs with a struct literal stops compiling, so by `docs/dev/git-scm-conventions.md` each of those pull requests would carry a `BREAKING CHANGE:` footer and the release would become a major version. `sdk/Cargo.toml` does not set `publish = false`, but the CLI in this workspace is the only user of the SDK that langstar knows of, and each pull request updates the struct literals in this repository. Recommendation: treat the additions as `feat` changes with no `BREAKING CHANGE:` footer, and name the new fields in the release notes.
 
 <ANSWER_HERE>
