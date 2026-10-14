@@ -313,9 +313,9 @@ impl Config {
     /// `~/.config/langstar/config.toml` on macOS and Linux. `default_base_dir`
     /// supplies `base_dir`.
     ///
-    /// Takes `base_dir` as an argument so a unit test can pass `None`, which
-    /// `dirs` cannot be made to report: `dirs::home_dir` falls back to the passwd
-    /// entry when `HOME` is unset.
+    /// Takes `base_dir` as an argument so a unit test can pass `None`. A test
+    /// cannot get `dirs::home_dir` to return `None` by unsetting `HOME`, because
+    /// `dirs` then reads the home directory from the passwd entry.
     #[cfg(target_os = "windows")]
     fn config_file_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
         let config_dir = base_dir
@@ -377,7 +377,7 @@ fn config_file_in(dir: &Path) -> PathBuf {
     dir.join("config.toml")
 }
 
-/// Returns the part of toml's error message that comes before any quoted text, because toml quotes the value it rejected, which can be the API key. toml quotes a value between backticks, or between double quotes when the value is a string, and the later lines of the message quote the file, so the function reads only the first line and stops at the first backtick or double quote. A trailing `expected` says nothing once the quoted text after it is gone, so the function removes it, and the function returns `invalid TOML` when nothing remains.
+/// Returns the start of toml's error message, before the value toml quotes, because that value can be the API key. toml quotes the value between backticks, or between double quotes for a string, and quotes the file's lines after the first line of the message. The function therefore keeps the first line up to the first backtick or double quote, drops a trailing `expected`, and returns `invalid TOML` when nothing is left.
 fn message_without_value(message: &str) -> &str {
     let first_line = message.lines().next().unwrap_or("");
     let end = first_line.find(['`', '"']).unwrap_or(first_line.len());
