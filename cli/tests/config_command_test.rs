@@ -180,6 +180,7 @@ fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
     for (line, value) in [
         ("langsmith_api_key = 12345678", "12345678"),
         ("timezone = 5", "`5`"),
+        ("lsv2_pt_SECRET123", "SECRET123"),
         (
             "hide_workspace_and_org_id_message = \"lsv2_pt_SECRET123\"",
             "SECRET123",
@@ -195,6 +196,8 @@ fn test_config_load_warning_leaves_out_a_value_of_the_wrong_type() {
         assert!(stderr.contains("line 1, column"), "{stderr}");
         assert!(!stderr.contains(value), "{stderr}");
         assert!(!stderr.contains("\nexpected"), "{stderr}");
+        let first_line = stderr.lines().next().unwrap();
+        assert!(!first_line.ends_with("expected"), "{stderr}");
     }
 }
 

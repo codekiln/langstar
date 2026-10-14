@@ -360,13 +360,19 @@ fn config_file_in(dir: &Path) -> PathBuf {
 /// Returns the first line of toml's error message, cut before the first backtick
 /// or double quote, because toml writes the rejected value between backticks or,
 /// for a string, between double quotes, and the value can be the API key. The
-/// function drops the later lines too: toml puts quoted tokens there as well,
-/// and a line cut at its quote can leave a lone `expected` at the end of the
-/// message.
+/// function drops the later lines too, because toml puts quoted tokens there as
+/// well. When the cut leaves a trailing `expected`, which names nothing once
+/// the quoted token is gone, the function drops it too, and returns
+/// `invalid TOML` when nothing else is left, as for a line with no `=`.
 fn message_without_value(message: &str) -> &str {
     let first_line = message.lines().next().unwrap_or("");
     let end = first_line.find(['`', '"']).unwrap_or(first_line.len());
-    first_line[..end].trim_end_matches([' ', ':', ','])
+    let cut = first_line[..end].trim_end_matches([' ', ':', ',']);
+    let cut = cut
+        .strip_suffix("expected")
+        .unwrap_or(cut)
+        .trim_end_matches([' ', ':', ',']);
+    if cut.is_empty() { "invalid TOML" } else { cut }
 }
 
 #[cfg(test)]
