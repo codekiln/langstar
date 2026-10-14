@@ -769,7 +769,7 @@ where
 ///
 /// A failure on any page returns before `path` is opened, so an existing file
 /// is untouched. Once the copy starts, an error or a kill leaves `path` partly
-/// written; before it starts, `path` is untouched.
+/// written.
 async fn export_to_file<S, E>(
     examples: S,
     format: ExportFormat,
@@ -930,6 +930,55 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(read.load(std::sync::atomic::Ordering::SeqCst), 2);
         assert!(!out.exists());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn export_to_file_writes_through_a_symlink_and_keeps_the_file_mode() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.jsonl");
+        let link = dir.path().join("link.jsonl");
+        std::fs::write(&target, "old\n").unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o640)).unwrap();
+        symlink(&target, &link).unwrap();
+        let stream =
+            futures_util::stream::iter(vec![Ok::<_, crate::error::CliError>(fake_example(1))]);
+
+        export_to_file(stream, ExportFormat::Jsonl, &link)
+            .await
+            .unwrap();
+
+        assert!(
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        assert_eq!(std::fs::read_to_string(&target).unwrap().lines().count(), 1);
+        assert_eq!(
+            std::fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn export_to_file_gives_a_new_file_the_mode_a_plain_create_gives() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let plain = dir.path().join("plain.jsonl");
+        let out = dir.path().join("export.jsonl");
+        std::fs::File::create(&plain).unwrap();
+        let stream =
+            futures_util::stream::iter(vec![Ok::<_, crate::error::CliError>(fake_example(1))]);
+
+        export_to_file(stream, ExportFormat::Jsonl, &out)
+            .await
+            .unwrap();
+
+        let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&out), mode(&plain));
     }
 
     #[test]

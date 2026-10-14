@@ -353,7 +353,7 @@ langstar dataset export 12345678-1234-1234-1234-123456789012 \
 Exported 100 examples to "backup.jsonl"
 ```
 
-With `--out`, langstar first fetches every page into a temporary file in your system temp directory, then opens `--out` as `>` does (create and truncate) and copies the export into it. If a page request fails, the command exits with an error and an existing `--out` file keeps its contents. `--out` is therefore opened only after the download, so a path that cannot be opened (a missing directory, a directory, a read-only file) fails after the download, not before it. Once the copy starts, an error or a kill leaves `--out` partly written; before it starts, `--out` is untouched.
+With `--out`, langstar downloads every page into a temporary file in your system temp directory, which needs as much free space as the export, and only then opens `--out` the way `>` does (create and truncate) and copies the export into it. A failed page request leaves an existing `--out` file as it was, and so does a path that cannot be opened, although that failure comes after the download. If langstar fails or is stopped while it copies, `--out` holds part of the export.
 
 ## Import/Export Formats
 
