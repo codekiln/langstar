@@ -30,7 +30,7 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 
 ### Requirement: Export an assistant to a file
 
-`langstar assistant export <assistant-id> --deployment <name-or-id>` SHALL write one JSON file holding the assistant's name, description, graph ID, configuration, context and metadata, and a `source` object naming the deployment, assistant ID and version. `--output <path>` SHALL choose the file; without it the file goes to stdout. Exporting the same assistant version twice SHALL produce identical files.
+`langstar assistant export <assistant-id> --deployment <name-or-id>` SHALL write one JSON file holding the assistant's name, description, graph ID, configuration, context and metadata, and a `source` object naming the deployment, assistant ID and version. `--output <path>` SHALL choose the file; without it stdout SHALL hold only the file, and messages go to stderr. Exporting the same assistant version twice SHALL produce identical files.
 
 #### Scenario: Export an assistant
 
@@ -42,6 +42,12 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 
 - **WHEN** the deployment has no assistant with that ID
 - **THEN** langstar exits with status 1 and an error naming the assistant ID
+
+#### Scenario: Export to stdout
+
+- **WHEN** a user runs `langstar assistant export <assistant-id> --deployment my-agent` without `--output`
+- **THEN** stdout holds only the export file's JSON document
+- **AND** any progress message goes to stderr
 
 ### Requirement: Record the prompts an assistant refers to
 
@@ -160,6 +166,12 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 - **WHEN** someone changed a metadata value on the deployment's assistant
 - **THEN** langstar lists that metadata path with both values and exits with status 3
+
+#### Scenario: No assistant to compare
+
+- **WHEN** the destination record has no entry for `my-agent-prod`
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod` without `--assistant-id`
+- **THEN** langstar exits with status 1 and an error that names the deployment and suggests `--assistant-id`
 
 ### Requirement: Verify that an assistant can run on a deployment
 

@@ -6,7 +6,7 @@
 
 ### Requirement: Export a prompt commit to a file
 
-`langstar prompt export <handle>` SHALL write one JSON file holding the prompt's repo details (handle, description, readme, tags, visibility), the commit's description, the commit's manifest as LangSmith returns it with the model included, the commit's model configuration and provider, the commit tags that point at it, and a `source` object naming the workspace, handle and commit hash. `--output <path>` SHALL choose the file; without it the file goes to stdout.
+`langstar prompt export <handle>` SHALL write one JSON file holding the repo details (handle, description, readme, tags, visibility), the commit's description, its manifest as LangSmith returns it with the model included, its model configuration and provider, the tags that point at it, and a `source` object naming the workspace, handle and commit hash. `--output <path>` SHALL choose the file; without it stdout SHALL hold only the file, and messages go to stderr.
 
 #### Scenario: Export the latest commit
 
@@ -24,6 +24,12 @@
 
 - **WHEN** no prompt in the workspace has the handle
 - **THEN** langstar exits with status 1 and an error naming the handle
+
+#### Scenario: Export to stdout
+
+- **WHEN** a user runs `langstar prompt export my-prompt` without `--output`
+- **THEN** stdout holds only the export file's JSON document
+- **AND** any progress message goes to stderr
 
 ### Requirement: Export a chosen commit or tag
 
@@ -45,7 +51,7 @@ Exporting the same commit twice SHALL produce identical files. The file SHALL ho
 
 ### Requirement: List the credentials a prompt needs without their values
 
-The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the class name that ends the chat model constructor's `id`, such as `ChatOpenAI`. It SHALL hold no secret values. Import and verify SHALL read the secret names and the model class out of the file's manifest again, and when either differs from `requires.secrets` or `requires.model_provider`, write nothing, name the field and exit with status 1.
+The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_class`, the class name that ends the chat model constructor's `id`, such as `ChatOpenAI`. It SHALL hold no secret values. Import and verify SHALL read the secret names and the model class out of the file's manifest again, and when either differs from `requires.secrets` or `requires.model_class`, write nothing, name the field and exit with status 1.
 
 #### Scenario: Model reads an API key secret
 
@@ -61,12 +67,12 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Export, import and verify a prompt without a model
 
-When the manifest holds no chat model constructor, `langstar prompt export` SHALL write `requires.model_provider` as null. Import and verify SHALL accept null when the manifest they read again holds no chat model, skip the saved model configuration check, report no note for it, and still run the secret check.
+When the manifest holds no chat model constructor, `langstar prompt export` SHALL write `requires.model_class` as null. Import and verify SHALL accept null when the manifest they read again holds no chat model, skip the saved model configuration check, report no note for it, and still run the secret check.
 
 #### Scenario: Prompt saved without a model
 
 - **WHEN** a user exports a prompt saved without a model and imports the file with `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
-- **THEN** the file holds null under `requires.model_provider`
+- **THEN** the file holds null under `requires.model_class`
 - **AND** langstar creates the prompt without a saved model configuration check and exits with status 0
 - **AND** `langstar prompt verify my-prompt.json` against the destination reports no saved model configuration note and exits with status 0
 
@@ -211,9 +217,15 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **WHEN** someone changed the readme of the workspace's prompt
 - **THEN** langstar lists the readme's JSON path with both values and exits with status 3
 
+#### Scenario: Prompt missing from the workspace
+
+- **WHEN** a user runs `langstar prompt compare my-prompt.json`
+- **AND** the workspace has no prompt named `my-prompt`
+- **THEN** langstar exits with status 1 and an error naming the handle
+
 ### Requirement: Verify that a prompt can run in a workspace
 
-`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 3 when any secret is missing. When `requires.model_provider` is not null, it SHALL also look for a saved model configuration whose settings `id` ends in that class name, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
+`langstar prompt verify <file>` SHALL do what `compare` does and also check that the workspace has every secret in `requires.secrets`. It SHALL name each missing secret and exit with status 3 when any secret is missing. When `requires.model_class` is not null, it SHALL also look for a saved model configuration whose settings `id` ends in that class name, and report a missing one as a note that leaves the exit status unchanged, because the prompt runs with the model its manifest carries.
 
 #### Scenario: Secret missing in the destination
 
@@ -223,7 +235,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 #### Scenario: No saved model configuration for the provider
 
-- **WHEN** the file's `requires.model_provider` is `ChatOpenAI`
+- **WHEN** the file's `requires.model_class` is `ChatOpenAI`
 - **AND** no saved model configuration in the destination workspace has a settings `id` ending in `ChatOpenAI`
 - **AND** every secret in `requires.secrets` exists and the prompt matches the file
 - **THEN** langstar notes that no saved model configuration matches `ChatOpenAI` and exits with status 0
