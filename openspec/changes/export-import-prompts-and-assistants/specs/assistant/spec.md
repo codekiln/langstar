@@ -66,14 +66,22 @@ Every `langstar assistant` subcommand SHALL take a required `--deployment` flag 
 
 ### Requirement: Import an assistant into a deployment
 
-`langstar assistant import <file> --deployment <name-or-id>` SHALL create an assistant on the deployment with the file's name, description, graph ID, configuration, context and metadata, and print the new assistant ID. It SHALL record the deployment and the new assistant ID in the destination record file, `<file stem>.destinations.json` unless `--record <path>` names another.
+`langstar assistant import <file> --deployment <name-or-id>` SHALL choose a new assistant ID, write it as pending under the deployment in the destination record (`<file stem>.destinations.json` unless `--record <path>` names another), then create the assistant with that `assistant_id`, `if_exists: do_nothing` and the file's name, description, graph ID, configuration, context and metadata, mark the entry created, and print the ID. A pending entry SHALL make the next import repeat the create.
 
 #### Scenario: First import
 
 - **WHEN** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **AND** the destination record has no entry for `my-agent-prod`
 - **THEN** langstar creates the assistant and prints its new ID
-- **AND** `support-bot.destinations.json` holds the ID of the `my-agent-prod` deployment, with the new assistant ID under it
+- **AND** `support-bot.destinations.json` holds the ID of the `my-agent-prod` deployment, with the new assistant ID under it, marked created
+
+#### Scenario: Import stopped after the create and before the record write
+
+- **WHEN** the destination record holds a pending assistant ID for `my-agent-prod`
+- **AND** the deployment already has an assistant with that ID
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** langstar sends the create with that ID and `if_exists` set to `do_nothing`, so the deployment still holds one assistant from the file
+- **AND** the destination record marks that ID created
 
 ### Requirement: Check the destination before importing an assistant
 
@@ -88,7 +96,7 @@ Before it writes, `langstar assistant import` SHALL run the graph check and the 
 
 ### Requirement: Find the earlier copy instead of creating another
 
-When the destination record holds an assistant ID for the deployment, `langstar assistant import` SHALL compare the file with that assistant and create nothing. It SHALL exit with status 0 when they match, and list the differences and exit with status 3 when they differ, unless the user passes `--update`. When the recorded assistant no longer exists, it SHALL exit with status 1 and say so.
+When the destination record holds a created assistant ID for the deployment, `langstar assistant import` SHALL compare the file with that assistant and create nothing. It SHALL exit with status 0 when they match, and list the differences and exit with status 3 when they differ, unless the user passes `--update`. When the recorded assistant no longer exists, it SHALL exit with status 1 and say so.
 
 #### Scenario: Import the same file again
 
