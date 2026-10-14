@@ -42,11 +42,12 @@
 
 ### Requirement: Write the same file for the same commit
 
-Exporting the same commit twice SHALL produce identical files. The file SHALL hold no export time, and langstar SHALL write object keys in a fixed order.
+Exporting the same commit twice SHALL produce identical files when nobody changed the repo details or the tags that point at the commit in between, since those change without a new commit. The file SHALL hold no export time, and langstar SHALL write object keys in a fixed order.
 
 #### Scenario: Export twice
 
 - **WHEN** a user exports the same commit twice to two files
+- **AND** nobody changed the repo details or the commit's tags between the two exports
 - **THEN** the two files are identical
 
 ### Requirement: List the credentials a prompt needs without their values
