@@ -45,13 +45,19 @@ Exporting the same commit twice SHALL produce identical files. The file SHALL ho
 
 ### Requirement: List the credentials a prompt needs without their values
 
-The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the class name at the end of the chat model constructor's `id` in the manifest, such as `ChatOpenAI`. It SHALL hold no secret values.
+The export file SHALL list, under `requires.secrets`, the name of every secret the manifest refers to, and under `requires.model_provider`, the class name at the end of the chat model constructor's `id` in the manifest, such as `ChatOpenAI`. It SHALL hold no secret values. Import and verify SHALL work out both lists again from the file's manifest, and when either differs from the file's `requires`, write nothing, name the field and exit with status 1.
 
 #### Scenario: Model reads an API key secret
 
 - **WHEN** the prompt's model refers to the secret `OPENAI_API_KEY`
 - **THEN** `requires.secrets` holds `OPENAI_API_KEY`
 - **AND** no value of that secret appears in the file
+
+#### Scenario: Manifest edited without its requires list
+
+- **WHEN** someone edits the file's manifest so its model refers to the secret `ANTHROPIC_API_KEY`, and leaves `requires.secrets` holding only `OPENAI_API_KEY`
+- **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
+- **THEN** langstar creates no prompt, names `requires.secrets` and exits with status 1
 
 ### Requirement: Import names its destination workspace
 
