@@ -1,31 +1,3 @@
-## MODIFIED Requirements
-
-### Requirement: Every assistant command targets one deployment
-
-Every `langstar assistant` subcommand SHALL take a required `--deployment` flag holding a deployment name or ID. Langstar SHALL look the deployment up through the control plane API and send the assistant request to the deployment's `url`, or to its `source_config.custom_url` when `url` is null, missing or empty.
-
-#### Scenario: Deployment found by name
-
-- **WHEN** a user runs `langstar assistant list --deployment my-agent`
-- **AND** the workspace has a deployment named `my-agent`
-- **THEN** langstar lists the assistants on that deployment
-
-#### Scenario: Deployment built from GitHub
-
-- **WHEN** a user runs `langstar assistant list --deployment my-agent`
-- **AND** `my-agent` was built from a GitHub repository and has a `url` but no `source_config.custom_url`
-- **THEN** langstar lists the assistants on that deployment
-
-#### Scenario: Deployment not found
-
-- **WHEN** a user passes a `--deployment` that matches no deployment name or ID in the workspace
-- **THEN** langstar exits with an error that names the deployment and suggests `langstar deployment list`
-
-#### Scenario: Deployment has no URL
-
-- **WHEN** the deployment exists but has neither a `url` nor a custom URL
-- **THEN** langstar exits with an error saying the deployment has no URL
-
 ## ADDED Requirements
 
 ### Requirement: Export an assistant to a file
