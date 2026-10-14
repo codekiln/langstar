@@ -113,16 +113,16 @@ impl Config {
     /// 2. Config file (`config.toml` in the config directory, see `config_file_path`)
     /// 3. Default values
     ///
-    /// A config file that exists but cannot be looked up, read or parsed is ignored with a
+    /// A config file that langstar cannot look up, read or parse is ignored with a
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // `load` returns an error when langstar cannot find the config file's
-        // directory, even if the environment variables hold every setting. Without
-        // that error, a config file in a directory langstar never looked in would
-        // be ignored silently. The directory is unknown when `LANGSTAR_CONFIG_DIR`
-        // is unset and the operating system reports no home directory (macOS,
-        // Linux) or config directory (Windows).
+        // When langstar cannot work out where the config file belongs, `load`
+        // returns an error even if the environment variables hold every setting,
+        // because a config file the user wrote would otherwise be skipped without
+        // a word. That happens when `LANGSTAR_CONFIG_DIR` is unset and the
+        // operating system reports no home directory (macOS, Linux) or config
+        // directory (Windows).
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
