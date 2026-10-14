@@ -21,6 +21,16 @@
 - **THEN** stdout holds only the export file's JSON document
 - **AND** any progress message goes to stderr
 
+### Requirement: Refuse to export an API key written into an assistant
+
+When the assistant's configuration, context or metadata holds a string under a key whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, `langstar assistant export` SHALL write no file and nothing to stdout, name that key's JSON Pointer path without the string, and exit with status 1.
+
+#### Scenario: Configuration holds a literal API key
+
+- **WHEN** the assistant's `config.configurable.OPENAI_API_KEY` holds a string
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes no file, names `/config/configurable/OPENAI_API_KEY` without the string and exits with status 1
+
 ### Requirement: Record the prompts an assistant refers to
 
 `langstar assistant export` SHALL accept `--prompt-ref <json-pointer>`, repeatable, naming a string in the assistant's configuration or context that holds a prompt name. The file SHALL list each pointer and the prompt name it holds under `requires.prompts`. A pointer that resolves to no string SHALL be an error.
@@ -216,10 +226,16 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Redact an API key written into a destination assistant's configuration
 
-When `assistant compare`, `assistant verify` or `assistant import` prints a value on either side of a difference, langstar SHALL print `<redacted>`, in the text and JSON reports, in place of each string that a key ending in `api_key` holds as its value, whether that key sits at the difference's path or inside the value.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of every string stored under a key whose name ends in `api_key`, compared without regard to case, so `openai_api_key` and `OPENAI_API_KEY` both match. This holds when the difference is at that key and when the key sits deeper inside the printed object.
 
 #### Scenario: Destination configuration holds a literal API key
 
 - **WHEN** someone updated the destination assistant so `config.configurable.openai_api_key` holds a string
 - **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
 - **THEN** langstar reports `/assistant/config/configurable/openai_api_key` with `<redacted>` in place of the string and exits with status 3
+
+#### Scenario: Destination configuration holds a literal API key under an upper-case name
+
+- **WHEN** someone updated the destination assistant so `config.configurable.OPENAI_API_KEY` holds a string
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
+- **THEN** langstar reports `/assistant/config/configurable/OPENAI_API_KEY` with `<redacted>` in place of the string and exits with status 3

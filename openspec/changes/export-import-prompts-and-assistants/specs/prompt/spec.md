@@ -68,7 +68,7 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Refuse to export an API key written into a prompt's model
 
-When a chat model constructor in the manifest holds a string, rather than a secret reference, under a setting whose name ends in `api_key`, such as `openai_api_key`, `langstar prompt export` SHALL write no file and nothing to stdout, name that setting's JSON Pointer path without its value, and exit with status 1.
+When a chat model constructor in the manifest holds a string, rather than a secret reference, under a setting whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, `langstar prompt export` SHALL write no file and nothing to stdout, name that setting's JSON Pointer path without its value, and exit with status 1.
 
 #### Scenario: Model holds a literal API key
 
@@ -251,7 +251,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Redact an API key written into a destination prompt's model
 
-When `prompt compare`, `prompt verify` or `prompt import` prints a value on either side of a difference, langstar SHALL print `<redacted>`, in the text and JSON reports, in place of each string that a key ending in `api_key` holds as its value, whether that key sits at the difference's path or inside the value. langstar SHALL print a secret reference under such a key as it is, with its secret name.
+When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of every string stored under a key whose name ends in `api_key`, compared without regard to case. This holds when the difference is at that key and when the key sits deeper inside the printed object.
 
 #### Scenario: Destination model holds a literal API key
 
@@ -265,6 +265,10 @@ When `prompt compare`, `prompt verify` or `prompt import` prints a value on eith
 - **AND** someone saved the destination prompt with a model whose `openai_api_key` is written as a string
 - **AND** a user runs `langstar prompt compare my-prompt.json`
 - **THEN** langstar reports the model's path with `<redacted>` in place of the string and exits with status 3
+
+### Requirement: Print a secret reference in a destination prompt's model unchanged
+
+When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, and a key whose name ends in `api_key`, compared without regard to case, holds a LangChain secret reference, such as `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, langstar SHALL print the reference unchanged, so the report names the secret.
 
 #### Scenario: Destination adds a model that reads its key from a secret
 
