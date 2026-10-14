@@ -48,7 +48,7 @@ $ARGUMENTS
 This command delegates to a Python script for robust implementation:
 
 ```bash
-python3 scripts/gh-milestones/prep-next.py $ARGUMENTS
+mise run milestone:prep-next $ARGUMENTS
 ```
 
 The script performs the following steps:
@@ -133,7 +133,7 @@ Milestone: Feature X
 **Could not auto-detect milestone:**
 ```
 ❌ Error: Could not auto-detect milestone
-   Usage: prep-next.py [milestone-name-or-number]
+   Usage: mise run milestone:prep-next [milestone-name-or-number]
 ```
 - Provide milestone explicitly as argument
 - Ensure current branch is from an issue with a milestone
@@ -254,7 +254,7 @@ Command finds #102 as next issue (sibling of last completed #101).
 
 ## Development Notes
 
-**Script location:** `scripts/gh-milestones/prep-next.py`
+**Script location:** `mise-tasks/milestone/prep-next`
 
 The Python implementation provides:
 - Better error handling than shell scripts
