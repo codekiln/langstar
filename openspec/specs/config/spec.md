@@ -105,7 +105,7 @@ When the config file exists, `langstar config validate` SHALL load the settings 
 
 ### Requirement: `config validate` and `config <setting> set` fail with an error that names the config file when langstar cannot look up, read or parse it
 
-When langstar cannot look up the config file, cannot read it or cannot parse it, `langstar config validate` SHALL exit with an error that names the file and says why, before checking any setting. `langstar config <setting> set` SHALL exit with the same error and leave the file unchanged when langstar cannot look up the config file, cannot read it or cannot parse it. It SHALL do the same when a setting other than the one being set holds a value of the wrong type. When the file does not parse, both commands also print the line of the file that the parse error points at.
+When langstar cannot look up the config file, cannot read it or cannot parse it, `langstar config validate` SHALL exit with an error that names the file and says why, before checking any setting. `langstar config <setting> set` SHALL exit with the same error and leave the file unchanged when langstar cannot look up the config file, cannot read it or cannot parse it. `langstar config <setting> set` also SHALL exit with that error and leave the file unchanged when a different setting in the file holds a value of the wrong type, such as `timezone = 5`. When the file does not parse, both commands also print the line of the file that the parse error points at.
 
 #### Scenario: Unparsable config file
 
