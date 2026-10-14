@@ -172,7 +172,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 
 ### Requirement: Compare a prompt with its export file
 
-`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with the model included, and its repo details, and list each difference by its JSON path with the file's value and the workspace's value. `--commit <hash-or-tag>` SHALL choose the commit; without it langstar SHALL read the latest commit. It SHALL compare only the fields the file holds, leaving out server-set IDs and timestamps, and every key in the manifest, its `id` arrays included.
+`langstar prompt compare <file>` SHALL read the prompt with the file's handle from the workspace, with its model and repo details, and list each difference by its JSON path with both values. `--commit <hash-or-tag>` SHALL choose the commit, and without it langstar SHALL read the latest. It SHALL compare every field in the file's `repo` and `commit`, including every manifest key and its `id` arrays. Those hold no IDs or timestamps LangSmith sets, so compare never reports them.
 
 #### Scenario: Prompt matches
 
