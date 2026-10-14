@@ -144,6 +144,23 @@ fn test_config_show_warns_about_an_unparsable_file() {
 }
 
 #[test]
+fn test_config_load_warns_about_an_unreadable_config_file() {
+    let dir = TempDir::new().unwrap();
+    // A directory where the file should be cannot be read as a file
+    let path = dir.path().join("config.toml");
+    fs::create_dir(&path).unwrap();
+
+    let out = langstar_in(&dir).arg("version").output().unwrap();
+
+    assert!(out.status.success(), "{out:?}");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(stderr.contains("Failed to read config file"), "{stderr}");
+    assert!(stderr.contains(&path.display().to_string()), "{stderr}");
+    #[cfg(unix)]
+    assert!(stderr.contains("Is a directory"), "{stderr}");
+}
+
+#[test]
 fn test_config_load_warning_leaves_out_the_line_of_the_file() {
     let dir = TempDir::new().unwrap();
     let path = dir.path().join("config.toml");

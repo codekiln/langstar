@@ -98,7 +98,10 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
-        // load returns this error because, with no home directory (macOS, Linux) or no config directory (Windows) and LANGSTAR_CONFIG_DIR unset, langstar has no path to read the config file from, so the defaults would hide the problem.
+        // With `LANGSTAR_CONFIG_DIR` unset and no home directory (macOS, Linux) or
+        // config directory (Windows), langstar has no path to read the config file
+        // from, so `load` returns the error; falling back to the defaults would hide
+        // the problem.
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
@@ -269,26 +272,44 @@ impl Config {
         if let Some(dir) = config_dir_from_env() {
             return Ok(config_file_in(&dir));
         }
+        Self::config_file_under(Self::default_base_dir())
+    }
 
-        #[cfg(target_os = "windows")]
-        {
-            let config_dir = dirs::config_dir().ok_or_else(|| {
-                CliError::Config("Could not determine config directory".to_string())
-            })?;
-            Ok(config_dir.join("langstar").join("config.toml"))
-        }
+    /// The directory langstar's default config location sits under: the config
+    /// directory on Windows, the home directory on macOS and Linux. `None` when the
+    /// operating system reports none.
+    #[cfg(target_os = "windows")]
+    fn default_base_dir() -> Option<PathBuf> {
+        dirs::config_dir()
+    }
 
-        #[cfg(not(target_os = "windows"))]
-        {
-            // Use ~/.config/langstar/config.toml on macOS and Linux
-            let home_dir = dirs::home_dir().ok_or_else(|| {
-                CliError::Config("Could not determine home directory".to_string())
-            })?;
-            Ok(home_dir
-                .join(".config")
-                .join("langstar")
-                .join("config.toml"))
-        }
+    #[cfg(not(target_os = "windows"))]
+    fn default_base_dir() -> Option<PathBuf> {
+        dirs::home_dir()
+    }
+
+    /// Where the config file belongs under `base_dir`, the directory
+    /// `default_base_dir` returns: `<config dir>\langstar\config.toml` on Windows,
+    /// `~/.config/langstar/config.toml` on macOS and Linux.
+    ///
+    /// Takes `base_dir` as an argument so a unit test can pass `None`, which
+    /// `dirs` cannot be made to report: `dirs::home_dir` falls back to the passwd
+    /// entry when `HOME` is unset.
+    #[cfg(target_os = "windows")]
+    fn config_file_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
+        let config_dir = base_dir
+            .ok_or_else(|| CliError::Config("Could not determine config directory".to_string()))?;
+        Ok(config_dir.join("langstar").join("config.toml"))
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn config_file_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
+        let home_dir = base_dir
+            .ok_or_else(|| CliError::Config("Could not determine home directory".to_string()))?;
+        Ok(home_dir
+            .join(".config")
+            .join("langstar")
+            .join("config.toml"))
     }
 
     /// Save the current configuration to file
@@ -364,6 +385,27 @@ mod tests {
     fn test_config_dir_env_unset_or_empty_is_ignored() {
         assert_eq!(config_dir_from_value(None), None);
         assert_eq!(config_dir_from_value(Some("".into())), None);
+    }
+
+    #[test]
+    fn test_config_file_path_fails_without_a_home_or_config_directory() {
+        let err = Config::config_file_under(None).unwrap_err().to_string();
+        let expected = if cfg!(target_os = "windows") {
+            "Could not determine config directory"
+        } else {
+            "Could not determine home directory"
+        };
+        assert!(err.contains(expected), "{err}");
+    }
+
+    #[test]
+    fn test_config_file_path_sits_under_the_home_or_config_directory() {
+        let path = Config::config_file_under(Some("/base".into())).unwrap();
+        assert!(path.starts_with("/base"), "{path:?}");
+        assert!(
+            path.ends_with(Path::new("langstar").join("config.toml")),
+            "{path:?}"
+        );
     }
 
     #[test]
