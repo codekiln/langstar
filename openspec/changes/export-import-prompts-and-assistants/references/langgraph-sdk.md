@@ -4,7 +4,7 @@ Read at [langgraph 8a77332d](https://github.com/langchain-ai/langgraph/tree/8a77
 
 [`create`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/_async/assistants.py#L314) posts `graph_id`, `config`, `context`, `metadata`, `assistant_id`, `if_exists` (`raise` or `do_nothing`), `name` and `description` to `/assistants`.
 
-[`update`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/_async/assistants.py#L385) patches the same fields; the server merges `metadata` into the existing metadata. [`get_versions`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/_async/assistants.py#L656) lists the versions updates create.
+[`update`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/_async/assistants.py#L385) patches `graph_id`, `config`, `context`, `metadata`, `name` and `description`, and the server merges `metadata` into the existing metadata. [`get_versions`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/_async/assistants.py#L656) lists the versions updates create.
 
 [`AssistantBase`](https://github.com/langchain-ai/langgraph/blob/8a77332d0db75c49d296b1f3833a3a5ccd5f0dc8/libs/sdk-py/langgraph_sdk/schema.py#L246) returns `assistant_id`, `graph_id`, `config`, `context`, `created_at`, `metadata`, `version`, `name` and `description`. `context` sits beside `config.configurable`; newer graphs read it and older ones read `configurable`.
 
