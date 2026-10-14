@@ -10,6 +10,12 @@ if [ -z "${ORACLE_UNDER_FNOX:-}" ] && { [ -z "${LANGSMITH_API_KEY:-}" ] || [ -z 
   ORACLE_UNDER_FNOX=1 exec fnox exec -- "$0" "$@"
 fi
 
+# langstar's prompt commands always call this endpoint (LANGSMITH_API_BASE in
+# sdk/src/client.rs), but the official CLI would otherwise take LANGSMITH_ENDPOINT or a
+# saved profile. --api-url on every official call keeps both tools on the same server.
+api_url="https://api.smith.langchain.com"
+official=(langsmith --api-url "$api_url")
+
 repo="oracle-roundtrip-$(date +%s)-$$-$RANDOM"
 template="Answer this question: {question}"
 # `-` is the owner handle of a private prompt in the workspace.
@@ -18,7 +24,7 @@ handle="-/${repo}"
 # The official CLI creates the repo. langstar's own create-on-push sends "-/<repo>"
 # as the handle, which the API rejects, so letting langstar create it would fail here.
 # https://github.com/codekiln/langstar/issues/820
-langsmith prompt create --name "$repo" >/dev/null
+"${official[@]}" prompt create --name "$repo" >/dev/null
 
 # Registered only after create succeeds, so a name collision can never delete
 # another run's prompt.
@@ -27,7 +33,7 @@ schema=""
 cleanup() {
   local status=$?
   [ -z "$schema" ] || rm -f "$schema"
-  if ! langsmith prompt delete --yes -- "$handle" >/dev/null 2>&1; then
+  if ! "${official[@]}" prompt delete --yes -- "$handle" >/dev/null 2>&1; then
     echo "could not delete ${handle}; delete it by hand" >&2
     [ "$status" -ne 0 ] || status=1
   fi
@@ -44,7 +50,7 @@ cargo run --quiet --bin langstar -- prompt push \
   --owner - --repo "$repo" --template "$template" --input-variables question \
   --schema "$schema" >/dev/null
 
-pulled="$(langsmith prompt pull -- "$handle")"
+pulled="$("${official[@]}" prompt pull -- "$handle")"
 
 # The manifest is nested JSON, so look for each pushed value anywhere in it:
 # the template text, the input variable, and a property name from the schema.
