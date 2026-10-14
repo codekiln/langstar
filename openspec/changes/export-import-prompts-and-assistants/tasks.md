@@ -99,7 +99,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - An error test for a pointer that names nothing.
   - An error test that exporting an assistant ID the deployment lacks exits with status 1, names the ID and writes no file.
   - A CLI test that runs `assistant export` without `--output`, parses all of stdout as one JSON document, and asserts that its `source.assistant_id` is the exported assistant's ID and that any progress message is on stderr.
-- [ ] 8.2 Document assistant export, including that export writes the assistant's configuration, context and metadata as the Agent Server returns them, so a credential kept there reaches the file; verify that each documented command runs as written
+- [ ] 8.2 Document assistant export. The page says that export writes the assistant's configuration, context and metadata as the Agent Server returns them, so a credential kept there reaches the file; tells users to keep credentials in the deployment's environment variables or the workspace's secrets; and tells them to read an export file before they commit it. Verify that each documented command runs as written.
 
 ## 9. assistant compare and verify
 

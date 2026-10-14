@@ -183,6 +183,16 @@ After import writes a commit, langstar SHALL record the destination workspace, h
 - **THEN** `my-prompt.destinations.json` holds one entry for each workspace with its own commit hash
 - **AND** `my-prompt.json` is unchanged
 
+### Requirement: Replace the prompt destination record in one step
+
+`langstar prompt import` SHALL write each new destination record to a temporary file in the record's directory and rename it over the old record, so that a langstar that stops during a write leaves the earlier record whole.
+
+#### Scenario: Import stopped while writing the record
+
+- **WHEN** `my-prompt.destinations.json` holds commit hashes for a staging and a production workspace
+- **AND** langstar stops while it writes the record after an import into the production workspace
+- **THEN** `my-prompt.destinations.json` still holds both workspaces' entries as they were before that import
+
 ### Requirement: Warn when the destination changed since the last import
 
 When the destination record holds a commit for the destination workspace and the destination's latest commit is a different one, `langstar prompt import` SHALL say that someone changed the prompt after the last import, in addition to listing the differences.
