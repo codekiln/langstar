@@ -353,6 +353,8 @@ langstar dataset export 12345678-1234-1234-1234-123456789012 \
 Exported 100 examples to "backup.jsonl"
 ```
 
+With `--out`, langstar first downloads every page into a temporary file in your system temp directory, so that directory needs as much free space as the export. After the last page arrives, langstar opens `--out` the way the shell's `>` does (create and truncate) and copies the export into it. If a page request fails, or langstar cannot open `--out`, an existing `--out` file keeps its old contents. If the disk fills, or someone stops langstar while it copies into `--out`, `--out` may hold only part of the export. To put the temporary file in a different directory, set `TMPDIR` before you run the command (`TMP` on Windows).
+
 ## Import/Export Formats
 
 ### JSONL Format

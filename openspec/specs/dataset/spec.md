@@ -135,13 +135,19 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 ### Requirement: Export examples to JSONL or CSV
 
-`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL request the first page before it opens the `--out` file. When that request fails, langstar SHALL exit with an error and leave an existing `--out` file unchanged; when a later page fails, langstar SHALL exit with an error and leave the examples already written in the file.
+`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. With `--out`, langstar SHALL fetch every page into a temporary file, and only after the last page succeeds SHALL create or truncate `--out` the way the shell's `>` does and copy the export into it. When any page request fails, langstar SHALL exit with an error and leave an existing `--out` file unchanged. When it cannot open `--out`, langstar SHALL exit with an error after the download and leave an existing `--out` file unchanged. If the disk fills, or someone stops langstar while it copies into `--out`, `--out` MAY hold only part of the export.
 
 #### Scenario: Export to a CSV file
 
 - **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.csv`
 - **THEN** `examples.csv` holds a header row of `id`, `inputs`, `outputs` and `metadata` and one row per example, with each value as JSON
 - **AND** langstar reports how many examples it exported
+
+#### Scenario: Export fails partway
+
+- **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.jsonl` over an existing `examples.jsonl` and a request for a later page fails
+- **THEN** langstar exits with an error
+- **AND** `examples.jsonl` holds what it held before
 
 #### Scenario: Export with a limit below 1
 

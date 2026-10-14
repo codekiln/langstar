@@ -20,6 +20,8 @@ clap.workspace = true
 # Async runtime
 tokio.workspace = true
 futures-util = "0.3"
+# Anonymous temporary file that holds a dataset export while langstar downloads it and copies it into --out
+tempfile = "3.12"
 
 # Date/time and UUID
 chrono.workspace = true
@@ -50,7 +52,6 @@ rpassword = "7.4"
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
-tempfile = "3.12"
 serial_test = "3"
 mockito = "1.5"
 # Enable test-utils feature for shared test infrastructure
