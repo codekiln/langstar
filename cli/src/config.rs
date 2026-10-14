@@ -203,7 +203,7 @@ impl Config {
     /// Read and parse the config file at `path`, returning any read or parse error.
     ///
     /// `config validate` calls this function so that its error includes the line of the file that the parse error points at.
-    /// The warning that `Config::load` prints comes from `parse_config_file` with `quote_source` false, which leaves that line out.
+    /// `load_from_paths` calls `parse_config_file` with `quote_source` set to false, so the warning that `Config::load` prints leaves that line out.
     pub fn read_file(path: &Path) -> Result<Self> {
         Self::parse_config_file(path, true)
     }

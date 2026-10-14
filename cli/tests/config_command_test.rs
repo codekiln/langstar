@@ -355,7 +355,7 @@ fn test_config_set_names_a_config_file_it_cannot_look_up() {
 
 #[cfg(unix)]
 #[test]
-fn test_config_show_does_not_say_a_config_file_it_cannot_look_up_is_missing() {
+fn test_config_show_prints_unknown_for_a_config_file_it_cannot_look_up() {
     let (dir, _path) = dir_with_config_symlink_loop();
 
     let out = langstar_in(&dir).args(["config", "show"]).output().unwrap();
