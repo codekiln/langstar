@@ -866,7 +866,8 @@ fn test_cli_push_prompt_update_with_auto_parent() {
     // CLEANUP: Automatic via Drop trait
 }
 
-/// A plain prompt (no `--schema`) pushed to an empty repo must reach the API as a `ChatPromptTemplate` with an LC-JSON `id`, the bug reported in <https://github.com/codekiln/langstar/issues/821> (prompt push without --schema to an empty repo fails with "Manifest must have an id field").
+/// Pushes a plain prompt without `--schema` to an empty repo, pulls it back, and checks that the API stored a `ChatPromptTemplate` with an LC-JSON `id`.
+/// The API used to answer this push with 400 "Manifest must have an id field", reported in [prompt push without --schema to an empty repo fails with "Manifest must have an id field" · Issue #821](https://github.com/codekiln/langstar/issues/821).
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[serial]
