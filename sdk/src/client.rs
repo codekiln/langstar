@@ -1175,7 +1175,7 @@ impl LangchainClient {
     /// Remove a run from an annotation queue by run ID.
     ///
     /// The items API deletes by queue item ID, so this lists every review section for the
-    /// item whose `run_id` matches and deletes it. Returns `Ok(false)` when the queue
+    /// item whose `run_id` matches, page by page, and deletes it. Returns `Ok(false)` when the queue
     /// holds no item for the run.
     ///
     /// # API Reference
@@ -1196,15 +1196,27 @@ impl LangchainClient {
             let mut params = ListAnnotationQueueItemsParams::new(status);
             params.item_type = Some(AnnotationQueueItemType::Run);
             params.page_size = Some(100);
-            let items = self
-                .collect_annotation_queue_items(queue_id, params, None)
-                .await?;
-            matches.extend(
-                items
-                    .iter()
-                    .filter(|item| item.run_id == Some(run_id))
-                    .map(|item| item.id),
-            );
+            // Walk the pages and keep only the matching item IDs, so a large queue is
+            // never held in memory whole.
+            let mut cursor: Option<String> = None;
+            let mut seen_cursors = std::collections::HashSet::new();
+            loop {
+                let page = self
+                    .list_annotation_queue_items(queue_id, params, cursor.as_deref())
+                    .await?;
+                matches.extend(
+                    page.items
+                        .iter()
+                        .filter(|item| item.run_id == Some(run_id))
+                        .map(|item| item.id),
+                );
+                match page.next_cursor {
+                    Some(next) if !next.is_empty() && seen_cursors.insert(next.clone()) => {
+                        cursor = Some(next)
+                    }
+                    _ => break,
+                }
+            }
         }
 
         if matches.is_empty() {
