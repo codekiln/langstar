@@ -99,9 +99,10 @@ impl Config {
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
         // With `LANGSTAR_CONFIG_DIR` unset and no home directory (macOS, Linux) or
-        // config directory (Windows), langstar has no path to read the config file
-        // from, so `load` returns the error; falling back to the defaults would hide
-        // the problem.
+        // config directory (Windows), langstar cannot say which file to read, so
+        // `load` returns the error even if the environment variables hold every
+        // setting; a config file in a place langstar never looked would otherwise
+        // be ignored without a word.
         let config_path = Self::config_file_path()?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
