@@ -353,7 +353,7 @@ langstar dataset export 12345678-1234-1234-1234-123456789012 \
 Exported 100 examples to "backup.jsonl"
 ```
 
-With `--out`, langstar writes the export to a temporary file in the same directory and renames it over the target only when the whole export succeeds. If any page request or write fails, the command exits with an error, an existing `--out` file keeps its old contents and no temporary file is left behind. A new file gets the permissions your umask gives a plain create; a file that is replaced keeps its permissions (but not its owner). If `--out` is a symlink, the link stays and its target is replaced. The directory must exist and be writable, because the temporary file lives there.
+With `--out`, langstar writes the export to a temporary file in the same directory and renames it over the target only when the whole export succeeds. If any page request or write fails, the command exits with an error, an existing `--out` file keeps its old contents and langstar removes the temporary file. If you interrupt the command with Ctrl-C or kill it, a hidden `.<name>.<pid>.<nanos>.tmp` file can stay in the directory; it is safe to delete. A new file gets the permissions your umask gives a plain create; a file that is replaced keeps its permissions (but not its owner). If `--out` is a symlink, the link stays and its target is replaced. The directory must exist and be writable, because the temporary file lives there. A directory or a read-only existing file fails at once, before any request. An existing file that is not a regular file, such as `/dev/stdout`, `/dev/null` or a named pipe, is written in place. A rename breaks hard links, so a replaced file's other hard links keep the old contents.
 
 ## Import/Export Formats
 

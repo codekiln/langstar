@@ -760,10 +760,16 @@ impl DatasetCommands {
 /// keeps that file's mode, as `>` would; its owner is not preserved. A
 /// destination that is a symlink is resolved first, so the link keeps pointing
 /// at its target and the target is what gets replaced. Dropping the value
-/// without calling `commit` removes the staged file.
+/// without calling `commit` removes the staged file. A directory is an error
+/// at once, and so is a read-only file, as `File::create` would fail. A
+/// destination that exists but is not a regular file (`/dev/stdout`,
+/// `/dev/null`, a named pipe) has nothing to replace atomically, so it is
+/// opened and written in place with no staged file. Replacing a regular file
+/// by rename breaks hard links to it.
 struct StagedOut {
     file: std::fs::File,
-    temp: PathBuf,
+    /// `None` when the destination is written in place.
+    temp: Option<PathBuf>,
     target: PathBuf,
     committed: bool,
 }
@@ -781,6 +787,29 @@ impl StagedOut {
                 format!("{} is not a file path", out.display()),
             )
         })?;
+        if let Ok(existing) = std::fs::metadata(&target) {
+            if existing.is_dir() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("{} is a directory, not a file", out.display()),
+                ));
+            }
+            if !existing.file_type().is_file() {
+                let file = std::fs::OpenOptions::new().write(true).open(&target)?;
+                return Ok(Self {
+                    file,
+                    temp: None,
+                    target,
+                    committed: false,
+                });
+            }
+            if existing.permissions().readonly() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::PermissionDenied,
+                    format!("{} is read-only", out.display()),
+                ));
+            }
+        }
         let nanos = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.subsec_nanos());
@@ -799,7 +828,7 @@ impl StagedOut {
                 Ok(file) => {
                     return Ok(Self {
                         file,
-                        temp,
+                        temp: Some(temp),
                         target,
                         committed: false,
                     });
@@ -829,12 +858,16 @@ impl StagedOut {
     /// Flush the staged file and rename it over the destination.
     fn commit(mut self) -> std::io::Result<()> {
         self.file.flush()?;
+        let Some(temp) = self.temp.clone() else {
+            self.committed = true;
+            return Ok(());
+        };
         self.file.sync_all()?;
         // `metadata` follows symlinks, but `target` is already resolved.
         if let Ok(existing) = std::fs::metadata(&self.target) {
             self.file.set_permissions(existing.permissions())?;
         }
-        std::fs::rename(&self.temp, &self.target)?;
+        std::fs::rename(&temp, &self.target)?;
         self.committed = true;
         Ok(())
     }
@@ -852,8 +885,8 @@ impl Write for StagedOut {
 
 impl Drop for StagedOut {
     fn drop(&mut self) {
-        if !self.committed {
-            let _ = std::fs::remove_file(&self.temp);
+        if let (false, Some(temp)) = (self.committed, &self.temp) {
+            let _ = std::fs::remove_file(temp);
         }
     }
 }
@@ -910,6 +943,41 @@ mod tests {
         staged.commit().unwrap();
 
         assert_eq!(std::fs::read_to_string(&out).unwrap(), "new\n");
+        assert_eq!(dir_entries(dir.path()), 1);
+    }
+
+    #[test]
+    fn staged_out_directory_fails_at_once() {
+        let dir = tempfile::tempdir().unwrap();
+
+        let err = StagedOut::create(dir.path()).err().unwrap();
+
+        assert!(err.to_string().contains("is a directory"), "{err}");
+        assert_eq!(dir_entries(dir.path()), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_special_file_is_written_in_place() {
+        let mut staged = StagedOut::create(std::path::Path::new("/dev/null")).unwrap();
+        staged.write_all(b"discarded").unwrap();
+        staged.commit().unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staged_out_read_only_file_is_permission_denied() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old\n").unwrap();
+        std::fs::set_permissions(&out, std::fs::Permissions::from_mode(0o444)).unwrap();
+
+        let err = StagedOut::create(&out).err().unwrap();
+
+        assert_eq!(err.kind(), std::io::ErrorKind::PermissionDenied);
+        assert!(err.to_string().contains("read-only"), "{err}");
+        assert_eq!(std::fs::read_to_string(&out).unwrap(), "old\n");
         assert_eq!(dir_entries(dir.path()), 1);
     }
 
