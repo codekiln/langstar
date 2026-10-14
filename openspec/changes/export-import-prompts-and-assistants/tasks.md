@@ -61,6 +61,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - An integration test that exports a prompt, changes its model temperature through the SDK, and asserts the reported path, both values and exit status 3.
   - Integration tests that a changed commit description and a changed repo readme are each reported the same way.
   - An integration test that exports a prompt, adds a tag to the exported commit through the SDK, and asserts that compare reports `/commit/tags` with both values and exits with status 3.
+  - An integration test that exports a tagged commit, pushes a newer commit to the prompt through the SDK, runs `prompt compare --commit <tag>`, and asserts that it compares the tagged commit and exits with status 0.
   - A CLI test that `langstar -f json prompt compare` prints one JSON object with `status`, `differences` and `checks` to stdout and its progress to stderr.
   - A CLI test that `prompt compare` with a mistyped flag exits with status 2.
   - A CLI test that `prompt compare` of a file holding `"format_version": 2` exits with status 1 and names `format_version` and the value 2.
@@ -89,6 +90,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - An integration test that pushes the file's manifest to the destination, leaves an older commit hash in the destination record, imports the file, and asserts that import exits with status 0, prints no change warning and leaves the latest commit's hash in the record.
   - An integration test that pushes the file's manifest and tags to the destination, imports the file with no destination record, and asserts that import exits with status 0 and writes the latest commit's hash to the record under the destination workspace.
   - An integration test that `--update` adds one commit with the right parent and the file's commit description.
+  - An integration test that pushes the file's manifest to the destination without the file's tags, as an import that stopped before creating its tags leaves it, runs import with `--update`, and asserts that it creates the missing tags on that commit and adds no commit.
   - An integration test that `--update` against a destination whose repo description, readme, tags or visibility differ while the manifest matches updates the repo and adds no commit.
   - An integration test that `--update` against a destination whose `prod` tag points at an earlier commit while the manifest matches moves the tag and adds no commit, and that `--dry-run` lists the move.
   - An integration test that `--update` against a destination whose latest commit matches the file and carries a `staging` tag the file lacks deletes `staging`, adds no commit and exits with status 0, and that `--dry-run` lists the delete.
