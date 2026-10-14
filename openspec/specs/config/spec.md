@@ -134,13 +134,13 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 
 ### Requirement: Exit with an error when a command that loads the settings cannot find the config directory
 
-A langstar command that loads the settings SHALL exit with an error that says langstar cannot determine the config directory, instead of running on the defaults.
+A langstar command that loads the settings SHALL exit with an error when langstar cannot work out where the config file belongs, which happens when the home directory is unknown, instead of running on the defaults.
 
-#### Scenario: `config show` fails when langstar cannot determine the config directory
+#### Scenario: `config show` fails when langstar cannot determine the home directory
 
-- **WHEN** langstar cannot determine the config directory
+- **WHEN** langstar cannot determine the home directory
 - **AND** a user runs `langstar config show`
-- **THEN** langstar exits with an error that says it cannot determine the config directory
+- **THEN** langstar exits with an error that says langstar cannot determine the home directory
 
 ### Requirement: Stop checking when the config file is missing
 
