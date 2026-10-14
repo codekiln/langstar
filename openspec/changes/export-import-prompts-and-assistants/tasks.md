@@ -62,7 +62,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - A CLI test that `prompt compare` of a file holding `"format_version": 2` exits with status 1 and names `format_version` and the value 2.
   - A CLI test that `prompt compare` of a file whose handle the workspace lacks exits with status 1 and names the handle.
 - [ ] 6.2 Add `langstar prompt verify` with the secret check and the saved model configuration note, which matches `requires.model_class` against the class name at the end of each configuration's settings `id`. Verify with these tests:
-  - Integration tests against a workspace that lacks a secret the file lists, and against one that has it.
+  - An integration test against a workspace that lacks a secret the file lists, asserting that verify names the secret and exits with status 3, and one against a workspace that has every listed secret, asserting that verify exits with status 0.
   - A test that a missing saved model configuration is reported as a note and leaves the exit status at 0.
   - A test that verify of a prompt without a model, whose `requires.model_class` is null, reports no saved model configuration note and exits with status 0.
   - A test that a file whose manifest refers to a secret its `requires.secrets` leaves out exits with status 1 and names `requires.secrets`.
@@ -81,6 +81,8 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - An integration test that a repeated import creates no commit.
   - An integration test that a changed destination is refused without `--update`.
   - An integration test that an import after someone pushed a commit to the destination since the recorded import says the destination changed since the last import and exits with status 3.
+  - An integration test that pushes the file's manifest to the destination, leaves an older commit hash in the destination record, imports the file, and asserts that import exits with status 0, prints no change warning and leaves the latest commit's hash in the record.
+  - An integration test that pushes the file's manifest and tags to the destination, imports the file with no destination record, and asserts that import exits with status 0 and writes the latest commit's hash to the record under the destination workspace.
   - An integration test that `--update` adds one commit with the right parent and the file's commit description.
   - An integration test that `--update` against a destination whose repo description, readme, tags or visibility differ while the manifest matches updates the repo and adds no commit.
   - An integration test that `--update` against a destination whose `prod` tag points at an earlier commit while the manifest matches moves the tag and adds no commit, and that `--dry-run` lists the move.
@@ -112,7 +114,7 @@ Each task in this group adds a public field to one of these SDK structs: `Prompt
   - An integration test that runs verify with `--assistant-id` against an exported assistant and exits with status 0.
   - An integration test of a file whose graph ID the deployment lacks, which reports the graph ID and exits with status 3.
   - An integration test of a file whose prompt tag the workspace lacks, which reports the prompt and exits with status 3.
-  - An integration test that passes `--workspace-id` set to the destination workspace.
+  - An integration test that runs verify with `--workspace-id` set to the destination workspace, for an assistant whose referenced prompt tag exists only in that workspace, and asserts that verify exits with status 0 and that `checks` reports the prompt as found.
   - A CLI test that `langstar -f json assistant verify` prints one JSON object with `status`, `differences` and `checks` to stdout.
 - [ ] 9.3 Document assistant compare and verify; verify that each documented command runs as written
 

@@ -195,13 +195,29 @@ After import writes a commit, langstar SHALL record the destination workspace, h
 
 ### Requirement: Warn when the destination changed since the last import
 
-When the destination record holds a commit for the destination workspace and the destination's latest commit is a different one, `langstar prompt import` SHALL say that someone changed the prompt after the last import, in addition to listing the differences.
+When the destination record holds a commit for the destination workspace and the destination's latest commit is a different one that also differs from the file, `langstar prompt import` SHALL say that someone changed the prompt after the last import, in addition to listing the differences.
 
 #### Scenario: Someone edited the destination prompt
 
 - **WHEN** a user edited the destination prompt in the web interface after the last import
 - **AND** runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
 - **THEN** langstar reports that the destination changed since the last recorded import and exits with status 3
+
+### Requirement: Record a matching commit that an earlier import pushed
+
+When the destination's latest commit matches the file and the destination record holds no commit for the destination workspace or a different one, `langstar prompt import` without `--dry-run` SHALL write that commit's hash to the record, whatever hash the record held, and SHALL NOT say that someone changed the prompt. When the commit tags match the file too, it SHALL report the prompt unchanged and exit with status 0.
+
+#### Scenario: Earlier import stopped before it wrote the record
+
+- **WHEN** an earlier import pushed a commit and stopped before it wrote that commit's hash to `my-prompt.destinations.json`
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>` again
+- **THEN** langstar reports that the prompt is unchanged, writes the latest commit's hash to the record and exits with status 0
+
+#### Scenario: First import stopped before it wrote the record
+
+- **WHEN** the first import into a workspace pushed the prompt and stopped before it wrote `my-prompt.destinations.json`
+- **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>` again
+- **THEN** langstar reports that the prompt is unchanged, writes the latest commit's hash to the record under that workspace and exits with status 0
 
 ### Requirement: Dry run an import
 
