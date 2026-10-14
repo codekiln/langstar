@@ -226,7 +226,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Redact an API key written into a destination assistant's configuration
 
-When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` wherever a key whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, has a string as its value, whether the difference is at that key or at an object that contains it.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of the value of each key whose name ends in `api_key` when that value is a string. langstar matches the name without regard to case, so `openai_api_key` and `OPENAI_API_KEY` both match. This holds when the difference is at that key and when it is at an object that contains the key.
 
 #### Scenario: Destination configuration holds a literal API key
 
@@ -242,7 +242,7 @@ When `assistant compare`, `assistant verify` or `assistant import` prints either
 
 ### Requirement: Print a secret reference in a destination assistant's configuration unchanged
 
-When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, and a key whose name ends in `api_key`, compared without regard to case, holds a LangChain secret reference, such as `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, langstar SHALL print the reference unchanged, so the report names the secret.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print a LangChain secret reference unchanged when it is the value of a key whose name ends in `api_key`, so the report names the secret. A secret reference looks like `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, and langstar matches the key name without regard to case.
 
 #### Scenario: Destination configuration reads its key from a secret
 
