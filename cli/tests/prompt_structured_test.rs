@@ -19,8 +19,8 @@
 /// - LANGSMITH_WORKSPACE_ID environment variable (for private prompt tests)
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
-#[path = "common/home.rs"]
-mod home;
+#[path = "common/config_dir.rs"]
+mod config_dir;
 
 use assert_cmd::Command;
 use langstar_sdk::auth::AuthConfig;
@@ -376,7 +376,7 @@ fn test_cli_push_private_prompt() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -423,7 +423,7 @@ fn test_cli_push_public_prompt_invalid_schema() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -458,7 +458,7 @@ fn test_cli_push_public_prompt_missing_schema() {
     // TEST: Push with nonexistent schema file path
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -496,7 +496,7 @@ fn test_cli_push_public_prompt_invalid_method() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -536,7 +536,7 @@ fn test_cli_push_private_prompt_function_calling_method() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -576,7 +576,7 @@ fn test_cli_pull_private_prompt() {
     let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
-    push_cmd.env("HOME", home::empty_home());
+    push_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     push_cmd.args([
         "prompt",
         "push",
@@ -595,7 +595,7 @@ fn test_cli_pull_private_prompt() {
 
     // TEST: Pull the structured prompt
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args(["prompt", "pull", "--", &fixture.handle()]);
 
     // VERIFY: CLI command succeeds with expected output
@@ -624,7 +624,7 @@ fn test_cli_private_prompt_round_trip() {
 
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
-    push_cmd.env("HOME", home::empty_home());
+    push_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     push_cmd.args([
         "prompt",
         "push",
@@ -659,7 +659,7 @@ fn test_cli_private_prompt_round_trip() {
 
     // TEST Step 2: Pull it back
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.env("HOME", home::empty_home());
+    pull_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     pull_cmd.args([
         "prompt",
         "pull",
@@ -697,7 +697,7 @@ fn test_cli_push_private_prompt_json_output() {
 
     let bin = get_langstar_bin();
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "push",
@@ -754,7 +754,7 @@ fn test_cli_pull_private_prompt_json_output() {
     let schema_path = schema_file.path().to_str().unwrap();
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
-    push_cmd.env("HOME", home::empty_home());
+    push_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     push_cmd.args([
         "prompt",
         "push",
@@ -773,7 +773,7 @@ fn test_cli_pull_private_prompt_json_output() {
 
     // TEST: Pull with JSON output format
     let mut cmd = Command::new(&bin);
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd.args([
         "prompt",
         "pull",
@@ -816,7 +816,7 @@ fn test_cli_push_prompt_update_with_auto_parent() {
 
     let push = |template: &str| {
         let mut cmd = Command::new(&bin);
-        cmd.env("HOME", home::empty_home());
+        cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
         cmd.args([
             "prompt",
             "push",
