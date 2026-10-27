@@ -423,6 +423,9 @@ hide_workspace_and_org_id_message = false
         println!("  • Environment variables take precedence over config file values");
         println!("  • Most environment variables use LANGSMITH_ or LANGSTAR_ prefixes");
         println!(
+            "  • LANGSTAR_CONFIG_DIR sets the directory holding config.toml (default: ~/.config/langstar,\n    or %APPDATA%\\langstar on Windows); it has no config file key"
+        );
+        println!(
             "  • Config file keys use snake_case, environment variables use SCREAMING_SNAKE_CASE"
         );
 
