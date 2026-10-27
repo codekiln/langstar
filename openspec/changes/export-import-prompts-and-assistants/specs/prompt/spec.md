@@ -68,7 +68,7 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 
 ### Requirement: Refuse to export a prompt that holds a credential
 
-Before it writes, `langstar prompt export` SHALL run the credential check over every string in the `repo` and `commit` objects it would write, skipping LangChain secret references and empty strings. When the check flags a string, export SHALL write no file and nothing to stdout, list the JSON Pointer path of each flagged string and the rule that flagged it, without the string or any part of it, and exit with status 1. Export SHALL NOT redact a flagged string and write the rest of the file.
+Before it writes, `langstar prompt export` SHALL run the credential check over every string in the `repo` and `commit` objects it would write, skipping LangChain secret references and empty strings. When the check flags a string, export SHALL write no file and nothing to stdout, list the JSON Pointer path of each flagged string and the rule that flagged it, without the string or any part of it, and exit with status 1. Export SHALL NOT write a file with `<redacted>` in place of a flagged string.
 
 #### Scenario: Model holds a literal API key
 
@@ -126,9 +126,9 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 - **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
 - **THEN** langstar writes no file, names the path of `source_db` as a URL with a password and exits with status 1
 
-### Requirement: Let the user export a flagged string that holds no secret
+### Requirement: Write each flagged prompt string the user names with --not-a-secret
 
-`langstar prompt export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a path the check does not flag, export SHALL write nothing, name the pointer and exit with status 1. No flag SHALL turn the check off.
+`langstar prompt export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a string the check passes, export SHALL write nothing, name the pointer and exit with status 1. Export SHALL run the check on every run.
 
 #### Scenario: Message template shows an example token
 
@@ -136,7 +136,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 - **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret <path of that template>`
 - **THEN** langstar writes the file with the template unchanged, prints a warning naming the path to stderr and exits with status 0
 
-#### Scenario: Exemption names a path the check does not flag
+#### Scenario: User passes --not-a-secret for a string the check passes
 
 - **WHEN** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret /repo/description`
 - **AND** the check flags nothing at `/repo/description`
@@ -315,7 +315,7 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **THEN** langstar lists that field as a difference and exits with status 3
 - **AND** the destination record holds the new commit hash
 
-### Requirement: Redact a credential in a prompt difference
+### Requirement: Redact a credential when reporting how a prompt differs
 
 When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in text or JSON, langstar SHALL print `<redacted>` in place of each string the credential check from "Refuse to export a prompt that holds a credential" flags. It SHALL redact the string when the difference is at the string or at an object that contains it, and whether the string came from the destination or from the file.
 
