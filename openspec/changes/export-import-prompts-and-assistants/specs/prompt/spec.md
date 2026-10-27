@@ -25,6 +25,12 @@
 - **WHEN** no prompt in the workspace has the handle
 - **THEN** langstar exits with status 1 and an error naming the handle
 
+#### Scenario: Export a private prompt
+
+- **WHEN** the workspace's `my-prompt` is private
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json` or `langstar prompt export -/my-prompt --output my-prompt.json`
+- **THEN** langstar reads the commit as `-/my-prompt` and writes `my-prompt.json`
+
 #### Scenario: Export to stdout
 
 - **WHEN** a user runs `langstar prompt export my-prompt` without `--output`

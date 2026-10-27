@@ -150,7 +150,7 @@ The prompt's manifest carries the model and its settings, so the prompt runs wit
 
 ### The tests run in the single existing workspace and test deployment
 
-The integration tests import each prompt into the existing test workspace under a fresh handle, and each assistant onto the existing test deployment as a new assistant. That covers import, compare, verify and the destination record, but not a move between workspaces or deployments, and the test that moves an assistant to `test_graph_alt` is skipped. Whether the tests need a second workspace and deployment will be settled by trying export and import on real assistants and prompts before implementation, and the result will be recorded here.
+The integration tests import each prompt into the existing test workspace under a fresh handle, and each assistant onto the existing test deployment as a new assistant. That covers import, compare, verify and the destination record, but not a move between workspaces or deployments, and the test that moves an assistant to `test_graph_alt` is skipped. Trying export and compare on a real set of assistants and prompts, with langstar's current commands and the SDK, showed that one workspace and one test deployment are enough. Only the assistants needed to move; the prompts stayed in one shared workspace, and the assistants name them without an owner or a commit. Every failure the trial found shows up in an export, or in an import to any deployment, including a local `langgraph dev` server, so a local `langgraph dev` server can serve as an import target. The trial needed no live model call either: comparing each structured prompt's schema and model settings finds a bad copy, and a live call tests the model, not the copy.
 
 ## Risks / Trade-offs
 

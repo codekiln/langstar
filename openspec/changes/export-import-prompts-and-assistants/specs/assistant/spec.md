@@ -21,6 +21,15 @@
 - **THEN** stdout holds only the export file's JSON document
 - **AND** any progress message goes to stderr
 
+### Requirement: Refuse to export a graph's default assistant
+
+`langstar assistant export` SHALL refuse a graph's default assistant, which every deployment creates for each graph with the same ID.
+
+#### Scenario: Assistant is a graph's default assistant
+
+- **WHEN** the assistant is the default assistant the deployment created for its graph, with `created_by` set to `system` in its metadata
+- **THEN** langstar writes no file, says that every deployment creates that assistant, and exits with status 1
+
 ### Requirement: Refuse to export an assistant that holds a credential
 
 Before it writes, `langstar assistant export` SHALL run the credential check over every string at any depth of the `assistant` object, skipping secret references and empty strings. When the check flags a string, export SHALL write no file and nothing to stdout, list the JSON Pointer path and rule of each flagged string, without the string or any part of it, and exit with status 1. Export SHALL NOT write a file with `<redacted>` in place of a flagged string.
@@ -106,6 +115,17 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 - **WHEN** the pointer resolves to no value in the assistant
 - **THEN** langstar exits with status 1 and an error naming the pointer
+
+### Requirement: Read the owner `-` as the current workspace
+
+A prompt name under `requires.prompts` with the owner `-`, such as `-/support-system:prod`, SHALL mean the current workspace's prompt, as a name without an owner does.
+
+#### Scenario: Assistant names a private prompt with the owner `-`
+
+- **WHEN** a user runs `langstar assistant export <assistant-id> --deployment my-agent --prompt-ref /config/configurable/system_prompt`
+- **AND** that value is `-/support-system:prod`
+- **THEN** `requires.prompts` holds the pointer and `-/support-system:prod`
+- **AND** `langstar assistant verify` checks the `prod` tag of the workspace's `support-system` prompt
 
 ### Requirement: Import an assistant into a deployment
 
