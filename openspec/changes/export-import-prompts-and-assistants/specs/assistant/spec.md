@@ -77,7 +77,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 ### Requirement: Write each flagged assistant string the user names with --not-a-secret
 
-`langstar assistant export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a string the check passes, export SHALL write nothing, name the pointer and exit with status 1. Export SHALL run the check on every run.
+`langstar assistant export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a string the check lets through, export SHALL write nothing, name the pointer and exit with status 1. Export SHALL run the check on every run.
 
 #### Scenario: User writes a token budget setting with --not-a-secret
 
@@ -272,7 +272,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 #### Scenario: Edited prompt reference holds an API key
 
 - **WHEN** `requires.prompts` records `/config/configurable/system_prompt` with `support-system:prod`
-- **AND** the file's `assistant.config.configurable.system_prompt` holds a string that starts with `sk-`
+- **AND** the file's `assistant.config.configurable.system_prompt` holds `sk-` followed by a 40-character token
 - **AND** the user runs `langstar assistant verify support-bot.json --deployment my-agent-prod`
 - **THEN** langstar exits with status 1, names the pointer and `support-system:prod`, and prints `<redacted>` in place of the string
 

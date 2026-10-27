@@ -116,7 +116,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 #### Scenario: Model setting holds a token under a neutral name
 
-- **WHEN** the prompt's chat model holds a string that starts with `sk-` under `model_kwargs.extra`
+- **WHEN** the prompt's chat model holds `sk-` followed by a 40-character token under `model_kwargs.extra`
 - **AND** a user runs `langstar prompt export my-prompt`
 - **THEN** stdout is empty, langstar names the path of `extra` with the rule that flagged it and exits with status 1
 
@@ -128,7 +128,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 ### Requirement: Write each flagged prompt string the user names with --not-a-secret
 
-`langstar prompt export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a string the check passes, export SHALL write nothing, name the pointer and exit with status 1. Export SHALL run the check on every run.
+`langstar prompt export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a string the check lets through, export SHALL write nothing, name the pointer and exit with status 1. Export SHALL run the check on every run.
 
 #### Scenario: Message template shows an example token
 
@@ -136,7 +136,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 - **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret <path of that template>`
 - **THEN** langstar writes the file with the template unchanged, prints a warning naming the path to stderr and exits with status 0
 
-#### Scenario: User passes --not-a-secret for a string the check passes
+#### Scenario: User names an unflagged string with --not-a-secret
 
 - **WHEN** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret /repo/description`
 - **AND** the check flags nothing at `/repo/description`
