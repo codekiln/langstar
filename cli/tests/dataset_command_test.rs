@@ -18,8 +18,8 @@
 //!
 //! Run with: `cargo test --test dataset_command_test`
 
-#[path = "common/home.rs"]
-mod home;
+#[path = "common/config_dir.rs"]
+mod config_dir;
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -29,7 +29,7 @@ use tempfile::TempDir;
 /// Helper function to get a CLI command builder
 fn langstar_cmd() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd
 }
 
