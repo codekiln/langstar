@@ -20,7 +20,7 @@ Each numbered group below is one pull request, merged in the order listed, excep
 
 ## 3. SDK reads and writes the fields export and import need
 
-Each task in this group adds public fields to SDK structs and updates every struct literal of those structs in this repository, so the workspace still compiles. The structs are `Prompt`, `CommitManifestResponse`, `CommitData`, `CommitRequest`, `Assistant`, `CreateAssistantRequest`, `UpdateAssistantRequest` and `AssistantSearchRequest`. A crate outside this repository that builds one of them with a struct literal stops compiling too, and codekiln decides in [Should the SDK field additions count as a breaking change?](design.md#9---should-the-sdk-field-additions-count-as-a-breaking-change) whether this group's pull request carries a `BREAKING CHANGE:` footer.
+Each task in this group adds public fields to SDK structs and updates every struct literal of those structs in this repository, so the workspace still compiles. The structs are `Prompt`, `CommitManifestResponse`, `CommitData`, `CommitRequest`, `Assistant`, `CreateAssistantRequest`, `UpdateAssistantRequest` and `AssistantSearchRequest`. Commit these tasks as `✨ feat(sdk)` with no `BREAKING CHANGE:` footer and leave the version in `Cargo.toml` alone, as [SDK field additions ship as `✨ feat` commits](design.md#sdk-field-additions-ship-as--feat-commits) explains; the Prepare Release workflow picks the version.
 
 Each integration test in this group carries `#[cfg_attr(not(feature = "integration-tests"), ignore)]`, as the tests in `sdk/tests/structured_prompts_integration_test.rs` do, so that the SDK Integration Tests job in `.github/workflows/ci.yml` and `mise run check` both run it.
 
