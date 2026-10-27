@@ -189,9 +189,14 @@ impl Config {
     }
 
     /// Where langstar kept the config file on macOS before v2.2.0:
-    /// `~/Library/Application Support/langstar/config.toml`
+    /// `~/Library/Application Support/langstar/config.toml`. `None` when
+    /// `LANGSTAR_CONFIG_DIR` is set, because that variable names the only place
+    /// langstar looks.
     #[cfg(target_os = "macos")]
     pub fn old_config_file_path() -> Option<PathBuf> {
+        if config_dir_from_env().is_some() {
+            return None;
+        }
         dirs::config_dir().map(|dir| dir.join("langstar").join("config.toml"))
     }
 
@@ -204,9 +209,14 @@ impl Config {
 
     /// Get the path to the config file
     ///
-    /// Uses ~/.config/langstar/config.toml on macOS and Linux for consistency.
-    /// On Windows, uses the platform-specific AppData location.
+    /// Uses `$LANGSTAR_CONFIG_DIR/config.toml` when that variable is set and not
+    /// empty. Otherwise uses ~/.config/langstar/config.toml on macOS and Linux
+    /// for consistency, and the platform-specific AppData location on Windows.
     pub fn config_file_path() -> Result<PathBuf> {
+        if let Some(dir) = config_dir_from_env() {
+            return Ok(config_file_in(&dir));
+        }
+
         #[cfg(target_os = "windows")]
         {
             let config_dir = dirs::config_dir().ok_or_else(|| {
@@ -256,9 +266,40 @@ impl Config {
     }
 }
 
+/// The environment variable that names the directory holding `config.toml`
+pub const CONFIG_DIR_ENV: &str = "LANGSTAR_CONFIG_DIR";
+
+/// The directory `LANGSTAR_CONFIG_DIR` names, or `None` when it is unset or empty
+fn config_dir_from_env() -> Option<PathBuf> {
+    config_dir_from_value(std::env::var_os(CONFIG_DIR_ENV))
+}
+
+fn config_dir_from_value(value: Option<std::ffi::OsString>) -> Option<PathBuf> {
+    value.filter(|v| !v.is_empty()).map(PathBuf::from)
+}
+
+fn config_file_in(dir: &Path) -> PathBuf {
+    dir.join("config.toml")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_config_dir_env_chooses_directory() {
+        let dir = config_dir_from_value(Some("/tmp/ls-config".into())).unwrap();
+        assert_eq!(
+            config_file_in(&dir),
+            Path::new("/tmp/ls-config").join("config.toml")
+        );
+    }
+
+    #[test]
+    fn test_config_dir_env_unset_or_empty_is_ignored() {
+        assert_eq!(config_dir_from_value(None), None);
+        assert_eq!(config_dir_from_value(Some("".into())), None);
+    }
 
     #[test]
     fn test_config_defaults() {

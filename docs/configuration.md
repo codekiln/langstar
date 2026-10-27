@@ -78,6 +78,16 @@ The configuration file is located at:
 - **macOS and Linux**: `~/.config/langstar/config.toml`
 - **Windows**: `%APPDATA%\langstar\config.toml`
 
+#### Choosing the config directory
+
+Set `LANGSTAR_CONFIG_DIR` to make langstar read and write `config.toml` in that directory on every platform:
+
+```bash
+LANGSTAR_CONFIG_DIR=~/work/project-a/.langstar langstar config show
+```
+
+An empty value counts as unset. When the variable is set, langstar doesn't look for the pre-v2.2.0 macOS file described below. Use it to keep separate configs, for example one per project or one in CI.
+
 #### Moving a config file from before v2.2.0 on macOS
 
 Before v2.2.0, langstar on macOS kept its config file at `~/Library/Application Support/langstar/config.toml`. If `~/.config/langstar/config.toml` doesn't exist, langstar still reads the old file and, every time it runs, prints a warning with the command that moves it:
