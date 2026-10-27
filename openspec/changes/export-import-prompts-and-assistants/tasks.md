@@ -130,7 +130,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - An integration test that exports an assistant, changes its metadata through the SDK, runs compare with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
   - Unit tests that compare reads the assistant ID from a destination record written by the 4.1 types, once at the default path and once at a path passed with `--record`.
   - An integration test that `assistant compare` with no destination record entry and no `--assistant-id` exits with status 1 and names the deployment.
-  - A unit test that a file whose configuration names another prompt at a pointer under `requires.prompts` exits with status 1 and names the pointer and both values.
+  - A unit test that a file whose configuration names another prompt at a pointer under `requires.prompts` exits with status 1 and names the pointer and both values, and one whose configuration holds a string that starts with `sk-` at that pointer, which prints `<redacted>` in place of the string.
 - [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--record`, `--workspace-id` for the workspace that holds the prompts, the graph check, and the prompt check, which reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. Verify with these tests:
   - An integration test that runs verify with `--assistant-id` against an exported assistant and exits with status 0.
   - An integration test that exports an assistant, changes its metadata through the SDK, runs verify with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.

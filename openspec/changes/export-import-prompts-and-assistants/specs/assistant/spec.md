@@ -39,7 +39,7 @@ Before it writes, `langstar assistant export` SHALL run the credential check ove
 
 ### Requirement: Flag an assistant string by the name of its key
 
-The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
+The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` or `keys` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
 
 #### Scenario: Context holds an access token
 
@@ -260,7 +260,7 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 
 ### Requirement: Reject a file whose prompt reference no longer matches its assistant
 
-`assistant import`, `assistant compare` and `assistant verify` SHALL resolve each pointer under `requires.prompts` against the file's `assistant` object when they read the file. When a pointer resolves to no string, or to a string other than the prompt name recorded with it, they SHALL write nothing, exit with status 1 and name the pointer and both values.
+`assistant import`, `assistant compare` and `assistant verify` SHALL resolve each pointer under `requires.prompts` against the file's `assistant` object when they read the file. When a pointer resolves to no string, or to a string other than the prompt name recorded with it, they SHALL write nothing, exit with status 1 and name the pointer and both values, with `<redacted>` in place of each value the credential check flags, as the difference report does.
 
 #### Scenario: Configuration edited after export
 
@@ -268,6 +268,13 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **AND** the file's `assistant.config.configurable.system_prompt` is `support-system:staging`
 - **AND** the user runs `langstar assistant verify support-bot.json --deployment my-agent-prod`
 - **THEN** langstar exits with status 1 and names the pointer, `support-system:prod` and `support-system:staging`
+
+#### Scenario: Edited prompt reference holds an API key
+
+- **WHEN** `requires.prompts` records `/config/configurable/system_prompt` with `support-system:prod`
+- **AND** the file's `assistant.config.configurable.system_prompt` holds a string that starts with `sk-`
+- **AND** the user runs `langstar assistant verify support-bot.json --deployment my-agent-prod`
+- **THEN** langstar exits with status 1, names the pointer and `support-system:prod`, and prints `<redacted>` in place of the string
 
 ### Requirement: Assistant compare, verify and import use the prompt commands' exit statuses and JSON report
 

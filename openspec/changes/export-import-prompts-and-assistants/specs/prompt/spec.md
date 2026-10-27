@@ -96,7 +96,7 @@ Before it writes, `langstar prompt export` SHALL run the credential check over e
 
 ### Requirement: Flag a prompt string by the name of its key
 
-The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
+The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` or `keys` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
 
 #### Scenario: Model sends an authorization header
 
