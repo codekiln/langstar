@@ -87,13 +87,20 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 ### Requirement: Record the prompts an assistant refers to
 
-`langstar assistant export` SHALL accept `--prompt-ref <json-pointer>`, repeatable, naming a string in the assistant's configuration or context that holds a prompt name. The file SHALL list each pointer and the prompt name it holds under `requires.prompts`. A pointer that resolves to no string SHALL be an error.
+`langstar assistant export` SHALL accept `--prompt-ref <json-pointer>`, repeatable, naming a string in the assistant's configuration or context that holds a prompt name of the form `[<owner>/]<handle>[:<tag>]`. A name without an owner SHALL mean the current workspace's prompt, and a name without a tag SHALL mean the prompt's latest commit. The file SHALL list each pointer and the prompt name it holds under `requires.prompts`. A pointer that resolves to no string SHALL be an error.
 
 #### Scenario: Assistant names its system prompt
 
 - **WHEN** a user runs `langstar assistant export <assistant-id> --deployment my-agent --prompt-ref /config/configurable/system_prompt`
 - **AND** that value is `support-system:prod`
 - **THEN** `requires.prompts` holds the pointer and `support-system:prod`
+
+#### Scenario: Assistant names a prompt without a tag
+
+- **WHEN** a user runs `langstar assistant export <assistant-id> --deployment my-agent --prompt-ref /config/configurable/system_prompt`
+- **AND** that value is `support-system`
+- **THEN** `requires.prompts` holds the pointer and `support-system`
+- **AND** `langstar assistant verify` checks the latest commit of the workspace's `support-system` prompt
 
 #### Scenario: Pointer names nothing
 
@@ -102,7 +109,7 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 
 ### Requirement: Import an assistant into a deployment
 
-`langstar assistant import <file> --deployment <name-or-id>` SHALL choose a new assistant ID, write it as pending under the deployment in the destination record (`<file stem>.destinations.json` unless `--record <path>` names another), then create the assistant with that `assistant_id`, `if_exists: do_nothing` and the file's name, description, graph ID, configuration, context and metadata, mark the entry created, and print the ID. A pending entry SHALL make the next import repeat the create.
+With no created assistant ID recorded for the deployment and no `--assistant-id`, `langstar assistant import <file> --deployment <name-or-id>` SHALL choose a new assistant ID, write it as pending in the destination record, then create the assistant with that `assistant_id`, `if_exists: do_nothing` and the file's name, description, graph ID, configuration, context and metadata, mark the entry created, and print the ID. A pending entry SHALL make the next import repeat the create.
 
 #### Scenario: First import
 
@@ -118,6 +125,15 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 - **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **THEN** langstar sends the create with that ID and `if_exists` set to `do_nothing`, so the deployment still holds one assistant from the file
 - **AND** the destination record marks that ID created
+
+### Requirement: Keep the assistant destination record at the path the user names
+
+`langstar assistant import`, `assistant compare` and `assistant verify` SHALL read and write the destination record at `<file stem>.destinations.json` next to the export file, unless `--record <path>` names another file.
+
+#### Scenario: Import writes the record to another path
+
+- **WHEN** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod --record records/prod.json`
+- **THEN** langstar writes the new assistant ID to `records/prod.json` and writes no `support-bot.destinations.json`
 
 ### Requirement: Replace the destination record in one step
 
@@ -168,6 +184,16 @@ When the destination record holds a created assistant ID for the deployment, `la
 
 - **WHEN** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update --assistant-id <dest-assistant-id>`
 - **THEN** langstar updates that assistant and records its ID for `my-agent-prod`
+
+### Requirement: Compare with the assistant named by --assistant-id when --update is absent
+
+Without `--update`, `langstar assistant import --assistant-id <id>` SHALL compare the file with that assistant, as `assistant compare` does, and create and change nothing. It SHALL exit with status 0 when they match, and list the differences and exit with status 3 when they differ.
+
+#### Scenario: Named assistant differs from the file
+
+- **WHEN** the assistant `<dest-assistant-id>` has configuration that differs from the file
+- **AND** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --assistant-id <dest-assistant-id>`
+- **THEN** langstar creates no assistant, changes none, lists the differences and exits with status 3
 
 ### Requirement: Import with --update asks the Agent Server to remove the metadata, description and context the file lacks
 

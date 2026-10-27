@@ -8,7 +8,7 @@ Each numbered group below is one pull request, merged in the order listed, excep
 - [ ] 1.2 Write `reference/research/807-openapi-validation.md`, recording what the live API returns. Verify that every claim in the report names the request that produced it.
   - For a structured prompt saved with a model, read with `include=model`: the manifest, its outer `id`, the `model_config` and `model_provider` beside it, and whether `model_provider` matches the class name export writes to `requires.model_class`.
   - Push that manifest to a second workspace: whether the read-back returns the same manifest, `model_config` and `model_provider`, and what pushing an identical manifest again returns.
-  - On the Agent Server: what it returns for `context`, whether an assistant update that sends a metadata key with a null value removes that key, whether an update that sends `config` or `context` replaces the assistant's object or merges into it, and whether an update can clear the description.
+  - On the Agent Server: what `POST /assistants/search` returns for a graph ID the deployment does not serve, what it returns for `context`, whether an assistant update that sends a metadata key with a null value removes that key, whether an update that sends `config` or `context` replaces the assistant's object or merges into it, and whether an update can clear the description.
   - What `POST /api/v1/prompts/invoke_prompt` returns for a prompt with a model.
 
 ## 2. Test environments
@@ -137,7 +137,9 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - An integration test of a file whose graph ID the deployment lacks, which reports the graph ID and exits with status 3.
   - An integration test of a file whose prompt tag the workspace lacks, which reports the prompt and exits with status 3.
   - An integration test that runs verify with `--workspace-id` set to the destination workspace, for an assistant whose referenced prompt tag exists only in that workspace, and asserts that verify exits with status 0 and that `checks` reports the prompt as found.
+  - Unit tests in `cli/src/commands/assistant.rs` that serve, through a `mockito` server, a search that answers 422 with an error naming `graph_id`, and assert that verify reports the graph ID missing and exits with status 3, and a 422 naming another field, and assert that verify exits with status 1.
   - A CLI test that `langstar -f json assistant verify` prints one JSON object with `status`, `differences` and `checks` to stdout.
+  - A unit test that a prompt reference with no owner and no tag, such as `support-system`, makes the prompt check request `GET /api/v1/commits/-/support-system/latest`, and one that `my-org/support-system:prod` requests `GET /api/v1/commits/my-org/support-system/prod`.
 - [ ] 9.3 Document assistant compare and verify; verify that each documented command runs as written
 
 ## 10. assistant import
@@ -152,7 +154,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 - [ ] 10.2 Add `--update`, `--assistant-id` and `--dry-run`. Verify with these tests:
   - An integration test that a repeated import creates no assistant.
   - An integration test that `--update` changes the recorded assistant, moving it from `test_graph` to `test_graph_alt` among the fields.
-  - An integration test that `--update --assistant-id <id>` naming an assistant other than the recorded one updates that assistant, leaves the recorded one unchanged and writes the new ID to the destination record.
+  - An integration test that `--update --assistant-id <id>` naming an assistant other than the recorded one updates that assistant, leaves the recorded one unchanged and writes the new ID to the destination record, and that `--assistant-id <id>` without `--update`, against an assistant that differs from the file, creates and changes no assistant and exits with status 3.
   - An integration test that `--update` of an assistant with metadata `{"kept": 1, "stale": 2}` from a file with `{"kept": 1}` leaves `{"kept": 1}`, or reports `/metadata/stale` and exits with status 3, whichever task 1.2 found the server does.
   - An integration test that `--update` of an assistant with a description and context from a file with neither clears both, or reports `/description` and `/context` and exits with status 3, whichever task 1.2 found the server does.
   - An integration test that a deleted recorded assistant exits with status 1.
