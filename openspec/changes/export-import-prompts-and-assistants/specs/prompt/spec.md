@@ -187,7 +187,7 @@ When the destination workspace has no prompt with the file's handle, `langstar p
 
 ### Requirement: Finish an import that stopped before its first commit
 
-When the destination workspace has a prompt with the file's handle and no commit, `langstar prompt import` SHALL push the file's manifest and commit description as the first commit and create the file's commit tags, as for a prompt that does not exist yet, without `--update`. Repo details that differ from the file SHALL still need `--update`.
+When the destination workspace has a prompt with the file's handle and no commit, `langstar prompt import` SHALL push the file's manifest and commit description as the first commit and create the file's commit tags, as for a prompt that does not exist yet, without `--update`. Repo details that differ from the file SHALL still need `--update`: without it, import SHALL push the commit and tags, leave the repo details unchanged, list them as differences and exit with status 3.
 
 #### Scenario: Earlier import created the repo and stopped
 
@@ -437,3 +437,13 @@ When `prompt compare`, `prompt verify` or `prompt import` prints either side of 
 
 - **WHEN** a user runs `langstar prompt compare my-prompt.json --wrkspace-id <workspace-id>`
 - **THEN** langstar prints clap's usage error and exits with status 2
+
+### Requirement: Report the import's action and destination ID in the JSON report
+
+With `-f json`, the object that `prompt import` and `assistant import` print SHALL also hold `action`, one of `create`, `update` and `unchanged`, and the destination's commit hash or assistant ID. With `--dry-run`, `action` SHALL name the action import would take, and the ID SHALL be null when import would create the resource.
+
+#### Scenario: Machine-readable first import
+
+- **WHEN** a user runs `langstar -f json prompt import my-prompt.json --workspace-id <dest-workspace-id>`
+- **AND** the destination has no prompt named `my-prompt`
+- **THEN** stdout holds one JSON object whose `action` is `create` and that holds the new commit hash
