@@ -122,7 +122,7 @@ Langstar exits today only with 0, with 1 from `main` in `cli/src/main.rs` when a
 
 ### An optional Python script checks that an imported structured prompt still returns structured data
 
-The LangSmith API has no documented way to run a prompt with its model, so a short Python script runs each imported structured prompt with LangChain and checks that the result matches the prompt's schema. The one prompt endpoint in the OpenAPI spec, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no LangSmith SDK calls it; in [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8), a developer calls it on the live API in case it does more than the spec says. A mise task runs the script with `uv run --script`, which installs the `langsmith` and `langchain-openai` packages the script lists, on a developer's machine and in the Integration Tests CI job. The script reads the destination workspace: it builds its LangSmith `Client` with `workspace_id` set to `LANGSTAR_TEST_DEST_WORKSPACE_ID`, because both `fnox.toml` and CI set `LANGSMITH_WORKSPACE_ID` to the source workspace, which holds a prompt with the same handle. The script pulls the imported prompt with `include_model=True` and passes `secrets={"OPENAI_API_KEY": <value read from the environment>}` to [`pull_prompt`](https://github.com/langchain-ai/langsmith-sdk/blob/47c553caf08c1989e2be3ff1886da3eb801f709f/python/langsmith/client.py#L10228), because the LangSmith Python SDK reads no secret from the environment unless asked, and raises when a manifest holds a secret reference and no `secrets` map arrives. The script needs an OpenAI API key, which bills on every run. The check is optional: the mise task skips it and says so when `OPENAI_API_KEY` is unset, so every other test runs without a paid key, and a developer with a key of their own can run it by hand. The question under Open Questions asks for a key in CI.
+The LangSmith API has no documented way to run a prompt with its model, so a short Python script runs each imported structured prompt with LangChain and checks that the result matches the prompt's schema. The one prompt endpoint in the OpenAPI spec, `POST /api/v1/prompts/invoke_prompt`, takes message templates and inputs with no model or schema, and no LangSmith SDK calls it; in [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8), a developer calls it on the live API in case it does more than the spec says. A mise task runs the script with `uv run --script`, which installs the `langsmith` and `langchain-openai` packages the script lists, on a developer's machine and in the Integration Tests CI job. The script reads the destination workspace: it builds its LangSmith `Client` with `workspace_id` set to `LANGSTAR_TEST_DEST_WORKSPACE_ID`, because both `fnox.toml` and CI set `LANGSMITH_WORKSPACE_ID` to the source workspace, which holds a prompt with the same handle. The script pulls the imported prompt with `include_model=True` and passes `secrets={"OPENAI_API_KEY": <value read from the environment>}` to [`pull_prompt`](https://github.com/langchain-ai/langsmith-sdk/blob/47c553caf08c1989e2be3ff1886da3eb801f709f/python/langsmith/client.py#L10228), because the LangSmith Python SDK reads no secret from the environment unless asked, and raises when a manifest holds a secret reference and no `secrets` map arrives. The script needs an OpenAI API key, which bills on every run. The check is optional: the mise task skips it and says so when `OPENAI_API_KEY` is unset, so every other test runs without a paid key, and a developer with a key of their own can run it by hand.
 
 ### Export and import use the same SDK calls as the planned `prompt create`, `get` and `update`
 
@@ -148,9 +148,9 @@ Import writes, and `LANGSMITH_WORKSPACE_ID` is easy to leave pointing at the wro
 
 The prompt's manifest carries the model and its settings, so the prompt runs without a saved model configuration, and the secret check is the one that finds a prompt that cannot authenticate. Failing on the note would make verify exit with 3 for a prompt that runs.
 
-### Without a second workspace and deployment, the tests import into the existing ones
+### The tests run in the single existing workspace and test deployment
 
-Until a second workspace and a second test deployment exist, the integration tests import each prompt into the existing test workspace under a fresh handle, and each assistant onto the existing test deployment as a new assistant. That covers import, compare, verify and the destination record, but not a move between workspaces or deployments, and the test that moves an assistant to `test_graph_alt` is skipped. The question under Open Questions asks for both.
+The integration tests import each prompt into the existing test workspace under a fresh handle, and each assistant onto the existing test deployment as a new assistant. That covers import, compare, verify and the destination record, but not a move between workspaces or deployments, and the test that moves an assistant to `test_graph_alt` is skipped. Whether the tests need a second workspace and deployment will be settled by trying export and import on real assistants and prompts before implementation, and the result will be recorded here.
 
 ## Risks / Trade-offs
 
@@ -162,7 +162,7 @@ Until a second workspace and a second test deployment exist, the integration tes
 - [The check flags a string that holds no secret, such as an example token in a message template] → Export names the path and the rule, and the user passes `--not-a-secret` with that path after reading the string.
 - [A tag in the destination may already point at another commit] → `--update` moves the tag, and `--dry-run` lists the move.
 - [`--update` deletes a tag on the matching destination commit that the file lacks, and a graph on a deployment may read that tag] → `--dry-run` lists each delete, and `assistant verify` reports a prompt tag an assistant refers to that the workspace no longer has.
-- [The control plane may refuse a second deployment from this repository with 409] → In [export-import-prompts-and-assistants Task 2.3 Register the test graph under a second graph ID](tasks.md#L18), a developer deploys the new `langgraph.json` once, before anyone builds the fixture. If the control plane answers with 409, the developer reports it to codekiln with the question under Open Questions.
+- [The control plane may refuse a second deployment from this repository with 409] → In [export-import-prompts-and-assistants Task 2.3 Register the test graph under a second graph ID](tasks.md#L18), a developer deploys the new `langgraph.json` once, before anyone builds the fixture. If the control plane answers with 409, the developer records the answer in this design.
 
 ## Resolved Questions
 
@@ -170,6 +170,4 @@ None.
 
 ## Open Questions
 
-### q01 - A second workspace, a second test deployment and a paid OpenAI key
-
-Without them, the tests import into the existing test workspace and deployment, never cover a move between environments, and skip the structured output check. With them, the tests copy across environments and CI runs each imported structured prompt once, billed per run. May I create a second LangSmith workspace and a second test deployment, and use a paid OpenAI key in CI?
+None.
