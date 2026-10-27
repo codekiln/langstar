@@ -2,7 +2,7 @@
 //!
 //! Before v2.2.0 langstar kept its config file at
 //! `~/Library/Application Support/langstar/config.toml`. These tests run the
-//! binary with `HOME` set to a temporary directory that holds that file, and
+//! binary with `HOME` set to a temporary directory that holds that file and `LANGSTAR_CONFIG_DIR` unset, and
 //! check what the user sees. The unit tests in `cli/src/config.rs` cover the
 //! choice of file on every platform.
 //!
@@ -44,10 +44,11 @@ impl Home {
         fs::write(path, content).unwrap();
     }
 
-    /// A langstar command with `HOME` set to this home and `LANGSTAR_OUTPUT_FORMAT` unset
+    /// A langstar command with `HOME` set to this home and `LANGSTAR_CONFIG_DIR` and `LANGSTAR_OUTPUT_FORMAT` unset
     fn langstar(&self) -> Command {
         let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
         cmd.env("HOME", self.dir.path())
+            .env_remove("LANGSTAR_CONFIG_DIR")
             .env_remove("LANGSTAR_OUTPUT_FORMAT");
         cmd
     }
