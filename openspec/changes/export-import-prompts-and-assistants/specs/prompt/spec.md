@@ -66,15 +66,81 @@ The export file SHALL list, under `requires.secrets`, the name of every secret t
 - **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
 - **THEN** langstar creates no prompt, names `requires.secrets` and exits with status 1
 
-### Requirement: Refuse to export an API key written into a prompt's model
+### Requirement: Refuse to export a prompt that holds a credential
 
-When a chat model constructor in the manifest holds a string, rather than a secret reference, under a setting whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, `langstar prompt export` SHALL write no file and nothing to stdout, name that setting's JSON Pointer path without its value, and exit with status 1.
+Before it writes, `langstar prompt export` SHALL run the credential check over every string in the `repo` and `commit` objects it would write, skipping LangChain secret references and empty strings. When the check flags a string, export SHALL write no file and nothing to stdout, list the JSON Pointer path of each flagged string and the rule that flagged it, without the string or any part of it, and exit with status 1. Export SHALL NOT redact a flagged string and write the rest of the file.
 
 #### Scenario: Model holds a literal API key
 
 - **WHEN** the prompt's `ChatOpenAI` constructor holds a string under `openai_api_key`
 - **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
 - **THEN** langstar writes no file, names the path of `openai_api_key` without its value and exits with status 1
+
+#### Scenario: Model holds a literal API key under an upper-case name
+
+- **WHEN** the prompt's `ChatOpenAI` constructor holds a string under `OPENAI_API_KEY`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes no file, names the path of `OPENAI_API_KEY` without its value and exits with status 1
+
+#### Scenario: Readme holds a private key
+
+- **WHEN** the repo's readme holds a PEM block that begins `-----BEGIN PRIVATE KEY-----`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes no file, names `/repo/readme` and exits with status 1
+
+#### Scenario: Model reads its key from a secret
+
+- **WHEN** the prompt's chat model refers to the secret `OPENAI_API_KEY` under `openai_api_key`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes the file with the secret reference and exits with status 0
+
+### Requirement: Flag a prompt string by the name of its key
+
+The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
+
+#### Scenario: Model sends an authorization header
+
+- **WHEN** the prompt's chat model holds `default_headers` with `Authorization` set to `Bearer ` and a token
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes no file, names `/commit/manifest/kwargs/last/kwargs/default_headers/Authorization` without its value and exits with status 1
+
+#### Scenario: Model sets a token limit
+
+- **WHEN** the prompt's chat model holds the number 1024 under `max_tokens`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes the file with `max_tokens` unchanged and exits with status 0
+
+### Requirement: Flag a prompt string by its shape under any key
+
+The credential check SHALL flag a string, under any key, that holds a bearer token, a `Basic ` authorization value, a PEM private key, a URL with a password in its user info, a connection string with a non-empty `Password=`, `Pwd=`, `AccountKey=`, `SharedAccessKey=` or `SharedAccessSignature=`, a JSON Web Token, or a token that starts with a provider prefix the design lists: `sk-`, `lsv2_`, `ghp_`, `gho_`, `ghs_`, `github_pat_`, `xoxb-`, `xoxp-`, `xoxa-`, `AKIA`, `ASIA`, `AIza` or `hf_`.
+
+#### Scenario: Model setting holds a token under a neutral name
+
+- **WHEN** the prompt's chat model holds a string that starts with `sk-` under `model_kwargs.extra`
+- **AND** a user runs `langstar prompt export my-prompt`
+- **THEN** stdout is empty, langstar names the path of `extra` with the rule that flagged it and exits with status 1
+
+#### Scenario: Prompt metadata holds a connection string with a password
+
+- **WHEN** the manifest's `metadata` holds `postgresql://app:<password>@db.example.com/prod` under `source_db`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** langstar writes no file, names the path of `source_db` as a URL with a password and exits with status 1
+
+### Requirement: Let the user export a flagged string that holds no secret
+
+`langstar prompt export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a path the check does not flag, export SHALL write nothing, name the pointer and exit with status 1. No flag SHALL turn the check off.
+
+#### Scenario: Message template shows an example token
+
+- **WHEN** a message template holds `Authorization: Bearer ` followed by an example token
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret <path of that template>`
+- **THEN** langstar writes the file with the template unchanged, prints a warning naming the path to stderr and exits with status 0
+
+#### Scenario: Exemption names a path the check does not flag
+
+- **WHEN** a user runs `langstar prompt export my-prompt --output my-prompt.json --not-a-secret /repo/description`
+- **AND** the check flags nothing at `/repo/description`
+- **THEN** langstar writes no file, names `/repo/description` and exits with status 1
 
 ### Requirement: Export, import and verify a prompt without a model
 
@@ -249,9 +315,9 @@ After writing, `langstar prompt import` SHALL record the commit hash in the dest
 - **THEN** langstar lists that field as a difference and exits with status 3
 - **AND** the destination record holds the new commit hash
 
-### Requirement: Redact an API key written into a destination prompt's model
+### Requirement: Redact a credential in a prompt difference
 
-When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of the value of each key whose name ends in `api_key` when that value is a string. langstar SHALL match the name without regard to case. langstar SHALL redact the string both when the difference is at the key and when the difference is at an object that contains the key.
+When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in text or JSON, langstar SHALL print `<redacted>` in place of each string the credential check from "Refuse to export a prompt that holds a credential" flags. It SHALL redact the string when the difference is at the string or at an object that contains it, and whether the string came from the destination or from the file.
 
 #### Scenario: Destination model holds a literal API key
 
@@ -266,9 +332,21 @@ When `prompt compare`, `prompt verify` or `prompt import` prints either side of 
 - **AND** a user runs `langstar prompt compare my-prompt.json`
 - **THEN** langstar reports the model's path with `<redacted>` in place of the string and exits with status 3
 
+#### Scenario: Destination model sends a bearer token in a header
+
+- **WHEN** someone saved the destination prompt with a model whose `default_headers.Authorization` holds `Bearer ` and a token
+- **AND** a user runs `langstar prompt compare my-prompt.json -f json`
+- **THEN** the text and the JSON report print `<redacted>` at that header's path, neither holds the token, and langstar exits with status 3
+
+#### Scenario: Destination model holds a token under a neutral name
+
+- **WHEN** someone saved the destination prompt with a model whose `model_kwargs.extra` holds a string that starts with `lsv2_`
+- **AND** a user runs `langstar prompt compare my-prompt.json`
+- **THEN** langstar reports that path with `<redacted>` in place of the string and exits with status 3
+
 ### Requirement: Print a secret reference in a destination prompt's model unchanged
 
-When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print a LangChain secret reference unchanged when it is the value of a key whose name ends in `api_key`, so the report names the secret. A secret reference looks like `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, and langstar matches the key name without regard to case.
+When `prompt compare`, `prompt verify` or `prompt import` prints either side of a difference, in the text or the JSON report, langstar SHALL print a LangChain secret reference unchanged under any key, so the report names the secret. A secret reference looks like `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`.
 
 #### Scenario: Destination adds a model that reads its key from a secret
 

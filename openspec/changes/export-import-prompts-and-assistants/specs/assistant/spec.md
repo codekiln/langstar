@@ -21,15 +21,69 @@
 - **THEN** stdout holds only the export file's JSON document
 - **AND** any progress message goes to stderr
 
-### Requirement: Refuse to export an API key written into an assistant
+### Requirement: Refuse to export an assistant that holds a credential
 
-When the assistant's configuration, context or metadata holds a string under a key whose name ends in `api_key`, compared without regard to case, such as `openai_api_key` or `OPENAI_API_KEY`, `langstar assistant export` SHALL write no file and nothing to stdout, name that key's JSON Pointer path without the string, and exit with status 1.
+Before it writes, `langstar assistant export` SHALL run the credential check over every string at any depth of the `assistant` object, skipping secret references and empty strings. When the check flags a string, export SHALL write no file and nothing to stdout, list the JSON Pointer path and rule of each flagged string, without the string or any part of it, and exit with status 1. Export SHALL NOT redact a flagged string and write the rest.
 
 #### Scenario: Configuration holds a literal API key
 
 - **WHEN** the assistant's `config.configurable.OPENAI_API_KEY` holds a string
 - **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
 - **THEN** langstar writes no file, names `/config/configurable/OPENAI_API_KEY` without the string and exits with status 1
+
+#### Scenario: Configuration reads its key from a secret
+
+- **WHEN** the assistant's `config.configurable.openai_api_key` holds a secret reference to `OPENAI_API_KEY`
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes the file with the secret reference and exits with status 0
+
+### Requirement: Flag an assistant string by the name of its key
+
+The credential check SHALL flag a string when the key that holds it, or the array it is in, has a name whose words, split at `_`, `-`, `.`, spaces and lower-to-upper case changes and compared without regard to case, include `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization` or `cookie`, or `key` right after `api`, `access`, `private`, `secret`, `signing` or `account`.
+
+#### Scenario: Context holds an access token
+
+- **WHEN** the assistant's `context.github_access_token` holds a string
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes no file, names `/context/github_access_token` without the string and exits with status 1
+
+#### Scenario: Configuration holds a database password
+
+- **WHEN** the assistant's `config.configurable.db.password` holds a string
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes no file, names `/config/configurable/db/password` without the string and exits with status 1
+
+#### Scenario: Configuration sends an authorization header
+
+- **WHEN** the assistant's `config.configurable.tool_headers.Authorization` holds `Bearer ` and a token
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes no file, names `/config/configurable/tool_headers/Authorization` without the string and exits with status 1
+
+### Requirement: Flag an assistant string by its shape under any key
+
+The credential check SHALL flag a string, under any key, that holds a bearer token, a `Basic ` authorization value, a PEM private key, a URL with a password in its user info, a connection string with a non-empty `Password=`, `Pwd=`, `AccountKey=`, `SharedAccessKey=` or `SharedAccessSignature=`, a JSON Web Token, or a token that starts with a provider prefix the design lists: `sk-`, `lsv2_`, `ghp_`, `gho_`, `ghs_`, `github_pat_`, `xoxb-`, `xoxp-`, `xoxa-`, `AKIA`, `ASIA`, `AIza` or `hf_`.
+
+#### Scenario: Configuration holds a connection string with a password
+
+- **WHEN** the assistant's `config.configurable.checkpoint_uri` holds `postgresql://app:<password>@db.example.com/agent`
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json`
+- **THEN** langstar writes no file, names `/config/configurable/checkpoint_uri` as a URL with a password and exits with status 1
+
+#### Scenario: Metadata holds a private key
+
+- **WHEN** the assistant's `metadata.deploy_note` holds a PEM block that begins `-----BEGIN OPENSSH PRIVATE KEY-----`
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent`
+- **THEN** stdout is empty, langstar names `/metadata/deploy_note` as a private key and exits with status 1
+
+### Requirement: Let the user export a flagged assistant string that holds no secret
+
+`langstar assistant export` SHALL take `--not-a-secret <json-pointer>` any number of times. For each pointer at a string the credential check flags, export SHALL write that string and print a warning to stderr naming the pointer. A flagged string at any path not named SHALL still make export refuse. When a pointer names a path the check does not flag, export SHALL write nothing, name the pointer and exit with status 1. No flag SHALL turn the check off.
+
+#### Scenario: Configuration names a token budget
+
+- **WHEN** the assistant's `config.configurable.token_budget_policy` holds the string `strict`
+- **AND** a user runs `langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json --not-a-secret /config/configurable/token_budget_policy`
+- **THEN** langstar writes the file with `strict` at that path, prints a warning naming the path to stderr and exits with status 0
 
 ### Requirement: Record the prompts an assistant refers to
 
@@ -224,9 +278,9 @@ After writing, `langstar assistant import` SHALL record the assistant ID in the 
 - **WHEN** a user runs `langstar -f json assistant verify support-bot.json --deployment my-agent-prod`
 - **THEN** stdout holds one JSON object with `status`, `differences` and `checks`
 
-### Requirement: Redact an API key written into a destination assistant's configuration
+### Requirement: Redact a credential in an assistant difference
 
-When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print `<redacted>` in place of the value of each key whose name ends in `api_key` when that value is a string. langstar SHALL match the name without regard to case. langstar SHALL redact the string both when the difference is at the key and when the difference is at an object that contains the key.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in text or JSON, langstar SHALL print `<redacted>` in place of each string the credential check from "Refuse to export an assistant that holds a credential" flags. It SHALL redact the string when the difference is at the string or at an object that contains it, and whether the string came from the destination or from the file.
 
 #### Scenario: Destination configuration holds a literal API key
 
@@ -240,9 +294,22 @@ When `assistant compare`, `assistant verify` or `assistant import` prints either
 - **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
 - **THEN** langstar reports `/assistant/config/configurable/OPENAI_API_KEY` with `<redacted>` in place of the string and exits with status 3
 
+#### Scenario: Destination context holds a connection string with a password
+
+- **WHEN** someone updated the destination assistant so `context.checkpoint_uri` holds `postgresql://app:<password>@db.example.com/agent`
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod -f json`
+- **THEN** the text and the JSON report print `<redacted>` at `/assistant/context/checkpoint_uri`, neither holds the password, and langstar exits with status 3
+
+#### Scenario: Destination adds a configuration object that holds a password
+
+- **WHEN** the file's configuration has no `db` key
+- **AND** someone updated the destination assistant so `config.configurable.db` holds `{"user": "app", "password": "<password>"}`
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
+- **THEN** langstar reports `/assistant/config/configurable/db` with `user` unchanged and `<redacted>` under `password`, and exits with status 3
+
 ### Requirement: Print a secret reference in a destination assistant's configuration unchanged
 
-When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print a LangChain secret reference unchanged when it is the value of a key whose name ends in `api_key`, so the report names the secret. A secret reference looks like `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, and langstar matches the key name without regard to case.
+When `assistant compare`, `assistant verify` or `assistant import` prints either side of a difference, in the text or the JSON report, langstar SHALL print a LangChain secret reference unchanged under any key, so the report names the secret. A secret reference looks like `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`.
 
 #### Scenario: Destination configuration reads its key from a secret
 
