@@ -105,7 +105,10 @@ pub struct Deployment {
     pub image_version: Option<String>,
     /// ID of the workspace that holds the deployment. langstar sends it as
     /// `X-Tenant-Id` when the API key reaches several workspaces and none was chosen.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// It is read from the Control Plane and left out of langstar's JSON output, so
+    /// `deployment get` and `deployment list` print what they printed before and a
+    /// test that prints that output does not publish a workspace ID.
+    #[serde(default, skip_serializing)]
     pub tenant_id: Option<String>,
 }
 
