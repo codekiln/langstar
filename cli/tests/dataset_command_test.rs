@@ -253,6 +253,22 @@ fn test_dataset_import_requires_file() {
 }
 
 #[test]
+fn test_dataset_export_rejects_limit_below_one() {
+    for limit in ["--limit=-1", "--limit=0"] {
+        let mut cmd = langstar_cmd();
+        cmd.env("LANGSMITH_API_KEY", "<your-api-key>").args([
+            "dataset",
+            "export",
+            "12345678-1234-1234-1234-123456789012",
+            limit,
+        ]);
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("--limit must be at least 1"));
+    }
+}
+
+#[test]
 fn test_dataset_list_examples_requires_uuid() {
     let mut cmd = langstar_cmd();
     cmd.args(["dataset", "list-examples"]);
@@ -818,6 +834,119 @@ mod integration {
 
         println!("✓ Deleted dataset successfully");
         println!("✓ Full CRUD lifecycle test passed");
+    }
+
+    /// `dataset export` with no `--limit` returns every example, not one page of 100, and `--limit` still caps the export. See [issue 809, dataset export returns only the first 100 examples](https://github.com/codekiln/langstar/issues/809).
+    #[test]
+    fn test_dataset_export_returns_more_than_one_page() {
+        require_api_credentials();
+        const EXAMPLES: usize = 105;
+
+        let temp_dir = TempDir::new().unwrap();
+        let unique_name = format!("export-all-test-{}", &Uuid::new_v4().to_string()[..8]);
+        let output = langstar_cmd()
+            .args([
+                "dataset",
+                "create",
+                "--name",
+                &unique_name,
+                "--data-type",
+                "kv",
+                "--json",
+            ])
+            .assert()
+            .success();
+        let created: serde_json::Value =
+            serde_json::from_slice(&output.get_output().stdout).unwrap();
+        let dataset_id = created["id"].as_str().unwrap().to_string();
+
+        let import_file = temp_dir.path().join("import.jsonl");
+        let lines: Vec<String> = (0..EXAMPLES)
+            .map(|i| {
+                format!(
+                    r#"{{"inputs": {{"n": {i}}}, "outputs": {{"double": {}}}}}"#,
+                    i * 2
+                )
+            })
+            .collect();
+        fs::write(&import_file, lines.join("\n")).unwrap();
+
+        // Run the checks in a closure so the dataset is deleted even if one fails.
+        let result = std::panic::catch_unwind(|| {
+            langstar_cmd()
+                .args([
+                    "dataset",
+                    "import",
+                    &dataset_id,
+                    "--file",
+                    import_file.to_str().unwrap(),
+                ])
+                .assert()
+                .success();
+
+            let export = |extra: &[&str]| -> Vec<serde_json::Value> {
+                let out = langstar_cmd()
+                    .args(["dataset", "export", &dataset_id, "--file-format", "jsonl"])
+                    .args(extra)
+                    .assert()
+                    .success();
+                String::from_utf8_lossy(&out.get_output().stdout)
+                    .lines()
+                    .filter(|l| !l.is_empty())
+                    .map(|l| serde_json::from_str(l).unwrap())
+                    .collect()
+            };
+
+            let all = export(&[]);
+            assert_eq!(all.len(), EXAMPLES, "export should return every example");
+            let mut ns: Vec<i64> = all
+                .iter()
+                .map(|r| r["inputs"]["n"].as_i64().expect("inputs.n"))
+                .collect();
+            ns.sort_unstable();
+            assert_eq!(ns, (0..EXAMPLES as i64).collect::<Vec<_>>());
+            for record in &all {
+                let n = record["inputs"]["n"].as_i64().unwrap();
+                assert_eq!(record["outputs"]["double"].as_i64(), Some(n * 2));
+            }
+            let mut ids: Vec<&str> = all.iter().map(|r| r["id"].as_str().unwrap()).collect();
+            ids.sort_unstable();
+            ids.dedup();
+            assert_eq!(ids.len(), EXAMPLES, "no example should repeat across pages");
+
+            assert_eq!(export(&["--limit", "7"]).len(), 7);
+            assert_eq!(export(&["--limit", "101"]).len(), 101);
+        });
+
+        delete_dataset(&dataset_id);
+        if let Err(panic) = result {
+            std::panic::resume_unwind(panic);
+        }
+    }
+
+    /// A failed export leaves an existing `--out` file as it was, because the
+    /// first page is requested before the file is opened.
+    #[test]
+    fn test_dataset_export_failure_leaves_existing_out_file_untouched() {
+        require_api_credentials();
+
+        let temp_dir = TempDir::new().unwrap();
+        let out = temp_dir.path().join("backup.jsonl");
+        let original = "{\"inputs\":{\"keep\":\"me\"}}\n";
+        fs::write(&out, original).unwrap();
+
+        langstar_cmd()
+            .args([
+                "dataset",
+                "export",
+                &Uuid::new_v4().to_string(),
+                "--out",
+                out.to_str().unwrap(),
+            ])
+            .assert()
+            .failure();
+
+        assert_eq!(fs::read_to_string(&out).unwrap(), original);
     }
 
     /// Test import/export roundtrip for datasets.
