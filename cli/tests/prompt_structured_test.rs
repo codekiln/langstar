@@ -909,7 +909,7 @@ fn test_cli_push_creates_new_repo_with_owner_dash() {
 
     // TEST: push to a repo that does not exist yet
     let mut push_cmd = Command::new(&bin);
-    push_cmd.env("HOME", home::empty_home());
+    push_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     push_cmd.args([
         "prompt",
         "push",
@@ -928,7 +928,7 @@ fn test_cli_push_creates_new_repo_with_owner_dash() {
 
     // VERIFY: the pulled manifest has the pushed template and schema
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.env("HOME", home::empty_home());
+    pull_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     pull_cmd.args([
         "prompt",
         "pull",
