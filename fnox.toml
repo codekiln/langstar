@@ -14,8 +14,8 @@
 # Setup and re-sync steps: docs/dev/environment-variables.md
 
 [secrets]
-LANGSMITH_API_KEY = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/password", if_missing = "error" }
-LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-org-id", if_missing = "error" }
-LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-workspace-id", if_missing = "error" }
+LANGSMITH_API_KEY = { provider = "langsmith", value = "langstar-cli-testing-workspace/api-key", if_missing = "error" }
+LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-org-id", if_missing = "error" }
+LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-workspace-id", if_missing = "error" }
 # A second workspace that the import tests import into. They export from LANGSMITH_WORKSPACE_ID.
-LANGSMITH_DESTINATION_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-destination-workspace-id", if_missing = "error" }
+LANGSMITH_DESTINATION_WORKSPACE_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-destination-workspace-id", if_missing = "error" }
