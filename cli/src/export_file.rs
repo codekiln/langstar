@@ -267,7 +267,20 @@ pub fn stage_record<T: Serialize>(path: &Path, record: &T) -> Result<PathBuf> {
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "destinations.json".to_string());
     let staged = directory.join(format!("{}.{}.tmp", name, std::process::id()));
-    std::fs::write(&staged, to_sorted_json(record)?)?;
+    // Anything already at the staged path, such as a file a langstar that died
+    // mid-write left or a symlink to another file, is removed rather than written
+    // through, and `create_new` refuses to follow whatever appears there before
+    // the file is created.
+    match std::fs::remove_file(&staged) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error.into()),
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&staged)?;
+    std::io::Write::write_all(&mut file, to_sorted_json(record)?.as_bytes())?;
     Ok(staged)
 }
 
@@ -561,6 +574,36 @@ mod tests {
         assert_eq!(
             after.destinations["<deployment-id>"].state,
             DestinationState::Pending
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staging_replaces_a_symlink_at_the_staged_path_without_writing_through_it() {
+        let directory = TempDir::new().expect("a temporary directory");
+        let path = directory.path().join("support-bot.destinations.json");
+        let other = directory.path().join("other-file");
+        std::fs::write(&other, "left alone").expect("the other file writes");
+        let planted = directory.path().join(format!(
+            "support-bot.destinations.json.{}.tmp",
+            std::process::id()
+        ));
+        std::os::unix::fs::symlink(&other, &planted).expect("the symlink is created");
+
+        let staged =
+            stage_record(&path, &AssistantDestinations::default()).expect("the record stages");
+
+        assert_eq!(staged, planted);
+        assert!(
+            !std::fs::symlink_metadata(&staged)
+                .expect("the staged file exists")
+                .file_type()
+                .is_symlink(),
+            "the staged file is a plain file, not the planted symlink"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&other).expect("the other file reads"),
+            "left alone"
         );
     }
 }
