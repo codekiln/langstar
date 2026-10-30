@@ -4,7 +4,7 @@
 ///
 /// **Test Coverage:**
 /// - PRIVATE prompts (99% use case): Format `-/repo`, requires LANGSMITH_WORKSPACE_ID
-/// - PUBLIC prompts (1% use case): Format `owner/repo`, must NOT have LANGSMITH_WORKSPACE_ID
+/// - PUBLIC prompts (1% use case): Format `owner/repo`, also sent with LANGSMITH_WORKSPACE_ID
 ///
 /// **Test Pattern:**
 /// Each test follows CRUD lifecycle with unique repo names to avoid conflicts:
@@ -16,7 +16,7 @@
 /// **Prerequisites:**
 /// - LANGSMITH_API_KEY environment variable
 /// - LANGSMITH_ORGANIZATION_ID environment variable
-/// - LANGSMITH_WORKSPACE_ID environment variable (for private prompt tests)
+/// - LANGSMITH_WORKSPACE_ID environment variable
 ///
 /// Run with: cargo test --features integration-tests --test prompt_structured_test -- --nocapture
 #[path = "common/config_dir.rs"]
@@ -45,18 +45,13 @@ fn check_env_vars_private_prompts() {
 }
 
 /// Check environment variables for PUBLIC prompt tests (1% use case)
-/// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID
-/// Unsets: LANGSMITH_WORKSPACE_ID (incompatible with owner/repo format)
+/// Requires: LANGSMITH_API_KEY, LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID
+///
+/// A public push to `owner/repo` works with the workspace header, and an API key
+/// that reaches several workspaces needs it
+/// ([#837](https://github.com/codekiln/langstar/issues/837)).
 fn check_env_vars_public_prompts() {
-    std::env::var("LANGSMITH_API_KEY")
-        .expect("LANGSMITH_API_KEY must be set for integration tests");
-    std::env::var("LANGSMITH_ORGANIZATION_ID")
-        .expect("LANGSMITH_ORGANIZATION_ID must be set for integration tests");
-    // SAFETY: Modifying environment variables is unsafe in multi-threaded contexts.
-    // Tests using this function MUST be marked with #[serial] to prevent data races.
-    unsafe {
-        std::env::remove_var("LANGSMITH_WORKSPACE_ID");
-    }
+    check_env_vars_private_prompts();
 }
 
 /// Helper to create a tokio runtime for SDK operations
