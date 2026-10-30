@@ -1,4 +1,5 @@
 mod commands;
+mod compare;
 mod config;
 mod confirm;
 mod credential_check;
