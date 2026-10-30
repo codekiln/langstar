@@ -10,9 +10,9 @@ use langstar_sdk::{AuthConfig, Deployment, LangchainClient, LangstarError, Works
 pub struct ResolvedDeployment {
     /// The deployment's Agent Server URL (`source_config.custom_url`)
     pub url: String,
-    /// The workspace to send to the Agent Server when none was chosen: the one the
-    /// lookup found the deployment in. `None` when a workspace was chosen, or when the
-    /// lookup needed none.
+    /// The workspace that holds the deployment, found by searching each workspace the
+    /// key reaches. Set only when no workspace ID was given and the deployment lookup
+    /// needed one; `None` otherwise.
     pub workspace_id: Option<String>,
 }
 

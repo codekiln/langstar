@@ -72,13 +72,13 @@ langstar assistant list --deployment my-deployment --workspace-id "your-workspac
 
 ## An API key that reaches several workspaces
 
-Langstar sends the workspace ID in the `X-Tenant-Id` header on every request: to the LangSmith API, to the Control Plane API, and to a deployment's Agent Server. With no workspace ID set, it sends no header, and a key that reaches one workspace works as it is.
+Langstar sends the workspace ID in the `X-Tenant-Id` header on every request: to the LangSmith API, to the Control Plane API, and to a deployment's Agent Server. When no workspace ID is set, langstar sends no header, and a key that reaches one workspace keeps working.
 
 A key that reaches several workspaces gets `403 Forbidden` when no workspace is named. When that happens, langstar asks LangSmith once per run which workspaces the key reaches (`GET /api/v1/workspaces`), and then:
 
 - If the key reaches one workspace, langstar sends the request again with it.
 - If the key reaches several and the command names a deployment (`assistant` and `graph`), langstar looks for that deployment in each workspace. When exactly one workspace holds it, langstar uses that workspace and prints its name to stderr.
-- Otherwise langstar stops and lists the workspaces the key reaches, by name and ID, with the three ways to choose one.
+- Otherwise langstar stops, lists the workspaces the key reaches by name and ID, and asks you to pass `--workspace-id`, set `LANGSMITH_WORKSPACE_ID`, or set `workspace_id` in the config file.
 
 When a workspace ID is set and the server answers `403 Forbidden`, langstar checks whether the key reaches that workspace. If it does not, the error says so and lists the workspaces the key does reach. If it does, the 403 is a permission error, and langstar reports it as the server sent it.
 

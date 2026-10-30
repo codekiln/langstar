@@ -365,9 +365,7 @@ impl LangchainClient {
     /// `POST /assistants/search` with no workspace header and `200` with `X-Tenant-Id`
     /// set to the deployment's workspace, while a key that reaches one workspace got
     /// `200` without the header
-    /// ([#837](https://github.com/codekiln/langstar/issues/837)).
-    /// The header is sent because the server behaved that way, not because a document
-    /// promises it.
+    /// ([#837 Agent Server requests send no workspace header, so a key with two workspaces gets 403](https://github.com/codekiln/langstar/issues/837)).
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
         self.langgraph_request(Method::GET, path)
     }
@@ -439,8 +437,8 @@ impl LangchainClient {
 
     /// Send a request, and on a 403 work out which workspace the API key needs.
     ///
-    /// A 403 means the server refused the request before acting on it, so sending the
-    /// request again cannot do anything twice.
+    /// A 403 means the server refused the request before acting on it, so sending it
+    /// again is safe.
     ///
     /// - The request named no workspace: the client looks up the workspaces the key
     ///   reaches. When there is one, it sends the request again with that workspace and
@@ -482,7 +480,7 @@ impl LangchainClient {
             None => match reachable {
                 [] => Ok(response),
                 [only] => {
-                    // A body that cannot be cloned cannot be sent again.
+                    // A streamed body can be sent only once, so return the 403 as it came.
                     let Some(again) = again else {
                         return Ok(response);
                     };

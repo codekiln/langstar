@@ -49,7 +49,7 @@ fn check_env_vars_private_prompts() {
 ///
 /// A public push to `owner/repo` works with the workspace header, and an API key
 /// that reaches several workspaces needs it
-/// ([#837](https://github.com/codekiln/langstar/issues/837)).
+/// ([#837 Agent Server requests send no workspace header, so a key with two workspaces gets 403](https://github.com/codekiln/langstar/issues/837)).
 fn check_env_vars_public_prompts() {
     check_env_vars_private_prompts();
 }

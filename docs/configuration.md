@@ -287,7 +287,7 @@ The API key automatically determines:
 
 #### Workspace
 
-`organization_id` does not apply to assistants. `workspace_id`, `LANGSMITH_WORKSPACE_ID` and the global `--workspace-id` flag do: langstar sends the workspace to the deployment's Agent Server in the `X-Tenant-Id` header. A key that reaches one workspace needs none. For a key that reaches several, see [An API key that reaches several workspaces](usage/scoping.md#an-api-key-that-reaches-several-workspaces).
+`organization_id` does not apply to assistants. `workspace_id`, `LANGSMITH_WORKSPACE_ID` and the global `--workspace-id` flag do: langstar sends the workspace to the deployment's Agent Server in the `X-Tenant-Id` header. A key that reaches one workspace works without a workspace ID. For a key that reaches several, see [An API key that reaches several workspaces](usage/scoping.md#an-api-key-that-reaches-several-workspaces).
 
 ## Configuration Precedence
 
