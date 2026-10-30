@@ -682,9 +682,13 @@ impl<'a> PromptClient<'a> {
         repo: &str,
         commit: &str,
     ) -> Result<CommitManifestResponse> {
+        // A tag name or hash goes into the path, so a reserved character in it would
+        // otherwise cut the request short and drop `include=model`.
         let path = format!(
             "/api/v1/commits/{}/{}/{}?include=model",
-            owner, repo, commit
+            owner,
+            repo,
+            urlencoding::encode(commit)
         );
         let request = self.client.langsmith_get(&path)?;
         let response: CommitManifestResponse = self.client.execute(request).await?;
@@ -803,7 +807,12 @@ impl<'a> PromptClient<'a> {
             commit_id: &'a str,
         }
 
-        let path = format!("/api/v1/repos/{}/{}/tags/{}", owner, repo, tag_name);
+        let path = format!(
+            "/api/v1/repos/{}/{}/tags/{}",
+            owner,
+            repo,
+            urlencoding::encode(tag_name)
+        );
         let request = self
             .client
             .langsmith_patch(&path)?
@@ -819,7 +828,12 @@ impl<'a> PromptClient<'a> {
     /// * `repo` - The prompt repository name
     /// * `tag_name` - The name of the tag to delete
     pub async fn delete_tag(&self, owner: &str, repo: &str, tag_name: &str) -> Result<()> {
-        let path = format!("/api/v1/repos/{}/{}/tags/{}", owner, repo, tag_name);
+        let path = format!(
+            "/api/v1/repos/{}/{}/tags/{}",
+            owner,
+            repo,
+            urlencoding::encode(tag_name)
+        );
         let request = self.client.langsmith_delete(&path)?;
         self.client.execute_status_only_request(request).await
     }
@@ -2128,6 +2142,62 @@ mod export_field_tests {
             Some("4f2b2d9e-0b4a-4a1f-9f3a-3b6b5f1c2d7e")
         );
         assert_eq!(response.commit.commit_hash, "abc123");
+    }
+
+    #[tokio::test]
+    async fn test_a_reserved_character_in_a_tag_name_or_commit_stays_in_the_path() {
+        let mut server = mockito::Server::new_async().await;
+        let read = server
+            .mock("GET", "/api/v1/commits/-/my-prompt/prod%23candidate")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "include".into(),
+                "model".into(),
+            ))
+            .with_body(json!({"commit_hash": "abc123", "manifest": {"lc": 1}}).to_string())
+            .create_async()
+            .await;
+        let moved = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt/tags/prod%23candidate")
+            .with_body(
+                json!({
+                    "id": "tag-1",
+                    "repo_id": "repo-1",
+                    "commit_id": "id-second",
+                    "commit_hash": "hash-second",
+                    "tag_name": "prod#candidate"
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+        let deleted = server
+            .mock("DELETE", "/api/v1/repos/-/my-prompt/tags/prod%23candidate")
+            .with_status(204)
+            .create_async()
+            .await;
+
+        let client = mock_client(&server);
+        client
+            .prompts()
+            .get_commit_with_model("-", "my-prompt", "prod#candidate")
+            .await
+            .expect("the commit read should succeed");
+        client
+            .prompts()
+            .move_tag("-", "my-prompt", "prod#candidate", "id-second")
+            .await
+            .expect("the tag move should succeed");
+        client
+            .prompts()
+            .delete_tag("-", "my-prompt", "prod#candidate")
+            .await
+            .expect("the tag delete should succeed");
+
+        // Without the encoding each request would land on `prod` and the commit read
+        // would lose `include=model`, so these three assertions are the whole test.
+        read.assert_async().await;
+        moved.assert_async().await;
+        deleted.assert_async().await;
     }
 
     #[tokio::test]
