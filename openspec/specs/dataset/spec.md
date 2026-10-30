@@ -135,13 +135,18 @@ When a CSV row's `metadata` cell is not JSON, or its `id` cell is not a UUID, la
 
 ### Requirement: Export examples to JSONL or CSV
 
-`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and up to 100 when `--limit` is absent.
+`langstar dataset export <dataset-id>` SHALL write the dataset's examples as CSV, or as JSONL when the user passes `--file-format jsonl`. It SHALL write to the file named by `--out`, or to standard output without it. It SHALL export up to `--limit` examples, and every example in the dataset when `--limit` is absent, however many pages the API needs to return them. It SHALL request the first page before it opens the `--out` file. When that request fails, langstar SHALL exit with an error and leave an existing `--out` file unchanged; when a later page fails, langstar SHALL exit with an error and leave the examples already written in the file.
 
 #### Scenario: Export to a CSV file
 
 - **WHEN** a user runs `langstar dataset export <dataset-id> --out examples.csv`
 - **THEN** `examples.csv` holds a header row of `id`, `inputs`, `outputs` and `metadata` and one row per example, with each value as JSON
 - **AND** langstar reports how many examples it exported
+
+#### Scenario: Export with a limit below 1
+
+- **WHEN** a user runs `langstar dataset export <dataset-id> --limit=-1`, or `--limit 0`
+- **THEN** langstar exits with an error saying `--limit` must be at least 1 and exports nothing
 
 #### Scenario: Export JSONL to standard output
 

@@ -9,6 +9,7 @@ use langstar_sdk::{
 };
 use mockito::{Matcher, Server};
 use serde_json::json;
+use tokio_stream::StreamExt;
 use uuid::Uuid;
 
 /// Helper function to make a minimal valid Dataset JSON response
@@ -629,6 +630,109 @@ async fn test_bulk_create_examples() {
     assert_eq!(created.len(), 2);
 
     mock.assert_async().await;
+}
+
+#[tokio::test]
+async fn test_list_examples_paginated_pages_until_a_short_page() {
+    let mut server = Server::new_async().await;
+    let dataset_id = "12345678-1234-1234-1234-123456789012";
+
+    let page = |start: usize, count: usize| {
+        let examples: Vec<_> = (start..start + count)
+            .map(|i| make_example_json(&format!("22345678-1234-1234-1234-{i:012}"), dataset_id))
+            .collect();
+        json!(examples).to_string()
+    };
+
+    let mut mocks = Vec::new();
+    // Each tuple is (offset, limit in the request, examples the mock returns).
+    // The offset-0 mock expects two requests, one from the stream with no total
+    // limit and one from the stream with a total limit of 150, because both
+    // start with limit=100.
+    for (offset, limit, count) in [(0, 100, 100), (100, 100, 100), (200, 100, 5)] {
+        mocks.push(
+            server
+                .mock("GET", "/api/v1/examples")
+                .match_query(Matcher::AllOf(vec![
+                    Matcher::UrlEncoded("offset".into(), offset.to_string()),
+                    Matcher::UrlEncoded("limit".into(), limit.to_string()),
+                ]))
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(page(offset, count))
+                .expect(if offset == 0 { 2 } else { 1 })
+                .create_async()
+                .await,
+        );
+    }
+
+    let client = create_test_client(&server.url());
+    let params = ListExamplesParams {
+        dataset: Some(Uuid::parse_str(dataset_id).unwrap()),
+        ..Default::default()
+    };
+
+    let all: Vec<_> = client
+        .list_examples_paginated(params.clone(), None)
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(all.len(), 205);
+    assert_eq!(
+        all[204].id.to_string(),
+        "22345678-1234-1234-1234-000000000204"
+    );
+
+    // Second page asks for limit=50, not 100.
+    let limit_mock = server
+        .mock("GET", "/api/v1/examples")
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("offset".into(), "100".into()),
+            Matcher::UrlEncoded("limit".into(), "50".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(page(100, 50))
+        .expect(1)
+        .create_async()
+        .await;
+    let limited: Vec<_> = client
+        .list_examples_paginated(params.clone(), Some(150))
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(limited.len(), 150);
+    limit_mock.assert_async().await;
+    for mock in &mocks {
+        mock.assert_async().await;
+    }
+
+    // A small total asks for a small page, not 100.
+    let small_mock = server
+        .mock("GET", "/api/v1/examples")
+        .match_query(Matcher::AllOf(vec![
+            Matcher::UrlEncoded("offset".into(), "0".into()),
+            Matcher::UrlEncoded("limit".into(), "1".into()),
+        ]))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(page(0, 1))
+        .expect(1)
+        .create_async()
+        .await;
+    let one: Vec<_> = client
+        .list_examples_paginated(params, Some(1))
+        .collect::<Vec<_>>()
+        .await
+        .into_iter()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(one.len(), 1);
+    small_mock.assert_async().await;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
