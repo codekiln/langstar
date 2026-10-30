@@ -195,6 +195,12 @@ The integration tests import each prompt into the existing test workspace under 
 
 Trying export and compare on a real set of assistants and prompts, with langstar's current commands and the SDK, showed that one workspace and one test deployment are enough for the rest of the work. Only the assistants needed to move; the prompts stayed in one shared workspace, and the assistants name them without an owner or a commit. Every failure the trial found shows up in an export, or in an import to any deployment. The trial needed no live model call either: comparing each structured prompt's schema and model settings finds a bad copy, and a live call tests the model, not the copy.
 
+### One test key reaches both test workspaces
+
+On 2026-10-30 codekiln chose one LangSmith service key that reaches both the test workspace and the destination workspace. `LANGSMITH_API_KEY` holds it, and each command names its workspace: the tests set `LANGSMITH_WORKSPACE_ID` for the source and pass `--workspace-id` to import for the destination. With this key a request that names no workspace, or the wrong one, gets 403, so a test fails when langstar sends a request to the wrong workspace. A one-workspace key would hide that, because the server knows its only workspace. The tests also run with the kind of key an organization admin creates for several workspaces, and there is one key to rotate in 1Password, fnox and CI.
+
+The key needs langstar to send `X-Tenant-Id` on its Agent Server requests, which it does not do yet: [#837 Agent Server requests send no workspace header, so a key with two workspaces gets 403](https://github.com/codekiln/langstar/issues/837). The design for that fix is attached to the issue as [Picking the workspace for an API key that reaches several](https://github.com/codekiln/langstar/issues/837/artifacts/1). [export-import-prompts-and-assistants Task 2.1 Add the destination workspace and the model provider key](tasks.md#L16) merges after the fix. No LangSmith page says the Agent Server reads `X-Tenant-Id`; the live server did on 2026-10-30, and the integration tests would fail if it stopped.
+
 ## Risks / Trade-offs
 
 - [LangSmith may store a pushed model differently from the source] → Import reads the prompt back and reports any difference, and in [export-import-prompts-and-assistants Task 1.2 Record what the live API returns](tasks.md#L8) a developer checks the round trip against the live API before anyone builds the commands.
