@@ -17,5 +17,5 @@
 LANGSMITH_API_KEY = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/password", if_missing = "error" }
 LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-org-id", if_missing = "error" }
 LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-workspace-id", if_missing = "error" }
-# The workspace the import tests import into, which is not the one they export from.
+# A second workspace that the import tests import into. They export from LANGSMITH_WORKSPACE_ID.
 LANGSMITH_DESTINATION_WORKSPACE_ID = { provider = "langsmith", value = "langsmith-api-key-langsmith-cli-testing/langsmith-destination-workspace-id", if_missing = "error" }

@@ -12,7 +12,7 @@ Langstar uses three core environment variables for authentication across differe
 
 The integration tests read one more:
 
-- `LANGSMITH_DESTINATION_WORKSPACE_ID` - The workspace the prompt import tests import into. It is a second workspace in the same organization as `LANGSMITH_WORKSPACE_ID`, so a test that imports into the workspace it exported from cannot pass by mistake. Its workspace secrets hold `OPENAI_API_KEY`, so import's secret check passes for a prompt with an OpenAI model. Langstar itself never reads this variable; a test passes it to `prompt import --workspace-id`.
+- `LANGSMITH_DESTINATION_WORKSPACE_ID` - The workspace the prompt import tests import into. It is a second workspace in the same organization as `LANGSMITH_WORKSPACE_ID`, so a test that imports into the workspace it exported from cannot pass by mistake. It holds a workspace secret named `OPENAI_API_KEY`, because `langstar prompt import` checks that the destination has a secret with that name before it imports a prompt that uses an OpenAI model. Only the tests read this variable, and they pass it to `langstar prompt import --workspace-id`.
 
 ## Loading the Variables Locally
 
