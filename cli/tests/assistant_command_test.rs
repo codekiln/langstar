@@ -92,7 +92,7 @@ fn get_test_deployment() -> (String, String) {
 
 #[test]
 #[serial] // Uses shared TEST_DEPLOYMENT - must run serially with other shared deployment tests
-#[ignore] // Blocked - GitHub deployments don't have custom_url in source_config (URL only in v1 API)
+#[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_assistant_create_basic() {
     println!("==================================================");
     println!("Test: Assistant Create (Basic)");
