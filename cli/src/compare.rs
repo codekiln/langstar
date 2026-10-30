@@ -150,9 +150,29 @@ fn compare_assistant(
     destination: Option<&Value>,
     found: &mut Vec<Difference>,
 ) {
-    let file_settings = settings_of(file);
     let destination_settings = settings_of(destination);
 
+    // A file whose two settings fields disagree was edited in one of them, so
+    // each is compared on its own and the edit shows up as a difference.
+    if let Some(fields) = conflicting_settings(file) {
+        for (settings, field) in fields {
+            match destination_settings {
+                Some((destination_settings, _)) => {
+                    walk(field.to_string(), settings, destination_settings, found)
+                }
+                None => found.push(Difference::new(field, Some(settings), None)),
+            }
+        }
+        compare_object(
+            "/assistant",
+            without_settings(file).as_ref(),
+            without_settings(destination).as_ref(),
+            found,
+        );
+        return;
+    }
+
+    let file_settings = settings_of(file);
     match (file_settings, destination_settings) {
         (None, None) => {}
         (Some((settings, field)), Some((destination_settings, _))) => {
@@ -180,6 +200,14 @@ fn settings_of(assistant: Option<&Value>) -> Option<(&Value, &'static str)> {
         return Some((configurable, CONFIGURABLE));
     }
     present(assistant.get("context")).map(|context| (context, CONTEXT))
+}
+
+/// Both settings fields, when an assistant holds both and they differ.
+fn conflicting_settings(assistant: Option<&Value>) -> Option<[(&Value, &'static str); 2]> {
+    let assistant = assistant?;
+    let configurable = present(assistant.pointer("/config/configurable"))?;
+    let context = present(assistant.get("context"))?;
+    (configurable != context).then_some([(configurable, CONFIGURABLE), (context, CONTEXT)])
 }
 
 /// The assistant with `context` and `config.configurable` taken out, and with
@@ -407,6 +435,28 @@ mod tests {
                 path: "/assistant/config/configurable/model".to_string(),
                 file: Some(json!("gpt-4o")),
                 destination: Some(json!("claude-opus-4")),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_file_whose_context_was_edited_alone_reports_the_edit() {
+        let file = assistant(json!({
+            "config": { "configurable": { "model": "gpt-4o" } },
+            "context": { "model": "claude-opus-4" }
+        }));
+        let destination = assistant(json!({
+            "config": { "configurable": { "model": "gpt-4o" } },
+            "context": { "model": "gpt-4o" }
+        }));
+        let differences = compare_export(&file, &destination);
+
+        assert_eq!(
+            differences,
+            vec![Difference {
+                path: "/assistant/context/model".to_string(),
+                file: Some(json!("claude-opus-4")),
+                destination: Some(json!("gpt-4o")),
             }]
         );
     }
