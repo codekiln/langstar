@@ -206,11 +206,16 @@ pub fn redact_at(path: &str, value: &Value) -> Value {
 }
 
 /// Whether `value` is a LangChain secret reference.
+///
+/// A reference holds `lc`, `type` and `id` and nothing else. An object that
+/// holds those and more is walked like any other object, so a password sitting
+/// beside them is still found.
 pub fn is_secret_reference(value: &Value) -> bool {
     let Some(object) = value.as_object() else {
         return false;
     };
-    object.contains_key("lc")
+    object.len() == 3
+        && object.contains_key("lc")
         && object.get("type").and_then(Value::as_str) == Some("secret")
         && object
             .get("id")
@@ -359,10 +364,27 @@ fn is_token_character(character: char) -> bool {
         || matches!(character, '-' | '_' | '.' | '~' | '+' | '/' | '=')
 }
 
-/// The maximal runs of token characters in `text`.
-fn tokens(text: &str) -> impl Iterator<Item = &str> {
-    text.split(|character: char| !is_token_character(character))
-        .filter(|token| !token.is_empty())
+/// The runs of letters, digits, `-` and `_` in `text`. A provider token is one
+/// whole run whether it stands alone, follows `=` in an assignment or a URL
+/// query, or ends a sentence.
+fn provider_token_candidates(text: &str) -> impl Iterator<Item = &str> {
+    text.split(|character: char| {
+        !(character.is_ascii_alphanumeric() || matches!(character, '-' | '_'))
+    })
+    .filter(|candidate| !candidate.is_empty())
+}
+
+/// Each run of base64url characters, dots and `=` padding that starts at an
+/// `eyJ`, with a dot that ends a sentence trimmed off. Starting at `eyJ` finds
+/// a JSON Web Token after `=` in an assignment or a URL query.
+fn json_web_token_candidates(text: &str) -> impl Iterator<Item = &str> {
+    text.match_indices("eyJ").map(move |(at, _)| {
+        let from = &text[at..];
+        let end = from
+            .find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '=')))
+            .unwrap_or(from.len());
+        from[..end].trim_end_matches('.')
+    })
 }
 
 fn bearer_token(text: &str) -> bool {
@@ -422,10 +444,9 @@ fn connection_string_with_password(text: &str) -> bool {
 }
 
 fn json_web_token(text: &str) -> bool {
-    tokens(text).any(|token| {
-        let parts: Vec<&str> = token.split('.').collect();
+    json_web_token_candidates(text).any(|candidate| {
+        let parts: Vec<&str> = candidate.split('.').collect();
         parts.len() == 3
-            && parts[0].starts_with("eyJ")
             && parts.iter().all(|part| {
                 !part.is_empty()
                     && part
@@ -436,7 +457,7 @@ fn json_web_token(text: &str) -> bool {
 }
 
 fn provider_token(text: &str) -> bool {
-    tokens(text).any(|token| {
+    provider_token_candidates(text).any(|token| {
         TOKEN_PREFIXES.iter().any(|prefix| {
             token
                 .strip_prefix(prefix)
@@ -700,6 +721,40 @@ mod tests {
         }
     }
 
+    #[test]
+    fn flags_a_provider_token_in_an_assignment_a_url_query_and_a_sentence() {
+        let github = format!("ghp_{}", "a1".repeat(18));
+        for text in [
+            "x=sk-proj-0123456789abcdefghij".to_string(),
+            format!("https://example.test/?api_key={github}"),
+            format!("https://example.test/?a=1&token={github}&b=2"),
+            "aws=AKIAABCDEFGH12345678".to_string(),
+            "the key is sk-proj-0123456789abcdefghij.".to_string(),
+        ] {
+            assert_eq!(
+                flagged_under_note(&text),
+                Some(Rule::ProviderToken),
+                "expected {text:?} to be flagged"
+            );
+        }
+    }
+
+    #[test]
+    fn flags_a_json_web_token_in_an_assignment_a_url_query_and_a_sentence() {
+        let token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+        for text in [
+            format!("The token is {token}."),
+            format!("token={token}"),
+            format!("https://example.test/callback?id_token={token}&state=x"),
+        ] {
+            assert_eq!(
+                flagged_under_note(&text),
+                Some(Rule::JsonWebToken),
+                "expected {text:?} to be flagged"
+            );
+        }
+    }
+
     // Ordinary text
 
     #[test]
@@ -711,6 +766,8 @@ mod tests {
             "postgresql://host/db",
             "sk-",
             "-----BEGIN PUBLIC KEY-----",
+            // A prefix inside a longer word is not a token.
+            "risk-0123456789abcdefghijklmnop",
         ] {
             assert_eq!(flagged_under_note(text), None, "expected {text:?} to pass");
         }
@@ -724,6 +781,26 @@ mod tests {
             "openai_api_key": { "id": ["OPENAI_API_KEY"], "lc": 1, "type": "secret" }
         });
         assert!(find_credentials(&value).is_empty());
+    }
+
+    #[test]
+    fn walks_an_object_that_holds_a_secret_reference_and_more() {
+        let value = json!({
+            "note": {
+                "id": ["OPENAI_API_KEY"],
+                "lc": 1,
+                "type": "secret",
+                "password": "plain-looking-password"
+            }
+        });
+        assert_eq!(
+            find_credentials(&value),
+            vec![Flagged {
+                path: "/note/password".to_string(),
+                rule: Rule::KeyName,
+            }]
+        );
+        assert!(secret_names(&value).is_empty());
     }
 
     #[test]
@@ -779,6 +856,28 @@ mod tests {
             &json!({ "user": "app", "password": "s3cret-pw" }),
         );
         assert_eq!(redacted, json!({ "user": "app", "password": REDACTED }));
+    }
+
+    #[test]
+    fn redacts_a_password_beside_the_members_of_a_secret_reference() {
+        let redacted = redact_at(
+            "/assistant/config/configurable/openai",
+            &json!({
+                "id": ["OPENAI_API_KEY"],
+                "lc": 1,
+                "type": "secret",
+                "password": "plain-looking-password"
+            }),
+        );
+        assert_eq!(
+            redacted,
+            json!({
+                "id": ["OPENAI_API_KEY"],
+                "lc": 1,
+                "type": "secret",
+                "password": REDACTED
+            })
+        );
     }
 
     #[test]
