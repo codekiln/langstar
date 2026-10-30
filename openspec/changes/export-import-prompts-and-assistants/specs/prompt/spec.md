@@ -148,6 +148,22 @@ The credential check SHALL flag a string, under any key, that holds a bearer tok
 - **AND** the check flags nothing at `/repo/description`
 - **THEN** langstar writes no file, names `/repo/description` and exits with status 1
 
+### Requirement: Find the chat model constructor through the RunnableBinding
+
+`langstar prompt export` SHALL look for the chat model constructor at the manifest's `kwargs.last`, step through a `RunnableBinding` there to its `kwargs.bound`, and read `requires.model_class` from the `id` of what it lands on.
+
+#### Scenario: A RunnableBinding wraps the chat model
+
+- **WHEN** the manifest's `kwargs.last` is a `RunnableBinding` whose `kwargs.bound` has the `id` `["langchain", "chat_models", "openai", "ChatOpenAI"]`
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** the file holds `ChatOpenAI` under `requires.model_class`
+
+#### Scenario: The chat model constructor sits at kwargs.last itself
+
+- **WHEN** the manifest's `kwargs.last` has the `id` `["langchain", "chat_models", "openai", "ChatOpenAI"]` and no binding wraps it
+- **AND** a user runs `langstar prompt export my-prompt --output my-prompt.json`
+- **THEN** the file holds `ChatOpenAI` under `requires.model_class`
+
 ### Requirement: Export, import and verify a prompt without a model
 
 When the manifest holds no chat model constructor, `langstar prompt export` SHALL write `requires.model_class` as null. Import and verify SHALL accept null when the manifest they read again holds no chat model, skip the saved model configuration check, report no note for it, and still run the secret check.
