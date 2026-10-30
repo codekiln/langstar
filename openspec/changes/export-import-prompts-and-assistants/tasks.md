@@ -31,7 +31,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 
 ## 4. Shared code for the prompt and assistant commands: the export file, the comparison and the report
 
-- [ ] 4.1 Add the export file types, with sorted keys, sorted `commit.tags`, `repo.tags` and `requires.secrets`, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, which langstar replaces by writing a temporary file in the same directory and renaming it over the old one, to a new module in `cli/src/`. Verify with these unit tests:
+- [x] 4.1 Add the export file types, with sorted keys, sorted `commit.tags`, `repo.tags` and `requires.secrets`, no export time and a reader that accepts only `format_version` 1 and the expected `kind`, and the destination record file, which langstar replaces by writing a temporary file in the same directory and renaming it over the old one, to a new module in `cli/src/`. Verify with these unit tests:
   - Tests that build equivalent nested values with keys inserted in different orders, serialize each, and assert identical text with keys sorted at every level, and a test that `commit.tags`, `repo.tags` and `requires.secrets` given in different orders serialize to the same text.
   - A test that updating one destination leaves the others unchanged.
   - A test that a record write that fails before the rename leaves the earlier record file unchanged, its pending entries included.
