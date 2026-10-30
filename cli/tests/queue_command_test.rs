@@ -10,8 +10,8 @@
 //!
 //! Run with: `cargo test --test queue_command_test --features integration-tests`
 
-#[path = "common/home.rs"]
-mod home;
+#[path = "common/config_dir.rs"]
+mod config_dir;
 
 use assert_cmd::Command;
 use chrono::Utc;
@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 fn langstar_cmd() -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_langstar"));
-    cmd.env("HOME", home::empty_home());
+    cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     cmd
 }
 
