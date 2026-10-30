@@ -129,7 +129,7 @@ A prompt name under `requires.prompts` with the owner `-`, such as `-/support-sy
 
 ### Requirement: Import an assistant into a deployment
 
-With no created assistant ID recorded for the deployment and no `--assistant-id`, `langstar assistant import <file> --deployment <name-or-id>` SHALL choose a new assistant ID, write it as pending in the destination record, then create the assistant with that `assistant_id`, `if_exists: do_nothing` and the file's name, description, graph ID, configuration, context and metadata, mark the entry created, and print the ID. A pending entry SHALL make the next import repeat the create.
+With no created assistant ID recorded for the deployment and no `--assistant-id`, `langstar assistant import <file> --deployment <name-or-id>` SHALL choose a new assistant ID, write it as pending in the destination record, then create the assistant with that `assistant_id`, `if_exists: do_nothing` and the file's name, description, graph ID, settings and metadata, mark the entry created, and print the ID. A pending entry SHALL make the next import repeat the create.
 
 #### Scenario: First import
 
@@ -145,6 +145,29 @@ With no created assistant ID recorded for the deployment and no `--assistant-id`
 - **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **THEN** langstar sends the create with that ID and `if_exists` set to `do_nothing`, so the deployment still holds one assistant from the file
 - **AND** the destination record marks that ID created
+
+### Requirement: Send an assistant's settings in one field
+
+When the file's `assistant` object holds both `config.configurable` and `context` with the same values, `langstar assistant import` SHALL send `config` with `configurable` and SHALL NOT send `context`. When it holds only one of them, import SHALL send that one. When it holds both and they differ, import SHALL write nothing, leave the destination record unchanged, name `/assistant/config/configurable` and `/assistant/context` without their values, and exit with status 1.
+
+#### Scenario: Both fields hold the same settings
+
+- **WHEN** the file's `config.configurable` and `context` both hold `{"system_prompt": "support-system:prod"}`
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** the create request holds `config.configurable` and no `context`
+- **AND** the read-back's `context` holds `{"system_prompt": "support-system:prod"}`, so import reports no difference
+
+#### Scenario: Only context holds the settings
+
+- **WHEN** the file's `context` holds `{"system_prompt": "support-system:prod"}` and its `config` has no `configurable`
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** the create request holds `context` and no `config.configurable`
+
+#### Scenario: The two fields differ
+
+- **WHEN** the file's `config.configurable.system_prompt` is `support-system:prod` and its `context.system_prompt` is `support-system:staging`
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** langstar creates no assistant, leaves `support-bot.destinations.json` as it was, names `/assistant/config/configurable` and `/assistant/context` without their values and exits with status 1
 
 ### Requirement: Keep the assistant destination record at the path the user names
 
@@ -192,7 +215,7 @@ When the destination record holds a created assistant ID for the deployment, `la
 
 ### Requirement: Update an existing assistant only on request
 
-`langstar assistant import --update` SHALL update the recorded assistant, or the assistant named by `--assistant-id <id>`, with the file's name, description, graph ID, configuration, context and metadata. `--assistant-id` SHALL take precedence over the destination record.
+`langstar assistant import --update` SHALL update the recorded assistant, or the assistant named by `--assistant-id <id>`, with the file's name, description, graph ID, settings and metadata, sending the settings as "Send an assistant's settings in one field" requires. `--assistant-id` SHALL take precedence over the destination record.
 
 #### Scenario: Update the recorded assistant
 
