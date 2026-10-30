@@ -8,6 +8,7 @@ mod error;
 mod export_file;
 mod json_pointer;
 mod output;
+mod report;
 pub mod time;
 
 use clap::{Parser, Subcommand};
