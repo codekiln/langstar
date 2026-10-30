@@ -3,6 +3,23 @@ use crate::error::{LangstarError, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// Percent-encode a tag name or commit for one segment of a URL path.
+///
+/// Percent-encoding leaves `.` and `..` as they are, and a client or proxy reads those
+/// as the current or parent directory: `DELETE /api/v1/repos/-/my-prompt/tags/..` lands
+/// on `/api/v1/repos/-/my-prompt/`, which deletes the whole prompt. An empty name would
+/// end the path at `tags/`. None of the three can name a tag or a commit, so each is
+/// refused before a request goes out.
+fn path_segment(name: &str) -> Result<String> {
+    if name.is_empty() || name == "." || name == ".." {
+        return Err(LangstarError::InvalidInput(format!(
+            "{:?} is not a tag name or commit",
+            name
+        )));
+    }
+    Ok(urlencoding::encode(name).into_owned())
+}
+
 /// Visibility filter for prompts
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Visibility {
@@ -688,7 +705,7 @@ impl<'a> PromptClient<'a> {
             "/api/v1/commits/{}/{}/{}?include=model",
             owner,
             repo,
-            urlencoding::encode(commit)
+            path_segment(commit)?
         );
         let request = self.client.langsmith_get(&path)?;
         let response: CommitManifestResponse = self.client.execute(request).await?;
@@ -811,7 +828,7 @@ impl<'a> PromptClient<'a> {
             "/api/v1/repos/{}/{}/tags/{}",
             owner,
             repo,
-            urlencoding::encode(tag_name)
+            path_segment(tag_name)?
         );
         let request = self
             .client
@@ -832,7 +849,7 @@ impl<'a> PromptClient<'a> {
             "/api/v1/repos/{}/{}/tags/{}",
             owner,
             repo,
-            urlencoding::encode(tag_name)
+            path_segment(tag_name)?
         );
         let request = self.client.langsmith_delete(&path)?;
         self.client.execute_status_only_request(request).await
@@ -2235,6 +2252,47 @@ mod export_field_tests {
             Some("hash-first")
         );
         assert_eq!(commits.commits[1].id, "id-first");
+    }
+
+    #[tokio::test]
+    async fn test_a_dot_segment_or_empty_tag_name_sends_no_request() {
+        let mut server = mockito::Server::new_async().await;
+        // Each mock matches any path for its method, so `expect(0)` fails the test if a
+        // request goes out.
+        let mut any_request = Vec::new();
+        for method in ["GET", "PATCH", "DELETE"] {
+            any_request.push(
+                server
+                    .mock(method, mockito::Matcher::Any)
+                    .expect(0)
+                    .create_async()
+                    .await,
+            );
+        }
+
+        let client = mock_client(&server);
+        let prompts = client.prompts();
+        for name in ["..", ".", ""] {
+            let read = prompts.get_commit_with_model("-", "my-prompt", name).await;
+            assert!(
+                matches!(read, Err(LangstarError::InvalidInput(_))),
+                "the commit read of {name:?} should be refused, got {read:?}"
+            );
+            let moved = prompts.move_tag("-", "my-prompt", name, "id-second").await;
+            assert!(
+                matches!(moved, Err(LangstarError::InvalidInput(_))),
+                "the move of tag {name:?} should be refused, got {moved:?}"
+            );
+            let deleted = prompts.delete_tag("-", "my-prompt", name).await;
+            assert!(
+                matches!(deleted, Err(LangstarError::InvalidInput(_))),
+                "the delete of tag {name:?} should be refused, got {deleted:?}"
+            );
+        }
+
+        for mock in any_request {
+            mock.assert_async().await;
+        }
     }
 
     #[tokio::test]
