@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::error::Result;
 use crate::output::{ExportFormat, OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand};
+use futures_util::StreamExt;
 use langstar_sdk::{
     DataType, Dataset, DatasetCreate, DatasetUpdate, Example, ExampleCreate, LangchainClient,
     ListDatasetsParams, ListExamplesParams,
@@ -171,7 +172,7 @@ pub struct ExportArgs {
     #[arg(long, short)]
     pub out: Option<PathBuf>,
 
-    /// Maximum number of examples to export (default: all)
+    /// Maximum number of examples to export, at least 1 (default: all)
     #[arg(short, long)]
     pub limit: Option<i64>,
 }
@@ -658,18 +659,35 @@ impl DatasetCommands {
     }
 
     async fn execute_export(args: &ExportArgs, config: &Config) -> Result<()> {
+        // The examples endpoint requires limit >= 1, so a zero or negative
+        // --limit is an error rather than a silently empty export.
+        if let Some(limit) = args.limit
+            && limit < 1
+        {
+            return Err(crate::error::CliError::Config(format!(
+                "--limit must be at least 1, got {limit}"
+            )));
+        }
+
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        // Fetch all examples (with pagination if needed)
-        let limit = args.limit.unwrap_or(100);
+        // No --limit exports every example, paging through the API
         let params = ListExamplesParams {
             dataset: Some(args.dataset_id),
-            limit: Some(limit),
             ..Default::default()
         };
+        let total_limit = args.limit.map(|limit| limit as usize);
 
-        let examples = client.list_examples(params).await?;
+        // Write each example as its page arrives, so memory stays bounded to
+        // one page however large the dataset is.
+        let mut examples = client.list_examples_paginated(params, total_limit);
+
+        // Request the first page before opening --out, so a bad dataset id or
+        // API key leaves an existing file untouched. If a later page fails, the
+        // command exits with an error and the file keeps the examples written
+        // so far.
+        let mut next = examples.next().await.transpose()?;
 
         // Prepare output
         let mut output: Box<dyn Write> = if let Some(path) = &args.out {
@@ -678,23 +696,27 @@ impl DatasetCommands {
             Box::new(std::io::stdout())
         };
 
+        let mut exported = 0usize;
         match args.file_format {
             ExportFormat::Jsonl => {
-                for example in &examples {
+                while let Some(example) = next {
                     let record = JsonlRecord {
                         id: Some(example.id),
-                        inputs: example.inputs.clone(),
-                        outputs: example.outputs.clone(),
-                        metadata: example.metadata.clone(),
+                        inputs: example.inputs,
+                        outputs: example.outputs,
+                        metadata: example.metadata,
                     };
                     writeln!(output, "{}", serde_json::to_string(&record)?)?;
+                    exported += 1;
+                    next = examples.next().await.transpose()?;
                 }
+                output.flush()?;
             }
             ExportFormat::Csv => {
                 // CSV format
                 let mut wtr = csv::Writer::from_writer(output);
                 wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                for example in &examples {
+                while let Some(example) = next {
                     wtr.write_record([
                         example.id.to_string(),
                         serde_json::to_string(&example.inputs)?,
@@ -711,13 +733,15 @@ impl DatasetCommands {
                             .transpose()?
                             .unwrap_or_default(),
                     ])?;
+                    exported += 1;
+                    next = examples.next().await.transpose()?;
                 }
                 wtr.flush()?;
             }
         }
 
         if let Some(path) = &args.out {
-            eprintln!("Exported {} examples to {:?}", examples.len(), path);
+            eprintln!("Exported {} examples to {:?}", exported, path);
         }
 
         Ok(())
