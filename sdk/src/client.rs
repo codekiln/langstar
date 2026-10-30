@@ -1772,6 +1772,65 @@ impl LangchainClient {
         self.execute(request).await
     }
 
+    /// Stream examples across as many pages as it takes, up to an optional total.
+    ///
+    /// `GET /api/v1/examples` returns at most 100 examples per request, so this
+    /// requests pages at increasing offsets until a page comes back shorter
+    /// than requested. Each page asks for `min(100, examples still needed)`,
+    /// so a small `total_limit` does not download a full page.
+    ///
+    /// The stream keeps one page in memory at a time. A caller that writes each
+    /// example as it arrives, as `langstar dataset export` does, therefore uses
+    /// memory for one page however large the dataset is.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters; the first page starts at `offset`, and `limit` is ignored in favor of `total_limit`
+    /// * `total_limit` - Maximum number of examples to yield. `None` yields all.
+    ///
+    /// # Returns
+    ///
+    /// A `Stream` of `Result<Example>` that yields examples one at a time.
+    ///
+    /// # Notes
+    ///
+    /// - The stream ends when `total_limit` examples have been yielded, when a page comes back shorter than requested, or when an error occurs.
+    /// - Errors are yielded as `Err` items, allowing partial results
+    pub fn list_examples_paginated(
+        &self,
+        mut params: crate::datasets::ListExamplesParams,
+        total_limit: Option<usize>,
+    ) -> Pin<Box<dyn Stream<Item = Result<crate::datasets::Example>> + Send + '_>> {
+        const PAGE_SIZE: usize = 100;
+
+        Box::pin(async_stream::try_stream! {
+            let mut offset = params.offset.unwrap_or(0);
+            let mut total_yielded = 0usize;
+
+            loop {
+                if total_limit.is_some_and(|total| total_yielded >= total) {
+                    break;
+                }
+                let requested = total_limit
+                    .map_or(PAGE_SIZE, |total| PAGE_SIZE.min(total - total_yielded));
+                params.offset = Some(offset);
+                params.limit = Some(requested as i64);
+                let page = self.list_examples(params.clone()).await?;
+                let page_len = page.len();
+
+                for example in page {
+                    total_yielded += 1;
+                    yield example;
+                }
+
+                if page_len < requested {
+                    break;
+                }
+                offset += page_len as i64;
+            }
+        })
+    }
+
     /// Get an example by ID.
     ///
     /// # Arguments
@@ -3235,5 +3294,73 @@ mod tests {
 
         assert_eq!(client.organization_id(), Some("new_org"));
         assert_eq!(client.workspace_id(), Some("new_workspace"));
+    }
+
+    #[tokio::test]
+    async fn test_list_examples_paginated_yields_page_one_then_errors_when_page_two_fails() {
+        use tokio_stream::StreamExt;
+
+        let dataset_id = uuid::Uuid::from_u128(0xd5);
+        let page_one: Vec<serde_json::Value> = (1..=100u128)
+            .map(|n| {
+                serde_json::json!({
+                    "id": uuid::Uuid::from_u128(n).to_string(),
+                    "dataset_id": dataset_id.to_string(),
+                    "inputs": {"n": n},
+                    "name": format!("example-{n}"),
+                })
+            })
+            .collect();
+        let expected_ids: Vec<uuid::Uuid> = (1..=100u128).map(uuid::Uuid::from_u128).collect();
+
+        let mut server = mockito::Server::new_async().await;
+        let first_page = server
+            .mock("GET", "/api/v1/examples")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("offset".into(), "0".into()),
+                mockito::Matcher::UrlEncoded("limit".into(), "100".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(serde_json::Value::Array(page_one).to_string())
+            .expect(1)
+            .create_async()
+            .await;
+        let second_page = server
+            .mock("GET", "/api/v1/examples")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("offset".into(), "100".into()),
+                mockito::Matcher::UrlEncoded("limit".into(), "100".into()),
+            ]))
+            .with_status(400)
+            .with_body("bad request")
+            .expect(1)
+            .create_async()
+            .await;
+        let client = retry_test_client(server.url(), 0);
+
+        let mut stream =
+            client.list_examples_paginated(crate::datasets::ListExamplesParams::default(), None);
+
+        let mut yielded_ids = Vec::new();
+        for _ in 0..100 {
+            let example = stream
+                .next()
+                .await
+                .expect("stream ended before page one was yielded")
+                .expect("page one examples should be Ok");
+            yielded_ids.push(example.id);
+        }
+        assert_eq!(yielded_ids, expected_ids);
+
+        let failure = stream
+            .next()
+            .await
+            .expect("expected an Err item for page two");
+        assert!(failure.is_err(), "page two failure should surface as Err");
+        assert!(stream.next().await.is_none(), "stream should end after Err");
+
+        first_page.assert_async().await;
+        second_page.assert_async().await;
     }
 }
