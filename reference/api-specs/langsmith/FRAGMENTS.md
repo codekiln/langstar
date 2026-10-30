@@ -28,7 +28,7 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `example-schemas.json` | 29K | Example data types | See below | 2025-11-28 |
 | `evals-endpoints.json` | 45K | Evaluation/feedback API endpoints | See below | 2025-11-28 |
 | `evals-schemas.json` | 38K | Evaluation/feedback data types | See below | 2025-11-28 |
-| `prompt-endpoints.json` | 45K | Prompt repository/commit API endpoints | See below | 2025-11-29 |
+| `prompt-endpoints.json` | 58K | Prompt repository/commit API endpoints | See below | 2026-10-30 |
 | `prompt-schemas.json` | 37K | Prompt/commit/manifest data types | See below | 2025-11-29 |
 | `playground-settings-endpoints.json` | 4.9K | Playground settings CRUD API endpoints | See below | 2025-12-01 |
 | `playground-settings-response.json` | 1.1K | PlaygroundSettingsResponse schema | See below | 2025-12-01 |
@@ -37,6 +37,7 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 | `playground-saved-options.json` | 0.3K | PlaygroundSavedOptions schema | See below | 2025-12-01 |
 | `sessions-endpoints.json` | 15K | Sessions (Projects) CRUD API endpoints | See below | 2025-12-05 |
 | `sessions-schemas.json` | 12K | TracerSession and related data types | See below | 2025-12-05 |
+| `workspace-secrets-endpoints.json` | 4.7K | Workspace secret name list and upsert endpoints | See below | 2026-10-30 |
 
 ## Extraction Commands
 
@@ -45,87 +46,91 @@ Run these from the `reference/openapi/langchain/langsmith/` directory:
 ```bash
 # Annotation queue endpoints
 jq '.paths | with_entries(select(.key | contains("annotation-queue")))' \
-  openapi.json > ../../api-specs/langsmith/annotation-queue-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/annotation-queue-endpoints.json
 
 # Annotation queue schemas
 jq '.components.schemas | with_entries(select(.key | test("Annotation|Queue"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/annotation-queue-schemas.json
+  openapi.json > ../../../api-specs/langsmith/annotation-queue-schemas.json
 
 # Run schema
 jq '.components.schemas.Run' \
-  openapi.json > ../../api-specs/langsmith/run-schema.json
+  openapi.json > ../../../api-specs/langsmith/run-schema.json
 
 # Runs query endpoint
 jq '.paths["/api/v1/runs/query"]' \
-  openapi.json > ../../api-specs/langsmith/runs-query-endpoint.json
+  openapi.json > ../../../api-specs/langsmith/runs-query-endpoint.json
 
 # Runs query request schema
 jq '.components.schemas.RunQueryRequest // .components.schemas.FilterQueryRequest' \
-  openapi.json > ../../api-specs/langsmith/runs-query-request-schema.json
+  openapi.json > ../../../api-specs/langsmith/runs-query-request-schema.json
 
 # Runs query response schema
 jq '.components.schemas.RunQueryResponse // .components.schemas.FilterQueryResponse' \
-  openapi.json > ../../api-specs/langsmith/runs-query-response-schema.json
+  openapi.json > ../../../api-specs/langsmith/runs-query-response-schema.json
 
 # Dataset endpoints (all /api/v1/datasets paths)
 jq '.paths | with_entries(select(.key | test("^/api/v1/datasets")))' \
-  openapi.json > ../../api-specs/langsmith/dataset-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/dataset-endpoints.json
 
 # Dataset schemas (all schemas containing "dataset" in name)
 jq '.components.schemas | with_entries(select(.key | test("[Dd]ataset"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/dataset-schemas.json
+  openapi.json > ../../../api-specs/langsmith/dataset-schemas.json
 
 # Example endpoints (all /api/v1/examples paths)
 jq '.paths | with_entries(select(.key | test("^/api/v1/examples")))' \
-  openapi.json > ../../api-specs/langsmith/example-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/example-endpoints.json
 
 # Example schemas (all schemas containing "example" in name)
 jq '.components.schemas | with_entries(select(.key | test("[Ee]xample"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/example-schemas.json
+  openapi.json > ../../../api-specs/langsmith/example-schemas.json
 
 # Evaluation/feedback endpoints (all feedback/evaluator paths)
 jq '.paths | with_entries(select(.key | test("feedback|evaluator"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/evals-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/evals-endpoints.json
 
 # Evaluation/feedback schemas (all schemas containing "feedback", "evaluator", or "eval")
 jq '.components.schemas | with_entries(select(.key | test("feedback|evaluator|eval"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/evals-schemas.json
+  openapi.json > ../../../api-specs/langsmith/evals-schemas.json
 
 # Prompt repository and commit endpoints (all /api/v1/repos and /api/v1/commits paths)
 jq '.paths | with_entries(select(.key | test("^/api/v1/(repos|commits)")))' \
-  openapi.json > ../../api-specs/langsmith/prompt-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/prompt-endpoints.json
 
 # Prompt/commit/manifest schemas (all schemas containing "repo", "commit", "prompt", or "manifest")
 jq '.components.schemas | with_entries(select(.key | test("[Rr]epo|[Cc]ommit|[Pp]rompt|[Mm]anifest"; "i")))' \
-  openapi.json > ../../api-specs/langsmith/prompt-schemas.json
+  openapi.json > ../../../api-specs/langsmith/prompt-schemas.json
 
 # Playground settings endpoints (all /api/v1/playground-settings paths)
 jq '.paths | with_entries(select(.key | test("^/api/v1/playground-settings")))' \
-  openapi.json > ../../api-specs/langsmith/playground-settings-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/playground-settings-endpoints.json
 
 # PlaygroundSettingsResponse schema
 jq '.components.schemas.PlaygroundSettingsResponse' \
-  openapi.json > ../../api-specs/langsmith/playground-settings-response.json
+  openapi.json > ../../../api-specs/langsmith/playground-settings-response.json
 
 # PlaygroundSettingsCreateRequest schema
 jq '.components.schemas.PlaygroundSettingsCreateRequest' \
-  openapi.json > ../../api-specs/langsmith/playground-settings-create-request.json
+  openapi.json > ../../../api-specs/langsmith/playground-settings-create-request.json
 
 # PlaygroundSettingsUpdateRequest schema
 jq '.components.schemas.PlaygroundSettingsUpdateRequest' \
-  openapi.json > ../../api-specs/langsmith/playground-settings-update-request.json
+  openapi.json > ../../../api-specs/langsmith/playground-settings-update-request.json
 
 # PlaygroundSavedOptions schema
 jq '.components.schemas.PlaygroundSavedOptions' \
-  openapi.json > ../../api-specs/langsmith/playground-saved-options.json
+  openapi.json > ../../../api-specs/langsmith/playground-saved-options.json
 
 # Sessions (Projects) endpoints (core CRUD operations only)
 jq '.paths | with_entries(select(.key | test("^/api/v1/sessions($|/\\{session_id\\}$)")))' \
-  openapi.json > ../../api-specs/langsmith/sessions-endpoints.json
+  openapi.json > ../../../api-specs/langsmith/sessions-endpoints.json
 
 # Sessions (Projects) schemas (TracerSession, Create, Update, and related types)
 jq '.components.schemas | with_entries(select(.key | test("TracerSession|SessionSortable|TraceTier")))' \
-  openapi.json > ../../api-specs/langsmith/sessions-schemas.json
+  openapi.json > ../../../api-specs/langsmith/sessions-schemas.json
+
+# Workspace secrets endpoints (all /api/v1/workspaces/current/secrets paths)
+jq '.paths | with_entries(select(.key | test("^/api/v1/workspaces/current/secrets")))' \
+  openapi.json > ../../../api-specs/langsmith/workspace-secrets-endpoints.json
 ```
 
 ## Verification
@@ -156,3 +161,4 @@ jq '.paths | keys | map(select(contains("annotation-queue"))) | length' \
   - `../../research/402-structured-prompts-openapi-validation.md` - Structured output prompts validation
   - `../../research/461-openapi-validation.md` - Playground settings (model providers) validation
   - `../../research/592-ls-projects-openapi-validation.md` - Sessions/Projects validation
+  - `../../research/807-openapi-validation.md` - Prompt export and import round trip, and workspace secrets

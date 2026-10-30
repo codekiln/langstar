@@ -30,6 +30,16 @@
           }
         },
         {
+          "name": "include_owners",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Include Owners"
+          }
+        },
+        {
           "name": "limit",
           "in": "query",
           "required": false,
@@ -164,11 +174,7 @@
           "schema": {
             "anyOf": [
               {
-                "enum": [
-                  "true",
-                  "false"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/TrueFalseLiteral"
               },
               {
                 "type": "null"
@@ -227,6 +233,73 @@
               }
             ],
             "title": "Tag Value Id"
+          }
+        },
+        {
+          "name": "repo_type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "prompt",
+                  "file",
+                  "agent",
+                  "skill"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Type"
+          }
+        },
+        {
+          "name": "repo_types",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "prompt",
+                    "file",
+                    "agent",
+                    "skill"
+                  ],
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Types"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "internal",
+                  "external"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
           }
         },
         {
@@ -295,7 +368,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "post": {
       "tags": [
@@ -346,7 +420,64 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
+    },
+    "delete": {
+      "tags": [
+        "repos"
+      ],
+      "summary": "Delete Repos",
+      "description": "Delete multiple repos with partial success support.\n\nReturns:\n    - 200: All repos deleted successfully\n    - 207: Some repos deleted successfully, some failed",
+      "operationId": "delete_repos_api_v1_repos_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "repo_ids",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "maxItems": 100,
+            "title": "Repo Ids"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}": {
@@ -409,7 +540,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "patch": {
       "tags": [
@@ -480,7 +612,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "delete": {
       "tags": [
@@ -539,7 +672,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/fork": {
@@ -612,7 +746,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/tags": {
@@ -770,11 +905,7 @@
           "schema": {
             "anyOf": [
               {
-                "enum": [
-                  "true",
-                  "false"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/TrueFalseLiteral"
               },
               {
                 "type": "null"
@@ -834,6 +965,73 @@
             ],
             "title": "Tag Value Id"
           }
+        },
+        {
+          "name": "repo_type",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "prompt",
+                  "file",
+                  "agent",
+                  "skill"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Type"
+          }
+        },
+        {
+          "name": "repo_types",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "prompt",
+                    "file",
+                    "agent",
+                    "skill"
+                  ],
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Repo Types"
+          }
+        },
+        {
+          "name": "source",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "anyOf": [
+              {
+                "enum": [
+                  "internal",
+                  "external"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
         }
       ],
       "responses": {
@@ -857,7 +1055,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/optimize-job": {
@@ -910,273 +1109,8 @@
         {
           "Bearer Auth": []
         }
-      ]
-    }
-  },
-  "/api/v1/commits/{owner}/{repo}": {
-    "get": {
-      "tags": [
-        "commits"
       ],
-      "summary": "List Commits",
-      "description": "Get all commits.",
-      "operationId": "list_commits_api_v1_commits__owner___repo__get",
-      "security": [
-        {
-          "API Key": []
-        },
-        {
-          "Tenant ID": []
-        },
-        {
-          "Bearer Auth": []
-        }
-      ],
-      "parameters": [
-        {
-          "name": "owner",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Owner"
-          }
-        },
-        {
-          "name": "repo",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Repo"
-          }
-        },
-        {
-          "name": "limit",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
-            "default": 20,
-            "title": "Limit"
-          }
-        },
-        {
-          "name": "offset",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "integer",
-            "minimum": 0,
-            "default": 0,
-            "title": "Offset"
-          }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Successful Response",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ListCommitsResponse"
-              }
-            }
-          }
-        },
-        "422": {
-          "description": "Validation Error",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HTTPValidationError"
-              }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "tags": [
-        "commits"
-      ],
-      "summary": "Create Commit",
-      "description": "Upload a repo.",
-      "operationId": "create_commit_api_v1_commits__owner___repo__post",
-      "security": [
-        {
-          "API Key": []
-        },
-        {
-          "Tenant ID": []
-        },
-        {
-          "Bearer Auth": []
-        }
-      ],
-      "parameters": [
-        {
-          "name": "owner",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Owner"
-          }
-        },
-        {
-          "name": "repo",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Repo"
-          }
-        }
-      ],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/CreateRepoCommitRequest"
-            }
-          }
-        }
-      },
-      "responses": {
-        "200": {
-          "description": "Successful Response",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateRepoCommitResponse"
-              }
-            }
-          }
-        },
-        "422": {
-          "description": "Validation Error",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HTTPValidationError"
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "/api/v1/commits/{owner}/{repo}/{commit}": {
-    "get": {
-      "tags": [
-        "commits"
-      ],
-      "summary": "Get Commit",
-      "description": "Download a repo.",
-      "operationId": "get_commit_api_v1_commits__owner___repo___commit__get",
-      "security": [
-        {
-          "API Key": []
-        },
-        {
-          "Tenant ID": []
-        },
-        {
-          "Bearer Auth": []
-        }
-      ],
-      "parameters": [
-        {
-          "name": "owner",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Owner"
-          }
-        },
-        {
-          "name": "repo",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Repo"
-          }
-        },
-        {
-          "name": "commit",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string",
-            "title": "Commit"
-          }
-        },
-        {
-          "name": "get_examples",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "boolean",
-            "default": false,
-            "title": "Get Examples"
-          }
-        },
-        {
-          "name": "is_view",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "type": "boolean",
-            "default": false,
-            "title": "Is View"
-          }
-        },
-        {
-          "name": "include_model",
-          "in": "query",
-          "required": false,
-          "schema": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": false,
-            "title": "Include Model"
-          }
-        }
-      ],
-      "responses": {
-        "200": {
-          "description": "Successful Response",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CommitManifestResponse"
-              }
-            }
-          }
-        },
-        "422": {
-          "description": "Validation Error",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/HTTPValidationError"
-              }
-            }
-          }
-        }
-      }
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/tags": {
@@ -1233,13 +1167,15 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "post": {
       "tags": [
         "tags"
       ],
       "summary": "Create Tag",
+      "description": "Create a tag. Requires repo ownership, prompts:tag permission, or ABAC grant.",
       "operationId": "create_tag_api_v1_repos__owner___repo__tags_post",
       "security": [
         {
@@ -1253,6 +1189,15 @@
         }
       ],
       "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
         {
           "name": "repo",
           "in": "path",
@@ -1294,7 +1239,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/tags/{tag_name}": {
@@ -1356,13 +1302,15 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "patch": {
       "tags": [
         "tags"
       ],
       "summary": "Update Tag",
+      "description": "Update a tag. Requires repo ownership, prompts:tag permission, or ABAC grant.",
       "operationId": "update_tag_api_v1_repos__owner___repo__tags__tag_name__patch",
       "security": [
         {
@@ -1376,6 +1324,15 @@
         }
       ],
       "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
         {
           "name": "repo",
           "in": "path",
@@ -1426,13 +1383,15 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "delete": {
       "tags": [
         "tags"
       ],
       "summary": "Delete Tag",
+      "description": "Delete a tag. Requires repo ownership, prompts:tag permission, or ABAC grant.",
       "operationId": "delete_tag_api_v1_repos__owner___repo__tags__tag_name__delete",
       "security": [
         {
@@ -1446,6 +1405,15 @@
         }
       ],
       "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
         {
           "name": "repo",
           "in": "path",
@@ -1484,7 +1452,214 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
+    }
+  },
+  "/api/v1/repos/{owner}/{repo}/owners": {
+    "get": {
+      "tags": [
+        "ownerships"
+      ],
+      "summary": "List Repo Owners",
+      "description": "List all owners of a repo.\n\nRequires read permission on the repo.",
+      "operationId": "list_repo_owners_api_v1_repos__owner___repo__owners_get",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
+        {
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Repo"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListRepoOwnersResponse"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "post": {
+      "tags": [
+        "ownerships"
+      ],
+      "summary": "Add Repo Owner",
+      "description": "Add an owner to a repo.\n\nRequires being an existing owner of the repo.",
+      "operationId": "add_repo_owner_api_v1_repos__owner___repo__owners_post",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
+        {
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Repo"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/AddRepoOwnerRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepoOwner"
+              }
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
+    },
+    "delete": {
+      "tags": [
+        "ownerships"
+      ],
+      "summary": "Remove Repo Owner",
+      "description": "Remove an owner from a repo.\n\nRequires being an existing owner of the repo.",
+      "operationId": "remove_repo_owner_api_v1_repos__owner___repo__owners_delete",
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Owner"
+          }
+        },
+        {
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Repo"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RemoveRepoOwnerRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "Successful Response",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          }
+        },
+        "422": {
+          "description": "Validation Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HTTPValidationError"
+              }
+            }
+          }
+        }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/optimization-jobs": {
@@ -1542,7 +1717,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "post": {
       "tags": [
@@ -1604,7 +1780,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/optimization-jobs/{job_id}": {
@@ -1659,7 +1836,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "patch": {
       "tags": [
@@ -1722,7 +1900,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "delete": {
       "tags": [
@@ -1773,7 +1952,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/optimization-jobs/{job_id}/logs": {
@@ -1832,7 +2012,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "post": {
       "tags": [
@@ -1895,7 +2076,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     }
   },
   "/api/v1/repos/{owner}/{repo}/optimization-jobs/{job_id}/logs/{log_id}": {
@@ -1950,7 +2132,8 @@
             }
           }
         }
-      }
+      },
+      "x-public": true
     },
     "delete": {
       "tags": [
@@ -2001,7 +2184,363 @@
             }
           }
         }
+      },
+      "x-public": true
+    }
+  },
+  "/api/v1/commits/{owner}/{repo}": {
+    "get": {
+      "description": "List commits for a repository, with pagination support.\nThis endpoint supports both authenticated and unauthenticated access.\nAuthenticated users can access private repositories; unauthenticated users can only access public repositories.\nThe include_stats parameter controls whether download and view statistics are computed (defaults to true).",
+      "tags": [
+        "commits"
+      ],
+      "summary": "List commits",
+      "parameters": [
+        {
+          "description": "Repository owner (tenant handle) or '-' for private repos",
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Repository handle",
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "IncludeStats determines whether to compute num_downloads and num_views",
+          "name": "include_stats",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "default": true,
+            "title": "Include Stats"
+          }
+        },
+        {
+          "description": "Limit is the pagination limit",
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 20,
+            "maximum": 100,
+            "title": "Limit"
+          }
+        },
+        {
+          "description": "Offset is the pagination offset",
+          "name": "offset",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "title": "Offset"
+          }
+        },
+        {
+          "description": "Tag filters commits to only those with a specific tag (e.g. \"production\", \"staging\")",
+          "name": "tag",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "title": "Tag"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ListCommitsResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
+    },
+    "post": {
+      "description": "Creates a new commit in a repository.\nRequires authentication and write access to the repository.",
+      "tags": [
+        "commits"
+      ],
+      "summary": "Create a commit",
+      "parameters": [
+        {
+          "description": "Repository owner (tenant handle) or '-' for private repos",
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Repository handle",
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "responses": {
+        "201": {
+          "description": "Created",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.CreateCommitResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "403": {
+          "description": "Forbidden",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true,
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/commits.CreateCommitReq"
+            }
+          }
+        }
       }
+    }
+  },
+  "/api/v1/commits/{owner}/{repo}/{commit}": {
+    "get": {
+      "description": "Retrieves a specific commit by hash, tag, or \"latest\" for a repository.\nThis endpoint supports both authenticated and unauthenticated access.\nAuthenticated users can access private repos, while unauthenticated users can only access public repos.\nCommit resolution logic:\n- \"latest\" or empty: Get the most recent commit\n- Less than 8 characters: Only check for tags\n- 8 or more characters: Prioritize commit hash over tag, check both",
+      "tags": [
+        "commits"
+      ],
+      "summary": "Get a commit",
+      "parameters": [
+        {
+          "description": "Repository owner (tenant handle) or '-' for private repos",
+          "name": "owner",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Repository handle",
+          "name": "repo",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "description": "Commit hash, tag, or 'latest'",
+          "name": "commit",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "get_examples",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Get Examples"
+          }
+        },
+        {
+          "description": "Comma-separated list of optional fields: \"model\", \"is_draft\"",
+          "name": "include",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "title": "Include"
+          }
+        },
+        {
+          "description": "Deprecated: use Include instead",
+          "name": "include_model",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Include Model"
+          }
+        },
+        {
+          "name": "is_view",
+          "in": "query",
+          "schema": {
+            "type": "boolean",
+            "default": false,
+            "title": "Is View"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.CommitResponse"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad Request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "404": {
+          "description": "Not Found",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal Server Error",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/commits.ErrorResponse"
+              }
+            }
+          }
+        }
+      },
+      "security": [
+        {
+          "API Key": []
+        },
+        {
+          "Tenant ID": []
+        },
+        {
+          "Bearer Auth": []
+        }
+      ],
+      "x-public": true
     }
   }
 }
