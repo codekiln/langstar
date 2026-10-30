@@ -30,7 +30,7 @@ When you scope operations to an organization or workspace, Langstar defaults to 
 
 ## Configuration
 
-You can configure organization and workspace IDs using three methods. CLI flags take highest precedence, followed by config file settings, then environment variables.
+You can configure organization and workspace IDs using three methods. For the workspace ID, the `--workspace-id` flag wins over `LANGSMITH_WORKSPACE_ID`, which wins over `workspace_id` in the config file.
 
 ### Method 1: Environment Variables
 
@@ -62,12 +62,25 @@ workspace_id = "your-workspace-id"
 
 ### Method 3: CLI Flags
 
-Override configuration on a per-command basis:
+Override configuration on a per-command basis. `--workspace-id` is a global flag, so every command takes it, including `assistant` and `graph`; `--organization-id` belongs to the `prompt` and `runs` commands.
 
 ```bash
 langstar prompt list --organization-id "your-org-id"
 langstar prompt list --workspace-id "your-workspace-id"
+langstar assistant list --deployment my-deployment --workspace-id "your-workspace-id"
 ```
+
+## An API key that reaches several workspaces
+
+Langstar sends the workspace ID in the `X-Tenant-Id` header on every request: to the LangSmith API, to the Control Plane API, and to a deployment's Agent Server. With no workspace ID set, it sends no header, and a key that reaches one workspace works as it is.
+
+A key that reaches several workspaces gets `403 Forbidden` when no workspace is named. When that happens, langstar asks LangSmith once per run which workspaces the key reaches (`GET /api/v1/workspaces`), and then:
+
+- If the key reaches one workspace, langstar sends the request again with it.
+- If the key reaches several and the command names a deployment (`assistant` and `graph`), langstar looks for that deployment in each workspace. When exactly one workspace holds it, langstar uses that workspace and prints its name to stderr.
+- Otherwise langstar stops and lists the workspaces the key reaches, by name and ID, with the three ways to choose one.
+
+When a workspace ID is set and the server answers `403 Forbidden`, langstar checks whether the key reaches that workspace. If it does not, the error says so and lists the workspaces the key does reach. If it does, the 403 is a permission error, and langstar reports it as the server sent it.
 
 ## Finding Your Organization and Workspace IDs
 

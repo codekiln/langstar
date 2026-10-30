@@ -263,7 +263,7 @@ langstar prompt list --organization-id "<org-id>" --public
 
 LangGraph assistants are deployment-level resources:
 - Each API key is tied to a specific deployment
-- No additional scoping configuration needed
+- A key that reaches one workspace needs no scoping configuration
 - Simpler model for graph-based applications
 
 #### Configuration Options
@@ -285,13 +285,9 @@ The API key automatically determines:
 - Which assistants you can see and manage
 - Authentication and authorization
 
-#### No Additional Configuration
+#### Workspace
 
-These do NOT apply to assistants:
-- ❌ `organization_id` - Not used
-- ❌ `workspace_id` - Not used
-- ❌ No `--organization-id` flags
-- ❌ No `--workspace-id` flags
+`organization_id` does not apply to assistants. `workspace_id`, `LANGSMITH_WORKSPACE_ID` and the global `--workspace-id` flag do: langstar sends the workspace to the deployment's Agent Server in the `X-Tenant-Id` header. A key that reaches one workspace needs none. For a key that reaches several, see [An API key that reaches several workspaces](usage/scoping.md#an-api-key-that-reaches-several-workspaces).
 
 ## Configuration Precedence
 
