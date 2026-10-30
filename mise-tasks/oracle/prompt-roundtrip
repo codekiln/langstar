@@ -52,13 +52,28 @@ cargo run --quiet --bin langstar -- prompt push \
 
 pulled="$("${official[@]}" prompt pull -- "$handle")"
 
-# The manifest is nested JSON, so look for each pushed value anywhere in it:
-# the template text, the input variable, and a property name from the schema.
-for needle in "$template" question answer; do
-  if ! printf '%s' "$pulled" | jq -e --arg t "$needle" '[.. | strings | select(. == $t)] + [.. | objects | keys[] | select(. == $t)] | length > 0' >/dev/null; then
-    echo "FAIL: the official CLI did not return '${needle}', which langstar pushed" >&2
+# `langsmith prompt pull` prints {owner, repo, commit_hash, description, manifest}, and
+# the manifest is the StructuredPrompt in LangChain's JSON form that langstar sent
+# (sdk/src/prompts.rs). Check each pushed value at the field it belongs in, and compare
+# the schema with the file as a whole, so a changed type or a dropped `required` fails.
+# The message nesting matches what `langstar prompt pull` reads in cli/src/commands/prompt.rs.
+check() {
+  local what="$1"
+  shift
+  if ! printf '%s' "$pulled" | jq -e "$@" >/dev/null; then
+    echo "FAIL: the official CLI returned a different ${what} than langstar pushed" >&2
     printf '%s\n' "$pulled" >&2
     exit 1
   fi
-done
-echo "OK: langsmith prompt pull returned the template, variable and schema pushed by langstar (${handle})"
+}
+# The filters below are jq programs; `$want` and `$t` are jq variables, not shell ones.
+# shellcheck disable=SC2016
+{
+  check "prompt class" '.manifest.id[-1] == "StructuredPrompt"'
+  check "schema" --slurpfile want "$schema" '.manifest.kwargs.schema_ == $want[0]'
+  check "list of input variables" '.manifest.kwargs.input_variables == ["question"]'
+  check "message count" '.manifest.kwargs.messages | length == 1'
+  check "template" --arg t "$template" '.manifest.kwargs.messages[0].kwargs.prompt.kwargs.template == $t'
+  check "list of template variables" '.manifest.kwargs.messages[0].kwargs.prompt.kwargs.input_variables == ["question"]'
+}
+echo "OK: langsmith prompt pull returned the template, variables and schema pushed by langstar (${handle})"
