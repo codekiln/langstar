@@ -60,7 +60,7 @@ pub use annotation_queues::{
     RunWithAnnotationQueueInfo, UpdateAnnotationQueueRequest,
 };
 pub use assistants::{
-    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
+    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest, IfExists,
     UpdateAssistantRequest,
 };
 pub use auth::AuthConfig;

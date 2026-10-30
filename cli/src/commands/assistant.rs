@@ -391,11 +391,14 @@ impl AssistantCommands {
                 };
 
                 let request = CreateAssistantRequest {
+                    assistant_id: None,
                     graph_id: graph_id.clone(),
                     name: name.clone(),
                     description: description.clone(),
                     config: config_value,
+                    context: None,
                     metadata: None,
+                    if_exists: None,
                 };
 
                 let assistant = client.assistants().create(&request).await?;
@@ -433,8 +436,10 @@ impl AssistantCommands {
 
                 let request = UpdateAssistantRequest {
                     name: name.clone(),
+                    graph_id: None,
                     description: description.clone(),
                     config: config_value,
+                    context: None,
                     metadata: None,
                 };
 
@@ -494,7 +499,9 @@ mod tests {
             name: "Test Assistant".to_string(),
             description: None,
             config: None,
+            context: None,
             metadata: None,
+            version: None,
             created_at: Some("2024-01-01T00:00:00Z".to_string()),
             updated_at: None,
         };
