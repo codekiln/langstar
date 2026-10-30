@@ -207,15 +207,16 @@ pub fn redact_at(path: &str, value: &Value) -> Value {
 
 /// Whether `value` is a LangChain secret reference.
 ///
-/// A reference holds `lc`, `type` and `id` and nothing else. An object that
-/// holds those and more is walked like any other object, so a password sitting
-/// beside them is still found.
+/// A reference holds `lc` set to 1, `type` and `id` and nothing else. An
+/// object that holds those and more, or whose `lc` is anything but 1, is walked
+/// like any other object, so a password sitting beside them or inside `lc` is
+/// still found.
 pub fn is_secret_reference(value: &Value) -> bool {
     let Some(object) = value.as_object() else {
         return false;
     };
     object.len() == 3
-        && object.contains_key("lc")
+        && object.get("lc").and_then(Value::as_u64) == Some(1)
         && object.get("type").and_then(Value::as_str) == Some("secret")
         && object
             .get("id")
@@ -856,6 +857,28 @@ mod tests {
             &json!({ "user": "app", "password": "s3cret-pw" }),
         );
         assert_eq!(redacted, json!({ "user": "app", "password": REDACTED }));
+    }
+
+    #[test]
+    fn walks_a_secret_reference_whose_lc_is_not_1() {
+        let value = json!({
+            "openai": {
+                "id": ["OPENAI_API_KEY"],
+                "lc": { "password": "plain-looking-password" },
+                "type": "secret"
+            }
+        });
+        assert_eq!(
+            find_credentials(&value),
+            vec![Flagged {
+                path: "/openai/lc/password".to_string(),
+                rule: Rule::KeyName,
+            }]
+        );
+        assert_eq!(
+            redact_at("", &value)["openai"]["lc"]["password"],
+            json!(REDACTED)
+        );
     }
 
     #[test]
