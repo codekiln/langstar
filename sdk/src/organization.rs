@@ -34,6 +34,27 @@ pub struct Workspace {
     pub handle: Option<String>,
 }
 
+/// The ways to choose a workspace, for error messages.
+pub const CHOOSE_WORKSPACE_HELP: &str = "Choose one in any of these ways:\n  \
+     - pass --workspace-id <workspace-id>\n  \
+     - set the LANGSMITH_WORKSPACE_ID environment variable\n  \
+     - set workspace_id in langstar's config.toml";
+
+/// One line per workspace, `  - <name> (<id>)`, for error messages.
+pub fn describe_workspaces(workspaces: &[Workspace]) -> String {
+    workspaces
+        .iter()
+        .map(|w| {
+            format!(
+                "  - {} ({})",
+                w.display_name.as_deref().unwrap_or("unnamed workspace"),
+                w.id
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 impl LangchainClient {
     /// Get information about the current organization
     ///
