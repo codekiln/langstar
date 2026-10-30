@@ -1,15 +1,15 @@
 # What the live LangSmith API returns for prompt export and import
 
 **Umbrella issue**: [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807)
-**Task**: [export-import-prompts-and-assistants task 1.2](../../openspec/changes/export-import-prompts-and-assistants/tasks.md)
+**Task**: [tasks.md:8, task 1.2, record what the live API returns](../../openspec/changes/export-import-prompts-and-assistants/tasks.md#L8), in the `export-import-prompts-and-assistants` change
 **Date**: 2026-10-30
 **Status**: Partial. The questions about the commit read and about `invoke_prompt` are answered. The questions that need a push, and every question about the Agent Server, are not. [What this report does not answer](#what-this-report-does-not-answer) says why, question by question.
 
 Every claim below names the request that produced it. The workspace is the CLI Testing Workspace, the one `LANGSMITH_WORKSPACE_ID` names; this report leaves its ID out, for the reason `mise-tasks/ci/redact-ids-in-junit` gives. Every request carried `X-Api-Key: $LANGSMITH_API_KEY` and `X-Tenant-Id: $LANGSMITH_WORKSPACE_ID`, and the host was `https://api.smith.langchain.com`.
 
-## How this report read a prompt saved with a model
+## No prompt in the test workspace carries a model
 
-No prompt in the CLI Testing Workspace carries a model: this request listed the workspace's own prompts and returned only the `langstar-structured-test-*` repos the integration tests leave behind, every one of them a structured prompt with no model.
+This request listed the workspace's own prompts and returned only the `langstar-structured-test-*` repos the integration tests leave behind, every one of them a structured prompt with no model.
 
 ```
 GET /api/v1/repos/?limit=100&is_public=false
@@ -29,7 +29,7 @@ The manifest's outer `id` is `["langchain", "schema", "runnable", "RunnableSeque
 
 `last` is **not** the chat model constructor. Its `id` is `["langchain", "schema", "runnable", "RunnableBinding"]`, and its `kwargs` holds `bound` and `kwargs`. The chat model constructor sits one level further in, at `manifest.kwargs.last.kwargs.bound`, whose `id` is `["langchain", "chat_models", "openai", "ChatOpenAI"]` and whose `kwargs` holds `model`, `temperature`, `stream_usage` and `openai_api_key`. The binding's own `kwargs` is the empty object on this commit.
 
-This matters for `requires.model_class`. [design.md's note on the model class](../../openspec/changes/export-import-prompts-and-assistants/design.md) says export reads the class name from the last element of the chat model constructor's `id`. On this commit the last element of `manifest.kwargs.last.id` is `RunnableBinding`, and the class name `ChatOpenAI` is the last element of `manifest.kwargs.last.kwargs.bound.id`. Export has to walk through the `RunnableBinding` to reach the constructor. Whether LangSmith ever returns the constructor directly under `last`, with no binding around it, is open: the two other model-saved prompts this report read, `langchain-ai/sql-query-system-prompt` and `nicobutes/chain-of-density-prompt`, both carry the binding.
+This matters for `requires.model_class`. [design.md:132, on where export reads the model's class name](../../openspec/changes/export-import-prompts-and-assistants/design.md#L132) says export reads it from the last element of the chat model constructor's `id`. On this commit the last element of `manifest.kwargs.last.id` is `RunnableBinding`, and the class name `ChatOpenAI` is the last element of `manifest.kwargs.last.kwargs.bound.id`. Export has to walk through the `RunnableBinding` to reach the constructor. Whether LangSmith ever returns the constructor directly under `last`, with no binding around it, is open: the two other model-saved prompts this report read, `langchain-ai/sql-query-system-prompt` and `nicobutes/chain-of-density-prompt`, both carry the binding.
 
 ```
 GET /api/v1/commits/langchain-ai/sql-query-system-prompt/latest?include=model
@@ -84,7 +84,7 @@ GET /api/v1/commits/langchain-ai/chain-of-density/latest?include=model
 GET /api/v1/commits/langchain-ai/chain-of-density/latest?include_model=true
 ```
 
-Sorting both responses with `jq -S` and comparing them byte for byte shows no difference. The spec types them differently — `include` is a string with no enumerated values and `include_model` is a boolean defaulting to false, as `reference/api-specs/langsmith/prompt-endpoints.json` records for `GET /api/v1/commits/{owner}/{repo}/{commit}` — and the live API honours either. Export can keep sending `include=model`, the form the Go SDK uses, with nothing lost.
+Sorting both responses with `jq -S` and comparing them shows no difference. The spec types them differently — `include` is a string with no enumerated values and `include_model` is a boolean defaulting to false, as `reference/api-specs/langsmith/prompt-endpoints.json` records for `GET /api/v1/commits/{owner}/{repo}/{commit}` — and the live API honours either. Export can keep sending `include=model`, the form the Go SDK uses, with nothing lost.
 
 ## `POST /api/v1/prompts/invoke_prompt` renders a template and never runs a model
 
@@ -113,7 +113,7 @@ Sending a `prompt` key naming `langchain-ai/chain-of-density` and a `model` key 
 
 Omitting `template_format` returned HTTP 422 and `{"detail": ["body.template_format: Field required"]}`.
 
-So `invoke_prompt` cannot stand in for running an exported prompt against its model, and prompt verify cannot use it to prove a copied prompt still answers. Anything that runs a prompt with its model has to call the model provider, which is what the OpenAI key in [task 2.1](../../openspec/changes/export-import-prompts-and-assistants/tasks.md) is for.
+So `invoke_prompt` cannot stand in for running an exported prompt against its model, and prompt verify cannot use it to prove a copied prompt still answers. Anything that runs a prompt with its model has to call the model provider, which is what the OpenAI key in [tasks.md:16, task 2.1, which adds the destination workspace and the model provider key](../../openspec/changes/export-import-prompts-and-assistants/tasks.md#L16) is for.
 
 ## The workspace secrets endpoints
 
@@ -123,7 +123,7 @@ GET /api/v1/workspaces/current/secrets
 
 returned HTTP 200 and `[{"key": "TEST_KEY"}]`. The response lists names and no values, which matches `SecretKey` in the spec: one required `key` string and nothing else. `SecretUpsert`, the body `POST /api/v1/workspaces/current/secrets` takes, carries `key` and a nullable `value`.
 
-This is the request prompt import's secret check sends: it can ask which secret names the destination workspace holds, and it cannot read a value back. The CLI Testing Workspace holds `TEST_KEY` and no `OPENAI_API_KEY`, so the secret check for a prompt with an OpenAI model fails in this workspace today. [Task 2.1](../../openspec/changes/export-import-prompts-and-assistants/tasks.md) adds that secret.
+This is the request prompt import's secret check sends: it can ask which secret names the destination workspace holds, and it cannot read a value back. The CLI Testing Workspace holds `TEST_KEY` and no `OPENAI_API_KEY`, so the secret check for a prompt with an OpenAI model fails in this workspace today. [tasks.md:16, task 2.1, which adds the destination workspace and the model provider key](../../openspec/changes/export-import-prompts-and-assistants/tasks.md#L16) adds that secret.
 
 `reference/api-specs/langsmith/workspace-secrets-endpoints.json` holds both paths, extracted in task 1.1.
 
@@ -133,7 +133,7 @@ An agent wrote this report, and the permission rules it runs under refused every
 
 **Whether a structured prompt saved with a model has the arrangement described above.** The reads above used `langchain-ai/chain-of-density`, whose `first` is a `ChatPromptTemplate`. This report found no public prompt whose `first` is a `StructuredPrompt`: a scan of the first five hundred public prompts by likes, through `GET /api/v1/repos/?limit=100&offset=<0..400>&is_public=true&with_latest_manifest=true&sort_field=num_likes&sort_direction=desc`, returned a null `latest_commit_manifest` on every row, so the scan proved nothing either way. Answering this needs `POST /api/v1/commits/-/<handle>` to push a `StructuredPrompt` with a `ChatOpenAI` beside it, then the commit read above.
 
-**Whether a read-back after a push returns the same manifest, `model_config` and `model_provider`, and what pushing an identical manifest again returns.** This needs `POST /api/v1/repos` and `POST /api/v1/commits/-/<handle>`. The task's fallback, pushing to the existing test workspace under a fresh handle, is just as much a write. `GET /api/v1/workspaces` confirms the key reaches one workspace, the CLI Testing Workspace, so the second workspace the task would otherwise use does not exist until [task 2.1](../../openspec/changes/export-import-prompts-and-assistants/tasks.md) adds it.
+**Whether a read-back after a push returns the same manifest, `model_config` and `model_provider`, and what pushing an identical manifest again returns.** This needs `POST /api/v1/repos` and `POST /api/v1/commits/-/<handle>`. The task's fallback, pushing to the existing test workspace under a fresh handle, is just as much a write. `GET /api/v1/workspaces` returned one workspace, the CLI Testing Workspace, so the second workspace the task would otherwise use does not exist until [tasks.md:16, task 2.1, which adds the destination workspace and the model provider key](../../openspec/changes/export-import-prompts-and-assistants/tasks.md#L16) adds it.
 
 **Every question about the Agent Server**: what `POST /assistants/search` returns for a graph ID the deployment does not serve and what it returns for `context`; whether an assistant update that sends a metadata key with a null value removes that key; whether an update that sends `config` or `context` replaces the assistant's object or merges into it; whether an update can clear the description; whether a create and an update that send both `config.configurable` and `context` are refused; and whether an update that sends `configurable` alone replaces `context` too. `GET /v1/deployments?limit=50` on `https://api.host.langchain.com` returned an empty `resources` list, so the workspace serves no Agent Server to ask. Answering these needs a deployment, and `langstar deployment create` writes to the control plane.
 
@@ -146,7 +146,7 @@ Give the run permission to write to the CLI Testing Workspace and to create a de
 - Push a `StructuredPrompt` with a `ChatOpenAI` beside it under a fresh handle, read it back with `include=model`, and record the outer `id`, whether a `RunnableBinding` wraps the model, and the `model_config` and `model_provider` beside the manifest.
 - Push that manifest again under a second fresh handle, compare the read-back against the first, then push the identical manifest to the same handle once more and record the status and body.
 - Create a deployment from `tests/fixtures/test-graph-deployment/langgraph.json`, then work through the Agent Server questions listed above against it and delete the deployment afterwards.
-- Set an OpenAI key and run one imported structured prompt against a small model, which is the check [task 7.3](../../openspec/changes/export-import-prompts-and-assistants/tasks.md) describes.
+- Set an OpenAI key and run one imported structured prompt against a small model, which is the check [tasks.md:116, task 7.3, the structured output check](../../openspec/changes/export-import-prompts-and-assistants/tasks.md#L116) describes.
 
 ## Related
 
