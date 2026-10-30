@@ -880,7 +880,7 @@ fn test_cli_push_plain_prompt_to_empty_repo_round_trips_manifest() {
     // TEST Step 1: Push a plain prompt, without --schema
     let bin = get_langstar_bin();
     let mut push_cmd = Command::new(&bin);
-    push_cmd.env("HOME", home::empty_home());
+    push_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     push_cmd.args([
         "prompt",
         "push",
@@ -905,7 +905,7 @@ fn test_cli_push_plain_prompt_to_empty_repo_round_trips_manifest() {
 
     // TEST Step 2: Pull the commit back as JSON
     let mut pull_cmd = Command::new(&bin);
-    pull_cmd.env("HOME", home::empty_home());
+    pull_cmd.env("LANGSTAR_CONFIG_DIR", config_dir::empty_config_dir());
     pull_cmd.args([
         "prompt",
         "pull",
