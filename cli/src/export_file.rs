@@ -80,7 +80,7 @@ pub struct PromptRepo {
 /// or partial variables.
 ///
 /// LangSmith fills `model_config` and `model_provider` in itself when import
-/// pushes a commit, so the file carries them for the reader and the comparison
+/// pushes a commit, so the file records what the source held and the comparison
 /// skips them. A commit saved without a model has neither.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PromptCommit {
@@ -168,7 +168,7 @@ pub fn parse_assistant_export(text: &str) -> Result<AssistantExport> {
 }
 
 /// Serialize as JSON with the keys sorted at every level, and a trailing
-/// newline, so two exports of one commit write the same bytes.
+/// newline, so two exports of one commit write the same file.
 pub fn to_sorted_json<T: Serialize>(value: &T) -> Result<String> {
     let sorted = sort_keys(serde_json::to_value(value)?);
     Ok(format!("{}\n", serde_json::to_string_pretty(&sorted)?))
@@ -368,7 +368,7 @@ mod tests {
         }
     }
 
-    // Byte-stable files
+    // A file that changes only when the prompt does
 
     #[test]
     fn sorts_the_keys_at_every_level_whatever_order_they_arrived_in() {
@@ -432,7 +432,7 @@ mod tests {
         assert!(written["commit"].get("model_provider").is_none());
     }
 
-    // The reader
+    // Reading an export file
 
     #[test]
     fn reads_a_prompt_export_back() {

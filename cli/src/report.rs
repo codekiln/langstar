@@ -50,7 +50,7 @@ pub enum Outcome {
     Passed,
     /// The destination lacks it, which fails the run.
     Failed,
-    /// Something worth saying that leaves the status alone, such as a workspace
+    /// Something to tell the user that leaves the status alone, such as a workspace
     /// with no saved model configuration for the prompt's model class, which
     /// the prompt runs without.
     Note,

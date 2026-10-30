@@ -7,7 +7,8 @@
 //! `ChatOpenAI` replaced by `ChatAnthropic`, is reported at the array's own
 //! path with both arrays.
 //!
-//! Two parts of the export file are not compared as they stand:
+//! The comparison reads two of the export file's values differently from the
+//! rest:
 //!
 //! - `commit.model_config` and `commit.model_provider`, which LangSmith fills
 //!   in itself when import pushes a commit and a destination workspace can fill
@@ -181,8 +182,8 @@ fn settings_of(assistant: Option<&Value>) -> Option<(&Value, &'static str)> {
     present(assistant.get("context")).map(|context| (context, CONTEXT))
 }
 
-/// The assistant without either settings field, and without a `config` the
-/// settings were all of.
+/// The assistant with `context` and `config.configurable` taken out, and with
+/// `config` taken out too when the settings were all it held.
 fn without_settings(assistant: Option<&Value>) -> Option<Value> {
     let assistant = without(assistant, &["context"])?;
     let Some(members) = assistant.as_object() else {

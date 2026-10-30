@@ -32,8 +32,9 @@
 //! - a **URL with a password**: `scheme://user:password@host` or
 //!   `scheme://:password@host`, which covers database and queue connection
 //!   strings;
-//! - a **connection string with a password**: a non-empty `Password=`, `Pwd=`,
-//!   `AccountKey=`, `SharedAccessKey=` or `SharedAccessSignature=`;
+//! - a **connection string with a password**: a `Password=`, `Pwd=`,
+//!   `AccountKey=`, `SharedAccessKey=` or `SharedAccessSignature=` with a value
+//!   after it;
 //! - a **JSON Web Token**: three base64url parts, the first starting `eyJ`;
 //! - a **provider token**: one of the published prefixes `sk-` (OpenAI and
 //!   Anthropic), `lsv2_` (LangSmith), `ghp_`, `gho_`, `ghs_`, `github_pat_`
@@ -95,7 +96,7 @@ const AWS_PREFIXES: &[&str] = &["AKIA", "ASIA"];
 /// catch a real token, long enough to leave `sk-` on its own alone.
 const MIN_TOKEN_TAIL: usize = 16;
 
-/// The keys of a connection string whose non-empty value flags the string.
+/// The keys of a connection string. A value after one of them flags the string.
 const CONNECTION_STRING_KEYS: &[&str] = &[
     "password=",
     "pwd=",
@@ -117,8 +118,8 @@ pub enum Rule {
     PemPrivateKey,
     /// `scheme://user:password@host`.
     UrlWithPassword,
-    /// A non-empty `Password=`, `Pwd=`, `AccountKey=`, `SharedAccessKey=` or
-    /// `SharedAccessSignature=`.
+    /// A `Password=`, `Pwd=`, `AccountKey=`, `SharedAccessKey=` or
+    /// `SharedAccessSignature=` with a value after it.
     ConnectionStringWithPassword,
     /// Three base64url parts, the first starting `eyJ`.
     JsonWebToken,
