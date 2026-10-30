@@ -193,7 +193,7 @@ When the destination workspace has no prompt with the file's handle, `langstar p
 
 ### Requirement: Finish an import that stopped before its first commit
 
-When the destination workspace has a prompt with the file's handle and no commit, `langstar prompt import` SHALL push the file's manifest and commit description as the first commit and create the file's commit tags, as for a prompt that does not exist yet, without `--update`. Repo details that differ from the file SHALL still need `--update`: without it, import SHALL push the commit and tags, leave the repo details unchanged, list them as differences and exit with status 3.
+When the destination workspace has a prompt with the file's handle and no commit, `langstar prompt import` SHALL push the file's manifest and commit description as the first commit and create the file's commit tags, without `--update`. Differing repo details SHALL still need `--update`: without it, import SHALL push the commit and tags, leave them unchanged, list them as differences and exit with status 3. "Keep a private prompt out of a public destination repo" covers a public one.
 
 #### Scenario: Earlier import created the repo and stopped
 
@@ -201,6 +201,23 @@ When the destination workspace has a prompt with the file's handle and no commit
 - **AND** the user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>` again
 - **THEN** langstar pushes the file's manifest as the prompt's first commit and creates the file's tags
 - **AND** exits with status 0
+
+### Requirement: Keep a private prompt out of a public destination repo
+
+When the destination repo is public and the file's `repo.is_public` is false, `langstar prompt import` without `--update` SHALL push no commit and no tag, report `/repo/is_public` and exit with status 3. With `--update` it SHALL make the repo private before it pushes the commit.
+
+#### Scenario: Public destination repo and no --update
+
+- **WHEN** the destination holds a repo named `my-prompt` that is public and has no commit
+- **AND** the file's `repo.is_public` is false
+- **AND** a user runs `langstar prompt import my-prompt.json --workspace-id <dest-workspace-id>`
+- **THEN** langstar pushes no commit and no tag, reports `/repo/is_public` and exits with status 3
+
+#### Scenario: Public destination repo with --update
+
+- **WHEN** the same user runs the same import with `--update`
+- **THEN** langstar sets the repo's visibility to private before it pushes the commit
+- **AND** the prompt holds the file's manifest and the destination repo is private
 
 ### Requirement: Change an existing prompt only with --update
 
