@@ -163,11 +163,40 @@ When the file's `assistant` object holds both `config.configurable` and `context
 - **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **THEN** the create request holds `context` and no `config.configurable`
 
+#### Scenario: Only config.configurable holds the settings
+
+- **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** the create request holds `config.configurable` and no `context`
+
 #### Scenario: The two fields differ
 
 - **WHEN** the file's `config.configurable.system_prompt` is `support-system:prod` and its `context.system_prompt` is `support-system:staging`
 - **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
 - **THEN** langstar creates no assistant, leaves `support-bot.destinations.json` as it was, names `/assistant/config/configurable` and `/assistant/context` without their values and exits with status 1
+
+### Requirement: Read an assistant's settings from whichever field holds them
+
+When the file holds settings in only one of `config.configurable` and `context`, `langstar assistant compare`, and the read-back import makes, SHALL compare the file's settings with the destination's settings from whichever field the destination holds, and SHALL NOT report the field the file lacks as a difference.
+
+#### Scenario: Import of a context-only file reports no difference
+
+- **WHEN** the file's `context` holds `{"system_prompt": "support-system:prod"}` and its `config` has no `configurable`
+- **AND** the read-back's `config.configurable` holds `{"system_prompt": "support-system:prod"}`
+- **THEN** import reports no difference and exits with status 0
+
+#### Scenario: Import of a config-only file reports no difference
+
+- **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
+- **AND** the read-back's `context` holds `{"system_prompt": "support-system:prod"}`
+- **THEN** import reports no difference and exits with status 0
+
+#### Scenario: Compare of a config-only file against a destination holding both fields
+
+- **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
+- **AND** the destination assistant's `config.configurable` and `context` both hold `{"system_prompt": "support-system:prod"}`
+- **AND** a user runs `langstar assistant compare support-bot.json --deployment my-agent-prod`
+- **THEN** langstar reports no difference and exits with status 0
 
 ### Requirement: Keep the assistant destination record at the path the user names
 
@@ -238,9 +267,9 @@ Without `--update`, `langstar assistant import --assistant-id <id>` SHALL compar
 - **AND** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --assistant-id <dest-assistant-id>`
 - **THEN** langstar creates no assistant, changes none, lists the differences and exits with status 3
 
-### Requirement: Import with --update asks the Agent Server to remove the metadata, description and context the file lacks
+### Requirement: Import with --update asks the Agent Server to remove the metadata and description the file lacks
 
-`langstar assistant import --update` SHALL ask the Agent Server to remove each metadata key the destination assistant has and the file lacks, and to clear a description or context the file lacks, then read the assistant back. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
+`langstar assistant import --update` SHALL ask the Agent Server to remove each metadata key the destination assistant has and the file lacks, and to clear a description the file lacks, then read the assistant back. When such a key or field remains after the update, it SHALL list it as a difference and exit with status 3.
 
 #### Scenario: Remove a metadata key the file lacks
 
@@ -255,6 +284,19 @@ Without `--update`, `langstar assistant import --assistant-id <id>` SHALL compar
 
 - **WHEN** the Agent Server keeps `stale` in the assistant's metadata after the update
 - **THEN** langstar lists `/metadata/stale` as a difference and exits with status 3
+
+### Requirement: Import with --update leaves the settings field it did not send alone
+
+`langstar assistant import --update` SHALL clear `context` only when the file holds settings in neither `config.configurable` nor `context`.
+
+#### Scenario: --update of a config-only file leaves context alone
+
+- **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
+- **AND** the recorded assistant's `context` holds `{"system_prompt": "support-system:staging"}`
+- **AND** the user runs `langstar assistant import support-bot.json --deployment my-agent-prod --update`
+- **THEN** the update request holds `config.configurable` and no `context`
+- **AND** the assistant's settings read back from the deployment hold `support-system:prod`
+- **AND** langstar exits with status 0
 
 #### Scenario: Deployment keeps a description the file lacks
 
