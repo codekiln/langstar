@@ -9,6 +9,8 @@ use crate::output::{OutputFormat, OutputFormatter};
 use chrono::{DateTime, Utc};
 use clap::{Args, Subcommand, ValueEnum};
 use futures_util::StreamExt;
+use langstar_sdk::Project;
+use langstar_sdk::projects::ListProjectsParams;
 use langstar_sdk::{LangchainClient, QueriedRun, QueryRunsRequest, RunSelectField, RunType};
 use serde::Serialize;
 use tabled::Tabled;
@@ -28,10 +30,10 @@ pub enum RunsCommands {
 /// Arguments for the `runs query` command
 #[derive(Debug, Args)]
 pub struct QueryArgs {
-    /// Project UUID to query runs from (required)
+    /// Project name or UUID to query runs from (required)
     ///
     /// Can be specified multiple times to query from multiple projects.
-    /// The LangSmith runs API needs at least one project UUID.
+    /// The LangSmith runs API needs at least one project.
     #[arg(short, long = "project", value_name = "PROJECT")]
     pub projects: Vec<String>,
 
@@ -623,6 +625,46 @@ impl RunsCommands {
         runs
     }
 
+    /// Turns a `--project` value into a project ID. A UUID is used as given.
+    /// A name is looked up with `GET /api/v1/sessions?name=`, as langsmith-sdk's
+    /// `read_project` does, and must match one project exactly.
+    async fn resolve_project(client: &LangchainClient, project: &str) -> Result<Uuid> {
+        if let Ok(id) = Uuid::parse_str(project) {
+            return Ok(id);
+        }
+
+        let params = ListProjectsParams {
+            name: Some(project.to_string()),
+            // The name filter is exact, so one match is the answer; a second
+            // match is enough to report the name as ambiguous.
+            limit: Some(2),
+            ..Default::default()
+        };
+        let found = client.list_projects(params).await?;
+        Self::pick_exact_project(found, project)
+    }
+
+    /// Picks the one project whose name equals `name` from the API's name-filter results.
+    fn pick_exact_project(found: Vec<Project>, name: &str) -> Result<Uuid> {
+        // The name filter is an exact match (langsmith-sdk's `read_project` takes the
+        // first result of `name=` with `limit=1`). Comparing names again keeps a
+        // response with any other project from becoming the one we query.
+        let mut exact = found
+            .into_iter()
+            .filter(|p| p.name.as_deref() == Some(name));
+        match (exact.next(), exact.next()) {
+            (Some(p), None) => Ok(p.id),
+            (None, _) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "No project named '{}' found. Pass an existing project name or UUID to --project.",
+                name
+            ))),
+            (Some(_), Some(_)) => Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "More than one project is named '{}'. Pass its UUID to --project instead.",
+                name
+            ))),
+        }
+    }
+
     /// Runs to request per page: --limit, capped at the API maximum.
     fn page_size(limit: usize) -> u32 {
         limit.clamp(1, MAX_PAGE_SIZE as usize) as u32
@@ -686,24 +728,17 @@ impl RunsCommands {
 
         let combined_filter = filter_builder.build();
 
-        // Parse project IDs/names (warn if not valid UUIDs)
-        let project_ids: Vec<Uuid> = args
-            .projects
-            .iter()
-            .filter_map(|p| match Uuid::parse_str(p) {
-                Ok(uuid) => Some(uuid),
-                Err(_) => {
-                    formatter.warning(&format!("Project '{}' is not a valid UUID, ignoring", p));
-                    None
-                }
-            })
-            .collect();
-
-        if project_ids.is_empty() {
+        if args.projects.is_empty() {
             return Err(crate::error::CliError::Other(anyhow::anyhow!(
-                "runs query needs at least one project UUID: pass --project <UUID>. \
+                "runs query needs at least one project: pass --project <NAME or UUID>. \
                  The LangSmith runs API cannot query across all projects."
             )));
+        }
+
+        // A UUID is used as given; a name is looked up in the workspace.
+        let mut project_ids: Vec<Uuid> = Vec::with_capacity(args.projects.len());
+        for project in &args.projects {
+            project_ids.push(Self::resolve_project(&client, project).await?);
         }
 
         // Parse time filters with precedence:
@@ -799,6 +834,47 @@ impl RunsCommands {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn project(id: &str, name: &str) -> Project {
+        serde_json::from_value(serde_json::json!({
+            "id": id,
+            "tenant_id": "00000000-0000-0000-0000-000000000001",
+            "name": name,
+        }))
+        .unwrap()
+    }
+
+    const ID_A: &str = "11111111-1111-1111-1111-111111111111";
+    const ID_B: &str = "22222222-2222-2222-2222-222222222222";
+
+    #[test]
+    fn test_pick_exact_project_one_exact_match() {
+        let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project-2")];
+        let id = RunsCommands::pick_exact_project(found, "my-project").unwrap();
+        assert_eq!(id, Uuid::parse_str(ID_A).unwrap());
+    }
+
+    #[test]
+    fn test_pick_exact_project_rejects_substring_only_match() {
+        let found = vec![project(ID_A, "my-project-2")];
+        let err = RunsCommands::pick_exact_project(found, "my-project").unwrap_err();
+        assert!(err.to_string().contains("No project named"), "{err}");
+    }
+
+    #[test]
+    fn test_pick_exact_project_no_match() {
+        let err = RunsCommands::pick_exact_project(vec![], "my-project").unwrap_err();
+        assert!(err.to_string().contains("No project named"), "{err}");
+    }
+
+    #[test]
+    fn test_pick_exact_project_ambiguous() {
+        let found = vec![project(ID_A, "my-project"), project(ID_B, "my-project")];
+        let err = RunsCommands::pick_exact_project(found, "my-project").unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("More than one project"), "{msg}");
+        assert!(msg.contains("UUID"), "{msg}");
+    }
 
     #[test]
     fn test_filter_builder_empty() {
