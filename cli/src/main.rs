@@ -1,8 +1,10 @@
 mod commands;
 mod config;
 mod confirm;
+mod credential_check;
 mod deployment_utils;
 mod error;
+mod json_pointer;
 mod output;
 pub mod time;
 
