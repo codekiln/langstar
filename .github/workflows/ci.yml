@@ -159,6 +159,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -175,6 +176,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
@@ -230,6 +232,19 @@ jobs:
           version: 2026.10.2
           install: false
 
+      - name: Check that the destination workspace ID is set
+        # The prompt import tests import into this second workspace. Without it
+        # they would import into the workspace they export from and could pass
+        # by mistake, so the job stops here instead.
+        run: |
+          if [ -z "$LANGSMITH_DESTINATION_WORKSPACE_ID" ]; then
+            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID is empty. See docs/dev/environment-variables.md."
+            exit 1
+          fi
+          echo "✓ Destination workspace ID set"
+        env:
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
+
       - name: Run integration tests
         # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
@@ -241,6 +256,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -257,6 +273,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
@@ -322,6 +339,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -338,6 +356,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
