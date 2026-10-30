@@ -207,10 +207,10 @@ pub fn redact_at(path: &str, value: &Value) -> Value {
 
 /// Whether `value` is a LangChain secret reference.
 ///
-/// A reference holds `lc` set to 1, `type` and `id` and nothing else. An
-/// object that holds those and more, or whose `lc` is anything but 1, is walked
-/// like any other object, so a password sitting beside them or inside `lc` is
-/// still found.
+/// A reference holds `lc` set to 1, `type` and `id` and nothing else. This
+/// returns false for an object with extra keys or with an `lc` other than 1.
+/// The credential check and the redaction then look inside it as they would any
+/// object, and find a password beside those keys or inside `lc`.
 pub fn is_secret_reference(value: &Value) -> bool {
     let Some(object) = value.as_object() else {
         return false;

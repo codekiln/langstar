@@ -267,10 +267,10 @@ pub fn stage_record<T: Serialize>(path: &Path, record: &T) -> Result<PathBuf> {
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "destinations.json".to_string());
     let staged = directory.join(format!("{}.{}.tmp", name, std::process::id()));
-    // Anything already at the staged path, such as a file a langstar that died
-    // mid-write left or a symlink to another file, is removed rather than written
-    // through, and `create_new` refuses to follow whatever appears there before
-    // the file is created.
+    // Remove whatever is at the staged path, such as a file left by a langstar run
+    // that stopped mid-write, or a symlink to another file. `create_new` then fails
+    // if anything appears at the path before it creates the file, so the write
+    // never goes through a symlink.
     match std::fs::remove_file(&staged) {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
