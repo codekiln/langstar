@@ -643,15 +643,16 @@ impl<'a> PromptClient<'a> {
     /// `RunnableSequence`: `manifest.kwargs.first` is the prompt and `manifest.kwargs.last`
     /// is a `RunnableBinding` whose `kwargs.bound` is the chat model constructor. A reader
     /// after the model's class name, such as `ChatOpenAI`, takes the last element of that
-    /// constructor's `id`, not of the binding's. `reference/research/807-openapi-validation.md`
-    /// records those reads against the live API.
+    /// constructor's `id`. The binding's own `id` ends in `RunnableBinding`.
+    /// `reference/research/807-openapi-validation.md` records those reads against the
+    /// live API.
     ///
-    /// `model_config` and `model_provider` come back either way, so a caller cannot tell
-    /// from them whether the manifest holds the model. The manifest is the only place a
-    /// commit create can carry a model to another workspace.
+    /// `model_config` and `model_provider` come back either way, so the manifest is what
+    /// says whether the read asked for the model. It is also the only place a commit
+    /// create can carry a model to another workspace.
     ///
     /// The older `include_model=true`, which the LangSmith Python SDK sends, returns the
-    /// same document; the spec marks it deprecated in favour of `include`.
+    /// same document, and the spec marks it deprecated.
     ///
     /// # Arguments
     /// * `owner` - The owner of the prompt (username or organization)
@@ -759,7 +760,8 @@ impl<'a> PromptClient<'a> {
     /// * `repo` - The prompt repository name
     /// * `tag_name` - The tag's name, such as `prod`
     /// * `commit_id` - The commit's ID, which [`list_commits`](Self::list_commits) and a
-    ///   push both return. The endpoint rejects a commit hash here.
+    ///   push both return. `RepoTagRequest` in
+    ///   `reference/api-specs/langsmith/prompt-schemas.json` types it as a UUID.
     pub async fn create_tag(
         &self,
         owner: &str,
@@ -1044,9 +1046,10 @@ pub struct CommitResponse {
 /// Commit data within the response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitData {
-    /// The commit's ID, which differs from its hash.
+    /// The commit's ID, which the tag endpoints take.
     ///
-    /// The tag endpoints name a commit by this ID, never by its hash.
+    /// `RepoTagRequest` in `reference/api-specs/langsmith/prompt-schemas.json` types it
+    /// as a UUID, and a commit's hash is a different string.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     /// Commit hash
@@ -1058,8 +1061,8 @@ pub struct CommitData {
 
 /// One commit in a prompt's commit list
 ///
-/// Returned by `GET /api/v1/commits/{owner}/{repo}`. The commit read and the repo read
-/// return no `id`, so this list is where a caller looks one up to tag that commit.
+/// Returned by `GET /api/v1/commits/{owner}/{repo}`. The commit read returns the hash
+/// alone, so this list is where a caller finds the ID of a commit it wants to tag.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitListEntry {
     /// The commit's ID, which the tag endpoints take
@@ -2039,7 +2042,7 @@ mod export_field_tests {
                 .and_then(|c| c["model"].as_str()),
             Some("gpt-4.1-mini")
         );
-        // The chat model sits under the RunnableBinding, not directly under `last`.
+        // The chat model sits under the RunnableBinding.
         assert_eq!(
             commit.manifest["kwargs"]["last"]["id"]
                 .as_array()

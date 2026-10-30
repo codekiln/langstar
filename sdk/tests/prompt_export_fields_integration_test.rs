@@ -8,6 +8,9 @@
 //!
 //! The SDK Integration Tests job in `.github/workflows/ci.yml` runs them on every pull
 //! request, and `mise run check` runs them locally.
+//!
+//! The tasks each test names live in
+//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`.
 
 use langstar_sdk::prompts::{CommitRequest, UpdateRepoRequest};
 use langstar_sdk::{AuthConfig, LangchainClient};
@@ -19,9 +22,9 @@ const TEST_OWNER: &str = "-";
 /// A public prompt saved with a model, pinned to one commit so its manifest never changes.
 ///
 /// No prompt in the test workspace carries a model, as
-/// `reference/research/807-openapi-validation.md` records, and pushing one would prove
-/// nothing about what the live API returns for a prompt a person saved with a model in
-/// the web interface. These two constants name the prompt that report read.
+/// `reference/research/807-openapi-validation.md` records. That report read this public
+/// prompt instead, which a person saved with a model in the web interface, so these
+/// constants name it and the commit the report read.
 const MODEL_PROMPT_OWNER: &str = "langchain-ai";
 const MODEL_PROMPT_REPO: &str = "chain-of-density";
 const MODEL_PROMPT_COMMIT: &str =
@@ -89,7 +92,8 @@ async fn delete_test_repo(client: &LangchainClient, repo: &str) {
     }
 }
 
-/// Task 3.1: the commit read with `include=model` returns the model inside the manifest.
+/// Task 3.1, "Add the commit read that asks for the model": the commit read with
+/// `include=model` returns the model inside the manifest.
 ///
 /// The chat model constructor sits at `manifest.kwargs.last.kwargs.bound`, behind a
 /// `RunnableBinding`, which is where `prompt export` reads the model class from.
@@ -151,8 +155,9 @@ async fn test_commit_read_with_model_returns_the_bound_chat_model() {
     );
 }
 
-/// Tasks 3.1 and 3.4: a commit carries its description, and a repo update changes the
-/// repo details the export file holds.
+/// Tasks 3.1 and 3.4, "Add the repo details and the commit description": a commit
+/// carries its description, and a repo update changes the repo details the export file
+/// holds.
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_commit_description_and_repo_details_round_trip() {
@@ -235,8 +240,8 @@ async fn test_commit_description_and_repo_details_round_trip() {
     delete_test_repo(&client, &repo).await;
 }
 
-/// Task 3.2: the commit list gives each commit's ID, and the tag calls move a tag from
-/// one commit to another and then delete it.
+/// Task 3.2, "Add the commit list and the commit tag calls": the commit list gives each
+/// commit's ID, and the tag calls move a tag from one commit to another and delete it.
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_commit_tags_move_between_commits_and_delete() {

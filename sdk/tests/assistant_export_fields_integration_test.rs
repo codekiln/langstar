@@ -5,6 +5,9 @@
 //! the fixture in `sdk/src/test_utils.rs` keeps alive, and need `LANGSMITH_API_KEY` and
 //! `LANGSMITH_WORKSPACE_ID`.
 //!
+//! The tasks each test names live in
+//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`.
+//!
 //! Run with: cargo test --features integration-tests,test-utils -p langstar-sdk --test assistant_export_fields_integration_test
 //!
 //! The SDK Integration Tests job in `.github/workflows/ci.yml` runs them on every pull
@@ -24,14 +27,17 @@ const TEST_GRAPH: &str = "test_graph";
 
 /// The second graph ID the destination deployment serves.
 ///
-/// Task 2.3 registers the test graph under this ID as well, and task 2.4 deploys that
-/// file as the destination deployment, so only the test that waits for task 2.4 uses it.
+/// Task 2.3, "Register the test graph under a second graph ID", adds a `langgraph.json`
+/// that registers the test graph under this ID as well, and task 2.4, "Add a destination
+/// deployment fixture", deploys that file. Only the test waiting for those two uses it.
 const TEST_GRAPH_ALT: &str = "test_graph_alt";
 
-/// The name prefix task 2.4 gives the destination deployment
+/// The name prefix task 2.4, "Add a destination deployment fixture", gives the
+/// destination deployment
 const DESTINATION_DEPLOYMENT_PREFIX: &str = "dest-integration-test";
 
-/// The graph config file task 2.3 adds
+/// The graph config file task 2.3, "Register the test graph under a second graph ID",
+/// adds
 const DESTINATION_CONFIG_PATH: &str = "tests/fixtures/test-graph-deployment-alt/langgraph.json";
 
 fn test_assistant_name(prefix: &str) -> String {
@@ -74,8 +80,8 @@ async fn delete_assistant(assistants: &AssistantClient<'_>, assistant: &Assistan
     }
 }
 
-/// Task 3.3: an assistant keeps the context a create sends, comes back with its version,
-/// and the search finds it by graph ID.
+/// Task 3.3, "Add the assistant fields to the SDK": an assistant keeps the context a
+/// create sends, comes back with its version, and the search finds it by graph ID.
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_assistant_keeps_its_context_and_is_found_by_graph_id() {
@@ -130,12 +136,14 @@ async fn test_assistant_keeps_its_context_and_is_found_by_graph_id() {
     delete_assistant(&assistants, &created).await;
 }
 
-/// Task 3.3: an update moves an assistant from one graph to another.
+/// Task 3.3, "Add the assistant fields to the SDK": an update moves an assistant from
+/// one graph to another.
 ///
 /// The existing test deployment serves only `test_graph`, so this test waits for the
-/// destination deployment that task 2.4 adds and the second graph ID that task 2.3
-/// registers. Task 2.4 removes the `#[ignore]` and takes the deployment from the fixture
-/// it adds to `sdk/src/test_utils.rs` in place of the config built here.
+/// destination deployment that task 2.4, "Add a destination deployment fixture", adds,
+/// and for the second graph ID that task 2.3 registers. Whoever carries out task 2.4
+/// removes the `#[ignore]` here and takes the deployment from the fixture they add to
+/// `sdk/src/test_utils.rs`, in place of the config this test builds.
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 #[ignore = "needs task 2.4"]
