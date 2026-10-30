@@ -161,9 +161,10 @@ analyze_commits() {
     # stdout of this function is the JSON, so the progress line goes to stderr.
     log_info "Analyzing commits since last release..." >&2
 
-    # analyze_commits.py reports the bump as its exit code (0 none, 1 patch, 2 minor,
-    # 3 major) and prints JSON; prepare-release.yml reads the same codes. This function
-    # fails when the JSON is unreadable or the exit code is above 3.
+    # analyze_commits.py prints JSON and exits 0, 1, 2 or 3 for no bump, patch, minor
+    # or major; prepare-release.yml reads the same exit codes. It also exits 1, with
+    # no JSON, when there are no commits since the last tag, so this function
+    # fails when the exit code is above 3 or the output is not JSON.
     local analysis status=0
     analysis=$("$SCRIPT_DIR/analyze_commits.py" --format json) || status=$?
     if (( status > 3 )) || ! python3 -c "import sys, json; json.load(sys.stdin)" <<<"$analysis" 2>/dev/null; then
