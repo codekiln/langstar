@@ -191,6 +191,13 @@ When the file holds settings in only one of `config.configurable` and `context`,
 - **AND** the read-back's `context` holds `{"system_prompt": "support-system:prod"}`
 - **THEN** import reports no difference and exits with status 0
 
+#### Scenario: A second import of a config-only file creates nothing
+
+- **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
+- **AND** the destination record names the assistant an earlier import created, whose `config.configurable` and `context` both hold `{"system_prompt": "support-system:prod"}`
+- **AND** a user runs `langstar assistant import support-bot.json --deployment my-agent-prod`
+- **THEN** langstar creates no assistant, reports no difference and exits with status 0
+
 #### Scenario: Compare of a config-only file against a destination holding both fields
 
 - **WHEN** the file's `config.configurable` holds `{"system_prompt": "support-system:prod"}` and the file has no `context`
