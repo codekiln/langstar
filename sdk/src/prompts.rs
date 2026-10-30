@@ -8,8 +8,8 @@ use serde_json::Value;
 /// Percent-encoding leaves `.` and `..` as they are, and a client or proxy reads those
 /// as the current or parent directory: `DELETE /api/v1/repos/-/my-prompt/tags/..` lands
 /// on `/api/v1/repos/-/my-prompt/`, which deletes the whole prompt. An empty name would
-/// end the path at `tags/`. None of the three can name a tag or a commit, so each is
-/// refused before a request goes out.
+/// end the path at `tags/`. No tag or commit is named `.`, `..` or an empty string, so
+/// `path_segment` returns `InvalidInput` for those names before a request goes out.
 fn path_segment(name: &str) -> Result<String> {
     if name.is_empty() || name == "." || name == ".." {
         return Err(LangstarError::InvalidInput(format!(
