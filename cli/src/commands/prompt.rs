@@ -4,10 +4,9 @@ use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
 use langstar_sdk::prompts::{
     LcJson, MessagePromptTemplateKwargs, PromptTemplateKwargs, StructuredOutputKwargs,
-    StructuredPrompt, validate_json_schema, validate_method,
+    StructuredPrompt, plain_prompt_manifest, validate_json_schema, validate_method,
 };
 use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
-use serde_json::json;
 use std::fs;
 use tabled::Tabled;
 use uuid::Uuid;
@@ -766,12 +765,11 @@ impl PromptCommands {
                     formatter.info(&format!("Pushing prompt to {}/{}...", owner, repo));
 
                     let commit_request = CommitRequest {
-                        manifest: json!({
-                            "type": "prompt",
-                            "template": template,
-                            "input_variables": vars,
-                            "template_format": template_format
-                        }),
+                        manifest: serde_json::to_value(plain_prompt_manifest(
+                            template,
+                            &vars,
+                            template_format,
+                        ))?,
                         parent_commit: final_parent_commit,
                         example_run_ids: None,
                     };
