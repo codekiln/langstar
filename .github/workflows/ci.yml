@@ -233,12 +233,13 @@ jobs:
           install: false
 
       - name: Check that the destination workspace ID is set
-        # The prompt import tests import into this second workspace. Without it
-        # they would import into the workspace they export from and could pass
-        # by mistake, so the job stops here instead.
+        # The prompt import tests import into this second workspace. If the
+        # secret is empty, they import back into the workspace they exported
+        # from. The prompt already exists there, so a broken import still
+        # passes. This step stops the job before the tests run.
         run: |
           if [ -z "$LANGSMITH_DESTINATION_WORKSPACE_ID" ]; then
-            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID is empty. See docs/dev/environment-variables.md."
+            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID is empty. Set it to the ID of the workspace the prompt import tests import into; docs/dev/environment-variables.md describes it under LANGSMITH_DESTINATION_WORKSPACE_ID."
             exit 1
           fi
           echo "✓ Destination workspace ID set"
