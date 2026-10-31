@@ -321,22 +321,8 @@ impl<'a> AssistantClient<'a> {
         let path = format!("/assistants/{}", assistant_id);
         let request = self.client.langgraph_delete(&path)?;
 
-        // DELETE typically returns 204 No Content, so we need to handle empty response
-        let response = request.send().await?;
-
-        let status = response.status();
-        if !status.is_success() {
-            let error_text = response
-                .text()
-                .await
-                .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(crate::error::LangstarError::ApiError {
-                status: status.as_u16(),
-                message: error_text,
-            });
-        }
-
-        Ok(())
+        // DELETE typically returns 204 No Content, so there is no body to parse
+        self.client.execute_status_only_request(request).await
     }
 }
 
