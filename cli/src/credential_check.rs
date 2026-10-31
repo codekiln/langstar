@@ -390,12 +390,12 @@ fn json_web_token_candidates(text: &str) -> impl Iterator<Item = &str> {
 }
 
 fn bearer_token(text: &str) -> bool {
-    occurrences_ignoring_case(text, "Bearer ")
+    auth_payloads(text, "Bearer ")
         .any(|after| after.chars().take_while(|c| is_token_character(*c)).count() >= MIN_TOKEN_TAIL)
 }
 
 fn basic_value(text: &str) -> bool {
-    occurrences_ignoring_case(text, "Basic ").any(|after| {
+    auth_payloads(text, "Basic ").any(|after| {
         let payload: String = after
             .chars()
             .take_while(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '/' | '='))
@@ -473,6 +473,13 @@ fn provider_token(text: &str) -> bool {
             })
         })
     })
+}
+
+/// The text after each HTTP authentication scheme in `text`, in any ASCII
+/// case, past the spaces that separate the scheme from its payload. HTTP
+/// allows more than one space there, as in `Basic  dXNlcjpwYXNz`.
+fn auth_payloads<'a>(text: &'a str, scheme: &'static str) -> impl Iterator<Item = &'a str> {
+    occurrences_ignoring_case(text, scheme).map(|after| after.trim_start_matches(' '))
 }
 
 /// Each place `needle` appears in `haystack` in any ASCII case, as the text
@@ -674,6 +681,16 @@ mod tests {
             "basic dXNlcjpwYXNz",
             "BASIC dXNlcjpwYXNz",
         ] {
+            assert!(
+                flagged_under_note(text).is_some(),
+                "{text:?} should be flagged"
+            );
+        }
+    }
+
+    #[test]
+    fn flags_a_bearer_token_or_basic_value_after_several_spaces() {
+        for text in ["Bearer  abcdefghijklmnopqrst", "Basic   dXNlcjpwYXNz"] {
             assert!(
                 flagged_under_note(text).is_some(),
                 "{text:?} should be flagged"
