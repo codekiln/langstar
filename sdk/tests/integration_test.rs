@@ -56,6 +56,7 @@ async fn test_push_prompt_to_prompthub() {
             "input_variables": ["context", "question"],
             "template_format": "f-string"
         }),
+        description: None,
         parent_commit: None,
         example_run_ids: None,
     };

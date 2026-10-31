@@ -60,7 +60,7 @@ pub use annotation_queues::{
     RunWithAnnotationQueueInfo, UpdateAnnotationQueueRequest,
 };
 pub use assistants::{
-    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest,
+    Assistant, AssistantClient, AssistantSearchRequest, CreateAssistantRequest, IfExists,
     UpdateAssistantRequest,
 };
 pub use auth::AuthConfig;
@@ -95,9 +95,9 @@ pub use projects::{
     ListProjectsParams, Project, ProjectCreate, ProjectSortColumn, ProjectUpdate, TraceTier,
 };
 pub use prompts::{
-    CommitManifestResponse, CommitRequest, CommitResponse, LcJson, MessagePromptTemplateKwargs,
-    Prompt, PromptClient, PromptTemplateKwargs, StructuredOutputKwargs, StructuredPrompt,
-    Visibility,
+    CommitData, CommitList, CommitListEntry, CommitManifestResponse, CommitRequest, CommitResponse,
+    LcJson, MessagePromptTemplateKwargs, Prompt, PromptClient, PromptTemplateKwargs, RepoTag,
+    StructuredOutputKwargs, StructuredPrompt, UpdateRepoRequest, Visibility,
 };
 pub use runs::{QueriedRun, QueryRunsRequest, QueryRunsResponse, Run, RunSelectField, RunType};
 pub use secrets::{SecretKey, SecretUpsert};

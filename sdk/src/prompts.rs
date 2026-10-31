@@ -3,6 +3,23 @@ use crate::error::{LangstarError, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+/// Percent-encode a tag name or commit for one segment of a URL path.
+///
+/// Percent-encoding leaves `.` and `..` as they are, and a client or proxy reads those
+/// as the current or parent directory: `DELETE /api/v1/repos/-/my-prompt/tags/..` lands
+/// on `/api/v1/repos/-/my-prompt/`, which deletes the whole prompt. An empty name would
+/// end the path at `tags/`. No tag or commit is named `.`, `..` or an empty string, so
+/// `path_segment` returns `InvalidInput` for those names before a request goes out.
+fn path_segment(name: &str) -> Result<String> {
+    if name.is_empty() || name == "." || name == ".." {
+        return Err(LangstarError::InvalidInput(format!(
+            "{:?} is not a tag name or commit",
+            name
+        )));
+    }
+    Ok(urlencoding::encode(name).into_owned())
+}
+
 /// Visibility filter for prompts
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Visibility {
@@ -254,6 +271,15 @@ pub struct Prompt {
     /// Description of the prompt
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// The prompt's readme, the long text beside its description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub readme: Option<String>,
+    /// The prompt's own tags, which name the prompt rather than one of its commits
+    #[serde(default)]
+    pub tags: Vec<String>,
+    /// The ID of the workspace that holds the prompt
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tenant_id: Option<String>,
     /// Number of likes
     #[serde(default)]
     pub num_likes: u32,
@@ -580,6 +606,7 @@ impl<'a> PromptClient<'a> {
         // Create commit request
         let commit_request = CommitRequest {
             manifest,
+            description: None,
             parent_commit,
             example_run_ids: None,
         };
@@ -624,6 +651,258 @@ impl<'a> PromptClient<'a> {
         let request = self.client.langsmith_get(&path)?;
         let response: CommitManifestResponse = self.client.execute(request).await?;
         Ok(response)
+    }
+
+    /// Get a commit with the chat model inside its manifest.
+    ///
+    /// [`get_commit`](Self::get_commit) returns the prompt on its own. This call sends
+    /// `include=model`, and LangSmith then wraps the prompt and the chat model in one
+    /// `RunnableSequence`: `manifest.kwargs.first` is the prompt and `manifest.kwargs.last`
+    /// is a `RunnableBinding` whose `kwargs.bound` is the chat model constructor. A reader
+    /// after the model's class name, such as `ChatOpenAI`, takes the last element of that
+    /// constructor's `id`. The binding's own `id` ends in `RunnableBinding`.
+    /// `reference/research/807-openapi-validation.md` records those reads against the
+    /// live API.
+    ///
+    /// `model_config` and `model_provider` come back either way, so the manifest is what
+    /// says whether the read asked for the model. It is also the only place a commit
+    /// create can carry a model to another workspace.
+    ///
+    /// The older `include_model=true`, which the LangSmith Python SDK sends, returns the
+    /// same document, and the spec marks it deprecated.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `commit` - The commit hash or tag (e.g., "latest", "main", commit SHA)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let commit = client
+    ///     .prompts()
+    ///     .get_commit_with_model("owner", "my-prompt", "latest")
+    ///     .await?;
+    /// if let Some(provider) = &commit.model_provider {
+    ///     println!("Model class: {}", provider);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn get_commit_with_model(
+        &self,
+        owner: &str,
+        repo: &str,
+        commit: &str,
+    ) -> Result<CommitManifestResponse> {
+        // A tag name or hash goes into the path, so a reserved character in it would
+        // otherwise cut the request short and drop `include=model`.
+        let path = format!(
+            "/api/v1/commits/{}/{}/{}?include=model",
+            owner,
+            repo,
+            path_segment(commit)?
+        );
+        let request = self.client.langsmith_get(&path)?;
+        let response: CommitManifestResponse = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// List a prompt's commits, newest first.
+    ///
+    /// Each entry carries the commit's `id` and its hash. The commit read returns only
+    /// the hash, and the tag endpoints take the `id`, so a caller that wants to tag a
+    /// commit it knows by hash finds the ID here.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `limit` - How many commits to return. The API returns 20 by default and at most 100.
+    /// * `offset` - How many commits to skip (default: 0)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let commits = client
+    ///     .prompts()
+    ///     .list_commits("owner", "my-prompt", Some(10), None)
+    ///     .await?;
+    /// for commit in &commits.commits {
+    ///     println!("{} {}", commit.id, commit.commit_hash);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn list_commits(
+        &self,
+        owner: &str,
+        repo: &str,
+        limit: Option<u32>,
+        offset: Option<u32>,
+    ) -> Result<CommitList> {
+        let mut path = format!("/api/v1/commits/{}/{}", owner, repo);
+        let mut separator = '?';
+        if let Some(limit) = limit {
+            path.push_str(&format!("{}limit={}", separator, limit));
+            separator = '&';
+        }
+        if let Some(offset) = offset {
+            path.push_str(&format!("{}offset={}", separator, offset));
+        }
+        let request = self.client.langsmith_get(&path)?;
+        let response: CommitList = self.client.execute(request).await?;
+        Ok(response)
+    }
+
+    /// List a prompt's commit tags.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    pub async fn list_tags(&self, owner: &str, repo: &str) -> Result<Vec<RepoTag>> {
+        let path = format!("/api/v1/repos/{}/{}/tags", owner, repo);
+        let request = self.client.langsmith_get(&path)?;
+        let tags: Vec<RepoTag> = self.client.execute(request).await?;
+        Ok(tags)
+    }
+
+    /// Put a new tag on a commit.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `tag_name` - The tag's name, such as `prod`
+    /// * `commit_id` - The commit's ID, which [`list_commits`](Self::list_commits) and a
+    ///   push both return. `RepoTagRequest` in
+    ///   `reference/api-specs/langsmith/prompt-schemas.json` types it as a UUID.
+    pub async fn create_tag(
+        &self,
+        owner: &str,
+        repo: &str,
+        tag_name: &str,
+        commit_id: &str,
+    ) -> Result<RepoTag> {
+        #[derive(Serialize)]
+        struct CreateTagRequest<'a> {
+            tag_name: &'a str,
+            commit_id: &'a str,
+        }
+
+        let path = format!("/api/v1/repos/{}/{}/tags", owner, repo);
+        let request = self.client.langsmith_post(&path)?.json(&CreateTagRequest {
+            tag_name,
+            commit_id,
+        });
+        let tag: RepoTag = self.client.execute(request).await?;
+        Ok(tag)
+    }
+
+    /// Move an existing tag to another commit.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `tag_name` - The name of the tag to move
+    /// * `commit_id` - The ID of the commit the tag should point at
+    pub async fn move_tag(
+        &self,
+        owner: &str,
+        repo: &str,
+        tag_name: &str,
+        commit_id: &str,
+    ) -> Result<RepoTag> {
+        #[derive(Serialize)]
+        struct MoveTagRequest<'a> {
+            commit_id: &'a str,
+        }
+
+        let path = format!(
+            "/api/v1/repos/{}/{}/tags/{}",
+            owner,
+            repo,
+            path_segment(tag_name)?
+        );
+        let request = self
+            .client
+            .langsmith_patch(&path)?
+            .json(&MoveTagRequest { commit_id });
+        let tag: RepoTag = self.client.execute(request).await?;
+        Ok(tag)
+    }
+
+    /// Delete a tag, leaving the commit it pointed at alone.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `tag_name` - The name of the tag to delete
+    pub async fn delete_tag(&self, owner: &str, repo: &str, tag_name: &str) -> Result<()> {
+        let path = format!(
+            "/api/v1/repos/{}/{}/tags/{}",
+            owner,
+            repo,
+            path_segment(tag_name)?
+        );
+        let request = self.client.langsmith_delete(&path)?;
+        self.client.execute_status_only_request(request).await
+    }
+
+    /// Change a prompt's description, readme, tags or visibility.
+    ///
+    /// These details live on the prompt rather than on a commit, so this call changes
+    /// them without pushing one.
+    ///
+    /// # Arguments
+    /// * `owner` - The owner of the prompt (username or organization)
+    /// * `repo` - The prompt repository name
+    /// * `update` - The details to change; each `None` field stays as it is
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use langstar_sdk::{AuthConfig, LangchainClient, prompts::UpdateRepoRequest};
+    /// # async fn example() -> langstar_sdk::Result<()> {
+    /// let auth = AuthConfig::from_env()?;
+    /// let client = LangchainClient::new(auth)?;
+    ///
+    /// let updated = client
+    ///     .prompts()
+    ///     .update_repo(
+    ///         "-",
+    ///         "my-prompt",
+    ///         &UpdateRepoRequest {
+    ///             description: Some("Answers support questions".to_string()),
+    ///             ..Default::default()
+    ///         },
+    ///     )
+    ///     .await?;
+    /// println!("{:?}", updated.description);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn update_repo(
+        &self,
+        owner: &str,
+        repo: &str,
+        update: &UpdateRepoRequest,
+    ) -> Result<Prompt> {
+        let path = format!("/api/v1/repos/{}/{}", owner, repo);
+        let request = self.client.langsmith_patch(&path)?.json(update);
+
+        #[derive(Deserialize)]
+        struct UpdateRepoResponse {
+            repo: Prompt,
+        }
+
+        let response: UpdateRepoResponse = self.client.execute(request).await?;
+        Ok(response.repo)
     }
 
     /// Pull a prompt commit from the PromptHub.
@@ -777,6 +1056,9 @@ impl<'a> PromptClient<'a> {
 pub struct CommitRequest {
     /// The prompt manifest/template (required)
     pub manifest: serde_json::Value,
+    /// What this commit changes, which the commit read returns as `description`
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     /// Parent commit hash (optional, for updates)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_commit: Option<String>,
@@ -795,11 +1077,90 @@ pub struct CommitResponse {
 /// Commit data within the response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitData {
+    /// The commit's ID, which the tag endpoints take.
+    ///
+    /// `RepoTagRequest` in `reference/api-specs/langsmith/prompt-schemas.json` types it
+    /// as a UUID, and a commit's hash is a different string.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     /// Commit hash
     pub commit_hash: String,
     /// URL to the commit
     #[serde(skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
+}
+
+/// One commit in a prompt's commit list
+///
+/// Returned by `GET /api/v1/commits/{owner}/{repo}`. The commit read returns the hash
+/// alone, so this list is where a caller finds the ID of a commit it wants to tag.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitListEntry {
+    /// The commit's ID, which the tag endpoints take
+    pub id: String,
+    /// The commit's hash
+    pub commit_hash: String,
+    /// What the person who pushed the commit wrote about it
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// The hash of the commit this one was pushed on top of
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_commit_hash: Option<String>,
+    /// When the commit was created
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+}
+
+/// A page of a prompt's commits, newest first
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitList {
+    /// The commits on this page
+    pub commits: Vec<CommitListEntry>,
+    /// How many commits the prompt has in all
+    #[serde(default)]
+    pub total: u32,
+}
+
+/// A tag on a prompt commit, such as `prod`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTag {
+    /// The tag's own ID
+    pub id: String,
+    /// The tag's name
+    pub tag_name: String,
+    /// The ID of the commit the tag points at
+    pub commit_id: String,
+    /// The hash of the commit the tag points at
+    pub commit_hash: String,
+    /// The ID of the prompt the tag belongs to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repo_id: Option<String>,
+    /// When the tag was created
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+    /// When the tag last moved
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<String>,
+}
+
+/// Repo details a repo update sends
+///
+/// Each field the caller leaves `None` stays out of the request body, and LangSmith
+/// leaves that detail as it is.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UpdateRepoRequest {
+    /// The prompt's one-line description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// The prompt's readme
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub readme: Option<String>,
+    /// The prompt's tags, which name the prompt rather than a commit
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
+    /// Whether anyone can read the prompt
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_public: Option<bool>,
 }
 
 /// Response from getting commit metadata
@@ -812,6 +1173,20 @@ pub struct CommitManifestResponse {
     pub commit_hash: String,
     /// The commit manifest (prompt template/schema)
     pub manifest: serde_json::Value,
+    /// The commit's description, which the person who pushed it wrote
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    /// The model's settings, beside the manifest rather than inside it.
+    ///
+    /// LangSmith leaves this field out for a commit with no model, rather than
+    /// returning null, so `None` means the commit has no model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_config: Option<serde_json::Value>,
+    /// The chat model's class name, such as `ChatOpenAI`.
+    ///
+    /// Left out, like `model_config`, for a commit with no model.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model_provider: Option<String>,
     /// Optional example run records (serialized RepoExampleResponse objects)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub examples: Option<Vec<serde_json::Value>>,
@@ -872,6 +1247,9 @@ mod tests {
             full_name: Some("owner/prompt".to_string()),
             owner: Some("owner".to_string()),
             description: Some("Test prompt".to_string()),
+            readme: None,
+            tags: vec![],
+            tenant_id: None,
             num_likes: 42,
             num_downloads: 100,
             manifest: None,
@@ -1587,5 +1965,568 @@ mod tests {
             Some(vec!["movie_name".to_string()])
         );
         assert_eq!(structured_prompt.messages.len(), 1);
+    }
+}
+
+#[cfg(test)]
+mod export_field_tests {
+    use super::*;
+    use crate::auth::AuthConfig;
+    use serde_json::json;
+
+    fn mock_client(server: &mockito::ServerGuard) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            AuthConfig::new(
+                Some("test_key".to_string()),
+                None,
+                Some("test_workspace".to_string()),
+            ),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap()
+    }
+
+    /// A commit read as the live API returns it for a prompt saved with a model.
+    ///
+    /// The outer constructor is a `RunnableSequence`, `kwargs.first` is the prompt and
+    /// `kwargs.last` is a `RunnableBinding` whose `kwargs.bound` is the `ChatOpenAI`
+    /// constructor. `reference/research/807-openapi-validation.md` read three such
+    /// commits on the live API and found the binding in every one.
+    fn commit_with_model_body() -> serde_json::Value {
+        json!({
+            "commit_hash": "8c0ba491ce9b01f707e56db935d7eeee7aa6ff29c04258b458928cf7c8ebe35b",
+            "description": "Raise the temperature",
+            "manifest": {
+                "lc": 1,
+                "type": "constructor",
+                "id": ["langchain", "schema", "runnable", "RunnableSequence"],
+                "kwargs": {
+                    "first": {
+                        "lc": 1,
+                        "type": "constructor",
+                        "id": ["langchain", "prompts", "chat", "ChatPromptTemplate"],
+                        "kwargs": {"input_variables": ["question"], "messages": []}
+                    },
+                    "last": {
+                        "lc": 1,
+                        "type": "constructor",
+                        "id": ["langchain", "schema", "runnable", "RunnableBinding"],
+                        "kwargs": {
+                            "bound": {
+                                "lc": 1,
+                                "type": "constructor",
+                                "id": ["langchain", "chat_models", "openai", "ChatOpenAI"],
+                                "kwargs": {
+                                    "model": "gpt-4.1-mini",
+                                    "temperature": 0,
+                                    "stream_usage": true,
+                                    "openai_api_key": {
+                                        "lc": 1,
+                                        "type": "secret",
+                                        "id": ["OPENAI_API_KEY"]
+                                    }
+                                }
+                            },
+                            "kwargs": {}
+                        }
+                    }
+                }
+            },
+            "model_config": {
+                "model": "gpt-4.1-mini",
+                "temperature": 0,
+                "stream_usage": true,
+                "openai_api_key": {"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}
+            },
+            "model_provider": "ChatOpenAI"
+        })
+    }
+
+    #[tokio::test]
+    async fn test_get_commit_with_model_sends_include_model() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/api/v1/commits/-/my-prompt/latest")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "include".into(),
+                "model".into(),
+            ))
+            .with_body(commit_with_model_body().to_string())
+            .create_async()
+            .await;
+
+        let commit = mock_client(&server)
+            .prompts()
+            .get_commit_with_model("-", "my-prompt", "latest")
+            .await
+            .expect("the commit read should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(commit.description.as_deref(), Some("Raise the temperature"));
+        assert_eq!(commit.model_provider.as_deref(), Some("ChatOpenAI"));
+        assert_eq!(
+            commit
+                .model_config
+                .as_ref()
+                .and_then(|c| c["model"].as_str()),
+            Some("gpt-4.1-mini")
+        );
+        // The chat model sits under the RunnableBinding.
+        assert_eq!(
+            commit.manifest["kwargs"]["last"]["id"]
+                .as_array()
+                .and_then(|id| id.last())
+                .and_then(|name| name.as_str()),
+            Some("RunnableBinding")
+        );
+        assert_eq!(
+            commit.manifest["kwargs"]["last"]["kwargs"]["bound"]["id"]
+                .as_array()
+                .and_then(|id| id.last())
+                .and_then(|name| name.as_str()),
+            Some("ChatOpenAI")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_commit_read_leaves_out_the_model_for_a_prompt_without_one() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/api/v1/commits/-/plain-prompt/latest")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "include".into(),
+                "model".into(),
+            ))
+            .with_body(
+                json!({
+                    "commit_hash": "abc123",
+                    "manifest": {"lc": 1, "type": "constructor", "id": ["x"], "kwargs": {}}
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let commit = mock_client(&server)
+            .prompts()
+            .get_commit_with_model("-", "plain-prompt", "latest")
+            .await
+            .expect("the commit read should succeed");
+
+        assert!(commit.model_config.is_none());
+        assert!(commit.model_provider.is_none());
+        assert!(commit.description.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_push_sends_the_commit_description_and_reads_back_the_commit_id() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/api/v1/commits/-/my-prompt")
+            .match_body(mockito::Matcher::PartialJson(
+                json!({"description": "Add the system message"}),
+            ))
+            .with_body(
+                json!({"commit": {
+                    "id": "4f2b2d9e-0b4a-4a1f-9f3a-3b6b5f1c2d7e",
+                    "commit_hash": "abc123"
+                }})
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let response = mock_client(&server)
+            .prompts()
+            .push(
+                "-",
+                "my-prompt",
+                &CommitRequest {
+                    manifest: json!({"lc": 1}),
+                    description: Some("Add the system message".to_string()),
+                    parent_commit: None,
+                    example_run_ids: None,
+                },
+            )
+            .await
+            .expect("the push should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(
+            response.commit.id.as_deref(),
+            Some("4f2b2d9e-0b4a-4a1f-9f3a-3b6b5f1c2d7e")
+        );
+        assert_eq!(response.commit.commit_hash, "abc123");
+    }
+
+    #[tokio::test]
+    async fn test_a_reserved_character_in_a_tag_name_or_commit_stays_in_the_path() {
+        let mut server = mockito::Server::new_async().await;
+        let read = server
+            .mock("GET", "/api/v1/commits/-/my-prompt/prod%23candidate")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "include".into(),
+                "model".into(),
+            ))
+            .with_body(json!({"commit_hash": "abc123", "manifest": {"lc": 1}}).to_string())
+            .create_async()
+            .await;
+        let moved = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt/tags/prod%23candidate")
+            .with_body(
+                json!({
+                    "id": "tag-1",
+                    "repo_id": "repo-1",
+                    "commit_id": "id-second",
+                    "commit_hash": "hash-second",
+                    "tag_name": "prod#candidate"
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+        let deleted = server
+            .mock("DELETE", "/api/v1/repos/-/my-prompt/tags/prod%23candidate")
+            .with_status(204)
+            .create_async()
+            .await;
+
+        let client = mock_client(&server);
+        client
+            .prompts()
+            .get_commit_with_model("-", "my-prompt", "prod#candidate")
+            .await
+            .expect("the commit read should succeed");
+        client
+            .prompts()
+            .move_tag("-", "my-prompt", "prod#candidate", "id-second")
+            .await
+            .expect("the tag move should succeed");
+        client
+            .prompts()
+            .delete_tag("-", "my-prompt", "prod#candidate")
+            .await
+            .expect("the tag delete should succeed");
+
+        // Without the encoding each request would land on `prod` and the commit read
+        // would lose `include=model`, so these three assertions are the whole test.
+        read.assert_async().await;
+        moved.assert_async().await;
+        deleted.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_list_commits_returns_each_commit_id_with_its_hash() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("GET", "/api/v1/commits/-/my-prompt")
+            .match_query(mockito::Matcher::UrlEncoded("limit".into(), "2".into()))
+            .with_body(
+                json!({
+                    "commits": [
+                        {"id": "id-second", "commit_hash": "hash-second",
+                         "parent_commit_hash": "hash-first", "manifest": {}},
+                        {"id": "id-first", "commit_hash": "hash-first", "manifest": {}}
+                    ],
+                    "total": 2
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let commits = mock_client(&server)
+            .prompts()
+            .list_commits("-", "my-prompt", Some(2), None)
+            .await
+            .expect("the commit list should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(commits.total, 2);
+        assert_eq!(commits.commits[0].id, "id-second");
+        assert_eq!(commits.commits[0].commit_hash, "hash-second");
+        assert_eq!(
+            commits.commits[0].parent_commit_hash.as_deref(),
+            Some("hash-first")
+        );
+        assert_eq!(commits.commits[1].id, "id-first");
+    }
+
+    #[tokio::test]
+    async fn test_a_dot_segment_or_empty_tag_name_sends_no_request() {
+        let mut server = mockito::Server::new_async().await;
+        // Each mock matches any path for its method, so `expect(0)` fails the test if a
+        // request goes out.
+        let mut any_request = Vec::new();
+        for method in ["GET", "PATCH", "DELETE"] {
+            any_request.push(
+                server
+                    .mock(method, mockito::Matcher::Any)
+                    .expect(0)
+                    .create_async()
+                    .await,
+            );
+        }
+
+        let client = mock_client(&server);
+        let prompts = client.prompts();
+        for name in ["..", ".", ""] {
+            let read = prompts.get_commit_with_model("-", "my-prompt", name).await;
+            assert!(
+                matches!(read, Err(LangstarError::InvalidInput(_))),
+                "the commit read of {name:?} should be refused, got {read:?}"
+            );
+            let moved = prompts.move_tag("-", "my-prompt", name, "id-second").await;
+            assert!(
+                matches!(moved, Err(LangstarError::InvalidInput(_))),
+                "the move of tag {name:?} should be refused, got {moved:?}"
+            );
+            let deleted = prompts.delete_tag("-", "my-prompt", name).await;
+            assert!(
+                matches!(deleted, Err(LangstarError::InvalidInput(_))),
+                "the delete of tag {name:?} should be refused, got {deleted:?}"
+            );
+        }
+
+        for mock in any_request {
+            mock.assert_async().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn test_create_tag_names_the_commit_by_its_id() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/api/v1/repos/-/my-prompt/tags")
+            .match_body(mockito::Matcher::Json(json!({
+                "tag_name": "prod",
+                "commit_id": "id-first"
+            })))
+            .with_body(
+                json!({
+                    "id": "tag-1",
+                    "repo_id": "repo-1",
+                    "commit_id": "id-first",
+                    "commit_hash": "hash-first",
+                    "tag_name": "prod",
+                    "created_at": "2026-10-30T00:00:00Z",
+                    "updated_at": "2026-10-30T00:00:00Z"
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let tag = mock_client(&server)
+            .prompts()
+            .create_tag("-", "my-prompt", "prod", "id-first")
+            .await
+            .expect("the tag create should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(tag.tag_name, "prod");
+        assert_eq!(tag.commit_id, "id-first");
+    }
+
+    #[tokio::test]
+    async fn test_move_tag_sends_the_new_commit_id() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt/tags/prod")
+            .match_body(mockito::Matcher::Json(json!({"commit_id": "id-second"})))
+            .with_body(
+                json!({
+                    "id": "tag-1",
+                    "repo_id": "repo-1",
+                    "commit_id": "id-second",
+                    "commit_hash": "hash-second",
+                    "tag_name": "prod",
+                    "created_at": "2026-10-30T00:00:00Z",
+                    "updated_at": "2026-10-30T00:01:00Z"
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let tag = mock_client(&server)
+            .prompts()
+            .move_tag("-", "my-prompt", "prod", "id-second")
+            .await
+            .expect("the tag move should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(tag.commit_id, "id-second");
+        assert_eq!(tag.commit_hash, "hash-second");
+    }
+
+    #[tokio::test]
+    async fn test_delete_tag_sends_the_tag_name_in_the_path() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("DELETE", "/api/v1/repos/-/my-prompt/tags/prod")
+            .with_status(204)
+            .create_async()
+            .await;
+
+        mock_client(&server)
+            .prompts()
+            .delete_tag("-", "my-prompt", "prod")
+            .await
+            .expect("the tag delete should succeed");
+
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_list_tags_returns_each_tag_with_the_commit_it_points_at() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/api/v1/repos/-/my-prompt/tags")
+            .with_body(
+                json!([{
+                    "id": "tag-1",
+                    "repo_id": "repo-1",
+                    "commit_id": "id-first",
+                    "commit_hash": "hash-first",
+                    "tag_name": "prod",
+                    "created_at": "2026-10-30T00:00:00Z",
+                    "updated_at": "2026-10-30T00:00:00Z"
+                }])
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let tags = mock_client(&server)
+            .prompts()
+            .list_tags("-", "my-prompt")
+            .await
+            .expect("the tag list should succeed");
+
+        assert_eq!(tags.len(), 1);
+        assert_eq!(tags[0].tag_name, "prod");
+        assert_eq!(tags[0].commit_hash, "hash-first");
+    }
+
+    #[tokio::test]
+    async fn test_update_repo_sends_each_detail_the_caller_set() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt")
+            .match_body(mockito::Matcher::Json(json!({
+                "description": "Answers support questions",
+                "readme": "# My prompt",
+                "tags": ["support"],
+                "is_public": false
+            })))
+            .with_body(
+                json!({"repo": {
+                    "id": "repo-1",
+                    "repo_handle": "my-prompt",
+                    "description": "Answers support questions",
+                    "readme": "# My prompt",
+                    "tags": ["support"],
+                    "tenant_id": "workspace-1",
+                    "is_public": false
+                }})
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let updated = mock_client(&server)
+            .prompts()
+            .update_repo(
+                "-",
+                "my-prompt",
+                &UpdateRepoRequest {
+                    description: Some("Answers support questions".to_string()),
+                    readme: Some("# My prompt".to_string()),
+                    tags: Some(vec!["support".to_string()]),
+                    is_public: Some(false),
+                },
+            )
+            .await
+            .expect("the repo update should succeed");
+
+        mock.assert_async().await;
+        assert_eq!(updated.readme.as_deref(), Some("# My prompt"));
+        assert_eq!(updated.tags, vec!["support".to_string()]);
+    }
+
+    #[tokio::test]
+    async fn test_update_repo_leaves_out_every_detail_the_caller_left_alone() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt")
+            .match_body(mockito::Matcher::Json(json!({"is_public": true})))
+            .with_body(
+                json!({"repo": {
+                    "id": "repo-1",
+                    "repo_handle": "my-prompt",
+                    "is_public": true
+                }})
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let updated = mock_client(&server)
+            .prompts()
+            .update_repo(
+                "-",
+                "my-prompt",
+                &UpdateRepoRequest {
+                    is_public: Some(true),
+                    ..Default::default()
+                },
+            )
+            .await
+            .expect("the repo update should succeed");
+
+        mock.assert_async().await;
+        assert!(updated.is_public);
+        assert!(updated.readme.is_none());
+        assert!(updated.tags.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_reads_the_readme_tags_and_tenant_id() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/api/v1/repos/-/my-prompt")
+            .with_body(
+                json!({"repo": {
+                    "id": "repo-1",
+                    "repo_handle": "my-prompt",
+                    "description": "Answers support questions",
+                    "readme": "# My prompt\n\nWhat it does.",
+                    "tags": ["support", "triage"],
+                    "tenant_id": "workspace-1",
+                    "is_public": false
+                }})
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let prompt = mock_client(&server)
+            .prompts()
+            .get("my-prompt")
+            .await
+            .expect("the prompt read should succeed");
+
+        assert_eq!(
+            prompt.readme.as_deref(),
+            Some("# My prompt\n\nWhat it does.")
+        );
+        assert_eq!(
+            prompt.tags,
+            vec!["support".to_string(), "triage".to_string()]
+        );
+        assert_eq!(prompt.tenant_id.as_deref(), Some("workspace-1"));
     }
 }
