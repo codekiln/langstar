@@ -97,13 +97,14 @@ const AWS_PREFIXES: &[&str] = &["AKIA", "ASIA"];
 /// catch a real token, long enough to leave `sk-` on its own alone.
 const MIN_TOKEN_TAIL: usize = 16;
 
-/// The keys of a connection string. A value after one of them flags the string.
+/// The keys of a connection string. A value after one of them and `=` flags the
+/// string, with or without spaces around the `=`.
 const CONNECTION_STRING_KEYS: &[&str] = &[
-    "password=",
-    "pwd=",
-    "accountkey=",
-    "sharedaccesskey=",
-    "sharedaccesssignature=",
+    "password",
+    "pwd",
+    "accountkey",
+    "sharedaccesskey",
+    "sharedaccesssignature",
 ];
 
 /// The rule that flagged a string.
@@ -450,7 +451,10 @@ fn connection_string_with_password(text: &str) -> bool {
         // key with no `;`, as in `pwd=pwd=pwd=`, takes one pass rather than
         // a pass to the end for each key.
         occurrences(&lowered, key).any(|after| {
-            after
+            let Some(value) = after.trim_start().strip_prefix('=') else {
+                return false;
+            };
+            value
                 .chars()
                 .take_while(|c| *c != ';')
                 .any(|c| !c.is_whitespace())
@@ -781,6 +785,32 @@ mod tests {
             ),
             Some(Rule::ConnectionStringWithPassword)
         );
+    }
+
+    #[test]
+    fn flags_a_connection_string_with_spaces_around_the_equals_sign() {
+        for text in [
+            "Server=db; User Id=app; Password = s3cret-pw",
+            "Server=db;Pwd =s3cret-pw",
+            "AccountName=store; AccountKey= YWJjZGVmZ2hpamtsbW5vcA==",
+        ] {
+            assert_eq!(
+                flagged_under_note(text),
+                Some(Rule::ConnectionStringWithPassword),
+                "{text:?} should be flagged"
+            );
+            assert_eq!(
+                redact_at("/note", &Value::String(text.to_string())),
+                Value::String(REDACTED.to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn passes_a_password_key_with_no_value() {
+        for text in ["Enter your password.", "Password = ;Server=db", "pwd ="] {
+            assert_eq!(flagged_under_note(text), None, "{text:?} should pass");
+        }
     }
 
     #[test]
