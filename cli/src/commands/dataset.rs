@@ -679,66 +679,19 @@ impl DatasetCommands {
         };
         let total_limit = args.limit.map(|limit| limit as usize);
 
-        // Write each example as its page arrives, so memory stays bounded to
-        // one page however large the dataset is.
-        let mut examples = client.list_examples_paginated(params, total_limit);
+        // Memory stays bounded to one page however large the dataset is: each
+        // example is written as its page arrives.
+        let examples = client.list_examples_paginated(params, total_limit);
 
-        // Request the first page before opening --out, so a bad dataset id or
-        // API key leaves an existing file untouched. If a later page fails, the
-        // command exits with an error and the file keeps the examples written
-        // so far.
-        let mut next = examples.next().await.transpose()?;
-
-        // Prepare output
-        let mut output: Box<dyn Write> = if let Some(path) = &args.out {
-            Box::new(std::fs::File::create(path)?)
-        } else {
-            Box::new(std::io::stdout())
+        let exported = match &args.out {
+            // With --out, fetch every page into a temporary file first and open
+            // --out only after the last page arrived.
+            Some(path) => export_to_file(examples, args.file_format, path).await?,
+            None => {
+                let mut stdout = std::io::stdout();
+                write_export(examples, args.file_format, &mut stdout).await?
+            }
         };
-
-        let mut exported = 0usize;
-        match args.file_format {
-            ExportFormat::Jsonl => {
-                while let Some(example) = next {
-                    let record = JsonlRecord {
-                        id: Some(example.id),
-                        inputs: example.inputs,
-                        outputs: example.outputs,
-                        metadata: example.metadata,
-                    };
-                    writeln!(output, "{}", serde_json::to_string(&record)?)?;
-                    exported += 1;
-                    next = examples.next().await.transpose()?;
-                }
-                output.flush()?;
-            }
-            ExportFormat::Csv => {
-                // CSV format
-                let mut wtr = csv::Writer::from_writer(output);
-                wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
-                while let Some(example) = next {
-                    wtr.write_record([
-                        example.id.to_string(),
-                        serde_json::to_string(&example.inputs)?,
-                        example
-                            .outputs
-                            .as_ref()
-                            .map(serde_json::to_string)
-                            .transpose()?
-                            .unwrap_or_default(),
-                        example
-                            .metadata
-                            .as_ref()
-                            .map(serde_json::to_string)
-                            .transpose()?
-                            .unwrap_or_default(),
-                    ])?;
-                    exported += 1;
-                    next = examples.next().await.transpose()?;
-                }
-                wtr.flush()?;
-            }
-        }
 
         if let Some(path) = &args.out {
             eprintln!("Exported {} examples to {:?}", exported, path);
@@ -748,9 +701,287 @@ impl DatasetCommands {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Export output
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Write each example from `examples` to `output` as it arrives, in `format`,
+/// and return how many it wrote. Stops at the first page that fails.
+async fn write_export<S, E>(
+    examples: S,
+    format: ExportFormat,
+    output: &mut dyn Write,
+) -> Result<usize>
+where
+    S: futures_util::Stream<Item = std::result::Result<Example, E>>,
+    crate::error::CliError: From<E>,
+{
+    futures_util::pin_mut!(examples);
+    let mut exported = 0usize;
+    match format {
+        ExportFormat::Jsonl => {
+            while let Some(example) = examples.next().await.transpose()? {
+                let record = JsonlRecord {
+                    id: Some(example.id),
+                    inputs: example.inputs,
+                    outputs: example.outputs,
+                    metadata: example.metadata,
+                };
+                writeln!(output, "{}", serde_json::to_string(&record)?)?;
+                exported += 1;
+            }
+            output.flush()?;
+        }
+        ExportFormat::Csv => {
+            // Wait for the first page before printing the header, so a failing
+            // first request prints nothing. An empty dataset still gets the header.
+            let mut next = examples.next().await.transpose()?;
+            let mut wtr = csv::Writer::from_writer(output);
+            wtr.write_record(["id", "inputs", "outputs", "metadata"])?;
+            while let Some(example) = next {
+                wtr.write_record([
+                    example.id.to_string(),
+                    serde_json::to_string(&example.inputs)?,
+                    example
+                        .outputs
+                        .as_ref()
+                        .map(serde_json::to_string)
+                        .transpose()?
+                        .unwrap_or_default(),
+                    example
+                        .metadata
+                        .as_ref()
+                        .map(serde_json::to_string)
+                        .transpose()?
+                        .unwrap_or_default(),
+                ])?;
+                exported += 1;
+                next = examples.next().await.transpose()?;
+            }
+            wtr.flush()?;
+        }
+    }
+    Ok(exported)
+}
+
+/// Fetch every example into an anonymous temporary file, then open `path` the
+/// way the shell's `>` does (create and truncate) and copy the temporary file into it.
+///
+/// If a page request fails, or `path` cannot be opened, an existing file keeps
+/// its old contents. If the disk fills, or someone stops langstar while it
+/// copies, `path` may hold only part of the export.
+async fn export_to_file<S, E>(
+    examples: S,
+    format: ExportFormat,
+    path: &std::path::Path,
+) -> Result<usize>
+where
+    S: futures_util::Stream<Item = std::result::Result<Example, E>>,
+    crate::error::CliError: From<E>,
+{
+    use std::io::{Seek, SeekFrom};
+
+    let mut temp = tempfile::tempfile()?;
+    let exported = {
+        let mut writer = std::io::BufWriter::new(&mut temp);
+        let exported = write_export(examples, format, &mut writer).await?;
+        writer.flush()?;
+        exported
+    };
+
+    let mut out = std::fs::File::create(path)?;
+    temp.seek(SeekFrom::Start(0))?;
+    std::io::copy(&mut temp, &mut out)?;
+    out.flush()?;
+    Ok(exported)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn fake_example(n: u8) -> Example {
+        serde_json::from_value(serde_json::json!({
+            "id": format!("00000000-0000-0000-0000-0000000000{n:02}"),
+            "dataset_id": "00000000-0000-0000-0000-0000000000aa",
+            "name": "example",
+            "inputs": {"q": n},
+            "created_at": "2024-01-01T00:00:00Z"
+        }))
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn export_to_file_writes_every_example() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old, longer than the export\n".repeat(50)).unwrap();
+        let stream = futures_util::stream::iter(vec![
+            Ok::<_, crate::error::CliError>(fake_example(1)),
+            Ok(fake_example(2)),
+        ]);
+
+        let n = export_to_file(stream, ExportFormat::Jsonl, &out)
+            .await
+            .unwrap();
+
+        assert_eq!(n, 2);
+        let text = std::fs::read_to_string(&out).unwrap();
+        assert_eq!(text.lines().count(), 2);
+        assert!(text.contains("\"q\":2"), "{text}");
+    }
+
+    #[tokio::test]
+    async fn export_to_file_failing_page_leaves_existing_file_untouched() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.jsonl");
+        std::fs::write(&out, "old\n").unwrap();
+        let stream = futures_util::stream::iter(vec![
+            Ok(fake_example(1)),
+            Err(crate::error::CliError::Config("page 2 failed".into())),
+        ]);
+
+        let err = export_to_file(stream, ExportFormat::Jsonl, &out)
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("page 2 failed"), "{err}");
+        assert_eq!(std::fs::read_to_string(&out).unwrap(), "old\n");
+    }
+
+    #[tokio::test]
+    async fn export_to_file_csv_with_no_examples_writes_only_the_header() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.csv");
+        let stream = futures_util::stream::iter(Vec::<
+            std::result::Result<Example, crate::error::CliError>,
+        >::new());
+
+        let n = export_to_file(stream, ExportFormat::Csv, &out)
+            .await
+            .unwrap();
+
+        assert_eq!(n, 0);
+        assert_eq!(
+            std::fs::read_to_string(&out).unwrap(),
+            "id,inputs,outputs,metadata\n"
+        );
+    }
+
+    #[tokio::test]
+    async fn export_to_file_csv_writes_one_row_per_example() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("export.csv");
+        let stream = futures_util::stream::iter(vec![
+            Ok::<_, crate::error::CliError>(fake_example(1)),
+            Ok(fake_example(2)),
+            Ok(fake_example(3)),
+        ]);
+
+        let n = export_to_file(stream, ExportFormat::Csv, &out)
+            .await
+            .unwrap();
+
+        assert_eq!(n, 3);
+        let text = std::fs::read_to_string(&out).unwrap();
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines.len(), 4, "{text}");
+        assert_eq!(lines[0], "id,inputs,outputs,metadata");
+        assert!(
+            lines[1].starts_with("00000000-0000-0000-0000-000000000001,"),
+            "{text}"
+        );
+        assert!(
+            lines[3].starts_with("00000000-0000-0000-0000-000000000003,"),
+            "{text}"
+        );
+    }
+
+    #[tokio::test]
+    async fn write_export_csv_failing_first_page_prints_no_header() {
+        let stream = futures_util::stream::iter(vec![Err::<Example, _>(
+            crate::error::CliError::Config("page 1 failed".into()),
+        )]);
+        let mut buf: Vec<u8> = Vec::new();
+
+        let err = write_export(stream, ExportFormat::Csv, &mut buf)
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("page 1 failed"), "{err}");
+        assert!(buf.is_empty(), "{}", String::from_utf8_lossy(&buf));
+    }
+
+    #[tokio::test]
+    async fn export_to_file_unopenable_path_fails_after_the_stream_is_read() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("missing-dir").join("export.jsonl");
+        let read = std::sync::atomic::AtomicUsize::new(0);
+        let stream = futures_util::stream::iter(vec![
+            Ok::<_, crate::error::CliError>(fake_example(1)),
+            Ok(fake_example(2)),
+        ])
+        .inspect(|_| {
+            read.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        });
+
+        let result = export_to_file(stream, ExportFormat::Jsonl, &out).await;
+
+        assert!(result.is_err());
+        assert_eq!(read.load(std::sync::atomic::Ordering::SeqCst), 2);
+        assert!(!out.exists());
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn export_to_file_writes_through_a_symlink_and_keeps_the_file_mode() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("target.jsonl");
+        let link = dir.path().join("link.jsonl");
+        std::fs::write(&target, "old\n").unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o640)).unwrap();
+        symlink(&target, &link).unwrap();
+        let stream =
+            futures_util::stream::iter(vec![Ok::<_, crate::error::CliError>(fake_example(1))]);
+
+        export_to_file(stream, ExportFormat::Jsonl, &link)
+            .await
+            .unwrap();
+
+        assert!(
+            std::fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        let text = std::fs::read_to_string(&target).unwrap();
+        assert!(text.contains("\"q\":1"), "{text}");
+        assert!(!text.contains("old"), "{text}");
+        assert_eq!(
+            std::fs::metadata(&target).unwrap().permissions().mode() & 0o777,
+            0o640
+        );
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn export_to_file_gives_a_new_file_the_mode_a_plain_create_gives() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let plain = dir.path().join("plain.jsonl");
+        let out = dir.path().join("export.jsonl");
+        std::fs::File::create(&plain).unwrap();
+        let stream =
+            futures_util::stream::iter(vec![Ok::<_, crate::error::CliError>(fake_example(1))]);
+
+        export_to_file(stream, ExportFormat::Jsonl, &out)
+            .await
+            .unwrap();
+
+        let mode = |p: &std::path::Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&out), mode(&plain));
+    }
 
     #[test]
     fn test_dataset_row_truncation() {
