@@ -1,3 +1,4 @@
+use crate::organization::{CHOOSE_WORKSPACE_HELP, Workspace, describe_workspaces};
 use thiserror::Error;
 
 /// Result type for SDK operations
@@ -41,6 +42,29 @@ pub enum LangstarError {
     /// Every GitHub integration listed its repositories, and none includes this one
     #[error("No GitHub integration has access to {owner}/{repo}")]
     NoGitHubIntegrationForRepo { owner: String, repo: String },
+
+    /// A request with no workspace got 403, and the API key reaches several workspaces
+    #[error(
+        "The server answered 403 Forbidden. The API key reaches more than one workspace, \
+         and no workspace was chosen, so langstar cannot tell which one to use.\n\
+         Workspaces this key reaches:\n{}\n{}",
+        describe_workspaces(.reachable),
+        CHOOSE_WORKSPACE_HELP
+    )]
+    WorkspaceRequired { reachable: Vec<Workspace> },
+
+    /// A request for a workspace got 403, and the API key does not reach that workspace
+    #[error(
+        "The server answered 403 Forbidden for workspace {workspace_id}, \
+         and the API key does not reach that workspace.\n\
+         Workspaces this key reaches:\n{}\n{}",
+        describe_workspaces(.reachable),
+        CHOOSE_WORKSPACE_HELP
+    )]
+    WorkspaceNotReachable {
+        workspace_id: String,
+        reachable: Vec<Workspace>,
+    },
 
     /// Invalid input provided
     #[error("Invalid input: {0}")]

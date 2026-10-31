@@ -1,11 +1,14 @@
 use crate::auth::AuthConfig;
 use crate::error::{LangstarError, Result};
+use crate::organization::Workspace;
 use crate::runs::{QueriedRun, QueryRunsRequest, QueryRunsResponse};
 use futures_core::Stream;
-use reqwest::{Client as HttpClient, Method, RequestBuilder, Response};
+use reqwest::{Client as HttpClient, Method, RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::pin::Pin;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
+use tokio::sync::OnceCell;
 
 /// Base URLs for LangChain services
 pub const LANGSMITH_API_BASE: &str = "https://api.smith.langchain.com";
@@ -17,6 +20,9 @@ pub const CONTROL_PLANE_API_BASE: &str = "https://api.host.langchain.com";
 /// 429 Too Many Requests. langsmith-py retries these statuses and 500 as well. langstar
 /// does not retry a 500, because a 500 on a read is usually a server bug that repeats.
 const RETRYABLE_STATUSES: [u16; 6] = [502, 503, 504, 408, 425, 429];
+
+/// The header that names the workspace a request is for.
+const TENANT_HEADER: &str = "X-Tenant-Id";
 
 /// Bounded retry settings for read requests.
 ///
@@ -97,6 +103,12 @@ pub struct LangchainClient {
     organization_id: Option<String>,
     /// Optional workspace ID for narrower scoping (used in X-Tenant-Id header)
     workspace_id: Option<String>,
+    /// The workspace the client picked after a 403 because the API key reaches only
+    /// that one. Clones share it, so the rest of the run sends it too.
+    found_workspace_id: Arc<OnceLock<String>>,
+    /// The workspaces the API key reaches, looked up at most once, after the first 403.
+    /// `Some(None)` means the lookup failed. Clones share the answer.
+    reachable_workspaces: Arc<OnceCell<Option<Vec<Workspace>>>>,
     retry_policy: RetryPolicy,
 }
 
@@ -121,6 +133,8 @@ impl LangchainClient {
             control_plane_base_url: CONTROL_PLANE_API_BASE.to_string(),
             organization_id,
             workspace_id,
+            found_workspace_id: Arc::default(),
+            reachable_workspaces: Arc::default(),
             retry_policy: RetryPolicy::default(),
         })
     }
@@ -205,8 +219,66 @@ impl LangchainClient {
             control_plane_base_url,
             organization_id,
             workspace_id,
+            found_workspace_id: Arc::default(),
+            reachable_workspaces: Arc::default(),
             retry_policy: RetryPolicy::default(),
         })
+    }
+
+    /// The workspace ID the client sends in `X-Tenant-Id`: the one it was given, or else
+    /// the one it picked after a 403 because the API key reaches only that workspace.
+    /// `None` means the client sends no `X-Tenant-Id` header.
+    pub fn resolved_workspace_id(&self) -> Option<&str> {
+        self.workspace_id
+            .as_deref()
+            .or_else(|| self.found_workspace_id.get().map(String::as_str))
+    }
+
+    /// Add `X-Tenant-Id` when the client has a workspace (see [`resolved_workspace_id`](Self::resolved_workspace_id)).
+    fn with_workspace_header(&self, request: RequestBuilder) -> RequestBuilder {
+        match self.resolved_workspace_id() {
+            Some(ws_id) => request.header(TENANT_HEADER, ws_id),
+            None => request,
+        }
+    }
+
+    /// A LangSmith API request: `x-api-key`, `x-organization-id` when set, and `X-Tenant-Id`.
+    fn langsmith_request(&self, method: Method, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langsmith_base_url, path);
+        let mut request = self
+            .http_client
+            .request(method, &url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+        Ok(self.with_workspace_header(request))
+    }
+
+    /// A Control Plane API request: `X-Api-Key` and `X-Tenant-Id`.
+    fn control_plane_request(&self, method: Method, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.control_plane_base_url, path);
+        let request = self
+            .http_client
+            .request(method, &url)
+            .header("X-Api-Key", api_key)
+            .header("Content-Type", "application/json");
+        Ok(self.with_workspace_header(request))
+    }
+
+    /// An Agent Server request: `x-api-key` and `X-Tenant-Id`.
+    fn langgraph_request(&self, method: Method, path: &str) -> Result<RequestBuilder> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}{}", self.langgraph_base_url, path);
+        let request = self
+            .http_client
+            .request(method, &url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+        Ok(self.with_workspace_header(request))
     }
 
     /// Create a GET request to LangSmith API
@@ -214,26 +286,7 @@ impl LangchainClient {
     /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
     /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_get(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .get(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set (should be present on all requests per docs)
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set (for workspace-scoped requests)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.langsmith_request(Method::GET, path)
     }
 
     /// Create a POST request to LangSmith API
@@ -241,26 +294,7 @@ impl LangchainClient {
     /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
     /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_post(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .post(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set (should be present on all requests per docs)
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set (for workspace-scoped requests)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.langsmith_request(Method::POST, path)
     }
 
     /// Create a PUT request to LangSmith API
@@ -268,26 +302,7 @@ impl LangchainClient {
     /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
     /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_put(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .put(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set (should be present on all requests per docs)
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set (for workspace-scoped requests)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.langsmith_request(Method::PUT, path)
     }
 
     /// Create a PATCH request to LangSmith API
@@ -295,26 +310,7 @@ impl LangchainClient {
     /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
     /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_patch(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .patch(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set (should be present on all requests per docs)
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set (for workspace-scoped requests)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.langsmith_request(Method::PATCH, path)
     }
 
     /// Create a DELETE request to LangSmith API
@@ -322,26 +318,7 @@ impl LangchainClient {
     /// Per LangSmith documentation, both x-organization-id and X-Tenant-Id
     /// headers can be used together for workspace-scoped requests.
     pub fn langsmith_delete(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langsmith_base_url, path);
-
-        let mut request = self
-            .http_client
-            .delete(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add organization ID header if set (should be present on all requests per docs)
-        if let Some(org_id) = &self.organization_id {
-            request = request.header("x-organization-id", org_id);
-        }
-
-        // Add workspace ID header if set (for workspace-scoped requests)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.langsmith_request(Method::DELETE, path)
     }
 
     /// Create a GET request to Control Plane API
@@ -349,21 +326,7 @@ impl LangchainClient {
     /// The Control Plane API uses the same authentication as LangSmith:
     /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
     pub fn control_plane_get(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.control_plane_base_url, path);
-
-        let mut request = self
-            .http_client
-            .get(&url)
-            .header("X-Api-Key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add workspace ID header if set (required for Control Plane API)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.control_plane_request(Method::GET, path)
     }
 
     /// Create a POST request to Control Plane API
@@ -371,21 +334,7 @@ impl LangchainClient {
     /// The Control Plane API uses the same authentication as LangSmith:
     /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
     pub fn control_plane_post(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.control_plane_base_url, path);
-
-        let mut request = self
-            .http_client
-            .post(&url)
-            .header("X-Api-Key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add workspace ID header if set (required for Control Plane API)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.control_plane_request(Method::POST, path)
     }
 
     /// Create a PATCH request to Control Plane API
@@ -393,21 +342,7 @@ impl LangchainClient {
     /// The Control Plane API uses the same authentication as LangSmith:
     /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
     pub fn control_plane_patch(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.control_plane_base_url, path);
-
-        let mut request = self
-            .http_client
-            .patch(&url)
-            .header("X-Api-Key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add workspace ID header if set (required for Control Plane API)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.control_plane_request(Method::PATCH, path)
     }
 
     /// Create a DELETE request to Control Plane API
@@ -415,109 +350,48 @@ impl LangchainClient {
     /// The Control Plane API uses the same authentication as LangSmith:
     /// X-Api-Key (LangSmith API key) and X-Tenant-Id (workspace ID) headers.
     pub fn control_plane_delete(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.control_plane_base_url, path);
-
-        let mut request = self
-            .http_client
-            .delete(&url)
-            .header("X-Api-Key", api_key)
-            .header("Content-Type", "application/json");
-
-        // Add workspace ID header if set (required for Control Plane API)
-        if let Some(ws_id) = &self.workspace_id {
-            request = request.header("X-Tenant-Id", ws_id);
-        }
-
-        Ok(request)
+        self.control_plane_request(Method::DELETE, path)
     }
 
-    /// Create a GET request to LangGraph API
+    /// Create a GET request to a deployment's Agent Server (the LangGraph API)
     ///
-    /// ## Deployment-Level Resources
+    /// ## Workspace header
     ///
-    /// **Important:** Unlike `langsmith_get()`, this method does NOT add organization
-    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
+    /// Agent Server requests send `X-Tenant-Id` whenever the client has a workspace,
+    /// as LangSmith and Control Plane requests do. They do not send `x-organization-id`.
     ///
-    /// LangGraph assistants are deployment-level resources. The API key used in the
-    /// request is tied to a specific deployment, and all operations are automatically
-    /// scoped to that deployment. No additional scoping is needed or supported.
-    ///
-    /// ### Why No Scoping Headers?
-    ///
-    /// LangGraph and LangSmith have different resource models:
-    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
-    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
-    ///
-    /// This is the intended design, not a limitation. Access control for LangGraph
-    /// resources is managed entirely at the API key/deployment level.
-    ///
-    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
+    /// No LangSmith documentation says the Agent Server reads `X-Tenant-Id`. On
+    /// 2026-10-30, a service key that reaches two workspaces got `403 Forbidden` from
+    /// `POST /assistants/search` with no workspace header and `200` with `X-Tenant-Id`
+    /// set to the deployment's workspace, while a key that reaches one workspace got
+    /// `200` without the header
+    /// ([#837 Agent Server requests send no workspace header, so a key with two workspaces gets 403](https://github.com/codekiln/langstar/issues/837)).
     pub fn langgraph_get(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langgraph_base_url, path);
-
-        Ok(self
-            .http_client
-            .get(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+        self.langgraph_request(Method::GET, path)
     }
 
-    /// Create a POST request to LangGraph API
+    /// Create a POST request to a deployment's Agent Server (the LangGraph API)
     ///
-    /// ## Deployment-Level Resources
-    ///
-    /// **Important:** Unlike `langsmith_post()`, this method does NOT add organization
-    /// or workspace scoping headers (`x-organization-id`, `X-Tenant-Id`).
-    ///
-    /// LangGraph assistants are deployment-level resources. The API key used in the
-    /// request is tied to a specific deployment, and all operations are automatically
-    /// scoped to that deployment. No additional scoping is needed or supported.
-    ///
-    /// ### Why No Scoping Headers?
-    ///
-    /// LangGraph and LangSmith have different resource models:
-    /// - **LangSmith**: Hierarchical (Organization → Workspace → Prompts)
-    /// - **LangGraph**: Flat (API Key → Deployment → Assistants)
-    ///
-    /// This is the intended design, not a limitation. Access control for LangGraph
-    /// resources is managed entirely at the API key/deployment level.
-    ///
-    /// For more details, see the [LangGraph Cloud documentation](https://langchain-ai.github.io/langgraph/cloud/).
+    /// Sends `X-Tenant-Id` when the client has a workspace; see
+    /// [`langgraph_get`](Self::langgraph_get) for why.
     pub fn langgraph_post(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langgraph_base_url, path);
-
-        Ok(self
-            .http_client
-            .post(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+        self.langgraph_request(Method::POST, path)
     }
 
-    /// Create a PATCH request to LangGraph API
+    /// Create a PATCH request to a deployment's Agent Server (the LangGraph API)
+    ///
+    /// Sends `X-Tenant-Id` when the client has a workspace; see
+    /// [`langgraph_get`](Self::langgraph_get) for why.
     pub fn langgraph_patch(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langgraph_base_url, path);
-
-        Ok(self
-            .http_client
-            .patch(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+        self.langgraph_request(Method::PATCH, path)
     }
 
-    /// Create a DELETE request to LangGraph API
+    /// Create a DELETE request to a deployment's Agent Server (the LangGraph API)
+    ///
+    /// Sends `X-Tenant-Id` when the client has a workspace; see
+    /// [`langgraph_get`](Self::langgraph_get) for why.
     pub fn langgraph_delete(&self, path: &str) -> Result<RequestBuilder> {
-        let api_key = self.auth.require_langsmith_key()?;
-        let url = format!("{}{}", self.langgraph_base_url, path);
-
-        Ok(self
-            .http_client
-            .delete(&url)
-            .header("x-api-key", api_key)
-            .header("Content-Type", "application/json"))
+        self.langgraph_request(Method::DELETE, path)
     }
 
     /// Execute a request that returns no response body (status-only response).
@@ -561,9 +435,102 @@ impl LangchainClient {
         }
     }
 
-    /// Send a request, retrying retryable statuses when `retry` is `Safe`.
-    /// Returns the last response once retries run out, whatever its status.
+    /// Send a request, and on a 403 work out which workspace the API key needs.
+    ///
+    /// A 403 means the server refused the request before acting on it, so sending it
+    /// again is safe.
+    ///
+    /// - The request named no workspace: the client looks up the workspaces the key
+    ///   reaches. When there is one, it sends the request again with that workspace and
+    ///   keeps it for the rest of the run. When there are several, it returns
+    ///   [`LangstarError::WorkspaceRequired`].
+    /// - The request named a workspace the key does not reach: the client returns
+    ///   [`LangstarError::WorkspaceNotReachable`].
+    /// - The request named a workspace the key reaches: the client returns the 403 as it
+    ///   came, which the caller reports as a permission error.
+    ///
+    /// When the workspace lookup fails, the client returns the original 403.
     async fn send(&self, request: RequestBuilder, retry: RetryMode) -> Result<Response> {
+        let again = request.try_clone();
+        let response = self.send_with_retries(request, retry).await?;
+        if response.status() != StatusCode::FORBIDDEN {
+            return Ok(response);
+        }
+        let sent_workspace = match again
+            .as_ref()
+            .and_then(RequestBuilder::try_clone)
+            .and_then(|r| r.build().ok())
+        {
+            Some(built) => built
+                .headers()
+                .get(TENANT_HEADER)
+                .and_then(|v| v.to_str().ok())
+                .map(str::to_string),
+            None => self.resolved_workspace_id().map(str::to_string),
+        };
+        let Some(reachable) = self.reachable_workspaces().await else {
+            return Ok(response);
+        };
+        match sent_workspace {
+            Some(workspace_id) if reachable.iter().any(|w| w.id == workspace_id) => Ok(response),
+            Some(workspace_id) => Err(LangstarError::WorkspaceNotReachable {
+                workspace_id,
+                reachable: reachable.to_vec(),
+            }),
+            None => match reachable {
+                [] => Ok(response),
+                [only] => {
+                    // A streamed body can be sent only once, so return the 403 as it came.
+                    let Some(again) = again else {
+                        return Ok(response);
+                    };
+                    drop(response);
+                    let _ = self.found_workspace_id.set(only.id.clone());
+                    self.send_with_retries(again.header(TENANT_HEADER, &only.id), retry)
+                        .await
+                }
+                several => Err(LangstarError::WorkspaceRequired {
+                    reachable: several.to_vec(),
+                }),
+            },
+        }
+    }
+
+    /// The workspaces the API key reaches, from `GET /api/v1/workspaces`, which answers
+    /// without a workspace header. The client asks once per run and keeps the answer,
+    /// a failure included; `None` means the lookup failed.
+    async fn reachable_workspaces(&self) -> Option<&[Workspace]> {
+        self.reachable_workspaces
+            .get_or_init(|| async { self.fetch_reachable_workspaces().await.ok() })
+            .await
+            .as_deref()
+    }
+
+    async fn fetch_reachable_workspaces(&self) -> Result<Vec<Workspace>> {
+        let api_key = self.auth.require_langsmith_key()?;
+        let url = format!("{}/api/v1/workspaces", self.langsmith_base_url);
+        let mut request = self
+            .http_client
+            .get(&url)
+            .header("x-api-key", api_key)
+            .header("Content-Type", "application/json");
+        if let Some(org_id) = &self.organization_id {
+            request = request.header("x-organization-id", org_id);
+        }
+        let response = self
+            .send_with_retries(request, RetryMode::RetryOnGatewayError)
+            .await?;
+        let response = Self::check_status(response).await?;
+        Ok(response.json().await?)
+    }
+
+    /// Send a request, retrying retryable statuses when `retry` is `RetryOnGatewayError`.
+    /// Returns the last response once retries run out, whatever its status.
+    async fn send_with_retries(
+        &self,
+        request: RequestBuilder,
+        retry: RetryMode,
+    ) -> Result<Response> {
         let mut retries = 0;
         let mut request = request;
         loop {
@@ -3090,6 +3057,275 @@ mod tests {
 
         limited.assert_async().await;
         good.assert_async().await;
+    }
+
+    fn workspace_test_client(url: String, workspace_id: Option<&str>) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            AuthConfig::new(
+                Some("test_key".to_string()),
+                None,
+                workspace_id.map(str::to_string),
+            ),
+            url.clone(),
+            url.clone(),
+            url,
+        )
+        .unwrap()
+        .with_retry_policy(RetryPolicy::none())
+    }
+
+    fn tenant_header(request: Result<RequestBuilder>) -> Option<String> {
+        request
+            .unwrap()
+            .build()
+            .unwrap()
+            .headers()
+            .get(TENANT_HEADER)
+            .map(|v| v.to_str().unwrap().to_string())
+    }
+
+    type Builder = fn(&LangchainClient, &str) -> Result<RequestBuilder>;
+
+    const EVERY_BUILDER: [(&str, Builder); 13] = [
+        ("langsmith_get", LangchainClient::langsmith_get),
+        ("langsmith_post", LangchainClient::langsmith_post),
+        ("langsmith_put", LangchainClient::langsmith_put),
+        ("langsmith_patch", LangchainClient::langsmith_patch),
+        ("langsmith_delete", LangchainClient::langsmith_delete),
+        ("control_plane_get", LangchainClient::control_plane_get),
+        ("control_plane_post", LangchainClient::control_plane_post),
+        ("control_plane_patch", LangchainClient::control_plane_patch),
+        (
+            "control_plane_delete",
+            LangchainClient::control_plane_delete,
+        ),
+        ("langgraph_get", LangchainClient::langgraph_get),
+        ("langgraph_post", LangchainClient::langgraph_post),
+        ("langgraph_patch", LangchainClient::langgraph_patch),
+        ("langgraph_delete", LangchainClient::langgraph_delete),
+    ];
+
+    #[test]
+    fn test_every_builder_sends_the_configured_workspace() {
+        let client = workspace_test_client("http://localhost".to_string(), Some("ws-1"));
+        for (name, build) in EVERY_BUILDER {
+            assert_eq!(
+                tenant_header(build(&client, "/x")),
+                Some("ws-1".to_string()),
+                "{} should send X-Tenant-Id",
+                name
+            );
+        }
+    }
+
+    #[test]
+    fn test_no_builder_sends_a_workspace_when_none_is_set() {
+        let client = workspace_test_client("http://localhost".to_string(), None);
+        for (name, build) in EVERY_BUILDER {
+            assert_eq!(
+                tenant_header(build(&client, "/x")),
+                None,
+                "{} should send no X-Tenant-Id",
+                name
+            );
+        }
+    }
+
+    const ONE_WORKSPACE: &str = r#"[{"id":"ws-1","display_name":"Only Workspace"}]"#;
+    const TWO_WORKSPACES: &str = r#"[{"id":"ws-1","display_name":"Workspace One"},
+                                     {"id":"ws-2","display_name":"Workspace Two"}]"#;
+
+    async fn mock_workspaces(
+        server: &mut mockito::ServerGuard,
+        body: &str,
+        expect: usize,
+    ) -> mockito::Mock {
+        server
+            .mock("GET", "/api/v1/workspaces")
+            .match_header("x-tenant-id", mockito::Matcher::Missing)
+            .with_body(body)
+            .expect(expect)
+            .create_async()
+            .await
+    }
+
+    #[tokio::test]
+    async fn test_403_without_workspace_and_one_reachable_retries_once_with_it() {
+        let mut server = mockito::Server::new_async().await;
+        let refused = server
+            .mock("POST", "/assistants/search")
+            .match_header("x-tenant-id", mockito::Matcher::Missing)
+            .with_status(403)
+            .with_body(r#"{"detail":"Forbidden"}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        let accepted = server
+            .mock("POST", "/assistants/search")
+            .match_header("x-tenant-id", "ws-1")
+            .with_body("[]")
+            .expect(2)
+            .create_async()
+            .await;
+        let lookup = mock_workspaces(&mut server, ONE_WORKSPACE, 1).await;
+        let client = workspace_test_client(server.url(), None);
+
+        let first: Vec<serde_json::Value> = client
+            .execute(client.langgraph_post("/assistants/search").unwrap())
+            .await
+            .unwrap();
+        assert!(first.is_empty());
+        assert_eq!(client.resolved_workspace_id(), Some("ws-1"));
+        assert_eq!(client.workspace_id(), None);
+
+        // The rest of the run sends the workspace without another lookup.
+        let _: Vec<serde_json::Value> = client
+            .clone()
+            .execute(client.langgraph_post("/assistants/search").unwrap())
+            .await
+            .unwrap();
+
+        refused.assert_async().await;
+        accepted.assert_async().await;
+        lookup.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_403_without_workspace_and_several_reachable_lists_them() {
+        let mut server = mockito::Server::new_async().await;
+        let refused = server
+            .mock("GET", "/api/v1/sessions")
+            .match_header("x-tenant-id", mockito::Matcher::Missing)
+            .with_status(403)
+            .expect(2)
+            .create_async()
+            .await;
+        let retried = server
+            .mock("GET", "/api/v1/sessions")
+            .match_header("x-tenant-id", mockito::Matcher::Regex(".+".to_string()))
+            .expect(0)
+            .create_async()
+            .await;
+        let lookup = mock_workspaces(&mut server, TWO_WORKSPACES, 1).await;
+        let client = workspace_test_client(server.url(), None);
+
+        for _ in 0..2 {
+            let err = client
+                .execute::<serde_json::Value>(client.langsmith_get("/api/v1/sessions").unwrap())
+                .await
+                .unwrap_err();
+            assert!(
+                matches!(&err, LangstarError::WorkspaceRequired { reachable } if reachable.len() == 2),
+                "got {:?}",
+                err
+            );
+            let text = err.to_string();
+            for expected in [
+                "403 Forbidden",
+                "Workspace One (ws-1)",
+                "Workspace Two (ws-2)",
+                "--workspace-id",
+                "LANGSMITH_WORKSPACE_ID",
+                "workspace_id in langstar's config.toml",
+            ] {
+                assert!(
+                    text.contains(expected),
+                    "missing {:?} in {}",
+                    expected,
+                    text
+                );
+            }
+        }
+
+        refused.assert_async().await;
+        retried.assert_async().await;
+        // Two 403s, one lookup: the answer is kept for the rest of the run.
+        lookup.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_403_for_a_workspace_the_key_does_not_reach_lists_the_ones_it_does() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/v2/deployments")
+            .match_header("x-tenant-id", "ws-unknown")
+            .with_status(403)
+            .create_async()
+            .await;
+        let lookup = mock_workspaces(&mut server, TWO_WORKSPACES, 1).await;
+        let client = workspace_test_client(server.url(), Some("ws-unknown"));
+
+        let err = client
+            .execute::<serde_json::Value>(client.control_plane_get("/v2/deployments").unwrap())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, LangstarError::WorkspaceNotReachable { workspace_id, .. } if workspace_id == "ws-unknown"),
+            "got {:?}",
+            err
+        );
+        let text = err.to_string();
+        assert!(text.contains("does not reach that workspace"), "{}", text);
+        assert!(text.contains("Workspace One (ws-1)"), "{}", text);
+        assert!(text.contains("Workspace Two (ws-2)"), "{}", text);
+        lookup.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_403_for_a_reachable_workspace_is_a_permission_error() {
+        let mut server = mockito::Server::new_async().await;
+        let refused = server
+            .mock("DELETE", "/assistants/a1")
+            .match_header("x-tenant-id", "ws-2")
+            .with_status(403)
+            .with_body(r#"{"detail":"Forbidden"}"#)
+            .expect(1)
+            .create_async()
+            .await;
+        mock_workspaces(&mut server, TWO_WORKSPACES, 1).await;
+        let client = workspace_test_client(server.url(), Some("ws-2"));
+
+        let err = client
+            .execute_status_only_request(client.langgraph_delete("/assistants/a1").unwrap())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, LangstarError::ApiError { status: 403, message } if message.contains("Forbidden")),
+            "got {:?}",
+            err
+        );
+        refused.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_403_is_returned_as_it_came_when_the_lookup_fails() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/api/v1/sessions")
+            .with_status(403)
+            .with_body(r#"{"detail":"Forbidden"}"#)
+            .create_async()
+            .await;
+        server
+            .mock("GET", "/api/v1/workspaces")
+            .with_status(401)
+            .expect(1)
+            .create_async()
+            .await;
+        let client = workspace_test_client(server.url(), None);
+
+        let err = client
+            .execute::<serde_json::Value>(client.langsmith_get("/api/v1/sessions").unwrap())
+            .await
+            .unwrap_err();
+
+        assert!(
+            matches!(&err, LangstarError::ApiError { status: 403, .. }),
+            "got {:?}",
+            err
+        );
     }
 
     #[test]

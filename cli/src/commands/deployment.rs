@@ -844,6 +844,7 @@ mod tests {
             latest_revision_id: None,
             active_revision_id: None,
             image_version: None,
+            tenant_id: None,
         };
 
         let row = DeploymentRow::from(&deployment);
