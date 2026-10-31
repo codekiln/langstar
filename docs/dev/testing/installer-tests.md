@@ -1,6 +1,6 @@
 # Installer Script Testing Checklist
 
-This document provides a comprehensive testing checklist for the langstar installer script (`scripts/install.sh`).
+Work through this checklist by hand to test `scripts/install.sh`, the script that installs the langstar CLI.
 
 ## Overview
 

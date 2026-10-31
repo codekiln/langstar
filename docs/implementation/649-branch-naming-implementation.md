@@ -27,7 +27,7 @@ Updated branch naming convention from `<username>/<issue_num>-<slug>` to milesto
   - Added backward compatibility for old format
   - Updated header comments
 
-- ✅ `scripts/gh-milestones/prep-next.py`
+- ✅ `mise-tasks/milestone/prep-next`
   - Fetch milestone ID from issue
   - Fetch parent issue ID via `gh sub-issue`
   - Generate branch name with appropriate prefixes
