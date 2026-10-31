@@ -154,10 +154,6 @@ pub struct QueryArgs {
     /// Organization ID for scoping (overrides config/env)
     #[arg(long)]
     pub organization_id: Option<String>,
-
-    /// Workspace ID for narrower scoping (overrides config/env)
-    #[arg(long)]
-    pub workspace_id: Option<String>,
 }
 
 /// Output format for runs query
@@ -692,7 +688,7 @@ impl RunsCommands {
         let client = Self::apply_scoping(
             client,
             &args.organization_id,
-            &args.workspace_id,
+            &config.workspace_id_flag(),
             &formatter,
         );
 
@@ -1215,7 +1211,6 @@ mod tests {
             output: RunsOutputFormat::Table,
             select: None,
             organization_id: None,
-            workspace_id: None,
         }
     }
 

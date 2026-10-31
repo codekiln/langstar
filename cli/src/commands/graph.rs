@@ -1,9 +1,9 @@
 use crate::config::Config;
-use crate::deployment_utils::resolve_deployment_url;
+use crate::deployment_utils::resolve_deployment;
 use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{GraphSummary, LangchainClient};
+use langstar_sdk::GraphSummary;
 use serde_json::json;
 use tabled::Tabled;
 
@@ -69,11 +69,10 @@ impl GraphCommands {
         };
 
         // Resolve deployment to URL
-        let deployment_url = resolve_deployment_url(config, deployment_name).await?;
+        let deployment = resolve_deployment(config, deployment_name).await?;
 
-        // Create client with custom deployment URL
-        let auth = config.to_auth_config();
-        let client = LangchainClient::new(auth)?.with_langgraph_url(deployment_url);
+        // Create client with custom deployment URL and the deployment's workspace
+        let client = deployment.client(config)?;
         let formatter = OutputFormatter::new(format);
 
         match self {
