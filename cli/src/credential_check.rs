@@ -432,14 +432,15 @@ fn pem_private_key(text: &str) -> bool {
 
 /// Whether `text` holds a URL with a password in it, as in
 /// `postgresql://app:s3cret@host/db`. The URL's host part ends at `/`, `?` or
-/// `#`, and at a space, a quote or an angle bracket, which a URL cannot hold, so
-/// a later `name: someone@example.com` in the same sentence is not read as
-/// part of the URL.
+/// `#`, and at a space, a double quote, an angle bracket or a backtick, which a
+/// URL cannot hold, so a later `name: someone@example.com` in the same sentence
+/// is not read as part of the URL. An apostrophe does not end it, because a
+/// URL's user and password may hold one.
 fn url_with_password(text: &str) -> bool {
     occurrences(text, "://").any(|after| {
         let authority_end = after
             .find(|c: char| {
-                c.is_whitespace() || matches!(c, '/' | '?' | '#' | '"' | '\'' | '<' | '>' | '`')
+                c.is_whitespace() || matches!(c, '/' | '?' | '#' | '"' | '<' | '>' | '`')
             })
             .unwrap_or(after.len());
         let authority = &after[..authority_end];
@@ -778,6 +779,11 @@ mod tests {
         );
         assert_eq!(
             flagged_under_note("redis://:s3cret-pw@host:6379"),
+            Some(Rule::UrlWithPassword)
+        );
+        // A URL's user and password may hold an apostrophe.
+        assert_eq!(
+            flagged_under_note("postgresql://app:plain'pass@host/db"),
             Some(Rule::UrlWithPassword)
         );
     }
