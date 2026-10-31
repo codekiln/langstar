@@ -10,13 +10,17 @@ Langstar uses three core environment variables for authentication across differe
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoping operations
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID for narrower scoping (also used as Tenant ID)
 
+The integration tests read one more:
+
+- `LANGSMITH_DESTINATION_WORKSPACE_ID` - The workspace the prompt import tests import into. It is a second workspace in the same organization as `LANGSMITH_WORKSPACE_ID`. The test `LANGSMITH_API_KEY` reaches both workspaces, so langstar sends the workspace ID in the `X-Tenant-Id` header on every request. An import test passes this ID to read back what `langstar prompt import` wrote to the destination. It holds a workspace secret named `OPENAI_API_KEY`, because `langstar prompt import` checks that the destination has a secret with that name before it imports a prompt that uses an OpenAI model. Only the tests read this variable, and they pass it to `langstar prompt import --workspace-id`.
+
 ## Loading the Variables Locally
 
 On your own computer, [fnox](https://fnox.jdx.dev) reads the LangSmith credentials from 1Password once and keeps an encrypted copy in your gitignored `fnox.local.toml`, so tests run without asking 1Password each time. The committed `fnox.toml` says only which 1Password item and field holds each credential. This is the setup the [fnox guide](https://fnox.jdx.dev/guide/golden-path.html) recommends.
 
 | File | Committed | Contents |
 |------|-----------|----------|
-| `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, each with `if_missing = "error"` |
+| `fnox.toml` | Yes | References for `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, `LANGSMITH_WORKSPACE_ID` and `LANGSMITH_DESTINATION_WORKSPACE_ID`, each with `if_missing = "error"` |
 | `fnox.local.toml.example` | Yes | Template for your `fnox.local.toml`, with a placeholder vault name |
 | `fnox.local.toml` | No | The `langsmith` provider, which names your vault, and the encrypted cache that `fnox sync` writes |
 | `mise.toml` | Yes | Pins `fnox`, `1password-cli`, `age` and `cargo-nextest`. Sets the non-secret fixture names `REPOSITORY_OWNER` and `REPOSITORY_NAME` in `[env]` |
@@ -105,7 +109,7 @@ The devcontainer still reads the variables from `.devcontainer/.env` through `do
 
 ### CI
 
-CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`) and does not use fnox.
+CI reads GitHub Actions secrets (`secrets.LANGSMITH_API_KEY`, `secrets.LANGSMITH_ORGANIZATION_ID`, `secrets.LANGSMITH_WORKSPACE_ID`, `secrets.LANGSMITH_DESTINATION_WORKSPACE_ID`) and does not use fnox.
 
 ## Environment Variable to Header Mapping
 
@@ -209,7 +213,7 @@ This approach was chosen because:
 | Refresh the cache after a rotation | `fnox sync --provider sync-age --local-file --force` |
 | See which config files fnox loaded | `fnox config-files` |
 
-Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID` and `LANGSMITH_WORKSPACE_ID`, and `fnox exec` sets each of them.
+Integration tests need `LANGSMITH_API_KEY`, `LANGSMITH_ORGANIZATION_ID`, `LANGSMITH_WORKSPACE_ID` and `LANGSMITH_DESTINATION_WORKSPACE_ID`, and `fnox exec` sets each of them.
 
 ## Implementation Details
 
