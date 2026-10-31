@@ -692,6 +692,16 @@ Config file exists but settings aren't applied.
    env | grep LANGGRAPH
    ```
 
+### Warning: langstar is using the default settings
+
+**Symptom:**
+
+A command prints a warning with the path of the config file and the error, with the line and column when the file does not parse, followed by "langstar is using the default settings and any environment variables instead".
+
+**Solution:**
+
+Run `langstar config validate` to see the full error, then fix the file. The command ran on the default settings and your environment variables because langstar could not check that the config file exists (a symlink that points at itself does this), could not read it, or could not parse it. The warning leaves out the line that failed and its value because an API key may sit on that line.
+
 ## Security Best Practices
 
 ### Protecting API Keys

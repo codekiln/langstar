@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, config_file_exists};
 use crate::error::{CliError, Result};
 use crate::time::ConfiguredTimezone;
 use clap::{Args, Subcommand};
@@ -92,8 +92,19 @@ impl ConfigCommands {
         let config_path = Config::config_file_path()?;
 
         println!("Configuration file: {}", config_path.display());
-        println!("  File exists: {}", config_path.exists());
-        if let Some(path) = Config::file_to_read()?.filter(|path| *path != config_path) {
+        // `Config::load` above already warned about a config file langstar cannot
+        // look up, so `.ok()` drops the same error from `file_to_read` here.
+        match config_file_exists(&config_path) {
+            Ok(exists) => println!("  File exists: {exists}"),
+            Err(_) => {
+                println!("  File exists: unknown (langstar could not check; see the warning above)")
+            }
+        }
+        if let Some(path) = Config::file_to_read()
+            .ok()
+            .flatten()
+            .filter(|path| *path != config_path)
+        {
             println!(
                 "  Reading instead: {} (where langstar kept it before v2.2.0)",
                 path.display()
@@ -579,17 +590,26 @@ hide_workspace_and_org_id_message = false
         key: &str,
         new_value: &str,
     ) -> Result<()> {
-        let is_new_file = !config_path.exists();
+        let is_new_file = !config_file_exists(config_path)?;
         // The errors below name this file, the one langstar read the settings
         // from. On a Mac with no new file yet it is the old file, and these
         // errors are the only place `config set` shows that path.
         let source_path = if is_new_file {
-            old_path.filter(|path| path.exists())
+            match old_path {
+                Some(path) if config_file_exists(path)? => Some(path),
+                _ => None,
+            }
         } else {
             Some(config_path)
         };
         let config_content = match source_path {
-            Some(path) => fs::read_to_string(path)?,
+            Some(path) => fs::read_to_string(path).map_err(|e| {
+                CliError::Config(format!(
+                    "Failed to read config file {}: {}",
+                    path.display(),
+                    e
+                ))
+            })?,
             // toml_edit handles empty documents
             None => String::new(),
         };
