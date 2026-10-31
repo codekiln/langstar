@@ -28,6 +28,11 @@ struct Cli {
     #[arg(short = 'f', long, global = true, env = "LANGSTAR_OUTPUT_FORMAT")]
     format: Option<String>,
 
+    /// Workspace ID to send as X-Tenant-Id. Overrides LANGSMITH_WORKSPACE_ID and
+    /// workspace_id in config.toml.
+    #[arg(long, global = true)]
+    workspace_id: Option<String>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -106,7 +111,10 @@ async fn run() -> Result<()> {
     };
 
     // Load configuration
-    let config = Config::load()?;
+    let mut config = Config::load()?;
+    if let Some(workspace_id) = cli.workspace_id {
+        config.set_workspace_id_from_flag(workspace_id);
+    }
 
     // Determine output format
     let format = if let Some(format_str) = cli.format {
@@ -160,4 +168,44 @@ async fn run() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn test_cli_definition_is_valid() {
+        Cli::command().debug_assert();
+    }
+
+    #[test]
+    fn test_every_command_takes_the_global_workspace_flag() {
+        for args in [
+            vec!["langstar", "--workspace-id", "ws-1", "project", "list"],
+            vec![
+                "langstar",
+                "graph",
+                "list",
+                "my-deployment",
+                "--workspace-id",
+                "ws-1",
+            ],
+            vec![
+                "langstar",
+                "assistant",
+                "list",
+                "--deployment",
+                "my-deployment",
+                "--workspace-id",
+                "ws-1",
+            ],
+            vec!["langstar", "prompt", "list", "--workspace-id", "ws-1"],
+            vec!["langstar", "runs", "query", "--workspace-id", "ws-1"],
+        ] {
+            let cli = Cli::try_parse_from(&args).unwrap_or_else(|e| panic!("{:?}: {}", args, e));
+            assert_eq!(cli.workspace_id.as_deref(), Some("ws-1"), "{:?}", args);
+        }
+    }
 }
