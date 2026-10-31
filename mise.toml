@@ -37,6 +37,17 @@ age = "1.3.2"
 git-cliff = "2.14.2"
 # GitHub CLI, used by the worktree cleanup task and the issue workflow skills.
 gh = "2.102.0"
+# Official LangChain tools, used as an outside check on langstar's results
+# (docs/dev/testing/official-tool-checks.md). Exact pins skip minimum_release_age,
+# so each was chosen to be older than five days.
+# https://github.com/langchain-ai/langsmith-cli
+"github:langchain-ai/langsmith-cli" = "0.3.0"
+# langgraph-cli installs through uv; the LangGraph Python SDK is a library with no
+# executable, so tasks run it with `uv run --with langgraph-sdk==$LANGGRAPH_SDK_VERSION`.
+uv = "0.12.23"
+"pipx:langgraph-cli" = "0.4.33"
+# The oracle:* tasks parse the official CLI's JSON with jq.
+jq = "1.8.1"
 # rulesync is a Node CLI (v27 declares node >=22); without Node its executable
 # cannot run on a clean host.
 node = "22"
@@ -48,6 +59,8 @@ node = "22"
 enter = "lefthook install"
 
 [env]
+# The LangGraph Python SDK version that the oracle:* tasks will run; see [tools] above.
+LANGGRAPH_SDK_VERSION = "0.4.6"
 # Test fixture names are not secrets, so they live here rather than in 1Password.
 REPOSITORY_OWNER = "codekiln"
 REPOSITORY_NAME = "langstar"
