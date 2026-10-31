@@ -157,13 +157,13 @@ pub fn read_assistant_export(path: &Path) -> Result<AssistantExport> {
 
 /// Read a prompt export file's text.
 pub fn parse_prompt_export(text: &str) -> Result<PromptExport> {
-    check_header(text, Kind::Prompt)?;
+    check_header(text, Kind::Prompt, "export file")?;
     parse_body(text, Kind::Prompt)
 }
 
 /// Read an assistant export file's text.
 pub fn parse_assistant_export(text: &str) -> Result<AssistantExport> {
-    check_header(text, Kind::Assistant)?;
+    check_header(text, Kind::Assistant, "export file")?;
     parse_body(text, Kind::Assistant)
 }
 
@@ -195,6 +195,7 @@ pub fn record_path_for(export_path: &Path) -> PathBuf {
 
 /// What import created in each destination workspace, keyed by workspace ID.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptDestinations {
     pub kind: Kind,
     pub format_version: u32,
@@ -203,6 +204,7 @@ pub struct PromptDestinations {
 
 /// The prompt one import created or updated.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptDestination {
     pub handle: String,
     pub commit_hash: String,
@@ -210,6 +212,7 @@ pub struct PromptDestination {
 
 /// What import created on each destination deployment, keyed by deployment ID.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantDestinations {
     pub kind: Kind,
     pub format_version: u32,
@@ -222,6 +225,7 @@ pub struct AssistantDestinations {
 /// create request, so an import that stops in between leaves the next one the
 /// same ID to send again.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantDestination {
     pub assistant_id: String,
     pub state: DestinationState,
@@ -257,14 +261,43 @@ impl Default for AssistantDestinations {
     }
 }
 
+/// A record of what import created, for prompts or for assistants.
+pub trait Record: DeserializeOwned + Default {
+    /// The kind of resource whose destinations the record holds.
+    const KIND: Kind;
+}
+
+impl Record for PromptDestinations {
+    const KIND: Kind = Kind::Prompt;
+}
+
+impl Record for AssistantDestinations {
+    const KIND: Kind = Kind::Assistant;
+}
+
 /// Read the record at `path`, or an empty one when no file is there yet.
 ///
 /// Only a missing file reads as empty. A record langstar cannot read, such as
 /// one in a directory the user may not list, is an error, so import never
 /// starts from an empty record and loses the IDs the old one held.
-pub fn read_record<T: DeserializeOwned + Default>(path: &Path) -> Result<T> {
+///
+/// A record of another format version or another kind, or one with a field
+/// langstar does not know, is refused too: import rewrites the whole record,
+/// and would drop what it could not read.
+pub fn read_record<T: Record>(path: &Path) -> Result<T> {
     match std::fs::read_to_string(path) {
-        Ok(text) => Ok(serde_json::from_str(&text)?),
+        Ok(text) => {
+            check_header(&text, T::KIND, "import record")?;
+            serde_json::from_str(&text).map_err(|error| {
+                // A record holds only names and IDs, so serde_json's message,
+                // which names an unknown field, is safe to print.
+                CliError::Config(format!(
+                    "The import record {} does not match the format: {}",
+                    path.display(),
+                    error
+                ))
+            })
+        }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(T::default()),
         Err(source) => Err(CliError::Config(format!(
             "Could not read {}: {}",
@@ -320,15 +353,16 @@ fn read_to_string(path: &Path) -> Result<String> {
 
 /// Reject a file of another format version or another kind before the command
 /// reads anything else from it.
-fn check_header(text: &str, expected: Kind) -> Result<()> {
+fn check_header(text: &str, expected: Kind, file: &str) -> Result<()> {
     let header: Value = serde_json::from_str(text)?;
 
     let format_version = header
         .get("format_version")
-        .ok_or_else(|| CliError::Config("This export file has no format_version.".to_string()))?;
+        .ok_or_else(|| CliError::Config(format!("This {file} has no format_version.")))?;
     if format_version.as_u64() != Some(FORMAT_VERSION as u64) {
         return Err(CliError::Config(format!(
-            "This export file's format_version is {}, and langstar reads format_version {}.",
+            "This {}'s format_version is {}, and langstar reads format_version {}.",
+            file,
             shown(format_version),
             FORMAT_VERSION
         )));
@@ -336,10 +370,11 @@ fn check_header(text: &str, expected: Kind) -> Result<()> {
 
     let kind = header
         .get("kind")
-        .ok_or_else(|| CliError::Config("This export file has no kind.".to_string()))?;
+        .ok_or_else(|| CliError::Config(format!("This {file} has no kind.")))?;
     if kind.as_str() != Some(expected.name()) {
         return Err(CliError::Config(format!(
-            "This export file's kind is {}, and the {} commands read a file whose kind is {}.",
+            "This {}'s kind is {}, and the {} commands read a file whose kind is {}.",
+            file,
             shown(kind),
             expected.name(),
             expected.name()
@@ -596,6 +631,36 @@ mod tests {
             .expect_err("an unreadable record is refused")
             .to_string();
         assert!(message.contains("Could not read"), "got {message}");
+    }
+
+    #[test]
+    fn refuses_a_record_of_another_version_or_kind_or_with_an_unknown_field() {
+        let directory = TempDir::new().expect("a temporary directory");
+        let path = directory.path().join("my-prompt.destinations.json");
+        for (text, expected) in [
+            (
+                r#"{"kind": "prompt", "format_version": 2, "destinations": {}}"#,
+                "format_version",
+            ),
+            (
+                r#"{"kind": "assistant", "format_version": 1, "destinations": {}}"#,
+                "kind",
+            ),
+            (
+                r#"{"kind": "prompt", "format_version": 1, "destinations": {}, "notes": "x"}"#,
+                "notes",
+            ),
+            (
+                r#"{"kind": "prompt", "format_version": 1, "destinations": {"w": {"handle": "h", "commit_hash": "c", "url": "u"}}}"#,
+                "url",
+            ),
+        ] {
+            std::fs::write(&path, text).expect("the record writes");
+            let message = read_record::<PromptDestinations>(&path)
+                .expect_err("the record is refused")
+                .to_string();
+            assert!(message.contains(expected), "got {message}");
+        }
     }
 
     #[test]
