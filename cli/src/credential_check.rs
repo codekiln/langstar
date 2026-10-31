@@ -430,9 +430,18 @@ fn pem_private_key(text: &str) -> bool {
     text.contains("-----BEGIN") && text.contains("PRIVATE KEY-----")
 }
 
+/// Whether `text` holds a URL with a password in it, as in
+/// `postgresql://app:s3cret@host/db`. The URL's host part ends at `/`, `?` or
+/// `#`, and at a space, a quote or an angle bracket, which a URL cannot hold, so
+/// a later `name: someone@example.com` in the same sentence is not read as
+/// part of the URL.
 fn url_with_password(text: &str) -> bool {
     occurrences(text, "://").any(|after| {
-        let authority_end = after.find(['/', '?', '#']).unwrap_or(after.len());
+        let authority_end = after
+            .find(|c: char| {
+                c.is_whitespace() || matches!(c, '/' | '?' | '#' | '"' | '\'' | '<' | '>' | '`')
+            })
+            .unwrap_or(after.len());
         let authority = &after[..authority_end];
         let Some(at) = authority.rfind('@') else {
             return false;
@@ -771,6 +780,17 @@ mod tests {
             flagged_under_note("redis://:s3cret-pw@host:6379"),
             Some(Rule::UrlWithPassword)
         );
+    }
+
+    #[test]
+    fn passes_a_url_without_a_password_followed_by_an_address_in_prose() {
+        for text in [
+            "Read https://example.com. Contact: support@example.com",
+            "Docs at https://example.com\nQuestions: help@example.com",
+            "See \"https://example.com\" or write to team:ops@example.com",
+        ] {
+            assert_eq!(flagged_under_note(text), None, "{text:?} should pass");
+        }
     }
 
     #[test]
