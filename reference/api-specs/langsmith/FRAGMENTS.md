@@ -16,8 +16,8 @@ These fragments are extracted subsets of the full OpenAPI spec, optimized for:
 
 | File | Size | Purpose | jq Query | Last Updated |
 |------|------|---------|----------|--------------|
-| `annotation-queue-endpoints.json` | 2.3K | Annotation queue API endpoints | See below | 2025-11-26 |
-| `annotation-queue-schemas.json` | 45K | Annotation queue data types | See below | 2025-11-26 |
+| `annotation-queue-endpoints.json` | 64K | Annotation queue API endpoints | See below | 2026-10-13 |
+| `annotation-queue-schemas.json` | 47K | Annotation queue data types | See below | 2026-10-13 |
 | `run-schema.json` | 9.8K | Run/trace data structures | See below | 2025-11-26 |
 | `runs-query-endpoint.json` | 1.0K | POST /runs/query endpoint | See below | 2025-11-26 |
 | `runs-query-request-schema.json` | 5.5K | Runs query request payload | See below | 2025-11-26 |

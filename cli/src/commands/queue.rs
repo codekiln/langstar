@@ -8,8 +8,9 @@ use crate::error::Result;
 use crate::output::{OutputFormat, OutputFormatter};
 use clap::{Args, Subcommand};
 use langstar_sdk::{
-    AnnotationQueue, CreateAnnotationQueueRequest, LangchainClient, ListAnnotationQueuesParams,
-    QueueType, UpdateAnnotationQueueRequest,
+    AnnotationQueue, AnnotationQueueItemStatus, AnnotationQueueListItem,
+    CreateAnnotationQueueRequest, LangchainClient, ListAnnotationQueueItemsParams,
+    ListAnnotationQueuesParams, QueueType, UpdateAnnotationQueueRequest,
 };
 use serde::Serialize;
 use std::io::{BufRead, BufReader};
@@ -38,7 +39,7 @@ pub enum QueueCommands {
     AddRuns(AddRunsArgs),
     /// Remove a run from an annotation queue
     RemoveRun(RemoveRunArgs),
-    /// List runs in an annotation queue
+    /// List the items in an annotation queue, one review section at a time
     Items(ItemsArgs),
 }
 
@@ -166,6 +167,10 @@ pub struct ItemsArgs {
     #[arg(short, long, default_value = "100")]
     pub limit: u32,
 
+    /// Review section to list: needs-my-review, needs-others-review or archived (default: all)
+    #[arg(long, value_parser = ["needs-my-review", "needs-others-review", "archived"])]
+    pub status: Option<String>,
+
     /// Output as JSON
     #[arg(long)]
     pub json: bool,
@@ -226,12 +231,12 @@ impl From<&AnnotationQueue> for QueueRow {
 /// Queue item row for table display
 #[derive(Debug, Tabled, Serialize)]
 struct QueueItemRow {
-    #[tabled(rename = "Index")]
-    index: u32,
+    #[tabled(rename = "Item ID")]
+    id: String,
     #[tabled(rename = "Run ID")]
     run_id: String,
-    #[tabled(rename = "Name")]
-    name: String,
+    #[tabled(rename = "Type")]
+    item_type: String,
     #[tabled(rename = "Status")]
     status: String,
     #[tabled(rename = "Added")]
@@ -439,11 +444,11 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        client
-            .add_runs_to_annotation_queue(args.queue_id, run_ids.clone())
+        let items = client
+            .add_runs_to_annotation_queue(args.queue_id, run_ids)
             .await?;
 
-        println!("Added {} runs to queue {}", run_ids.len(), args.queue_id);
+        println!("Added {} runs to queue {}", items.len(), args.queue_id);
 
         Ok(())
     }
@@ -452,10 +457,17 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        client
+        let removed = client
             .delete_run_from_annotation_queue(args.queue_id, args.run_id)
             .await?;
 
+        if !removed {
+            return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "Run {} is not in queue {}",
+                args.run_id,
+                args.queue_id
+            )));
+        }
         println!("Removed run {} from queue {}", args.run_id, args.queue_id);
 
         Ok(())
@@ -471,37 +483,24 @@ impl QueueCommands {
         let auth = config.to_auth_config();
         let client = LangchainClient::new(auth)?;
 
-        // Fetch items by index (API only supports get by index)
-        // Note: Sequential fetching is required as the API only provides get-by-index
-        let mut items = Vec::new();
-        for index in 0..args.limit {
-            match client
-                .get_run_from_annotation_queue(args.queue_id, index)
-                .await
-            {
-                Ok(item) => items.push((index, item)),
-                Err(langstar_sdk::LangstarError::ApiError { status: 404, .. }) => {
-                    // 404 means no more items at this index - end of queue
-                    break;
-                }
-                Err(e) => {
-                    // Propagate other errors (auth failures, network issues, etc.)
-                    return Err(e.into());
-                }
-            }
-        }
+        let items = collect_items(&client, args).await?;
 
         if args.json {
-            let json_items: Vec<_> = items.iter().map(|(_, item)| item).collect();
-            println!("{}", serde_json::to_string_pretty(&json_items)?);
+            println!("{}", items_json(&items)?);
         } else {
             let rows: Vec<QueueItemRow> = items
                 .iter()
-                .map(|(index, item)| QueueItemRow {
-                    index: *index,
-                    run_id: item.run.id.to_string().chars().take(8).collect(),
-                    name: item.run.name.chars().take(30).collect(),
-                    status: item.run.status.clone(),
+                .map(|(status, item)| QueueItemRow {
+                    id: item.id.to_string().chars().take(8).collect(),
+                    run_id: item
+                        .run_id
+                        .map(|id| id.to_string().chars().take(8).collect())
+                        .unwrap_or_else(|| "-".to_string()),
+                    item_type: item
+                        .item_type
+                        .map(|t| t.as_str().to_string())
+                        .unwrap_or_else(|| "-".to_string()),
+                    status: status.as_str().to_string(),
                     added: item
                         .added_at
                         .map(|t| t.format("%Y-%m-%d").to_string())
@@ -516,6 +515,48 @@ impl QueueCommands {
     }
 }
 
+/// An item and the review section it was listed from.
+type SectionItem = (AnnotationQueueItemStatus, AnnotationQueueListItem);
+
+/// Lists the items in the sections `--status` names (every section without it),
+/// at most `--limit` in all.
+async fn collect_items(client: &LangchainClient, args: &ItemsArgs) -> Result<Vec<SectionItem>> {
+    let statuses = match args.status.as_deref() {
+        Some("needs-my-review") => vec![AnnotationQueueItemStatus::NeedsMyReview],
+        Some("needs-others-review") => vec![AnnotationQueueItemStatus::NeedsOthersReview],
+        Some("archived") => vec![AnnotationQueueItemStatus::Archived],
+        _ => AnnotationQueueItemStatus::ALL.to_vec(),
+    };
+
+    let mut items = Vec::new();
+    for status in statuses {
+        let remaining = args.limit as usize - items.len();
+        if remaining == 0 {
+            break;
+        }
+        let mut params = ListAnnotationQueueItemsParams::new(status);
+        params.page_size = Some(args.limit.clamp(1, 100));
+        let section = client
+            .collect_annotation_queue_items(args.queue_id, params, Some(remaining))
+            .await?;
+        items.extend(section.into_iter().map(|item| (status, item)));
+    }
+    Ok(items)
+}
+
+/// The `--json` output: each item with a `status` field naming its section.
+fn items_json(items: &[SectionItem]) -> Result<String> {
+    let json_items = items
+        .iter()
+        .map(|(status, item)| {
+            let mut value = serde_json::to_value(item)?;
+            value["status"] = serde_json::json!(status.as_str());
+            Ok(value)
+        })
+        .collect::<std::result::Result<Vec<_>, serde_json::Error>>()?;
+    Ok(serde_json::to_string_pretty(&json_items)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -525,11 +566,11 @@ mod tests {
         let json = r#"{
             "id": "12345678-1234-1234-1234-123456789012",
             "name": "Test Queue",
-            "tenantId": "87654321-4321-4321-4321-210987654321",
-            "queueType": "single",
+            "tenant_id": "87654321-4321-4321-4321-210987654321",
+            "queue_type": "single",
             "description": "A very long description that should be truncated for display",
-            "createdAt": "2024-01-01T12:00:00Z",
-            "updatedAt": "2024-01-01T12:00:00Z"
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:00:00Z"
         }"#;
 
         let queue: AnnotationQueue = serde_json::from_str(json).unwrap();
@@ -537,5 +578,125 @@ mod tests {
 
         assert_eq!(row.id, "12345678");
         assert!(row.description.ends_with("..."));
+    }
+
+    const QUEUE: &str = "12345678-1234-1234-1234-123456789012";
+
+    /// A mock LangSmith that holds one item in each review section and records
+    /// which sections the CLI asked for.
+    struct SectionServer {
+        server: mockito::ServerGuard,
+        mocks: Vec<(AnnotationQueueItemStatus, Uuid, mockito::Mock)>,
+    }
+
+    impl SectionServer {
+        async fn new(listed: &[AnnotationQueueItemStatus]) -> Self {
+            let mut server = mockito::Server::new_async().await;
+            let mut mocks = Vec::new();
+            for status in AnnotationQueueItemStatus::ALL {
+                let item_id = Uuid::new_v4();
+                let body = serde_json::json!({"items": [{
+                    "id": item_id,
+                    "queue_id": QUEUE,
+                    "item_type": "RUN",
+                    "run_id": Uuid::new_v4(),
+                    "added_at": "2026-01-01T00:00:00Z"
+                }]});
+                let mock = server
+                    .mock(
+                        "GET",
+                        format!("/api/v1/platform/annotation-queues/{QUEUE}/items").as_str(),
+                    )
+                    .match_query(mockito::Matcher::UrlEncoded(
+                        "status".into(),
+                        status.as_str().into(),
+                    ))
+                    .with_status(200)
+                    .with_header("content-type", "application/json")
+                    .with_body(body.to_string())
+                    .expect(usize::from(listed.contains(&status)))
+                    .create_async()
+                    .await;
+                mocks.push((status, item_id, mock));
+            }
+            Self { server, mocks }
+        }
+
+        fn client(&self) -> LangchainClient {
+            LangchainClient::with_base_urls(
+                langstar_sdk::AuthConfig::new(Some("test_key".to_string()), None, None),
+                self.server.url(),
+                self.server.url(),
+                self.server.url(),
+            )
+            .unwrap()
+        }
+
+        fn item_id(&self, status: AnnotationQueueItemStatus) -> String {
+            let (_, id, _) = self.mocks.iter().find(|(s, _, _)| *s == status).unwrap();
+            id.to_string()
+        }
+
+        async fn assert_sections_listed(&self) {
+            for (_, _, mock) in &self.mocks {
+                mock.assert_async().await;
+            }
+        }
+    }
+
+    /// Runs what `queue items <queue> [--status <status>] --json` runs, listing
+    /// and JSON output, against `server` and returns each printed item's (id, status).
+    async fn items_output(server: &SectionServer, status: Option<&str>) -> Vec<(String, String)> {
+        let args = ItemsArgs {
+            queue_id: Uuid::parse_str(QUEUE).unwrap(),
+            limit: 100,
+            status: status.map(str::to_string),
+            json: true,
+        };
+        let items = collect_items(&server.client(), &args).await.unwrap();
+        let printed: Vec<serde_json::Value> =
+            serde_json::from_str(&items_json(&items).unwrap()).unwrap();
+        printed
+            .iter()
+            .map(|item| {
+                (
+                    item["id"].as_str().unwrap().to_string(),
+                    item["status"].as_str().unwrap().to_string(),
+                )
+            })
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn test_items_status_lists_only_the_named_section() {
+        for (flag, status) in [
+            ("needs-my-review", AnnotationQueueItemStatus::NeedsMyReview),
+            (
+                "needs-others-review",
+                AnnotationQueueItemStatus::NeedsOthersReview,
+            ),
+            ("archived", AnnotationQueueItemStatus::Archived),
+        ] {
+            let server = SectionServer::new(&[status]).await;
+            let output = items_output(&server, Some(flag)).await;
+            assert_eq!(
+                output,
+                vec![(server.item_id(status), status.as_str().to_string())],
+                "--status {flag}"
+            );
+            server.assert_sections_listed().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn test_items_without_status_lists_every_section() {
+        let server = SectionServer::new(&AnnotationQueueItemStatus::ALL).await;
+        let output = items_output(&server, None).await;
+        let expected: Vec<(String, String)> = AnnotationQueueItemStatus::ALL
+            .iter()
+            .map(|status| (server.item_id(*status), status.as_str().to_string()))
+            .collect();
+        assert_eq!(output, expected);
+        server.assert_sections_listed().await;
     }
 }

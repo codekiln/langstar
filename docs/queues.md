@@ -229,6 +229,8 @@ langstar queue add-runs 12345678-... run-id-1 run-id-2 run-id-3
 langstar queue add-runs 12345678-... --runs-file runs.txt
 ```
 
+A run that LangSmith cannot find yet is rejected with a 404, so after ingesting a run, retry until it succeeds.
+
 **runs.txt format:**
 ```
 # Comments are ignored
@@ -241,7 +243,7 @@ abcdef03-1234-1234-1234-123456789012
 
 ### `langstar queue remove-run`
 
-Remove a run from an annotation queue.
+Remove a run from an annotation queue. The items API deletes by queue item ID, so langstar looks the run up in every review section first. It exits non-zero if the queue holds no item for the run.
 
 ```bash
 langstar queue remove-run <QUEUE_ID> <RUN_ID>
@@ -256,7 +258,7 @@ langstar queue remove-run 12345678-... abcdef01-...
 
 ### `langstar queue items`
 
-List runs currently in an annotation queue.
+List the items currently in an annotation queue, one review section after another.
 
 ```bash
 langstar queue items <QUEUE_ID> [OPTIONS]
@@ -266,7 +268,8 @@ langstar queue items <QUEUE_ID> [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | `-l, --limit <N>` | Maximum items to return (default: 100) |
-| `--json` | Output as JSON |
+| `--status <SECTION>` | One review section: `needs-my-review`, `needs-others-review` or `archived` (default: all three) |
+| `--json` | Output as JSON; each item carries a `status` field naming its review section |
 
 **Example:**
 ```bash
@@ -275,13 +278,14 @@ langstar queue items 12345678-1234-1234-1234-123456789012 --limit 50
 
 Output:
 ```
-Index  Run ID    Name          Status   Added
-0      abcdef01  ChatOpenAI    success  2025-11-28
-1      abcdef02  RAGChain      error    2025-11-28
-2      abcdef03  AgentExecutor success  2025-11-28
+Item ID   Run ID    Type  Status            Added
+1a2b3c4d  abcdef01  RUN   needs_my_review   2026-10-13
+5e6f7a8b  abcdef02  RUN   needs_my_review   2026-10-13
 
-Found 3 items in queue
+Found 2 items in queue
 ```
+
+The items API returns the run ID, not the run's name or status. Look a run up with `langstar runs query`.
 
 ---
 
@@ -520,11 +524,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     client.add_runs_to_annotation_queue(queue.base.id, run_ids).await?;
 
     // List queue items
-    for index in 0..10 {
-        match client.get_run_from_annotation_queue(queue.base.id, index).await {
-            Ok(item) => println!("Item {}: {}", index, item.run.name),
-            Err(_) => break, // No more items
-        }
+    use langstar_sdk::{AnnotationQueueItemStatus, ListAnnotationQueueItemsParams};
+    let params = ListAnnotationQueueItemsParams::new(AnnotationQueueItemStatus::NeedsMyReview);
+    let page = client
+        .list_annotation_queue_items(queue.base.id, params, None)
+        .await?;
+    for item in page.items {
+        println!("Item {}: run {:?}", item.id, item.run_id);
     }
 
     // Clean up
@@ -562,8 +568,9 @@ langstar config
 
 ### Empty queue items
 
-The `items` command fetches runs sequentially by index. If you see fewer items than expected:
-- Some runs may have been reviewed and removed
+If you see fewer items than expected:
+- If you passed `--status`, items in the other two review sections are left out; drop `--status` to see all three
+- Raise `--limit` (default 100)
 - The queue may be empty
 
 ---
@@ -579,8 +586,10 @@ The annotation queue commands use the LangSmith REST API:
 | `queue get` | GET | `/api/v1/annotation-queues/{id}` |
 | `queue update` | PATCH | `/api/v1/annotation-queues/{id}` |
 | `queue delete` | DELETE | `/api/v1/annotation-queues/{id}` |
-| `queue add-runs` | POST | `/api/v1/annotation-queues/{id}/runs` |
-| `queue remove-run` | DELETE | `/api/v1/annotation-queues/{id}/runs/{run_id}` |
-| `queue items` | GET | `/api/v1/annotation-queues/{id}/run/{index}` |
+| `queue add-runs` | POST | `/api/v1/platform/annotation-queues/{id}/items` |
+| `queue remove-run` | GET, then POST | `/api/v1/platform/annotation-queues/{id}/items`, then `.../items/delete` |
+| `queue items` | GET | `/api/v1/platform/annotation-queues/{id}/items` |
+
+LangSmith deprecated the `/api/v1/annotation-queues/{id}/runs*` and `/run/{index}` endpoints. `add-runs` sends each run as a `RUN` item with only its `run_id`.
 
 For complete API documentation, see the [LangSmith OpenAPI spec](https://api.smith.langchain.com/redoc).

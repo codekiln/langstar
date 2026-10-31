@@ -5,7 +5,8 @@
 //!
 //! # API Reference
 //!
-//! - Base endpoint: `/api/v1/annotation-queues`
+//! - Queue endpoints: `/api/v1/annotation-queues`
+//! - Item endpoints: `/api/v1/platform/annotation-queues/{queue_id}/items`
 //! - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
 //!
 //! # Example
@@ -51,7 +52,6 @@ pub enum QueueType {
 ///
 /// Maps to `AnnotationQueueRubricItemSchema` in OpenAPI spec.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AnnotationQueueRubricItem {
     /// Feedback key identifier
     pub feedback_key: String,
@@ -78,7 +78,6 @@ pub struct AnnotationQueueRubricItem {
 /// Maps to `AnnotationQueueSchema` in OpenAPI spec.
 /// Returned by `GET /annotation-queues` and `GET /annotation-queues/{id}`
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AnnotationQueue {
     /// Unique identifier for the queue
     pub id: Uuid,
@@ -142,7 +141,6 @@ pub struct AnnotationQueue {
 /// Maps to `AnnotationQueueSchemaWithRubric` in OpenAPI spec.
 /// Returned by `GET /annotation-queues/{id}` and `POST /annotation-queues`
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct AnnotationQueueWithDetails {
     /// Base queue fields
     #[serde(flatten)]
@@ -178,7 +176,6 @@ pub struct AnnotationQueueWithDetails {
 /// };
 /// ```
 #[derive(Debug, Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct CreateAnnotationQueueRequest {
     /// Name of the queue (required)
     pub name: String,
@@ -255,7 +252,6 @@ pub struct CreateAnnotationQueueRequest {
 ///
 /// All fields are optional for partial updates.
 #[derive(Debug, Clone, Serialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdateAnnotationQueueRequest {
     /// New name
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -300,7 +296,6 @@ pub struct UpdateAnnotationQueueRequest {
 ///
 /// Query parameters for `GET /annotation-queues`
 #[derive(Debug, Clone, Default, Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ListAnnotationQueuesParams {
     /// Filter by specific queue IDs
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -319,39 +314,310 @@ pub struct ListAnnotationQueuesParams {
     pub limit: Option<u32>,
 }
 
-/// Run with annotation queue metadata.
+/// Kind of thing an annotation queue item points at.
 ///
-/// Extends the base Run with queue-specific fields like when it was added
-/// and when it was last reviewed.
+/// Maps to `annotationqueues.AnnotationQueueItemType` in the OpenAPI spec.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum AnnotationQueueItemType {
+    /// A single run (trace)
+    Run,
+    /// A conversation thread
+    Thread,
+}
+
+impl AnnotationQueueItemType {
+    /// The wire value LangSmith expects in the `item_type` query parameter.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Run => "RUN",
+            Self::Thread => "THREAD",
+        }
+    }
+}
+
+/// Review section of an annotation queue, as the list and count endpoints take it.
 ///
-/// # API Reference
+/// Maps to `annotationqueues.AnnotationQueueItemListStatus` in the OpenAPI spec.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AnnotationQueueItemStatus {
+    /// Waiting for the calling reviewer
+    NeedsMyReview,
+    /// Waiting for other reviewers
+    NeedsOthersReview,
+    /// Fully reviewed
+    Archived,
+}
+
+impl AnnotationQueueItemStatus {
+    /// Every section, in the order a queue shows them.
+    pub const ALL: [Self; 3] = [Self::NeedsMyReview, Self::NeedsOthersReview, Self::Archived];
+
+    /// The wire value LangSmith expects in the `status` query parameter.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::NeedsMyReview => "needs_my_review",
+            Self::NeedsOthersReview => "needs_others_review",
+            Self::Archived => "archived",
+        }
+    }
+}
+
+/// Bucket to count with `GET .../items/count`: one review section, or every item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationQueueItemCountStatus {
+    /// Items in one review section
+    Section(AnnotationQueueItemStatus),
+    /// Every item in the queue
+    All,
+}
+
+impl AnnotationQueueItemCountStatus {
+    /// The wire value LangSmith expects in the `status` query parameter.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Section(status) => status.as_str(),
+            Self::All => "all",
+        }
+    }
+}
+
+impl From<AnnotationQueueItemStatus> for AnnotationQueueItemCountStatus {
+    fn from(status: AnnotationQueueItemStatus) -> Self {
+        Self::Section(status)
+    }
+}
+
+/// One item to add to an annotation queue.
 ///
-/// Maps to `RunSchemaWithAnnotationQueueInfo` in OpenAPI spec.
-/// Returned by `GET /annotation-queues/{queue_id}/run/{index}`
+/// Maps to `annotationqueues.AnnotationQueueItemInput`. A `RUN` item needs `run_id`, unless
+/// `source_proposed_example_id` creates it from a suggested example; `project_id` and
+/// `start_time` locate the run directly, as langsmith-sdk's `RunKey` does.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct AnnotationQueueItemInput {
+    /// What the item points at
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_type: Option<AnnotationQueueItemType>,
+
+    /// Run to review (for `RUN` items)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<Uuid>,
+
+    /// Tracing project the run belongs to
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<Uuid>,
+
+    /// When the run started
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_time: Option<DateTime<Utc>>,
+
+    /// Thread to review (for `THREAD` items)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thread_id: Option<String>,
+
+    /// Suggested example the item was created from
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_proposed_example_id: Option<Uuid>,
+}
+
+/// An item as the add and patch endpoints return it.
 ///
-/// # Note
-///
-/// Uses snake_case field names to match existing Run struct pattern.
+/// Maps to `annotationqueues.AnnotationQueueItem`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RunWithAnnotationQueueInfo {
-    /// Base run fields
-    #[serde(flatten)]
-    pub run: super::runs::Run,
+pub struct AnnotationQueueItem {
+    /// Queue item ID (not the run ID)
+    pub id: Uuid,
 
-    /// Queue run ID (junction table ID)
-    pub queue_run_id: Uuid,
+    /// Queue the item belongs to
+    #[serde(default)]
+    pub queue_id: Option<Uuid>,
 
-    /// When the run was last reviewed
+    /// What the item points at
+    #[serde(default)]
+    pub item_type: Option<AnnotationQueueItemType>,
+
+    /// Run under review, for `RUN` items
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub run_id: Option<Uuid>,
+
+    /// Tracing project of the run
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub project_id: Option<Uuid>,
+
+    /// Thread under review, for `THREAD` items
+    #[serde(default)]
+    pub thread_id: Option<String>,
+
+    /// Suggested example the item was created from
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub source_proposed_example_id: Option<Uuid>,
+
+    /// When the run started
     #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
-    pub last_reviewed_time: Option<DateTime<Utc>>,
+    pub start_time: Option<DateTime<Utc>>,
 
-    /// When the run was added to the queue
+    /// When the item was added to the queue
     #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub added_at: Option<DateTime<Utc>>,
 
-    /// Effective added time (for sorting/display)
+    /// When the item was last reviewed; null until reviewed
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub last_reviewed_time: Option<DateTime<Utc>>,
+}
+
+/// An item as the list endpoint returns it, with reviewer state.
+///
+/// Maps to `annotationqueues.AnnotationQueueListItem`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnnotationQueueListItem {
+    /// Queue item ID (not the run ID)
+    pub id: Uuid,
+
+    /// Queue the item belongs to
+    #[serde(default)]
+    pub queue_id: Option<Uuid>,
+
+    /// What the item points at
+    #[serde(default)]
+    pub item_type: Option<AnnotationQueueItemType>,
+
+    /// Run under review, for `RUN` items
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub run_id: Option<Uuid>,
+
+    /// Tracing project of the run
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub project_id: Option<Uuid>,
+
+    /// Thread under review, for `THREAD` items
+    #[serde(default)]
+    pub thread_id: Option<String>,
+
+    /// Suggested example the item was created from
+    #[serde(default, deserialize_with = "deserialize_nonempty_uuid_opt")]
+    pub source_proposed_example_id: Option<Uuid>,
+
+    /// When the run started
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub start_time: Option<DateTime<Utc>>,
+
+    /// When the item was added to the queue
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub added_at: Option<DateTime<Utc>>,
+
+    /// Added time used for ordering
     #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
     pub effective_added_at: Option<DateTime<Utc>>,
+
+    /// When the item was last reviewed; null until reviewed
+    #[serde(default, deserialize_with = "deserialize_flexible_datetime_opt")]
+    pub last_reviewed_time: Option<DateTime<Utc>>,
+
+    /// Identities currently reviewing the item
+    #[serde(default)]
+    pub reserved_by: Option<Vec<String>>,
+
+    /// Identities that finished reviewing the item
+    #[serde(default)]
+    pub completed_by: Option<Vec<String>>,
+}
+
+/// One page of queue items.
+///
+/// Maps to `annotationqueues.ListAnnotationQueueItemsResponse`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ListAnnotationQueueItemsResponse {
+    /// Items on this page
+    #[serde(default)]
+    pub items: Vec<AnnotationQueueListItem>,
+
+    /// Cursor for the next page, if there is one
+    #[serde(default)]
+    pub next_cursor: Option<String>,
+
+    /// Cursor for the previous page, if there is one
+    #[serde(default)]
+    pub previous_cursor: Option<String>,
+}
+
+/// Query parameters for `GET /api/v1/platform/annotation-queues/{queue_id}/items`, which
+/// lists the items of one review section of an annotation queue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ListAnnotationQueueItemsParams {
+    /// Review section to list; the API requires one
+    pub status: AnnotationQueueItemStatus,
+
+    /// Items per page (the API defaults to 20)
+    pub page_size: Option<u32>,
+
+    /// Only items of this type
+    pub item_type: Option<AnnotationQueueItemType>,
+}
+
+impl ListAnnotationQueueItemsParams {
+    /// Params for one review section, with the API's defaults for everything else.
+    pub fn new(status: AnnotationQueueItemStatus) -> Self {
+        Self {
+            status,
+            page_size: None,
+            item_type: None,
+        }
+    }
+}
+
+/// Body for `PATCH /api/v1/platform/annotation-queues/{queue_id}/items/{item_id}`.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct PatchAnnotationQueueItemRequest {
+    /// Move the item to this added time
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub added_at: Option<DateTime<Utc>>,
+
+    /// Set the last reviewed time
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_reviewed_time: Option<DateTime<Utc>>,
+}
+
+/// Where an item sits in its queue.
+///
+/// Maps to `annotationqueues.AnnotationQueueItemPlacementResponse`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnnotationQueueItemPlacement {
+    /// Section the item is in
+    #[serde(default)]
+    pub section: Option<AnnotationQueueItemStatus>,
+
+    /// Zero-based position within the section
+    #[serde(default)]
+    pub position: Option<u64>,
+
+    /// Cursor that lists the page holding the item
+    #[serde(default)]
+    pub cursor: Option<String>,
+
+    /// What the item points at
+    #[serde(default)]
+    pub item_type: Option<AnnotationQueueItemType>,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct AnnotationQueueItemCountResponse {
+    #[serde(default)]
+    pub(crate) count: u64,
+}
+
+/// The items endpoints send `""` for an id that does not apply to the item type.
+fn deserialize_nonempty_uuid_opt<'de, D>(deserializer: D) -> Result<Option<Uuid>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: Option<String> = Option::deserialize(deserializer)?;
+    match value.as_deref() {
+        None | Some("") => Ok(None),
+        Some(s) => Uuid::parse_str(s)
+            .map(Some)
+            .map_err(serde::de::Error::custom),
+    }
 }
 
 #[cfg(test)]
@@ -383,14 +649,14 @@ mod tests {
         let json = r#"{
             "id": "12345678-1234-1234-1234-123456789012",
             "name": "Review Queue",
-            "tenantId": "87654321-4321-4321-4321-210987654321",
-            "queueType": "single",
+            "tenant_id": "87654321-4321-4321-4321-210987654321",
+            "queue_type": "single",
             "description": "Queue for reviews",
-            "createdAt": "2024-01-01T12:00:00Z",
-            "updatedAt": "2024-01-01T12:00:00Z",
-            "numReviewersPerItem": 2,
-            "enableReservations": true,
-            "reservationMinutes": 5
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:00:00Z",
+            "num_reviewers_per_item": 2,
+            "enable_reservations": true,
+            "reservation_minutes": 5
         }"#;
 
         let queue: AnnotationQueue = serde_json::from_str(json).unwrap();
@@ -410,8 +676,8 @@ mod tests {
         let json = r#"{
             "id": "12345678-1234-1234-1234-123456789012",
             "name": "Minimal Queue",
-            "tenantId": "87654321-4321-4321-4321-210987654321",
-            "queueType": "single"
+            "tenant_id": "87654321-4321-4321-4321-210987654321",
+            "queue_type": "single"
         }"#;
 
         let queue: AnnotationQueue = serde_json::from_str(json).unwrap();
@@ -426,14 +692,14 @@ mod tests {
         let json = r#"{
             "id": "12345678-1234-1234-1234-123456789012",
             "name": "Review Queue",
-            "tenantId": "87654321-4321-4321-4321-210987654321",
-            "queueType": "pairwise",
-            "createdAt": "2024-01-01T12:00:00Z",
-            "updatedAt": "2024-01-01T12:00:00Z",
-            "rubricInstructions": "Rate on accuracy and helpfulness",
-            "rubricItems": [
+            "tenant_id": "87654321-4321-4321-4321-210987654321",
+            "queue_type": "pairwise",
+            "created_at": "2024-01-01T12:00:00Z",
+            "updated_at": "2024-01-01T12:00:00Z",
+            "rubric_instructions": "Rate on accuracy and helpfulness",
+            "rubric_items": [
                 {
-                    "feedbackKey": "accuracy",
+                    "feedback_key": "accuracy",
                     "description": "How accurate is the response?"
                 }
             ]
@@ -463,8 +729,8 @@ mod tests {
         let json = serde_json::to_string(&request).unwrap();
         assert!(json.contains("\"name\":\"Test Queue\""));
         assert!(json.contains("\"description\":\"Test description\""));
-        assert!(json.contains("\"queueType\":\"single\""));
-        assert!(json.contains("\"rubricInstructions\":\"Test rubric\""));
+        assert!(json.contains("\"queue_type\":\"single\""));
+        assert!(json.contains("\"rubric_instructions\":\"Test rubric\""));
     }
 
     #[test]
@@ -502,7 +768,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&params).unwrap();
-        assert!(json.contains("\"nameContains\":\"review\""));
+        assert!(json.contains("\"name_contains\":\"review\""));
         assert!(json.contains("\"limit\":50"));
     }
 
@@ -516,31 +782,51 @@ mod tests {
         };
 
         let json = serde_json::to_string(&item).unwrap();
-        assert!(json.contains("\"feedbackKey\":\"accuracy\""));
+        assert!(json.contains("\"feedback_key\":\"accuracy\""));
         assert!(json.contains("\"description\":\"Rate accuracy\""));
     }
 
     #[test]
-    fn test_run_with_annotation_queue_info_deserialization() {
+    fn test_queue_item_deserialization_blank_ids() {
         let json = r#"{
             "id": "123e4567-e89b-12d3-a456-426614174000",
-            "name": "ChatOpenAI",
-            "run_type": "llm",
-            "trace_id": "223e4567-e89b-12d3-a456-426614174001",
-            "dotted_order": "20240101T000000000000Z123e4567-e89b-12d3-a456-426614174000",
-            "status": "success",
-            "session_id": "323e4567-e89b-12d3-a456-426614174002",
-            "app_path": "/chat",
-            "queue_run_id": "423e4567-e89b-12d3-a456-426614174003",
-            "last_reviewed_time": "2024-01-01T13:00:00Z",
+            "queue_id": "223e4567-e89b-12d3-a456-426614174001",
+            "item_type": "THREAD",
+            "run_id": "",
+            "thread_id": "thread-1",
             "added_at": "2024-01-01T12:00:00Z",
-            "effective_added_at": "2024-01-01T12:00:00Z"
+            "last_reviewed_time": null
         }"#;
 
-        let run: RunWithAnnotationQueueInfo = serde_json::from_str(json).unwrap();
-        assert_eq!(run.run.name, "ChatOpenAI");
-        assert!(run.last_reviewed_time.is_some());
-        assert!(run.added_at.is_some());
-        assert!(run.effective_added_at.is_some());
+        let item: AnnotationQueueItem = serde_json::from_str(json).unwrap();
+        assert_eq!(item.item_type, Some(AnnotationQueueItemType::Thread));
+        assert!(item.run_id.is_none());
+        assert!(item.added_at.is_some());
+        assert!(item.last_reviewed_time.is_none());
+    }
+
+    #[test]
+    fn test_queue_item_input_serialization() {
+        let run_id = Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000").unwrap();
+        let input = AnnotationQueueItemInput {
+            item_type: Some(AnnotationQueueItemType::Run),
+            run_id: Some(run_id),
+            ..Default::default()
+        };
+        let value = serde_json::to_value(&input).unwrap();
+        assert_eq!(
+            value,
+            serde_json::json!({"item_type": "RUN", "run_id": run_id.to_string()})
+        );
+    }
+
+    #[test]
+    fn test_item_status_wire_values() {
+        for status in AnnotationQueueItemStatus::ALL {
+            assert_eq!(
+                serde_json::to_string(&status).unwrap(),
+                format!("\"{}\"", status.as_str())
+            );
+        }
     }
 }

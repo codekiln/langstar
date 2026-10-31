@@ -904,12 +904,46 @@ impl LangchainClient {
         self.execute_status_only_request(request).await
     }
 
-    /// Add runs to an annotation queue.
+    /// Add items to an annotation queue.
     ///
-    /// # Arguments
+    /// The API takes at most 100 items per request, so a longer list is sent in
+    /// several requests. Returns the created items, each with its queue item ID.
     ///
-    /// * `queue_id` - The UUID of the annotation queue
-    /// * `run_ids` - Vector of run UUIDs to add to the queue
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/platform/annotation-queues/{queue_id}/items`
+    /// - Request body: `{"items": [AnnotationQueueItemInput]}`, at most 100 per request
+    pub async fn add_items_to_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        items: Vec<crate::annotation_queues::AnnotationQueueItemInput>,
+    ) -> Result<Vec<crate::annotation_queues::AnnotationQueueItem>> {
+        #[derive(Deserialize)]
+        struct AddResponse {
+            #[serde(default)]
+            items: Vec<crate::annotation_queues::AnnotationQueueItem>,
+        }
+
+        let path = format!("/api/v1/platform/annotation-queues/{}/items", queue_id);
+        let mut created = Vec::with_capacity(items.len());
+        for chunk in items.chunks(100) {
+            let request = self
+                .langsmith_post(&path)?
+                .json(&serde_json::json!({ "items": chunk }));
+            let response: AddResponse = self.execute(request).await?;
+            created.extend(response.items);
+        }
+        Ok(created)
+    }
+
+    /// Add runs to an annotation queue by run ID.
+    ///
+    /// Each run becomes a `RUN` item that carries only its `run_id`. To locate a run
+    /// directly, as langsmith-sdk's `RunKey` does, build [`AnnotationQueueItemInput`]s with
+    /// `project_id` and `start_time` and call
+    /// [`add_items_to_annotation_queue`](Self::add_items_to_annotation_queue).
+    ///
+    /// [`AnnotationQueueItemInput`]: crate::annotation_queues::AnnotationQueueItemInput
     ///
     /// # Example
     ///
@@ -921,114 +955,243 @@ impl LangchainClient {
     /// let client = LangchainClient::new(auth)?;
     ///
     /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
-    /// let run_ids = vec![
-    ///     Uuid::parse_str("abcdef01-1234-1234-1234-123456789012").unwrap(),
-    ///     Uuid::parse_str("abcdef02-1234-1234-1234-123456789012").unwrap(),
-    /// ];
+    /// let run_ids = vec![Uuid::parse_str("abcdef01-1234-1234-1234-123456789012").unwrap()];
     ///
-    /// client.add_runs_to_annotation_queue(queue_id, run_ids).await?;
-    /// println!("Runs added successfully");
+    /// let items = client.add_runs_to_annotation_queue(queue_id, run_ids).await?;
+    /// println!("Added {} items", items.len());
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// # API Reference
     ///
-    /// - Endpoint: `POST /api/v1/annotation-queues/{queue_id}/runs`
-    /// - Request body: JSON array of UUID strings
-    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    /// - Endpoint: `POST /api/v1/platform/annotation-queues/{queue_id}/items`
     pub async fn add_runs_to_annotation_queue(
         &self,
         queue_id: uuid::Uuid,
         run_ids: Vec<uuid::Uuid>,
-    ) -> Result<()> {
-        let path = format!("/api/v1/annotation-queues/{}/runs", queue_id);
-
-        // Convert UUIDs to strings for JSON serialization
-        let run_id_strings: Vec<String> = run_ids.iter().map(|id| id.to_string()).collect();
-
-        let request_builder = self.langsmith_post(&path)?.json(&run_id_strings);
-        self.execute_status_only_request(request_builder).await
+    ) -> Result<Vec<crate::annotation_queues::AnnotationQueueItem>> {
+        let items = run_ids
+            .into_iter()
+            .map(
+                |run_id| crate::annotation_queues::AnnotationQueueItemInput {
+                    item_type: Some(crate::annotation_queues::AnnotationQueueItemType::Run),
+                    run_id: Some(run_id),
+                    ..Default::default()
+                },
+            )
+            .collect();
+        self.add_items_to_annotation_queue(queue_id, items).await
     }
 
-    /// Remove a run from an annotation queue.
+    /// List one page of the items in one review section of an annotation queue.
     ///
-    /// # Arguments
-    ///
-    /// * `queue_id` - The UUID of the annotation queue
-    /// * `run_id` - The UUID of the run to remove
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use langstar_sdk::{AuthConfig, LangchainClient};
-    /// # use uuid::Uuid;
-    /// # async fn example() -> langstar_sdk::Result<()> {
-    /// let auth = AuthConfig::from_env()?;
-    /// let client = LangchainClient::new(auth)?;
-    ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
-    /// let run_id = Uuid::parse_str("abcdef01-1234-1234-1234-123456789012").unwrap();
-    ///
-    /// client.delete_run_from_annotation_queue(queue_id, run_id).await?;
-    /// println!("Run removed successfully");
-    /// # Ok(())
-    /// # }
-    /// ```
+    /// Pass the returned `next_cursor` as `cursor` to get the next page.
     ///
     /// # API Reference
     ///
-    /// - Endpoint: `DELETE /api/v1/annotation-queues/{queue_id}/runs/{run_id}`
-    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
+    /// - Endpoint: `GET /api/v1/platform/annotation-queues/{queue_id}/items`
+    pub async fn list_annotation_queue_items(
+        &self,
+        queue_id: uuid::Uuid,
+        params: crate::annotation_queues::ListAnnotationQueueItemsParams,
+        cursor: Option<&str>,
+    ) -> Result<crate::annotation_queues::ListAnnotationQueueItemsResponse> {
+        let path = format!("/api/v1/platform/annotation-queues/{}/items", queue_id);
+        let mut request = self
+            .langsmith_get(&path)?
+            .query(&[("status", params.status.as_str())]);
+        if let Some(page_size) = params.page_size {
+            request = request.query(&[("page_size", page_size)]);
+        }
+        if let Some(item_type) = params.item_type {
+            request = request.query(&[("item_type", item_type.as_str())]);
+        }
+        if let Some(cursor) = cursor {
+            request = request.query(&[("cursor", cursor)]);
+        }
+        self.execute(request).await
+    }
+
+    /// List the items of one review section across pages.
+    ///
+    /// Returns up to `limit` items, or every item in the section when `limit` is `None`.
+    /// The call requests the next page whenever `next_cursor` is non-empty, even after an
+    /// empty page, and stops if the API sends a cursor the call has already used.
+    pub async fn collect_annotation_queue_items(
+        &self,
+        queue_id: uuid::Uuid,
+        params: crate::annotation_queues::ListAnnotationQueueItemsParams,
+        limit: Option<usize>,
+    ) -> Result<Vec<crate::annotation_queues::AnnotationQueueListItem>> {
+        let mut items = Vec::new();
+        if limit == Some(0) {
+            return Ok(items);
+        }
+        let mut cursor: Option<String> = None;
+        let mut seen_cursors = std::collections::HashSet::new();
+        loop {
+            let page = self
+                .list_annotation_queue_items(queue_id, params, cursor.as_deref())
+                .await?;
+            for item in page.items {
+                items.push(item);
+                if limit.is_some_and(|limit| items.len() >= limit) {
+                    return Ok(items);
+                }
+            }
+            match page.next_cursor {
+                Some(next) if !next.is_empty() && seen_cursors.insert(next.clone()) => {
+                    cursor = Some(next)
+                }
+                _ => return Ok(items),
+            }
+        }
+    }
+
+    /// Count the items in one review section of an annotation queue, or every item with
+    /// [`AnnotationQueueItemCountStatus::All`].
+    ///
+    /// [`AnnotationQueueItemCountStatus::All`]: crate::annotation_queues::AnnotationQueueItemCountStatus::All
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/platform/annotation-queues/{queue_id}/items/count`
+    pub async fn count_annotation_queue_items(
+        &self,
+        queue_id: uuid::Uuid,
+        status: impl Into<crate::annotation_queues::AnnotationQueueItemCountStatus>,
+    ) -> Result<u64> {
+        let status = status.into();
+        let path = format!(
+            "/api/v1/platform/annotation-queues/{}/items/count",
+            queue_id
+        );
+        let request = self
+            .langsmith_get(&path)?
+            .query(&[("status", status.as_str())]);
+        let response: crate::annotation_queues::AnnotationQueueItemCountResponse =
+            self.execute(request).await?;
+        Ok(response.count)
+    }
+
+    /// Update an item of an annotation queue.
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `PATCH /api/v1/platform/annotation-queues/{queue_id}/items/{item_id}`
+    pub async fn update_annotation_queue_item(
+        &self,
+        queue_id: uuid::Uuid,
+        item_id: uuid::Uuid,
+        request: crate::annotation_queues::PatchAnnotationQueueItemRequest,
+    ) -> Result<crate::annotation_queues::AnnotationQueueItem> {
+        let path = format!(
+            "/api/v1/platform/annotation-queues/{}/items/{}",
+            queue_id, item_id
+        );
+        let request = self.langsmith_patch(&path)?.json(&request);
+        self.execute(request).await
+    }
+
+    /// Get where an item sits in its annotation queue.
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `GET /api/v1/platform/annotation-queues/{queue_id}/items/{item_id}/placement`
+    pub async fn get_annotation_queue_item_placement(
+        &self,
+        queue_id: uuid::Uuid,
+        item_id: uuid::Uuid,
+    ) -> Result<crate::annotation_queues::AnnotationQueueItemPlacement> {
+        let path = format!(
+            "/api/v1/platform/annotation-queues/{}/items/{}/placement",
+            queue_id, item_id
+        );
+        let request = self.langsmith_get(&path)?;
+        self.execute(request).await
+    }
+
+    /// Remove items from an annotation queue by queue item ID.
+    ///
+    /// The IDs are the `id` of each [`AnnotationQueueItem`] or
+    /// [`AnnotationQueueListItem`], not run IDs; to remove a run by its run ID, use
+    /// [`delete_run_from_annotation_queue`](Self::delete_run_from_annotation_queue).
+    ///
+    /// [`AnnotationQueueItem`]: crate::annotation_queues::AnnotationQueueItem
+    /// [`AnnotationQueueListItem`]: crate::annotation_queues::AnnotationQueueListItem
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoint: `POST /api/v1/platform/annotation-queues/{queue_id}/items/delete`
+    pub async fn delete_items_from_annotation_queue(
+        &self,
+        queue_id: uuid::Uuid,
+        item_ids: Vec<uuid::Uuid>,
+    ) -> Result<()> {
+        let path = format!(
+            "/api/v1/platform/annotation-queues/{}/items/delete",
+            queue_id
+        );
+        let request = self
+            .langsmith_post(&path)?
+            .json(&serde_json::json!({ "item_ids": item_ids }));
+        self.execute_status_only_request(request).await
+    }
+
+    /// Remove a run from an annotation queue by run ID.
+    ///
+    /// The items API deletes by queue item ID, so this lists every review section for the
+    /// item whose `run_id` matches, page by page, and deletes it. Returns `Ok(false)` when the queue
+    /// holds no item for the run.
+    ///
+    /// # API Reference
+    ///
+    /// - Endpoints: `GET /api/v1/platform/annotation-queues/{queue_id}/items`, then
+    ///   `POST /api/v1/platform/annotation-queues/{queue_id}/items/delete`
     pub async fn delete_run_from_annotation_queue(
         &self,
         queue_id: uuid::Uuid,
         run_id: uuid::Uuid,
-    ) -> Result<()> {
-        let path = format!("/api/v1/annotation-queues/{}/runs/{}", queue_id, run_id);
-        let request = self.langsmith_delete(&path)?;
-        self.execute_status_only_request(request).await
-    }
+    ) -> Result<bool> {
+        use crate::annotation_queues::{
+            AnnotationQueueItemStatus, AnnotationQueueItemType, ListAnnotationQueueItemsParams,
+        };
 
-    /// Get a run from an annotation queue at the specified index.
-    ///
-    /// # Arguments
-    ///
-    /// * `queue_id` - The UUID of the annotation queue
-    /// * `index` - Zero-based index of the run in the queue
-    ///
-    /// # Returns
-    ///
-    /// A `RunWithAnnotationQueueInfo` containing the run data and queue-specific metadata.
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use langstar_sdk::{AuthConfig, LangchainClient};
-    /// # use uuid::Uuid;
-    /// # async fn example() -> langstar_sdk::Result<()> {
-    /// let auth = AuthConfig::from_env()?;
-    /// let client = LangchainClient::new(auth)?;
-    ///
-    /// let queue_id = Uuid::parse_str("12345678-1234-1234-1234-123456789012").unwrap();
-    /// let run = client.get_run_from_annotation_queue(queue_id, 0).await?;
-    /// println!("Run: {} (added at: {:?})", run.run.name, run.added_at);
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # API Reference
-    ///
-    /// - Endpoint: `GET /api/v1/annotation-queues/{queue_id}/run/{index}`
-    /// - OpenAPI spec: <https://api.smith.langchain.com/openapi.json>
-    pub async fn get_run_from_annotation_queue(
-        &self,
-        queue_id: uuid::Uuid,
-        index: u32,
-    ) -> Result<crate::annotation_queues::RunWithAnnotationQueueInfo> {
-        let path = format!("/api/v1/annotation-queues/{}/run/{}", queue_id, index);
-        let request = self.langsmith_get(&path)?;
-        self.execute(request).await
+        let mut matches = Vec::new();
+        for status in AnnotationQueueItemStatus::ALL {
+            let mut params = ListAnnotationQueueItemsParams::new(status);
+            params.item_type = Some(AnnotationQueueItemType::Run);
+            params.page_size = Some(100);
+            // Walk the pages and keep only the matching item IDs, so a large queue is
+            // never held in memory whole.
+            let mut cursor: Option<String> = None;
+            let mut seen_cursors = std::collections::HashSet::new();
+            loop {
+                let page = self
+                    .list_annotation_queue_items(queue_id, params, cursor.as_deref())
+                    .await?;
+                matches.extend(
+                    page.items
+                        .iter()
+                        .filter(|item| item.run_id == Some(run_id))
+                        .map(|item| item.id),
+                );
+                match page.next_cursor {
+                    Some(next) if !next.is_empty() && seen_cursors.insert(next.clone()) => {
+                        cursor = Some(next)
+                    }
+                    _ => break,
+                }
+            }
+        }
+
+        if matches.is_empty() {
+            return Ok(false);
+        }
+        self.delete_items_from_annotation_queue(queue_id, matches)
+            .await?;
+        Ok(true)
     }
 
     // ═══════════════════════════════════════════════════════════════════════
