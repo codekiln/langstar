@@ -158,13 +158,27 @@ pub fn read_assistant_export(path: &Path) -> Result<AssistantExport> {
 /// Read a prompt export file's text.
 pub fn parse_prompt_export(text: &str) -> Result<PromptExport> {
     check_header(text, Kind::Prompt)?;
-    Ok(serde_json::from_str(text)?)
+    parse_body(text, Kind::Prompt)
 }
 
 /// Read an assistant export file's text.
 pub fn parse_assistant_export(text: &str) -> Result<AssistantExport> {
     check_header(text, Kind::Assistant)?;
-    Ok(serde_json::from_str(text)?)
+    parse_body(text, Kind::Assistant)
+}
+
+/// Read the whole file as `T`. serde_json's message for a field of the wrong
+/// type quotes the value, which may be a credential, so the error names only
+/// the line and column.
+fn parse_body<T: DeserializeOwned>(text: &str, kind: Kind) -> Result<T> {
+    serde_json::from_str(text).map_err(|error| {
+        CliError::Config(format!(
+            "This {} export file does not match the format at line {}, column {}.",
+            kind.name(),
+            error.line(),
+            error.column()
+        ))
+    })
 }
 
 /// Serialize as JSON with the keys sorted at every level, and a trailing
@@ -244,11 +258,20 @@ impl Default for AssistantDestinations {
 }
 
 /// Read the record at `path`, or an empty one when no file is there yet.
+///
+/// Only a missing file reads as empty. A record langstar cannot read, such as
+/// one in a directory the user may not list, is an error, so import never
+/// starts from an empty record and loses the IDs the old one held.
 pub fn read_record<T: DeserializeOwned + Default>(path: &Path) -> Result<T> {
-    if !path.exists() {
-        return Ok(T::default());
+    match std::fs::read_to_string(path) {
+        Ok(text) => Ok(serde_json::from_str(&text)?),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(T::default()),
+        Err(source) => Err(CliError::Config(format!(
+            "Could not read {}: {}",
+            path.display(),
+            source
+        ))),
     }
-    Ok(serde_json::from_str(&read_to_string(path)?)?)
 }
 
 /// Replace the record at `path` with `record`.
@@ -306,7 +329,8 @@ fn check_header(text: &str, expected: Kind) -> Result<()> {
     if format_version.as_u64() != Some(FORMAT_VERSION as u64) {
         return Err(CliError::Config(format!(
             "This export file's format_version is {}, and langstar reads format_version {}.",
-            format_version, FORMAT_VERSION
+            shown(format_version),
+            FORMAT_VERSION
         )));
     }
 
@@ -316,13 +340,34 @@ fn check_header(text: &str, expected: Kind) -> Result<()> {
     if kind.as_str() != Some(expected.name()) {
         return Err(CliError::Config(format!(
             "This export file's kind is {}, and the {} commands read a file whose kind is {}.",
-            kind,
+            shown(kind),
             expected.name(),
             expected.name()
         )));
     }
 
     Ok(())
+}
+
+/// A header value as an error message may print it: a number, `prompt` or
+/// `assistant` as it is, and anything else by its JSON type alone, so a
+/// credential pasted into the header never reaches the terminal.
+fn shown(value: &Value) -> String {
+    match value {
+        Value::Number(number) => number.to_string(),
+        Value::String(text)
+            if [Kind::Prompt, Kind::Assistant]
+                .iter()
+                .any(|kind| kind.name() == text) =>
+        {
+            text.clone()
+        }
+        Value::String(_) => "a string".to_string(),
+        Value::Null => "null".to_string(),
+        Value::Bool(_) => "a boolean".to_string(),
+        Value::Array(_) => "an array".to_string(),
+        Value::Object(_) => "an object".to_string(),
+    }
 }
 
 fn sort_keys(value: Value) -> Value {
@@ -481,6 +526,34 @@ mod tests {
         assert!(message.contains("prompt"), "got {message}");
     }
 
+    #[test]
+    fn a_header_error_leaves_out_a_string_it_does_not_know() {
+        let secret = "sk-abcdefghijklmnopqrstuvwxyz";
+        for text in [
+            format!(r#"{{"kind": "prompt", "format_version": "{secret}"}}"#),
+            format!(r#"{{"kind": "{secret}", "format_version": 1}}"#),
+        ] {
+            let message = parse_prompt_export(&text)
+                .expect_err("the header is refused")
+                .to_string();
+            assert!(!message.contains(secret), "got {message}");
+            assert!(message.contains("a string"), "got {message}");
+        }
+    }
+
+    #[test]
+    fn a_field_of_the_wrong_type_is_refused_without_its_value() {
+        let secret = "sk-abcdefghijklmnopqrstuvwxyz";
+        let text = format!(
+            r#"{{"kind": "assistant", "format_version": 1, "source": {{"deployment_id": "d", "assistant_id": "a", "version": "{secret}"}}}}"#
+        );
+        let message = parse_assistant_export(&text)
+            .expect_err("a string version is refused")
+            .to_string();
+        assert!(!message.contains(secret), "got {message}");
+        assert!(message.contains("line 1"), "got {message}");
+    }
+
     // The destination record
 
     #[test]
@@ -498,6 +571,31 @@ mod tests {
             read_record(&directory.path().join("my-prompt.destinations.json"))
                 .expect("an absent record reads as empty");
         assert_eq!(record, PromptDestinations::default());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_record_langstar_cannot_read_is_an_error_not_an_empty_record() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = TempDir::new().expect("a temporary directory");
+        let locked = directory.path().join("locked");
+        std::fs::create_dir(&locked).expect("the directory is created");
+        let path = locked.join("my-prompt.destinations.json");
+        std::fs::write(&path, "{}").expect("the record writes");
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000))
+            .expect("the directory is locked");
+        // root lists any directory, and then the record is readable after all.
+        let privileged = std::fs::read_dir(&locked).is_ok();
+        let result: Result<PromptDestinations> = read_record(&path);
+        std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755))
+            .expect("the directory is unlocked");
+        if privileged {
+            return;
+        }
+        let message = result
+            .expect_err("an unreadable record is refused")
+            .to_string();
+        assert!(message.contains("Could not read"), "got {message}");
     }
 
     #[test]
