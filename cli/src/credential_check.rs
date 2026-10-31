@@ -379,13 +379,21 @@ fn provider_token_candidates(text: &str) -> impl Iterator<Item = &str> {
 /// Each run of base64url characters, dots and `=` padding that starts at an
 /// `eyJ`, with a dot that ends a sentence trimmed off. Starting at `eyJ` finds
 /// a JSON Web Token after `=` in an assignment or a URL query.
+///
+/// An `eyJ` inside a run already read starts no new run, so text such as
+/// `eyJeyJeyJ…` takes one pass rather than a pass to the end for each `eyJ`.
 fn json_web_token_candidates(text: &str) -> impl Iterator<Item = &str> {
-    text.match_indices("eyJ").map(move |(at, _)| {
+    let mut read_to = 0;
+    text.match_indices("eyJ").filter_map(move |(at, _)| {
+        if at < read_to {
+            return None;
+        }
         let from = &text[at..];
         let end = from
             .find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '=')))
             .unwrap_or(from.len());
-        from[..end].trim_end_matches('.')
+        read_to = at + end;
+        Some(from[..end].trim_end_matches('.'))
     })
 }
 
@@ -438,9 +446,14 @@ fn url_with_password(text: &str) -> bool {
 fn connection_string_with_password(text: &str) -> bool {
     let lowered = text.to_ascii_lowercase();
     CONNECTION_STRING_KEYS.iter().any(|key| {
+        // Stop at the first character that is not a space, so text that repeats a
+        // key with no `;`, as in `pwd=pwd=pwd=`, takes one pass rather than
+        // a pass to the end for each key.
         occurrences(&lowered, key).any(|after| {
-            let value_end = after.find(';').unwrap_or(after.len());
-            !after[..value_end].trim().is_empty()
+            after
+                .chars()
+                .take_while(|c| *c != ';')
+                .any(|c| !c.is_whitespace())
         })
     })
 }
@@ -696,6 +709,19 @@ mod tests {
                 "{text:?} should be flagged"
             );
         }
+    }
+
+    #[test]
+    fn checks_long_repeated_text_in_one_pass() {
+        let start = std::time::Instant::now();
+        for text in ["pwd=".repeat(200_000), "eyJ".repeat(200_000)] {
+            flag(&text, Some("note"));
+        }
+        assert!(
+            start.elapsed() < std::time::Duration::from_secs(5),
+            "the check took {:?}",
+            start.elapsed()
+        );
     }
 
     #[test]
