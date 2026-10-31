@@ -274,6 +274,12 @@ pub struct Prompt {
     pub is_public: bool,
 }
 
+/// The `repo_handle` to send when creating a repo: `-/name` (`-` is the current
+/// workspace) becomes `name`, and every other handle is sent as given.
+fn create_repo_handle(repo_handle: &str) -> &str {
+    repo_handle.strip_prefix("-/").unwrap_or(repo_handle)
+}
+
 /// Client for interacting with LangSmith Prompts API
 pub struct PromptClient<'a> {
     client: &'a LangchainClient,
@@ -439,7 +445,11 @@ impl<'a> PromptClient<'a> {
     /// Create a new prompt repository
     ///
     /// # Arguments
-    /// * `repo_handle` - The handle for the repository (e.g., "owner/repo-name")
+    /// * `repo_handle` - The handle for the repository (e.g., "owner/repo-name"). A
+    ///   `-/repo-name` handle, where `-` means the current workspace, is sent as
+    ///   just `repo-name`, because the API rejects a handle that contains `-/`.
+    ///   [`langsmith-sdk`](https://github.com/langchain-ai/langsmith-sdk/blob/9966fd69a631369398d7598d8d725868f9c74339/python/langsmith/client.py#L9904)
+    ///   also sends only the name.
     /// * `description` - Optional description
     /// * `readme` - Optional readme content
     /// * `is_public` - Whether the repository is public (default: false)
@@ -464,7 +474,7 @@ impl<'a> PromptClient<'a> {
         }
 
         let request_body = CreateRepoRequest {
-            repo_handle: repo_handle.to_string(),
+            repo_handle: create_repo_handle(repo_handle).to_string(),
             description,
             readme,
             is_public,
@@ -856,6 +866,17 @@ mod tests {
     use super::*;
     use crate::auth::AuthConfig;
     use serde_json::json;
+
+    #[test]
+    fn test_create_repo_handle_drops_current_workspace_owner() {
+        assert_eq!(create_repo_handle("-/my-prompt"), "my-prompt");
+    }
+
+    #[test]
+    fn test_create_repo_handle_keeps_named_owner_and_bare_name() {
+        assert_eq!(create_repo_handle("acme/my-prompt"), "acme/my-prompt");
+        assert_eq!(create_repo_handle("my-prompt"), "my-prompt");
+    }
 
     #[test]
     fn test_prompt_client_creation() {
