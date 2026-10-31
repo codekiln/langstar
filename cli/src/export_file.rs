@@ -47,6 +47,7 @@ impl Kind {
 
 /// One prompt commit, with everything import needs to recreate it elsewhere.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptExport {
     pub kind: Kind,
     pub format_version: u32,
@@ -59,6 +60,7 @@ pub struct PromptExport {
 /// Where the prompt came from. Compare never reads these, so a copy in another
 /// workspace is no difference.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptSource {
     pub workspace_id: String,
     pub handle: String,
@@ -67,6 +69,7 @@ pub struct PromptSource {
 
 /// The prompt's repo details, which import sets with `--update`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptRepo {
     pub handle: String,
     pub description: Option<String>,
@@ -83,6 +86,7 @@ pub struct PromptRepo {
 /// pushes a commit, so the file records what the source held and the comparison
 /// skips them. A commit saved without a model has neither.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptCommit {
     pub description: Option<String>,
     pub manifest: Value,
@@ -98,6 +102,7 @@ pub struct PromptCommit {
 /// `model_class` is null for a prompt saved without a model, and verify then
 /// looks for no saved model configuration.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromptRequires {
     pub secrets: BTreeSet<String>,
     pub model_class: Option<String>,
@@ -106,6 +111,7 @@ pub struct PromptRequires {
 /// One assistant, with everything import needs to recreate it on another
 /// deployment.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantExport {
     pub kind: Kind,
     pub format_version: u32,
@@ -116,6 +122,7 @@ pub struct AssistantExport {
 
 /// Where the assistant came from.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantSource {
     pub deployment_id: String,
     pub assistant_id: String,
@@ -126,6 +133,7 @@ pub struct AssistantSource {
 /// the Agent Server mirrors from whichever field it was given, so export writes
 /// both as the server returned them and the comparison reads them once.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantBody {
     pub name: String,
     pub description: Option<String>,
@@ -141,6 +149,7 @@ pub struct AssistantBody {
 /// with `--prompt-ref` and the prompt name that pointer held at export, such as
 /// `support-system:prod`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AssistantRequires {
     pub prompts: BTreeMap<String, String>,
 }
@@ -167,18 +176,31 @@ pub fn parse_assistant_export(text: &str) -> Result<AssistantExport> {
     parse_body(text, Kind::Assistant)
 }
 
-/// Read the whole file as `T`. serde_json's message for a field of the wrong
-/// type quotes the value, which may be a credential, so the error names only
-/// the line and column.
+/// Read the whole file as `T`, refusing a field the format does not have, so a
+/// setting no comparison would read never passes unseen. serde_json's message
+/// for a field of the wrong type quotes the value, which may be a credential, so
+/// the error names the line and column, and the field's name when it is unknown.
 fn parse_body<T: DeserializeOwned>(text: &str, kind: Kind) -> Result<T> {
     serde_json::from_str(text).map_err(|error| {
+        let unknown = unknown_field(&error)
+            .map(|field| format!(" It has a field langstar does not know, `{field}`."))
+            .unwrap_or_default();
         CliError::Config(format!(
-            "This {} export file does not match the format at line {}, column {}.",
+            "This {} export file does not match the format at line {}, column {}.{}",
             kind.name(),
             error.line(),
-            error.column()
+            error.column(),
+            unknown
         ))
     })
+}
+
+/// The field named in serde_json's "unknown field `name`" message, if that is
+/// the error. A field name is a key, not a value, so it is safe to print.
+fn unknown_field(error: &serde_json::Error) -> Option<String> {
+    let message = error.to_string();
+    let rest = message.strip_prefix("unknown field `")?;
+    Some(rest[..rest.find('`')?].to_string())
 }
 
 /// Serialize as JSON with the keys sorted at every level, and a trailing
@@ -574,6 +596,17 @@ mod tests {
             assert!(!message.contains(secret), "got {message}");
             assert!(message.contains("a string"), "got {message}");
         }
+    }
+
+    #[test]
+    fn refuses_an_export_file_with_a_field_langstar_does_not_know() {
+        let export = prompt_export(&["support"], &["prod"], &["OPENAI_API_KEY"]);
+        let mut value = serde_json::to_value(&export).expect("an export serializes");
+        value["commit"]["temperature_override"] = serde_json::json!(0.2);
+        let message = parse_prompt_export(&value.to_string())
+            .expect_err("an unknown field is refused")
+            .to_string();
+        assert!(message.contains("temperature_override"), "got {message}");
     }
 
     #[test]
