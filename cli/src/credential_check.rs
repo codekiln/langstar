@@ -412,6 +412,9 @@ fn basic_value(text: &str) -> bool {
     })
 }
 
+/// Whether `payload` decodes to `user:password`. The bytes are read without a
+/// character set, because a client may encode the pair in Latin-1 rather than
+/// UTF-8, so a `:` and no ASCII control byte is enough.
 fn decodes_to_user_and_password(payload: &str) -> bool {
     if payload.is_empty() {
         return false;
@@ -419,10 +422,7 @@ fn decodes_to_user_and_password(payload: &str) -> bool {
     let Ok(bytes) = BASE64.decode(payload) else {
         return false;
     };
-    let Ok(decoded) = std::str::from_utf8(&bytes) else {
-        return false;
-    };
-    decoded.contains(':') && !decoded.chars().any(char::is_control)
+    bytes.contains(&b':') && !bytes.iter().any(u8::is_ascii_control)
 }
 
 fn pem_private_key(text: &str) -> bool {
@@ -730,6 +730,18 @@ mod tests {
         assert_eq!(
             flagged_under_note("Basic dXNlcjpwYXNz"),
             Some(Rule::BasicValue)
+        );
+    }
+
+    #[test]
+    fn flags_a_basic_value_whose_password_is_latin_1() {
+        use base64::Engine;
+        // `user:pässwort` with ä as the single Latin-1 byte 0xE4, which is not UTF-8.
+        let text = format!("Basic {}", BASE64.encode(b"user:p\xe4sswort"));
+        assert_eq!(flagged_under_note(&text), Some(Rule::BasicValue));
+        assert_eq!(
+            redact_at("/note", &Value::String(text)),
+            Value::String(REDACTED.to_string())
         );
     }
 
