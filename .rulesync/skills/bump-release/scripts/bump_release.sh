@@ -158,11 +158,17 @@ fetch_tags() {
 }
 
 analyze_commits() {
-    log_info "Analyzing commits since last release..."
+    # stdout of this function is the JSON, so the progress line goes to stderr.
+    log_info "Analyzing commits since last release..." >&2
 
-    local analysis
-    if ! analysis=$("$SCRIPT_DIR/analyze_commits.py" --format json 2>&1); then
-        log_error "Failed to analyze commits"
+    # analyze_commits.py prints JSON and exits 0, 1, 2 or 3 for no bump, patch, minor
+    # or major; prepare-release.yml reads the same exit codes. It also exits 1, with
+    # no JSON, when there are no commits since the last tag, so this function
+    # fails when the exit code is above 3 or the output is not JSON.
+    local analysis status=0
+    analysis=$("$SCRIPT_DIR/analyze_commits.py" --format json) || status=$?
+    if (( status > 3 )) || ! python3 -c "import sys, json; json.load(sys.stdin)" <<<"$analysis" 2>/dev/null; then
+        log_error "Failed to analyze commits (exit $status)"
         echo "$analysis" >&2
         return 1
     fi
@@ -511,5 +517,7 @@ main() {
     echo ""
 }
 
-# Run main
-main "$@"
+# Run main, unless a test sources this file to call one function
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
