@@ -604,6 +604,7 @@ fn test_deployment_url_extraction() {
         latest_revision_id: None,
         active_revision_id: None,
         image_version: None,
+        tenant_id: None,
     };
 
     let url = deployment_with_url.custom_url();
@@ -631,6 +632,7 @@ fn test_deployment_url_extraction() {
         latest_revision_id: None,
         active_revision_id: None,
         image_version: None,
+        tenant_id: None,
     };
 
     let url = deployment_without_url.custom_url();
@@ -657,6 +659,7 @@ fn test_deployment_url_extraction() {
         latest_revision_id: None,
         active_revision_id: None,
         image_version: None,
+        tenant_id: None,
     };
 
     let url = deployment_with_null_url.custom_url();
