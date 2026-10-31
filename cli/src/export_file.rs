@@ -1,5 +1,5 @@
-//! The export file a prompt or an assistant moves through, and the record of
-//! where langstar has imported it.
+//! The export file that carries a prompt or an assistant from one LangSmith
+//! environment to another, and the record of where langstar has imported it.
 //!
 //! Export writes the file, a reviewer reads it in Git, and import reads it in
 //! the destination environment later. The file holds no export time and its
@@ -196,7 +196,8 @@ fn parse_body<T: DeserializeOwned>(text: &str, kind: Kind) -> Result<T> {
 }
 
 /// The field named in serde_json's "unknown field `name`" message, if that is
-/// the error. A field name is a key, not a value, so it is safe to print.
+/// the error. The name comes from the file's keys and holds none of its values,
+/// so it is safe to print.
 fn unknown_field(error: &serde_json::Error) -> Option<String> {
     let message = error.to_string();
     let rest = message.strip_prefix("unknown field `")?;
