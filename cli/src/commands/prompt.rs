@@ -28,10 +28,6 @@ pub enum PromptCommands {
         #[arg(long)]
         organization_id: Option<String>,
 
-        /// Workspace ID for narrower scoping (overrides config/env)
-        #[arg(long)]
-        workspace_id: Option<String>,
-
         /// Show only public prompts (default: private when scoped, any when not scoped)
         #[arg(long)]
         public: bool,
@@ -63,10 +59,6 @@ pub enum PromptCommands {
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
-
-        /// Workspace ID for narrower scoping (overrides config/env)
-        #[arg(long)]
-        workspace_id: Option<String>,
     },
 
     /// Search for prompts
@@ -81,10 +73,6 @@ pub enum PromptCommands {
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
-
-        /// Workspace ID for narrower scoping (overrides config/env)
-        #[arg(long)]
-        workspace_id: Option<String>,
 
         /// Show only public prompts (default: private when scoped, any when not scoped)
         #[arg(long)]
@@ -128,10 +116,6 @@ pub enum PromptCommands {
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
-
-        /// Workspace ID for narrower scoping (overrides config/env)
-        #[arg(long)]
-        workspace_id: Option<String>,
     },
 
     /// Pull a prompt from the PromptHub
@@ -146,10 +130,6 @@ pub enum PromptCommands {
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
         organization_id: Option<String>,
-
-        /// Workspace ID for narrower scoping (overrides config/env)
-        #[arg(long)]
-        workspace_id: Option<String>,
     },
 }
 
@@ -398,7 +378,6 @@ impl PromptCommands {
                 limit,
                 offset,
                 organization_id,
-                workspace_id,
                 public,
                 full,
                 columns,
@@ -427,7 +406,12 @@ impl PromptCommands {
                     }
                 }
 
-                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
+                let client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
                 let visibility = Self::determine_visibility(&client, *public);
 
                 // Show scope information
@@ -484,9 +468,13 @@ impl PromptCommands {
             PromptCommands::Get {
                 handle,
                 organization_id,
-                workspace_id,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
+                let client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
 
                 // Detect if input is a valid UUID using the uuid crate for robust parsing
                 let is_uuid = Uuid::parse_str(handle).is_ok();
@@ -531,11 +519,15 @@ impl PromptCommands {
                 query,
                 limit,
                 organization_id,
-                workspace_id,
                 public,
                 full,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
+                let client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
                 let visibility = Self::determine_visibility(&client, *public);
 
                 // Show scope information
@@ -588,10 +580,14 @@ impl PromptCommands {
                 schema,
                 schema_method,
                 organization_id,
-                workspace_id,
             } => {
                 // Apply scoping from flags/config
-                let mut client = Self::apply_scoping(client, organization_id, workspace_id, config);
+                let mut client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
 
                 // If no organization ID was explicitly provided, try to fetch it
                 if organization_id.is_none() && client.organization_id().is_none() {
@@ -805,9 +801,13 @@ impl PromptCommands {
                 handle,
                 commit,
                 organization_id,
-                workspace_id,
             } => {
-                let client = Self::apply_scoping(client, organization_id, workspace_id, config);
+                let client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
 
                 // Parse handle into owner/repo
                 let parts: Vec<&str> = handle.split('/').collect();

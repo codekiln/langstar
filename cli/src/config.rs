@@ -27,6 +27,10 @@ pub struct Config {
     /// Suppress warning when both organization_id and workspace_id are set
     #[serde(default)]
     pub hide_workspace_and_org_id_message: bool,
+    /// Whether `workspace_id` came from the `--workspace-id` flag rather than
+    /// `LANGSMITH_WORKSPACE_ID` or the config file
+    #[serde(skip)]
+    pub workspace_id_from_flag: bool,
 }
 
 fn default_output_format() -> String {
@@ -82,6 +86,7 @@ impl Default for Config {
             output_format: default_output_format(),
             timezone: default_timezone(),
             hide_workspace_and_org_id_message: false,
+            workspace_id_from_flag: false,
         }
     }
 }
@@ -254,6 +259,20 @@ impl Config {
         std::fs::write(&config_path, content)?;
 
         Ok(())
+    }
+
+    /// Use the workspace ID from the global `--workspace-id` flag, which wins over
+    /// `LANGSMITH_WORKSPACE_ID` and `workspace_id` in the config file
+    pub fn set_workspace_id_from_flag(&mut self, workspace_id: String) {
+        self.workspace_id = Some(workspace_id);
+        self.workspace_id_from_flag = true;
+    }
+
+    /// The workspace ID when it came from the `--workspace-id` flag
+    pub fn workspace_id_flag(&self) -> Option<String> {
+        self.workspace_id
+            .clone()
+            .filter(|_| self.workspace_id_from_flag)
     }
 
     /// Convert to AuthConfig for the SDK
@@ -460,6 +479,7 @@ mod tests {
             output_format: "json".to_string(),
             timezone: "America/New_York".to_string(),
             hide_workspace_and_org_id_message: false,
+            workspace_id_from_flag: false,
         };
 
         let toml = toml::to_string(&config).unwrap();
@@ -480,11 +500,28 @@ mod tests {
             output_format: "table".to_string(),
             timezone: "local".to_string(),
             hide_workspace_and_org_id_message: false,
+            workspace_id_from_flag: false,
         };
 
         let auth = config.to_auth_config();
         assert!(auth.organization_id.is_none());
         assert_eq!(auth.workspace_id, Some("test_workspace_id".to_string()));
+    }
+
+    #[test]
+    fn test_workspace_id_flag_wins_over_env_and_file() {
+        let mut config = Config {
+            workspace_id: Some("from_env_or_file".to_string()),
+            ..Config::default()
+        };
+        assert_eq!(config.workspace_id_flag(), None);
+
+        config.set_workspace_id_from_flag("from_flag".to_string());
+        assert_eq!(config.workspace_id_flag(), Some("from_flag".to_string()));
+        assert_eq!(
+            config.to_auth_config().workspace_id,
+            Some("from_flag".to_string())
+        );
     }
 
     #[test]
@@ -496,6 +533,7 @@ mod tests {
             output_format: "table".to_string(),
             timezone: "UTC".to_string(),
             hide_workspace_and_org_id_message: false,
+            workspace_id_from_flag: false,
         };
 
         let auth = config.to_auth_config();
