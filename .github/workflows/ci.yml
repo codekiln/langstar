@@ -232,18 +232,24 @@ jobs:
           version: 2026.10.2
           install: false
 
-      - name: Check that the destination workspace ID is set
+      - name: Check that the destination workspace ID is set and differs from the source
         # The prompt import tests import into this second workspace. If the
-        # secret is empty, they import back into the workspace they exported
-        # from. The prompt already exists there, so a broken import still
-        # passes. This step stops the job before the tests run.
+        # secret is empty or holds the source workspace's ID, they import back
+        # into the workspace they exported from. The prompt already exists
+        # there, so a broken import still passes. This step stops the job
+        # before the tests run.
         run: |
           if [ -z "$LANGSMITH_DESTINATION_WORKSPACE_ID" ]; then
             echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID is empty. Set it to the ID of the workspace the prompt import tests import into; docs/dev/environment-variables.md describes it under LANGSMITH_DESTINATION_WORKSPACE_ID."
             exit 1
           fi
-          echo "✓ Destination workspace ID set"
+          if [ "$LANGSMITH_DESTINATION_WORKSPACE_ID" = "$LANGSMITH_WORKSPACE_ID" ]; then
+            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID holds the same ID as secrets.LANGSMITH_WORKSPACE_ID. Set it to the second test workspace, which the prompt import tests import into; docs/dev/environment-variables.md describes it under LANGSMITH_DESTINATION_WORKSPACE_ID."
+            exit 1
+          fi
+          echo "✓ Destination workspace ID set, and it differs from the source workspace ID"
         env:
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
           LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: Run integration tests
