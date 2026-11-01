@@ -29,6 +29,9 @@ uuid.workspace = true
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
+# Decodes the payload of a `Basic ` value, so the credential check can tell a
+# user and password from ordinary words.
+base64 = "0.22"
 toml.workspace = true
 toml_edit = "0.22"
 csv = "1.3"
