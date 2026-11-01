@@ -160,7 +160,10 @@ fn compare_assistant(
                 Some((destination_settings, _)) => {
                     walk(field.to_string(), settings, destination_settings, found)
                 }
-                None => found.push(Difference::new(field, Some(settings), None)),
+                None if holds_settings(Some(settings)).is_some() => {
+                    found.push(Difference::new(field, Some(settings), None))
+                }
+                None => {}
             }
         }
         compare_object(
@@ -193,13 +196,19 @@ fn compare_assistant(
 /// The settings an assistant carries, and the field they came from.
 ///
 /// `config.configurable` and `context` hold one value, so the first field that
-/// holds anything answers for both.
+/// holds anything answers for both. An assistant whose settings were cleared
+/// reads back with both fields as `{}`, which carries no settings.
 fn settings_of(assistant: Option<&Value>) -> Option<(&Value, &'static str)> {
     let assistant = assistant?;
-    if let Some(configurable) = present(assistant.pointer("/config/configurable")) {
+    if let Some(configurable) = holds_settings(assistant.pointer("/config/configurable")) {
         return Some((configurable, CONFIGURABLE));
     }
-    present(assistant.get("context")).map(|context| (context, CONTEXT))
+    holds_settings(assistant.get("context")).map(|context| (context, CONTEXT))
+}
+
+/// `value` when it holds settings: anything but null and the empty object.
+fn holds_settings(value: Option<&Value>) -> Option<&Value> {
+    present(value).filter(|value| !value.as_object().is_some_and(Map::is_empty))
 }
 
 /// Both settings fields, when an assistant holds both and they differ.
@@ -495,6 +504,39 @@ mod tests {
                 destination: None,
             }]
         );
+    }
+
+    #[test]
+    fn a_file_without_settings_matches_a_destination_whose_settings_were_cleared() {
+        let file = assistant(json!({}));
+        let destination = assistant(json!({ "config": {}, "context": {} }));
+        assert!(compare_export(&file, &destination).is_empty());
+    }
+
+    #[test]
+    fn reports_settings_a_cleared_destination_lacks() {
+        let file = assistant(json!({ "context": { "model": "gpt-4o" } }));
+        let destination = assistant(json!({ "config": {}, "context": {} }));
+        let differences = compare_export(&file, &destination);
+
+        assert_eq!(
+            differences,
+            vec![Difference {
+                path: CONTEXT.to_string(),
+                file: Some(json!({ "model": "gpt-4o" })),
+                destination: None,
+            }]
+        );
+    }
+
+    #[test]
+    fn a_file_with_one_settings_field_emptied_reports_the_other_against_a_cleared_destination() {
+        let file = assistant(json!({
+            "config": { "configurable": {} },
+            "context": { "model": "gpt-4o" }
+        }));
+        let destination = assistant(json!({ "config": {}, "context": {} }));
+        assert_eq!(paths(&compare_export(&file, &destination)), vec![CONTEXT]);
     }
 
     #[test]
