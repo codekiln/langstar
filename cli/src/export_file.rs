@@ -181,18 +181,22 @@ pub fn parse_assistant_export(text: &str) -> Result<AssistantExport> {
 /// for a field of the wrong type quotes the value, which may be a credential, so
 /// the error names the line and column, and the field's name when it is unknown.
 fn parse_body<T: DeserializeOwned>(text: &str, kind: Kind) -> Result<T> {
-    serde_json::from_str(text).map_err(|error| {
-        let unknown = unknown_field(&error)
-            .map(|field| format!(" It has a field langstar does not know, `{field}`."))
-            .unwrap_or_default();
-        CliError::Config(format!(
-            "This {} export file does not match the format at line {}, column {}.{}",
-            kind.name(),
-            error.line(),
-            error.column(),
-            unknown
-        ))
-    })
+    serde_json::from_str(text)
+        .map_err(|error| shape_error(&format!("This {} export file", kind.name()), &error))
+}
+
+/// The error for a file that does not match its format. serde_json's own
+/// message quotes the value for a wrong type, and a value can be a
+/// credential, so this names only the line, the column and an unknown field.
+fn shape_error(file: &str, error: &serde_json::Error) -> CliError {
+    let unknown = unknown_field(error)
+        .map(|field| format!(" It has a field langstar does not know, `{field}`."))
+        .unwrap_or_default();
+    CliError::Config(format!(
+        "{file} does not match the format at line {}, column {}.{unknown}",
+        error.line(),
+        error.column(),
+    ))
 }
 
 /// The field named in serde_json's "unknown field `name`" message, if that is
@@ -312,13 +316,7 @@ pub fn read_record<T: Record>(path: &Path) -> Result<T> {
         Ok(text) => {
             check_header(&text, T::KIND, "import record")?;
             serde_json::from_str(&text).map_err(|error| {
-                // A record holds only names and IDs, so serde_json's message,
-                // which names an unknown field, is safe to print.
-                CliError::Config(format!(
-                    "The import record {} does not match the format: {}",
-                    path.display(),
-                    error
-                ))
+                shape_error(&format!("The import record {}", path.display()), &error)
             })
         }
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(T::default()),
@@ -695,6 +693,23 @@ mod tests {
                 .to_string();
             assert!(message.contains(expected), "got {message}");
         }
+    }
+
+    #[test]
+    fn a_record_field_of_the_wrong_type_is_refused_without_its_value() {
+        let directory = TempDir::new().expect("a temporary directory");
+        let path = directory.path().join("my-prompt.destinations.json");
+        std::fs::write(
+            &path,
+            r#"{"kind": "prompt", "format_version": 1, "destinations": "sk-proj-not-a-real-key"}"#,
+        )
+        .expect("the record writes");
+
+        let message = read_record::<PromptDestinations>(&path)
+            .expect_err("the record is refused")
+            .to_string();
+        assert!(message.contains("line 1, column"), "got {message}");
+        assert!(!message.contains("sk-proj"), "got {message}");
     }
 
     #[test]
