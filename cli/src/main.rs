@@ -1,9 +1,14 @@
 mod commands;
+mod compare;
 mod config;
 mod confirm;
+mod credential_check;
 mod deployment_utils;
 mod error;
+mod export_file;
+mod json_pointer;
 mod output;
+mod report;
 pub mod time;
 
 use clap::{Parser, Subcommand};
