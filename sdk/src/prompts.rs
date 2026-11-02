@@ -1162,10 +1162,18 @@ pub struct RepoTag {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UpdateRepoRequest {
     /// The prompt's one-line description: `None` leaves it, `Some(None)` clears it
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_or_null"
+    )]
     pub description: Option<Option<String>>,
     /// The prompt's readme: `None` leaves it, `Some(None)` clears it
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "present_or_null"
+    )]
     pub readme: Option<Option<String>>,
     /// The prompt's tags, which name the prompt rather than a commit
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1173,6 +1181,16 @@ pub struct UpdateRepoRequest {
     /// Whether anyone can read the prompt
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_public: Option<bool>,
+}
+
+/// Read a field that is there, `null` included, as `Some`, so a `null` read
+/// back from JSON still clears the detail. `default` covers a missing field.
+fn present_or_null<'de, D, T>(deserializer: D) -> std::result::Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
 }
 
 /// Response from getting commit metadata
@@ -2567,6 +2585,33 @@ mod export_field_tests {
         assert!(updated.is_public);
         assert!(updated.readme.is_none());
         assert!(updated.tags.is_empty());
+    }
+
+    #[test]
+    fn test_update_repo_request_reads_missing_null_and_text_apart() {
+        let missing: UpdateRepoRequest = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(missing.description, None);
+        assert_eq!(serde_json::to_value(&missing).unwrap(), json!({}));
+
+        let cleared: UpdateRepoRequest =
+            serde_json::from_value(json!({"description": null, "readme": null})).unwrap();
+        assert_eq!(cleared.description, Some(None));
+        assert_eq!(cleared.readme, Some(None));
+        assert_eq!(
+            serde_json::to_value(&cleared).unwrap(),
+            json!({"description": null, "readme": null})
+        );
+
+        let set: UpdateRepoRequest =
+            serde_json::from_value(json!({"description": "Answers support questions"})).unwrap();
+        assert_eq!(
+            set.description,
+            Some(Some("Answers support questions".to_string()))
+        );
+        assert_eq!(
+            serde_json::to_value(&set).unwrap(),
+            json!({"description": "Answers support questions"})
+        );
     }
 
     #[tokio::test]
