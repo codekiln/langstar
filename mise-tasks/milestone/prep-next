@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+#MISE description="Pick the next issue in a milestone, label it ready and create its worktree"
+#USAGE arg "[milestone]" help="Milestone name or number; defaults to the milestone of the current branch's issue"
 """
 Automate moving to next issue in a GitHub milestone workflow.
 
@@ -139,7 +141,7 @@ class MilestoneWorkflow:
                     return self.milestone_title, self.milestone_num
 
             print("❌ Error: Could not auto-detect milestone", file=sys.stderr)
-            print("   Usage: prep-next.py [milestone-name-or-number]", file=sys.stderr)
+            print("   Usage: mise run milestone:prep-next [milestone-name-or-number]", file=sys.stderr)
             print("   Or ensure you're on a branch associated with a milestone issue", file=sys.stderr)
             sys.exit(1)
 
@@ -466,7 +468,7 @@ class MilestoneWorkflow:
             print(f"⚠️  Worktree already exists at {worktree_path}")
             print("   To recreate:")
             print(f"     git worktree remove {worktree_path}")
-            print("     python scripts/gh-milestones/prep-next.py")
+            print("     mise run milestone:prep-next")
             sys.exit(1)
 
         # Check if branch already exists
@@ -586,6 +588,8 @@ def main():
     parser.add_argument(
         "milestone",
         nargs="?",
+        # mise parses the #USAGE argument and also exports it as usage_milestone.
+        default=os.environ.get("usage_milestone") or None,
         help="Milestone name or number (optional, will auto-detect from current branch)"
     )
 
