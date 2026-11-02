@@ -9,6 +9,7 @@ use langstar_sdk::prompts::{
 use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
 use serde_json::json;
 use std::fs;
+use std::path::PathBuf;
 use tabled::Tabled;
 use uuid::Uuid;
 
@@ -127,6 +128,37 @@ pub enum PromptCommands {
         /// Commit hash or tag (default: "latest")
         #[arg(long, default_value = "latest")]
         commit: String,
+
+        /// Organization ID for scoping (overrides config/env)
+        #[arg(long)]
+        organization_id: Option<String>,
+    },
+
+    /// Write one prompt commit to a JSON file that `prompt import` can read
+    ///
+    /// The file holds the repo details, the commit's manifest with its model,
+    /// the tags that point at the commit, and the names of the secrets the model
+    /// reads. Export refuses to write a file that would hold a credential, and
+    /// names the path of each string the check flagged.
+    Export {
+        /// Prompt handle: "my-prompt" or "-/my-prompt" for a prompt in your
+        /// workspace, or "owner/my-prompt"
+        #[arg(allow_hyphen_values = true)]
+        handle: String,
+
+        /// Commit hash or tag to export (default: the latest commit)
+        #[arg(long)]
+        commit: Option<String>,
+
+        /// File to write (default: print the file to stdout)
+        #[arg(short, long, value_name = "PATH")]
+        output: Option<PathBuf>,
+
+        /// JSON Pointer of a flagged string you have read and know holds no
+        /// credential, such as /commit/manifest/kwargs/first/kwargs/template.
+        /// Give it once for each path.
+        #[arg(long = "not-a-secret", value_name = "JSON_POINTER")]
+        not_a_secret: Vec<String>,
 
         /// Organization ID for scoping (overrides config/env)
         #[arg(long)]
@@ -905,10 +937,273 @@ impl PromptCommands {
                     }
                 }
             }
+
+            PromptCommands::Export {
+                handle,
+                commit,
+                output,
+                not_a_secret,
+                organization_id,
+            } => {
+                let client = Self::apply_scoping(
+                    client,
+                    organization_id,
+                    &config.workspace_id_flag(),
+                    config,
+                );
+                let request = ExportRequest {
+                    handle,
+                    commit: commit.as_deref(),
+                    output: output.as_deref(),
+                    not_a_secret,
+                };
+                run_export(
+                    &client,
+                    &request,
+                    &mut std::io::stdout(),
+                    &mut std::io::stderr(),
+                )
+                .await?;
+            }
         }
 
         Ok(())
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// prompt export
+// ═══════════════════════════════════════════════════════════════════════
+
+/// What `langstar prompt export` was asked to do.
+struct ExportRequest<'a> {
+    /// The handle as the user typed it: `my-prompt`, `-/my-prompt` or `owner/my-prompt`.
+    handle: &'a str,
+    /// A commit hash or tag, or `None` for the latest commit.
+    commit: Option<&'a str>,
+    /// The file to write, or `None` for stdout.
+    output: Option<&'a std::path::Path>,
+    /// The JSON Pointers the user named with `--not-a-secret`.
+    not_a_secret: &'a [String],
+}
+
+/// Export one prompt commit: read it, check it for credentials, and write the
+/// file to `output` or to `stdout`.
+///
+/// Every message goes to `stderr`, so stdout holds the file and nothing else.
+/// When the check flags a string, this returns the refusal before it writes
+/// anything, and `main` prints it and exits with status 1.
+async fn run_export(
+    client: &LangchainClient,
+    request: &ExportRequest<'_>,
+    stdout: &mut dyn std::io::Write,
+    stderr: &mut dyn std::io::Write,
+) -> Result<()> {
+    let (owner, repo) = split_handle(request.handle)?;
+    let commit = request.commit.unwrap_or("latest");
+
+    writeln!(stderr, "Reading {}/{} at {}...", owner, repo, commit)?;
+    let export = read_prompt_export(client, request.handle, &owner, &repo, commit).await?;
+    let allowed = check_export_for_credentials(&export, request.not_a_secret)?;
+    for item in &allowed {
+        writeln!(
+            stderr,
+            "⚠ Warning: writing the string at {} ({}), because --not-a-secret names it",
+            item.path, item.rule
+        )?;
+    }
+
+    let text = crate::export_file::to_sorted_json(&export)?;
+    match request.output {
+        Some(path) => {
+            fs::write(path, &text).map_err(|source| {
+                crate::error::CliError::Other(anyhow::anyhow!(
+                    "Could not write {}: {}",
+                    path.display(),
+                    source
+                ))
+            })?;
+            writeln!(
+                stderr,
+                "✓ Wrote commit {} of {} to {}",
+                export.source.commit_hash,
+                export.source.handle,
+                path.display()
+            )?;
+        }
+        None => {
+            stdout.write_all(text.as_bytes())?;
+            stdout.flush()?;
+        }
+    }
+    Ok(())
+}
+
+/// Split a handle into the owner and repo the commit read takes. A handle with
+/// no owner, `my-prompt`, names a prompt in the current workspace, which
+/// LangSmith reads as `-/my-prompt`.
+fn split_handle(handle: &str) -> Result<(String, String)> {
+    let invalid = || {
+        crate::error::CliError::Other(anyhow::anyhow!(
+            "Invalid handle `{}`. Expected my-prompt, -/my-prompt or owner/my-prompt",
+            handle
+        ))
+    };
+    match handle.split_once('/') {
+        None if !handle.is_empty() => Ok(("-".to_string(), handle.to_string())),
+        Some((owner, repo)) if !owner.is_empty() && !repo.is_empty() && !repo.contains('/') => {
+            Ok((owner.to_string(), repo.to_string()))
+        }
+        _ => Err(invalid()),
+    }
+}
+
+/// Read the repo, the commit with its model, and the commit's tags, and build
+/// the export file from them.
+async fn read_prompt_export(
+    client: &LangchainClient,
+    handle: &str,
+    owner: &str,
+    repo: &str,
+    commit: &str,
+) -> Result<crate::export_file::PromptExport> {
+    use crate::export_file::{
+        FORMAT_VERSION, Kind, PromptCommit, PromptExport, PromptRepo, PromptRequires, PromptSource,
+    };
+    use langstar_sdk::error::LangstarError;
+
+    let prompts = client.prompts();
+    let details = match prompts.get(&format!("{}/{}", owner, repo)).await {
+        Err(LangstarError::ApiError { status: 404, .. }) => {
+            return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "No prompt in this workspace has the handle `{}`",
+                handle
+            )));
+        }
+        other => other?,
+    };
+    let read = match prompts.get_commit_with_model(owner, repo, commit).await {
+        Err(LangstarError::ApiError { status: 404, .. }) => {
+            return Err(crate::error::CliError::Other(anyhow::anyhow!(
+                "The prompt `{}` has no commit or tag `{}`",
+                handle,
+                commit
+            )));
+        }
+        other => other?,
+    };
+    let commit_tags = prompts
+        .list_tags(owner, repo)
+        .await?
+        .into_iter()
+        .filter(|tag| tag.commit_hash == read.commit_hash)
+        .map(|tag| tag.tag_name)
+        .collect();
+
+    let workspace_id = details
+        .tenant_id
+        .clone()
+        .or_else(|| client.workspace_id().map(str::to_string))
+        .ok_or_else(|| {
+            crate::error::CliError::Other(anyhow::anyhow!(
+                "LangSmith returned no workspace for the prompt `{}`. Set --workspace-id",
+                handle
+            ))
+        })?;
+
+    Ok(PromptExport {
+        kind: Kind::Prompt,
+        format_version: FORMAT_VERSION,
+        source: PromptSource {
+            workspace_id,
+            handle: details.repo_handle.clone(),
+            commit_hash: read.commit_hash.clone(),
+        },
+        repo: PromptRepo {
+            handle: details.repo_handle,
+            description: details.description,
+            readme: details.readme,
+            tags: details.tags.into_iter().collect(),
+            is_public: details.is_public,
+        },
+        requires: PromptRequires {
+            secrets: crate::credential_check::secret_names(&read.manifest),
+            model_class: model_class(&read.manifest),
+        },
+        commit: PromptCommit {
+            description: read.description,
+            manifest: read.manifest,
+            model_config: read.model_config,
+            model_provider: read.model_provider,
+            tags: commit_tags,
+        },
+    })
+}
+
+/// The class name of the manifest's chat model, such as `ChatOpenAI`, or `None`
+/// for a prompt saved without a model.
+///
+/// The commit read with `include=model` puts the chat model at `kwargs.last`.
+/// On a prompt saved in the playground a `RunnableBinding` sits there and the
+/// constructor is at its `kwargs.bound`, so this steps through the binding
+/// before it reads the last element of the constructor's `id`.
+fn model_class(manifest: &serde_json::Value) -> Option<String> {
+    fn class_name(value: &serde_json::Value) -> Option<&str> {
+        value.get("id")?.as_array()?.last()?.as_str()
+    }
+    let last = manifest.get("kwargs")?.get("last")?;
+    let constructor = if class_name(last) == Some("RunnableBinding") {
+        last.get("kwargs")?.get("bound")?
+    } else {
+        last
+    };
+    class_name(constructor).map(str::to_string)
+}
+
+/// Run the credential check over the `repo` and `commit` objects the file would
+/// hold, and return the flagged strings the user named with `--not-a-secret`.
+///
+/// A `--not-a-secret` pointer at a string the check lets through is an error,
+/// and so is any flagged string the user did not name. Neither error holds any
+/// part of a flagged string.
+fn check_export_for_credentials(
+    export: &crate::export_file::PromptExport,
+    not_a_secret: &[String],
+) -> Result<Vec<crate::credential_check::Flagged>> {
+    use crate::credential_check::{find_credentials, refusal_message};
+
+    let checked = json!({
+        "repo": serde_json::to_value(&export.repo)?,
+        "commit": serde_json::to_value(&export.commit)?,
+    });
+    let flagged = find_credentials(&checked);
+
+    let unflagged: Vec<&String> = not_a_secret
+        .iter()
+        .filter(|pointer| !flagged.iter().any(|item| &item.path == *pointer))
+        .collect();
+    if !unflagged.is_empty() {
+        let mut message =
+            String::from("--not-a-secret names a path where the check flags no string:\n");
+        for pointer in unflagged {
+            message.push_str(&format!("  {}\n", pointer));
+        }
+        message.push_str(
+            "Remove each one, or name the path the refusal printed. No file was written.",
+        );
+        return Err(crate::error::CliError::Other(anyhow::anyhow!(message)));
+    }
+
+    let (allowed, refused): (Vec<_>, Vec<_>) = flagged
+        .into_iter()
+        .partition(|item| not_a_secret.contains(&item.path));
+    if !refused.is_empty() {
+        return Err(crate::error::CliError::Other(anyhow::anyhow!(
+            "{}\nNo file was written.",
+            refusal_message(&refused)
+        )));
+    }
+    Ok(allowed)
 }
 
 #[cfg(test)]
@@ -1105,5 +1400,567 @@ mod tests {
         let result = truncate_description(Some(&desc), 3);
         // With max_len=3 and saturating_sub(3)=0, we get "" + "..."
         assert_eq!(result, "...");
+    }
+}
+
+/// Tests of `prompt export` against a `mockito` server that serves one prompt.
+///
+/// Each test serves the three reads export sends — the repo, the commit with
+/// `include=model`, and the repo's tags — and calls the export code the
+/// command runs, with stdout and stderr captured.
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+    use langstar_sdk::AuthConfig;
+    use mockito::{Matcher, Mock, ServerGuard};
+    use serde_json::Value;
+    use std::path::Path;
+
+    /// The workspace the served repo says it is in.
+    const TENANT_ID: &str = "00000000-0000-4000-8000-000000000001";
+    /// The hash of the commit the server serves.
+    const COMMIT_HASH: &str = "0a1b2c3d4e5f";
+    /// A provider token under a neutral key, made at run time so no scanner
+    /// reads the source as holding one.
+    fn provider_token() -> String {
+        format!("sk-{}", "0123456789abcdefghij".repeat(2))
+    }
+
+    /// One served prompt: the repo, the commit and the tags.
+    struct Served {
+        server: ServerGuard,
+        _mocks: Vec<Mock>,
+    }
+
+    fn repo(readme: Option<&str>) -> Value {
+        json!({
+            "id": "00000000-0000-4000-8000-000000000002",
+            "repo_handle": "my-prompt",
+            "description": "A prompt for tests",
+            "readme": readme,
+            "tags": ["support", "ChatPromptTemplate"],
+            "tenant_id": TENANT_ID,
+            "is_public": false,
+        })
+    }
+
+    fn chat_prompt(template: &str) -> Value {
+        json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "prompts", "chat", "ChatPromptTemplate"],
+            "kwargs": {
+                "input_variables": ["question"],
+                "messages": [{
+                    "lc": 1,
+                    "type": "constructor",
+                    "id": ["langchain", "prompts", "chat", "HumanMessagePromptTemplate"],
+                    "kwargs": {
+                        "prompt": {
+                            "lc": 1,
+                            "type": "constructor",
+                            "id": ["langchain", "prompts", "prompt", "PromptTemplate"],
+                            "kwargs": {
+                                "input_variables": ["question"],
+                                "template": template,
+                                "template_format": "f-string",
+                            },
+                        },
+                    },
+                }],
+            },
+        })
+    }
+
+    fn chat_open_ai(kwargs: Value) -> Value {
+        json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "chat_models", "openai", "ChatOpenAI"],
+            "kwargs": kwargs,
+        })
+    }
+
+    fn secret_reference(name: &str) -> Value {
+        json!({"lc": 1, "type": "secret", "id": [name]})
+    }
+
+    fn binding(bound: Value) -> Value {
+        json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "schema", "runnable", "RunnableBinding"],
+            "kwargs": {"bound": bound, "kwargs": {}},
+        })
+    }
+
+    fn sequence(first: Value, last: Value) -> Value {
+        json!({
+            "lc": 1,
+            "type": "constructor",
+            "id": ["langchain", "schema", "runnable", "RunnableSequence"],
+            "kwargs": {"first": first, "last": last},
+        })
+    }
+
+    /// A prompt whose model reads its key from the `OPENAI_API_KEY` secret.
+    fn safe_manifest() -> Value {
+        sequence(
+            chat_prompt("Answer {question}"),
+            chat_open_ai(json!({
+                "model": "gpt-4o-mini",
+                "max_tokens": 1024,
+                "openai_api_key": secret_reference("OPENAI_API_KEY"),
+            })),
+        )
+    }
+
+    async fn serve(repo: Value, manifest: Value) -> Served {
+        let mut server = mockito::Server::new_async().await;
+        let repo_mock = server
+            .mock("GET", "/api/v1/repos/-/my-prompt")
+            .with_status(200)
+            .with_body(json!({"repo": repo}).to_string())
+            .create_async()
+            .await;
+        let commit_mock = server
+            .mock("GET", "/api/v1/commits/-/my-prompt/latest")
+            .match_query(Matcher::UrlEncoded("include".into(), "model".into()))
+            .with_status(200)
+            .with_body(
+                json!({
+                    "commit_hash": COMMIT_HASH,
+                    "manifest": manifest,
+                    "description": "First commit",
+                    "examples": [],
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+        let tags_mock = server
+            .mock("GET", "/api/v1/repos/-/my-prompt/tags")
+            .with_status(200)
+            .with_body(
+                json!([
+                    {"id": "t1", "tag_name": "prod", "commit_id": "c1", "commit_hash": COMMIT_HASH},
+                    {"id": "t2", "tag_name": "dev", "commit_id": "c2", "commit_hash": "ffffffffffff"},
+                ])
+                .to_string(),
+            )
+            .create_async()
+            .await;
+        Served {
+            server,
+            _mocks: vec![repo_mock, commit_mock, tags_mock],
+        }
+    }
+
+    fn client_for(served: &Served, workspace_id: Option<&str>) -> LangchainClient {
+        LangchainClient::with_base_urls(
+            AuthConfig::new(
+                Some("test_key".to_string()),
+                None,
+                workspace_id.map(str::to_string),
+            ),
+            served.server.url(),
+            served.server.url(),
+            served.server.url(),
+        )
+        .unwrap()
+    }
+
+    /// What one export run left behind.
+    struct Run {
+        result: Result<()>,
+        stdout: String,
+        stderr: String,
+    }
+
+    async fn export(
+        served: &Served,
+        handle: &str,
+        output: Option<&Path>,
+        not_a_secret: &[&str],
+    ) -> Run {
+        let client = client_for(served, None);
+        let not_a_secret: Vec<String> = not_a_secret.iter().map(|p| p.to_string()).collect();
+        let request = ExportRequest {
+            handle,
+            commit: None,
+            output,
+            not_a_secret: &not_a_secret,
+        };
+        let mut stdout = Vec::new();
+        let mut stderr = Vec::new();
+        let result = run_export(&client, &request, &mut stdout, &mut stderr).await;
+        Run {
+            result,
+            stdout: String::from_utf8(stdout).unwrap(),
+            stderr: String::from_utf8(stderr).unwrap(),
+        }
+    }
+
+    /// Export to stdout and parse what it printed.
+    async fn export_document(served: &Served, not_a_secret: &[&str]) -> (Value, Run) {
+        let run = export(served, "my-prompt", None, not_a_secret).await;
+        assert!(run.result.is_ok(), "export failed: {:?}", run.result);
+        let document = serde_json::from_str(&run.stdout).expect("stdout is one JSON document");
+        (document, run)
+    }
+
+    /// Export once with `--output` and once to stdout, and assert that both
+    /// refuse with the path and the rule, without the string, and write nothing.
+    async fn assert_refused(repo: Value, manifest: Value, path: &str, rule: &str, string: &str) {
+        let served = serve(repo, manifest).await;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+
+        for output in [Some(file.as_path()), None] {
+            let run = export(&served, "my-prompt", output, &[]).await;
+            let message = match &run.result {
+                Err(error) => error.to_string(),
+                Ok(()) => panic!("export wrote a file holding {path}"),
+            };
+            assert!(message.contains(path), "{message}");
+            assert!(message.contains(&format!("({rule})")), "{message}");
+            assert!(!message.contains(string), "the refusal holds the string");
+            assert!(!run.stderr.contains(string), "stderr holds the string");
+            assert!(run.stdout.is_empty(), "stdout holds {:?}", run.stdout);
+            assert!(!file.exists(), "export wrote {}", file.display());
+        }
+    }
+
+    #[test]
+    fn test_model_class_steps_through_a_runnable_binding() {
+        let manifest = sequence(chat_prompt("Hi"), binding(chat_open_ai(json!({}))));
+        assert_eq!(model_class(&manifest).as_deref(), Some("ChatOpenAI"));
+        assert_eq!(model_class(&chat_prompt("Hi")), None);
+    }
+
+    #[tokio::test]
+    async fn test_export_finds_the_model_class_inside_a_runnable_binding() {
+        let manifest = sequence(
+            chat_prompt("Answer {question}"),
+            binding(chat_open_ai(json!({"model": "gpt-4o-mini"}))),
+        );
+        let served = serve(repo(None), manifest).await;
+        let (document, _) = export_document(&served, &[]).await;
+        assert_eq!(document["requires"]["model_class"], "ChatOpenAI");
+        assert!(!document["requires"].to_string().contains("RunnableBinding"));
+    }
+
+    #[tokio::test]
+    async fn test_export_finds_the_model_class_with_no_binding() {
+        let manifest = sequence(
+            chat_prompt("Answer {question}"),
+            chat_open_ai(json!({"model": "gpt-4o-mini"})),
+        );
+        let served = serve(repo(None), manifest).await;
+        let (document, _) = export_document(&served, &[]).await;
+        assert_eq!(document["requires"]["model_class"], "ChatOpenAI");
+        assert!(!document["requires"].to_string().contains("RunnableBinding"));
+    }
+
+    #[tokio::test]
+    async fn test_export_writes_null_model_class_for_a_prompt_without_a_model() {
+        let served = serve(repo(None), chat_prompt("Answer {question}")).await;
+        let (document, _) = export_document(&served, &[]).await;
+        assert_eq!(document["requires"]["model_class"], Value::Null);
+        assert_eq!(document["requires"]["secrets"], json!([]));
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_a_literal_key_under_openai_api_key() {
+        let value = "literal-value-0123456789";
+        let manifest = sequence(
+            chat_prompt("Hi"),
+            chat_open_ai(json!({"model": "gpt-4o-mini", "openai_api_key": value})),
+        );
+        assert_refused(
+            repo(None),
+            manifest,
+            "/commit/manifest/kwargs/last/kwargs/openai_api_key",
+            "key name",
+            value,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_a_literal_key_under_upper_case_openai_api_key() {
+        let value = "literal-value-0123456789";
+        let manifest = sequence(
+            chat_prompt("Hi"),
+            chat_open_ai(json!({"model": "gpt-4o-mini", "OPENAI_API_KEY": value})),
+        );
+        assert_refused(
+            repo(None),
+            manifest,
+            "/commit/manifest/kwargs/last/kwargs/OPENAI_API_KEY",
+            "key name",
+            value,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_an_authorization_header() {
+        let token = "abcdefghijklmnopqrstuvwxyz012345";
+        let manifest = sequence(
+            chat_prompt("Hi"),
+            chat_open_ai(json!({
+                "model": "gpt-4o-mini",
+                "default_headers": {"Authorization": format!("Bearer {token}")},
+            })),
+        );
+        assert_refused(
+            repo(None),
+            manifest,
+            "/commit/manifest/kwargs/last/kwargs/default_headers/Authorization",
+            "key name",
+            token,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_a_provider_token_under_a_neutral_key() {
+        let token = provider_token();
+        let manifest = sequence(
+            chat_prompt("Hi"),
+            chat_open_ai(json!({
+                "model": "gpt-4o-mini",
+                "model_kwargs": {"extra": token},
+            })),
+        );
+        assert_refused(
+            repo(None),
+            manifest,
+            "/commit/manifest/kwargs/last/kwargs/model_kwargs/extra",
+            "provider token",
+            &token[3..],
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_a_connection_string_with_a_password_in_metadata() {
+        let password = "hunter2-db-password";
+        let mut prompt = chat_prompt("Hi");
+        prompt["kwargs"]["metadata"] = json!({
+            "source_db": format!("postgresql://app:{password}@db.example.com/prod"),
+        });
+        assert_refused(
+            repo(None),
+            sequence(prompt, chat_open_ai(json!({"model": "gpt-4o-mini"}))),
+            "/commit/manifest/kwargs/first/kwargs/metadata/source_db",
+            "URL with a password",
+            password,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_refuses_a_private_key_in_the_readme() {
+        let body = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASC";
+        let readme =
+            format!("Setup\n-----BEGIN PRIVATE KEY-----\n{body}\n-----END PRIVATE KEY-----\n");
+        assert_refused(
+            repo(Some(&readme)),
+            safe_manifest(),
+            "/repo/readme",
+            "PEM private key",
+            body,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn test_export_writes_a_secret_reference() {
+        let served = serve(repo(None), safe_manifest()).await;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+        let run = export(&served, "my-prompt", Some(&file), &[]).await;
+        assert!(run.result.is_ok(), "{:?}", run.result);
+        assert!(run.stdout.is_empty());
+
+        let document: Value =
+            serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        let model = &document["commit"]["manifest"]["kwargs"]["last"]["kwargs"];
+        assert_eq!(model["openai_api_key"], secret_reference("OPENAI_API_KEY"));
+        assert_eq!(model["max_tokens"], 1024);
+        assert_eq!(document["requires"]["secrets"], json!(["OPENAI_API_KEY"]));
+        assert_eq!(document["requires"]["model_class"], "ChatOpenAI");
+    }
+
+    #[tokio::test]
+    async fn test_export_writes_every_field_and_only_the_commits_tags() {
+        let served = serve(repo(Some("Read me")), safe_manifest()).await;
+        let (document, run) = export_document(&served, &[]).await;
+        assert!(run.stderr.contains("Reading"), "{}", run.stderr);
+        assert_eq!(
+            document,
+            json!({
+                "kind": "prompt",
+                "format_version": 1,
+                "source": {
+                    "workspace_id": TENANT_ID,
+                    "handle": "my-prompt",
+                    "commit_hash": COMMIT_HASH,
+                },
+                "repo": {
+                    "handle": "my-prompt",
+                    "description": "A prompt for tests",
+                    "readme": "Read me",
+                    "tags": ["ChatPromptTemplate", "support"],
+                    "is_public": false,
+                },
+                "commit": {
+                    "description": "First commit",
+                    "manifest": safe_manifest(),
+                    "tags": ["prod"],
+                },
+                "requires": {"secrets": ["OPENAI_API_KEY"], "model_class": "ChatOpenAI"},
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn test_export_reads_a_private_handle_with_or_without_the_dash() {
+        let served = serve(repo(None), safe_manifest()).await;
+        let short = export(&served, "my-prompt", None, &[]).await;
+        let dashed = export(&served, "-/my-prompt", None, &[]).await;
+        assert!(short.result.is_ok() && dashed.result.is_ok());
+        assert_eq!(short.stdout, dashed.stdout);
+    }
+
+    #[tokio::test]
+    async fn test_export_names_a_handle_the_workspace_has_no_prompt_for() {
+        let mut server = mockito::Server::new_async().await;
+        let _missing = server
+            .mock("GET", "/api/v1/repos/-/no-such-prompt")
+            .with_status(404)
+            .with_body(r#"{"detail":"Repo not found"}"#)
+            .create_async()
+            .await;
+        let served = Served {
+            server,
+            _mocks: Vec::new(),
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+        let run = export(&served, "no-such-prompt", Some(&file), &[]).await;
+        let message = run.result.unwrap_err().to_string();
+        assert!(message.contains("`no-such-prompt`"), "{message}");
+        assert!(run.stdout.is_empty());
+        assert!(!file.exists());
+    }
+
+    /// A prompt whose message template shows an example bearer token.
+    fn template_with_example_token() -> Value {
+        sequence(
+            chat_prompt("Send the header Authorization: Bearer abcdefghijklmnopqrstuvwx"),
+            chat_open_ai(json!({
+                "model": "gpt-4o-mini",
+                "openai_api_key": secret_reference("OPENAI_API_KEY"),
+            })),
+        )
+    }
+
+    const TEMPLATE_PATH: &str =
+        "/commit/manifest/kwargs/first/kwargs/messages/0/kwargs/prompt/kwargs/template";
+
+    #[tokio::test]
+    async fn test_not_a_secret_writes_the_named_template_and_warns() {
+        let served = serve(repo(None), template_with_example_token()).await;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+        let run = export(&served, "my-prompt", Some(&file), &[TEMPLATE_PATH]).await;
+        assert!(run.result.is_ok(), "{:?}", run.result);
+        assert!(run.stderr.contains("Warning"), "{}", run.stderr);
+        assert!(run.stderr.contains(TEMPLATE_PATH), "{}", run.stderr);
+
+        let document: Value =
+            serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(
+            document["commit"]["manifest"],
+            template_with_example_token(),
+            "the template changed"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_not_a_secret_still_refuses_a_second_flagged_path() {
+        let mut manifest = template_with_example_token();
+        manifest["kwargs"]["last"]["kwargs"]["model_kwargs"] = json!({"extra": provider_token()});
+        let served = serve(repo(None), manifest).await;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+        let run = export(&served, "my-prompt", Some(&file), &[TEMPLATE_PATH]).await;
+        let message = run.result.unwrap_err().to_string();
+        assert!(
+            message.contains("/commit/manifest/kwargs/last/kwargs/model_kwargs/extra"),
+            "{message}"
+        );
+        assert!(!message.contains(TEMPLATE_PATH), "{message}");
+        assert!(run.stdout.is_empty());
+        assert!(!file.exists());
+    }
+
+    #[tokio::test]
+    async fn test_not_a_secret_refuses_a_path_the_check_lets_through() {
+        let served = serve(repo(None), safe_manifest()).await;
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("my-prompt.json");
+        let run = export(&served, "my-prompt", Some(&file), &["/repo/description"]).await;
+        let message = run.result.unwrap_err().to_string();
+        assert!(message.contains("/repo/description"), "{message}");
+        assert!(run.stdout.is_empty());
+        assert!(!file.exists());
+    }
+
+    #[tokio::test]
+    async fn test_export_takes_the_workspace_from_the_repos_tenant_id() {
+        let served = serve(repo(None), safe_manifest()).await;
+        // `export` builds its client with no workspace ID.
+        let (document, _) = export_document(&served, &[]).await;
+        assert_eq!(document["source"]["workspace_id"], TENANT_ID);
+    }
+
+    #[test]
+    fn test_split_handle() {
+        let split = |handle| split_handle(handle).ok();
+        let pair = |owner: &str, repo: &str| Some((owner.to_string(), repo.to_string()));
+        assert_eq!(split("my-prompt"), pair("-", "my-prompt"));
+        assert_eq!(split("-/my-prompt"), pair("-", "my-prompt"));
+        assert_eq!(split("owner/my-prompt"), pair("owner", "my-prompt"));
+        assert_eq!(split(""), None);
+        assert_eq!(split("a/b/c"), None);
+        assert_eq!(split("/my-prompt"), None);
+        assert_eq!(split("owner/"), None);
+    }
+
+    #[test]
+    fn test_export_takes_a_dashed_handle_without_a_double_dash() {
+        use clap::Parser;
+        #[derive(Parser)]
+        struct Wrapper {
+            #[command(subcommand)]
+            command: PromptCommands,
+        }
+        let parsed = Wrapper::try_parse_from([
+            "prompt",
+            "export",
+            "-/my-prompt",
+            "--output",
+            "my-prompt.json",
+        ])
+        .expect("clap reads -/my-prompt as the handle");
+        let PromptCommands::Export { handle, output, .. } = parsed.command else {
+            panic!("not an export");
+        };
+        assert_eq!(handle, "-/my-prompt");
+        assert_eq!(output.as_deref(), Some(Path::new("my-prompt.json")));
     }
 }
