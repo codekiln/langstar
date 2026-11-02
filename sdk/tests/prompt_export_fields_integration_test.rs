@@ -95,8 +95,10 @@ async fn delete_test_repo(client: &LangchainClient, repo: &str) {
 /// Task 3.1, "Add the commit read that asks for the model": the commit read with
 /// `include=model` returns the model inside the manifest.
 ///
-/// The chat model constructor sits at `manifest.kwargs.last.kwargs.bound`, behind a
-/// `RunnableBinding`, which is where `prompt export` reads the model class from.
+/// The pinned commit was saved in the LangSmith playground, so its chat model
+/// constructor sits at `manifest.kwargs.last.kwargs.bound`, behind a `RunnableBinding`.
+/// A pushed structured prompt carries the constructor directly at `kwargs.last`; the
+/// unit tests in `sdk/src/prompts.rs` cover that shape.
 #[tokio::test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 async fn test_commit_read_with_model_returns_the_bound_chat_model() {

@@ -658,10 +658,20 @@ impl<'a> PromptClient<'a> {
     /// [`get_commit`](Self::get_commit) returns the prompt on its own. This call sends
     /// `include=model`, and LangSmith then wraps the prompt and the chat model in one
     /// `RunnableSequence`: `manifest.kwargs.first` is the prompt and `manifest.kwargs.last`
-    /// is a `RunnableBinding` whose `kwargs.bound` is the chat model constructor. A reader
-    /// after the model's class name, such as `ChatOpenAI`, takes the last element of that
-    /// constructor's `id`. The binding's own `id` ends in `RunnableBinding`.
-    /// `reference/research/807-openapi-validation.md` records those reads against the
+    /// holds the chat model in one of two shapes.
+    ///
+    /// - On a prompt saved in the LangSmith playground, `kwargs.last` is a
+    ///   `RunnableBinding`, whose `id` ends in `RunnableBinding`, and the chat model
+    ///   constructor sits one level further in at `kwargs.last.kwargs.bound`.
+    /// - On a pushed structured prompt, `kwargs.last` is the chat model constructor
+    ///   itself, with no binding around it.
+    ///
+    /// A reader after the model's class name, such as `ChatOpenAI`, steps into
+    /// `kwargs.bound` only when the last element of `kwargs.last.id` is
+    /// `RunnableBinding`, and otherwise reads `kwargs.last` as the constructor. Either
+    /// way the class name is the last element of the constructor's `id`. This call
+    /// returns the manifest as LangSmith sends it and does not unwrap either shape.
+    /// `reference/research/807-openapi-validation.md` records both shapes against the
     /// live API.
     ///
     /// `model_config` and `model_provider` come back either way, so the manifest is what
@@ -1992,8 +2002,8 @@ mod export_field_tests {
     ///
     /// The outer constructor is a `RunnableSequence`, `kwargs.first` is the prompt and
     /// `kwargs.last` is a `RunnableBinding` whose `kwargs.bound` is the `ChatOpenAI`
-    /// constructor. `reference/research/807-openapi-validation.md` read three such
-    /// commits on the live API and found the binding in every one.
+    /// constructor, the shape `reference/research/807-openapi-validation.md` read on
+    /// prompts saved in the LangSmith playground.
     fn commit_with_model_body() -> serde_json::Value {
         json!({
             "commit_hash": "8c0ba491ce9b01f707e56db935d7eeee7aa6ff29c04258b458928cf7c8ebe35b",
@@ -2088,6 +2098,70 @@ mod export_field_tests {
                 .and_then(|name| name.as_str()),
             Some("ChatOpenAI")
         );
+    }
+
+    /// A pushed structured prompt carries the chat model constructor directly at
+    /// `kwargs.last`, with no `RunnableBinding` around it, as
+    /// `reference/research/807-openapi-validation.md` read on the live API. The commit
+    /// read keeps that shape as it came, so a reader finds the class at `kwargs.last`.
+    #[tokio::test]
+    async fn test_commit_read_keeps_a_chat_model_with_no_binding_at_kwargs_last() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", "/api/v1/commits/-/structured-prompt/latest")
+            .match_query(mockito::Matcher::UrlEncoded(
+                "include".into(),
+                "model".into(),
+            ))
+            .with_body(
+                json!({
+                    "commit_hash": "def456",
+                    "manifest": {
+                        "lc": 1,
+                        "type": "constructor",
+                        "id": ["langchain", "schema", "runnable", "RunnableSequence"],
+                        "kwargs": {
+                            "first": {
+                                "lc": 1,
+                                "type": "constructor",
+                                "id": ["langchain_core", "prompts", "structured", "StructuredPrompt"],
+                                "kwargs": {}
+                            },
+                            "last": {
+                                "lc": 1,
+                                "type": "constructor",
+                                "id": ["langchain", "chat_models", "openai", "ChatOpenAI"],
+                                "kwargs": {"model": "gpt-4.1-mini"}
+                            }
+                        }
+                    },
+                    "model_provider": "ChatOpenAI"
+                })
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let commit = mock_client(&server)
+            .prompts()
+            .get_commit_with_model("-", "structured-prompt", "latest")
+            .await
+            .expect("the commit read should succeed");
+
+        let last = &commit.manifest["kwargs"]["last"];
+        assert_eq!(
+            last["id"]
+                .as_array()
+                .and_then(|id| id.last())
+                .and_then(|name| name.as_str()),
+            Some("ChatOpenAI"),
+            "kwargs.last is the chat model constructor itself"
+        );
+        assert!(
+            last["kwargs"].get("bound").is_none(),
+            "with no binding there is no kwargs.bound to step into"
+        );
+        assert_eq!(commit.model_provider.as_deref(), Some("ChatOpenAI"));
     }
 
     #[tokio::test]
