@@ -72,6 +72,8 @@ No file was written.
 
 Keep credentials in the workspace's secrets (see [workspace-secrets.md](./workspace-secrets.md)), and have the model read them through a secret reference. A prompt saved in the LangSmith playground does this already.
 
+Export stops before it reads anything while `LANGSTAR_DEBUG_HTTP` is set, because that variable makes langstar write each response it reads to a debug file and to stderr, with any credential in it.
+
 ### A flagged string that holds no secret
 
 Some flagged strings are harmless, such as a message template that shows an example `Authorization: Bearer` header. Read the string at the path export printed, and when it is harmless, name that path with `--not-a-secret`:

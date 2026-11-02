@@ -999,6 +999,7 @@ async fn run_export(
     stdout: &mut dyn std::io::Write,
     stderr: &mut dyn std::io::Write,
 ) -> Result<()> {
+    refuse_debug_dump(std::env::var_os(DEBUG_HTTP_VARIABLE).is_some())?;
     let (owner, repo) = split_handle(request.handle)?;
     let commit = request.commit.unwrap_or("latest");
 
@@ -1035,6 +1036,27 @@ async fn run_export(
             stdout.write_all(text.as_bytes())?;
             stdout.flush()?;
         }
+    }
+    Ok(())
+}
+
+/// The variable that makes the SDK write every response body it reads to a
+/// debug file and print parts of it to stderr.
+const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
+
+/// Refuse to export while `LANGSTAR_DEBUG_HTTP` is set.
+///
+/// With it set, the SDK writes the whole commit read to a file and prints the
+/// start of it to stderr before export runs the credential check, so a literal
+/// API key in the prompt would reach the disk and the terminal even though
+/// export then refuses to write the file.
+fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
+    if debug_http_set {
+        return Err(crate::error::CliError::Other(anyhow::anyhow!(
+            "prompt export does not run while {DEBUG_HTTP_VARIABLE} is set, because that \
+             writes each response, with any credential in it, to a debug file and to \
+             stderr. Unset {DEBUG_HTTP_VARIABLE} and run the export again."
+        )));
     }
     Ok(())
 }
@@ -1926,6 +1948,13 @@ mod export_tests {
         // `export` builds its client with no workspace ID.
         let (document, _) = export_document(&served, &[]).await;
         assert_eq!(document["source"]["workspace_id"], TENANT_ID);
+    }
+
+    #[test]
+    fn test_export_refuses_to_run_while_debug_http_is_set() {
+        let message = refuse_debug_dump(true).unwrap_err().to_string();
+        assert!(message.contains("LANGSTAR_DEBUG_HTTP"), "{message}");
+        assert!(refuse_debug_dump(false).is_ok());
     }
 
     #[test]
