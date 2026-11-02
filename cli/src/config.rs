@@ -122,13 +122,20 @@ impl Config {
     /// warning, so `config show` still runs and prints the file's path;
     /// `config validate` and `config <setting> set` fail on it instead.
     pub fn load() -> Result<Self> {
+        Self::load_with_base_dir(Self::default_base_dir())
+    }
+
+    /// `load`, with the directory the default config location sits under passed
+    /// in, so a unit test can pass `None` to make that lookup fail (see
+    /// `config_file_under`).
+    fn load_with_base_dir(base_dir: Option<PathBuf>) -> Result<Self> {
         // `load` returns an error when langstar cannot find the directory that holds
         // the config file, even if environment variables set every setting, so that
         // langstar tells the user instead of silently skipping a config file they
         // wrote. This happens when `LANGSTAR_CONFIG_DIR` is unset and the operating
         // system reports no home directory (macOS, Linux) or no config directory
         // (Windows).
-        let config_path = Self::config_file_path()?;
+        let config_path = Self::config_file_path_under(base_dir)?;
         let old_path = Self::old_config_file_path();
         let mut config = Self::load_from_paths(&config_path, old_path.as_deref()).unwrap_or_else(|e| {
             // Warn on the first failed load only, so a process that loads the
@@ -294,10 +301,16 @@ impl Config {
     /// empty. Otherwise uses ~/.config/langstar/config.toml on macOS and Linux
     /// for consistency, and the platform-specific AppData location on Windows.
     pub fn config_file_path() -> Result<PathBuf> {
+        Self::config_file_path_under(Self::default_base_dir())
+    }
+
+    /// `config_file_path`, with `base_dir` used when `LANGSTAR_CONFIG_DIR` is
+    /// unset or empty.
+    fn config_file_path_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
         if let Some(dir) = config_dir_from_env() {
             return Ok(config_file_in(&dir));
         }
-        Self::config_file_under(Self::default_base_dir())
+        Self::config_file_under(base_dir)
     }
 
     /// The directory langstar's default config location sits under: the config
@@ -436,6 +449,33 @@ mod tests {
     #[test]
     fn test_config_file_path_fails_without_a_home_or_config_directory() {
         let err = Config::config_file_under(None).unwrap_err().to_string();
+        let expected = if cfg!(target_os = "windows") {
+            "langstar cannot find your config directory"
+        } else {
+            "langstar cannot find your home directory"
+        };
+        assert!(err.contains(expected), "{err}");
+    }
+
+    #[test]
+    #[serial_test::serial]
+    fn test_load_fails_without_a_home_or_config_directory_even_with_settings_in_env() {
+        unsafe {
+            std::env::remove_var("LANGSTAR_CONFIG_DIR");
+            std::env::set_var("LANGSMITH_API_KEY", "env-key");
+            std::env::set_var("LANGSTAR_OUTPUT_FORMAT", "json");
+        }
+        let result = Config::load_with_base_dir(None);
+        unsafe {
+            std::env::remove_var("LANGSMITH_API_KEY");
+            std::env::remove_var("LANGSTAR_OUTPUT_FORMAT");
+        }
+
+        let err = result
+            .expect_err(
+                "load must fail rather than return a config built from environment variables",
+            )
+            .to_string();
         let expected = if cfg!(target_os = "windows") {
             "langstar cannot find your config directory"
         } else {
@@ -718,6 +758,7 @@ mod tests {
     }
 
     #[test]
+    #[serial_test::serial]
     fn test_env_var_hide_warning_parsing() {
         unsafe {
             // Test parsing "1"
