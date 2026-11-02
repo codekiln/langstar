@@ -119,7 +119,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 
 ## 8. assistant export
 
-- [ ] 8.1 Add `langstar assistant export` with `--output`, `--prompt-ref` and `--not-a-secret`, and run the credential check from 4.4 over the `assistant` object before writing. Verify with these tests:
+- [x] 8.1 Add `langstar assistant export` with `--output`, `--prompt-ref` and `--not-a-secret`, and run the credential check from 4.4 over the `assistant` object before writing. Verify with these tests:
   - An integration test that creates an assistant with configuration, context and metadata through the SDK and asserts every field of the exported file.
   - An integration test that exports, with `--prompt-ref /config/configurable/system_prompt`, an assistant whose value there is `support-system:prod`, and asserts that the file holds that pointer and `support-system:prod` under `requires.prompts`.
   - An integration test that exports the same assistant version twice and asserts that the two files are identical.
@@ -130,7 +130,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - A unit test that serves an assistant whose `config.configurable.openai_api_key` holds a secret reference, and asserts that export writes the file with the reference.
   - A unit test that exports an assistant whose `config.configurable.token_budget_policy` holds `strict` with `--not-a-secret /config/configurable/token_budget_policy`, and asserts that the file holds `strict` there and stderr names the path, and one without the flag that asserts status 1.
   - A CLI test that runs `assistant export` without `--output`, parses all of stdout as one JSON document, and asserts that its `source.assistant_id` is the exported assistant's ID and that any progress message is on stderr.
-- [ ] 8.2 Document assistant export. The page links the prompt export page's list of what the credential check flags, says that export then names each path and writes no file, shows `--not-a-secret`, and says that a credential under an ordinary key name with an ordinary-looking value passes the check and reaches the file. It tells users to keep credentials in the deployment's environment variables or the workspace's secrets, and to read an export file before they commit it. Verify that each documented command runs as written.
+- [x] 8.2 Document assistant export. The page links the prompt export page's list of what the credential check flags, says that export then names each path and writes no file, shows `--not-a-secret`, and says that a credential under an ordinary key name with an ordinary-looking value passes the check and reaches the file. It tells users to keep credentials in the deployment's environment variables or the workspace's secrets, and to read an export file before they commit it. Verify that each documented command runs as written.
 
 ## 9. assistant compare and verify
 
