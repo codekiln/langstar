@@ -84,11 +84,12 @@ Keep credentials out of an assistant's configuration, context and metadata. Put 
 
 ### Write a flagged string that holds no secret
 
-Some flagged strings hold no secret, such as `strict` under a setting called `token_budget_policy`, which the key-name rule flags for the word `token`. Read the string first. Then name its path with `--not-a-secret`, once for each path:
+Some flagged strings hold no secret, such as `strict` under a setting called `token_budget_policy`, which the key-name rule flags for the word `token`. Read the string first. Then name its path with `--not-a-secret`, once for each path. The Agent Server returns each setting in both `config.configurable` and `context`, so a setting has two paths:
 
 ```bash
 langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json \
-  --not-a-secret /config/configurable/token_budget_policy
+  --not-a-secret /config/configurable/token_budget_policy \
+  --not-a-secret /context/token_budget_policy
 ```
 
 Export writes that string and prints a warning naming the path to stderr. A flagged string at any path you did not name still stops the export. When `--not-a-secret` names a path where the check flags nothing, export names the path, writes no file and exits with status 1, so a script that keeps naming a path after the string there has changed stops at the export. Export runs the check on every run.
@@ -97,8 +98,10 @@ Export writes that string and prints a warning naming the path to stderr. A flag
 
 A credential under an ordinary key name with an ordinary-looking value, such as a random string under a key called `x`, passes the check and reaches the file. Read an export file before you commit it.
 
+Export also refuses to run while `LANGSTAR_DEBUG_HTTP` is set, because that variable makes langstar write each response the server sends, credentials included, to a debug file and to stderr.
+
 ## Exit statuses
 
 - 0: export wrote the file.
-- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` or `--not-a-secret` pointer did not match, the deployment has no assistant with that ID, the assistant is a graph's default assistant, or another error stopped it.
+- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` or `--not-a-secret` pointer did not match, the deployment has no assistant with that ID, the assistant is a graph's default assistant, `LANGSTAR_DEBUG_HTTP` is set, or another error stopped it.
 - 2: a mistyped flag or a missing required one.
