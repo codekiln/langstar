@@ -114,21 +114,14 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-check
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
       - name: Run cargo check
-        run: mbx check --all-targets --all-features
+        run: cargo check --all-targets --all-features
 
   test:
     name: Test
@@ -142,15 +135,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-test
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
@@ -168,7 +154,7 @@ jobs:
           install: false
 
       - name: Run unit tests
-        run: mbx nextest run --profile ci --all-features --workspace --lib
+        run: cargo nextest run --profile ci --all-features --workspace --lib
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
@@ -226,15 +212,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-integration-tests
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
@@ -256,7 +235,7 @@ jobs:
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
         # Note: The serial_test crate's #[serial] attribute works at the process level.
         # Nextest runs each test in its own process, so #[serial] coordination works correctly.
-        run: mbx nextest run --profile integration -p langstar --features integration-tests
+        run: cargo nextest run --profile integration -p langstar --features integration-tests
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
@@ -315,15 +294,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-integration-tests-sdk
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2
@@ -344,7 +316,7 @@ jobs:
         # Runs SDK integration tests in the langstar-sdk package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
         # Note: test-utils feature included for shared test infrastructure used by some SDK tests
-        run: mbx nextest run --profile integration -p langstar-sdk --features integration-tests,test-utils
+        run: cargo nextest run --profile integration -p langstar-sdk --features integration-tests,test-utils
         timeout-minutes: 15
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
@@ -403,18 +375,11 @@ jobs:
         with:
           components: clippy
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-clippy
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Run clippy
-        run: mbx clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
   audit:
     name: Security Audit
@@ -428,8 +393,6 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # cargo audit compiles nothing, so the Mr Boxington action would find no
-      # target directory to save; rust-cache keeps caching the downloads here.
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
@@ -457,18 +420,11 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Restores this job's Cargo target directory and downloaded crates, as
-      # Swatinem/rust-cache did, and puts mbx on PATH for the cargo steps below.
-      # Why each input is set: openspec/changes/run-cargo-through-mr-boxington/design.md
-      - name: Set up Mr Boxington
-        uses: jdx/mr-boxington-action@88acf2bb50552c7c508cbac13e5f8c576b95b1de # v1.7.3
-        with:
-          version: 1.28.0
-          cache-generation: v1-build
-          save-on-pull-request: true
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: mbx build --release --all-features
+        run: cargo build --release --all-features
 
       - name: Upload binary (Linux)
         if: matrix.os == 'ubuntu-latest'
