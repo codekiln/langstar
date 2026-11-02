@@ -90,6 +90,7 @@ async fn test_create_push_and_read_prompt() {
                 "template_format": "f-string"
             }
         }),
+        description: None,
         parent_commit: None,
         example_run_ids: None,
     };
@@ -168,6 +169,7 @@ async fn test_create_push_and_read_prompt() {
                 "template_format": "f-string"
             }
         }),
+        description: None,
         parent_commit: Some(first_commit_hash.clone()),
         example_run_ids: None,
     };

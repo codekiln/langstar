@@ -118,6 +118,7 @@ impl<'a> GraphClient<'a> {
         loop {
             let request_body = AssistantSearchRequest {
                 name: None, // No name filter lists all assistants
+                graph_id: None,
                 limit: Some(limit),
                 offset: Some(offset),
             };
