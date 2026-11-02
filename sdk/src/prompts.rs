@@ -679,7 +679,8 @@ impl<'a> PromptClient<'a> {
     /// create can carry a model to another workspace.
     ///
     /// The older `include_model=true`, which the LangSmith Python SDK sends, returns the
-    /// same document, and the spec marks it deprecated.
+    /// same document, and `reference/api-specs/langsmith/prompt-endpoints.json` marks
+    /// it deprecated.
     ///
     /// # Arguments
     /// * `owner` - The owner of the prompt (username or organization)
@@ -1206,10 +1207,10 @@ pub struct CommitManifestResponse {
     /// The commit's description, which the person who pushed it wrote
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    /// The model's settings, beside the manifest rather than inside it.
+    /// The model's settings, which LangSmith returns in a field beside the manifest.
     ///
-    /// LangSmith leaves this field out for a commit with no model, rather than
-    /// returning null, so `None` means the commit has no model.
+    /// LangSmith leaves this field out for a commit with no model, so `None` means
+    /// the commit has no model.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model_config: Option<serde_json::Value>,
     /// The chat model's class name, such as `ChatOpenAI`.

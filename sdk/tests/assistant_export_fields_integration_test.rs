@@ -1,4 +1,4 @@
-//! Integration tests for the assistant fields export and import read and write
+//! Integration tests for the assistant fields that export reads and import writes
 //!
 //! These tests cover the assistant's `context` and `version`, the search by graph ID,
 //! and the graph an update moves an assistant to. They run against the test deployment
@@ -33,7 +33,8 @@ const TEST_GRAPH: &str = "test_graph";
 ///
 /// Task 2.3, "Register the test graph under a second graph ID", adds a `langgraph.json`
 /// that registers the test graph under this ID as well, and task 2.4, "Add a destination
-/// deployment fixture", deploys that file. Only the test waiting for those two uses it.
+/// deployment fixture", deploys that file. Only `test_update_moves_an_assistant_to_another_graph`
+/// uses this ID, and it waits for both tasks.
 const TEST_GRAPH_ALT: &str = "test_graph_alt";
 
 /// The name prefix task 2.4, "Add a destination deployment fixture", gives the
@@ -41,8 +42,9 @@ const TEST_GRAPH_ALT: &str = "test_graph_alt";
 const DESTINATION_DEPLOYMENT_PREFIX: &str = "dest-integration-test";
 
 /// The graph config file task 2.3, "Register the test graph under a second graph ID",
-/// adds
-const DESTINATION_CONFIG_PATH: &str = "tests/fixtures/test-graph-deployment-alt/langgraph.json";
+/// adds in codekiln/langstar#842
+const DESTINATION_CONFIG_PATH: &str =
+    "tests/fixtures/test-graph-deployment/langgraph-two-graph-ids.json";
 
 fn test_assistant_name(prefix: &str) -> String {
     format!("{}-{}", prefix, &Uuid::new_v4().to_string()[..8])

@@ -134,8 +134,9 @@ pub struct CreateAssistantRequest {
     /// Optional configuration
     #[serde(skip_serializing_if = "Option::is_none")]
     pub config: Option<serde_json::Value>,
-    /// Static context for the assistant. A newer Agent Server refuses a create that
-    /// sends both this and `config.configurable`, so send one of them.
+    /// Static context for the assistant. The Agent Server answers a create that sends
+    /// both this and `config.configurable` with HTTP 400, as
+    /// `reference/research/807-openapi-validation.md` records, so send one of them.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context: Option<serde_json::Value>,
     /// Optional metadata
@@ -180,7 +181,8 @@ pub struct AssistantSearchRequest {
     /// Sent as `name`, the field `POST /assistants/search` filters on.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// Keep only assistants that run this graph. `None` lists every graph's.
+    /// Keep only assistants that run this graph. When `None`, the search lists the
+    /// assistants of every graph.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub graph_id: Option<String>,
     /// Maximum number of results. When `None`, the API returns up to 10.

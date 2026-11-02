@@ -1,4 +1,4 @@
-//! Integration tests for the prompt fields export and import read and write
+//! Integration tests for the prompt fields that export reads and import writes
 //!
 //! These tests cover the commit read that asks for the model, the commit list and the
 //! commit tags, the commit description, and the repo update, against the live LangSmith
