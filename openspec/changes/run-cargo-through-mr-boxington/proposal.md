@@ -13,13 +13,13 @@ codekiln already turns mbx on for their machine in their global mise config, but
 - `mise.toml` sets `mr_boxington = true` on the `rust` entry, keeping the 1.99.0 pin, so Cargo started through mise (tasks, `mise exec`, the shims or an activated shell) runs through mbx.
 - `mise.toml` pins `mr-boxington = "1.28.0"`. An exact pin is exempt from the repo's `minimum_release_age = "5d"`, so whoever bumps it picks a release at least five days old by hand, as the comment above `[settings]` says.
 - `docs/dev/getting-started.md` says what mbx does, how to check that `cargo` goes through it, and that `target/` becomes a symlink into mbx's cache.
-- CI keeps `Swatinem/rust-cache` and plain `cargo`. A trial on this change's pull request moved the compiling jobs to `jdx/mr-boxington-action`, and every one of them ran slower on a warm run than with rust-cache, so the trial was reverted; design.md records the measurements and the reasons.
+- CI keeps `Swatinem/rust-cache` and plain `cargo`. A trial on this change's pull request switched the compiling jobs to `jdx/mr-boxington-action`, and every one of them ran slower on a warm run than with rust-cache, so the trial was reverted; design.md records the measurements and the reasons.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `dev-environment`: how a langstar developer and CI build the workspace. No `langstar` command group covers building langstar, so this capability is named for the developer's environment instead.
+- `dev-environment`: how a langstar developer and CI build the workspace.
 
 ### Modified Capabilities
 
@@ -29,8 +29,8 @@ None.
 
 - `mise.toml`: the `rust` entry and a new `mr-boxington` pin.
 - `docs/dev/getting-started.md`: one paragraph.
-- `.github/workflows/ci.yml`: unchanged once the trial is reverted.
-- A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache; [design.md question 1](design.md#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) covers it.
+- `.github/workflows/ci.yml`: the pull request leaves it as it is on `main`, after a trial and its revert.
+- A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache; the open question [If a new Claude Code session still runs ~/.cargo/bin/cargo, should someone file a mise issue?](design.md#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) in design.md covers it.
 
 ## Citations
 
