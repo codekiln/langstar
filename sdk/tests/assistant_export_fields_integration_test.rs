@@ -12,6 +12,10 @@
 //!
 //! The SDK Integration Tests job in `.github/workflows/ci.yml` runs them on every pull
 //! request, and `mise run check` runs them locally.
+//!
+//! The crate imports `langstar_sdk::test_utils`, which the library builds only with the
+//! `test-utils` feature, so without that feature this crate compiles to nothing.
+#![cfg(feature = "test-utils")]
 
 use langstar_sdk::test_utils::TestDeploymentConfig;
 use langstar_sdk::{
