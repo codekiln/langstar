@@ -12,8 +12,8 @@
 //!
 //! Run with: cargo nextest run -p langstar --features integration-tests --test prompt_export_test
 //!
-//! The tasks these tests verify live in
-//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`, task 5.1.
+//! `openspec/changes/export-import-prompts-and-assistants/tasks.md` lists these
+//! tests under "5. prompt export".
 #[path = "common/config_dir.rs"]
 mod config_dir;
 
@@ -263,7 +263,7 @@ fn chat_prompt(template: &str) -> Value {
     })
 }
 
-/// Task 5.1: a `json_schema` structured prompt saved without a model exports
+/// A `json_schema` structured prompt saved without a model exports
 /// every field the SDK reads, an empty `requires.secrets` and a null
 /// `requires.model_class`.
 #[test]
@@ -296,7 +296,7 @@ fn test_export_json_schema_prompt_without_a_model() {
     );
 }
 
-/// Task 5.1: a `function_calling` structured prompt keeps its nested schema and
+/// A `function_calling` structured prompt keeps its nested schema and
 /// its method unchanged.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -346,7 +346,7 @@ fn test_export_function_calling_prompt_with_a_nested_schema() {
     );
 }
 
-/// Task 5.1: a prompt with several messages and a placeholder keeps every
+/// A prompt with several messages and a placeholder keeps every
 /// message.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -391,7 +391,7 @@ fn test_export_prompt_with_several_messages_and_a_placeholder() {
     );
 }
 
-/// Task 5.1: a prompt with a model and metadata lists the model's secret and
+/// A prompt with a model and metadata lists the model's secret and
 /// class, and holds no secret value.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -440,7 +440,7 @@ fn test_export_prompt_with_a_model_and_metadata() {
     }
 }
 
-/// Task 5.1: `--commit prod` exports the earlier commit the `prod` tag points at.
+/// `--commit prod` exports the earlier commit the `prod` tag points at.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_the_commit_a_tag_points_at() {
@@ -467,7 +467,7 @@ fn test_export_the_commit_a_tag_points_at() {
     assert_eq!(file["commit"]["tags"], json!(["prod"]));
 }
 
-/// Task 5.1: a handle the workspace has no prompt for exits with status 1,
+/// A handle the workspace has no prompt for exits with status 1,
 /// names the handle and writes no file.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -491,7 +491,7 @@ fn test_export_a_handle_with_no_prompt() {
     assert!(!output.exists(), "export wrote {}", output.display());
 }
 
-/// Task 5.1: `my-prompt` and `-/my-prompt`, without `--`, write the same file.
+/// `my-prompt` and `-/my-prompt`, without `--`, write the same file.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_private_prompt_with_and_without_the_dash() {
@@ -508,7 +508,7 @@ fn test_export_private_prompt_with_and_without_the_dash() {
     assert_eq!(short, dashed);
 }
 
-/// Task 5.1: without `--output`, stdout holds one JSON document and the
+/// Without `--output`, stdout holds one JSON document and the
 /// progress message goes to stderr.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -533,7 +533,7 @@ fn test_export_to_stdout_holds_only_the_file() {
     );
 }
 
-/// Task 5.1: one commit with two tags exports to the same file twice.
+/// One commit with two tags exports to the same file twice.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_a_commit_with_two_tags_twice() {

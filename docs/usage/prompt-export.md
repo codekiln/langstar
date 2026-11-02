@@ -20,7 +20,7 @@ langstar prompt export my-prompt --commit <commit-hash> --output my-prompt.json
 langstar prompt export my-prompt > my-prompt.json
 ```
 
-`my-prompt` and `-/my-prompt` both name a prompt in your workspace, and both write the same file. You do not need `--` before `-/my-prompt`. A public prompt takes its owner, as in `owner/my-prompt`.
+`my-prompt` and `-/my-prompt` both name a prompt in your workspace, and both write the same file. `-/my-prompt` works as it is, with no `--` in front of it. A public prompt takes its owner, as in `owner/my-prompt`.
 
 Progress messages and warnings go to stderr, so a file written through `>` holds only the export.
 
@@ -74,14 +74,14 @@ Keep credentials in the workspace's secrets (see [workspace-secrets.md](./worksp
 
 ### A flagged string that holds no secret
 
-Some flagged strings are harmless, such as a message template that shows an example `Authorization: Bearer` header. Read the string at the path export printed, and when it holds no credential, name that path with `--not-a-secret`:
+Some flagged strings are harmless, such as a message template that shows an example `Authorization: Bearer` header. Read the string at the path export printed, and when it is harmless, name that path with `--not-a-secret`:
 
 ```bash
 langstar prompt export my-prompt --output my-prompt.json \
   --not-a-secret /commit/manifest/kwargs/first/kwargs/messages/0/kwargs/prompt/kwargs/template
 ```
 
-Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at a path you did not name still stops the export. A `--not-a-secret` path where the check flags no string also stops it, naming the path, so a script that keeps naming a path after the string there has changed stops too. Export runs the check every time.
+Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops, and names the path, when you name a path whose string passes the check, so a script that keeps naming a path after the string there has changed stops too. Export runs the check every time.
 
 ### What the check misses
 
