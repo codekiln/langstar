@@ -204,8 +204,8 @@ async fn test_commit_description_and_repo_details_round_trip() {
             TEST_OWNER,
             &repo,
             &UpdateRepoRequest {
-                description: Some("Answers support questions".to_string()),
-                readme: Some("# Support\n\nWhat this prompt does.".to_string()),
+                description: Some(Some("Answers support questions".to_string())),
+                readme: Some(Some("# Support\n\nWhat this prompt does.".to_string())),
                 tags: Some(vec!["support".to_string(), "triage".to_string()]),
                 is_public: Some(false),
             },

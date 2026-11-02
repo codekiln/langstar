@@ -888,7 +888,7 @@ impl<'a> PromptClient<'a> {
     ///         "-",
     ///         "my-prompt",
     ///         &UpdateRepoRequest {
-    ///             description: Some("Answers support questions".to_string()),
+    ///             description: Some(Some("Answers support questions".to_string())),
     ///             ..Default::default()
     ///         },
     ///     )
@@ -1156,15 +1156,17 @@ pub struct RepoTag {
 /// Repo details a repo update sends
 ///
 /// Each field the caller leaves `None` stays out of the request body, and LangSmith
-/// leaves that detail as it is.
+/// leaves that detail as it is. `description` and `readme` can also be cleared:
+/// `Some(None)` sends `null`, which an import needs to copy a prompt that has
+/// no description or readme onto one that has.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UpdateRepoRequest {
-    /// The prompt's one-line description
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    /// The prompt's readme
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub readme: Option<String>,
+    /// The prompt's one-line description: `None` leaves it, `Some(None)` clears it
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<Option<String>>,
+    /// The prompt's readme: `None` leaves it, `Some(None)` clears it
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub readme: Option<Option<String>>,
     /// The prompt's tags, which name the prompt rather than a commit
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
@@ -2517,8 +2519,8 @@ mod export_field_tests {
                 "-",
                 "my-prompt",
                 &UpdateRepoRequest {
-                    description: Some("Answers support questions".to_string()),
-                    readme: Some("# My prompt".to_string()),
+                    description: Some(Some("Answers support questions".to_string())),
+                    readme: Some(Some("# My prompt".to_string())),
                     tags: Some(vec!["support".to_string()]),
                     is_public: Some(false),
                 },
@@ -2565,6 +2567,47 @@ mod export_field_tests {
         assert!(updated.is_public);
         assert!(updated.readme.is_none());
         assert!(updated.tags.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_update_repo_sends_null_to_clear_the_description_and_readme() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("PATCH", "/api/v1/repos/-/my-prompt")
+            .match_body(mockito::Matcher::Json(json!({
+                "description": null,
+                "readme": null
+            })))
+            .with_body(
+                json!({"repo": {
+                    "id": "repo-1",
+                    "repo_handle": "my-prompt",
+                    "description": null,
+                    "readme": null,
+                    "is_public": false
+                }})
+                .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let updated = mock_client(&server)
+            .prompts()
+            .update_repo(
+                "-",
+                "my-prompt",
+                &UpdateRepoRequest {
+                    description: Some(None),
+                    readme: Some(None),
+                    ..Default::default()
+                },
+            )
+            .await
+            .expect("the repo update should succeed");
+
+        mock.assert_async().await;
+        assert!(updated.description.is_none());
+        assert!(updated.readme.is_none());
     }
 
     #[tokio::test]
