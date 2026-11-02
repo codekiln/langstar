@@ -13,8 +13,7 @@ codekiln already turns mbx on for their machine in their global mise config, but
 - `mise.toml` sets `mr_boxington = true` on the `rust` entry, keeping the 1.99.0 pin, so Cargo started through mise (tasks, `mise exec`, the shims or an activated shell) runs through mbx.
 - `mise.toml` pins `mr-boxington = "1.28.0"`. An exact pin is exempt from the repo's `minimum_release_age = "5d"`, so whoever bumps it picks a release at least five days old by hand, as the comment above `[settings]` says.
 - `docs/dev/getting-started.md` says what mbx does, how to check that `cargo` goes through it, and that `target/` becomes a symlink into mbx's cache.
-- CI's Check, Test, Integration Tests, SDK Integration Tests, Clippy and Build jobs replace `Swatinem/rust-cache` with `jdx/mr-boxington-action`, pinned to its v1.7.3 commit, and run their compile steps as `mbx check`, `mbx nextest run`, `mbx clippy` and `mbx build`. The action installs mbx 1.28.0 and restores each job's own target directory and downloaded crates from GitHub Actions cache, as rust-cache did.
-- Security Audit, the release workflow and the cleanup workflow keep plain `cargo` and rust-cache.
+- CI keeps `Swatinem/rust-cache` and plain `cargo`. A trial on this change's pull request moved the compiling jobs to `jdx/mr-boxington-action`, and every one of them ran slower on a warm run than with rust-cache, so the trial was reverted; design.md records the measurements and the reasons.
 
 ## Capabilities
 
@@ -30,7 +29,7 @@ None.
 
 - `mise.toml`: the `rust` entry and a new `mr-boxington` pin.
 - `docs/dev/getting-started.md`: one paragraph.
-- `.github/workflows/ci.yml`: six jobs change their cache step and compile commands. Cache entries move to new keys, so the first run of each job after the change compiles from nothing.
+- `.github/workflows/ci.yml`: unchanged once the trial is reverted.
 - A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache; [design.md question 1](design.md#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) covers it.
 
 ## Citations

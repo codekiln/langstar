@@ -32,25 +32,15 @@ The `rust` entry in `mise.toml` SHALL set `mr_boxington = true`, so that Cargo s
 - **THEN** mise installs `mr-boxington` 1.28.0
 - **AND** `mise exec -- mbx --version` prints 1.28.0
 
-### Requirement: CI compiles through Mr Boxington with each job's own cache
+### Requirement: CI and release workflows compile with plain Cargo
 
-The Check, Test, Integration Tests, SDK Integration Tests, Clippy and Build jobs in `.github/workflows/ci.yml` SHALL compile through `mbx`, using the mbx version `mise.toml` pins, and SHALL restore and save a cache entry of their own, apart from every other job's.
+The GitHub Actions workflows SHALL run plain `cargo`, not `mbx`, and SHALL cache Cargo's target directory and downloads with `Swatinem/rust-cache`. The release workflow SHALL NOT restore compiler outputs through `jdx/mr-boxington-action` or a remote mbx cache.
 
-#### Scenario: A job restores its own entry
+#### Scenario: A CI job compiles with plain cargo
 
-- **WHEN** CI runs the Test job on a pull request after an earlier run of that job saved an entry
-- **THEN** the job's Mr Boxington step reports that it restored an entry with the Test job's cache generation
-- **AND** it does not restore an entry saved by the Build or Clippy job
-
-#### Scenario: A fork pull request saves nothing
-
-- **WHEN** CI runs on a pull request from a fork
-- **THEN** each job restores from the default branch's entries
-- **AND** no job saves a cache entry
-
-### Requirement: Release builds do not restore compiler outputs through Mr Boxington
-
-The release workflow SHALL build the binaries it publishes without restoring compiler outputs through `jdx/mr-boxington-action` or a remote mbx cache.
+- **WHEN** CI runs the Test job on a pull request
+- **THEN** the job restores its entry with `Swatinem/rust-cache`
+- **AND** it runs `cargo nextest run`, not `mbx nextest run`
 
 #### Scenario: The release build compiles with plain cargo
 
