@@ -132,7 +132,7 @@ fn read_json(path: &std::path::Path) -> Value {
         .expect("the file should hold JSON")
 }
 
-/// Task 8.1: export writes every field of an assistant with configuration,
+/// Task 8.1, "Add langstar assistant export": export writes every field of an assistant with configuration,
 /// context and metadata.
 #[test]
 #[serial]
@@ -190,7 +190,7 @@ fn test_export_writes_every_field() {
     assert_eq!(written["requires"], json!({"prompts": {}}));
 }
 
-/// Task 8.1: `--prompt-ref` records the pointer and the prompt name it holds.
+/// Task 8.1, "Add langstar assistant export": `--prompt-ref` records the pointer and the prompt name it holds.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -231,7 +231,7 @@ fn test_export_records_a_prompt_reference() {
     );
 }
 
-/// Task 8.1: two exports of one assistant version write identical files.
+/// Task 8.1, "Add langstar assistant export": two exports of one assistant version write identical files.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -267,7 +267,7 @@ fn test_export_twice_writes_identical_files() {
     assert_eq!(texts[0], texts[1]);
 }
 
-/// Task 8.1: an assistant ID the deployment lacks exits with status 1, names
+/// Task 8.1, "Add langstar assistant export": an assistant ID the deployment lacks exits with status 1, names
 /// the ID and writes no file.
 #[test]
 #[serial]
@@ -292,28 +292,28 @@ fn test_export_of_a_missing_assistant_names_the_id() {
     assert!(!file.exists(), "export should write no file");
 }
 
-/// Task 8.1: a graph's default assistant is refused.
+/// Task 8.1, "Add langstar assistant export": a graph's default assistant is refused.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_refuses_a_graphs_default_assistant() {
     let client = agent_server_client();
+    // The test deployment holds many assistants the other tests created, so a
+    // search by graph ID alone can return a page without the default one. The
+    // Agent Server's search filters by metadata as well, and the default
+    // assistant carries `created_by: system`.
     let default = runtime()
-        .block_on(
-            client
-                .assistants()
-                .search_by_graph_id(TEST_GRAPH, Some(100)),
-        )
-        .expect("the search by graph ID should succeed")
-        .into_iter()
-        .find(|assistant| {
-            assistant
-                .metadata
-                .as_ref()
-                .and_then(|metadata| metadata.get("created_by"))
-                .and_then(Value::as_str)
-                == Some("system")
+        .block_on(async {
+            let request = client.langgraph_post("/assistants/search")?.json(&json!({
+                "graph_id": TEST_GRAPH,
+                "metadata": {"created_by": "system"},
+                "limit": 10,
+            }));
+            client.execute::<Vec<Assistant>>(request).await
         })
+        .expect("the search for the default assistant should succeed")
+        .into_iter()
+        .next()
         .expect("the deployment has a default assistant for test_graph");
 
     let directory = TempDir::new().unwrap();
@@ -331,7 +331,7 @@ fn test_export_refuses_a_graphs_default_assistant() {
     assert!(output.stdout.is_empty());
 }
 
-/// Task 8.1: without `--output`, stdout holds only the file and progress goes
+/// Task 8.1, "Add langstar assistant export": without `--output`, stdout holds only the file and progress goes
 /// to stderr.
 #[test]
 #[serial]
