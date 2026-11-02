@@ -67,7 +67,7 @@ Part of the warm gap is the save: rust-cache found an exact entry and saved noth
 ## Risks / Trade-offs
 
 - [The trial runs saved 14 mbx entries, about 5 GB, under this pull request's scope, while the repository's cache was already over GitHub's 10 GB default] → GitHub evicts the least recently used entries, so `main`'s rust-cache entries may be evicted once and rebuilt on the next push to `main`.
-- [Plain `cargo` in a shell whose `PATH` does not start with mise's wrapper skips mbx] → Builds still work, and reuse nothing; [question 1](#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) covers the one case seen so far.
+- [Plain `cargo` in a shell whose `PATH` does not start with mise's wrapper skips mbx, and on a filesystem that cannot clone files, such as ext4, it can fail with `output file ... is not writeable` on a unit mbx restored as a read-only hard link (`mr-boxington/docs/troubleshooting.md:181-188`, `mr-boxington/docs/how-it-works.md:181-188`)] → `docs/dev/getting-started.md` says to check with `command -v cargo`, to use `mise exec -- cargo ...` in such a shell, and to recover with `mbx clean`. macOS's APFS clones files, so Macs do not hit the error. [Question 1](#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) covers the shell seen so far.
 
 ## Resolved Questions
 
@@ -78,6 +78,6 @@ None.
 ### 1 - If a new Claude Code session still runs ~/.cargo/bin/cargo, should someone file a mise issue?
 
 > Context from the drafting agent, for question 1.
-> In a terminal, `command -v cargo` prints mise's `command-wrappers/bin/cargo`, so Cargo goes through Mr Boxington. In a Claude Code session started earlier, `command -v cargo` prints `~/.cargo/bin/cargo` instead, and Cargo runs without the cache: builds still work but reuse nothing. A new terminal or a new Claude Code session should fix it. If it does not, the cause is in how mise orders `PATH`, and the fix belongs in a mise issue, not in this repository. `docs/dev/getting-started.md` tells developers to check with `command -v cargo`.
+> In a terminal, `command -v cargo` prints mise's `command-wrappers/bin/cargo`, so Cargo goes through Mr Boxington. In a Claude Code session started earlier, `command -v cargo` prints `~/.cargo/bin/cargo` instead, and plain `cargo` there skips mbx: it reuses nothing, and on ext4 it can fail on a read-only restored output. `mise exec -- cargo ...` in that session still printed an `mbx[cache]:` line on 2026-11-02, while `mise exec -- sh -c 'command -v cargo'` printed `~/.cargo/bin/cargo`, so scripts that mise starts skip mbx too. A new terminal or a new Claude Code session should fix it. If it does not, the cause is in how mise orders `PATH`, and the fix belongs in a mise issue, not in this repository. `docs/dev/getting-started.md` tells developers to check with `command -v cargo`.
 
 <ANSWER_HERE>
