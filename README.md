@@ -220,6 +220,20 @@ langstar prompt push \
 
 For detailed examples and workflows, see [docs/examples/structured-output-prompts.md](./docs/examples/structured-output-prompts.md).
 
+**Exporting a Prompt:**
+
+`langstar prompt export` writes one prompt commit, with its model, to a JSON file you can commit to Git and import into another workspace.
+
+```bash
+# The latest commit, to a file
+langstar prompt export my-prompt --output my-prompt.json
+
+# The commit the prod tag points at
+langstar prompt export my-prompt --commit prod --output my-prompt.json
+```
+
+Export refuses to write a file that holds a credential, such as an API key in the model's settings. It names the path of each flagged string and writes nothing. Keep credentials in the workspace's secrets, and read an export file before you commit it. See [docs/usage/prompt-export.md](./docs/usage/prompt-export.md) for what the check flags and for `--not-a-secret`.
+
 #### LangGraph Assistants (Deployment-Level)
 
 ```bash
