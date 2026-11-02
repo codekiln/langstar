@@ -44,6 +44,8 @@ mise install   # installs every tool pinned in mise.toml
 op signin      # or turn on the 1Password desktop app integration
 ```
 
+Cargo started through mise (`mise run` tasks, `mise exec -- cargo ...`, or `cargo` in a shell with mise activated) runs through [Mr Boxington](https://github.com/jdx/mr-boxington) (`mbx`), a compile cache that reuses compiled work across worktrees. A new worktree's first build restores most crates from that cache instead of compiling them again. `mbx stats` shows what it has saved. To check that a shell or a task uses mbx, run `mise exec -- sh -c 'command -v cargo'`: it should print a path under mise's `command-wrappers` directory. If it prints `~/.cargo/bin/cargo`, rustup's `PATH` entry from your shell profile comes first, and plain `cargo` and the `mise run` tasks bypass mbx; `mise exec -- cargo ...` still uses it. mbx also moves `target/` into its cache directory and leaves a `target` symlink, so paths like `target/debug/langstar` still work.
+
 ### Step 2: One-Time Machine Setup
 
 Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.

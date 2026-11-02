@@ -23,7 +23,14 @@ lefthook = "2.2.1"
 # Same version as rust-toolchain.toml, so mise and rustup users get one compiler.
 # The workspace needs Rust 1.89 or newer (uuid 1.27's minimum), and the code uses let-chains
 # (`if let ... && ...`), which older compilers reject.
-rust = "1.99.0"
+# mr_boxington runs Cargo through mbx (Mr Boxington), which shares compiled work
+# across worktrees and agent runs. It applies only to Cargo started through mise:
+# tasks, `mise exec`, the shims or an activated shell. This entry replaces a
+# global `mr_boxington = true`, so the option has to be set here too.
+# https://github.com/jdx/mr-boxington
+rust = { version = "1.99.0", mr_boxington = true }
+# 1.28.0 was the newest release older than minimum_release_age when pinned.
+mr-boxington = "1.28.0"
 # Secrets: fnox resolves fnox.toml's 1Password references (op) into an
 # age-encrypted local cache. See docs/dev/environment-variables.md.
 fnox = "1.38.1"
