@@ -763,7 +763,7 @@ mod tests {
         assert_eq!(row.name, "Test Assistant");
     }
 
-    // assistant export, task 8.1 of the export-import-prompts-and-assistants change
+    // Task 8.1, "Add langstar assistant export", of the export-import-prompts-and-assistants change
 
     use langstar_sdk::AuthConfig;
     use tempfile::TempDir;

@@ -58,7 +58,7 @@ langstar assistant export <assistant-id> --deployment my-agent --output support-
 
 The string at that pointer holds a prompt name of the form `[<owner>/]<handle>[:<tag>]`, such as `support-system:prod`. A name with no owner, or with the owner `-`, means the prompt in the current workspace. A name with no tag means the prompt's latest commit. Export writes each pointer and the name it holds under `requires.prompts`. When a pointer names no string in the assistant, export names the pointer, writes no file and exits with status 1.
 
-Name each prompt by its handle and a tag, such as `support-system:prod`, rather than a commit hash, because the same prompt has a different commit hash in each workspace.
+Name each prompt by its handle and a tag, such as `support-system:prod`. The same prompt has a different commit hash in each workspace, and import copies the tag to the destination workspace.
 
 ## A graph's default assistant
 
@@ -78,7 +78,7 @@ Error: This would write a credential to the export file:
 Move each one into the workspace's secrets or the deployment's environment variables. To write a string that holds no credential, read it first and name its path with --not-a-secret.
 ```
 
-Export never writes a file with `<redacted>` in place of a credential. An assistant copied from such a file could not authenticate, and a reviewer reading the file would not see that the source holds a credential.
+A refused export writes nothing at all. A file with `<redacted>` in place of the credential would copy an assistant that cannot authenticate, and would hide from a reviewer that the source holds a credential.
 
 Keep credentials out of an assistant's configuration, context and metadata. Put each one in the deployment's environment variables, which the graph reads, or in the workspace's secrets ([Workspace Secrets Management](workspace-secrets.md)).
 
