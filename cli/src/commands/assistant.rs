@@ -267,6 +267,12 @@ impl AssistantCommands {
             crate::confirm::require_terminal("--force")?;
         }
 
+        // Refuse before the deployment lookup, whose responses the SDK would
+        // write to its debug file as well.
+        if let AssistantCommands::Export { .. } = self {
+            refuse_debug_http(std::env::var_os(DEBUG_HTTP).is_some())?;
+        }
+
         // Resolve deployment to URL
         let deployment = resolve_deployment(config, deployment_name).await?;
 
@@ -576,7 +582,6 @@ async fn export_assistant(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> Result<()> {
-    refuse_debug_http(std::env::var_os(DEBUG_HTTP).is_some())?;
     writeln!(stderr, "Reading assistant '{assistant_id}'...")?;
     let assistant = match client.assistants().get(assistant_id).await {
         Ok(assistant) => assistant,
@@ -666,7 +671,7 @@ async fn export_assistant(
 /// print the start of it to stderr.
 const DEBUG_HTTP: &str = "LANGSTAR_DEBUG_HTTP";
 
-/// Refuse to read the assistant while HTTP debugging is on. The SDK would
+/// Refuse to export while HTTP debugging is on. The SDK would
 /// write the whole response, credentials included, to a file and to stderr
 /// before the credential check could refuse it.
 fn refuse_debug_http(debug_http: bool) -> Result<()> {
