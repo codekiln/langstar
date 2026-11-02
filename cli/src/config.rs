@@ -125,9 +125,9 @@ impl Config {
         Self::load_with_base_dir(Self::default_base_dir())
     }
 
-    /// `load`, with the directory the default config location sits under passed
-    /// in, so a unit test can pass `None` to make that lookup fail (see
-    /// `config_file_under`).
+    /// Loads the configuration as `load` does, from the config location under
+    /// `base_dir`. `load` passes `default_base_dir()`, and a unit test passes
+    /// `None` to make the lookup fail (see `config_file_under`).
     fn load_with_base_dir(base_dir: Option<PathBuf>) -> Result<Self> {
         // `load` returns an error when langstar cannot find the directory that holds
         // the config file, even if environment variables set every setting, so that
@@ -304,8 +304,8 @@ impl Config {
         Self::config_file_path_under(Self::default_base_dir())
     }
 
-    /// `config_file_path`, with `base_dir` used when `LANGSTAR_CONFIG_DIR` is
-    /// unset or empty.
+    /// Returns the config file path as `config_file_path` does, looking under
+    /// `base_dir` when `LANGSTAR_CONFIG_DIR` is unset or empty.
     fn config_file_path_under(base_dir: Option<PathBuf>) -> Result<PathBuf> {
         if let Some(dir) = config_dir_from_env() {
             return Ok(config_file_in(&dir));
