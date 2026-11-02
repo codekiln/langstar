@@ -10,9 +10,9 @@ Langstar uses three core environment variables for authentication across differe
 - `LANGSMITH_ORGANIZATION_ID` - Organization ID for scoping operations
 - `LANGSMITH_WORKSPACE_ID` - Workspace ID for narrower scoping (also used as Tenant ID)
 
-The integration tests read one more:
+The integration tests also read a destination workspace ID:
 
-- `LANGSMITH_DESTINATION_WORKSPACE_ID` - The workspace the prompt import tests import into. It is a second workspace in the same organization as `LANGSMITH_WORKSPACE_ID`. The test `LANGSMITH_API_KEY` reaches both workspaces, so langstar sends the workspace ID in the `X-Tenant-Id` header on every request. An import test passes this ID to read back what `langstar prompt import` wrote to the destination. It holds a workspace secret named `OPENAI_API_KEY`, because `langstar prompt import` checks that the destination has a secret with that name before it imports a prompt that uses an OpenAI model. Only the tests read this variable, and they pass it to `langstar prompt import --workspace-id`.
+- `LANGSMITH_DESTINATION_WORKSPACE_ID` - The workspace the prompt import tests import into, a second workspace in the same organization as `LANGSMITH_WORKSPACE_ID`. The test `LANGSMITH_API_KEY` reaches both workspaces, so langstar sends the workspace ID in the `X-Tenant-Id` header on every request. The destination workspace holds a workspace secret named `OPENAI_API_KEY`, because `langstar prompt import` will check that the destination has a secret with that name before it imports a prompt that uses an OpenAI model. Only the tests read this variable: they pass it to `langstar prompt import --workspace-id`, then use it to read back what the import wrote. `langstar prompt import` and its tests arrive with [export-import-prompts-and-assistants Task 7.1 Add `langstar prompt import`](https://github.com/codekiln/langstar/blob/3ebfd5251196e5858c86413177c6650f7cc95d84/openspec/changes/export-import-prompts-and-assistants/tasks.md?plain=1#L93).
 
 ## Loading the Variables Locally
 
