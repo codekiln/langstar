@@ -576,6 +576,7 @@ async fn export_assistant(
     stdout: &mut dyn Write,
     stderr: &mut dyn Write,
 ) -> Result<()> {
+    refuse_debug_http(std::env::var_os(DEBUG_HTTP).is_some())?;
     writeln!(stderr, "Reading assistant '{assistant_id}'...")?;
     let assistant = match client.assistants().get(assistant_id).await {
         Ok(assistant) => assistant,
@@ -657,6 +658,24 @@ async fn export_assistant(
             stdout.write_all(text.as_bytes())?;
             stdout.flush()?;
         }
+    }
+    Ok(())
+}
+
+/// The variable that makes the SDK write each response body to a file and
+/// print the start of it to stderr.
+const DEBUG_HTTP: &str = "LANGSTAR_DEBUG_HTTP";
+
+/// Refuse to read the assistant while HTTP debugging is on. The SDK would
+/// write the whole response, credentials included, to a file and to stderr
+/// before the credential check could refuse it.
+fn refuse_debug_http(debug_http: bool) -> Result<()> {
+    if debug_http {
+        return Err(refusal(format!(
+            "{DEBUG_HTTP} is set, and it makes langstar write the assistant as the server \
+             returned it to a debug file and to stderr, credentials included. Unset it and \
+             run the export again."
+        )));
     }
     Ok(())
 }
@@ -1124,6 +1143,15 @@ mod tests {
         let message = run.result.expect_err("export should refuse").to_string();
         assert!(message.contains("Every deployment creates"), "{message}");
         assert_eq!(run.stdout, "");
+    }
+
+    #[test]
+    fn refuses_to_read_the_assistant_while_http_debugging_is_on() {
+        let message = refuse_debug_http(true)
+            .expect_err("export should refuse while LANGSTAR_DEBUG_HTTP is set")
+            .to_string();
+        assert!(message.contains("LANGSTAR_DEBUG_HTTP"), "{message}");
+        refuse_debug_http(false).expect("export goes ahead without the variable");
     }
 
     #[tokio::test]
