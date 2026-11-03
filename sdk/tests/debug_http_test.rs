@@ -1,11 +1,13 @@
 /// Checks that an API key in a response reaches neither stderr nor a file when
 /// `LANGSTAR_DEBUG_HTTP` is set.
 ///
-/// Until this test landed, setting `LANGSTAR_DEBUG_HTTP` made every SDK call print
-/// each response to stderr and save it to a file, API keys included. The test runs
-/// its own binary again with `LANGSTAR_DEBUG_HTTP`, `LANGSTAR_DEBUG_FILE`, `TMPDIR`,
-/// `TMP` and `TEMP` set, so it can read that run's stderr and set those variables
-/// without changing them for the other tests running beside it.
+/// `LANGSTAR_DEBUG_HTTP` used to make every successful SDK call print each response
+/// to stderr and save it to a file, API keys included. This test fails if any code
+/// brings that output back.
+///
+/// The test starts a second copy of its own test binary with `LANGSTAR_DEBUG_HTTP`,
+/// `LANGSTAR_DEBUG_FILE`, `TMPDIR`, `TMP` and `TEMP` set, so it can read what that
+/// copy prints to stderr.
 use langstar_sdk::playground_settings::ListPlaygroundSettingsParams;
 use langstar_sdk::{AuthConfig, LangchainClient};
 use mockito::Server;
