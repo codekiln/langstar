@@ -4,7 +4,7 @@ Issue: [#810 🐛 fix(config): make config validate fail on a config file that d
 
 ## Why
 
-When a user's `config.toml` does not parse, every langstar command except `langstar config validate` runs on the default settings without telling them. `config validate` already fails on that file, but no test checks it.
+When a user's `config.toml` does not parse, most langstar commands run on the default settings without telling them. Only `langstar config validate` and `langstar config <setting> set` stop with an error, and no test checks that `config validate` does.
 
 ## What Changes
 
