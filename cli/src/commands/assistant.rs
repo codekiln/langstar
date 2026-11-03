@@ -887,7 +887,7 @@ async fn import_assistant(
     writeln!(
         stderr,
         "Creating assistant '{}' with ID {assistant_id}...",
-        export.assistant.name
+        shown_at("/assistant/name", &export.assistant.name)
     )?;
     client
         .assistants()
@@ -1044,11 +1044,16 @@ async fn destination_checks(
 /// serve with 404 and the graph IDs it does serve, as
 /// `reference/research/807-openapi-validation.md` records. Its OpenAPI spec
 /// allows a 422 naming `graph_id` instead, so that counts as missing too.
+///
+/// When the credential check flags the graph ID, `graph_check` writes
+/// `<redacted>` in its place in the check's detail, as `prompt_check` does for
+/// a prompt name.
 async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> {
+    let shown = shown_at("/assistant/graph_id", graph_id);
     let missing = |detail: &str| {
         Check::failed(
             "graph",
-            format!("The deployment does not serve graph '{graph_id}'. {detail}")
+            format!("The deployment does not serve graph '{shown}'. {detail}")
                 .trim_end()
                 .to_string(),
         )
@@ -1060,7 +1065,7 @@ async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> 
     {
         Ok(found) if !found.is_empty() => Ok(Check::passed(
             "graph",
-            format!("The deployment serves graph '{graph_id}'."),
+            format!("The deployment serves graph '{shown}'."),
         )),
         Ok(_) => Ok(missing("")),
         Err(LangstarError::ApiError {
@@ -1086,10 +1091,7 @@ async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> 
 /// there and still match its `requires.prompts`.
 async fn prompt_check(client: &LangchainClient, pointer: &str, name: &str) -> Result<Check> {
     let (owner, handle, tag) = split_prompt_name(name);
-    let shown = match credential_check::redact_at(&format!("/assistant{pointer}"), &json!(name)) {
-        Value::String(shown) => shown,
-        other => other.to_string(),
-    };
+    let shown = shown_at(&format!("/assistant{pointer}"), name);
     match client
         .prompts()
         .get_commit_with_model(owner, handle, tag)
@@ -1107,18 +1109,37 @@ async fn prompt_check(client: &LangchainClient, pointer: &str, name: &str) -> Re
     }
 }
 
+/// A string from the export file, with `<redacted>` in its place when the
+/// credential check flags it at `pointer`.
+///
+/// Export refuses to write a credential, but someone may edit the file in Git
+/// before import reads it, so import checks each string again before printing it.
+fn shown_at(pointer: &str, value: &str) -> String {
+    match credential_check::redact_at(pointer, &json!(value)) {
+        Value::String(shown) => shown,
+        other => other.to_string(),
+    }
+}
+
 /// An error from the Agent Server or LangSmith, with `<redacted>` in place of
-/// each string the credential check flags in its body.
+/// each string the credential check flags in its body, and without the
+/// request URL when the request never got an answer.
 ///
 /// A server that refuses a request can quote the values it refused, as a 422
 /// does, and import sends the file's settings, which nobody has checked for a
 /// credential since export if someone edited the file in Git.
+///
+/// Langstar drops the URL from a request that got no answer because a prompt
+/// lookup's URL carries the prompt name from the file.
 fn redacted(error: LangstarError) -> CliError {
     match error {
         LangstarError::ApiError { status, message } => CliError::Sdk(LangstarError::ApiError {
             status,
             message: redacted_body(&message),
         }),
+        LangstarError::HttpError(error) => {
+            CliError::Sdk(LangstarError::HttpError(error.without_url()))
+        }
         other => other.into(),
     }
 }
@@ -1137,7 +1158,7 @@ fn redacted_body(body: &str) -> String {
 /// `-`, which LangSmith reads as the current workspace; with no tag, the tag is
 /// `latest`.
 fn split_prompt_name(name: &str) -> (&str, &str, &str) {
-    let (rest, tag) = name.rsplit_once(':').unwrap_or((name, "latest"));
+    let (rest, tag) = name.split_once(':').unwrap_or((name, "latest"));
     let (owner, handle) = rest.split_once('/').unwrap_or(("-", rest));
     (owner, handle, tag)
 }
@@ -1981,6 +2002,73 @@ mod tests {
             split_prompt_name("-/support-system:prod"),
             ("-", "support-system", "prod")
         );
+        assert_eq!(
+            split_prompt_name("my-org/support-system:prod:candidate"),
+            ("my-org", "support-system", "prod:candidate")
+        );
+    }
+
+    #[tokio::test]
+    async fn redacts_a_credential_shaped_name_and_graph_id() {
+        let token = format!("sk-{}", "a1B2c3D4e5".repeat(4));
+        let directory = tempfile::tempdir().unwrap();
+        let mut assistant = file_assistant();
+        assistant["name"] = json!(token);
+        let file = write_export(directory.path(), assistant, json!({}));
+        let destination = destination(&served_assistant(), 1).await;
+        let mut stderr = Vec::new();
+
+        let _ = import_assistant(
+            &destination.client,
+            DESTINATION_ID,
+            &file,
+            &record_path_for(&file),
+            &mut stderr,
+        )
+        .await;
+        let stderr = String::from_utf8(stderr).unwrap();
+        assert!(stderr.contains("<redacted>"), "{stderr}");
+        assert!(!stderr.contains(&token), "{stderr}");
+
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("POST", "/assistants/search")
+            .with_status(404)
+            .with_body(json!({"detail": format!("Graph '{token}' not found")}).to_string())
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+        let check = graph_check(&client, &token).await.unwrap();
+        assert_eq!(check.outcome, Outcome::Failed);
+        assert!(check.detail.contains("<redacted>"), "{}", check.detail);
+        assert!(!check.detail.contains(&token), "{}", check.detail);
+    }
+
+    #[tokio::test]
+    async fn leaves_the_prompt_name_out_of_a_connection_failure() {
+        let token = format!("sk-{}", "a1B2c3D4e5".repeat(4));
+        // Nothing listens on port 9 of localhost, so the request fails
+        // before any server answers.
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            "http://127.0.0.1:9".to_string(),
+            "http://127.0.0.1:9".to_string(),
+            "http://127.0.0.1:9".to_string(),
+        )
+        .unwrap();
+
+        let error = prompt_check(&client, SYSTEM_PROMPT, &token)
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert!(!error.contains(&token), "{error}");
     }
 
     #[tokio::test]

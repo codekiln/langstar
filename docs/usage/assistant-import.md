@@ -85,12 +85,13 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 2. List the assistants on the old deployment, leaving out the default assistant the Agent Server makes for each graph:
 
    ```bash
-   langstar -f json assistant list --deployment <old-deployment> --limit 100 > old-assistants.json
-   jq '.assistants | length' old-assistants.json
-   jq -r '.assistants[] | select(.metadata.created_by != "system") | .assistant_id' old-assistants.json > assistant-ids.txt
+   langstar -f json assistant list --deployment <old-deployment> --limit 100 \
+     | jq -r '.assistants[] | "\(.metadata.created_by) \(.assistant_id)"' > old-assistants.txt
+   wc -l < old-assistants.txt
+   awk '$1 != "system" { print $2 }' old-assistants.txt > assistant-ids.txt
    ```
 
-   The first `jq` counts every assistant on the page, default assistants included. When it prints 100, list the next page with `--offset 100`, add its IDs to `assistant-ids.txt` the same way, and go on until a page holds fewer than 100.
+   `jq` writes each assistant's creator and ID to `old-assistants.txt` and drops everything else, so the only assistant settings that reach the disk are the ones `langstar assistant export` has checked for credentials. `wc -l` counts every assistant on the page, default assistants included. When it prints 100, list the next page with `--offset 100`, add its IDs to `assistant-ids.txt` the same way, and go on until a page holds fewer than 100.
 
 3. Find the assistants the new deployment already holds. Import creates a new assistant without looking for one with the same graph ID and name, so copying an assistant the new deployment already has leaves two, and code that looks an assistant up by graph ID and name finds both. The `pairs` function prints the graph ID and name of each assistant on a deployment, and `comm -12` keeps the lines both deployments print:
 
