@@ -1186,9 +1186,9 @@ fn model_class(manifest: &serde_json::Value) -> Option<String> {
 /// Run the credential check over the `repo` and `commit` objects the file would
 /// hold, and return the flagged strings the user named with `--not-a-secret`.
 ///
-/// A `--not-a-secret` pointer at a string the check lets through is an error,
-/// and so is any flagged string the user did not name. Neither error holds any
-/// part of a flagged string.
+/// It returns an error when the user names a string the check lets through,
+/// or when the check flags a string the user left unnamed. Each error names
+/// paths and rules and leaves the flagged strings out.
 fn check_export_for_credentials(
     export: &crate::export_file::PromptExport,
     not_a_secret: &[String],
@@ -1443,8 +1443,9 @@ mod export_tests {
     const TENANT_ID: &str = "00000000-0000-4000-8000-000000000001";
     /// The hash of the commit the server serves.
     const COMMIT_HASH: &str = "0a1b2c3d4e5f";
-    /// A provider token under a neutral key, made at run time so no scanner
-    /// reads the source as holding one.
+    /// A provider token under a neutral key. The test builds it at run time so
+    /// a secret scanner, such as GitHub's push protection, does not flag this
+    /// file.
     fn provider_token() -> String {
         format!("sk-{}", "0123456789abcdefghij".repeat(2))
     }
