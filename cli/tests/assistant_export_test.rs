@@ -1,8 +1,8 @@
 //! Integration tests for `langstar assistant export`
 //!
-//! Task 8.1 of the `export-import-prompts-and-assistants` OpenSpec change,
-//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`, lists these
-//! tests. Each one creates its assistant through the SDK on the shared test
+//! Task 8.1, "Add langstar assistant export", of the
+//! `export-import-prompts-and-assistants` OpenSpec change lists these tests in
+//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`. Each one creates its assistant through the SDK on the shared test
 //! deployment from `common/fixtures.rs`, exports it through the CLI, and deletes
 //! the assistant afterwards. The unit tests in `cli/src/commands/assistant.rs`
 //! cover the credential check and `--not-a-secret`, which need no live server.

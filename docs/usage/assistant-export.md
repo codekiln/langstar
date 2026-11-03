@@ -42,14 +42,14 @@ langstar assistant export --help
 ```
 
 - `assistant` holds the name, description, graph ID, configuration, context and metadata. The Agent Server returns an assistant's settings in both `config.configurable` and `context`, and export writes both as the server returned them.
-- `source` names the deployment, the assistant ID and the assistant's version. The assistant ID, the version and the timestamps the server sets stay out of `assistant`, so they never read as a change against a copy.
+- `source` names the deployment, the assistant ID and the assistant's version. Export leaves the assistant ID, the version and the server's timestamps out of `assistant`, so the `assistant` object of a copy on another deployment differs from this one only where a setting differs.
 - `requires.prompts` lists the prompts the assistant refers to, as the next section shows.
 
 The keys are sorted and the file holds no export time, so exporting the same assistant version twice writes the same file, and Git has nothing to commit when nothing changed.
 
 ## Record the prompts an assistant refers to
 
-An assistant names a prompt through whatever configuration key its graph reads, so langstar cannot find those references by itself. Name each one with `--prompt-ref` and the JSON Pointer of the string that holds the prompt name, inside the assistant:
+Each graph reads its prompt name from a configuration key its author chose, so langstar cannot tell which strings name a prompt. Name each one with `--prompt-ref` and the JSON Pointer, inside the assistant, of the string that holds the prompt name:
 
 ```bash
 langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json \
@@ -78,8 +78,6 @@ Error: This would write a credential to the export file:
 Move each one into the workspace's secrets or the deployment's environment variables. To write a string that holds no credential, read it first and name its path with --not-a-secret.
 ```
 
-A refused export writes nothing at all. A file with `<redacted>` in place of the credential would copy an assistant that cannot authenticate, and would hide from a reviewer that the source holds a credential.
-
 Keep credentials out of an assistant's configuration, context and metadata. Put each one in the deployment's environment variables, which the graph reads, or in the workspace's secrets ([Workspace Secrets Management](workspace-secrets.md)).
 
 ### Write a flagged string that holds no secret
@@ -92,13 +90,15 @@ langstar assistant export <assistant-id> --deployment my-agent --output support-
   --not-a-secret /context/token_budget_policy
 ```
 
-Export writes that string and prints a warning naming the path to stderr. A flagged string at any path you did not name still stops the export. When `--not-a-secret` names a path where the check flags nothing, export names the path, writes no file and exits with status 1, so a script that keeps naming a path after the string there has changed stops at the export. Export runs the check on every run.
+Export writes that string and prints a warning naming the path to stderr. A flagged string at any path you did not name still stops the export. When the check flags nothing at a path you named with `--not-a-secret`, export names that path, writes no file and exits with status 1. When the check still flags the string at a path you named, export writes whatever that string now holds and prints the warning, so read the string again each time the assistant changes.
 
 ### What the check cannot catch
 
 A credential under an ordinary key name with an ordinary-looking value, such as a random string under a key called `x`, passes the check and reaches the file. Read an export file before you commit it.
 
-Export also refuses to run while `LANGSTAR_DEBUG_HTTP` is set, because that variable makes langstar write each response the server sends, credentials included, to a debug file and to stderr.
+## Unset LANGSTAR_DEBUG_HTTP before you export
+
+`LANGSTAR_DEBUG_HTTP` makes langstar write each response the server sends, credentials included, to a debug file and to stderr. Export refuses to run while it is set, before it sends any request. [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847) tracks the change that would let export run with it set.
 
 ## Exit statuses
 
