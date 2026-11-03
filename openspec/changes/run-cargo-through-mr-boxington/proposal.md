@@ -4,16 +4,16 @@ Issue: [#841 Run Cargo through Mr Boxington so worktrees share compiled work](ht
 
 ## Why
 
-codekiln and their coding agents work in many langstar worktrees at once, and each worktree compiles the whole workspace and every dependency into its own `target/` directory, even when the code matches the next worktree's. [Mr Boxington](https://github.com/jdx/mr-boxington) (`mbx`) stores each compiler output once on the machine and restores it in any checkout that compiles the same crate with the same inputs.
+codekiln and their coding agents work in many langstar worktrees at once, and Cargo compiles the whole workspace and every dependency from scratch in each new worktree, even when another worktree already compiled the same code. [Mr Boxington](https://github.com/jdx/mr-boxington) (`mbx`) keeps one copy of each compiled crate on the machine, so a new worktree's first build restores that work instead of repeating it.
 
-codekiln already turns mbx on for their machine in their global mise config, but langstar's own `rust` entry in `mise.toml` replaces the global one, so the opt-in is off inside langstar.
+codekiln's global mise config sets `mr_boxington = true` on its `rust` entry, but mise reads langstar's own `rust` entry in `mise.toml` in place of the global one, so that setting never reaches langstar.
 
 ## What Changes
 
 - `mise.toml` sets `mr_boxington = true` on the `rust` entry, keeping the 1.99.0 pin, so Cargo started through mise (tasks, `mise exec`, the shims or an activated shell) runs through mbx.
 - `mise.toml` pins `mr-boxington = "1.28.0"`. An exact pin is exempt from the repo's `minimum_release_age = "5d"`, so whoever bumps it picks a release at least five days old by hand, as the comment above `[settings]` says.
 - `docs/dev/getting-started.md` says what mbx does, how to check that `cargo` goes through it, and that `target/` becomes a symlink into mbx's cache.
-- CI keeps `Swatinem/rust-cache` and plain `cargo`. A trial on this change's pull request switched the compiling jobs to `jdx/mr-boxington-action`, and every one of them ran slower on a warm run than with rust-cache, so the trial was reverted; design.md records the measurements and the reasons.
+- CI keeps `Swatinem/rust-cache` and plain `cargo`. The agent working on this change switched the compiling CI jobs to `jdx/mr-boxington-action`, found every job slower on a warm run than with rust-cache, and switched them back; [design.md, CI keeps rust-cache and plain cargo](design.md#ci-keeps-rust-cache-and-plain-cargo) has the measurements.
 
 ## Capabilities
 
@@ -28,9 +28,8 @@ None.
 ## Impact
 
 - `mise.toml`: the `rust` entry and a new `mr-boxington` pin.
-- `docs/dev/getting-started.md`: one paragraph.
-- `.github/workflows/ci.yml`: the pull request leaves it as it is on `main`, after a trial and its revert.
-- A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache; the open question [If a new Claude Code session still runs ~/.cargo/bin/cargo, should someone file a mise issue?](design.md#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue) in design.md covers it.
+- `docs/dev/getting-started.md`: three paragraphs on mbx.
+- A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache. A Claude Code session started on 2026-11-03 ran mise's wrapper instead, so starting a new session fixes it, as [design.md, A new Claude Code session runs Cargo through mise's wrapper](design.md#a-new-claude-code-session-runs-cargo-through-mises-wrapper) says.
 
 ## Citations
 

@@ -13,7 +13,6 @@ Both groups land in one pull request, [#843 🔧 build(mise): run Cargo through 
 - [x] 2.1 Switch the Check, Test, Integration Tests, SDK Integration Tests, Clippy and Build jobs in `.github/workflows/ci.yml` to `jdx/mr-boxington-action` pinned to its v1.7.3 commit, with `version: 1.28.0`, `cache-generation: v1-<job>` and `save-on-pull-request: true`, and run their compile commands through `mbx`; verify with two passing CI runs, the second restoring each job's own entry, and record their job times and entry sizes beside rust-cache's in [design.md, CI timings](design.md#ci-timings).
 - [x] 2.2 Revert that switch, since every job ran slower on a warm run than with rust-cache, and record why in [design.md, CI keeps rust-cache and plain cargo](design.md#ci-keeps-rust-cache-and-plain-cargo); verify that `git diff bc3dc21 -- .github/workflows/ci.yml` is empty and that CI passes on the pull request.
 
-## Workflow follow-up
+## After the pull request merges
 
-- codekiln answers the open question [If a new Claude Code session still runs ~/.cargo/bin/cargo, should someone file a mise issue?](design.md#1---if-a-new-claude-code-session-still-runs-cargobincargo-should-someone-file-a-mise-issue).
-- After the pull request merges, archive the change with `openspec archive run-cargo-through-mr-boxington`, which syncs `specs/dev-environment/spec.md` into `openspec/specs/`.
+- Archive the change with `openspec archive run-cargo-through-mr-boxington`, which syncs `specs/dev-environment/spec.md` into `openspec/specs/`.
