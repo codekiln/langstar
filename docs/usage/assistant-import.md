@@ -74,7 +74,7 @@ Each difference names its `path` and the `file` and `destination` values. Import
 
 Follow these steps to copy the assistants you created on an old deployment onto a new deployment in the same workspace, and then to check the copies. They use `jq`. Replace `<old-deployment>` and `<new-deployment>` with each deployment's name or ID from `langstar deployment list`. When your API key reaches several workspaces, add `--workspace-id <workspace-id>` to each command.
 
-1. Unset `LANGSTAR_DEBUG_HTTP`, which export refuses to run with:
+1. Unset `LANGSTAR_DEBUG_HTTP`. It makes langstar write each response, credentials included, to a debug file, so export and import refuse to run while it is set:
 
    ```bash
    unset LANGSTAR_DEBUG_HTTP
@@ -83,12 +83,12 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 2. List the assistants on the old deployment, leaving out the default assistant the Agent Server makes for each graph:
 
    ```bash
-   langstar -f json assistant list --deployment <old-deployment> --limit 100 \
-     | jq -r '.assistants[] | select(.metadata.created_by != "system") | .assistant_id' > assistant-ids.txt
-   wc -l < assistant-ids.txt
+   langstar -f json assistant list --deployment <old-deployment> --limit 100 > old-assistants.json
+   jq '.assistants | length' old-assistants.json
+   jq -r '.assistants[] | select(.metadata.created_by != "system") | .assistant_id' old-assistants.json > assistant-ids.txt
    ```
 
-   When you see 100, list the next page with `--offset 100` and add its IDs to the file.
+   The first `jq` counts every assistant on the page, default assistants included. When it prints 100, list the next page with `--offset 100`, add its IDs to `assistant-ids.txt` the same way, and go on until a page holds fewer than 100.
 
 3. Find the assistants the new deployment already holds. Import creates a new assistant without looking for one with the same graph ID and name, so copying an assistant the new deployment already has leaves two, and code that looks an assistant up by graph ID and name finds both. The `pairs` function prints the graph ID and name of each assistant on a deployment, and `comm -12` keeps the lines both deployments print:
 
@@ -148,7 +148,7 @@ The copies have new assistant IDs. Code that refers to an assistant by ID has to
 ## Exit statuses
 
 - 0: the assistant on the deployment matches the file, and every check passed.
-- 1: the file is not an assistant export, its `requires.prompts` no longer matches its assistant, its two settings fields differ, or the record names an assistant the deployment no longer has; import created nothing in these cases. Another error, such as a network failure, also exits with 1; when it comes after the create, the record holds the new ID and the next import finds that assistant.
+- 1: the file is not an assistant export, its `requires.prompts` no longer matches its assistant, its two settings fields differ, the record names an assistant the deployment no longer has, or `LANGSTAR_DEBUG_HTTP` is set; import created nothing in these cases. Another error, such as a network failure, also exits with 1; when it comes after the create, the record holds the new ID and the next import finds that assistant.
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. When the copy differs from the file, the record keeps the ID of the assistant that import created, so the next import compares that assistant instead of creating another.
 

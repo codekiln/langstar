@@ -298,8 +298,9 @@ impl AssistantCommands {
         }
 
         // Refuse before the deployment lookup, whose responses the SDK would
-        // write to its debug file as well.
-        if let AssistantCommands::Export { .. } = self {
+        // write to its debug file as well. Import reads an assistant back from
+        // the destination, which may hold a credential, so it refuses too.
+        if let AssistantCommands::Export { .. } | AssistantCommands::Import { .. } = self {
             refuse_debug_http(std::env::var_os(DEBUG_HTTP).is_some())?;
         }
 
@@ -724,7 +725,7 @@ fn refuse_debug_http(debug_http: bool) -> Result<()> {
         return Err(refusal(format!(
             "{DEBUG_HTTP} is set, and it makes langstar write the assistant as the server \
              returned it to a debug file and to stderr, credentials included. Unset it and \
-             run the export again."
+             run the command again."
         )));
     }
     Ok(())
@@ -1075,9 +1076,16 @@ async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> 
 
 /// Whether the workspace holds the prompt `name`, read as
 /// `[<owner>/]<handle>[:<tag>]`.
+///
+/// `get_commit_with_model` encodes the tag as one path segment, so a tag such
+/// as `prod#candidate` is looked up whole instead of being cut at the `#`.
 async fn prompt_check(client: &LangchainClient, name: &str) -> Result<Check> {
     let (owner, handle, tag) = split_prompt_name(name);
-    match client.prompts().get_commit(owner, handle, tag).await {
+    match client
+        .prompts()
+        .get_commit_with_model(owner, handle, tag)
+        .await
+    {
         Ok(_) => Ok(Check::passed(
             "prompt",
             format!("The workspace holds {name}."),
@@ -1781,7 +1789,12 @@ mod tests {
         let mut destination = destination(&served_assistant(), 0).await;
         let commit = destination
             .server
-            .mock("GET", "/api/v1/commits/-/support-system/prod")
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(
+                    r"^/api/v1/commits/-/support-system/prod(\?.*)?$".to_string(),
+                ),
+            )
             .with_status(404)
             .with_body(json!({"detail": "Not found"}).to_string())
             .expect(1)
@@ -1811,7 +1824,12 @@ mod tests {
         let mut destination = destination(&served_assistant(), 1).await;
         destination
             .server
-            .mock("GET", "/api/v1/commits/-/support-system/prod")
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(
+                    r"^/api/v1/commits/-/support-system/prod(\?.*)?$".to_string(),
+                ),
+            )
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(json!({"commit_hash": "abc123", "manifest": {}}).to_string())
@@ -1823,6 +1841,37 @@ mod tests {
         assert_eq!(report.exit_code(), EXIT_MATCH, "{}", report.to_text());
         assert_eq!(report.checks[1].outcome, Outcome::Passed);
         destination.create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn looks_up_a_tag_with_a_reserved_character_whole() {
+        let mut server = mockito::Server::new_async().await;
+        let whole = server
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(
+                    r"^/api/v1/commits/-/support-system/prod%23candidate(\?.*)?$".to_string(),
+                ),
+            )
+            .with_status(404)
+            .with_body(json!({"detail": "Not found"}).to_string())
+            .expect(1)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+
+        let check = prompt_check(&client, "support-system:prod#candidate")
+            .await
+            .unwrap();
+
+        assert_eq!(check.outcome, Outcome::Failed);
+        whole.assert_async().await;
     }
 
     #[test]
