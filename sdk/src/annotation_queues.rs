@@ -364,7 +364,7 @@ impl AnnotationQueueItemStatus {
     }
 }
 
-/// Bucket to count with `GET .../items/count`: one review section, or every item.
+/// What `GET .../items/count` counts: one review section, or every item.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AnnotationQueueItemCountStatus {
     /// Items in one review section
@@ -392,7 +392,7 @@ impl From<AnnotationQueueItemStatus> for AnnotationQueueItemCountStatus {
 /// One item to add to an annotation queue.
 ///
 /// Maps to `annotationqueues.AnnotationQueueItemInput`. A `RUN` item needs `run_id`, unless
-/// `source_proposed_example_id` creates it from a suggested example; `project_id` and
+/// the item is created from a suggested example named by `source_proposed_example_id`; `project_id` and
 /// `start_time` locate the run directly, as langsmith-sdk's `RunKey` does.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct AnnotationQueueItemInput {

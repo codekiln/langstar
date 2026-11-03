@@ -1016,8 +1016,8 @@ impl LangchainClient {
     /// List the items of one review section across pages.
     ///
     /// Returns up to `limit` items, or every item in the section when `limit` is `None`.
-    /// The call requests the next page whenever `next_cursor` is non-empty, even after an
-    /// empty page, and stops if the API sends a cursor the call has already used.
+    /// The call requests the next page whenever the API returns a `next_cursor`, even after a
+    /// page with no items, and stops if the API sends a cursor the call has already used.
     pub async fn collect_annotation_queue_items(
         &self,
         queue_id: uuid::Uuid,

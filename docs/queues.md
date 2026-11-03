@@ -229,7 +229,7 @@ langstar queue add-runs 12345678-... run-id-1 run-id-2 run-id-3
 langstar queue add-runs 12345678-... --runs-file runs.txt
 ```
 
-A run that LangSmith cannot find yet is rejected with a 404, so after ingesting a run, retry until it succeeds.
+LangSmith answers 404 for a run it cannot find yet, so a script that adds a run it just ingested should retry `add-runs` until it succeeds.
 
 **runs.txt format:**
 ```
@@ -243,7 +243,7 @@ abcdef03-1234-1234-1234-123456789012
 
 ### `langstar queue remove-run`
 
-Remove a run from an annotation queue. The items API deletes by queue item ID, so langstar looks the run up in every review section first. It exits non-zero if the queue holds no item for the run.
+Remove a run from an annotation queue. The items API deletes by queue item ID, so langstar looks the run up in every review section first. It exits with an error when the run is not in the queue.
 
 ```bash
 langstar queue remove-run <QUEUE_ID> <RUN_ID>

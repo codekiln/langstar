@@ -518,8 +518,8 @@ impl QueueCommands {
 /// An item and the review section it was listed from.
 type SectionItem = (AnnotationQueueItemStatus, AnnotationQueueListItem);
 
-/// Lists the items in the sections `--status` names (every section without it),
-/// at most `--limit` in all.
+/// Lists the items in the review section `--status` names, or in every section when
+/// `--status` is absent, at most `--limit` in all.
 async fn collect_items(client: &LangchainClient, args: &ItemsArgs) -> Result<Vec<SectionItem>> {
     let statuses = match args.status.as_deref() {
         Some("needs-my-review") => vec![AnnotationQueueItemStatus::NeedsMyReview],
@@ -644,8 +644,8 @@ mod tests {
         }
     }
 
-    /// Runs what `queue items <queue> [--status <status>] --json` runs, listing
-    /// and JSON output, against `server` and returns each printed item's (id, status).
+    /// Runs the listing and JSON output of `queue items <queue> [--status <status>] --json`
+    /// against `server` and returns each printed item's (id, status).
     async fn items_output(server: &SectionServer, status: Option<&str>) -> Vec<(String, String)> {
         let args = ItemsArgs {
             queue_id: Uuid::parse_str(QUEUE).unwrap(),
