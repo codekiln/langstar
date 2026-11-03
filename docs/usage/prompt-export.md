@@ -20,7 +20,7 @@ langstar prompt export my-prompt --commit <commit-hash> --output my-prompt.json
 langstar prompt export my-prompt > my-prompt.json
 ```
 
-`my-prompt` and `-/my-prompt` both name a prompt in your workspace, and both write the same file. `-/my-prompt` works as it is, with no `--` in front of it. A public prompt takes its owner, as in `owner/my-prompt`.
+Export writes the same file for `my-prompt` and `-/my-prompt`, since both name a prompt in your workspace. You can type `-/my-prompt` without `--` in front of it. A public prompt takes its owner, as in `owner/my-prompt`.
 
 Progress messages and warnings go to stderr, so a file written through `>` holds only the export.
 
@@ -43,13 +43,13 @@ Progress messages and warnings go to stderr, so a file written through `>` holds
 - `requires.secrets` names each workspace secret the model reads, such as `OPENAI_API_KEY`. The file holds the secret's name and never its value.
 - `requires.model_class` is the chat model's class name, such as `ChatOpenAI`, or null for a prompt saved without a model.
 
-The file holds no export time, and langstar sorts its keys and its tag and secret lists. Exporting a commit twice writes the same file, unless someone changed the prompt's description, readme, tags or visibility, or moved a tag, in between.
+Exporting a commit twice writes the same file, as long as nobody changed the prompt's description, readme, tags or visibility, or moved a tag, in between. langstar sorts the file's keys and its tag and secret lists and leaves out the time of the export, so a second export matches the first.
 
 ## Export refuses to write a credential
 
 Before it writes anything, export checks every string in the `repo` and `commit` objects. It skips a LangChain secret reference, `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, because that holds a secret's name, and it skips the empty string.
 
-The check flags a string when the name of its key, or of the array it sits in, holds one of these words: `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization`, `cookie`. It also flags `key` or `keys` right after `api`, `access`, `private`, `secret`, `signing` or `account`. A key name splits into words at `_`, `-`, `.`, a space and each change from a lower-case to an upper-case letter, and case does not matter. So `openai_api_key`, `OPENAI_API_KEY`, `x-api-key`, `Authorization` and `privateKey` are flagged, and `max_tokens` and `cache_key` pass.
+The check flags a string when the name of its key, or of the array it sits in, holds one of these words: `secret`, `token`, `password`, `passwd`, `pwd`, `credential`, `credentials`, `apikey`, `authorization`, `cookie`. It also flags `key` or `keys` right after `api`, `access`, `private`, `secret`, `signing` or `account`. The check splits each key name into words at `_`, `-`, `.`, a space and each change from a lower-case to an upper-case letter, and it ignores case. So `openai_api_key`, `OPENAI_API_KEY`, `x-api-key`, `Authorization` and `privateKey` are flagged, and `max_tokens` and `cache_key` pass.
 
 Under any key, the check flags a string that holds:
 
@@ -72,7 +72,7 @@ No file was written.
 
 Keep credentials in the workspace's secrets (see [workspace-secrets.md](./workspace-secrets.md)), and have the model read them through a secret reference. A prompt saved in the LangSmith playground does this already.
 
-Export stops before it reads anything while `LANGSTAR_DEBUG_HTTP` is set, because that variable makes langstar write each response it reads to a debug file and to stderr, with any credential in it.
+Export stops before it reads anything while `LANGSTAR_DEBUG_HTTP` is set, because langstar then writes each response it reads, with any credential in it, to a debug file and to stderr. Unset `LANGSTAR_DEBUG_HTTP` and run the export again. [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847) tracks the change that would let export run with it set.
 
 ### A flagged string that holds no secret
 
@@ -83,7 +83,7 @@ langstar prompt export my-prompt --output my-prompt.json \
   --not-a-secret /commit/manifest/kwargs/first/kwargs/messages/0/kwargs/prompt/kwargs/template
 ```
 
-Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops, and names the path, when you name a path whose string passes the check, so a script that keeps naming a path after the string there has changed stops too. Export runs the check every time.
+Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
 
 ### What the check misses
 

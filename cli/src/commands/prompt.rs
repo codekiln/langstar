@@ -1046,10 +1046,10 @@ const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
 
 /// Refuse to export while `LANGSTAR_DEBUG_HTTP` is set.
 ///
-/// With it set, the SDK writes the whole commit read to a file and prints the
-/// start of it to stderr before export runs the credential check, so a literal
-/// API key in the prompt would reach the disk and the terminal even though
-/// export then refuses to write the file.
+/// With it set, the SDK writes LangSmith's whole response for the commit to a
+/// file and prints the start of it to stderr before export runs the credential
+/// check, so a literal API key in the prompt would reach the disk and the
+/// terminal even though export then refuses to write the file.
 fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
     if debug_http_set {
         return Err(crate::error::CliError::Other(anyhow::anyhow!(
@@ -1061,9 +1061,9 @@ fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
     Ok(())
 }
 
-/// Split a handle into the owner and repo the commit read takes. A handle with
-/// no owner, `my-prompt`, names a prompt in the current workspace, which
-/// LangSmith reads as `-/my-prompt`.
+/// Split a handle into the owner and repo that LangSmith's commit endpoint
+/// takes. A handle with no owner, `my-prompt`, names a prompt in the current
+/// workspace, which LangSmith reads as `-/my-prompt`.
 fn split_handle(handle: &str) -> Result<(String, String)> {
     let invalid = || {
         crate::error::CliError::Other(anyhow::anyhow!(
@@ -1165,7 +1165,8 @@ async fn read_prompt_export(
 /// The class name of the manifest's chat model, such as `ChatOpenAI`, or `None`
 /// for a prompt saved without a model.
 ///
-/// The commit read with `include=model` puts the chat model at `kwargs.last`.
+/// When export asks LangSmith for a commit with `include=model`, LangSmith
+/// returns the chat model at `kwargs.last` of the manifest.
 /// On a prompt saved in the playground a `RunnableBinding` sits there and the
 /// constructor is at its `kwargs.bound`, so this steps through the binding
 /// before it reads the last element of the constructor's `id`.

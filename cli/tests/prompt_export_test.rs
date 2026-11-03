@@ -491,7 +491,8 @@ fn test_export_a_handle_with_no_prompt() {
     assert!(!output.exists(), "export wrote {}", output.display());
 }
 
-/// `my-prompt` and `-/my-prompt`, without `--`, write the same file.
+/// Export writes the same file for `my-prompt` and for `-/my-prompt` typed
+/// without `--`.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_private_prompt_with_and_without_the_dash() {
