@@ -1029,8 +1029,8 @@ async fn destination_checks(
     export: &AssistantExport,
 ) -> Result<Vec<Check>> {
     let mut checks = vec![graph_check(client, &export.assistant.graph_id).await?];
-    for name in export.requires.prompts.values() {
-        checks.push(prompt_check(client, name).await?);
+    for (pointer, name) in &export.requires.prompts {
+        checks.push(prompt_check(client, pointer, name).await?);
     }
     Ok(checks)
 }
@@ -1079,8 +1079,16 @@ async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> 
 ///
 /// `get_commit_with_model` encodes the tag as one path segment, so a tag such
 /// as `prod#candidate` is looked up whole instead of being cut at the `#`.
-async fn prompt_check(client: &LangchainClient, name: &str) -> Result<Check> {
+///
+/// The check's detail prints the name with `<redacted>` in place of a string
+/// the credential check flags at `pointer`, since a file can hold an API key
+/// there and still match its `requires.prompts`.
+async fn prompt_check(client: &LangchainClient, pointer: &str, name: &str) -> Result<Check> {
     let (owner, handle, tag) = split_prompt_name(name);
+    let shown = match credential_check::redact_at(&format!("/assistant{pointer}"), &json!(name)) {
+        Value::String(shown) => shown,
+        other => other.to_string(),
+    };
     match client
         .prompts()
         .get_commit_with_model(owner, handle, tag)
@@ -1088,11 +1096,11 @@ async fn prompt_check(client: &LangchainClient, name: &str) -> Result<Check> {
     {
         Ok(_) => Ok(Check::passed(
             "prompt",
-            format!("The workspace holds {name}."),
+            format!("The workspace holds {shown}."),
         )),
         Err(LangstarError::ApiError { status: 404, .. }) => Ok(Check::failed(
             "prompt",
-            format!("The workspace has no prompt {name}."),
+            format!("The workspace has no prompt {shown}."),
         )),
         Err(error) => Err(error.into()),
     }
@@ -1866,12 +1874,40 @@ mod tests {
         )
         .unwrap();
 
-        let check = prompt_check(&client, "support-system:prod#candidate")
+        let check = prompt_check(&client, SYSTEM_PROMPT, "support-system:prod#candidate")
             .await
             .unwrap();
 
         assert_eq!(check.outcome, Outcome::Failed);
         whole.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn redacts_a_credential_shaped_prompt_name_in_the_check() {
+        let token = format!("sk-{}", "a1B2c3D4e5".repeat(4));
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(r"^/api/v1/commits/".to_string()),
+            )
+            .with_status(404)
+            .with_body(json!({"detail": "Not found"}).to_string())
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+
+        let check = prompt_check(&client, SYSTEM_PROMPT, &token).await.unwrap();
+
+        assert_eq!(check.outcome, Outcome::Failed);
+        assert!(check.detail.contains("<redacted>"), "{}", check.detail);
+        assert!(!check.detail.contains(&token), "{}", check.detail);
     }
 
     #[test]
