@@ -42,6 +42,8 @@ When you import the same file onto the same deployment again, import finds that 
 
 Import writes the ID to the record as `pending` before it sends the create, and marks it `created` once the create succeeds. If langstar stops in between, the next import sends the same create with the same ID, and the deployment answers with the assistant the first import made instead of creating another.
 
+Run one import of a file at a time. Two imports of the same file that run at once each read the record before the other writes it, so the one that writes last drops the other's entry, and two first imports onto one deployment can create two assistants. [#828 make concurrent prompt and assistant imports into one deployment safe](https://github.com/codekiln/langstar/issues/828) tracks making that safe.
+
 To keep the record somewhere else, name the path with `--record`:
 
 ```bash

@@ -901,7 +901,8 @@ async fn import_assistant(
             metadata: Some(export.assistant.metadata.clone()),
             if_exists: Some(IfExists::DoNothing),
         })
-        .await?;
+        .await
+        .map_err(redacted)?;
 
     record.destinations.insert(
         deployment_id.to_string(),
@@ -941,7 +942,7 @@ async fn read_back(
                 record_path.display()
             )));
         }
-        Err(error) => return Err(error.into()),
+        Err(error) => return Err(redacted(error)),
     };
     let destination = serde_json::to_value(body_of(assistant))?;
     Ok(compare_export(
@@ -1065,12 +1066,12 @@ async fn graph_check(client: &LangchainClient, graph_id: &str) -> Result<Check> 
         Err(LangstarError::ApiError {
             status: 404,
             message,
-        }) => Ok(missing(&message)),
+        }) => Ok(missing(&redacted_body(&message))),
         Err(LangstarError::ApiError {
             status: 422,
             message,
         }) if message.contains("graph_id") => Ok(missing("")),
-        Err(error) => Err(error.into()),
+        Err(error) => Err(redacted(error)),
     }
 }
 
@@ -1102,7 +1103,33 @@ async fn prompt_check(client: &LangchainClient, pointer: &str, name: &str) -> Re
             "prompt",
             format!("The workspace has no prompt {shown}."),
         )),
-        Err(error) => Err(error.into()),
+        Err(error) => Err(redacted(error)),
+    }
+}
+
+/// An error from the Agent Server or LangSmith, with `<redacted>` in place of
+/// each string the credential check flags in its body.
+///
+/// A server that refuses a request can quote the values it refused, as a 422
+/// does, and import sends the file's settings, which nobody has checked for a
+/// credential since export if someone edited the file in Git.
+fn redacted(error: LangstarError) -> CliError {
+    match error {
+        LangstarError::ApiError { status, message } => CliError::Sdk(LangstarError::ApiError {
+            status,
+            message: redacted_body(&message),
+        }),
+        other => other.into(),
+    }
+}
+
+/// A response body with `<redacted>` in place of each string the credential
+/// check flags, whether the body is JSON or plain text.
+fn redacted_body(body: &str) -> String {
+    let value = serde_json::from_str::<Value>(body).unwrap_or_else(|_| json!(body));
+    match credential_check::redact_at("", &value) {
+        Value::String(text) => text,
+        other => other.to_string(),
     }
 }
 
@@ -1880,6 +1907,36 @@ mod tests {
 
         assert_eq!(check.outcome, Outcome::Failed);
         whole.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn redacts_a_credential_the_server_quotes_when_it_refuses_the_create() {
+        let directory = tempfile::tempdir().unwrap();
+        let token = format!("sk-{}", "a1B2c3D4e5".repeat(4));
+        let mut assistant = file_assistant();
+        set(&mut assistant, "/config/configurable/note", json!(token));
+        set(&mut assistant, "/context/note", json!(token));
+        let file = write_export(directory.path(), assistant, json!({}));
+        let mut destination = destination(&served_assistant(), 0).await;
+        destination
+            .server
+            .mock("POST", "/assistants")
+            .with_status(422)
+            .with_body(
+                json!({"detail": [{"loc": ["body", "config"], "input": {"note": token}}]})
+                    .to_string(),
+            )
+            .create_async()
+            .await;
+
+        let error = import(&destination.client, &file, &record_path_for(&file))
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("422"), "{error}");
+        assert!(error.contains("<redacted>"), "{error}");
+        assert!(!error.contains(&token), "{error}");
     }
 
     #[tokio::test]
