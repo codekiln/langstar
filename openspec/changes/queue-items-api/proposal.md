@@ -4,7 +4,7 @@ Issue: [#765 Move annotation-queue run calls to the platform items API](https://
 
 ## Why
 
-LangSmith deprecated the annotation-queue run endpoints that `langstar queue add-runs`, `queue remove-run` and `queue items` call. The platform items endpoints that replace them return queue items rather than runs, so `queue items` can no longer show a run's name or status, and `queue remove-run` has to find the run's queue item before it can delete it.
+LangSmith deprecated the endpoints that `langstar queue add-runs`, `queue remove-run` and `queue items` call, and those commands stop working when LangSmith removes them. This change moves the three commands to LangSmith's queue items endpoints, so people who review runs in an annotation queue can keep adding, listing and removing runs from langstar. The new endpoints return each run's ID without its name or status, so `queue items` shows less about each run than it did.
 
 ## What Changes
 
@@ -14,13 +14,9 @@ LangSmith deprecated the annotation-queue run endpoints that `langstar queue add
 
 ## Capabilities
 
-### New Capabilities
-
-None.
-
 ### Modified Capabilities
 
-- `queue`: the requirement to list a queue's runs becomes a requirement to list its items, with `--status`, and removing a run that is not in the queue becomes an error.
+- [The queue specification](https://github.com/codekiln/langstar/blob/main/openspec/specs/queue/spec.md): `langstar queue items` lists queue items and takes `--status`, and `langstar queue remove-run` exits with an error when the run is not in the queue.
 
 ## Impact
 

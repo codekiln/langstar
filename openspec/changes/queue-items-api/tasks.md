@@ -17,4 +17,4 @@
 
 ## 4. Archive
 
-- [ ] 4.1 After this change merges, archive it so its requirements sync into `openspec/specs/queue/spec.md`, running `openspec validate queue-items-api --strict` first
+- [ ] 4.1 After this change merges, run `openspec validate queue-items-api --strict`, then `openspec archive queue-items-api`, which copies these requirements into `openspec/specs/queue/spec.md`
