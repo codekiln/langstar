@@ -692,6 +692,21 @@ Config file exists but settings aren't applied.
    env | grep LANGGRAPH
    ```
 
+### Warning: langstar is using the default settings
+
+**Symptom:**
+
+A command prints a warning like this on stderr, then runs:
+
+```
+Warning: Configuration error: Failed to parse config file ~/.config/langstar/config.toml at line 1, column 16: <error>
+  langstar is using the default settings and any environment variables instead. Run 'langstar config validate' to see the error.
+```
+
+**Solution:**
+
+Run `langstar config validate` to see the full error, then fix the file. The command ran on the default settings and your environment variables because langstar could not check that the config file exists, could not read it, or could not parse it. langstar cannot check a `config.toml` that is a symbolic link to itself. The warning leaves out the line that failed and its value because an API key may sit on that line.
+
 ## Security Best Practices
 
 ### Protecting API Keys
