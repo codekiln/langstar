@@ -5,6 +5,4138 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-11-03
+
+### ⚠ BREAKING CHANGES
+
+- ✨ feat(runs)!: query runs through POST /api/v2/runs/query (#794)
+
+* ✨ feat(runs): query runs through POST /api/v2/runs/query
+
+LangSmith deprecated POST /api/v1/runs/query at the end of July 2026 and
+removes it from Cloud on 31 Jan 2027. The SDK now posts to the v2
+endpoint, and `langstar runs query` maps its flags onto the v2 body.
+
+The SDK keeps `Run` for the annotation queue endpoints, which still
+return the v1 shape, and adds `QueriedRun` for the v2 response and
+`RunSelectField` for `selects`.
+
+v2 changes four things users of `runs query` will see:
+- `--order asc` reverses the newest --limit runs client-side, since v2
+  always sorts newest first.
+- A query with no --project UUID now exits with an error saying to pass
+  one; v1 and v2 both refuse such a query with a 400.
+- `--no-time-filter` asks for the last 400 days; v2 caps the window at
+  401 days and defaults to the last day.
+- JSON output carries the v2 run fields: `project_id` in place of
+  `session_id`, uppercase `status`, and no `execution_order`, child run
+  IDs or S3 URLs.
+
+`--errors-only` now sends `has_error`, because the v2 filter language
+cannot compare `error`. A failed page now ends the command with a
+non-zero exit instead of a printed error and exit 0.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): state the 400-day window and 401-day API limit consistently
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(runs): read query results that leave out id
+
+`POST /api/v2/runs/query` returns only the fields named in `selects`, so
+`langstar runs query --select name` gets runs with no `id`, and the
+required `QueriedRun.id` failed to deserialize them. `id` is now
+optional, like every other field; the table shows `-` without one.
+
+The live lifecycle test now runs `--select name` and checks that each
+run comes back without an `id`.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(runs): ask for the ID on an empty --select and test paging live
+
+`--select ""` sent an empty `selects` list, which is not the same as
+leaving `selects` out, so the CLI now asks for the ID explicitly.
+
+The live lifecycle test's `-l 1` query never reached a second page: the
+CLI sets `page_size` to `--limit` and stops after one run. The test now
+asks the SDK for one run per page and checks that it follows
+`next_cursor` through all three seeded runs. Breaking the cursor hand-off
+in `query_runs_paginated` makes that check fail.
+
+docs/queues.md now passes `-p` in its `runs query` examples, and its
+triage workflow takes the project UUID as an input.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): state why --no-time-filter asks for 400 days once, on NO_TIME_FILTER_DAYS
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(runs): cite the 401-day limit and gate the live runs test
+
+The 401-day limit on a v2 query window is in neither the OpenAPI spec
+nor LangChain's migration guide. `NO_TIME_FILTER_DAYS` now quotes the
+HTTP 400 a live request returned (`time_range duration exceeds maximum
+of 401 days`), and the SDK docs say where the limit comes from.
+
+`test_runs_query_lifecycle` now carries
+`#[cfg_attr(not(feature = "integration-tests"), ignore)]`, as the
+testing guidelines ask, so a default `cargo test` with no credentials
+skips it; CI's integration job and `--all-features` still run it.
+
+The `<project-uuid>` placeholders in README.md and docs/queues.md are
+now quoted, so a shell reading a pasted command does not take `<` as a
+redirect.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(runs): keep share_url out of default output; quote workflow input
+
+`share_url` is a public link anyone can use to view a run, and the
+OpenAPI spec says to treat it as a secret and not log it. Without
+`--select`, JSON output now asks for every field except `share_url`,
+and table output asks only for the columns it shows. `--select
+share_url` still returns it.
+
+The triage workflow in docs/queues.md passed `${{ inputs.project_id }}`
+straight into its `run:` script, where shell syntax in the input would
+run. It now passes the input through `env` as `PROJECT_ID`.
+
+The README pointed to `langstar project list` for project UUIDs, but
+that table shortens IDs to 8 characters, which `-p` does not accept. It
+now points to `langstar project get <name>`.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(runs): keep attachment URLs out of default output too
+
+`attachments` maps each file name to a pre-signed HTTPS download URL,
+which opens the file without an API key, just as `share_url` opens the
+run. Both now sit in `SECRET_FIELDS`, which JSON output leaves out
+unless --select names them. A sweep of every `query.RunResponse` field
+and the schemas it references found no other field described as a URL,
+token or secret that grants access.
+
+The triage workflow in docs/queues.md also put `inputs.queue_name` into
+a jq program and the queue ID step output into a shell command. Both
+now pass through `env`, and jq reads the name with `--arg`.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): describe the --select default for tables and JSON apart
+
+The --select help text said the CLI asks for every field except
+`share_url` and `attachments`. That holds only for JSON; table output,
+the default, asks for the table's columns.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): state self-hosted LangSmith v0.16 as the minimum
+
+`POST /api/v2/runs/query` needs LangSmith Cloud or self-hosted
+LangSmith v0.16 or later. LangChain's migration page deprecates v1 on
+self-hosted servers in v0.16 and removes it in v0.18, so `runs query`
+keeps no v1 fallback. README.md and the `query_runs` docs now say so.
+
+#766 746.5-runs-query-v2 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): update the runs spec for the v2 query contract
+
+#766 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): split the runs spec requirements that grew past one behavior
+
+#766 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): give each runs spec scenario a project
+
+#766 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(runs): type thread_id as a UUID and thread_evaluation_time as a timestamp
+
+#766 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): trim --select help and name the migration page in the SDK docs
+
+#766 Move run queries to POST /api/v2/runs/query
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(runs): state the 401-day limit and the CLI's 400-day request plainly
+
+#766 Move run queries to POST /api/v2/runs/query
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(queues): say what the environment variables protect against
+
+#766 Move run queries to POST /api/v2/runs/query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+### ✨ Features
+
+- ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory (#814)
+
+* ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory
+
+When LANGSTAR_CONFIG_DIR is set, langstar reads and writes config.toml in
+that directory on every platform and skips the pre-v2.2.0 macOS fallback.
+The CLI tests set it in place of HOME.
+
+#792 ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): unset LANGSTAR_CONFIG_DIR in the old macOS config tests
+
+#792 ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ♻️ refactor(test): name the empty config directory helper for what it holds
+
+#792 ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- ✨ feat(cli): add the export file, the comparison and the report (#834)
+
+* ✨ feat(cli): add the credential check and the secret reference walk
+
+A prompt's model or an assistant's configuration can hold an API key, a
+token, a password, an authorization header, a connection string or a
+private key, and a secret pushed to Git stays in the repository's history
+after someone deletes the file. Export runs this check over every string it
+would write and refuses to write a file that holds one; compare, verify and
+import run it to decide what to print as <redacted>.
+
+credential_check walks every string under a JSON value and flags a string
+by the name of its key, or of the key of the array it sits in, and by the
+shape of its value. Its doc comment names each word in the list and each
+value shape. It returns the JSON Pointer path and the rule, never the
+string, so a refusal message carries no part of the credential. It skips a
+LangChain secret reference and the empty string, and it lists the secret
+names a manifest reads, which export writes to requires.secrets.
+
+json_pointer holds the escaping the check and the comparison share: ~
+becomes ~0 and / becomes ~1, so the key a/b reads as /a~1b.
+
+base64 decodes the payload of a Basic value, which is flagged only when it
+decodes to printable text with a colon in it, so Basic dXNlcjpwYXNz is
+flagged for the user:pass it carries and Basic instructions follow. is not.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* ✨ feat(cli): add the export file and the destination record
+
+A prompt or an assistant moves between LangSmith environments through a
+file kept in Git: export writes it with the source environment's
+credentials, a reviewer reads it in a pull request, and import reads it in
+the destination later.
+
+export_file holds the typed shape of each file and the reader that accepts
+only format_version 1 and the kind the command asked for, naming the field
+and the value it found for anything else, so prompt import stops on an
+assistant export before it changes anything in the destination.
+
+The file is byte-stable: to_sorted_json sorts the keys at every level,
+commit.tags, repo.tags and requires.secrets are sets that serialize in one
+order, and nothing in the file records when the export ran. So exporting an
+unchanged resource leaves Git with nothing to commit.
+
+The record of what import created lives beside the export file, keyed by
+workspace ID for a prompt and by deployment ID for an assistant. Import
+replaces it by writing a temporary file in the same directory and renaming
+it over the old one, so a langstar that stops in the middle of a write
+leaves the earlier record whole, its pending entries included.
+
+Task 4.1 of the export-import-prompts-and-assistants change.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* ✨ feat(cli): add the comparison that names each difference by its path
+
+compare reads the destination in the shape of the export file's repo,
+commit and assistant objects and names every value that differs by its
+JSON Pointer path, with both sides. An array is one value, so a manifest
+whose model class changed from ChatOpenAI to ChatAnthropic is reported at
+the id array that holds it rather than at one element of it.
+
+Two parts of the file are not compared as they stand. LangSmith fills in
+commit.model_config and commit.model_provider itself when import pushes a
+commit, and a destination workspace can fill them in differently from the
+source, so a copy whose manifest matches reads as a match. An assistant's
+settings live in config.configurable and in context, and the Agent Server
+mirrors whichever field it was given into the other, so the comparison
+takes the file's settings from whichever field the file holds and the
+destination's from whichever the server returned. A file that holds its
+settings under config.configurable alone therefore matches a destination
+that answers with both fields. Every other key under config, such as
+config.recursion_limit, is compared as it stands.
+
+Task 4.2 of the export-import-prompts-and-assistants change, in
+openspec/changes/export-import-prompts-and-assistants/tasks.md:39.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* ✨ feat(cli): add the shared result report and its exit statuses
+
+compare, verify and import, for prompts and for assistants alike, print one
+report: the differences, the checks of the destination, and, for import,
+the action it took and the ID it wrote. The report goes to stdout, in text
+or as one JSON object, and every progress message goes to stderr, so
+`langstar -f json prompt compare my-prompt.json` leaves stdout holding the
+report alone.
+
+Status 3 is new and says langstar found a difference or a failed check.
+Status 0 says the resource matches and every check passed, and 1 stays what
+any other error exits with. A check can also carry a note, such as a
+workspace with no saved model configuration for the prompt's model class,
+which the prompt runs without, and a note leaves the status at 0. Clap
+keeps 2 for a mistyped flag.
+
+The report goes to a terminal or a CI log, so it hides credentials before
+it prints. It puts <redacted> in place of every string the credential check
+flags, whether the difference sits at that string or at an object holding
+it, and whether the string came from the destination or from the file. A
+difference at an object the destination added prints the keys around the
+credential, so the user still sees where the difference is. A LangChain
+secret reference prints unchanged under any key, because it names the
+secret and never holds its value.
+
+Task 4.3 of the export-import-prompts-and-assistants change, in
+openspec/changes/export-import-prompts-and-assistants/tasks.md:44.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(cli): rewrite the doc comments the language review marked
+
+The pr-language-review skill read the new modules against codekiln's
+writing rules and marked four shapes:
+
+- "byte-stable" and "the same bytes" in export_file, where the word byte
+  says nothing the sentence needs. The file now changes only when the
+  prompt does, and two exports of one commit write the same file.
+- "for the reader" in PromptCommit, where nobody can see who the reader
+  is. The file records what the source held.
+- "a config the settings were all of" in without_settings, a sentence the
+  reader has to read twice to parse.
+- "a non-empty Password=" in credential_check and "whose non-empty value",
+  each a negation where a Password= with a value after it says the same
+  thing forward.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): find credentials beside a secret reference and inside assignments
+
+Copilot found four ways a credential passed the check and then printed
+unredacted in a report.
+
+An object holding lc, type and id was treated as a secret reference and
+skipped whole, so {"lc": 1, "type": "secret", "id": [...], "password": ...}
+let the password through. A reference holds those three members and nothing
+else; an object with more is now walked like any other.
+
+The check split text into candidates at characters outside a token, and
+counted `=` and `.` as inside one. So `x=sk-proj-...` and
+`?api_key=ghp_...` were candidates that started with `x=` and `api_key=`,
+not with a provider prefix, and a JSON Web Token that ended a sentence
+kept its period and split into four parts. Provider tokens are now the
+runs of letters, digits, `-` and `_`. A JSON Web Token candidate starts at
+`eyJ` and has a trailing dot trimmed.
+
+Regression tests for each, and `risk-0123...` among the ordinary text so
+a prefix inside a longer word still passes. The 207 CLI unit tests,
+`cargo clippy --workspace --all-targets --features integration-tests -D
+warnings` and `cargo fmt --check` pass.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): treat an object as a secret reference only when its lc is 1
+
+is_secret_reference checked that lc was present, not what it held, so
+{"lc": {"password": "..."}, "type": "secret", "id": ["OPENAI_API_KEY"]}
+passed as a reference, and both the credential check and the report's
+redaction skipped the password inside lc. The predicate now requires lc
+to be 1, and an object whose lc is anything else is walked like any
+other. A new test flags and redacts a password inside lc.
+
+Copilot raised this in its review of #834 as a missed issue.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): stage the destination record without writing through a symlink
+
+stage_record wrote the new record with std::fs::write to
+<record>.<pid>.tmp, which follows a symlink already at that path, so a
+link planted there could make an import overwrite another file the user
+can write. stage_record now removes whatever is at the staged path and
+creates the file with create_new, which refuses to follow anything that
+appears there in between. A new test plants a symlink at the staged path
+and checks that the file it points at is left alone.
+
+Copilot raised this in its review of #834 as a missed issue.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(cli): say plainly what is_secret_reference and stage_record do
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): compare each settings field when a file's two fields disagree
+
+An export file holds config.configurable and context with the same
+values. Editing only context left the old value in configurable, and
+compare read configurable alone and dropped context, so it reported no
+difference. When the file's two fields differ, compare now checks each
+one against the destination's settings, and the edit shows up at its
+path. A new test edits context alone.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): flag Bearer and Basic values whatever the scheme's case
+
+HTTP reads authentication scheme names in any case, so `bearer <token>`
+and `basic dXNlcjpwYXNz` carry credentials as surely as the capitalized
+forms, and the check let them through. The check now finds both scheme
+names in any ASCII case, and a new test covers lowercase and uppercase.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): flag Bearer and Basic values after more than one space
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* ⚡ perf(cli): scan repeated keys and eyJ runs in one pass
+
+The connection string check read to the next ';' after every key, and the
+JSON Web Token check read to the end of the run after every eyJ, so text
+such as pwd=pwd=pwd=… or eyJeyJeyJ… took a pass per match. 800 KB of
+either took 117 seconds; it now takes under one.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): refuse an unreadable import record and keep values out of export file errors
+
+read_record treated a record it could not read, such as one in a
+directory the user may not list, as no record, so import would start
+from an empty record and lose the IDs it had saved. Only a missing file
+reads as empty now.
+
+An export file error no longer prints the value it rejected. The header
+check names a bad format_version or kind by its JSON type, and a field of
+the wrong type is reported by line and column, because serde_json quotes
+the value and the value may be a credential.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): flag a Basic value whose user and password are Latin-1
+
+decodes_to_user_and_password refused any payload that did not decode to
+UTF-8, so a Basic header whose password held a Latin-1 byte such as ä
+passed the check and the report printed it. The decoded bytes are now
+read without a character set: a ':' and no ASCII control byte is enough.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): flag a connection string with spaces around the equals sign
+
+The connection string check looked for "password=" and its siblings with
+no space, so "Password = s3cret" passed the check and the report printed
+it. The check now finds each key, steps over spaces, and then needs '='
+and a value.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): refuse an import record of another version, kind or shape
+
+read_record read any JSON that fit the record's fields, so a record from a
+newer langstar, or an assistant record given to a prompt import, read as
+this version's record. Import rewrites the whole record, so the fields it
+did not know would have been lost. read_record now checks format_version
+and kind as an export file does, and the record types refuse a field they
+do not know.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): refuse an export file with a field langstar does not know
+
+serde dropped any field the export types did not have, so a setting added
+to an export file by hand, or by a newer langstar, vanished on read and no
+comparison could report it. Every export type now refuses an unknown field,
+and the error names it.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): end a URL's host part at a space or a quote
+
+The URL check read a URL's host part up to the next '/', '?' or '#', so in
+"Read https://example.com. Contact: support@example.com" it took the rest
+of the sentence as the host part and saw a user and password before the
+'@'. Export refused the template and the report redacted all of it. The
+host part now also ends at whitespace, a quote, an angle bracket or a
+backtick, none of which a URL can hold.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(cli): read an apostrophe as part of a URL's password
+
+9630764 ended a URL's host part at an apostrophe, but a URL's user and
+password may hold one, so postgresql://app:plain'pass@host/db passed the
+check and the report printed it. The apostrophe no longer ends the host
+part.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(cli): rewrite two export_file comments the language review marked
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(compare): read settings cleared to {} as no settings
+
+An assistant whose settings were cleared reads back with config and context both {}. Compare counted that empty context as settings, so a file with no settings reported a difference and the report exited with status 3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(export): keep record values out of the record's format error
+
+serde_json quotes the value of a field with the wrong type, so a record with a key pasted into it printed the key. The record error now names the line, the column and an unknown field, as the export file's error already did.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+- ✨ feat(sdk): add the prompt and assistant fields that export and import need (#832)
+
+* ✨ feat(sdk): read and write an assistant's context, version and graph
+
+`Assistant` gains `context`, the settings field LangGraph 0.6 added beside
+`config.configurable`, and `version`, which the Agent Server raises on every
+update. A create can now choose the new assistant's ID and say what to do when
+that ID is taken, so an import that stops after it writes its record can send
+the same create again and get one assistant. An update can move an assistant to
+another graph, and the search can list one graph's assistants.
+
+The test that moves an assistant from `test_graph` to `test_graph_alt` carries
+`#[ignore = "needs task 2.4"]`, because the existing test deployment serves only
+`test_graph`.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* ✨ feat(sdk): read a prompt's model, commit IDs, tags and repo details
+
+The commit read can now ask for the model with `include=model`, which puts the
+chat model in the manifest: a `RunnableBinding` sits at `kwargs.last` with the
+constructor at its `kwargs.bound`, as `reference/research/807-openapi-validation.md`
+recorded against the live API. The response also carries the commit description
+and, for a commit with a model, `model_config` and `model_provider`.
+
+A commit create sends a description and reads back the new commit's ID. The tag
+endpoints name a commit by that ID rather than its hash, and the commit read
+returns only the hash, so the commit list is where a caller looks the ID up.
+`PromptClient` gains that list and calls that list, create, move and delete a
+prompt's commit tags.
+
+`Prompt` gains the readme, the repo's tags and `tenant_id`, which export writes
+to `source.workspace_id`, and a repo update sets the description, readme, tags
+and visibility without pushing a commit.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): say the doc comments plainly and name each task by its title
+
+The `pr-language-review` skill read the new doc comments against codekiln's
+writing rules. Each sentence shaped "X, not Y" now states the positive fact, a
+claim about what the tag endpoints refuse now cites the spec that types the
+field as a UUID, and each reference to a task in the change carries that task's
+title and the file that holds it.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): keep a reserved character in a tag name inside the path
+
+A tag name or commit reference went into the request path as the caller wrote
+it, so a `#` in one cut the request short: a delete of `prod#candidate` landed
+on `prod`, and the commit read lost `include=model` along with the rest. The
+three calls that put one of those arguments in a path now percent-encode it,
+and a test sends `prod#candidate` through each of them.
+
+Copilot's review of this pull request found this.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): refuse a tag name of `.`, `..` or nothing before building its URL
+
+Percent-encoding leaves `.` and `..` as they are, and a client or proxy
+reads them as the current or parent directory. delete_tag with `..`
+built /api/v1/repos/-/my-prompt/tags/.., which lands on
+/api/v1/repos/-/my-prompt/ and deletes the whole prompt. An empty name
+ends the path at tags/.
+
+get_commit_with_model, move_tag and delete_tag now build the segment
+through path_segment, which returns InvalidInput for those three names
+before any request goes out. A new test serves mocks that expect no
+request and calls each function with each name.
+
+Copilot raised this in its review of #832 as a missed issue.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): name the refused tag names in path_segment's doc comment
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(sdk): build the assistant fields test crate only with test-utils
+
+The crate imports the test_utils module, which the library builds only
+with the test-utils feature, so a plain cargo test of it did not compile.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): describe both shapes the chat model takes in a commit read
+
+A playground-saved prompt wraps the chat model in a RunnableBinding at
+kwargs.last, and a pushed structured prompt puts the constructor at
+kwargs.last directly. The docs now say to step into kwargs.bound only
+for a RunnableBinding, and a unit test reads the shape with no binding.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(sdk): let a repo update clear the description and readme
+
+UpdateRepoRequest could only leave description and readme alone or set them to a string, so an import could not copy a prompt whose description or readme is null onto one that has them. Both fields are now Option<Option<String>>: None stays out of the request, and Some(None) sends null.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(sdk): keep a null description or readme when reading a repo update
+
+The derived Deserialize turned an explicit null into the outer None, so a request read back from JSON sent {} and the clear did nothing. A field reader now wraps any present value, null included, in Some; a missing field still reads as None.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): say what each export field comment means, and point the test at the second graph's config
+
+Rewrites from pr-language-review: the Agent Server's HTTP 400 for both settings fields cites the research report; include_model's deprecation names prompt-endpoints.json; the model_config comment states where LangSmith returns it; the test files' first lines and the TEST_GRAPH_ALT comment name what they mean.
+
+DESTINATION_CONFIG_PATH named tests/fixtures/test-graph-deployment-alt/langgraph.json, which no pull request adds. It now names tests/fixtures/test-graph-deployment/langgraph-two-graph-ids.json, the file #842 adds for task 2.3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+- ✨ feat(assistant): add langstar assistant export (#845)
+
+* ✨ feat(assistant): add langstar assistant export
+
+langstar assistant export <assistant-id> --deployment <name-or-id> writes
+the assistant's name, description, graph ID, configuration, context and
+metadata to one JSON file, with the deployment ID, assistant ID and
+version under source. Without --output, stdout holds only the file.
+
+Before it writes, export runs the credential check over the assistant
+object. When the check flags a string, export names each path and rule,
+writes no file and nothing to stdout, and exits with status 1.
+--not-a-secret lets one flagged path through with a warning, and
+--prompt-ref records the prompt name a pointer holds under
+requires.prompts. Export refuses a graph's default assistant.
+
+The deployment lookup now returns the deployment's ID, which the file
+records as source.deployment_id.
+
+Task 8.1 of the export-import-prompts-and-assistants OpenSpec change.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): document langstar assistant export
+
+The new page says what the export file holds, how --prompt-ref records
+an assistant's prompts, why export refuses a graph's default assistant,
+and what the credential check does: it names each flagged path and
+writes no file, --not-a-secret writes a flagged string that holds no
+secret, and a credential under an ordinary key with an ordinary value
+still reaches the file. It links the prompt export page for the full
+list of what the check flags.
+
+Ticks tasks 8.1 and 8.2 of the export-import-prompts-and-assistants
+OpenSpec change.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(assistant): find the default assistant by its metadata
+
+The test deployment holds many assistants that other tests created, so
+a search by graph ID alone returned a page of 100 without the graph's
+default assistant, and test_export_refuses_a_graphs_default_assistant
+failed in CI. The test now asks the Agent Server's search for the
+assistant whose metadata holds created_by: system.
+
+The test comments also name task 8.1 by its title.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say why export names prompts by tag, and what a refusal writes
+
+The assistant export page now says that import copies a prompt's tag to
+the destination workspace, and that a refused export writes nothing.
+The unit tests' comment names task 8.1 by its title.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): refuse to export while LANGSTAR_DEBUG_HTTP is set
+
+With LANGSTAR_DEBUG_HTTP set, the SDK writes each response body to a
+debug file and prints the start of it to stderr, so an assistant holding
+a credential reached disk and the terminal before the credential check
+refused the export. Export now refuses before it reads the assistant.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): name both paths of a mirrored setting in --not-a-secret
+
+The Agent Server returns each setting in both config.configurable and
+context, so the token_budget_policy example needs --not-a-secret at
+both paths to export. The page also says that export refuses to run
+while LANGSTAR_DEBUG_HTTP is set.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): refuse LANGSTAR_DEBUG_HTTP before the deployment lookup
+
+Export checked LANGSTAR_DEBUG_HTTP only after the Control Plane lookup,
+whose responses the SDK also writes to its debug file. The check now
+runs before langstar sends any request. A new CLI test runs the binary
+with LANGSTAR_DEBUG_HTTP and LANGSTAR_DEBUG_FILE set, and asserts status
+1, an error naming the variable, no debug file and no export file. It
+sends no request, so it runs without credentials.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): give each export sentence an actor and move the LANGSTAR_DEBUG_HTTP stop under its own heading
+
+Say what --not-a-secret lets through at a named path, name export and the
+graph's author as actors, drop the paragraph about a redacting export the
+page never offered, and move the LANGSTAR_DEBUG_HTTP refusal out of the
+section on what the check misses, with a link to #847.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say what each pointer failed to match and give the default-assistant refusal an actor
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say import is still being built and that the file holds what recreating the assistant needs
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): lead with why export refuses a default assistant and give the missing-ID test an actor
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say the handle-and-tag form is for the prompt name in the assistant's configuration
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- ✨ feat(assistant): add langstar assistant import (#849)
+
+* ✨ feat(assistant): add langstar assistant export
+
+langstar assistant export <assistant-id> --deployment <name-or-id> writes
+the assistant's name, description, graph ID, configuration, context and
+metadata to one JSON file, with the deployment ID, assistant ID and
+version under source. Without --output, stdout holds only the file.
+
+Before it writes, export runs the credential check over the assistant
+object. When the check flags a string, export names each path and rule,
+writes no file and nothing to stdout, and exits with status 1.
+--not-a-secret lets one flagged path through with a warning, and
+--prompt-ref records the prompt name a pointer holds under
+requires.prompts. Export refuses a graph's default assistant.
+
+The deployment lookup now returns the deployment's ID, which the file
+records as source.deployment_id.
+
+Task 8.1 of the export-import-prompts-and-assistants OpenSpec change.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): document langstar assistant export
+
+The new page says what the export file holds, how --prompt-ref records
+an assistant's prompts, why export refuses a graph's default assistant,
+and what the credential check does: it names each flagged path and
+writes no file, --not-a-secret writes a flagged string that holds no
+secret, and a credential under an ordinary key with an ordinary value
+still reaches the file. It links the prompt export page for the full
+list of what the check flags.
+
+Ticks tasks 8.1 and 8.2 of the export-import-prompts-and-assistants
+OpenSpec change.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(assistant): find the default assistant by its metadata
+
+The test deployment holds many assistants that other tests created, so
+a search by graph ID alone returned a page of 100 without the graph's
+default assistant, and test_export_refuses_a_graphs_default_assistant
+failed in CI. The test now asks the Agent Server's search for the
+assistant whose metadata holds created_by: system.
+
+The test comments also name task 8.1 by its title.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say why export names prompts by tag, and what a refusal writes
+
+The assistant export page now says that import copies a prompt's tag to
+the destination workspace, and that a refused export writes nothing.
+The unit tests' comment names task 8.1 by its title.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): refuse to export while LANGSTAR_DEBUG_HTTP is set
+
+With LANGSTAR_DEBUG_HTTP set, the SDK writes each response body to a
+debug file and prints the start of it to stderr, so an assistant holding
+a credential reached disk and the terminal before the credential check
+refused the export. Export now refuses before it reads the assistant.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): name both paths of a mirrored setting in --not-a-secret
+
+The Agent Server returns each setting in both config.configurable and
+context, so the token_budget_policy example needs --not-a-secret at
+both paths to export. The page also says that export refuses to run
+while LANGSTAR_DEBUG_HTTP is set.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): refuse LANGSTAR_DEBUG_HTTP before the deployment lookup
+
+Export checked LANGSTAR_DEBUG_HTTP only after the Control Plane lookup,
+whose responses the SDK also writes to its debug file. The check now
+runs before langstar sends any request. A new CLI test runs the binary
+with LANGSTAR_DEBUG_HTTP and LANGSTAR_DEBUG_FILE set, and asserts status
+1, an error naming the variable, no debug file and no export file. It
+sends no request, so it runs without credentials.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): give each export sentence an actor and move the LANGSTAR_DEBUG_HTTP stop under its own heading
+
+Say what --not-a-secret lets through at a named path, name export and the
+graph's author as actors, drop the paragraph about a redacting export the
+page never offered, and move the LANGSTAR_DEBUG_HTTP refusal out of the
+section on what the check misses, with a link to #847.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say what each pointer failed to match and give the default-assistant refusal an actor
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say import is still being built and that the file holds what recreating the assistant needs
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): lead with why export refuses a default assistant and give the missing-ID test an actor
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): say the handle-and-tag form is for the prompt name in the assistant's configuration
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* ✨ feat(assistant): add langstar assistant import
+
+Import creates an assistant on a deployment from an assistant export file.
+Before it writes, it checks that requires.prompts still matches the file's
+assistant, that the deployment serves the file's graph and that the workspace
+holds each listed prompt. It records the new ID as pending, creates the
+assistant with that ID and if_exists do_nothing, marks the ID created, reads
+the assistant back and compares it with the file. A second import of the same
+file finds the recorded assistant and creates nothing.
+
+It sends the settings in config.configurable, or in context when only context
+holds them, because the Agent Server refuses a create that sets both with
+HTTP 400, as reference/research/807-openapi-validation.md records. Import
+exits with 3 when a check fails or the copy differs, through a new
+CliError::Exit that main turns into that status.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): document assistant import and how to copy every assistant to a new deployment
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): let assistant import merge before assistant compare and verify
+
+Task 10.1 now adds the graph, prompt and prompt-reference checks that
+compare, verify and import share, so users can copy assistants between
+deployments before compare and verify exist. Task 7.4, prompt import's
+documentation, now explains how export and import relate to the prompt
+create, get and update commands of #728 Implement CRUD command structure
+for prompt commands.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(assistant): answer the first codekiln-review round on assistant import
+
+Name the Agent Server's HTTP 400 in place of "a newer Agent Server", say
+what the duplicate checks print and why, give the record and the planned
+commands a person or a program that acts, and split the merge order in
+tasks.md into one sentence per rule.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): refuse LANGSTAR_DEBUG_HTTP in import and look up a prompt tag whole
+
+Import reads the copy back from the destination, which may hold a credential,
+so it refuses LANGSTAR_DEBUG_HTTP before the deployment lookup, as export
+does. The prompt check reads the commit through get_commit_with_model, which
+encodes the tag as one path segment, so a tag such as prod#candidate is
+looked up whole. The copy steps count every assistant on a page, default
+assistants included, to decide whether another page follows.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): redact a credential-shaped prompt name in import's prompt check
+
+A file can hold an API key at a --prompt-ref pointer and list the same string
+under requires.prompts, so the pointer check passes it. The prompt check now
+prints the name with <redacted> in place of a string the credential check
+flags at that pointer, in text and JSON output alike.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): redact credentials in the server errors import prints
+
+A server that refuses a request can quote the values it refused, as a 422
+does, and import sends the file's settings, which nobody has checked for a
+credential since export if someone edited the file in Git. Import now prints
+each Agent Server and LangSmith error body with <redacted> in place of each
+string the credential check flags. The import page tells users to run one
+import of a file at a time, which #828 tracks making safe.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔒 fix(assistant): redact the name, graph ID and request URL import prints
+
+Import now writes <redacted> in place of a credential-shaped assistant
+name or graph ID taken from an edited export file, and drops the request
+URL, which carries the prompt name, from a request that got no answer.
+It reads a prompt tag from the first colon, so `name:prod:candidate`
+looks up the tag `prod:candidate`. The import page's copy steps keep
+only each assistant's creator and ID on disk.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📝 docs(assistant): mark default assistants by label, not creator, in the copy steps
+
+Step 2 of the import page's copy steps split each line on whitespace, so
+a creator such as "Jane Doe" put "Doe" in place of the assistant ID. jq
+now writes `default` or `custom` before each ID, and awk keeps the
+`custom` lines.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* ✅ test(assistant): check import of a prompt tag the prompt lacks
+
+The prompt-check integration test now also imports an assistant naming
+`{repo}:prod`, a tag the test's prompt lacks, and asserts that import
+fails the prompt check naming that tag, exits with status 3 and writes
+no destination record. The case of a prompt the workspace lacks stays.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(test): give the release test deployment a UUID name and retry its create after a 409 (#784)
+
+* 🩹 fix(test): name the release test deployment with a UUID and retry a 409
+
+for_release_tests named its deployment release-integration-test-<seconds>, so
+two runs that started in the same second asked for the same name, and its
+create had no handling for 409. The name now ends in 12 hex characters of a
+random UUID, and create_fresh_deployment retries a 409 up to 5 times, 30s
+apart, under a new name each time. Mocked tests cover a 409 followed by a
+successful create under a new name, and giving up after the last 409.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): rename and retry only the release test's fresh deployment
+
+create_fresh_deployment handled every config with no name_prefix, so a
+caller's own fresh config would have been renamed release-integration-test-*
+after a 409. Only a config whose name starts with release-integration-test-
+gets the rename-and-retry now; any other fresh config is created once, under
+its own name, as before. A mocked test checks that a custom-named config is
+sent once and keeps its name.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): retry only names that start with release-integration-test-
+
+The guard matched `release-integration-test` with no hyphen, so a
+caller's `release-integration-testing` config would have been renamed
+and retried after a 409. It now matches the prefix with its trailing
+hyphen, as the doc comment says, and a mocked test covers that name.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): say the release test's 409 retry is a precaution
+
+The doc comment on `create_fresh_deployment` cited #755 bare and read as
+if this function fixed a 409 it had seen. It now links PR #755, says
+that 409 came from concurrent runs creating the shared
+`pr-integration-test-*` deployment, and says nobody has seen the
+release test get it.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): describe the release test's UUID-suffix name in its comments
+
+The doc comment and the inline comment in
+test_deployment_workflow_full_lifecycle still named the deployment
+release-integration-test-{ts}. The name now ends in 12 hex characters
+from a random UUID.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): say a 409 retry can also change the returned deployment name
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): retry a tracing-project 409 on the release test's create
+
+create_new_deployment turned a tracing-project 409 into a plain string error,
+so create_fresh_deployment couldn't tell it was a 409 and gave up at once,
+though that conflict is tied to the name and a new name clears it. It now
+returns the original error after printing its guidance. The PR tests' reuse
+loop retries under the same name, so it now skips tracing-project 409s rather
+than waiting on them. Mocked tests cover both paths.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): print 409 advice only after the deployment create stops retrying
+
+create_new_deployment printed its "delete the orphaned tracing project and
+re-run" box for every 409, so a release run whose retry then succeeded under a
+new name still showed that advice. The advice is now
+print_create_conflict_guidance, which the reuse loop and create_fresh_deployment
+call only when they return an error, with the name they last tried.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): print the full tracing-project name after the 409 advice box
+
+The box cuts the deployment name to 24 characters, and release names share
+those 24, while the API's 409 doesn't name the project. So the advice no longer
+said which project to delete. The full name now follows the box.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): truncate the tracing-project name by characters, not bytes
+
+The 409 advice box cut the deployment name with &name[..21], which panics when
+byte 21 falls inside a multibyte character. It now keeps the first 21
+characters. A test passes a name whose 21st byte splits an "é"; with the byte
+slice put back, it fails.
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): say the first "é" is the one the old byte slice split
+
+#769 746.7-release-deploy-409 Make the release lifecycle deployment test collision-safe
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🩹 fix(release): build the Linux assets with the pinned Rust toolchain and let a manual run rebuild an existing release (#796)
+
+* 🩹 fix(release): build the Linux assets under the pinned toolchain and rebuild a tag by hand
+
+rust-toolchain.toml pins Rust 1.99.0, so cargo built with 1.99.0 while
+dtolnay/rust-toolchain had added the musl targets to stable, and both
+Linux builds of v2.2.0 stopped with E0463. Add each target to the pinned
+toolchain with rustup.
+
+A run started by hand now checks out and verifies the tag it was given,
+takes the release notes from the version's section of CHANGELOG.md, and
+replaces only the notes of a release that already exists.
+
+#785 🔧 build(release): move releases to the GitHub App, release-plz and cargo-dist process from clilint
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(release): upload assets with gh and rewrite the workflow comments in plain words
+
+The upload steps now run `gh release upload --clobber` instead of
+softprops/action-gh-release. softprops publishes a draft release when its
+`draft` input is omitted, so the first asset upload would have published every
+new release that create-release made as a draft.
+
+The comments on the manual-run tag input, the release notes step, the release
+create-or-update step, the target step and the upload steps now say who does
+what.
+
+#785 🔧 build(release): move releases to the GitHub App, release-plz and cargo-dist process from clilint
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(release): open the comment above jobs with how to rebuild a release
+
+#785 🔧 build(release): move releases to the GitHub App, release-plz and cargo-dist process from clilint
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(release): name the CHANGELOG.md section the release notes come from
+
+#785 🔧 build(release): move releases to the GitHub App, release-plz and cargo-dist process from clilint
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(release): say how rustup finds the pinned toolchain in plain order
+
+#785 🔧 build(release): move releases to the GitHub App, release-plz and cargo-dist process from clilint
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🩹 fix(sdk): search assistants by name, and refresh the agent-server spec (#793)
+
+* 📚 docs(openapi): refresh the agent-server OpenAPI spec
+
+Fetched /openapi.json from the shared PR test deployment on 2026-10-09 and
+wrote it with `jq --indent 2`. The spec grew from 45 to 49 paths. MANIFEST.md
+gives the new fetch date and no longer names a deployment hostname.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): search assistants by the name field the Agent Server API reads
+
+AssistantClient::search sent its text as `query`, which POST
+/assistants/search doesn't define and ignores, so every search returned all
+assistants. The refreshed agent-server spec, like the previous one, filters on
+`name` (a case-insensitive substring match). AssistantSearchRequest now sends
+`name`. Against the shared test deployment, the #[ignore]d
+test_assistant_search passes with `name` and fails its "no results" check with
+`query`, getting 10 assistants back.
+
+Assistant.name now defaults to an empty string when the API leaves it out,
+since the spec doesn't require it, so one unnamed assistant can't fail a whole
+list or search.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openapi): fetch the agent-server spec from the shared test deployment
+
+The refresh command took whichever deployment `langstar graph list`
+returned first, but `graph list` lists graphs inside one deployment and
+the first deployment need not be the shared one. It now finds the
+`pr-integration-test-*` deployment by name with `langstar deployment
+list` and pipes the spec through `jq --indent 2`, the format the
+committed spec uses, so a refresh changes only what the server changed.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): describe the assistant name and search fields as they are
+
+The doc comment on `AssistantSearchRequest::name` told the history of the
+`query` bug and said a search returned every assistant, when the endpoint
+returns at most `limit` results. It now says only that the field is sent
+as `name`, the field `POST /assistants/search` filters on. The comment on
+`Assistant::name` now says what the field holds when the API leaves it out.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): say the assistant search API returns up to 10 when no limit is set
+
+The doc comments on AssistantSearchRequest.limit, AssistantClient::list and
+AssistantClient::search said the default was 20. The SDK leaves limit out when
+it is None, and the agent-server spec sets the API's default to 10.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openapi): replace the agent-server spec only after the fetch succeeds
+
+The refresh command piped curl into jq straight into openapi.json, so a failed
+request or invalid JSON left the committed spec empty, and without pipefail jq
+could hide a curl failure. It now runs with `set -euo pipefail`, fails if no
+deployment URL is found, writes to a temporary file, and moves it over the spec
+only after both steps succeed.
+
+#767 746.6-agent-server-spec Refresh the agent-server OpenAPI spec
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🩹 fix(test): give prompt lifecycle tests unique names and delete their prompt on failure (#783)
+
+* 🩹 fix(test): give prompt lifecycle tests unique names and delete their prompt on failure
+
+test_prompt_search_crud_lifecycle named its prompt from the process ID, and
+test_prompt_crud_lifecycle_private_visibility from a millisecond timestamp.
+Both can repeat across runs that share a LangSmith workspace, and each test
+deleted its prompt only as its last step, so a run that failed after creating
+the prompt left it behind and a later run with the same name got 409.
+
+generate_test_prompt_name now ends names in 12 hex characters of a random
+UUID, and a PromptCleanup guard deletes the prompt when the test ends, also
+when a step panics. Each test's own DELETE step still deletes the prompt and
+disarms the guard.
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): keep the prompt cleanup guard armed when a delete fails
+
+delete_now took the name before awaiting the delete, so a failed delete
+disarmed the guard, and the tests only log that error, so the prompt stayed
+behind. The guard now disarms only after a successful delete, and Drop tries a
+failed one again.
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): say plainly which workspace holds the prompts and that a failed cleanup leaves one behind
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(test): create the prompt cleanup guard before asserting the new prompt is private
+
+The private-visibility lifecycle test asserted is_public inside the Ok arm,
+before PromptCleanup existed, so a prompt returned as public stayed in the
+workspace. The guard now comes first.
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): reword the prompt name and cleanup doc comments in plain cause and effect
+
+generate_test_prompt_name now says a repeated name causes 409 Conflict in a
+shared workspace, and delete_now says what Drop does when the delete fails.
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test: cover the prompt cleanup guard's panic and retry paths
+
+PromptCleanup now takes the function that deletes a prompt, so unit tests can
+drive it without LangSmith. Three tests check that a panic after the guard
+exists deletes the prompt once, that a failed delete_now keeps the guard armed
+so Drop retries it, and that a successful delete_now leaves Drop nothing to do.
+The lifecycle tests pass delete_prompt_in_langsmith, which calls the SDK.
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(test): say what Drop does after a failed delete, and name the delete functions
+
+#782 🩹 fix(test): prompt search lifecycle test names its prompt by process ID, which repeats across runs
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🩹 fix(cli): ask for confirmation before deleting a workspace secret (#781)
+
+* 🩹 fix(cli): ask for confirmation before deleting a workspace secret
+
+`langstar secrets delete <key>` deleted the secret at once. It now asks the
+user to type `yes` through the shared prompt in cli/src/confirm.rs, the same
+one dataset delete uses, and `--yes` (`-y`) skips it. Without a terminal and
+without --yes the command fails before it sends any request.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(cli): reject lower-case 'deleted' in the no-terminal delete check
+
+secrets delete prints "deleted successfully", which the old check for
+"Deleted" never matched. Also fix the out-of-date comment in
+test_secrets_delete_accepts_format_flag.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: say plainly that scripts must pass --yes to secrets delete
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(cli): check that secrets delete --format stops at the terminal check
+
+test_secrets_delete_accepts_format_flag now asserts the command fails
+with "not a terminal", so a change that drops the confirmation check
+can no longer let this test delete TEST_KEY unnoticed.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: show the no-terminal error for secrets delete after the examples
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(cli): check that secrets delete --yes skips the confirmation prompt
+
+The tests only showed that delete without --yes stops at the terminal check.
+test_secrets_delete_yes_skips_confirmation runs delete --yes with a dummy API
+key: the command must get past the prompt and send the request, which
+LangSmith rejects, so nothing is deleted. With the prompt changed to ignore
+--yes, the test fails.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(cli): assert only what --yes does before the delete request
+
+test_secrets_delete_yes_skips_confirmation checked the API error that
+LangSmith returns for the dummy key, so its result depended on the network.
+It now checks only that the command printed "Deleting secret", which it
+prints after the prompt and before any request, and that it never reached the
+terminal check. The CLI has no API URL override to point the request
+somewhere local.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🧪 test(cli): pin table output in the secrets delete --yes test
+
+The test checks stdout for "Deleting secret", but json and text output print
+that line to stderr, and LANGSTAR_OUTPUT_FORMAT or the user's config file can
+pick either. Passing --format table makes the checked stream fixed.
+
+#761 secrets delete asks for no confirmation
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🩹 fix(sdk): retry read requests that get a gateway error, so langstar runs query survives one (#800)
+
+* 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+GET requests (by method) and read-only POSTs sent through the new
+`execute_read` retry on 502/503/504/408/425 with exponential backoff and
+Retry-After, 3 retries like langsmith-py. Writes are sent once. The
+runs query lifecycle test now panics when its read poll hits its deadline.
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): honour an HTTP-date Retry-After on retried reads
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): retry assistant list and search reads on gateway errors
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): release the connection before a retry backoff
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(sdk): test graph list retry and document HEAD retry
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📝 docs(sdk): name each retried status instead of "too-early responses"
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📝 docs(sdk): link langsmith-py where the retry defaults come from
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ♻️ refactor(sdk): rename Retry to RetryMode with variants that say what they do
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ✅ test(sdk): name the sent-once retry tests for what they check
+
+#799 🩹 fix(sdk): retry 502/503/504 on read requests so a gateway blip doesn't fail runs query
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do (#804)
+
+* 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do
+
+Add 429 to the statuses a GET, HEAD or read-only POST is sent again on. The wait is
+`Retry-After` when sent, else the existing 0.5s doubling backoff, capped at 30s per
+wait and 3 retries. Writes are still sent once. 500 and 409 stay unretried.
+
+#802 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): name the statuses langstar retries apart from langsmith-py
+
+#802 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(sdk): say who sends Retry-After and who waits
+
+#802 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+### ♻️ Refactoring
+
+- ♻️ refactor(scripts): move what's left in scripts/ to mise file tasks (#812)
+
+* ♻️ refactor(scripts): move what's left in scripts/ to mise file tasks
+
+prep-next.py becomes `mise run milestone:prep-next`, its tests move to
+tests/milestone/ with a `milestone:test` task, the installer checklist moves
+to docs/dev/testing/, and the gh-milestones README folds into
+docs/dev/milestone-tasks.md. scripts/install.sh stays: its URL is published.
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): give the milestone task doc its own section in the dev README
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(milestone): say what prep-next does instead of "moves to", and trim the installer checklist intro
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(milestone): list the steps of prep-next as bullets and spell out the traversal
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(milestone): match the prep-next steps to what the task does
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(milestone): split the traversal bullet and say what happens without gh-sub-issue
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(milestone): read the milestone mise parsed as well as argv
+
+#774 734.x move what's left in scripts/ to mise file tasks
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+### 📚 Documentation
+
+- 📚 docs(dev): document tmux manager/worker and PR workflow (#759)
+
+* 🔧 build(agents): manage agent config with rulesync
+
+Move the skills and the slash commands into .rulesync/skills/ (the
+commands become skills; gh-milestones:<x> is now gh-milestones-<x>),
+replace AGENTS.md and CLAUDE.md with one root rule in
+.rulesync/rules/overview.md, and generate CLAUDE.md, AGENTS.md,
+.claude/skills/ and .agents/skills/ from it with rulesync 27 for the
+agentsskills, claudecode and codexcli targets. Remove .cursor/.
+
+The root rule carries the background-task guidance from #731.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): repair skill paths, arguments and metadata from review
+
+- gh-milestones-prep-next: restore the script path scripts/gh-milestones/prep-next.py
+- gh-pr-comment-reply: advertise only the <pr_number> <comment_id> "<body>" form it parses, and have pr-workflow call it that way
+- pr-lifecycle: quote the description so "#XYZ" is no longer read as a YAML comment
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the pinned rulesync in the root rule
+
+An older rulesync earlier on PATH strips license, argument-hint and
+allowed-tools from the generated skills and writes a .codex/ directory.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): document tmux manager/worker and PR workflow
+
+Rewrite tmux-naming-conventions.md around the manager/worker layout,
+SendMessage to reach the manager, and the worker PR lifecycle. Add the
+#N Issue Title commit trailer to the commit docs, and document
+claude --chrome for LangSmith UI state in debugging-tests.md.
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): document stacked PR flow and ready checklist
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): rewrite sentences flagged in codekiln-review
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): stop renaming tmux windows with phase emojis
+
+The manager names each worker's window for its job, so the skills no
+longer rename it. Regenerated with the pinned rulesync.
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(skills): renumber pr-workflow steps and drop tmux rename from prep-next
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): give each root rule sentence an actor and a concrete check
+
+Rewrite the testing, secrets, background tasks and agent config
+paragraphs, and describe the release skill by the published GitHub
+release it waits for.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: state langstar's goal as the one CLI for LangSmith work
+
+Put codekiln's goal at the top of the root rule and in the README's
+opening paragraph: one tool, so nobody has to choose between an MCP
+server, the LangSmith CLI and the LangGraph CLI.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔥 chore(agents): delete the stale .claude/README.md
+
+It repeated the Cursor rule this PR removes, including the out-of-date
+<username>/<issue_num>-<issue_slug> branch format.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): open PRs ready for review, never as drafts
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the tools langstar replaces and the actor in each root rule
+
+State the goal as a goal in the README and the root rule, naming the
+LangSmith MCP server. Make the agent the one who opens the issue and the
+PR, and say who to ask when a response would exceed the output budget.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): correct the mise which and pr-workflow hint, spell out prep-next
+
+- Root rule: mise which prints the pinned rulesync's path, and the shell runs it
+- Root rule: the commit-format bullet now tells the agent what to write
+- pr-workflow: argument-hint marks the issue number optional, matching its Arguments section
+- gh-milestones-prep-next: the description says which labels it changes and how it picks the next issue
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): answer Copilot review of tmux workflow docs
+
+Add the issue trailer to pr-workflow commit templates, use branch -D
+after a squash merge, name the manager window like its session, and say
+where the codekiln-review skill lives.
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): hide token prefixes, fail on a failed status update, parse ⚡️ and feat!, pass the tmux socket
+
+- update-github-issue-project-status: the troubleshooting step says whether
+  each token is set, and prints nothing of the token.
+- update-issue-status.sh returns 1 when the status mutation fails. The caller
+  runs the function as an if condition, which turns off set -e inside it.
+- analyze_commits.py accepts U+FE0F after the emoji, so ⚡️ perf is a patch,
+  and reads the breaking-change ! from the match, so feat!: is a major.
+- tmux wait-for-text.sh takes -S/-L and passes them to capture-pane, so it
+  reads the private socket the skill creates sessions on.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): say what wait-for-text.sh polls when it gets no socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): name the personal tmux server wherever the scripts read it without a socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(tmux): give wait-for-text.sh the socket flags find-sessions.sh uses
+
+-S/--socket-path takes a socket path and -L/--socket takes a socket name in
+both scripts, so one flag means the same thing to each.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): stop waiting for CI checks after 60 minutes
+
+The wait loop polled forever while a check stayed queued, which breaks the
+root rule's bounded-polling guidance. After 60 minutes it now lists the
+stuck checks and reports them, instead of falling through to "All checks
+passed".
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): count running CI checks by their pending bucket
+
+gh pr checks gives a queued or running check completedAt
+0001-01-01T00:00:00Z, not null, so the wait loop counted no running checks
+and exited on its first pass. It now counts and lists the checks whose bucket
+is pending.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): tell agents other than Claude Code to set ARGUMENTS themselves
+
+Claude Code fills in $ARGUMENTS in a skill body, but rulesync copies the
+body unchanged to .agents/skills/, where Codex leaves it unset and the
+converted command skills see no arguments. Each of the six skills that use it
+now says to set the variable first when it is still literal.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): drop the command-only ! prefix from shell lines in two skills
+
+gh-start-issue and pr-workflow kept twelve lines that start with !, a prefix
+from their custom-command days. In a skill code block, bash reads
+!ISSUE_NUM=... as a command name, so ISSUE_NUM stays unset and the issue
+check rejects every run. The lines are now plain shell.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): move the ARGUMENTS note under each skill's Arguments heading
+
+The note opened six skills on an edge case, and it told the agent to set a
+shell variable that pr-workflow and gh-pr-comment-reply never read. It now
+sits under ## Arguments and says to put the user's arguments wherever the
+placeholder shows, in the commands and in the text.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): fix CI, draft and send-keys statements flagged in review
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): fix pr-lifecycle footer check and stacked-PR rebase steps
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): gitignore the generated agent config and regenerate it with lefthook
+
+Only .rulesync/ is committed now, as in codekiln's dotfiles. Git ignores
+CLAUDE.md, AGENTS.md, .claude/skills/ and .agents/skills/ through the block
+that `rulesync gitignore` writes, and they leave the index.
+
+lefthook.yml runs rulesync install and generate after every pull
+(post-merge) and checkout (post-checkout). mise pins lefthook and runs
+`lefthook install` on entering the repo, and the devcontainer installs the
+hooks and generates the config once on create. The hooks call
+"$(mise which rulesync)" rather than `mise x -- rulesync`, because mise.toml
+puts $HOME/.local/bin ahead of mise's tools on PATH.
+
+The root rule and the README say how to set this up in a new clone.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 👷 ci: read generated agent config from its source or generate it first
+
+prepare-release.yml runs analyze_commits.py from .rulesync/skills/, since
+.claude/skills/ is no longer committed. claude.yml installs rulesync with
+jdx/mise-action and generates CLAUDE.md and .claude/skills/ before Claude
+reads the checkout. Copilot's instructions point at the root rule's source.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: call gh-milestones-test-plan and gh-milestones-release skills, not commands
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): call mise x -- rulesync in the hooks and drop $HOME/.local/bin from PATH
+
+The hooks now run `mise x -- rulesync`, as in codekiln's dotfiles. mise.toml no
+longer puts $HOME/.local/bin on PATH, where a stale rulesync shadowed the one
+mise.toml pins. #763 makes the same _.path change.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🙈 chore(agents): ignore the .codex/skills/ an older rulesync writes
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): answer Copilot review of footer and tmux docs
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs: say Claude Code picks up regenerated skills in an open session
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): address the manager by its ListAgents name
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs: explain both .codex ignores and when an open session sees new skills
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): check every commit footer and open tuicr in a pane
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): regenerate agent config after a rebase too
+
+git pull --rebase and git rebase run post-rewrite, not post-merge, so a
+rebase that changed .rulesync/ left the generated files stale.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): check commit footers against the PR's base branch
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): parse the issue from i<N> and add the footer to scout commits
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): anchor the issue parse to the branch prefixes
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): sync branch cleanup, base range and issue-line placement
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): compare the full issue title in the footer check
+
+#738 734.4-tmux-workflow Document the tmux manager/worker and PR workflow
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 📚 docs(research): map langstar's parity with official LangChain tools (#752)
+
+* 📚 docs(research): map langstar against official LangChain tools
+
+Compare each langstar command group with the LangSmith CLI, the
+LangGraph CLI and SDK, and the LangSmith Terraform provider, and list
+the keep-or-deprecate decisions as open questions.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): note official project group has no get
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): lead with the finding and give each sentence a subject
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): fix the garden page link whose file name ends in %3F
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): turn the overlap map into a parity map
+
+codekiln set langstar's goal as the one tool a LangSmith user needs, so
+the document now sizes each gap with the official tools instead of
+recommending deprecation, and asks which gaps to close first.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): name what each heading and recommendation covers
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): match the parity map to the pinned sources and name who plans each change
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): name the CLI, size billing, and recommend covering Terraform-only areas
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): narrow two overclaims and resize the assistant gap
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): add project lookup and sandbox registries, name self-update
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): add deployment updates and JSON dataset files, order question 4
+
+- Add the deployment update row: Terraform changes a deployment in
+  place, and langstar's SDK has the call but no command.
+- Split JSON dataset upload and export into its own row, a small gap,
+  since langstar reads and writes JSONL and CSV.
+- Say the LangSmith CLI reaches annotation queues through `langsmith api`.
+- Name only langstar's own dataset and project commands, matching the
+  `project get` row.
+- Say how langstar closes the workspace, tag and alert gaps, and ask
+  open question 4 as an ordering question.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): add listeners, trace stats and setup, org admin and server info
+
+- Add `deploy listeners list` to the deployment logs and revisions row.
+- Split `trace stats` and `trace setup` into their own rows; setup is
+  medium because it writes a coding agent's local settings.
+- Add `langsmith_org_membership` and `langsmith_access_policy_attachment`
+  to the workspace administration row.
+- Add a row for Terraform's `langsmith_info` data source.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): explain listeners, pair commands with abilities, add feedback
+
+- Say what a deployment listener is in the deployment logs row.
+- Pair each langstar-only ability with its commands in one sentence.
+- Add the LangSmith CLI's `feedback` command; langstar needs none,
+  because people report its problems as GitHub issues.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): point the empty eval list link at execute_list
+
+The link backing "`list` returns an empty list" went to the TODO in
+`execute_create`; it now goes to the empty `vec![]` in `execute_list`.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): say the SDK's deployment update covers only source settings
+
+`PatchDeploymentRequest` has no environment variable or secret fields,
+so the update row no longer implies the SDK can change them.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): describe the API lookup of the GitHub integration
+
+`deployment create` lists the workspace's GitHub integrations and picks
+the one with access to the repository; it does not read existing
+deployments.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): re-pin langstar to 7b09eb2 and mark model configs at parity
+
+- Read langstar at main as of 7b09eb2; no command was added or removed
+  since 1704f1e.
+- #755 fixed `model-config create`, so model configurations have no gap
+  and their section under "What closing each gap would take" is gone.
+- Say the pinned LangSmith CLI and Terraform provider commits sit five
+  and two commits after their v0.3.0 and v0.0.16 releases.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): say which LangGraph CLI commands need Docker
+
+Only `up`, `build` and `deploy` run Docker; `dev` runs the Agent Server
+as a Python process and `new` copies a template.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): define gap sizes by command groups, name the Control Plane API
+
+- A gap is small for one command or a few in an existing group, medium
+  for a new group; the old definition made every LangSmith gap small.
+- `deployment create` looks up GitHub integrations through the
+  Deployment Control Plane API, not the LangSmith API.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): add the deployment settings only Terraform sets
+
+Terraform's `langsmith_deployment` sets display names, build commands,
+custom URLs, listener placement, Kubernetes secret references and
+compute resources; langstar's `deployment create` sends none of them.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): point the deploy link at the deploy group, drop "listener" early
+
+- The `langgraph deploy` link went to its list, listeners, revisions and
+  delete subcommands; it now goes to the group that builds and deploys.
+- The new deployment settings row names the self-hosted cluster instead
+  of "listener", which the next row explains.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): say langstar splits prompt details and manifest across get and pull
+
+The official `prompt get` returns a prompt's details and latest
+manifest; langstar's `get` shows the details and `pull` the manifest.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): credit the Remote MCP prompt, dataset, example and experiment tools
+
+- Add MCP `push_prompt`, `create_dataset`, `update_examples` and
+  `run_experiment` to their rows; single examples now include updates.
+- Say `run_experiment` is the one official tool that starts an
+  experiment, and order open question 2's recommendation to add that
+  after evaluators, rules and results.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): note that langstar finds datasets only by UUID
+
+The official `dataset get` and `delete` take a name or a UUID;
+langstar's take only a UUID, a small gap.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): note that langstar cannot create a deployment from a template
+
+Terraform's `langsmith_deployment` accepts the `internal_template`
+source; langstar's `deployment create` accepts only `github` and
+`external_docker`, a small gap.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): note that langstar cannot deploy a Docker image
+
+`deployment create --source external_docker` takes no image URI and
+sends no source revision, so only GitHub builds work; Terraform's
+`image_uri` covers Docker images.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(research): drop the documentation-only MCP tools, reword the deploy row
+
+- `push_prompt`, `create_dataset`, `update_examples` and
+  `run_experiment` only return documentation, so the rows no longer
+  credit them; the sources list says why they are left out.
+- No official tool starts an experiment; open question 2's
+  recommendation now defers that decision.
+- The deployment row says `deployment create` deploys only GitHub code
+  and names what Terraform covers.
+
+#749 746.4-scope Map langstar against the official LangSmith CLI, LangGraph tools and Terraform provider
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 📚 docs(worktrees): move worktrees from wip/ to .worktrees/ (#756)
+
+* 🔧 build(agents): manage agent config with rulesync
+
+Move the skills and the slash commands into .rulesync/skills/ (the
+commands become skills; gh-milestones:<x> is now gh-milestones-<x>),
+replace AGENTS.md and CLAUDE.md with one root rule in
+.rulesync/rules/overview.md, and generate CLAUDE.md, AGENTS.md,
+.claude/skills/ and .agents/skills/ from it with rulesync 27 for the
+agentsskills, claudecode and codexcli targets. Remove .cursor/.
+
+The root rule carries the background-task guidance from #731.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): repair skill paths, arguments and metadata from review
+
+- gh-milestones-prep-next: restore the script path scripts/gh-milestones/prep-next.py
+- gh-pr-comment-reply: advertise only the <pr_number> <comment_id> "<body>" form it parses, and have pr-workflow call it that way
+- pr-lifecycle: quote the description so "#XYZ" is no longer read as a YAML comment
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the pinned rulesync in the root rule
+
+An older rulesync earlier on PATH strips license, argument-hint and
+allowed-tools from the generated skills and writes a .codex/ directory.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): move worktrees from wip/ to .worktrees/
+
+Gitignore .worktrees/ and .claude/worktrees/, drop wip/, and point the
+skills, prep-next script and checklist at .worktrees/<branch-name>. Replace
+"keep /workspace clean" wording with the root checkout. The cleanup script
+now finds the root checkout via the common git dir, so it works from inside
+a worktree. git-worktrees and gh-start-issue run `mise run
+worktree:link-secrets` when that task exists (#740).
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🔧 build(agents): regenerate skills with rulesync 27.0.0
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): link #740 and give worktree sentences a subject
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): state what link-secrets does once
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): give each root rule sentence an actor and a concrete check
+
+Rewrite the testing, secrets, background tasks and agent config
+paragraphs, and describe the release skill by the published GitHub
+release it waits for.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: state langstar's goal as the one CLI for LangSmith work
+
+Put codekiln's goal at the top of the root rule and in the README's
+opening paragraph: one tool, so nobody has to choose between an MCP
+server, the LangSmith CLI and the LangGraph CLI.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔥 chore(agents): delete the stale .claude/README.md
+
+It repeated the Cursor rule this PR removes, including the out-of-date
+<username>/<issue_num>-<issue_slug> branch format.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the tools langstar replaces and the actor in each root rule
+
+State the goal as a goal in the README and the root rule, naming the
+LangSmith MCP server. Make the agent the one who opens the issue and the
+PR, and say who to ask when a response would exceed the output budget.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): correct the mise which and pr-workflow hint, spell out prep-next
+
+- Root rule: mise which prints the pinned rulesync's path, and the shell runs it
+- Root rule: the commit-format bullet now tells the agent what to write
+- pr-workflow: argument-hint marks the issue number optional, matching its Arguments section
+- gh-milestones-prep-next: the description says which labels it changes and how it picks the next issue
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): match .worktrees/ literally and resolve the root checkout in prep-next
+
+Match the /.worktrees/ path component with grep -F so a name like
+myworktrees/ no longer passes, and build prep-next's worktree path under
+the root checkout so running it from a worktree does not nest one.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): hide token prefixes, fail on a failed status update, parse ⚡️ and feat!, pass the tmux socket
+
+- update-github-issue-project-status: the troubleshooting step says whether
+  each token is set, and prints nothing of the token.
+- update-issue-status.sh returns 1 when the status mutation fails. The caller
+  runs the function as an if condition, which turns off set -e inside it.
+- analyze_commits.py accepts U+FE0F after the emoji, so ⚡️ perf is a patch,
+  and reads the breaking-change ! from the match, so feat!: is a major.
+- tmux wait-for-text.sh takes -S/-L and passes them to capture-pane, so it
+  reads the private socket the skill creates sessions on.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 build(agents): drop stale .codex/ output from rulesync 8.15
+
+rulesync 27.0.0 writes Codex skills to .agents/skills, so the tracked
+.codex/ copies were leftovers from the older rulesync on PATH.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): say what wait-for-text.sh polls when it gets no socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): name the personal tmux server wherever the scripts read it without a socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(tmux): give wait-for-text.sh the socket flags find-sessions.sh uses
+
+-S/--socket-path takes a socket path and -L/--socket takes a socket name in
+both scripts, so one flag means the same thing to each.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): stop waiting for CI checks after 60 minutes
+
+The wait loop polled forever while a check stayed queued, which breaks the
+root rule's bounded-polling guidance. After 60 minutes it now lists the
+stuck checks and reports them, instead of falling through to "All checks
+passed".
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): count running CI checks by their pending bucket
+
+gh pr checks gives a queued or running check completedAt
+0001-01-01T00:00:00Z, not null, so the wait loop counted no running checks
+and exited on its first pass. It now counts and lists the checks whose bucket
+is pending.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): tell agents other than Claude Code to set ARGUMENTS themselves
+
+Claude Code fills in $ARGUMENTS in a skill body, but rulesync copies the
+body unchanged to .agents/skills/, where Codex leaves it unset and the
+converted command skills see no arguments. Each of the six skills that use it
+now says to set the variable first when it is still literal.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): drop the command-only ! prefix from shell lines in two skills
+
+gh-start-issue and pr-workflow kept twelve lines that start with !, a prefix
+from their custom-command days. In a skill code block, bash reads
+!ISSUE_NUM=... as a command name, so ISSUE_NUM stays unset and the issue
+check rejects every run. The lines are now plain shell.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): move the ARGUMENTS note under each skill's Arguments heading
+
+The note opened six skills on an edge case, and it told the agent to set a
+shell variable that pr-workflow and gh-pr-comment-reply never read. It now
+sits under ## Arguments and says to put the user's arguments wherever the
+placeholder shows, in the commands and in the text.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): resolve the root checkout in scout and test the prep-next path helper
+
+The scout skill built its worktree path relative to the caller and dropped the feature slug from the directory name. It now derives the path from the root checkout and the full branch name. prep-next.py gets a worktree_path_for helper that the branch-naming test runs from both the root checkout and a linked worktree.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): reword the link-secrets steps in git-worktrees and gh-start-issue
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): enter the root checkout before cleanup and fix prep-next names
+
+The release checklist enters the root checkout before checking out main and
+removing the worktree. The prep-next skill names the worktree after the
+branch. The git-worktrees prerequisite is Git 2.31, which added
+--path-format=absolute.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): accept Claude Desktop worktrees in the location checks
+
+pr-lifecycle and pr-workflow now match .worktrees/ and .claude/worktrees/,
+the two locations git-worktrees documents.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): gitignore the generated agent config and regenerate it with lefthook
+
+Only .rulesync/ is committed now, as in codekiln's dotfiles. Git ignores
+CLAUDE.md, AGENTS.md, .claude/skills/ and .agents/skills/ through the block
+that `rulesync gitignore` writes, and they leave the index.
+
+lefthook.yml runs rulesync install and generate after every pull
+(post-merge) and checkout (post-checkout). mise pins lefthook and runs
+`lefthook install` on entering the repo, and the devcontainer installs the
+hooks and generates the config once on create. The hooks call
+"$(mise which rulesync)" rather than `mise x -- rulesync`, because mise.toml
+puts $HOME/.local/bin ahead of mise's tools on PATH.
+
+The root rule and the README say how to set this up in a new clone.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 👷 ci: read generated agent config from its source or generate it first
+
+prepare-release.yml runs analyze_commits.py from .rulesync/skills/, since
+.claude/skills/ is no longer committed. claude.yml installs rulesync with
+jdx/mise-action and generates CLAUDE.md and .claude/skills/ before Claude
+reads the checkout. Copilot's instructions point at the root rule's source.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: call gh-milestones-test-plan and gh-milestones-release skills, not commands
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): call mise x -- rulesync in the hooks and drop $HOME/.local/bin from PATH
+
+The hooks now run `mise x -- rulesync`, as in codekiln's dotfiles. mise.toml no
+longer puts $HOME/.local/bin on PATH, where a stale rulesync shadowed the one
+mise.toml pins. #763 makes the same _.path change.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): check for link-secrets in the new worktree and assert the full path
+
+gh-start-issue looks for the worktree:link-secrets task from inside the new
+worktree, which carries the target branch's mise config. The branch-naming
+test compares the whole path worktree_path_for returns instead of rebuilding
+its last component.
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): name the prep-next branch the way the script builds it
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): say why worktrees go in .worktrees/
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): run link-secrets in the new worktree from every creation workflow
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): flatten slashes in directory names and clean up by registered path
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): keep spaces when reading a registered worktree path
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): run the test one-liner when credentials are already set
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): detect the milestone from i<issue> branch names
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): source the Claude Desktop worktree location
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ✅ test(worktrees): cover the secret linking step in prep-next
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): show link-secrets warnings and state one directory naming rule
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktrees): tolerate a missing mise when linking secrets
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ✅ test(worktrees): cover a missing mise in the secret linking step
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(worktrees): say what the Claude Desktop path replaces and what a failed secret link leaves
+
+#736 734.2-worktrees Move worktrees from wip/ to .worktrees/
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* ✅ test(worktrees): check create_worktree links secrets after a successful worktree add
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 📚 docs(agents): mark every agent-written GitHub text with a from-AI header (#797)
+
+* 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+#777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* #777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): mark sub-issue bodies and close comments, and leave the harness to fill in
+
+#777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): document the AI header env vars for sub-issue creation and name all three fields
+
+#777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): pass reply text to gh through a quoted heredoc
+
+#777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* #777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* #777 📚 docs(agents): mark every agent-written GitHub text with a from-AI header
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- 📚 docs(skills): use mise tasks in skills and add agents:generate (#798)
+
+* 📚 docs(skills): use mise tasks in skills and add agents:generate
+
+Point git-worktrees, test-runner-worktree, gh-start-issue and the docs at
+`mise run check` and `mise run worktree:cleanup`. Add the `agents:generate`
+mise task as the one way to regenerate agent config, and have lefthook call it.
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(skills): route CI through agents:generate and warn about forced cleanup
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(skills): accept every supported worktree location in test-runner-worktree
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(worktree): skip worktrees with uncommitted changes instead of force-removing them
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(ci): keep the Claude workflow calling rulesync directly
+
+A mise task comes from the PR checkout, and this job holds write
+permissions and credentials, so it must not run one.
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): note that the Claude workflow calls rulesync directly
+
+#764 734.x Update skills for mise tasks after rulesync lands
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- 📚 docs(skills): fix the wording codekiln-review flagged after #798 merged (#806)
+
+#805 📚 docs(skills): fix the wording codekiln-review flagged after #798 merged
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- 📚 docs(agents): name the upstream LangChain projects to check for compatibility (#803)
+
+* 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Add a rulesync rule naming what langsmith-go, langsmith-cli, langsmith-sdk,
+langsmith-mcp-server and langgraph are authoritative for, orientation notes
+for langsmith-go, langsmith-cli and langgraph, and point the feature
+development process and scout skill at the rule.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): link the commits read and state each upstream reference plainly
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): fix upstream notes and make research steps iterate over applicable references
+
+Complete the langgraph control-plane endpoint list, state the case-sensitive
+x-api-key check, use the real `trace setup` command path, note the Retry-After
+clamp, and replace the Python-only research steps with one step per applicable
+upstream reference.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): link the langsmith-sdk 429 facts at a commit and tighten upstream wording
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): scope handle429 to batched trace ingestion and state the Go version
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): wrap the <name> placeholder in code formatting
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): describe both Python 429 retry layers
+
+The Python client's urllib3 adapter retries 429 up to 3 times even at
+stop_after_attempt=1; request_with_retries adds its 30s doubling wait
+only after that and only when stop_after_attempt > 1.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): split the 429 retry layers and name each link by file and line
+
+Layer 1 now lists raise_on_redirect=False and says allowed_methods=None applies only with urllib3 1.26 or newer, as _default_retry_config does.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): fix the JS and Python 429 retry notes and shorten the langsmith-sdk row
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): say what the langsmith-sdk row adds beyond langsmith-go's retry
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): drop the retry numbers from the langsmith-sdk row and point to the notes
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): say the langsmith-sdk row's retry policy differs from langsmith-go's
+
+The row claimed langsmith-go does not generate retry behavior, but its README
+says it retries 408, 409, 429 and 5xx. State that langsmith-sdk has its own
+retry policy that differs from the Stainless default.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): stop saying langstar's SDK is generated in the langsmith-go row
+
+Say the langsmith-go row rests on its Stainless file headers, that langstar's SDK is LLM-assisted, and that its retry defaults are generated-client behavior.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): say most langsmith-go source files start with the Stainless header
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the scout skill's upstream-clone step for what it does
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): open section 1.1 with the clone step and move the comparison to 1.2
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): apply review rewrites to the upstream-reference docs
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): say where the upstream clones live and generalize the scout report
+
+Name the root checkout as the home of code/, quote the Stainless defaults
+precisely, and make the scout report scaffold cover every upstream reference.
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): count the Stainless-generated langsmith-go files and generalize the scout notes
+
+#801 📚 docs(agents): name the upstream LangChain projects to check for compatibility
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Sonnet 5.5 <noreply@anthropic.com>
+- 📚 docs(openspec): propose export, import, compare and verify for prompts and assistants (#816)
+
+* 📚 docs(openspec): propose export, import, compare and verify for prompts and assistants
+
+Add the OpenSpec change export-import-prompts-and-assistants: a new prompt
+capability and assistant additions for writing a prompt commit or an
+assistant to a file, recreating it in another workspace or deployment,
+comparing a copy with the file, and checking that the copy can run.
+The task list splits the work into one pull request per group.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): fix the claims and headings codekiln-review flagged on the transfer design
+
+Add the SDK fields and the deployment URL fix the assistant commands
+need (tasks 2.3 and 3.3), check a prompt tag through the commits
+endpoint, match the model provider by class name and report a missing
+saved model configuration as a note (Open Question 7), and turn topic
+headings into decisions.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): carry the commit description, repo details and metadata removals through import
+
+Export now writes the commit description, and import sends it on each
+commit it creates. With --update, prompt import also sets the destination
+repo's description, readme, tags and visibility through
+PATCH /api/v1/repos/{owner}/{repo}, and a repo-only difference updates the
+repo without adding a commit. Assistant import sends each metadata key the
+destination has and the file lacks with a null value, because the Agent
+Server merges metadata on update, and reports any key that remains. Task
+3.3 adds graph_id to UpdateAssistantRequest, task 3.4 adds the commit
+description and repo update to the SDK, and task 4.1 tests sorted keys
+with values built in different insertion orders.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): add tag moves and the change warning to the tasks, and order assistant compare before its record
+
+Task 3.2 now moves a tag with PATCH /api/v1/repos/{owner}/{repo}/tags/{tag_name}, task 1.1 extracts that endpoint and the repo update, task 7.2 tests the warning that the destination changed since the last import, and tasks 9.1 and 9.2 add --assistant-id so assistant compare and verify can name an assistant before import exists. The manifest example uses the PromptPlayground id the upstream fixture holds, and design.md links tasks.md relatively.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): resolve an assistant's deployment through the deployment's url
+
+The assistant spec said a deployment without source_config.custom_url
+fails, which task 2.3 changes. Add a MODIFIED requirement that sends
+assistant requests to the control plane's top-level url, falling back to
+custom_url, and align task 2.3, the design risk and the proposal.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): run verify's checks before import writes and fix the SDK fields tags and deployments need
+
+Add the deployment url to the SDK Deployment and the commit id that the
+tag endpoints need, add --workspace-id to assistant verify, test the
+assistant dry run, scope the round-trip goal to the fields the file
+carries, clear an assistant's description and context on update or
+report them, and run verify's checks before prompt and assistant import
+write anything, with Open Question 8 on that choice.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): build the destination deployment from its own graph config and move commit tags on import
+
+Swap tasks 2.2 and 2.3 so the destination deployment fixture comes after
+the deployment URL it needs, and build that deployment from its own
+langgraph.json so the fixture never returns the source deployment. Treat a
+commit tag that is missing or points elsewhere as a difference that
+--update moves. Lead the assistant update paragraph with what the Agent
+Server keeps. Test that prompt import without --workspace-id fails while
+LANGSMITH_WORKSPACE_ID is set.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): find tag commits through the commit list and take the model class from the manifest
+
+Plan an SDK call for the commit list so the tag move can name a commit
+it did not create, take requires.model_provider from the chat model
+constructor's id, add tests for --commit prod and --assistant-id, and
+reword two design sentences.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): exit with 3 for a difference, leave clap's 2 for usage errors, and drop unused create fields
+
+clap exits with 2 on a usage error, so compare, verify and import now
+exit with 3 for a difference or a failed check and 1 for any other
+error. prompt import checks --workspace-id itself and exits with 1.
+Task 3.3 drops assistant_id and if_exists, task 1.1 extracts the commit
+list, and tasks 5.1 and 8.1 test a missing prompt and assistant.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): point the end-to-end test at the destination workspace, test requires, and let group 2 go ahead without task 2.1
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): run only verify's dependency checks before import and let update fall back to a reported difference
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say import asks the Agent Server to remove what the file lacks
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): test the JSON report in compare and verify, and name what import checks before it writes
+
+Task 4.3 tests only the report and its exit statuses, since group 4 adds
+no command that can find a difference. Tasks 6.1 and 9.2 now test the
+`-f json` report on stdout, progress on stderr and clap's status 2.
+design.md names the checks import runs, links open questions 7 and 8 by
+heading and links #807 by title.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): pass the model provider key to pull_prompt as a secrets map
+
+The pinned LangSmith Python SDK's pull_prompt reads no secret from the
+environment by default and raises when a manifest holds a secret
+reference and no secrets map arrives, so the structured output script
+passes the key it reads from the environment as a secrets map.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record a new assistant's ID before reading it back
+
+An assistant's record is the only link from the file to its copy, so
+assistant import writes the new ID before the read-back comparison. An
+import whose read-back finds a difference then leaves the link, and the
+next import finds that assistant instead of creating a duplicate.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): reject an export file of another kind or format version
+
+Import, compare and verify read only a file whose format_version is 1
+and whose kind names their own resource, and exit with status 1 naming
+the field otherwise. Task 4.1 adds the check with unit tests, and task
+6.1 adds CLI tests for both cases.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record the prompt commit before reading it back, and test both read-back failures
+
+Prompt import now records the commit hash before the read-back, as assistant import does, so the next import does not report langstar's own commit as someone else's change. Task 7.2 adds an httpmock test for a field LangSmith drops, task 10.1 a CLI test for a prompt export given to assistant import, and design.md splits the verify paragraph into the secret check and the model configuration note.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): test an assistant file given to prompt import with import, and name the format-version requirement
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): give the destination record its prompt purpose, make developers the actors of task sentences, and drop the #728 field claim
+
+The proposal now says the record finds an assistant's copy and tells whether someone pushed to a prompt. Sentences that had a task push or record now name a developer working that task. The #728 paragraph says export and import share PromptClient calls instead of promising prompt get --all shows an export file's fields. The assistant spec's removal requirement heading names import and the Agent Server.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): mark the SDK field additions as breaking, compare every manifest key, and check prompt references against the file
+
+Adding a public field to Deployment, CommitData, CommitRequest, Assistant or the assistant request structs breaks a struct literal in another crate, so those tasks update the literals in this repository and their pull requests carry a BREAKING CHANGE footer. Compare drops no key by name inside the repo, commit and assistant objects, so a manifest's id arrays count. Assistant compare, verify and import resolve each requires.prompts pointer against the file's assistant object and stop with status 1 on a mismatch.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): ask codekiln whether the SDK field additions are a breaking change
+
+Add Open Question 9 with the recommendation to ship the SDK field additions
+as feat changes, and point tasks.md, the design's risk entry and the
+proposal at it.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): weigh non_exhaustive and #815's choice in the SDK breaking-change question
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): list CommitManifestResponse among the changed SDK structs and give each rewritten sentence an actor
+
+Adds CommitManifestResponse, which PromptClient::get_commit returns, to the structs that question 9 and tasks.md group 3 name, and has task 3.1 extend it. Names the #815 link by its title, drops "a third option", links question 9 by its text, and limits prompt compare to the file's repo and commit objects.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): have prompt import and verify check requires against the manifest
+
+Someone can edit an export file's manifest in Git and leave requires.secrets as it was, so import and verify work out both requires lists again from the manifest and stop with status 1 when they differ. Adds a scenario and a verify test for it, and names CommitManifestResponse in the proposal's impact list.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): merge the destination graph config to main before its fixture and test import's requires check
+
+Task 2.3 now adds the destination test graph's langgraph.json in a pull
+request of its own, because the control plane builds test deployments
+from main; the fixture moves to 2.4 with a name prefix of its own.
+Task 7.1 tests import against an edited manifest. Question 9's context
+leads with its argument, the SDK risk names its structs, and the compare
+paragraph says what compare lists.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say that non_exhaustive breaks langstar's own CLI, order task 2.3's pull request before group 2, and shorten question 5's context
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name the destination deployment's integration-test prefix and its cleanup, list Assistant among the CLI's struct literals, and rename the workspace-id requirement
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): register the destination test graph under a second graph ID for the assistant update tests, and list group 3's SDK structs by name
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): merge task 2.2 before task 2.3 so its check lists assistants through langstar, and cite find_reusable_deployment and the 409 for the destination deployment
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): state the test-environment merge order once in the tasks preamble, and trim it from task 2.3, task 3.3 and question 5
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name the 409 risk behind the destination deployment, test --prompt-ref export, and handle prompts without a model
+
+Design question 5 and Risks / Trade-offs now say the control plane may refuse a second deployment from this repository with 409, and that task 2.3 finds out and sends question 5 back to codekiln. Task 8.1 tests that export writes the --prompt-ref pointer and prompt name. A prompt without a model exports requires.model_provider as null, and import and verify skip the saved model configuration check for it.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): rename requires.model_provider to requires.model_class, untie two design sentences, and specify export to stdout, a missing copy at compare, and tag delete
+
+Rename the export file's requires.model_provider to requires.model_class,
+so it no longer shares a name with LangSmith's commit.model_provider.
+Rewrite the design's two requires-check sentences so the action comes
+first. Add scenarios that compare exits with status 1 when the prompt or
+the recorded assistant is missing, require export without --output to
+print only the JSON document on stdout, and add a tag delete call to
+task 3.2 for the end-to-end test in task 10.3.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): make Deployment.url optional, and add the repo's readme and tags to Prompt
+
+The control-plane spec declares Deployment.url nullable, so task 2.2
+adds it as Option<String> with serde default and tests a null and a
+missing url. PromptClient::get returns Prompt, which has no readme or
+repo tags, so task 3.4 adds them and reads them back through get, and
+question 9 and the proposal list Prompt among the structs that gain
+fields.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): list Prompt among group 3's SDK structs, and limit identical exports to an unchanged repo and tags
+
+Task 3.4 adds readme and tags to Prompt, which test_prompt_serialization
+builds with a struct literal, so group 3's preamble lists Prompt. The
+repo details and the tags that point at a commit change without a new
+commit, so the identical-export requirement now holds only while they
+stay unchanged.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name exhaustive destructuring alongside struct literals as what a new SDK field breaks
+
+A new public field also breaks a crate that destructures the struct
+with a pattern naming every field. The proposal, the design's risk and
+question 9's context, and group 3's preamble now say so; question 9's
+recommendation is unchanged and stays with codekiln.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): give the 409 check a developer as subject, split task 5.1 into its tests, and drop the import-skips-comparison negation
+
+Name a developer as who deploys in task 2.3, read the commit description through the commit read from task 3.1, fix the print_message permalink line, and untangle "calls that list".
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record a new assistant's ID as pending before import creates it with if_exists do_nothing
+
+Import chooses the assistant ID, writes it to the destination record as pending, and creates the assistant with that assistant_id and if_exists set to do_nothing, so an import that stops between the create and the record write leaves no second assistant on retry. Task 3.3 adds both fields to CreateAssistantRequest and task 10.1 tests the retry.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): sort a commit's tags in the export file, give the structured output check its prompts, and name which record write import can lose
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): resume a prompt import that stopped before its first commit, delete destination tags the file lacks on --update, and split the task test lists
+
+Split the destination record paragraph in design.md into three, list each
+task's tests as sub-bullets, complete the OpenAI key setup in design.md, and
+gate group 3's SDK integration tests on the integration-tests feature rather
+than a bare #[ignore].
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): leave model_config and model_provider out of compare, cite what model_provider holds, and split tasks 2.2, 4.2, 6.2 and 9.2 into lists
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): replace the destination record by rename, drop source.ref from the export example, and warn that assistant export copies credentials kept in configuration
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): lead the compare sentence with what compare checks, move the model_provider citation to export, require the prompt record rename, and spell out the assistant export docs advice
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record a matching commit an interrupted import pushed, ask question 1 about status 3, and give the 6.2 and 9.2 tests their assertions
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): promise only that prompt export writes no value of a referenced secret, and warn in the prompt export docs about credentials written as literal settings
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): refuse to export a prompt whose model holds a literal API key
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say export refuses a literal API key in task 5.2, test that refusal, and narrow what an interrupted import finishes
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): untangle the destination-changed warning, match saved model configurations on the model class, and fill source.workspace_id from the repo's tenant_id
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): give the deployment url fix a Decision, fold the model_config paragraph into compare, untangle the assistant credential mitigation, and list the fields upstream update patches
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): test mocked commands as unit tests through mockito and with_base_urls, rerun the stale prompt endpoint extract, split the group 3 introduction, and list tenant_id among the new Prompt fields
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): test that prompt verify and assistant verify report a changed field as compare does
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): point the langgraph get docstring link at the created_by line
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): install the structured output check's Python packages through uv, name the missing-URL error in task 2.2, and split the SDK impact and first goal
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): drop the deployment url change, since GitHub deployments already carry custom_url, and split task 1.2
+
+The control-plane OpenAPI spec says SourceConfig.custom_url is set automatically
+for github source deployments, and test_assistant_description_field already
+passes against the GitHub-built test deployment. Task 2.2 now only re-enables
+test_assistant_create_basic. Also fix the question 3 context about the CI job's
+mise install, and split task 1.2 into sub-bullets.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): give assistant compare and verify --record, sort repo tags and secrets in the export, and test JSON Pointer escaping
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): lead the structured output check with its reason, name every sorted list in the export, and drop the unsourced claim about how users run prompts
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): open the assistant Context paragraph with the SDK gap the export needs
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): test compare --commit against an older tag and --update creating missing commit tags
+
+Copilot listed both as previously missed. Update the design's task 7.3
+and 8.2 links for the two added lines.
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): redact a literal API key in compare output, and point the structured output check at the destination workspace
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): redact API keys in the shared report task, say compare redacts them, and name the destination workspace in the structured output check
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): redact API keys inside any printed difference value, name both resource types in the shared report task, and say fnox.toml also sets the source workspace
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): redact any string a key ending in api_key holds, print secret references as they are, and redact assistant compare output too
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): refuse to export an assistant holding a literal API key, and match the api_key suffix without regard to case
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): redact only a string value under an api_key key, print an assistant's secret reference unchanged, and test the context branch of the assistant export refusal
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say what `<redacted>` replaces, lead the assistant secret reference requirement with its SHALL, and justify printing a secret reference by what it holds
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): lead the prompt secret reference requirement with its SHALL, as the assistant one does
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): state the redaction case match and its reach as SHALLs in both specs
+
+#807 Export, import, compare, and verify prompts and assistants across LangSmith environments
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): refuse an export that holds any credential, found by key name or value shape, and redact the same strings in reports
+
+Export now checks every string it would write, not only settings ending
+in api_key: key names with secret, token, password, credential,
+authorization or cookie, and values shaped like bearer tokens, private
+keys, URLs and connection strings with passwords, JSON Web Tokens and
+provider API keys. It refuses with status 1 instead of redacting, and
+--not-a-secret lets one reviewed string through.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): ship the SDK field additions as feat commits, as the release docs and #726 did, and drop open question 9
+
+docs/dev/procedures.md counts changed signatures and removed fields as
+breaking, not added ones; docs/dev/git-scm-conventions.md and
+docs/dev/ci-cd.md give feat a minor bump; the Prepare Release workflow
+picks the version from commit types; release.toml keeps langstar-sdk off
+crates.io.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say plainly what the credential check flags and when export refuses
+
+Lead the design paragraph with what export does, split the
+"never redacts and writes the rest" sentence that read two ways, state
+the --not-a-secret rules without stacked negatives, and rename the
+requirements and scenarios whose subjects could not act.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name who commits the SDK fields and link the release docs the design cites
+
+Retitle the release decision so it says who acts and what release
+follows, replace the group 3 ordinal with a linked task pointer, drop
+"ship", and turn each cited release-doc line into a link pinned to main.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): open the SDK release decision with what developers commit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): flag plural key names, redact the prompt reference error and support one import at a time
+
+Match `keys` as well as `key` after the credential prefixes so
+`api_keys` is flagged as task 4.4 tests, print `<redacted>` for a
+flagged value in the prompt reference mismatch error, and say that
+langstar supports one import at a time per deployment, with #828 for
+making concurrent imports safe. Also retitle the verify decision and
+give the ci-cd.md sentence a subject that can act.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name what one-import-at-a-time protects and untangle the credential sentences
+
+Say that langstar supports one import of an export file at a time, what
+two concurrent imports do to the record and to a first assistant import,
+and link #828. Split the redaction sentence whose object came last, use
+"lets through" for the check and "names" for the user, give the sk-
+scenarios a token long enough to flag, drop the "two more signs" count,
+and stop the proposal's link text from repeating its sentence.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): define prompt-reference syntax, unknown-graph handling and assistant import without --update
+
+Copilot listed these as previously missed findings on #816:
+- Prompt names under requires.prompts take [<owner>/]<handle>[:<tag>]; no owner means the current workspace, no tag means latest.
+- Verify counts a 422 naming graph_id from the assistant search as a missing graph; task 1.2 records what the live server returns.
+- Assistant import creates an assistant only on a first import, and --assistant-id without --update compares and changes nothing.
+- A separate requirement covers --record for assistant import, compare and verify.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): report import's action in JSON, settle a resumed import's repo differences and pin the structured output check
+
+Copilot listed these as previously missed findings on #816:
+- prompt import and assistant import JSON reports carry action and the destination's commit hash or assistant ID.
+- A resumed first import pushes the commit and tags, leaves differing repo details alone and exits with status 3 without --update.
+- The structured output script pins its dependencies and validates with jsonschema.
+- Task 1.2 waits on the destination workspace and key from task 2.1.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📝 docs(openspec): decide six #807 design questions and leave one for codekiln
+
+Compare, verify and import exit with 3 on a difference; import records
+destination IDs beside the export; --prompt-ref names prompt references;
+prompt import requires --workspace-id; a missing saved model
+configuration is a note; a failed dependency check stops import first.
+The structured output check skips without an OpenAI key, and the tests
+import into the existing workspace and deployment until codekiln answers
+the one remaining question.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): run the tests in the existing workspace and deployment and drop the last open question
+
+The structured output check skips without an OpenAI key, and the tests
+import into the single existing workspace and test deployment. Trying
+export and import on real assistants and prompts before implementation
+settles whether a second workspace and deployment are needed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): run the structured output check from a committed uv script lockfile
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record the export and compare trial in the transfer design
+
+Decision 8 now states the trial's result: one workspace and one test
+deployment are enough, and a local langgraph dev server can serve as an
+import target. Add scenarios and tasks for refusing a graph's default
+assistant, the -/ owner in prompt names and exporting a private prompt.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): run the transfer tests in one workspace until a second one exists
+
+Copilot pointed out that the tasks called the second workspace and
+deployment optional while task 3.3 needed the destination fixture from
+2.4, and task 7.3 read LANGSTAR_TEST_DEST_WORKSPACE_ID, which only 2.1
+sets. Until those tasks merge, the destination workspace and deployment
+are the existing test ones. The graph moves in 3.3 and 10.2 and the
+destination-only prompt in 9.2 carry an ignore naming the task that adds
+their environment, and the structured output script takes the workspace
+ID the import test used.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): drop the local langgraph dev server as an assistant import target
+
+Copilot pointed out that --deployment resolves a name or ID only through
+the control plane's deployment list (resolve_deployment_url in
+cli/src/deployment_utils.rs), so the proposed commands cannot reach a
+local langgraph dev server. Nothing else in the change depends on one, so
+the design drops the claim and lists a server the control plane does not
+list as a non-goal.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): require a second workspace and deployment before the change is archived
+
+#807 asks the assistant tests to create an assistant on a separate
+deployment and to exercise an assistant whose prompts were imported into a
+separate workspace. The design made tasks 2.1, 2.3 and 2.4 optional, so the
+change could be archived with those tests still ignored.
+
+Developers still build and run everything in one workspace and deployment.
+Tasks 2.1, 2.3 and 2.4 now merge before the archive, each removes the
+`#[ignore]` from the tests that waited for it, and the archiving pull
+request links a CI run in which they passed. A 409 from the control plane
+in 2.3 goes to codekiln as a decision.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): give the test-environment decision subjects that can act
+
+The pr-language-review skill found documents and tasks doing the verbs:
+"the design made tasks optional", "those tasks land", "they merge", "a 409
+goes to codekiln". Developers merge the tasks, the control plane answers
+with a 409, and codekiln decides.
+
+Also drops the coined "unignore" from the Workflow follow-up and splits the
+409 clause out of the sentence it was knotted into.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name the tasks the archive waits on, and shorten the heading
+
+The decision said "tasks 2.1, 2.3 and 2.4" with no link and no title, which
+costs a reader a trip into tasks.md to learn what they add. Each one now
+carries the link and the task title the rest of design.md uses.
+
+The heading was a sentence long enough to read twice. It now says what
+developers do: add the second workspace and deployment before they archive
+the change.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): rewrite the verify and import-check sections for a reader who has not read the LangSmith API
+
+codekiln read three paragraphs and could not tell what they were saying.
+
+The verify section now opens with the question a user has after an import —
+will the copy run here — and then says what verify asks the destination and
+what it prints. Each API call arrives after the sentence that says why
+langstar makes it. The assistant graph check explains that every graph a
+deployment serves has a default assistant, so an empty search answer means
+the deployment does not serve the graph; the 422 paragraph says the server
+may refuse an unknown graph ID instead of answering with nothing.
+
+The import section now says what import does — run verify's checks before
+it creates anything — and gives the cleanup it saves afterwards.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): send an assistant's settings in one field on import
+
+A newer Agent Server refuses to create an assistant that sets both
+config.configurable and context, while every read returns both. Import
+now sends configurable alone when the two match, the one present when
+only one is, and stops with status 1 when they differ.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): rewrite the rest of design.md for the faults codekiln marked
+
+Same sweep as the verify and import-check sections, across the remaining
+decisions.
+
+The destination-record decision opened with the reason for a separate file
+instead of saying what import writes. The exit-status decision opened with a
+sentence that had to be read twice and ended in "neither success nor a
+broken run". The prompt-reference decision said the same thing in its first
+two sentences. The one-field heading read "in one field, never in both".
+The compare decision and the structured-output script were each one
+paragraph long enough to lose a reader; both are split by what they cover.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): compare an assistant's settings from whichever field holds them
+
+A file that holds settings in config.configurable alone imported cleanly
+and then failed its own read-back: the Agent Server fills context from
+configurable, so the comparison found a context the file lacked and import
+exited with status 3. The same happened the other way round for a file that
+holds only context.
+
+Compare and the read-back now take the file's settings from whichever field
+the file holds and the destination's from whichever the server returned,
+and a field one side lacks is no difference.
+
+--update no longer sends an empty context beside a config.configurable.
+That would be refused by a newer server, or would wipe out the settings the
+server had just filled in. Import clears context only for a file that holds
+settings in neither field.
+
+New requirements and scenarios in specs/assistant for both rules, and tests
+in tasks 10.1 and 10.2 for a config-only file's round trip and for an
+--update that leaves the field it did not send alone.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): flag a short Basic credential, and read the settings alias in the shared comparison
+
+Copilot found two holes.
+
+The credential check asked for at least 16 base64 characters after
+`Basic `, and `Basic dXNlcjpwYXNz` carries twelve and decodes to
+`user:pass`. Under a key the name rule ignores, export would have written
+it to Git. The check now decodes the payload and flags it when the result
+is printable text with a colon in it, however short. `Basic instructions
+follow.` still passes, because its payload decodes to nothing readable.
+
+The settings alias lived in the assistant spec, while task 4.2's shared
+comparison still compared every key under `assistant`, so a one-field file
+would have been reported as a difference after all. Task 4.2 now reads
+`config.configurable` and `context` as one value and compares every other
+key under `config` as it stands, with tests for both single-field files and
+for a changed `config.recursion_limit`.
+
+Also a repeated-import test for each single-field file, and the matching
+scenario in specs/assistant.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): keep a private prompt out of a public destination repo
+
+Copilot found an exposure in the recovery path. When an earlier import left
+a repo with no commit and that repo is public, while the file says the
+prompt is private, import pushed the manifest and reported the visibility
+difference afterwards. By then the prompt's text was public, and no report
+takes that back.
+
+Import now pushes nothing in that case without --update, reports
+/repo/is_public and exits with status 3. With --update it makes the repo
+private before it pushes. The same holds for a repo someone else made.
+
+New requirement and scenarios in specs/prompt, and tests in tasks 7.1
+and 7.2.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 📚 docs(openspec): check the prompt API round trip before building on it (#830)
+
+* 📚 docs(api-specs): re-extract the prompt endpoints and add the workspace secrets ones
+
+The 2025-11-29 copy of prompt-endpoints.json predates the 2026-10-09 spec
+refresh, so it lacked the `include` parameter of
+`GET /api/v1/commits/{owner}/{repo}/{commit}` that prompt export sends.
+Rerunning its jq query picks the parameter up.
+
+workspace-secrets-endpoints.json is new, and holds
+`/api/v1/workspaces/current/secrets` and its `/encrypted` sibling, which
+prompt import's secret check reads. Its jq query goes in FRAGMENTS.md
+beside the others.
+
+The extraction commands in FRAGMENTS.md wrote to `../../api-specs/langsmith/`,
+which does not exist from the directory the same section tells the reader to
+run them in. They now write to `../../../api-specs/langsmith/`, so rerunning a
+query lands on the file it is meant to rewrite.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(research): record what the live prompt API returns, and what is still unread
+
+Answers the commit-read and invoke_prompt questions of task 1.2 against
+the live API, and says which questions it leaves open.
+
+The commit read carries the model through a RunnableBinding: the chat model
+constructor sits at manifest.kwargs.last.kwargs.bound, not at
+manifest.kwargs.last, so export has to walk through the binding to read the
+class name for requires.model_class. model_provider matches that bound class
+name. model_config and model_provider come back with or without
+`include=model`, which changes the manifest alone, and a commit with no model
+omits both keys rather than returning them as null. `include=model` and
+`include_model=true` return the same document.
+
+invoke_prompt renders a message template and runs no model. Its payload takes
+no prompt handle and no model, and it ignores either key when a request sends
+one, so prompt verify cannot use it to prove a copied prompt still answers.
+
+The questions that need a push, and every Agent Server question, stay open:
+the permission rules this run works under refuse a write to the workspace and
+a deployment create. Task 1.2 stays unticked.
+
+The report names no workspace or organization ID, for the reason
+mise-tasks/ci/redact-ids-in-junit gives: this repository is public, and CI
+redacts both IDs from the artifacts it uploads.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(research): apply the pr-language-review rewrites to the validation report
+
+Drops "byte for byte" and "confirms", both on codekiln's words-to-avoid
+page. Pins each pointer to the line it means, so design.md:132 and
+tasks.md:8, :16 and :116 open where the sentence says they do. Turns the
+heading that described the report into one that states what the workspace
+holds.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+- 📚 docs(openspec): read the model class through the RunnableBinding the live API returns (#831)
+
+The research report merged in #830 read three prompts saved with a model on
+the live LangSmith API. In every one, the manifest's kwargs.last is a
+RunnableBinding and the ChatOpenAI constructor sits at its kwargs.bound.
+The design said export reads the class name from the last element of the
+chat model constructor's id and called kwargs.last that constructor, so
+export would have written RunnableBinding to requires.model_class, and
+verify would then have looked for a saved model configuration that cannot
+exist.
+
+Export now steps through a RunnableBinding at kwargs.last to its
+kwargs.bound and reads the id of what it lands on. A new requirement in
+specs/prompt carries the rule, with a scenario for the binding and one for
+a constructor sitting at kwargs.last on its own, since whether LangSmith
+ever returns it that way is still open. Task 5.1 gains a unit test for each
+shape.
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+- 📚 docs(research): record what the live prompt and assistant APIs do on write (#833)
+
+* 📚 docs(research): answer the rest of task 1.2 against the live API, and tick it
+
+#830 merged while this work was still running, so the report on main stops
+at the questions that needed a write to the LangSmith workspace. codekiln
+then granted those writes. This run pushed prompts under fresh handles and
+drove an assistant on the shared test deployment, deleted both afterwards,
+and created no deployment.
+
+Two claims in the merged report were wrong and are corrected here.
+GET /v1/deployments answers 404 with a detail body and no resources, so
+reading .resources from it shows an empty list; GET /v2/deployments lists
+the READY pr-integration-test deployment the fixtures share. And the
+RunnableBinding around the chat model is not always present: a pushed
+structured prompt returns the ChatOpenAI constructor directly under
+manifest.kwargs.last, which is the second scenario #831 added to
+specs/prompt/spec.md.
+
+What the pushes showed: the server rewrites only the manifest's outer id,
+to RunnableSequence, and returns everything else as sent. A copy under a
+fresh handle reads back with the same manifest, model_config and
+model_provider, under a different commit hash. An identical push answers
+409 "Nothing to commit: prompt has not changed since latest commit", which
+import reads as a match, while a missing parent_commit answers 409 "Parent
+commit validation failed". The server fills the repo's tags from the
+manifest, so a destination's repo.tags can differ from the file's with
+nobody having changed the prompt.
+
+What the Agent Server showed: a search for an unserved graph ID answers 404
+naming the graphs it does serve. Sending config.configurable and context
+together is refused with 400 on create and on update, and the server keeps
+the two mirrored when either arrives alone. config and context are replaced
+wholesale while metadata merges, a null metadata value is stored rather than
+removing the key, an empty string clears the description while null answers
+422, and version counts the updates that succeeded.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+* 📚 docs(research): name the spec scenario the pushed prompt meets
+
+"the second scenario" made the reader go and count the scenarios in
+specs/prompt/spec.md. The sentence now says which shape it means.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+- 📚 docs(openspec): use one test key for both test workspaces (#838)
+
+* 📚 docs(openspec): use one test key that reaches both test workspaces
+
+codekiln chose on 2026-10-30 to give the tests one LangSmith service key
+that reaches the test workspace and the destination workspace. Every
+command then has to name its workspace, so a test fails when langstar
+sends a request to the wrong one, and there is one key to rotate.
+
+The key gets 403 from the Agent Server until langstar sends X-Tenant-Id
+there (#837), so task 2.1 now merges after that fix. design.md records
+the decision and links the design attached to #837.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): name who merges task 2.1 and link the sections it cites
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say which workspace mistake the shared test key catches
+
+The shared key reaches both test workspaces, so a request sent to the
+wrong one of them succeeds. Only a request with no workspace header gets
+403. The design now says so, and names what catches the wrong workspace:
+the import tests read the destination workspace with its own ID.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+### 🧪 Testing
+
+- 🧪 test(assistant): run test_assistant_create_basic in the integration tests (#835)
+
+The bare #[ignore] said a deployment built from GitHub has no custom_url
+in source_config. The control plane does set source_config.custom_url on
+those deployments, as SourceConfig.custom_url in
+reference/openapi/langchain/control-plane/openapi.json says, so the test
+now carries the integration-tests guard that
+test_assistant_description_field beside it carries, and the Integration
+Tests CI job runs it against the test deployment.
+
+Ticks task 2.2 of export-import-prompts-and-assistants.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+### 🔧 Build System
+
+- 🔧 build(agents): manage agent config with rulesync (#745)
+
+* 🔧 build(agents): manage agent config with rulesync
+
+Move the skills and the slash commands into .rulesync/skills/ (the
+commands become skills; gh-milestones:<x> is now gh-milestones-<x>),
+replace AGENTS.md and CLAUDE.md with one root rule in
+.rulesync/rules/overview.md, and generate CLAUDE.md, AGENTS.md,
+.claude/skills/ and .agents/skills/ from it with rulesync 27 for the
+agentsskills, claudecode and codexcli targets. Remove .cursor/.
+
+The root rule carries the background-task guidance from #731.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): repair skill paths, arguments and metadata from review
+
+- gh-milestones-prep-next: restore the script path scripts/gh-milestones/prep-next.py
+- gh-pr-comment-reply: advertise only the <pr_number> <comment_id> "<body>" form it parses, and have pr-workflow call it that way
+- pr-lifecycle: quote the description so "#XYZ" is no longer read as a YAML comment
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the pinned rulesync in the root rule
+
+An older rulesync earlier on PATH strips license, argument-hint and
+allowed-tools from the generated skills and writes a .codex/ directory.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): give each root rule sentence an actor and a concrete check
+
+Rewrite the testing, secrets, background tasks and agent config
+paragraphs, and describe the release skill by the published GitHub
+release it waits for.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: state langstar's goal as the one CLI for LangSmith work
+
+Put codekiln's goal at the top of the root rule and in the README's
+opening paragraph: one tool, so nobody has to choose between an MCP
+server, the LangSmith CLI and the LangGraph CLI.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔥 chore(agents): delete the stale .claude/README.md
+
+It repeated the Cursor rule this PR removes, including the out-of-date
+<username>/<issue_num>-<issue_slug> branch format.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): name the tools langstar replaces and the actor in each root rule
+
+State the goal as a goal in the README and the root rule, naming the
+LangSmith MCP server. Make the agent the one who opens the issue and the
+PR, and say who to ask when a response would exceed the output budget.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(agents): correct the mise which and pr-workflow hint, spell out prep-next
+
+- Root rule: mise which prints the pinned rulesync's path, and the shell runs it
+- Root rule: the commit-format bullet now tells the agent what to write
+- pr-workflow: argument-hint marks the issue number optional, matching its Arguments section
+- gh-milestones-prep-next: the description says which labels it changes and how it picks the next issue
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): hide token prefixes, fail on a failed status update, parse ⚡️ and feat!, pass the tmux socket
+
+- update-github-issue-project-status: the troubleshooting step says whether
+  each token is set, and prints nothing of the token.
+- update-issue-status.sh returns 1 when the status mutation fails. The caller
+  runs the function as an if condition, which turns off set -e inside it.
+- analyze_commits.py accepts U+FE0F after the emoji, so ⚡️ perf is a patch,
+  and reads the breaking-change ! from the match, so feat!: is a major.
+- tmux wait-for-text.sh takes -S/-L and passes them to capture-pane, so it
+  reads the private socket the skill creates sessions on.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): say what wait-for-text.sh polls when it gets no socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(tmux): name the personal tmux server wherever the scripts read it without a socket flag
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(tmux): give wait-for-text.sh the socket flags find-sessions.sh uses
+
+-S/--socket-path takes a socket path and -L/--socket takes a socket name in
+both scripts, so one flag means the same thing to each.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): stop waiting for CI checks after 60 minutes
+
+The wait loop polled forever while a check stayed queued, which breaks the
+root rule's bounded-polling guidance. After 60 minutes it now lists the
+stuck checks and reports them, instead of falling through to "All checks
+passed".
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(pr-workflow): count running CI checks by their pending bucket
+
+gh pr checks gives a queued or running check completedAt
+0001-01-01T00:00:00Z, not null, so the wait loop counted no running checks
+and exited on its first pass. It now counts and lists the checks whose bucket
+is pending.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): tell agents other than Claude Code to set ARGUMENTS themselves
+
+Claude Code fills in $ARGUMENTS in a skill body, but rulesync copies the
+body unchanged to .agents/skills/, where Codex leaves it unset and the
+converted command skills see no arguments. Each of the six skills that use it
+now says to set the variable first when it is still literal.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🐛 fix(skills): drop the command-only ! prefix from shell lines in two skills
+
+gh-start-issue and pr-workflow kept twelve lines that start with !, a prefix
+from their custom-command days. In a skill code block, bash reads
+!ISSUE_NUM=... as a command name, so ISSUE_NUM stays unset and the issue
+check rejects every run. The lines are now plain shell.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(skills): move the ARGUMENTS note under each skill's Arguments heading
+
+The note opened six skills on an edge case, and it told the agent to set a
+shell variable that pr-workflow and gh-pr-comment-reply never read. It now
+sits under ## Arguments and says to put the user's arguments wherever the
+placeholder shows, in the commands and in the text.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): gitignore the generated agent config and regenerate it with lefthook
+
+Only .rulesync/ is committed now, as in codekiln's dotfiles. Git ignores
+CLAUDE.md, AGENTS.md, .claude/skills/ and .agents/skills/ through the block
+that `rulesync gitignore` writes, and they leave the index.
+
+lefthook.yml runs rulesync install and generate after every pull
+(post-merge) and checkout (post-checkout). mise pins lefthook and runs
+`lefthook install` on entering the repo, and the devcontainer installs the
+hooks and generates the config once on create. The hooks call
+"$(mise which rulesync)" rather than `mise x -- rulesync`, because mise.toml
+puts $HOME/.local/bin ahead of mise's tools on PATH.
+
+The root rule and the README say how to set this up in a new clone.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 👷 ci: read generated agent config from its source or generate it first
+
+prepare-release.yml runs analyze_commits.py from .rulesync/skills/, since
+.claude/skills/ is no longer committed. claude.yml installs rulesync with
+jdx/mise-action and generates CLAUDE.md and .claude/skills/ before Claude
+reads the checkout. Copilot's instructions point at the root rule's source.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: call gh-milestones-test-plan and gh-milestones-release skills, not commands
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): call mise x -- rulesync in the hooks and drop $HOME/.local/bin from PATH
+
+The hooks now run `mise x -- rulesync`, as in codekiln's dotfiles. mise.toml no
+longer puts $HOME/.local/bin on PATH, where a stale rulesync shadowed the one
+mise.toml pins. #763 makes the same _.path change.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🙈 chore(agents): ignore the .codex/skills/ an older rulesync writes
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: say Claude Code picks up regenerated skills in an open session
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: explain both .codex ignores and when an open session sees new skills
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 chore(agents): regenerate agent config after a rebase too
+
+git pull --rebase and git rebase run post-rewrite, not post-merge, so a
+rebase that changed .rulesync/ left the generated files stale.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 build(openspec): adopt OpenSpec for feature design (#768)
+
+* 🔧 build(openspec): set up OpenSpec with rulesync-managed skills
+
+Pin the OpenSpec CLI in mise.toml and add openspec/config.yaml with the
+project context and per-artifact rules from My/Pref/Dev/AI/OpenSpec.
+The six core OpenSpec skills live in .rulesync/skills/ and rulesync
+generates them into .claude/skills/ and .agents/skills/.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): add baseline specs for the command groups
+
+Describe what assistant, config, dataset, deployment, graph,
+model-config, project, queue, runs and secrets do today. prompt waits
+for the ls-prompt-ux redesign and eval waits for a decision on its
+placeholder commands.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): design new features as OpenSpec changes
+
+Point the feature development process and the agent rules at
+openspec/, and mark docs/implementation/ as the designs written before
+OpenSpec.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(openspec): archive before merge and validate first, from review
+
+Archive an OpenSpec change inside its feature PR, keep test plans in
+docs/implementation/, have the archive workflow validate the change
+first, and describe config show's combined source label.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say runs query returns every project when no UUID is left
+
+A --project name that is not a UUID is skipped, and with no UUID left
+the query goes out with no project, so it returns runs from every project.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): explain spec edits and drop the old decisions example
+
+Name the files a change holds in plain words, say where the design and
+its build steps go now that Phase 10 has no implementation plan, and ask
+for decisions as prose, as openspec/config.yaml does.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say what the openspec CLI does and what Non-Goals lists
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say config validate checks the settings commands load
+
+The requirement now says config validate loads settings from the
+environment, the config file and defaults, as every command does, and a
+scenario shows an environment variable failing it. The silent fallback
+on an unparsable file stays out of the spec; #770 tracks it.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): say the archive skill applies the change's spec edits
+
+The archive step and its checklist item now use the same name for the
+spec edits as the section that introduces them.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(implementation): open with both kinds of document the folder holds
+
+The first sentence now names the milestone test plans that keep arriving
+along with the plans written before OpenSpec.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(dev): send Phase 2 design notes to the change's design.md
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record config show's literal match and the final-delete status
+
+config show labels a value as coming from the environment only when the variable's text equals the value it displays, so a timezone of local gets the config file label. deployment list also accepts AWAITING_FINAL_DELETE.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): lead config show's requirement with its labels and name the timezone scenario
+
+Split the config show requirement so the rule for each source label comes
+first in its own sentence, and rename the scenario for LANGSTAR_TIMEZONE=local
+after the case it covers.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record config validate's missing-file exit and JSONL-only comments
+
+config validate stops and succeeds when the config file is missing, without checking settings from the environment, and dataset import skips # lines only in JSONL files.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record how far deployment create and model-config get search
+
+deployment create looks for a GitHub integration ID only among the first 100 deployments, and model-config get looks for an ID only among the first 5,000 configurations.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): leave the integration ID lookup to #754
+
+#754 replaces the environment variable, the config key and the search of existing deployments, so the deployment spec says only that --integration-id sets the ID and that langstar otherwise looks it up, and the config spec stops naming the old key.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say what #754 does to the integration ID lookup
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say config env prints every key, with one example
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): follow #739's delete confirmation in the specs
+
+#739 makes dataset and queue delete ask the user to type yes, and makes every delete command refuse with an error naming its skip flag when standard input is not a terminal.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 build(agents): pass the OpenSpec skills' allowed-tools to Claude Code
+
+rulesync 27 copies allowed-tools into .claude/skills only from a claudecode: block, so the OpenSpec skills' top-level allowed-tools never reached Claude Code.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): say the delete commands keep the resource when standard input is not a terminal
+
+State the non-terminal case positively in the assistant, dataset,
+deployment, model-config, project and queue delete requirements, and
+rename each scenario to "Standard input is not a terminal".
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 build(agents): point the OpenSpec skills at each other by skill name
+
+This repo installs OpenSpec's skills but not its /opsx:* commands, so the skills now name the openspec-* skill to run next in place of a command that does not exist here.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🔧 build(agents): ask for an OpenSpec skill in words instead of showing its name as a command
+
+The OpenSpec skills showed a bare skill name where a user would read it
+as a command to type: telling the user to "run" a skill, the change-name
+example in openspec-apply-change, the override example in four skills,
+and the user's line in an openspec-explore example. Each now asks the
+agent in words or names the change alone.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): record that dataset import drops an unreadable CSV metadata or id cell
+
+A CSV row whose metadata cell is not JSON, or whose id cell is not a UUID, is imported without that field and without a warning.
+
+#762 734.7-openspec Adopt OpenSpec for feature design
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 🩹 fix(agents): validate before syncing specs and stop tailing forever, from review
+
+openspec-sync-specs now runs `openspec validate <name> --strict` before
+it writes a main spec, as openspec/config.yaml requires. test-runner-worktree
+checks a background test with `tail -n 50`, not `tail -f`. The deployment
+spec states the GitHub integration lookup that #754 merged.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs: tell existing clones to set up rulesync after their first pull
+
+The pull that brings rulesync into an older clone deletes the committed
+CLAUDE.md and AGENTS.md before any hook is installed, so the README and
+the root rule now say to run the one-time setup right after that pull.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 👷 ci(claude): install the pinned Node with rulesync
+
+rulesync 27 needs Node 22 or newer, and mise's npm backend does not bring
+a Node runtime, so the @claude workflow now installs mise.toml's node pin
+too instead of relying on the runner's Node.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+* 📚 docs(openspec): spec the pre-2.2.0 macOS config file fallback
+
+#789 makes langstar on macOS read ~/Library/Application Support's config
+file when ~/.config/langstar/config.toml is missing, and warn with the
+command that moves it. The config spec now says so.
+
+#735 734.1-rulesync Manage all agent config with rulesync
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🔧 build(deps): update rustls to 0.23.46 to clear RUSTSEC-2026-0346 to 0349 (#827)
+
+cargo audit fails on rustls 0.23.45, which four advisories published
+on 2026-10-14 cover. All four are fixed in 0.23.46.
+
+Fixes #826
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+- 🔧 build(deps): update rustls-webpki and webpki-roots to clear RUSTSEC-2026-0381 and 0382 (#829)
+
+cargo audit fails on main and on every open branch: rustls-webpki 0.103.15
+may accept a distrusted intermediate certificate, and webpki-roots 1.0.9
+bundles roots that trust distrusted emSign intermediates.
+
+`cargo update --precise` on each crate. `cargo audit` then reports only the
+allowed tokio warning, and `cargo check --workspace --all-targets` passes.
+
+Co-authored-by: Claude Opus 5 <noreply@anthropic.com>
+
 ## [2.2.0] - 2026-10-09
 
 ### ✨ Features
