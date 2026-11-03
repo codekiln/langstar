@@ -4,11 +4,11 @@ Issue: [#810 🐛 fix(config): make config validate fail on a config file that d
 
 ## Why
 
-`langstar config validate` passed a `config.toml` that does not parse: loading the settings swallowed the parse error and fell back to the defaults, so a user saw a clean report for a broken file. Every other command that loads the settings ran on the defaults the same way, without saying so.
+`openspec/specs/config/spec.md` says nothing about a `config.toml` that does not parse. `langstar config validate` already failed on that file, but no test checked it, and every other command that loads the settings ran on the defaults without telling the user.
 
 ## What Changes
 
-- `langstar config validate` exits with an error that names the config file and says why when langstar cannot look it up, read it or parse it, before checking any setting. For a parse error it also prints the line the error points at.
+- `langstar config validate` exits with an error that names the config file and says why when langstar cannot look it up, read it or parse it, before checking any setting. For a parse error it also prints the line the error points at. langstar cannot look up a file when it cannot even check whether the file exists, as when `config.toml` is a symbolic link to itself.
 - `langstar config <setting> set` exits with the same error and leaves the file unchanged. It also refuses when a different setting in the file holds a value of the wrong type, such as `timezone = 5`.
 - Every other command that loads the settings warns on stderr with the file's path and the error, then runs on the defaults and the environment variables. The warning leaves out the quoted line and value, because either can hold the API key.
 - `langstar config show` prints `File exists: unknown` when langstar could not look the file up.
@@ -26,7 +26,7 @@ None.
 
 ## Impact
 
-- `cli/src/config.rs`: loading the settings returns the lookup, read and parse errors instead of falling back silently, and `config validate`, `config <setting> set` and `config show` report them.
+- `cli/src/config.rs`: `Config::load` warns on stderr when it cannot look up, read or parse the config file, and `config validate`, `config <setting> set` and `config show` report the error.
 - `cli/tests/config_command_test.rs`: integration tests for each scenario.
 - `docs/configuration.md`: a troubleshooting entry for "Warning: langstar is using the default settings".
 
