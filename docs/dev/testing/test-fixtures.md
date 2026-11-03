@@ -65,6 +65,7 @@ The `tests/fixtures/test-graph-deployment/` directory contains a minimal LangGra
 ```
 test-graph-deployment/
 ├── langgraph.json          # LangGraph configuration
+├── langgraph-two-graph-ids.json  # Serves the test graph as both test_graph and test_graph_alt, so a test can move an assistant between graphs
 ├── requirements.txt        # Python dependencies
 ├── .env.example           # Environment variable template
 ├── README.md              # Quick start guide
