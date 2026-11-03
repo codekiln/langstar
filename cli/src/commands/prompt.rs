@@ -7,6 +7,7 @@ use langstar_sdk::prompts::{
     StructuredPrompt, plain_prompt_manifest, validate_json_schema, validate_method,
 };
 use langstar_sdk::{CommitRequest, LangchainClient, Prompt, Visibility};
+use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use tabled::Tabled;
