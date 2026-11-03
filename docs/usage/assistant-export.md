@@ -45,7 +45,7 @@ langstar assistant export --help
 - `source` names the deployment, the assistant ID and the assistant's version. Export leaves the assistant ID, the version and the server's timestamps out of `assistant`, so the `assistant` object of a copy on another deployment differs from this one only where a setting differs.
 - `requires.prompts` lists the prompts the assistant refers to, as the next section shows.
 
-The keys are sorted and the file holds no export time, so exporting the same assistant version twice writes the same file, and Git has nothing to commit when nothing changed.
+Exporting the same assistant version twice writes the same file, because export sorts the keys and records no export time. Git shows a change to the file only when the assistant changed.
 
 ## Record the prompts an assistant refers to
 
@@ -62,13 +62,13 @@ Name each prompt by its handle and a tag, such as `support-system:prod`. The sam
 
 ## A graph's default assistant
 
-Every deployment creates a default assistant for each graph it serves. Export refuses one, says why, writes no file and exits with status 1, because the destination deployment creates its own. Create an assistant with `langstar assistant create` and export that one.
+Export refuses a graph's default assistant, because the Agent Server creates one for each graph on every deployment. It says why, writes no file and exits with status 1. Create an assistant with `langstar assistant create` and export that one.
 
 ## Export refuses to write a credential
 
 A secret pushed to Git stays in the repository's history after someone deletes the file. So before it writes anything, export runs a credential check over every string in the assistant: its name, description, configuration, context and metadata, at any depth. The check flags a string by the name of its key, such as `openai_api_key` or `Authorization`, or by the shape of its value, such as a bearer token or a URL with a password in it. The [prompt export page](prompt-export.md) lists every key name and value shape the check flags.
 
-The check skips a LangChain secret reference, `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, because it holds a secret's name and never its value, and it skips the empty string.
+The check skips the empty string and a LangChain secret reference such as `{"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]}`, which holds the name of a secret and never its value.
 
 When the check flags a string, export names the JSON Pointer path of each one and the rule that flagged it, leaves the string out of the message, writes no file and nothing to stdout, and exits with status 1:
 

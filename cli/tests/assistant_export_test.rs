@@ -300,8 +300,8 @@ fn test_export_twice_writes_identical_files() {
     assert_eq!(texts[0], texts[1]);
 }
 
-/// Task 8.1, "Add langstar assistant export": an assistant ID the deployment lacks exits with status 1, names
-/// the ID and writes no file.
+/// Task 8.1, "Add langstar assistant export": when the deployment has no assistant with the ID,
+/// export names the ID, writes no file and exits with status 1.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
