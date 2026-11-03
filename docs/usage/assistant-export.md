@@ -1,6 +1,6 @@
 # Assistant Export
 
-`langstar assistant export` writes one assistant to a JSON file. You can keep the file in Git, so a reviewer sees each change to the assistant in a pull request. `langstar assistant import`, which will recreate the assistant from that file on another deployment, is still being built under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807).
+`langstar assistant export` writes one assistant to a JSON file. You can keep the file in Git, so a reviewer sees each change to the assistant in a pull request. [`langstar assistant import`](assistant-import.md) recreates the assistant from that file on another deployment.
 
 An assistant belongs to a deployment, so you name the deployment with `--deployment`, by name or by ID, as the other `langstar assistant` commands do.
 

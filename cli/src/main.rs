@@ -99,6 +99,9 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
+        if let error::CliError::Exit(code) = e {
+            std::process::exit(code);
+        }
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
