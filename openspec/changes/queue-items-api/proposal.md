@@ -9,8 +9,8 @@ LangSmith deprecated the endpoints that `langstar queue add-runs`, `queue remove
 ## What Changes
 
 - `langstar queue items` lists queue items: each item's short ID, short run ID, type, review section and the date it was added. A new `--status` option lists one review section: `needs-my-review`, `needs-others-review` or `archived`.
-- `langstar queue remove-run` exits with an error that says the run is not in the queue when the queue holds no item for it.
-- **BREAKING** for `langstar-sdk` callers: `get_run_from_annotation_queue` and `RunWithAnnotationQueueInfo` are removed, `add_runs_to_annotation_queue` and `delete_run_from_annotation_queue` return the created items and a `bool`, and the queue types read and write snake_case JSON.
+- When the queue holds no item for the run, `langstar queue remove-run` exits with an error that says the run is not in the queue.
+- **BREAKING** for `langstar-sdk` callers: `get_run_from_annotation_queue` and `RunWithAnnotationQueueInfo` are removed. `add_runs_to_annotation_queue` returns the queue items it created, and `delete_run_from_annotation_queue` returns `false` when the queue held no item for the run. The queue types read and write snake_case JSON.
 
 ## Capabilities
 

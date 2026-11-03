@@ -21,7 +21,7 @@
 
 ### Requirement: List the items in a queue
 
-`langstar queue items <queue-id>` SHALL list up to `--limit` items (default 100), one review section after another. With `--status needs-my-review`, `--status needs-others-review` or `--status archived`, it SHALL list only that section. The table and the JSON `status` field name each item's section with underscores: `needs_my_review`, `needs_others_review`, `archived`. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
+`langstar queue items <queue-id>` SHALL list up to `--limit` items (default 100), one review section after another. With `--status needs-my-review`, `--status needs-others-review` or `--status archived`, it SHALL list only that section. In the table and in the JSON `status` field, langstar writes each section with underscores: `needs_my_review`, `needs_others_review`, `archived`. `--status` takes the same names with hyphens. The table SHALL show each item's short ID, short run ID, type, review section and the date it was added, followed by how many items it found.
 
 #### Scenario: Queue shorter than the limit
 
