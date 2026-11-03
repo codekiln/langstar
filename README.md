@@ -256,7 +256,7 @@ langstar assistant export <assistant-id> --deployment my-agent --output support-
 langstar assistant list --format json
 ```
 
-Export refuses to write a file that holds a credential. See [docs/usage/assistant-export.md](./docs/usage/assistant-export.md) for the file, `--prompt-ref` and `--not-a-secret`.
+Export refuses to write a file that holds a credential. [Assistant Export](./docs/usage/assistant-export.md) shows what the file holds and how to use `--prompt-ref` and `--not-a-secret`.
 
 #### Command Migration (v0.5.0+)
 

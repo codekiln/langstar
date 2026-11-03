@@ -1,6 +1,6 @@
 # Assistant Export
 
-`langstar assistant export` writes one assistant to a JSON file. The file holds what you need to recreate the assistant on another deployment, and you can keep it in Git so a reviewer sees each change to the assistant in a pull request.
+`langstar assistant export` writes one assistant to a JSON file. You can keep the file in Git, so a reviewer sees each change to the assistant in a pull request. `langstar assistant import`, which will recreate the assistant from that file on another deployment, is still being built under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807).
 
 An assistant belongs to a deployment, so you name the deployment with `--deployment`, by name or by ID, as the other `langstar assistant` commands do.
 
@@ -58,7 +58,7 @@ langstar assistant export <assistant-id> --deployment my-agent --output support-
 
 The string at that pointer holds a prompt name of the form `[<owner>/]<handle>[:<tag>]`, such as `support-system:prod`. A name with no owner, or with the owner `-`, means the prompt in the current workspace. A name with no tag means the prompt's latest commit. Export writes each pointer and the name it holds under `requires.prompts`. When a pointer names no string in the assistant, export names the pointer, writes no file and exits with status 1.
 
-Name each prompt by its handle and a tag, such as `support-system:prod`. The same prompt has a different commit hash in each workspace, and import copies the tag to the destination workspace.
+Name each prompt by its handle and a tag, such as `support-system:prod`. The same prompt gets a different commit hash in each workspace. `langstar prompt import` will copy the prompt's tags into the workspace it imports to, so a tag names the same prompt version in both workspaces.
 
 ## A graph's default assistant
 

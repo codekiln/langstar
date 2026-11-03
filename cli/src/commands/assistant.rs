@@ -130,8 +130,8 @@ pub enum AssistantCommands {
         config: Option<String>,
     },
 
-    /// Export an assistant to a JSON file that can recreate it on another
-    /// deployment
+    /// Export an assistant to a JSON file that holds what you need to recreate
+    /// it on another deployment
     ///
     /// The file holds the assistant's name, description, graph ID,
     /// configuration, context and metadata, and where it came from. Before it
