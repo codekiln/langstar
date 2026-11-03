@@ -229,7 +229,7 @@ langstar queue add-runs 12345678-... run-id-1 run-id-2 run-id-3
 langstar queue add-runs 12345678-... --runs-file runs.txt
 ```
 
-LangSmith answers 404 for a run it cannot find yet, so a script that adds a run it just ingested should retry `add-runs` until it succeeds.
+`add-runs` can fail with a 404 on a run that LangSmith received moments ago, even after `langstar runs query` has listed that run. A script that adds recent runs should retry `add-runs` until it succeeds.
 
 **runs.txt format:**
 ```
