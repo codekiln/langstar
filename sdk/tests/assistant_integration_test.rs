@@ -106,11 +106,14 @@ async fn test_assistant_lifecycle() {
     println!("  Creating assistant: {}", test_name);
 
     let create_request = CreateAssistantRequest {
+        assistant_id: None,
         graph_id: graph_name.clone(),
         name: test_name.clone(),
         description: None,
         config: Some(json!({"configurable": {"test": true}})),
+        context: None,
         metadata: Some(json!({"purpose": "integration_test"})),
+        if_exists: None,
     };
 
     let created_assistant = client
@@ -156,8 +159,10 @@ async fn test_assistant_lifecycle() {
 
     let update_request = UpdateAssistantRequest {
         name: Some(updated_name.clone()),
+        graph_id: None,
         description: None,
         config: Some(json!({"configurable": {"test": true, "updated": true}})),
+        context: None,
         metadata: Some(json!({"purpose": "integration_test", "updated": true})),
     };
 
@@ -249,11 +254,14 @@ async fn test_assistant_search() {
     println!("  Assistant 2: {}", assistant2_name);
 
     let create_request1 = CreateAssistantRequest {
+        assistant_id: None,
         graph_id: graph_name.clone(),
         name: assistant1_name.clone(),
         description: None,
         config: None,
+        context: None,
         metadata: Some(json!({"test": "search"})),
+        if_exists: None,
     };
 
     let created1 = client
@@ -263,11 +271,14 @@ async fn test_assistant_search() {
         .expect("Failed to create assistant 1");
 
     let create_request2 = CreateAssistantRequest {
+        assistant_id: None,
         graph_id: graph_name.clone(),
         name: assistant2_name.clone(),
         description: None,
         config: None,
+        context: None,
         metadata: Some(json!({"test": "search"})),
+        if_exists: None,
     };
 
     let created2 = client
@@ -409,11 +420,14 @@ async fn test_list_assistants() {
 
     let test_name = generate_test_name("list-test");
     let create_request = CreateAssistantRequest {
+        assistant_id: None,
         graph_id: graph_name.clone(),
         name: test_name.clone(),
         description: None,
         config: None,
+        context: None,
         metadata: None,
+        if_exists: None,
     };
 
     let created = client
@@ -523,11 +537,14 @@ async fn test_assistant_description_field() {
     println!("  Description: {}", test_description);
 
     let create_request = CreateAssistantRequest {
+        assistant_id: None,
         graph_id: graph_name.clone(),
         name: test_name.clone(),
         description: Some(test_description.to_string()),
         config: Some(json!({"configurable": {"test": true}})),
+        context: None,
         metadata: Some(json!({"purpose": "description_test"})),
+        if_exists: None,
     };
 
     let created_assistant = client
@@ -589,8 +606,10 @@ async fn test_assistant_description_field() {
 
     let update_request = UpdateAssistantRequest {
         name: None, // Don't change the name
+        graph_id: None,
         description: Some(updated_description.to_string()),
         config: None,
+        context: None,
         metadata: None,
     };
 
@@ -635,8 +654,10 @@ async fn test_assistant_description_field() {
 
     let clear_request = UpdateAssistantRequest {
         name: None,
+        graph_id: None,
         description: None, // Clear the description
         config: None,
+        context: None,
         metadata: None,
     };
 
@@ -734,8 +755,10 @@ async fn test_error_handling() {
 
     let update_request = UpdateAssistantRequest {
         name: Some("updated-name".to_string()),
+        graph_id: None,
         description: None,
         config: None,
+        context: None,
         metadata: None,
     };
 

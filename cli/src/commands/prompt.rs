@@ -770,6 +770,7 @@ impl PromptCommands {
                             &vars,
                             template_format,
                         ))?,
+                        description: None,
                         parent_commit: final_parent_commit,
                         example_run_ids: None,
                     };
