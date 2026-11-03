@@ -24,7 +24,7 @@ The `rust` entry in `mise.toml` SHALL set `mr_boxington = true`, so that Cargo s
 
 ### Requirement: mise pins Mr Boxington to an exact release at least five days old
 
-`mise.toml` SHALL pin `mr-boxington` to an exact version. That version SHALL have been released at least as long ago as the `minimum_release_age` in `mise.toml`'s `[settings]` when it was pinned, because mise does not apply that setting to an exact pin.
+`mise.toml` SHALL pin `mr-boxington` to an exact version. A developer who changes that pin SHALL pick a release at least as old as the `minimum_release_age` in `mise.toml`'s `[settings]`, because mise skips that setting for an exact pin.
 
 #### Scenario: mise installs the pinned release
 
