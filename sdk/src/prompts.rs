@@ -197,10 +197,10 @@ pub struct ChatPromptKwargs {
 
 /// Build the manifest of a plain prompt: a `ChatPromptTemplate` holding one human message.
 ///
-/// The LangSmith API rejects a manifest without an LC-JSON `id` with a 400
-/// ("Manifest must have an id field"), so a plain prompt is pushed in the same
-/// LC-JSON shape as `ChatPromptTemplate.from_template(template)` in LangChain.
-/// The ids use the `langchain_core` module path, as [`StructuredPrompt`] does.
+/// The LangSmith API answers 400 ("Manifest must have an id field") to a manifest
+/// without an LC-JSON `id`, so this function builds the LC-JSON that
+/// `ChatPromptTemplate.from_template(template)` produces in LangChain. Its ids start
+/// with `["langchain_core", "prompts", ...]`, as the ids in [`StructuredPrompt`] do.
 pub fn plain_prompt_manifest(
     template: &str,
     input_variables: &[String],
