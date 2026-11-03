@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-11-03
+
+### ⚠ BREAKING CHANGES
+
+- ✨ feat(runs)!: query runs through POST /api/v2/runs/query ([#794](https://github.com/codekiln/langstar/pull/794))
+  - LangSmith removes POST /api/v1/runs/query from Cloud on 31 Jan 2027, so `langstar runs query` now uses the v2 endpoint. Every query now needs `--project`, and [#811](https://github.com/codekiln/langstar/pull/811) lets it take a project name as well as a UUID. `--order asc` returns the newest `--limit` runs, oldest first, because v2 always sorts newest first. `--no-time-filter` asks for the last 400 days, and `--errors-only` now matches runs that have an error. JSON output has `project_id` in place of `session_id` and an uppercase `status`, and drops `execution_order`, child run IDs and S3 URLs. When a page of results fails, the command now exits with an error status.
+
+### ✨ Features
+
+- ✨ feat(config): let LANGSTAR_CONFIG_DIR choose the config directory ([#814](https://github.com/codekiln/langstar/pull/814))
+  - When `LANGSTAR_CONFIG_DIR` is set, langstar reads and writes `config.toml` in that directory on every platform.
+- ✨ feat(cli): add the export file, the comparison and the report ([#834](https://github.com/codekiln/langstar/pull/834))
+- ✨ feat(sdk): add the prompt and assistant fields that export and import need ([#832](https://github.com/codekiln/langstar/pull/832))
+- ✨ feat(assistant): add langstar assistant export ([#845](https://github.com/codekiln/langstar/pull/845))
+  - `langstar assistant export <assistant-id> --deployment <name-or-id>` writes the assistant's name, description, graph ID, configuration, context and metadata to one JSON file. When the file would hold a credential, export names where it found it and writes nothing. `docs/usage/assistant-export.md` explains the file.
+- ✨ feat(assistant): add langstar assistant import ([#849](https://github.com/codekiln/langstar/pull/849))
+  - `langstar assistant import <file> --deployment <name-or-id>` creates the exported assistant on another deployment, so export and import together copy an assistant between deployments. Import first checks that the deployment serves the assistant's graph and that the workspace holds the prompts it uses, then reads the new assistant back and compares it with the file. Running it again on the same file checks the copy and creates nothing. `docs/usage/assistant-import.md` shows how to copy every assistant from one deployment to another.
+
+### 🩹 Bug Fixes
+
+- 🩹 fix(test): give the release test deployment a UUID name and retry its create after a 409 ([#784](https://github.com/codekiln/langstar/pull/784))
+- 🩹 fix(release): build the Linux assets with the pinned Rust toolchain and let a manual run rebuild an existing release ([#796](https://github.com/codekiln/langstar/pull/796))
+- 🩹 fix(sdk): search assistants by name, and refresh the agent-server spec ([#793](https://github.com/codekiln/langstar/pull/793))
+- 🩹 fix(test): give prompt lifecycle tests unique names and delete their prompt on failure ([#783](https://github.com/codekiln/langstar/pull/783))
+- 🩹 fix(cli): ask for confirmation before deleting a workspace secret ([#781](https://github.com/codekiln/langstar/pull/781))
+  - `langstar secrets delete` now asks you to type `yes`. A script or CI job has to pass `--yes`; one that leaves it off stops with an error before langstar deletes anything.
+- 🩹 fix(sdk): retry read requests that get a gateway error, so langstar runs query survives one ([#800](https://github.com/codekiln/langstar/pull/800))
+- 🩹 fix(sdk): retry 429 rate limits on safe requests, as langsmith-py and langsmith-go do ([#804](https://github.com/codekiln/langstar/pull/804))
+- 🐛 fix(runs): make runs query --project accept a project name and filter by it ([#811](https://github.com/codekiln/langstar/pull/811))
+- 🐛 fix(dataset): make dataset export return every example, not the first 100 ([#818](https://github.com/codekiln/langstar/pull/818))
+- 🐛 fix(sdk): send the workspace header to the Agent Server ([#839](https://github.com/codekiln/langstar/pull/839))
+  - A global `--workspace-id` flag picks the workspace for every command. When an API key reaches several workspaces and you name no workspace, langstar finds the workspace that holds the deployment you named, or stops and lists the workspaces to choose from.
+- 🐛 fix(prompt): send a ChatPromptTemplate manifest when pushing without --schema ([#823](https://github.com/codekiln/langstar/pull/823))
+
+### ♻️ Refactoring
+
+- ♻️ refactor(scripts): move what's left in scripts/ to mise file tasks ([#812](https://github.com/codekiln/langstar/pull/812))
+
+### 📚 Documentation
+
+- 📚 docs(dev): document tmux manager/worker and PR workflow ([#759](https://github.com/codekiln/langstar/pull/759))
+- 📚 docs(research): map langstar's parity with official LangChain tools ([#752](https://github.com/codekiln/langstar/pull/752))
+- 📚 docs(worktrees): move worktrees from wip/ to .worktrees/ ([#756](https://github.com/codekiln/langstar/pull/756))
+- 📚 docs(agents): mark every agent-written GitHub text with a from-AI header ([#797](https://github.com/codekiln/langstar/pull/797))
+- 📚 docs(skills): use mise tasks in skills and add agents:generate ([#798](https://github.com/codekiln/langstar/pull/798))
+- 📚 docs(skills): fix the wording codekiln-review flagged after [#798](https://github.com/codekiln/langstar/pull/798) merged ([#806](https://github.com/codekiln/langstar/pull/806))
+- 📚 docs(agents): name the upstream LangChain projects to check for compatibility ([#803](https://github.com/codekiln/langstar/pull/803))
+- 📚 docs(openspec): propose export, import, compare and verify for prompts and assistants ([#816](https://github.com/codekiln/langstar/pull/816))
+- 📚 docs(openspec): check the prompt API round trip before building on it ([#830](https://github.com/codekiln/langstar/pull/830))
+- 📚 docs(openspec): read the model class through the RunnableBinding the live API returns ([#831](https://github.com/codekiln/langstar/pull/831))
+- 📚 docs(research): record what the live prompt and assistant APIs do on write ([#833](https://github.com/codekiln/langstar/pull/833))
+- 📚 docs(openspec): use one test key for both test workspaces ([#838](https://github.com/codekiln/langstar/pull/838))
+
+### 🧪 Testing
+
+- 🧪 test(assistant): run test_assistant_create_basic in the integration tests ([#835](https://github.com/codekiln/langstar/pull/835))
+
+### 🔧 Build System
+
+- 🔧 build(agents): manage agent config with rulesync ([#745](https://github.com/codekiln/langstar/pull/745))
+- 🔧 build(deps): update rustls to 0.23.46 to clear RUSTSEC-2026-0346 to 0349 ([#827](https://github.com/codekiln/langstar/pull/827))
+- 🔧 build(deps): update rustls-webpki and webpki-roots to clear RUSTSEC-2026-0381 and 0382 ([#829](https://github.com/codekiln/langstar/pull/829))
+
 ## [2.2.0] - 2026-10-09
 
 ### ✨ Features
