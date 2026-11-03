@@ -29,7 +29,8 @@ handle="-/${repo}"
 # The script sets the cleanup trap only after `prompt create` succeeds, so a name
 # collision never deletes another run's prompt.
 schema=""
-# A failed delete turns a passing run into a failure and keeps an earlier failure's status.
+# cleanup removes the schema file and deletes the prompt. When the delete fails,
+# the task fails, and a run that had already failed keeps its own exit status.
 cleanup() {
   local status=$?
   [ -z "$schema" ] || rm -f "$schema"
@@ -44,8 +45,8 @@ schema="$(mktemp)"
 
 printf '%s' '{"type":"object","title":"Out","properties":{"answer":{"type":"string"}},"required":["answer"]}' >"$schema"
 
-# --schema matches the path cli/tests/prompt_structured_test.rs exercises; a push
-# without it fails (https://github.com/codekiln/langstar/issues/821).
+# langstar's own test, cli/tests/prompt_structured_test.rs, also pushes with --schema.
+# A push without --schema to an empty repo fails: https://github.com/codekiln/langstar/issues/821
 cargo run --quiet --bin langstar -- prompt push \
   --owner - --repo "$repo" --template "$template" --input-variables question \
   --schema "$schema" >/dev/null

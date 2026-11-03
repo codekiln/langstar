@@ -38,8 +38,9 @@ git-cliff = "2.14.2"
 # GitHub CLI, used by the worktree cleanup task and the issue workflow skills.
 gh = "2.102.0"
 # Official LangChain tools, used as an outside check on langstar's results
-# (docs/dev/testing/official-tool-checks.md). Exact pins skip minimum_release_age,
-# so each was chosen to be older than five days.
+# (docs/dev/testing/official-tool-checks.md). mise's minimum_release_age holds back
+# new releases only for version ranges, so each exact version below is a release
+# that was more than five days old when it was pinned.
 # https://github.com/langchain-ai/langsmith-cli
 "github:langchain-ai/langsmith-cli" = "0.3.0"
 # langgraph-cli installs through uv; the LangGraph Python SDK is a library with no
