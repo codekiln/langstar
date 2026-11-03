@@ -925,13 +925,13 @@ fn test_cli_push_plain_prompt_to_empty_repo_round_trips_manifest() {
         Some("ChatPromptTemplate"),
         "manifest id should end in ChatPromptTemplate: {manifest}"
     );
-    let first_message = &manifest["kwargs"]["messages"][0]["kwargs"]["prompt"]["kwargs"];
+    let prompt_kwargs = &manifest["kwargs"]["messages"][0]["kwargs"]["prompt"]["kwargs"];
     assert_eq!(
-        first_message["template"].as_str(),
+        prompt_kwargs["template"].as_str(),
         Some("Plain push test: {query}")
     );
     assert_eq!(
-        first_message["input_variables"],
+        prompt_kwargs["input_variables"],
         serde_json::json!(["query"])
     );
 
