@@ -249,9 +249,14 @@ langstar assistant update <assistant-id> --name "Updated Name"
 langstar assistant delete <assistant-id>
 langstar assistant delete <assistant-id> --force  # Skip confirmation
 
+# Export an assistant to a file you can keep in Git
+langstar assistant export <assistant-id> --deployment my-agent --output support-bot.json
+
 # JSON output
 langstar assistant list --format json
 ```
+
+Export refuses to write a file that holds a credential. [Assistant Export](./docs/usage/assistant-export.md) shows what the file holds and how to use `--prompt-ref` and `--not-a-secret`.
 
 #### Command Migration (v0.5.0+)
 

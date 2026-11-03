@@ -1,10 +1,20 @@
 use crate::config::Config;
+use crate::credential_check::{self, Flagged};
 use crate::deployment_utils::resolve_deployment;
-use crate::error::Result;
+use crate::error::{CliError, Result};
+use crate::export_file::{
+    AssistantBody, AssistantExport, AssistantRequires, AssistantSource, FORMAT_VERSION, Kind,
+    to_sorted_json,
+};
 use crate::output::{ColumnMetadata, OutputFormat, OutputFormatter};
 use clap::Subcommand;
-use langstar_sdk::{Assistant, CreateAssistantRequest, UpdateAssistantRequest};
-use serde_json::json;
+use langstar_sdk::{
+    Assistant, CreateAssistantRequest, LangchainClient, LangstarError, UpdateAssistantRequest,
+};
+use serde_json::{Value, json};
+use std::collections::{BTreeMap, BTreeSet};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use tabled::Tabled;
 
 /// Available columns for assistant list text output
@@ -120,6 +130,38 @@ pub enum AssistantCommands {
         config: Option<String>,
     },
 
+    /// Export an assistant to a JSON file that holds what you need to recreate
+    /// it on another deployment
+    ///
+    /// The file holds the assistant's name, description, graph ID,
+    /// configuration, context and metadata, and where it came from. Before it
+    /// writes, export checks every string in the assistant for a credential and,
+    /// when it finds one, names each path and writes no file.
+    Export {
+        /// Deployment name or ID (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
+        /// Assistant ID
+        assistant_id: String,
+
+        /// Write the file here. Without it, stdout holds only the file.
+        #[arg(long, value_name = "PATH")]
+        output: Option<PathBuf>,
+
+        /// JSON Pointer, inside the assistant, of a string that names a prompt,
+        /// such as /config/configurable/system_prompt holding support-system:prod.
+        /// Repeat for each prompt.
+        #[arg(long = "prompt-ref", value_name = "JSON_POINTER")]
+        prompt_refs: Vec<String>,
+
+        /// JSON Pointer, inside the assistant, of a string the credential check
+        /// flags and you have read and found to hold no credential. Export writes
+        /// it and prints a warning. Repeat for each string.
+        #[arg(long = "not-a-secret", value_name = "JSON_POINTER")]
+        not_a_secret: Vec<String>,
+    },
+
     /// Delete an assistant
     Delete {
         /// Deployment name or ID (from 'langstar graph list')
@@ -216,12 +258,19 @@ impl AssistantCommands {
             AssistantCommands::Get { deployment, .. } => deployment,
             AssistantCommands::Create { deployment, .. } => deployment,
             AssistantCommands::Update { deployment, .. } => deployment,
+            AssistantCommands::Export { deployment, .. } => deployment,
             AssistantCommands::Delete { deployment, .. } => deployment,
         };
 
         // Refuse before any network lookup when there is nobody to ask.
         if let AssistantCommands::Delete { force: false, .. } = self {
             crate::confirm::require_terminal("--force")?;
+        }
+
+        // Refuse before the deployment lookup, whose responses the SDK would
+        // write to its debug file as well.
+        if let AssistantCommands::Export { .. } = self {
+            refuse_debug_http(std::env::var_os(DEBUG_HTTP).is_some())?;
         }
 
         // Resolve deployment to URL
@@ -454,6 +503,29 @@ impl AssistantCommands {
                 Ok(())
             }
 
+            AssistantCommands::Export {
+                deployment: _,
+                assistant_id,
+                output,
+                prompt_refs,
+                not_a_secret,
+            } => {
+                let options = ExportOptions {
+                    output: output.as_deref(),
+                    prompt_refs,
+                    not_a_secret,
+                };
+                export_assistant(
+                    &client,
+                    &deployment.id,
+                    assistant_id,
+                    &options,
+                    &mut std::io::stdout(),
+                    &mut std::io::stderr(),
+                )
+                .await
+            }
+
             AssistantCommands::Delete {
                 deployment: _,
                 assistant_id,
@@ -486,6 +558,211 @@ impl AssistantCommands {
     }
 }
 
+/// What `assistant export` was asked to do beyond reading the assistant.
+struct ExportOptions<'a> {
+    /// The file to write, or `None` for stdout.
+    output: Option<&'a Path>,
+    /// The `--prompt-ref` pointers.
+    prompt_refs: &'a [String],
+    /// The `--not-a-secret` pointers.
+    not_a_secret: &'a [String],
+}
+
+/// Read one assistant from the deployment the client points at, check it, and
+/// write its export file to `options.output` or to `stdout`.
+///
+/// Every refusal returns an error before anything reaches `stdout` or the file,
+/// and `main` turns that error into exit status 1. Progress and warnings go to
+/// `stderr`, so `stdout` holds only the file.
+async fn export_assistant(
+    client: &LangchainClient,
+    deployment_id: &str,
+    assistant_id: &str,
+    options: &ExportOptions<'_>,
+    stdout: &mut dyn Write,
+    stderr: &mut dyn Write,
+) -> Result<()> {
+    writeln!(stderr, "Reading assistant '{assistant_id}'...")?;
+    let assistant = match client.assistants().get(assistant_id).await {
+        Ok(assistant) => assistant,
+        Err(LangstarError::ApiError { status: 404, .. }) => {
+            return Err(refusal(format!(
+                "The deployment has no assistant with ID '{assistant_id}'."
+            )));
+        }
+        Err(error) => return Err(error.into()),
+    };
+
+    if is_default_assistant(&assistant) {
+        return Err(refusal(format!(
+            "Assistant '{assistant_id}' is the default assistant for graph '{}'. Every \
+             deployment creates that assistant for each graph it serves, so langstar does \
+             not export it. Create an assistant with 'langstar assistant create' and \
+             export that one.",
+            assistant.graph_id
+        )));
+    }
+
+    let version = assistant
+        .version
+        .and_then(|version| i32::try_from(version).ok())
+        .ok_or_else(|| {
+            refusal(format!(
+                "The deployment returned assistant '{assistant_id}' without a version, which \
+                 the export file records."
+            ))
+        })?;
+
+    let body = AssistantBody {
+        name: assistant.name,
+        description: assistant.description,
+        graph_id: assistant.graph_id,
+        config: assistant.config,
+        context: assistant.context,
+        metadata: assistant.metadata.unwrap_or_else(|| json!({})),
+    };
+    let body_value = serde_json::to_value(&body)?;
+
+    let allowed = check_credentials(&body_value, options.not_a_secret)?;
+    let prompts = prompt_references(&body_value, options.prompt_refs)?;
+
+    let export = AssistantExport {
+        kind: Kind::Assistant,
+        format_version: FORMAT_VERSION,
+        source: AssistantSource {
+            deployment_id: deployment_id.to_string(),
+            assistant_id: assistant.assistant_id,
+            version,
+        },
+        assistant: body,
+        requires: AssistantRequires { prompts },
+    };
+    let text = to_sorted_json(&export)?;
+
+    for item in &allowed {
+        writeln!(
+            stderr,
+            "Warning: writing the string at {} ({}) because --not-a-secret names it.",
+            item.path, item.rule
+        )?;
+    }
+
+    match options.output {
+        Some(path) => {
+            std::fs::write(path, text).map_err(|source| {
+                refusal(format!("Could not write {}: {}", path.display(), source))
+            })?;
+            writeln!(
+                stderr,
+                "Wrote assistant '{}' to {}",
+                export.source.assistant_id,
+                path.display()
+            )?;
+        }
+        None => {
+            stdout.write_all(text.as_bytes())?;
+            stdout.flush()?;
+        }
+    }
+    Ok(())
+}
+
+/// The variable that makes the SDK write each response body to a file and
+/// print the start of it to stderr.
+const DEBUG_HTTP: &str = "LANGSTAR_DEBUG_HTTP";
+
+/// Refuse to export while HTTP debugging is on. The SDK would
+/// write the whole response, credentials included, to a file and to stderr
+/// before the credential check could refuse it.
+fn refuse_debug_http(debug_http: bool) -> Result<()> {
+    if debug_http {
+        return Err(refusal(format!(
+            "{DEBUG_HTTP} is set, and it makes langstar write the assistant as the server \
+             returned it to a debug file and to stderr, credentials included. Unset it and \
+             run the export again."
+        )));
+    }
+    Ok(())
+}
+
+/// An error that `main` prints as it stands, with no prefix.
+fn refusal(message: String) -> CliError {
+    CliError::Other(anyhow::anyhow!(message))
+}
+
+/// Whether this is the assistant the deployment created for one of its graphs,
+/// which the Agent Server marks with `created_by: system` in its metadata.
+fn is_default_assistant(assistant: &Assistant) -> bool {
+    assistant
+        .metadata
+        .as_ref()
+        .and_then(|metadata| metadata.get("created_by"))
+        .and_then(Value::as_str)
+        == Some("system")
+}
+
+/// Run the credential check over the assistant object and return the flagged
+/// strings that `--not-a-secret` lets through.
+///
+/// Refuses when a flagged string's path is missing from `not_a_secret`, or
+/// when `not_a_secret` names a path where the check flags nothing. The error
+/// names each path and rule and holds no part of any flagged string.
+fn check_credentials(assistant: &Value, not_a_secret: &[String]) -> Result<Vec<Flagged>> {
+    let flagged = credential_check::find_credentials(assistant);
+    let named: BTreeSet<&str> = not_a_secret.iter().map(String::as_str).collect();
+    let flagged_paths: BTreeSet<&str> = flagged.iter().map(|item| item.path.as_str()).collect();
+
+    let (allowed, refused): (Vec<Flagged>, Vec<Flagged>) = flagged
+        .iter()
+        .cloned()
+        .partition(|item| named.contains(item.path.as_str()));
+    let unflagged: Vec<&str> = named
+        .iter()
+        .copied()
+        .filter(|path| !flagged_paths.contains(path))
+        .collect();
+
+    let mut problems = Vec::new();
+    if !unflagged.is_empty() {
+        let mut message = String::from(
+            "--not-a-secret names a path where the credential check flags no string:\n",
+        );
+        for path in &unflagged {
+            message.push_str(&format!("  {path}\n"));
+        }
+        message.push_str("Remove each one from the command.");
+        problems.push(message);
+    }
+    if !refused.is_empty() {
+        problems.push(credential_check::refusal_message(&refused));
+    }
+    if problems.is_empty() {
+        Ok(allowed)
+    } else {
+        Err(refusal(problems.join("\n")))
+    }
+}
+
+/// Look up each `--prompt-ref` pointer in the assistant object and return the
+/// prompt name it holds, keyed by the pointer.
+fn prompt_references(assistant: &Value, pointers: &[String]) -> Result<BTreeMap<String, String>> {
+    let mut prompts = BTreeMap::new();
+    for pointer in pointers {
+        let name = assistant
+            .pointer(pointer)
+            .and_then(Value::as_str)
+            .ok_or_else(|| {
+                refusal(format!(
+                    "--prompt-ref {pointer} names no string in the assistant. Give the JSON \
+                     Pointer of the configuration or context value that holds the prompt \
+                     name, such as /config/configurable/system_prompt."
+                ))
+            })?;
+        prompts.insert(pointer.clone(), name.to_string());
+    }
+    Ok(prompts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -508,5 +785,404 @@ mod tests {
         let row = AssistantRow::from(&assistant);
         assert!(row.assistant_id.len() <= 16);
         assert_eq!(row.name, "Test Assistant");
+    }
+
+    // Task 8.1, "Add langstar assistant export", of the export-import-prompts-and-assistants change
+
+    use langstar_sdk::AuthConfig;
+    use tempfile::TempDir;
+
+    const ASSISTANT_ID: &str = "3f1c2b8e-0d4a-4c6e-9b7a-2e5f8d9c1a00";
+    const DEPLOYMENT_ID: &str = "deployment-0001";
+
+    /// An assistant as the Agent Server returns it, with settings in both fields.
+    fn served_assistant() -> Value {
+        json!({
+            "assistant_id": ASSISTANT_ID,
+            "graph_id": "test_graph",
+            "name": "support-bot",
+            "description": "Answers support questions.",
+            "config": {
+                "configurable": {"system_prompt": "support-system:prod", "temperature": 0.2},
+                "recursion_limit": 10
+            },
+            "context": {"system_prompt": "support-system:prod", "temperature": 0.2},
+            "metadata": {"team": "support"},
+            "version": 3,
+            "created_at": "2026-11-01T12:00:00Z",
+            "updated_at": "2026-11-02T12:00:00Z"
+        })
+    }
+
+    /// Set the value at `pointer`, adding objects on the way as needed.
+    fn set(value: &mut Value, pointer: &str, new: Value) {
+        let mut current = value;
+        for token in pointer.trim_start_matches('/').split('/') {
+            current = current
+                .as_object_mut()
+                .expect("each step of the pointer is an object")
+                .entry(token.to_string())
+                .or_insert_with(|| json!({}));
+        }
+        *current = new;
+    }
+
+    async fn serve(assistant: &Value) -> (mockito::ServerGuard, LangchainClient) {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", format!("/assistants/{ASSISTANT_ID}").as_str())
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(assistant.to_string())
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+        (server, client)
+    }
+
+    struct Run {
+        result: Result<()>,
+        stdout: String,
+        stderr: String,
+    }
+
+    async fn export(
+        client: &LangchainClient,
+        output: Option<&Path>,
+        prompt_refs: &[&str],
+        not_a_secret: &[&str],
+    ) -> Run {
+        let prompt_refs: Vec<String> = prompt_refs.iter().map(|p| p.to_string()).collect();
+        let not_a_secret: Vec<String> = not_a_secret.iter().map(|p| p.to_string()).collect();
+        let options = ExportOptions {
+            output,
+            prompt_refs: &prompt_refs,
+            not_a_secret: &not_a_secret,
+        };
+        let mut stdout = Vec::new();
+        let mut stderr = Vec::new();
+        let result = export_assistant(
+            client,
+            DEPLOYMENT_ID,
+            ASSISTANT_ID,
+            &options,
+            &mut stdout,
+            &mut stderr,
+        )
+        .await;
+        Run {
+            result,
+            stdout: String::from_utf8(stdout).unwrap(),
+            stderr: String::from_utf8(stderr).unwrap(),
+        }
+    }
+
+    /// Whether `message` holds `secret` or any eight-character run of it.
+    fn leaks(message: &str, secret: &str) -> bool {
+        let chars: Vec<char> = secret.chars().collect();
+        message.contains(secret)
+            || chars
+                .windows(8)
+                .any(|run| message.contains(&run.iter().collect::<String>()))
+    }
+
+    /// Serve an assistant holding `secret` at `pointer`, export it to a file and
+    /// to stdout, and assert that each run refuses, names the path and the rule
+    /// without the string, writes no file and prints nothing to stdout.
+    async fn assert_refused(pointer: &str, secret: &str, rule: credential_check::Rule) {
+        let mut assistant = served_assistant();
+        set(&mut assistant, pointer, json!(secret));
+        let (_server, client) = serve(&assistant).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        for output in [Some(file.as_path()), None] {
+            let run = export(&client, output, &[], &[]).await;
+            let message = run
+                .result
+                .expect_err("export of an assistant holding a credential should fail")
+                .to_string();
+            assert!(
+                message.contains(&format!("{pointer} ({rule})")),
+                "expected {pointer} and the rule {rule} in: {message}"
+            );
+            assert!(
+                !leaks(&message, secret),
+                "the error should hold no part of the string: {message}"
+            );
+            assert!(
+                !leaks(&run.stderr, secret),
+                "stderr should hold no part of the string: {}",
+                run.stderr
+            );
+            assert_eq!(run.stdout, "", "export should print nothing to stdout");
+            assert!(!file.exists(), "export should write no file");
+        }
+    }
+
+    #[tokio::test]
+    async fn refuses_an_api_key_in_the_configuration() {
+        assert_refused(
+            "/config/configurable/OPENAI_API_KEY",
+            "Qm4tVx8Lp2Ra7Nc1",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_an_api_key_in_the_context() {
+        assert_refused(
+            "/context/anthropic_api_key",
+            "Hy6dKw3Zs9Fb2Te5",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_an_api_key_in_the_metadata() {
+        assert_refused(
+            "/metadata/openai_api_key",
+            "Ju8cPn5Gx1Lv4Wq7",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_an_access_token_in_the_context() {
+        assert_refused(
+            "/context/github_access_token",
+            "Rb2mXs7Kd4Yh9Ef3",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_a_database_password_in_the_configuration() {
+        assert_refused(
+            "/config/configurable/db/password",
+            "Wn5qTz1Vc8Gp3Lk6",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_a_connection_string_with_a_password() {
+        assert_refused(
+            "/config/configurable/checkpoint_uri",
+            "postgresql://app:Zq7vLm2Rx9Wd@db.example.com/agent",
+            credential_check::Rule::UrlWithPassword,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_an_authorization_header() {
+        assert_refused(
+            "/config/configurable/tool_headers/Authorization",
+            "Bearer Zq7vLm2Rx9WdKp4TnB8sYc3H",
+            credential_check::Rule::KeyName,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn refuses_a_private_key_in_the_metadata() {
+        assert_refused(
+            "/metadata/deploy_note",
+            "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAE\n-----END OPENSSH PRIVATE KEY-----",
+            credential_check::Rule::PemPrivateKey,
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn writes_a_secret_reference() {
+        let reference = json!({"lc": 1, "type": "secret", "id": ["OPENAI_API_KEY"]});
+        let mut assistant = served_assistant();
+        set(
+            &mut assistant,
+            "/config/configurable/openai_api_key",
+            reference.clone(),
+        );
+        let (_server, client) = serve(&assistant).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        let run = export(&client, Some(&file), &[], &[]).await;
+
+        run.result.expect("a secret reference holds no credential");
+        let written: Value =
+            serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(
+            written.pointer("/assistant/config/configurable/openai_api_key"),
+            Some(&reference)
+        );
+    }
+
+    #[tokio::test]
+    async fn writes_a_flagged_string_named_by_not_a_secret() {
+        let pointer = "/config/configurable/token_budget_policy";
+        let mut assistant = served_assistant();
+        set(&mut assistant, pointer, json!("strict"));
+        let (_server, client) = serve(&assistant).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        let run = export(&client, Some(&file), &[], &[pointer]).await;
+
+        run.result.expect("--not-a-secret lets the string through");
+        let written: Value =
+            serde_json::from_str(&std::fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(
+            written.pointer(&format!("/assistant{pointer}")),
+            Some(&json!("strict"))
+        );
+        assert!(
+            run.stderr.contains(pointer),
+            "stderr should name the path: {}",
+            run.stderr
+        );
+    }
+
+    #[tokio::test]
+    async fn refuses_a_flagged_string_without_not_a_secret() {
+        let pointer = "/config/configurable/token_budget_policy";
+        let mut assistant = served_assistant();
+        set(&mut assistant, pointer, json!("strict"));
+        let (_server, client) = serve(&assistant).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        let run = export(&client, Some(&file), &[], &[]).await;
+
+        let message = run.result.expect_err("export should refuse").to_string();
+        assert!(message.contains(pointer), "{message}");
+        assert!(!file.exists());
+    }
+
+    #[tokio::test]
+    async fn refuses_not_a_secret_at_a_string_nothing_flags() {
+        let (_server, client) = serve(&served_assistant()).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        let run = export(&client, Some(&file), &[], &["/description"]).await;
+
+        let message = run.result.expect_err("export should refuse").to_string();
+        assert!(message.contains("/description"), "{message}");
+        assert!(!file.exists());
+    }
+
+    #[tokio::test]
+    async fn records_a_prompt_reference() {
+        let (_server, client) = serve(&served_assistant()).await;
+
+        let run = export(&client, None, &["/config/configurable/system_prompt"], &[]).await;
+
+        run.result.expect("the pointer names a string");
+        let written: Value = serde_json::from_str(&run.stdout).unwrap();
+        assert_eq!(
+            written["requires"]["prompts"],
+            json!({"/config/configurable/system_prompt": "support-system:prod"})
+        );
+    }
+
+    #[tokio::test]
+    async fn refuses_a_prompt_reference_that_names_nothing() {
+        let (_server, client) = serve(&served_assistant()).await;
+
+        let directory = TempDir::new().unwrap();
+        let file = directory.path().join("support-bot.json");
+        let pointer = "/config/configurable/missing_prompt";
+        let run = export(&client, Some(&file), &[pointer], &[]).await;
+
+        let message = run.result.expect_err("export should refuse").to_string();
+        assert!(message.contains(pointer), "{message}");
+        assert!(!file.exists());
+        assert_eq!(run.stdout, "");
+    }
+
+    #[tokio::test]
+    async fn names_an_assistant_the_deployment_lacks() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", format!("/assistants/{ASSISTANT_ID}").as_str())
+            .with_status(404)
+            .with_body(r#"{"detail": "Assistant not found"}"#)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+
+        let run = export(&client, None, &[], &[]).await;
+
+        let message = run.result.expect_err("export should fail").to_string();
+        assert!(message.contains(ASSISTANT_ID), "{message}");
+        assert_eq!(run.stdout, "");
+    }
+
+    #[tokio::test]
+    async fn refuses_a_graphs_default_assistant() {
+        let mut assistant = served_assistant();
+        set(&mut assistant, "/metadata/created_by", json!("system"));
+        let (_server, client) = serve(&assistant).await;
+
+        let run = export(&client, None, &[], &[]).await;
+
+        let message = run.result.expect_err("export should refuse").to_string();
+        assert!(message.contains("Every deployment creates"), "{message}");
+        assert_eq!(run.stdout, "");
+    }
+
+    #[test]
+    fn refuses_to_read_the_assistant_while_http_debugging_is_on() {
+        let message = refuse_debug_http(true)
+            .expect_err("export should refuse while LANGSTAR_DEBUG_HTTP is set")
+            .to_string();
+        assert!(message.contains("LANGSTAR_DEBUG_HTTP"), "{message}");
+        refuse_debug_http(false).expect("export goes ahead without the variable");
+    }
+
+    #[tokio::test]
+    async fn prints_only_the_file_to_stdout() {
+        let (_server, client) = serve(&served_assistant()).await;
+
+        let run = export(&client, None, &[], &[]).await;
+
+        run.result.expect("export should succeed");
+        let written: Value = serde_json::from_str(&run.stdout).unwrap();
+        assert_eq!(written["kind"], "assistant");
+        assert_eq!(written["format_version"], 1);
+        assert_eq!(
+            written["source"],
+            json!({"deployment_id": DEPLOYMENT_ID, "assistant_id": ASSISTANT_ID, "version": 3})
+        );
+        let mut expected = served_assistant();
+        let expected = expected.as_object_mut().unwrap();
+        for server_set in ["assistant_id", "version", "created_at", "updated_at"] {
+            expected.remove(server_set);
+        }
+        assert_eq!(written["assistant"], Value::Object(expected.clone()));
+        assert!(
+            run.stderr.contains("Reading assistant"),
+            "progress goes to stderr: {}",
+            run.stderr
+        );
     }
 }
