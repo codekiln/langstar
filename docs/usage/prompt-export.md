@@ -70,7 +70,7 @@ Move each one into the workspace's secrets or the deployment's environment varia
 No file was written.
 ```
 
-Keep credentials in the workspace's secrets (see [workspace-secrets.md](./workspace-secrets.md)), and have the model read them through a secret reference. A prompt saved in the LangSmith playground does this already.
+Keep credentials in the workspace's secrets (see [workspace-secrets.md](./workspace-secrets.md)), and have the model read them through a secret reference. When you save a prompt in the LangSmith playground, the playground already stores the model's key that way.
 
 Export stops before it reads anything while `LANGSTAR_DEBUG_HTTP` is set, because langstar then writes each response it reads, with any credential in it, to a debug file and to stderr. Unset `LANGSTAR_DEBUG_HTTP` and run the export again. [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847) tracks the change that would let export run with it set.
 

@@ -134,12 +134,14 @@ pub enum PromptCommands {
         organization_id: Option<String>,
     },
 
-    /// Write one prompt commit to a JSON file that `prompt import` can read
+    /// Write one prompt commit, with its model, to a JSON file you can commit to Git
     ///
-    /// The file holds the repo details, the commit's manifest with its model,
+    /// The file holds the prompt's details, the commit's manifest with its model,
     /// the tags that point at the commit, and the names of the secrets the model
-    /// reads. Export refuses to write a file that would hold a credential, and
-    /// names the path of each string the check flagged.
+    /// reads. Before it writes, export checks the file for credentials such as an
+    /// API key. When it finds one, it writes nothing and prints the JSON Pointer
+    /// of each string it flagged, such as
+    /// /commit/manifest/kwargs/last/kwargs/openai_api_key.
     Export {
         /// Prompt handle: "my-prompt" or "-/my-prompt" for a prompt in your
         /// workspace, or "owner/my-prompt"
@@ -1428,9 +1430,9 @@ mod tests {
 
 /// Tests of `prompt export` against a `mockito` server that serves one prompt.
 ///
-/// Each test serves the three reads export sends — the repo, the commit with
-/// `include=model`, and the repo's tags — and calls the export code the
-/// command runs, with stdout and stderr captured.
+/// Each test starts a mockito server that answers the requests export sends
+/// for the repo, for the commit with `include=model`, and for the repo's tags,
+/// then calls the export code the command runs and captures stdout and stderr.
 #[cfg(test)]
 mod export_tests {
     use super::*;

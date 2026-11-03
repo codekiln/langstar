@@ -1,9 +1,10 @@
 //! Integration tests for `langstar prompt export`
 //!
-//! Each test creates a private prompt in the workspace `LANGSMITH_WORKSPACE_ID`
-//! names, pushes commits to it through the SDK, runs the langstar binary to export
-//! it, and compares the file against the SDK's own read of the commit. Each test
-//! deletes its prompt when it ends, whether it passed or not.
+//! Each test creates a private prompt in the workspace whose ID is in
+//! `LANGSMITH_WORKSPACE_ID`, pushes commits to it through the SDK, runs the
+//! langstar binary to export it, and compares the file with what the SDK returns
+//! for the same commit. Each test deletes its prompt when it ends, whether it
+//! passed or not.
 //!
 //! The unit tests in `cli/src/commands/prompt.rs` cover the credential check's
 //! refusals, `--not-a-secret` and the model class through a `mockito` server.
@@ -121,8 +122,8 @@ impl TestPrompt {
             .unwrap_or_else(|e| panic!("Failed to tag {}: {}", self.repo, e));
     }
 
-    /// Assert that every field of the export file matches the SDK's read of the
-    /// commit with this hash.
+    /// Assert that every field of the export file matches what the SDK returns
+    /// for the commit with this hash.
     fn assert_file_matches_sdk_read(&self, file: &Value, commit_hash: &str) {
         let prompts = self.client.prompts();
         let details = self
@@ -296,8 +297,8 @@ fn test_export_json_schema_prompt_without_a_model() {
     );
 }
 
-/// A `function_calling` structured prompt keeps its nested schema and
-/// its method unchanged.
+/// Export writes a `function_calling` structured prompt's nested schema and
+/// method unchanged.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_function_calling_prompt_with_a_nested_schema() {
@@ -346,8 +347,8 @@ fn test_export_function_calling_prompt_with_a_nested_schema() {
     );
 }
 
-/// A prompt with several messages and a placeholder keeps every
-/// message.
+/// Export writes every message of a prompt that has several messages and a
+/// placeholder.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_prompt_with_several_messages_and_a_placeholder() {
@@ -440,7 +441,8 @@ fn test_export_prompt_with_a_model_and_metadata() {
     }
 }
 
-/// `--commit prod` exports the earlier commit the `prod` tag points at.
+/// With `--commit prod`, export writes the earlier commit the `prod` tag points
+/// at.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_the_commit_a_tag_points_at() {

@@ -232,7 +232,7 @@ langstar prompt export my-prompt --output my-prompt.json
 langstar prompt export my-prompt --commit prod --output my-prompt.json
 ```
 
-Export refuses to write a file that holds a credential, such as an API key in the model's settings. It names the path of each flagged string and writes nothing. Keep credentials in the workspace's secrets, and read an export file before you commit it. See [docs/usage/prompt-export.md](./docs/usage/prompt-export.md) for what the check flags and for `--not-a-secret`.
+Before it writes, export checks the file for credentials, such as an API key in the model's settings. When it finds one, it writes nothing and prints where each one sits in the file, as a JSON Pointer such as `/commit/manifest/kwargs/last/kwargs/openai_api_key`. Keep credentials in the workspace's secrets, and read an export file before you commit it. See [docs/usage/prompt-export.md](./docs/usage/prompt-export.md) for what the check flags and for `--not-a-secret`.
 
 #### LangGraph Assistants (Deployment-Level)
 
