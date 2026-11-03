@@ -924,8 +924,8 @@ mod integration {
         }
     }
 
-    /// A failed export leaves an existing `--out` file as it was, because the
-    /// first page is requested before the file is opened.
+    /// A failed export leaves an existing `--out` file as it was, because
+    /// langstar opens `--out` only after the last page arrived.
     #[test]
     fn test_dataset_export_failure_leaves_existing_out_file_untouched() {
         require_api_credentials();
