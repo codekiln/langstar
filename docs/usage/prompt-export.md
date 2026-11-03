@@ -1,6 +1,6 @@
 # Exporting a Prompt
 
-`langstar prompt export` writes one commit of a LangSmith prompt to a JSON file. You commit the file to Git, a reviewer reads the prompt change in a pull request, and `langstar prompt import` recreates the prompt in another workspace later.
+`langstar prompt export` writes one commit of a LangSmith prompt to a JSON file. You commit the file to Git, and a reviewer reads the prompt change in a pull request. `langstar prompt import`, which will recreate the prompt from that file in another workspace, is still being built under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807).
 
 Export runs with the source workspace's credentials. It needs `LANGSMITH_API_KEY`, and the workspace comes from `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or `workspace_id` in `config.toml`, as for the other `prompt` commands.
 

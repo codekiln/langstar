@@ -263,8 +263,8 @@ fn chat_prompt(template: &str) -> Value {
     })
 }
 
-/// A `json_schema` structured prompt saved without a model exports
-/// every field the SDK reads, an empty `requires.secrets` and a null
+/// For a `json_schema` structured prompt saved without a model, export
+/// writes every field the SDK reads, an empty `requires.secrets` and a null
 /// `requires.model_class`.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -391,8 +391,8 @@ fn test_export_prompt_with_several_messages_and_a_placeholder() {
     );
 }
 
-/// A prompt with a model and metadata lists the model's secret and
-/// class, and holds no secret value.
+/// For a prompt with a model and metadata, export lists the model's secret
+/// and class and writes no secret value.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_prompt_with_a_model_and_metadata() {
@@ -467,8 +467,8 @@ fn test_export_the_commit_a_tag_points_at() {
     assert_eq!(file["commit"]["tags"], json!(["prod"]));
 }
 
-/// A handle the workspace has no prompt for exits with status 1,
-/// names the handle and writes no file.
+/// When the workspace has no prompt with the handle, export exits with
+/// status 1, names the handle and writes no file.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_a_handle_with_no_prompt() {
@@ -534,7 +534,8 @@ fn test_export_to_stdout_holds_only_the_file() {
     );
 }
 
-/// One commit with two tags exports to the same file twice.
+/// Export writes the same file each time it exports a commit that has two
+/// tags.
 #[test]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
 fn test_export_a_commit_with_two_tags_twice() {

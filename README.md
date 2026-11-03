@@ -222,7 +222,7 @@ For detailed examples and workflows, see [docs/examples/structured-output-prompt
 
 **Exporting a Prompt:**
 
-`langstar prompt export` writes one prompt commit, with its model, to a JSON file you can commit to Git and import into another workspace.
+`langstar prompt export` writes one prompt commit, with its model, to a JSON file you can commit to Git. `langstar prompt import`, which will read that file into another workspace, is still being built under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807).
 
 ```bash
 # The latest commit, to a file
