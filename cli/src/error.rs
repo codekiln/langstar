@@ -15,6 +15,9 @@ pub enum CliError {
     Io(std::io::Error),
     /// Other errors
     Other(anyhow::Error),
+    /// The command has printed its report and exits with this status, such as
+    /// 3 when `assistant import` finds a difference. `main` prints nothing more.
+    Exit(i32),
 }
 
 impl fmt::Display for CliError {
@@ -24,6 +27,7 @@ impl fmt::Display for CliError {
             CliError::Config(e) => write!(f, "Configuration error: {}", e),
             CliError::Io(e) => write!(f, "IO error: {}", e),
             CliError::Other(e) => write!(f, "{}", e),
+            CliError::Exit(code) => write!(f, "exit status {}", code),
         }
     }
 }
