@@ -3,7 +3,7 @@
 ## 1. Local builds through mise
 
 - [x] 1.1 Set `mr_boxington = true` on the `rust` entry in `mise.toml`, keeping `version = "1.99.0"`; verify that `mise exec -- cargo clippy --workspace --all-targets --all-features -- -D warnings` passes and ends with an `mbx[cache]:` line.
-- [x] 1.2 Pin `mr-boxington = "1.28.0"` in `mise.toml` with a comment saying it was the newest release older than `minimum_release_age` when pinned; verify that `mise exec -- mbx --version` prints `mbx 1.28.0`.
+- [x] 1.2 Pin `mr-boxington = "1.29.0"` in `mise.toml` with a comment saying it was the newest release older than `minimum_release_age` when pinned; verify that `mise exec -- mbx --version` prints `mbx 1.29.0`.
 - [x] 1.3 Add a paragraph to `docs/dev/getting-started.md` saying that Cargo started through mise runs through mbx, how to check which `cargo` a shell runs with `command -v cargo`, and that `target/` becomes a symlink into mbx's cache; verify that `mise exec -- cargo nextest run --workspace --lib` passes and prints an `mbx[cache]:` line.
 
 ## 2. Decide whether CI uses Mr Boxington

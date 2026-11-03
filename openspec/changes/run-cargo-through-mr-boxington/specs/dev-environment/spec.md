@@ -29,8 +29,8 @@ The `rust` entry in `mise.toml` SHALL set `mr_boxington = true`, so that Cargo s
 #### Scenario: mise installs the pinned release
 
 - **WHEN** a developer runs `mise install` in a langstar checkout
-- **THEN** mise installs `mr-boxington` 1.28.0
-- **AND** `mise exec -- mbx --version` prints 1.28.0
+- **THEN** mise installs `mr-boxington` 1.29.0
+- **AND** `mise exec -- mbx --version` prints 1.29.0
 
 ### Requirement: CI and release workflows compile with plain Cargo
 

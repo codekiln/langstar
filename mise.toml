@@ -29,8 +29,11 @@ lefthook = "2.2.1"
 # global `mr_boxington = true`, so the option has to be set here too.
 # https://github.com/jdx/mr-boxington
 rust = { version = "1.99.0", mr_boxington = true }
-# 1.28.0 was the newest release older than minimum_release_age when pinned.
-mr-boxington = "1.28.0"
+# 1.29.0 was the newest release older than minimum_release_age on 2026-11-03.
+# It stops a build in one worktree from waiting, with no output, behind another
+# worktree that is compiling the same crate.
+# https://github.com/jdx/mr-boxington/releases/tag/v1.29.0
+mr-boxington = "1.29.0"
 # Secrets: fnox resolves fnox.toml's 1Password references (op) into an
 # age-encrypted local cache. See docs/dev/environment-variables.md.
 fnox = "1.38.1"

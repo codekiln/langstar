@@ -6,7 +6,7 @@ codekiln's global mise config turns on `mr_boxington` for Rust, but that setting
 
 CI's Rust jobs install Rust with `dtolnay/rust-toolchain@stable`, cache with `Swatinem/rust-cache@v2` and run plain `cargo`. rustup reads the same 1.99.0 pin from `rust-toolchain.toml`, so those jobs compile with 1.99.0. rust-cache keys each job's entry by the job's name.
 
-The links to Mr Boxington's docs and source below point at mbx v1.29.1 and mr-boxington-action v1.7.3. langstar pins mbx 1.28.0.
+The links to Mr Boxington's docs and source below point at mbx v1.29.1 and mr-boxington-action v1.7.3. langstar pins mbx 1.29.0.
 
 ## Goals / Non-Goals
 
@@ -21,9 +21,9 @@ The links to Mr Boxington's docs and source below point at mbx v1.29.1 and mr-bo
 
 ## Decisions
 
-### mise turns mbx on for langstar, pinned to 1.28.0
+### mise turns mbx on for langstar, pinned to 1.29.0
 
-The `rust` entry in `mise.toml` sets `mr_boxington = true` beside `version = "1.99.0"`, and `[tools]` pins `mr-boxington = "1.28.0"`. mise skips `minimum_release_age` for an exact pin, as the comment above `[settings]` says, so the developer chose 1.28.0 by hand as the newest release older than five days when pinned. `mise exec -- cargo clippy --workspace --all-targets --all-features -- -D warnings` in this worktree ended with `mbx[cache]: 286 hits, 13 misses`, so local builds through mise reach mbx.
+The `rust` entry in `mise.toml` sets `mr_boxington = true` beside `version = "1.99.0"`, and `[tools]` pins `mr-boxington = "1.29.0"`. mise skips `minimum_release_age` for an exact pin, as the comment above `[settings]` says, so the developer chose 1.29.0 by hand as the newest release older than five days on 2026-11-03. It fixes builds in different worktrees queuing behind one another, for 5 to 40 minutes with no output, when they compile the same crate with different inputs ([mbx v1.29.0 release notes](https://github.com/jdx/mr-boxington/releases/tag/v1.29.0)). Its upgrade notes cover build scripts that watch git metadata, optimized profiles with LTO and wrappers set in Cargo config, and langstar has none of them. With 1.29.0, `mise exec -- cargo clippy --workspace --all-targets --all-features -- -D warnings` passed in a langstar worktree on 2026-11-03 and ended with `mbx[cache]: 285 hits, 40 misses`, so local builds through mise reach mbx.
 
 ### CI keeps rust-cache and plain cargo
 
@@ -40,7 +40,7 @@ Anyone who tries mbx in CI again has to give each job its own `cache-generation`
 
 ### Release builds stay off mbx
 
-`.github/workflows/release.yml` builds the binaries langstar publishes. mbx's docs say a release build should not restore compiler outputs from a shared cache, so that a poisoned entry cannot reach a published binary ([mr-boxington/docs/github-action.md:312-324](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/github-action.md#L312-L324)). If the developers later switch CI to mbx, they keep the release jobs on plain `cargo`.
+`.github/workflows/release.yml` builds the binaries langstar publishes, and its build job restores `target/` through `Swatinem/rust-cache` before it runs `cargo build --release`. mbx's docs warn release jobs off restoring compiler outputs from any shared cache, `actions/cache` included, so that a poisoned cache entry cannot reach a published binary ([mr-boxington/docs/github-action.md:312-324](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/github-action.md#L312-L324)). rust-cache stores its entries through `actions/cache`, so today's release build takes the risk that warning describes. A developer can remove the risk by deleting the build job's `Cache dependencies` step, and each release then compiles from scratch; this pull request leaves `release.yml` as it is. If the developers later switch CI to mbx, they keep the release jobs on plain `cargo`.
 
 ### CI timings
 
@@ -66,8 +66,7 @@ Saving the cache explains part of why mbx's second run was slower than rust-cach
 
 ## Risks / Trade-offs
 
-- [The trial runs saved 14 mbx entries, about 5 GB, under this pull request's scope, while the repository's cache was already over GitHub's 10 GB default] → GitHub evicts the least recently used entries, so `main`'s rust-cache entries may be evicted once and rebuilt on the next push to `main`.
-- [Cargo that runs as `~/.cargo/bin/cargo` instead of through mise's wrapper skips mbx. On a Linux filesystem that cannot clone files, such as ext4, it can also fail with `output file ... is not writeable`, because mbx restores outputs as read-only hard links ([mr-boxington/docs/troubleshooting.md:182-189](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/troubleshooting.md#L182-L189), [mr-boxington/docs/how-it-works.md:182-188](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/how-it-works.md#L182-L188))] → `docs/dev/getting-started.md` says to check which Cargo a shell runs with `command -v cargo`, to use `mise exec -- cargo ...` when it is not mise's wrapper, and to recover with `mbx clean`. Macs use APFS, which clones files, so they do not hit the error. A Claude Code session started before Mr Boxington was set up is the only shell seen running `~/.cargo/bin/cargo`, and starting a new session fixes it ([A new Claude Code session runs Cargo through mise's wrapper](#a-new-claude-code-session-runs-cargo-through-mises-wrapper)).
+- [Cargo that runs as `~/.cargo/bin/cargo` instead of through mise's wrapper skips mbx. On a Linux filesystem that cannot clone files, such as ext4, it can also fail with `output file ... is not writeable`, because mbx restores outputs as read-only hard links ([mr-boxington/docs/troubleshooting.md:182-189](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/troubleshooting.md#L182-L189), [mr-boxington/docs/how-it-works.md:182-188](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/how-it-works.md#L182-L188))] → `docs/dev/getting-started.md` says to check which Cargo a shell runs with `command -v cargo`, to use `mise exec -- cargo ...` when it is not mise's wrapper, and to recover with `mbx clean`. Macs use APFS, which clones files, so they do not hit the error.
 
 ## Resolved Questions
 

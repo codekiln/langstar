@@ -11,7 +11,7 @@ codekiln's global mise config sets `mr_boxington = true` on its `rust` entry, bu
 ## What Changes
 
 - `mise.toml` sets `mr_boxington = true` on the `rust` entry, keeping the 1.99.0 pin, so Cargo started through mise (tasks, `mise exec`, the shims or an activated shell) runs through mbx.
-- `mise.toml` pins `mr-boxington = "1.28.0"`. An exact pin is exempt from the repo's `minimum_release_age = "5d"`, so whoever bumps it picks a release at least five days old by hand, as the comment above `[settings]` says.
+- `mise.toml` pins `mr-boxington = "1.29.0"`. An exact pin is exempt from the repo's `minimum_release_age = "5d"`, so whoever bumps it picks a release at least five days old by hand, as the comment above `[settings]` says.
 - `docs/dev/getting-started.md` says what mbx does, how to check that `cargo` goes through it, and that `target/` becomes a symlink into mbx's cache.
 - CI keeps `Swatinem/rust-cache` and plain `cargo`. The agent working on this change switched the compiling CI jobs to `jdx/mr-boxington-action`, found every job slower on a warm run than with rust-cache, and switched them back; [design.md, CI keeps rust-cache and plain cargo](design.md#ci-keeps-rust-cache-and-plain-cargo) has the measurements.
 
@@ -29,7 +29,6 @@ None.
 
 - `mise.toml`: the `rust` entry and a new `mr-boxington` pin.
 - `docs/dev/getting-started.md`: three paragraphs on mbx.
-- A Claude Code session started before Mr Boxington was set up can still run `~/.cargo/bin/cargo`, which skips the cache. A Claude Code session started on 2026-11-03 ran mise's wrapper instead, so starting a new session fixes it, as [design.md, A new Claude Code session runs Cargo through mise's wrapper](design.md#a-new-claude-code-session-runs-cargo-through-mises-wrapper) says.
 
 ## Citations
 
