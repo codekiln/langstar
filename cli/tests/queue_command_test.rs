@@ -238,8 +238,24 @@ fn test_queue_items_lifecycle() {
     }
 
     // ── ADD (CLI) ──
+    // `runs query` can list a run before the items API can find it, so the test
+    // retries a 404 the way docs/queues.md tells a script to.
     let (a, b) = (run_a.to_string(), run_b.to_string());
-    let stdout = run_ok(&["queue", "add-runs", &queue_id, &a, &b]);
+    let stdout = loop {
+        let output = langstar_cmd()
+            .args(["queue", "add-runs", &queue_id, &a, &b])
+            .output()
+            .expect("Failed to execute CLI");
+        if output.status.success() {
+            break String::from_utf8_lossy(&output.stdout).into_owned();
+        }
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains("404") && Instant::now() <= deadline,
+            "langstar queue add-runs failed: {stderr}"
+        );
+        std::thread::sleep(Duration::from_secs(5));
+    };
     assert!(stdout.contains("Added 2 runs"), "add-runs output: {stdout}");
 
     // ── READ (CLI): both runs show up as RUN items, wait for them to be visible ──
