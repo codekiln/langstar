@@ -302,7 +302,7 @@ pub struct Prompt {
 
 /// The `repo_handle` to send when creating a repo: `-/name` (`-` is the current
 /// workspace) becomes `name`, and every other handle is sent as given.
-fn strip_current_workspace_owner(repo_handle: &str) -> &str {
+fn strip_dash_owner(repo_handle: &str) -> &str {
     repo_handle.strip_prefix("-/").unwrap_or(repo_handle)
 }
 
@@ -501,7 +501,7 @@ impl<'a> PromptClient<'a> {
         }
 
         let request_body = CreateRepoRequest {
-            repo_handle: strip_current_workspace_owner(repo_handle).to_string(),
+            repo_handle: strip_dash_owner(repo_handle).to_string(),
             description,
             readme,
             is_public,
@@ -1275,17 +1275,14 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn test_strip_current_workspace_owner_drops_dash() {
-        assert_eq!(strip_current_workspace_owner("-/my-prompt"), "my-prompt");
+    fn test_strip_dash_owner_drops_dash() {
+        assert_eq!(strip_dash_owner("-/my-prompt"), "my-prompt");
     }
 
     #[test]
-    fn test_strip_current_workspace_owner_keeps_named_owner_and_bare_name() {
-        assert_eq!(
-            strip_current_workspace_owner("acme/my-prompt"),
-            "acme/my-prompt"
-        );
-        assert_eq!(strip_current_workspace_owner("my-prompt"), "my-prompt");
+    fn test_strip_dash_owner_keeps_named_owner_and_bare_name() {
+        assert_eq!(strip_dash_owner("acme/my-prompt"), "acme/my-prompt");
+        assert_eq!(strip_dash_owner("my-prompt"), "my-prompt");
     }
 
     #[test]
