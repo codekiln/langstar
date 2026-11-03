@@ -50,6 +50,8 @@ To see which Cargo a shell runs, run `command -v cargo`. In a terminal it prints
 
 On a Linux filesystem that cannot clone files, such as ext4, Cargo run without mbx can fail with `output file ... is not writeable`, because mbx restores outputs as read-only hard links. Run `mbx clean` to discard the managed target directory, or delete the file the error names. macOS's APFS clones files, so this does not happen on a Mac.
 
+rust-analyzer runs its own `cargo check` in the background, and that check skips mbx until `mbx setup` points it at mbx. Run `mbx setup` once per machine; it sets `check.overrideCommand` in rust-analyzer's user configuration file. When it asks `Where should plain cargo commands use mbx?`, choose **Create the shim without activating it**, and skip any `PATH` change it prints. Do not pass `--yes`, `--global` or `--local`: each one adds a second Cargo wrapper in mise that takes precedence over the `mr_boxington` option in `mise.toml`. To check the result, run `env -u MISE_SHELL mbx setup --status` ([mr-boxington/docs/setup.md, rust-analyzer](https://github.com/jdx/mr-boxington/blob/v1.29.0/docs/setup.md#rust-analyzer)).
+
 ### Step 2: One-Time Machine Setup
 
 Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.
