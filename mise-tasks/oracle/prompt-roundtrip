@@ -26,8 +26,8 @@ handle="-/${repo}"
 # https://github.com/codekiln/langstar/issues/820
 "${official[@]}" prompt create --name "$repo" >/dev/null
 
-# Registered only after create succeeds, so a name collision can never delete
-# another run's prompt.
+# The script sets the cleanup trap only after `prompt create` succeeds, so a name
+# collision never deletes another run's prompt.
 schema=""
 # A failed delete turns a passing run into a failure and keeps an earlier failure's status.
 cleanup() {

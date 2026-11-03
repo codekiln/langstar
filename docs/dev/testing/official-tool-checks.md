@@ -1,6 +1,6 @@
 # Checking langstar with the official LangChain tools
 
-langstar's CLI and SDK send requests through the same code, so a bug in that code passes both sets of langstar tests. A check here creates something with langstar and reads it back with LangChain's own CLI, which LangChain wrote separately. This extends [crud-lifecycle-pattern.md](crud-lifecycle-pattern.md).
+langstar's CLI and SDK send requests through the same code, so a bug in that code passes both sets of langstar tests. A check here creates something with langstar and reads it back with LangChain's own CLI, which LangChain wrote separately. These checks add an outside reader to the create-then-read tests in [CRUD Lifecycle Testing Pattern](crud-lifecycle-pattern.md), where langstar's CLI and SDK check each other.
 
 ## The tools
 
@@ -12,7 +12,7 @@ langstar's CLI and SDK send requests through the same code, so a bug in that cod
 | [langgraph-cli](https://pypi.org/project/langgraph-cli/) | `langgraph` |
 | [langgraph-sdk](https://pypi.org/project/langgraph-sdk/) | Python library; run it with `uv run --with "langgraph-sdk==$LANGGRAPH_SDK_VERSION"` |
 
-mise's `minimum_release_age` setting holds back releases younger than five days, but it skips exact versions. Before you change a version here, check that the new release is at least five days old.
+mise's `minimum_release_age` setting holds back releases younger than five days only for a version range; an exact version installs at any age. Before you change a version here, check that the new release is at least five days old.
 
 ## Which tool checks which command
 
