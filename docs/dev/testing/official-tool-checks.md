@@ -1,6 +1,6 @@
 # Checking langstar with the official LangChain tools
 
-A langstar command can be wrong in a way its own SDK cannot see, because the CLI and SDK share the same request code. The official tools are a second implementation: create with langstar, read back with the official tool, and compare. This extends [crud-lifecycle-pattern.md](crud-lifecycle-pattern.md).
+langstar's CLI and SDK send requests through the same code, so a bug in that code passes both sets of langstar tests. A check here creates something with langstar and reads it back with LangChain's own CLI, which LangChain wrote separately. This extends [crud-lifecycle-pattern.md](crud-lifecycle-pattern.md).
 
 ## The tools
 
@@ -12,7 +12,7 @@ A langstar command can be wrong in a way its own SDK cannot see, because the CLI
 | [langgraph-cli](https://pypi.org/project/langgraph-cli/) | `langgraph` |
 | [langgraph-sdk](https://pypi.org/project/langgraph-sdk/) | Python library; run it with `uv run --with "langgraph-sdk==$LANGGRAPH_SDK_VERSION"` |
 
-Bump a pin by hand and check that the release is older than five days: `minimum_release_age` does not apply to exact pins.
+mise's `minimum_release_age` setting holds back releases younger than five days, but it skips exact versions. Before you change a version here, check that the new release is at least five days old.
 
 ## Which tool checks which command
 
@@ -24,21 +24,22 @@ Bump a pin by hand and check that the release is older than five days: `minimum_
 | `runs` | `langsmith run`, `langsmith trace` |
 | `eval` | `langsmith evaluator`, `langsmith experiment` |
 | `queue` | none |
-| `langsmith thread`, `langsmith hub` | no langstar command yet |
 | `deployment`, `assistant`, `graph` | `langgraph` (local server, build, `deploy list`/`delete`/`logs`/`revisions list`), `langgraph-sdk` (assistants, threads, runs on a deployment) |
 | `secrets`, `model-config`, `config` | none |
 
-The table says what a tool can reach, not what a check covers today. Run `langsmith <group> --help` to confirm a subcommand exists before writing a check.
+The official `langsmith thread` and `langsmith hub` commands have no langstar command to check yet.
+
+Only `prompt` has a check today; the table lists what the official tools could check. Before writing a check, run `langsmith <group> --help` to see the subcommands.
 
 ## Checks
 
-Each check is a mise task under `mise-tasks/oracle/`, named for the official tool acting as the reference result. It gets its credentials from `fnox exec` and cleans up what it creates.
+Each check is a mise task under `mise-tasks/oracle/`. In testing, an oracle supplies the expected result, and here LangChain's own CLI is the oracle. Each task gets its credentials from `fnox exec` and cleans up what it creates.
 
 | Task | Checks |
 |------|--------|
 | `mise run oracle:prompt-roundtrip` | `langstar prompt push` against `langsmith prompt pull` |
 
-## Bugs the first check found
+## langstar bugs the prompt check found
 
-- [#820](https://github.com/codekiln/langstar/issues/820): `langstar prompt push --owner -` to a new repo fails. The task creates the repo with `langsmith prompt create` first.
-- [#821](https://github.com/codekiln/langstar/issues/821): a push without `--schema` to an empty repo fails. The task pushes with `--schema`.
+- [#820 prompt push --owner - fails when it creates a new repo](https://github.com/codekiln/langstar/issues/820): the task creates the repo with `langsmith prompt create` first.
+- [#821 prompt push without --schema to an empty repo fails](https://github.com/codekiln/langstar/issues/821): the task pushes with `--schema`.
