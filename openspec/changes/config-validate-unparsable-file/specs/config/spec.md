@@ -67,7 +67,7 @@ A langstar command that loads the settings SHALL warn on stderr and run on the d
 - **AND** the warning leaves out the quoted line of the file and the value the message quotes
 - **AND** langstar prints the default settings and exits successfully
 
-### Requirement: Every command outside the `config` group, `config show` and `config <setting>` load the settings
+### Requirement: `config show`, `config <setting>` and every command outside the `config` group load the settings
 
 Every command outside the `config` group SHALL load the settings, and so SHALL `langstar config show` and `langstar config <setting>` with no subcommand. `langstar config show` warns and still prints the config file's path. `langstar config create` and `langstar config env` never load the settings and print no warning.
 

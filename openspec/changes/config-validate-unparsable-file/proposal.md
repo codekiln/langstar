@@ -4,7 +4,7 @@ Issue: [#810 🐛 fix(config): make config validate fail on a config file that d
 
 ## Why
 
-`openspec/specs/config/spec.md` says nothing about a `config.toml` that does not parse. `langstar config validate` already failed on that file, but no test checked it, and every other command that loads the settings ran on the defaults without telling the user.
+When a user's `config.toml` does not parse, every langstar command except `langstar config validate` runs on the default settings without telling them. `config validate` already fails on that file, but no test checks it.
 
 ## What Changes
 
