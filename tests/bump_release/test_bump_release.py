@@ -105,8 +105,8 @@ class JsonModeTest(unittest.TestCase):
         self.assertIn("Failed to analyze commits", result.stderr)
 
     def test_shell_function_fails_on_an_exit_code_above_3_even_with_valid_json(self):
-        # Copy bump_release.sh next to a fake analyzer, since it runs the
-        # analyze_commits.py in its own directory.
+        # bump_release.sh runs the analyze_commits.py in the directory that holds
+        # bump_release.sh, so copy the script next to a fake analyzer.
         scripts = tempfile.TemporaryDirectory()
         self.addCleanup(scripts.cleanup)
         shutil.copy(SCRIPTS / "bump_release.sh", scripts.name)
