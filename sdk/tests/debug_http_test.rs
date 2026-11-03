@@ -19,7 +19,7 @@ const TEST_NAME: &str = "debug_http_writes_no_api_key";
 const CHILD_MARKER: &str = "LANGSTAR_TEST_DEBUG_HTTP_CHILD";
 const CHILD_DONE: &str = "debug-http-child-done";
 
-/// An `lsv2_pt_`-shaped key, built at run time so GitHub secret scanning does not flag this file
+/// Builds an `lsv2_pt_`-shaped key from pieces, so this file never holds a whole key for GitHub secret scanning to flag
 fn fake_api_key() -> String {
     format!("lsv2_pt_{}_{}", "0123456789abcdef".repeat(2), "abcdef0123")
 }
