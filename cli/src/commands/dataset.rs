@@ -706,7 +706,7 @@ impl DatasetCommands {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Write each example from `examples` to `output` as it arrives, in `format`,
-/// and return how many it wrote. Stops at the first page that fails.
+/// and return how many it wrote. Returns the error from the first page request that fails.
 async fn write_export<S, E>(
     examples: S,
     format: ExportFormat,
