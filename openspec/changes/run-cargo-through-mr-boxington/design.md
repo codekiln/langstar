@@ -2,9 +2,9 @@
 
 ## Context
 
-langstar pins Rust 1.99.0 in both `mise.toml` and `rust-toolchain.toml`. mise's `mr_boxington` option on a `rust` entry makes Cargo started through mise run through `mbx`, but a project's `rust` entry replaces the global one, so codekiln's global `mr_boxington = true` did not apply inside langstar.
+codekiln's global mise config turns on `mr_boxington` for Rust, but that setting never reached langstar. mise uses langstar's own `rust` entry in `mise.toml`, which pins 1.99.0, in place of the global one. With `mr_boxington = true` on a `rust` entry, mise runs Cargo through `mbx` whenever Cargo starts through mise.
 
-CI's Rust jobs install Rust with `dtolnay/rust-toolchain@stable`, cache with `Swatinem/rust-cache@v2` and run plain `cargo`. rustup reads `rust-toolchain.toml`, so those jobs compile with 1.99.0. rust-cache keys each job's entry by the job's name.
+CI's Rust jobs install Rust with `dtolnay/rust-toolchain@stable`, cache with `Swatinem/rust-cache@v2` and run plain `cargo`. rustup reads the same 1.99.0 pin from `rust-toolchain.toml`, so those jobs compile with 1.99.0. rust-cache keys each job's entry by the job's name.
 
 The links to Mr Boxington's docs and source below point at mbx v1.29.1 and mr-boxington-action v1.7.3. langstar pins mbx 1.28.0.
 
@@ -36,7 +36,7 @@ The two ways to carry mbx's store between jobs do not fit langstar now:
 - The action's `objects` setting saves mbx's store instead of `target/`, and leaves out the registry, so Cargo downloads crates again; the action's author measured it about ten seconds slower than the default setting on a small edit ([mr-boxington-action/README.md:53-68](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/README.md#L53-L68)). Non-Goals names it as a separate experiment.
 - The `remote` backend needs a cache server or an S3 bucket ([mr-boxington/docs/github-action.md:151-222](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/github-action.md#L151-L222)), which langstar does not have.
 
-The trial also showed what a later attempt needs. The action's generated key has no job name ([mr-boxington-action/src/lib.ts:286-294](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/src/lib.ts#L286-L294)) and its restore key drops only the commit ([mr-boxington-action/src/lib.ts:322-329](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/src/lib.ts#L322-L329)), so each job needs its own `cache-generation`, which goes into both ([mr-boxington-action/src/lib.ts:385-392](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/src/lib.ts#L385-L392), [mr-boxington-action/README.md:209](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/README.md#L209)). With `cache-generation: v1-<job>`, every job in the second run restored the entry its own job saved. `cache-key-suffix` would not separate them, because it leaves the restore keys shared ([mr-boxington-action/README.md:162-178](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/README.md#L162-L178)). A pull request saves only with `save-on-pull-request: true`, into its own merge-ref scope, and a fork pull request never saves ([mr-boxington-action/README.md:191](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/README.md#L191), [mr-boxington-action/src/lib.ts:507-528](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/src/lib.ts#L507-L528)). The action should be pinned to a commit ([mr-boxington/docs/github-action.md:371-374](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/github-action.md#L371-L374)) and given `version:` so it installs the release `mise.toml` pins rather than the latest ([mr-boxington/docs/github-action.md:17-20](https://github.com/jdx/mr-boxington/blob/v1.29.1/docs/github-action.md#L17-L20)).
+Anyone who tries mbx in CI again has to give each job its own `cache-generation`, because the action's cache key leaves out the job name ([mr-boxington-action/src/lib.ts:286-294](https://github.com/jdx/mr-boxington-action/blob/v1.7.3/src/lib.ts#L286-L294)). With `cache-generation: v1-<job>`, every job in the second mbx run restored the entry its own job saved.
 
 ### Release builds stay off mbx
 
