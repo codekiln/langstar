@@ -830,8 +830,8 @@ fn body_of(assistant: Assistant) -> AssistantBody {
 /// destination checks returns before import writes the record. An error from
 /// the create, the record write or the read-back can leave a pending or
 /// created ID in the record, so the next import finds that assistant. `main`
-/// exits with 1 on any error. A failed check or a difference goes in the
-/// report, whose exit status is 3.
+/// exits with 1 on any error. Import puts a failed check or a difference in
+/// the report it returns, and the command exits with status 3 after printing it.
 async fn import_assistant(
     client: &LangchainClient,
     deployment_id: &str,

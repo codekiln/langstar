@@ -1,13 +1,11 @@
-//! Integration tests for `langstar assistant import`
-//!
-//! Task 10.1, "Add langstar assistant import", of the
-//! `export-import-prompts-and-assistants` OpenSpec change lists these tests in
-//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`. Each one
-//! creates its source assistant through the SDK on the shared test deployment
-//! from `common/fixtures.rs`, exports it through the CLI, and imports the file
-//! back onto the same deployment as a new assistant. Until task 2.4 adds a
-//! destination deployment, the test deployment is the destination too, as
-//! tasks.md says. Each test deletes the assistants it made. The unit tests in
+//! Integration tests that export an assistant from the shared test deployment
+//! and import the file back onto the same deployment as a new assistant. Each
+//! test creates its source assistant through the SDK, exports it through the
+//! CLI, and deletes the assistants it made. They are the tests that task 10.1,
+//! "Add langstar assistant import", lists in
+//! `openspec/changes/export-import-prompts-and-assistants/tasks.md`. Until task
+//! 2.4 adds a destination deployment, the test deployment is the destination
+//! too, as tasks.md says. The unit tests in
 //! `cli/src/commands/assistant.rs` cover the settings field import sends, the
 //! pending record entry and the read-back, through a mock Agent Server.
 //!

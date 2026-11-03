@@ -16,7 +16,7 @@ Before import creates anything, it checks the destination: the deployment has to
 2. It creates the assistant with that ID and the file's name, description, graph ID, settings and metadata, and marks the ID created in the record.
 3. It reads the assistant back from the deployment and compares it with the file. It prints each field that differs, by its JSON Pointer path, and exits with status 3 when one does.
 
-Import reads prompts from the workspace that `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file names, the same workspace it looks for the deployment in. When none of them names one and your API key reaches several workspaces, import uses the workspace that holds the deployment.
+Import looks for the prompts in the workspace you set with `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file, which is also where it looks for the deployment. When you set none of them and your API key reaches several workspaces, import looks in the workspace that holds the deployment.
 
 To see every flag:
 
@@ -26,7 +26,7 @@ langstar assistant import --help
 
 ## The destination record
 
-The record holds, for each deployment you imported the file onto, the ID of the assistant import created there:
+For each deployment you import the file onto, the record holds the ID of the assistant that import created there:
 
 ```json
 {
@@ -52,7 +52,7 @@ When the record names an assistant that someone has since deleted from the deplo
 
 ## Import sends settings in config.configurable or context, never both
 
-The Agent Server keeps an assistant's settings in both `config.configurable` and `context`, and export writes both. A newer Agent Server refuses a create that sets both, so import sends one: `config.configurable` when the file holds the settings there, and `context` when only `context` holds them. The server fills the other field in itself, so the read-back matches the file. When the file's two fields hold different settings, import cannot tell which one you meant. It names both paths, creates nothing and exits with status 1.
+The Agent Server keeps an assistant's settings in both `config.configurable` and `context`, and export writes both. The Agent Server answers a create that sets both with HTTP 400 and the message `Cannot specify both configurable and context`, so import sends one: `config.configurable` when the file holds the settings there, and `context` when only `context` holds them. The server fills the other field in itself, so the read-back matches the file. When the file's two fields hold different settings, import cannot tell which one you meant. It names both paths, creates nothing and exits with status 1.
 
 ## Machine-readable output
 
@@ -72,7 +72,7 @@ Each difference names its `path` and the `file` and `destination` values. Import
 
 ## Copy every assistant from one deployment to another
 
-These steps copy the assistants you created on an old deployment onto a new deployment in the same workspace, and then check the copies. They use `jq`. Replace `<old-deployment>` and `<new-deployment>` with each deployment's name or ID from `langstar deployment list`. When your API key reaches several workspaces, add `--workspace-id <workspace-id>` to each command.
+Follow these steps to copy the assistants you created on an old deployment onto a new deployment in the same workspace, and then to check the copies. They use `jq`. Replace `<old-deployment>` and `<new-deployment>` with each deployment's name or ID from `langstar deployment list`. When your API key reaches several workspaces, add `--workspace-id <workspace-id>` to each command.
 
 1. Unset `LANGSTAR_DEBUG_HTTP`, which export refuses to run with:
 
@@ -90,7 +90,7 @@ These steps copy the assistants you created on an old deployment onto a new depl
 
    When you see 100, list the next page with `--offset 100` and add its IDs to the file.
 
-3. Check that the new deployment holds no assistant with the same graph ID and name as one you are about to copy. Import creates a new assistant even when the new deployment already holds one with the same graph ID and name, and code that searches for an assistant by graph ID and name would then find two. This prints each pair both deployments hold:
+3. Find the assistants the new deployment already holds. Import creates a new assistant without looking for one with the same graph ID and name, so copying an assistant the new deployment already has leaves two, and code that looks an assistant up by graph ID and name finds both. The `pairs` function prints the graph ID and name of each assistant on a deployment, and `comm -12` keeps the lines both deployments print:
 
    ```bash
    pairs() {
@@ -135,7 +135,7 @@ These steps copy the assistants you created on an old deployment onto a new depl
    done < assistant-ids.txt
    ```
 
-   Then check that no graph ID and name appear twice on the new deployment. This prints nothing when none do:
+   Then list each graph ID and name that appears more than once on the new deployment. An empty result means every copy is the only assistant with its graph ID and name:
 
    ```bash
    pairs <new-deployment> | uniq -d
@@ -150,8 +150,8 @@ The copies have new assistant IDs. Code that refers to an assistant by ID has to
 - 0: the assistant on the deployment matches the file, and every check passed.
 - 1: the file is not an assistant export, its `requires.prompts` no longer matches its assistant, its two settings fields differ, or the record names an assistant the deployment no longer has; import created nothing in these cases. Another error, such as a network failure, also exits with 1; when it comes after the create, the record holds the new ID and the next import finds that assistant.
 - 2: a mistyped flag or a missing required one.
-- 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. The record still holds the ID of an assistant import created, so the next import finds it.
+- 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. When the copy differs from the file, the record keeps the ID of the assistant that import created, so the next import compares that assistant instead of creating another.
 
-## Not yet built
+## Planned: compare, verify and import's --update
 
-[#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807) adds these later: `langstar assistant compare` and `langstar assistant verify`, and `--update`, `--assistant-id` and `--dry-run` for import. Until `--update` exists, import changes no assistant it finds through the record; to change a copy, edit it with `langstar assistant update`.
+The langstar developers will add `langstar assistant compare`, `langstar assistant verify`, and import's `--update`, `--assistant-id` and `--dry-run` flags under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807). Until `--update` exists, import only compares an assistant it finds through the record; to change a copy, edit it with `langstar assistant update`.
