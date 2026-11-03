@@ -103,5 +103,5 @@ A credential under an ordinary key name with an ordinary-looking value, such as 
 ## Exit statuses
 
 - 0: export wrote the file.
-- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` or `--not-a-secret` pointer did not match, the deployment has no assistant with that ID, the assistant is a graph's default assistant, `LANGSTAR_DEBUG_HTTP` is set, or another error stopped it.
+- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` pointer named no string, a `--not-a-secret` pointer named a path where the check flagged nothing, the deployment has no assistant with that ID, the assistant is a graph's default assistant, `LANGSTAR_DEBUG_HTTP` is set, or another error stopped it.
 - 2: a mistyped flag or a missing required one.

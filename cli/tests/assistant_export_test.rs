@@ -325,7 +325,7 @@ fn test_export_of_a_missing_assistant_names_the_id() {
     assert!(!file.exists(), "export should write no file");
 }
 
-/// Task 8.1, "Add langstar assistant export": a graph's default assistant is refused.
+/// Task 8.1, "Add langstar assistant export": export refuses a graph's default assistant.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
