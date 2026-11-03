@@ -296,9 +296,10 @@ fn test_import_of_a_graph_the_deployment_lacks_creates_nothing() {
     );
 }
 
-/// Task 10.1, "Add langstar assistant import": a file naming a prompt the
-/// workspace lacks creates no assistant and exits with status 3, and one naming
-/// a prompt the workspace holds passes the prompt check.
+/// Task 10.1, "Add langstar assistant import": import passes the prompt check
+/// when the file names a prompt the workspace holds. When the file names a
+/// prompt the workspace lacks, or a tag such as `prod` that the prompt lacks,
+/// import fails the prompt check, exits with status 3 and creates no assistant.
 #[test]
 #[serial]
 #[cfg_attr(not(feature = "integration-tests"), ignore)]
@@ -350,8 +351,16 @@ fn test_import_checks_the_prompts_the_assistant_names() {
         Some(json!({"configurable": {"system_prompt": missing_name}})),
         None,
     );
+    let missing_tag_name = format!("{repo}:prod");
+    let missing_tag = create_assistant(
+        &client,
+        None,
+        Some(json!({"configurable": {"system_prompt": missing_tag_name}})),
+        None,
+    );
     let found_directory = TempDir::new().unwrap();
     let missing_directory = TempDir::new().unwrap();
+    let missing_tag_directory = TempDir::new().unwrap();
     let found_file = export(
         found_directory.path(),
         &found.assistant_id,
@@ -362,16 +371,22 @@ fn test_import_checks_the_prompts_the_assistant_names() {
         &missing.assistant_id,
         &["--prompt-ref", SYSTEM_PROMPT],
     );
+    let missing_tag_file = export(
+        missing_tag_directory.path(),
+        &missing_tag.assistant_id,
+        &["--prompt-ref", SYSTEM_PROMPT],
+    );
     delete_assistant(&client, &found.assistant_id);
     delete_assistant(&client, &missing.assistant_id);
+    delete_assistant(&client, &missing_tag.assistant_id);
 
     let (found_status, found_report) = import(&found_file, &[]);
     let (missing_status, missing_report) = import(&missing_file, &[]);
-    if let Some(id) = found_report["destination_id"].as_str() {
-        delete_assistant(&client, id);
-    }
-    if let Some(id) = missing_report["destination_id"].as_str() {
-        delete_assistant(&client, id);
+    let (missing_tag_status, missing_tag_report) = import(&missing_tag_file, &[]);
+    for report in [&found_report, &missing_report, &missing_tag_report] {
+        if let Some(id) = report["destination_id"].as_str() {
+            delete_assistant(&client, id);
+        }
     }
     if let Err(e) = runtime().block_on(langsmith.prompts().delete(&repo)) {
         eprintln!("Warning: could not delete the test prompt {repo}: {e:?}");
@@ -390,6 +405,26 @@ fn test_import_checks_the_prompts_the_assistant_names() {
             .contains(&missing_name)
     );
     assert!(missing_report.get("action").is_none(), "{missing_report}");
+
+    assert_eq!(missing_tag_status, 3, "{missing_tag_report}");
+    assert_eq!(missing_tag_report["checks"][1]["name"], "prompt");
+    assert_eq!(missing_tag_report["checks"][1]["outcome"], "failed");
+    assert!(
+        missing_tag_report["checks"][1]["detail"]
+            .as_str()
+            .unwrap()
+            .contains(&missing_tag_name)
+    );
+    assert!(
+        missing_tag_report.get("action").is_none(),
+        "{missing_tag_report}"
+    );
+    assert!(
+        !missing_tag_directory
+            .path()
+            .join("support-bot.destinations.json")
+            .exists()
+    );
 }
 
 /// Task 10.1, "Add langstar assistant import": a file holding its settings in
