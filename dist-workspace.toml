@@ -19,3 +19,7 @@ hosting = "github"
 pr-run-mode = "upload"
 # Run the repository's checks before any release build can publish.
 plan-jobs = ["./release-checks"]
+
+# GitHub no longer runs jobs on macos-14, the runner dist picks by default.
+[dist.github-custom-runners]
+aarch64-apple-darwin = "macos-15"
