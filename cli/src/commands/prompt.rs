@@ -1662,6 +1662,31 @@ mod export_tests {
         }
     }
 
+    /// LangSmith's response reaches stderr before the credential check runs
+    /// only through an error. When a response does not decode, serde names the
+    /// value it could not read, so this test puts a token where LangSmith sends
+    /// a number and checks that neither the error `main` prints nor stderr
+    /// holds the token.
+    #[tokio::test]
+    async fn test_export_prints_no_value_from_a_response_it_cannot_decode() {
+        let token = provider_token();
+        let mut repo_with_a_token = repo(None);
+        repo_with_a_token["num_likes"] = json!(token);
+        let served = serve(repo_with_a_token, chat_prompt("Hi")).await;
+        let run = export(&served, "my-prompt", None, &[]).await;
+        let message = match &run.result {
+            Err(error) => error.to_string(),
+            Ok(()) => panic!("export decoded a repo whose num_likes is a string"),
+        };
+        assert!(
+            message.contains("error decoding response body"),
+            "{message}"
+        );
+        assert!(!message.contains(&token[3..]), "the error holds the token");
+        assert!(!run.stderr.contains(&token[3..]), "stderr holds the token");
+        assert!(run.stdout.is_empty(), "stdout holds {:?}", run.stdout);
+    }
+
     #[test]
     fn test_model_class_steps_through_a_runnable_binding() {
         let manifest = sequence(chat_prompt("Hi"), binding(chat_open_ai(json!({}))));
