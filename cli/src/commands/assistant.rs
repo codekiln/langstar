@@ -220,12 +220,12 @@ pub enum AssistantCommands {
     /// deployment serves the file's graph and the workspace holds the file's prompts
     ///
     /// Does what compare does, and also checks that the deployment serves the
-    /// file's graph and that the workspace holds each prompt under
-    /// requires.prompts. Verify looks for the prompts, and for the deployment,
-    /// in the workspace that --workspace-id, LANGSMITH_WORKSPACE_ID or the
-    /// config file names. Exits
-    /// with 0 when the assistant matches and every check passes, 3 when a
-    /// check fails or the assistant differs, and 1 on any other error.
+    /// file's graph and that the workspace holding the deployment has each
+    /// prompt under requires.prompts. To find that workspace, langstar searches
+    /// every workspace the API key reaches, unless you name one with
+    /// --workspace-id, LANGSMITH_WORKSPACE_ID or the config file. Exits with 0
+    /// when the assistant matches and every check passes, 3 when a check fails
+    /// or the assistant differs, and 1 on any other error.
     Verify {
         /// Deployment name or ID that holds the assistant (from 'langstar graph list')
         #[arg(long, required = true)]
