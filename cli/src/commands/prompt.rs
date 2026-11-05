@@ -992,8 +992,9 @@ struct ExportRequest<'a> {
 /// file to `output` or to `stdout`.
 ///
 /// Every message goes to `stderr`, so stdout holds the file and nothing else.
-/// When the check flags a string, this returns the refusal before it writes
-/// anything, and `main` prints it and exits with status 1.
+/// When the credential check flags a string, `run_export` returns an error
+/// that names each flagged path before it writes anything, and `main` prints
+/// that error and exits with status 1.
 async fn run_export(
     client: &LangchainClient,
     request: &ExportRequest<'_>,
@@ -1107,7 +1108,7 @@ async fn read_prompt_export(
         }
         other => other?,
     };
-    let read = match prompts.get_commit_with_model(owner, repo, commit).await {
+    let commit_with_model = match prompts.get_commit_with_model(owner, repo, commit).await {
         Err(LangstarError::ApiError { status: 404, .. }) => {
             return Err(crate::error::CliError::Other(anyhow::anyhow!(
                 "The prompt `{}` has no commit or tag `{}`",
@@ -1121,7 +1122,7 @@ async fn read_prompt_export(
         .list_tags(owner, repo)
         .await?
         .into_iter()
-        .filter(|tag| tag.commit_hash == read.commit_hash)
+        .filter(|tag| tag.commit_hash == commit_with_model.commit_hash)
         .map(|tag| tag.tag_name)
         .collect();
 
@@ -1142,7 +1143,7 @@ async fn read_prompt_export(
         source: PromptSource {
             workspace_id,
             handle: details.repo_handle.clone(),
-            commit_hash: read.commit_hash.clone(),
+            commit_hash: commit_with_model.commit_hash.clone(),
         },
         repo: PromptRepo {
             handle: details.repo_handle,
@@ -1152,14 +1153,14 @@ async fn read_prompt_export(
             is_public: details.is_public,
         },
         requires: PromptRequires {
-            secrets: crate::credential_check::secret_names(&read.manifest),
-            model_class: model_class(&read.manifest),
+            secrets: crate::credential_check::secret_names(&commit_with_model.manifest),
+            model_class: model_class(&commit_with_model.manifest),
         },
         commit: PromptCommit {
-            description: read.description,
-            manifest: read.manifest,
-            model_config: read.model_config,
-            model_provider: read.model_provider,
+            description: commit_with_model.description,
+            manifest: commit_with_model.manifest,
+            model_config: commit_with_model.model_config,
+            model_provider: commit_with_model.model_provider,
             tags: commit_tags,
         },
     })

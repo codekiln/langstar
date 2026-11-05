@@ -124,7 +124,7 @@ impl TestPrompt {
 
     /// Assert that every field of the export file matches what the SDK returns
     /// for the commit with this hash.
-    fn assert_file_matches_sdk_read(&self, file: &Value, commit_hash: &str) {
+    fn assert_file_matches_what_the_sdk_returns(&self, file: &Value, commit_hash: &str) {
         let prompts = self.client.prompts();
         let details = self
             .runtime
@@ -289,7 +289,7 @@ fn test_export_json_schema_prompt_without_a_model() {
         &[],
     ));
 
-    prompt.assert_file_matches_sdk_read(&file, &hash);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &hash);
     assert_eq!(file["commit"]["manifest"]["kwargs"]["schema_"], schema);
     assert_eq!(
         file["requires"],
@@ -338,7 +338,7 @@ fn test_export_function_calling_prompt_with_a_nested_schema() {
         &[],
     ));
 
-    prompt.assert_file_matches_sdk_read(&file, &hash);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &hash);
     let kwargs = &file["commit"]["manifest"]["kwargs"];
     assert_eq!(kwargs["schema_"], schema);
     assert_eq!(
@@ -380,7 +380,7 @@ fn test_export_prompt_with_several_messages_and_a_placeholder() {
         &[],
     ));
 
-    prompt.assert_file_matches_sdk_read(&file, &hash);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &hash);
     let messages = file["commit"]["manifest"]["kwargs"]["messages"]
         .as_array()
         .expect("the manifest holds the messages");
@@ -425,7 +425,7 @@ fn test_export_prompt_with_a_model_and_metadata() {
     let text = export_to_file(&prompt.repo, &dir.path().join("p.json"), &[]);
     let file = parse(&text);
 
-    prompt.assert_file_matches_sdk_read(&file, &hash);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &hash);
     assert_eq!(
         file["requires"],
         json!({"secrets": ["OPENAI_API_KEY"], "model_class": "ChatOpenAI"})
@@ -461,7 +461,7 @@ fn test_export_the_commit_a_tag_points_at() {
     ));
 
     assert_eq!(file["source"]["commit_hash"], earlier);
-    prompt.assert_file_matches_sdk_read(&file, &earlier);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &earlier);
     assert_eq!(
         file["commit"]["manifest"]["kwargs"]["messages"][0]["kwargs"]["prompt"]["kwargs"]["template"],
         "First version: {question}"
@@ -529,7 +529,7 @@ fn test_export_to_stdout_holds_only_the_file() {
 
     let file = parse(&stdout);
     assert_eq!(file["source"]["commit_hash"], hash);
-    prompt.assert_file_matches_sdk_read(&file, &hash);
+    prompt.assert_file_matches_what_the_sdk_returns(&file, &hash);
     assert!(
         stderr.contains("Reading"),
         "no progress message on stderr: {stderr}"
