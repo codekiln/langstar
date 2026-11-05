@@ -4,7 +4,7 @@ To release langstar, merge the release pull request. release-plz opens it, picks
 
 ## Release flow
 
-1. The maintainer merges a pull request into main. release-plz reads the title of its squash commit, such as `✨ feat(runs): ...`, to pick the next version.
+1. The maintainer merges a pull request into main. release-plz reads the title of each commit the merge adds to main, such as `🐛 fix(sdk): send the workspace header to the Agent Server (#839)`, to pick the next version and write the changelog. A squash merge adds one commit, and GitHub ends its title with the pull request number, which the changelog turns into a link. A merge commit or a rebase adds every commit on the branch, and the changelog lists each `feat`, `fix` and `perf` commit without a link.
 2. `prepare-release.yml` runs on main with a token from the release GitHub App. release-plz opens or updates one pull request titled `🔖 release: prepare vX.Y.Z` on a `release-plz-*` branch. The pull request bumps the workspace version in `Cargo.toml` and `Cargo.lock` and adds the version's section to `CHANGELOG.md`.
 3. CI runs its checks and Copilot reviews the release pull request, as on any other pull request.
 4. The maintainer reads the changelog section, edits it on the release branch if needed, and merges the pull request once its checks pass.
@@ -76,4 +76,4 @@ gh workflow run deployment-lifecycle-test.yml
 
 - `prepare-release.yml` fails: fix the cause and rerun the failed run. release-plz updates the open release pull request.
 - A check fails on the release pull request: no tag exists yet. Merge the fix to main, and release-plz updates the pull request.
-- `release.yml` fails after the tag: the tag stays, and no GitHub release exists until the workflow succeeds. A rerun builds the tagged commit again, so it helps when the cause was outside the code, such as a runner. When the code needs a fix, merge it to main and release it under the next version. Keep the existing tag where it is.
+- `release.yml` fails after release-plz pushes the tag: the tag stays, and GitHub shows no release for that version until a run succeeds. When a runner caused the failure, rerun the failed jobs, which build the tagged commit again. When the code or `release.yml` needs a fix, merge the fix to main and leave the failed version's tag where it is. release-plz opens a release pull request for the next patch version only after a commit whose title is `feat`, `fix` or `perf`, or carries a `!`, changes files in `cli/` or `sdk/`. A fix to `release.yml` alone changes neither folder, so the next release waits for such a commit.
