@@ -2,7 +2,7 @@
 
 `langstar assistant compare` compares an assistant on a deployment with the file that [`langstar assistant export`](assistant-export.md) wrote. It lists each field that differs, so you can see whether someone changed a copy on the deployment, or changed the file in Git, since the last import. It changes nothing on the deployment and writes no file.
 
-Compare and verify read the assistant from the deployment, which may hold a credential, so they refuse to run while `LANGSTAR_DEBUG_HTTP` is set, because that variable writes every server response to a debug file. Run `unset LANGSTAR_DEBUG_HTTP` first.
+When `LANGSTAR_DEBUG_HTTP` is set, langstar writes every server response to a debug file, and the assistant that compare and verify read from the deployment may hold a credential. Both commands refuse to run while that variable is set, so run `unset LANGSTAR_DEBUG_HTTP` first.
 
 To also check that the deployment serves the file's graph and that the workspace holds the prompts the assistant names, use [`langstar assistant verify`](assistant-verify.md).
 
@@ -38,7 +38,7 @@ Compare reads the assistant from the deployment and compares it with the file's 
 
 The Agent Server keeps an assistant's settings in both `config.configurable` and `context`, and export writes both. When you remove one of them from the file, compare checks the field the file still holds against the same settings on the deployment, and leaves the other field out of the comparison.
 
-Before it reads the deployment, compare checks the file against itself: each setting that `requires.prompts` lists by its path must still hold the prompt name recorded beside that path. When someone edited the configuration in Git and left `requires.prompts` as it was, compare names the pointer and both values and exits with status 1.
+Before it reads the deployment, compare checks that each setting `requires.prompts` lists by its path still holds the prompt name recorded beside that path. When someone edited the configuration in Git and left `requires.prompts` as it was, compare prints the path, the prompt name `requires.prompts` records and the one the setting now holds, and exits with status 1.
 
 ## The report
 

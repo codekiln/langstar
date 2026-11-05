@@ -433,9 +433,11 @@ fn test_verify_reports_a_prompt_tag_the_workspace_lacks() {
 
 /// Task 9.2, "Add langstar assistant verify": verify with `--workspace-id` set
 /// to the destination workspace finds a prompt tag that only that workspace
-/// holds, and exits with status 0. Until task 2.1 adds the destination
-/// workspace, the destination workspace is the test workspace, so the task 2.1
-/// pull request removes the `#[ignore]` here.
+/// holds, and exits with status 0. CI has one workspace until task 2.1, "Add
+/// the destination workspace and the model provider key to `fnox.toml`, the CI
+/// workflow and `docs/dev/environment-variables.md`", in
+/// `openspec/changes/export-import-prompts-and-assistants/tasks.md`. The pull
+/// request for task 2.1 removes the `#[ignore]`.
 #[test]
 #[serial]
 #[ignore = "needs task 2.1"]

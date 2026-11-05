@@ -67,6 +67,6 @@ As compare does, verify prints `<redacted>` in place of each value the credentia
 ## Exit statuses
 
 - 0: the assistant on the deployment matches the file, and every check passed.
-- 1: any error that makes [compare](assistant-compare.md#exit-statuses) exit with 1. Verify also exits with 1 when the server answers a graph or prompt lookup with an error other than 'not found', such as a server error.
+- 1: the file is not an assistant export; its `requires.prompts` no longer matches its assistant; the record has no created assistant for the deployment and you passed no `--assistant-id`; the deployment has no assistant with that ID; `LANGSTAR_DEBUG_HTTP` is set; the server answers a graph or prompt lookup with an error other than 'not found', such as a server error; or another error, such as a network failure.
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed, or the assistant on the deployment differs from the file.
