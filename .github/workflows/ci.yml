@@ -481,7 +481,6 @@ jobs:
             echo "✓ Devcontainer features are up to date with published version"
           fi
 
-  # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
   # Checks release-plz.toml and dist-workspace.toml (docs/dev/releases.md).
   release-config:
     name: Release Config
@@ -504,6 +503,7 @@ jobs:
       - name: Check the release-plz and cargo-dist configuration
         run: mise run release:check
 
+  # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
   # This job aggregates all CI results into a single "All Jobs" check.
   # Branch protection requires this check - removing it will block ALL merges to main.
   #
