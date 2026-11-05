@@ -1102,7 +1102,7 @@ async fn read_prompt_export(
     let details = match prompts.get(&format!("{}/{}", owner, repo)).await {
         Err(LangstarError::ApiError { status: 404, .. }) => {
             return Err(crate::error::CliError::Other(anyhow::anyhow!(
-                "No prompt in this workspace has the handle `{}`",
+                "LangSmith has no prompt with the handle `{}`",
                 handle
             )));
         }
