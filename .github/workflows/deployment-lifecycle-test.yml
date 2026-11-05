@@ -1,0 +1,39 @@
+name: Deployment lifecycle test
+
+# Creates a new LangSmith deployment, exercises it and deletes it. Run it by hand
+# with `gh workflow run deployment-lifecycle-test.yml`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  lifecycle:
+    name: Deployment lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run the full deployment lifecycle test
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+        run: |
+          cargo test --test integration_deployment_workflow \
+            test_deployment_workflow_full_lifecycle -- \
+            --ignored --nocapture
