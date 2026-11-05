@@ -1,0 +1,50 @@
+# release-plz picks the next version, writes CHANGELOG.md, opens the release
+# pull request and tags the version. docs/dev/releases.md explains the flow.
+# https://release-plz.dev/docs/config
+[workspace]
+git_only = true
+publish = false
+git_release_enable = false
+git_tag_enable = true
+git_tag_name = "v{{ version }}"
+release_always = false
+semver_check = false
+pr_branch_prefix = "release-plz-"
+pr_name = "🔖 release: prepare v{{ version }}"
+pr_labels = ["release"]
+# Commit titles look like "✨ feat(scope): ...", so the type follows an emoji.
+# A "!" before the colon marks a breaking change. Footers never change the bump.
+custom_major_increment_regex = '^\S+ \w+(?:\([^)]*\))?!:'
+custom_minor_increment_regex = '^\S+ feat(?:\([^)]*\))?!?:'
+release_commits = '^\S+ (?:feat|fix|perf)(?:\([^)]*\))?!?:|^\S+ \w+(?:\([^)]*\))?!:'
+
+[changelog]
+protect_breaking_commits = true
+commit_preprocessors = [
+  # Keep the title line only.
+  { pattern = '(?s)\n.*', replace = "" },
+  # Drop the leading emoji.
+  { pattern = '^\S+ +(\w+[(!:])', replace = "${1}" },
+  # Link the pull request number that GitHub appends to a squash commit.
+  { pattern = '\(#(\d+)\)', replace = "([#${1}](https://github.com/codekiln/langstar/pull/${1}))" },
+]
+commit_parsers = [
+  { message = '^\w+(?:\([^)]*\))?!:', group = "Breaking changes" },
+  { message = '^feat', group = "Added" },
+  { message = '^fix', group = "Fixed" },
+  { message = '^perf', group = "Performance" },
+  { message = '^.*', skip = true },
+]
+
+[[package]]
+name = "langstar"
+version_group = "langstar"
+changelog_path = "./CHANGELOG.md"
+# CHANGELOG.md also lists the SDK commits, since the CLI ships them.
+changelog_include = ["langstar-sdk"]
+
+[[package]]
+name = "langstar-sdk"
+version_group = "langstar"
+git_tag_enable = false
+changelog_update = false

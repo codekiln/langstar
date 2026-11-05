@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   # Determines whether to run CI based on changed files and branch name
-  # Always runs CI for release branches (created by prepare-release workflow)
+  # Always runs CI for release pull requests (release-plz opens them from release-plz-* branches)
   # Skips CI for docs-only changes on regular PRs
   # See issue #640: https://github.com/codekiln/langstar/issues/640
   changes:
@@ -47,10 +47,9 @@ jobs:
       - name: Check if release branch or code changed
         id: filter
         run: |
-          # Always run CI for release preparation branches (created by prepare-release workflow)
-          # Branch pattern: release/v{version} (e.g., release/v1.2.3)
-          # See: .github/workflows/prepare-release.yml:241
-          if [[ "${{ github.head_ref }}" == release/* ]] || [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+          # Always run CI for release pull requests. release-plz opens them from
+          # branches named release-plz-<timestamp>; see release-plz.toml.
+          if [[ "${{ github.head_ref }}" == release-plz-* ]]; then
             echo "Release branch detected - running CI regardless of changed files"
             echo "should_run=true" >> $GITHUB_OUTPUT
             exit 0

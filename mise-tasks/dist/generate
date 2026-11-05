@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Regenerate .github/workflows/release.yml from dist-workspace.toml"
+set -euo pipefail
+
+dist generate
