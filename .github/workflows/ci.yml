@@ -482,6 +482,28 @@ jobs:
           fi
 
   # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
+  # Checks release-plz.toml and dist-workspace.toml (docs/dev/releases.md).
+  release-config:
+    name: Release Config
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # https://mise.jdx.dev/continuous-integration.html#github-actions
+      - name: Setup mise
+        uses: jdx/mise-action@v5
+        with:
+          version: 2026.10.2
+          install_args: release-plz cargo-dist
+
+      - name: Check the release-plz and cargo-dist configuration
+        run: mise run release:check
+
   # This job aggregates all CI results into a single "All Jobs" check.
   # Branch protection requires this check - removing it will block ALL merges to main.
   #
@@ -502,6 +524,7 @@ jobs:
       - clippy
       - audit
       - build
+      - release-config
     steps:
       - name: Check all job results
         run: |

@@ -9,7 +9,7 @@ To release langstar, merge the release pull request. release-plz opens it, picks
 3. CI runs its checks and Copilot reviews the release pull request, as on any other pull request.
 4. The maintainer reads the changelog section, edits it on the release branch if needed, and merges the pull request once its checks pass.
 5. `prepare-release.yml` runs again, and release-plz pushes the `vX.Y.Z` tag.
-6. GitHub starts `release.yml`, which cargo-dist generates, for the new tag. It runs `release-checks.yml`, builds every target, writes SHA-256 checksums, and publishes the GitHub release with the version's `CHANGELOG.md` section as its notes.
+6. GitHub starts `release.yml`, which cargo-dist generates, for the new tag. It builds every target, writes SHA-256 checksums, and publishes the GitHub release with the version's `CHANGELOG.md` section as its notes.
 
 release-plz opens the pull request and pushes the tag with the App token because GitHub starts no workflow for a pull request or tag that `GITHUB_TOKEN` creates.
 
@@ -48,7 +48,7 @@ Each archive has a `.sha256` file next to it. `scripts/install.sh` downloads the
    - `RELEASE_APP_ID`: the App ID from the App's settings page
    - `RELEASE_APP_PRIVATE_KEY`: the whole `.pem` private key
 4. Delete the downloaded `.pem` file.
-5. Add the [Actions repository variable](https://github.com/codekiln/langstar/settings/variables/actions) `RELEASE_ENABLED` with the value `true`. Until it exists, `prepare-release.yml` skips its job.
+5. Add the [Actions repository variable](https://github.com/codekiln/langstar/settings/variables/actions) `RELEASE_ENABLED` with the value `true`. Until it exists, `prepare-release.yml` skips its job. Then start the first run with `gh workflow run prepare-release.yml`, so the release pull request opens without waiting for the next merge.
 
 ## Checks and maintenance
 
@@ -57,6 +57,8 @@ mise run release:check
 ```
 
 `release:check` runs two tasks. `release:impact-test` commits each kind of title to a temporary copy of `tests/fixtures/release-impact` and checks the version and changelog line that the pinned release-plz writes. `dist:check` checks that `release.yml` matches `dist-workspace.toml` and lists the release archives.
+
+CI's `Release Config` job runs `mise run release:check` on every pull request, and `All Jobs` waits for it.
 
 cargo-dist generates `release.yml` from `dist-workspace.toml`. After changing `dist-workspace.toml` or the `cargo-dist` version in `mise.toml`, regenerate `release.yml` and commit it:
 
