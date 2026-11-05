@@ -2,6 +2,8 @@
 
 `langstar assistant compare` compares an assistant on a deployment with the file that [`langstar assistant export`](assistant-export.md) wrote. It lists each field that differs, so you can see whether someone changed a copy on the deployment, or changed the file in Git, since the last import. It changes nothing on the deployment and writes no file.
 
+Compare and verify read the assistant from the deployment, which may hold a credential, so they refuse to run while `LANGSTAR_DEBUG_HTTP` is set, because that variable writes every server response to a debug file. Run `unset LANGSTAR_DEBUG_HTTP` first.
+
 To also check that the deployment serves the file's graph and that the workspace holds the prompts the assistant names, use [`langstar assistant verify`](assistant-verify.md).
 
 ## Compare an assistant
@@ -22,7 +24,7 @@ To compare the file with another assistant, such as the one you exported it from
 langstar assistant compare support-bot.json --deployment my-agent --assistant-id <assistant-id>
 ```
 
-When the record has no entry for the deployment and you pass no `--assistant-id`, compare names the deployment, suggests `--assistant-id` and exits with status 1. When the entry is still `pending`, an import stopped before it finished; import the file again to finish it.
+When the record has no entry for the deployment and you pass no `--assistant-id`, compare names the deployment, suggests `--assistant-id` and exits with status 1. When the record marks the deployment's entry `pending`, an earlier import stopped before it created the assistant. Compare says so and exits with status 1. Import the file again to finish creating it, or pass `--assistant-id`.
 
 To see every flag:
 
@@ -30,13 +32,13 @@ To see every flag:
 langstar assistant compare --help
 ```
 
-## What compare compares
+## Fields in the comparison
 
 Compare reads the assistant from the deployment and compares it with the file's `assistant` object: the name, description, graph ID, configuration, context and metadata. It leaves out the assistant ID, version and timestamps, which the server sets.
 
-The Agent Server keeps an assistant's settings in both `config.configurable` and `context`. When the file holds them in only one of those fields, compare reads the deployment's settings from whichever field holds them, so a file that import copied from an older deployment still matches.
+The Agent Server keeps an assistant's settings in both `config.configurable` and `context`, and export writes both. When you remove one of them from the file, compare checks the field the file still holds against the same settings on the deployment, and leaves the other field out of the comparison.
 
-Before it reads the deployment, compare checks that each pointer under the file's `requires.prompts` still holds the prompt name recorded with it. When someone edited the configuration in Git and left `requires.prompts` as it was, compare names the pointer and both values and exits with status 1.
+Before it reads the deployment, compare checks the file against itself: each setting that `requires.prompts` lists by its path must still hold the prompt name recorded beside that path. When someone edited the configuration in Git and left `requires.prompts` as it was, compare names the pointer and both values and exits with status 1.
 
 ## The report
 
@@ -50,7 +52,7 @@ Differences
     destination: "billing"
 ```
 
-Compare prints `<redacted>` in place of each value the credential check from [Assistant Export](assistant-export.md) flags, whether the value came from the file or from the deployment, and prints a secret reference, such as `{"id": ["OPENAI_API_KEY"], "lc": 1, "type": "secret"}`, unchanged.
+Compare prints `<redacted>` in place of each value that the credential check from [Assistant Export](assistant-export.md) flags, on the file's side and on the deployment's. It prints a secret reference as it stands, so the report names the secret: `{"id": ["OPENAI_API_KEY"], "lc": 1, "type": "secret"}`.
 
 With `-f json`, compare prints one JSON object to stdout and its progress messages to stderr:
 

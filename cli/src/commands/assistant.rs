@@ -630,7 +630,7 @@ impl AssistantCommands {
                     &mut std::io::stderr(),
                 )
                 .await?;
-                finish(&report, format)
+                print_report_and_exit(&report, format)
             }
 
             AssistantCommands::Compare {
@@ -646,7 +646,7 @@ impl AssistantCommands {
                 record,
             } => {
                 let record = record.clone().unwrap_or_else(|| record_path_for(file));
-                let target = Target {
+                let target = AssistantToCompare {
                     deployment_name,
                     deployment_id: &deployment.id,
                     assistant_id: assistant_id.as_deref(),
@@ -656,7 +656,7 @@ impl AssistantCommands {
                 let report =
                     compare_assistant(&client, file, &target, verify, &mut std::io::stderr())
                         .await?;
-                finish(&report, format)
+                print_report_and_exit(&report, format)
             }
 
             AssistantCommands::Delete {
@@ -1045,8 +1045,8 @@ async fn read_back(
                     record_path.display()
                 ),
                 IdFrom::Flag => format!(
-                    "The deployment has no assistant with ID '{assistant_id}', which \
-                     --assistant-id names."
+                    "The deployment has no assistant with the ID '{assistant_id}' that you \
+                     passed with --assistant-id."
                 ),
             }));
         }
@@ -1060,7 +1060,7 @@ async fn read_back(
 }
 
 /// Print the report and exit with the status it gives.
-fn finish(report: &ResultReport, format: OutputFormat) -> Result<()> {
+fn print_report_and_exit(report: &ResultReport, format: OutputFormat) -> Result<()> {
     report.print(format)?;
     match report.exit_code() {
         EXIT_MATCH => Ok(()),
@@ -1069,7 +1069,7 @@ fn finish(report: &ResultReport, format: OutputFormat) -> Result<()> {
 }
 
 /// The assistant that `assistant compare` and `assistant verify` read.
-struct Target<'a> {
+struct AssistantToCompare<'a> {
     /// The deployment name or ID the user gave, which an error names.
     deployment_name: &'a str,
     /// The deployment's ID, which keys its entry in the destination record.
@@ -1084,14 +1084,15 @@ struct Target<'a> {
 /// the client points at. With `verify`, also run the graph check and the prompt
 /// check that import runs before it writes.
 ///
-/// An error from reading the file, checking its prompt pointers, finding the
-/// assistant ID or reading the assistant exits with status 1 through `main`.
+/// When reading the file, checking its prompt pointers, finding the assistant
+/// ID or reading the assistant fails, this function returns the error, and
+/// `main` exits with status 1.
 /// A difference or a failed check goes in the report, and the command exits
 /// with status 3 after printing it. Neither command writes anything.
 async fn compare_assistant(
     client: &LangchainClient,
     file: &Path,
-    target: &Target<'_>,
+    target: &AssistantToCompare<'_>,
     verify: bool,
     stderr: &mut dyn Write,
 ) -> Result<ResultReport> {
@@ -1124,7 +1125,7 @@ async fn compare_assistant(
 
 /// The assistant ID that the destination record holds for the target's
 /// deployment, which import marked created.
-fn recorded_assistant_id(target: &Target<'_>) -> Result<String> {
+fn recorded_assistant_id(target: &AssistantToCompare<'_>) -> Result<String> {
     let record: AssistantDestinations = read_record(target.record)?;
     match record.destinations.get(target.deployment_id) {
         Some(AssistantDestination {
@@ -2437,8 +2438,8 @@ mod tests {
 
     const RECORDED_ID: &str = "7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d";
 
-    fn target<'a>(record: &'a Path, assistant_id: Option<&'a str>) -> Target<'a> {
-        Target {
+    fn target<'a>(record: &'a Path, assistant_id: Option<&'a str>) -> AssistantToCompare<'a> {
+        AssistantToCompare {
             deployment_name: "my-agent-prod",
             deployment_id: DESTINATION_ID,
             assistant_id,
@@ -2449,7 +2450,7 @@ mod tests {
     async fn compare(
         client: &LangchainClient,
         file: &Path,
-        target: &Target<'_>,
+        target: &AssistantToCompare<'_>,
         verify: bool,
     ) -> Result<ResultReport> {
         compare_assistant(client, file, target, verify, &mut Vec::new()).await

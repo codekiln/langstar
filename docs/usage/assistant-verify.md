@@ -1,6 +1,6 @@
 # Assistant Verify
 
-`langstar assistant verify` checks that an assistant can run on a deployment. It does what [`langstar assistant compare`](assistant-compare.md) does, and also checks the two things the assistant needs from its destination: that the deployment serves the file's graph, and that the workspace holds each prompt the file lists under `requires.prompts`. These are the checks that [`langstar assistant import`](assistant-import.md) runs before it creates anything. Verify changes nothing on the deployment and writes no file.
+`langstar assistant verify` checks that an assistant can run on a deployment. It compares the assistant with the file as [`langstar assistant compare`](assistant-compare.md) does, and also checks that the deployment serves the file's graph and that the workspace holds each prompt the file lists under `requires.prompts`. These are the checks that [`langstar assistant import`](assistant-import.md) runs before it creates anything. Verify changes nothing on the deployment and writes no file.
 
 ## Verify an assistant
 
@@ -27,12 +27,12 @@ To see every flag:
 langstar assistant verify --help
 ```
 
-## What verify checks
+## Graph and prompt checks
 
-- `graph`: the deployment serves the file's graph ID. When it does not, verify names the graph ID, and the graph IDs the deployment serves when the server lists them.
-- `prompt`: the workspace holds each prompt under `requires.prompts`, at the tag the name gives. A name without an owner, such as `support-system:prod`, reads as a prompt in the workspace; a name without a tag, such as `support-system`, reads as its latest commit.
+- `graph`: the deployment serves the file's graph ID. When it does not, verify names the missing graph ID. When the server's answer lists the graph IDs the deployment does serve, verify prints those too.
+- `prompt`: the workspace holds each prompt under `requires.prompts`, at the tag the name gives. When a name has no owner, such as `support-system:prod`, verify looks for the prompt in the workspace. When a name has no tag, such as `support-system`, verify checks the prompt's latest commit.
 
-Verify runs each check, then compares the assistant with the file as compare does. When a check fails or a field differs, verify prints them all and exits with status 3.
+Verify runs each check, then compares the assistant with the file as compare does. Verify prints every failed check and every field that differs, and exits with status 3 when it finds either.
 
 ## The report
 
@@ -67,6 +67,6 @@ As compare does, verify prints `<redacted>` in place of each value the credentia
 ## Exit statuses
 
 - 0: the assistant on the deployment matches the file, and every check passed.
-- 1: any error that [compare](assistant-compare.md#exit-statuses) exits with 1 for, or a server answer verify cannot read as a missing graph or prompt.
+- 1: any error that makes [compare](assistant-compare.md#exit-statuses) exit with 1. Verify also exits with 1 when the server answers a graph or prompt lookup with an error other than 'not found', such as a server error.
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed, or the assistant on the deployment differs from the file.
