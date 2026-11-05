@@ -39,6 +39,7 @@ langstar currently supports the following platforms:
 | Operating System | Architecture | Binary Type | Notes |
 |-----------------|--------------|-------------|-------|
 | **Linux** | x86_64 (64-bit) | Static (musl) | No runtime dependencies |
+| **Linux** | aarch64 (ARM64) | Static (musl) | No runtime dependencies |
 | **macOS** | x86_64 (Intel) | Dynamic | macOS 10.13+ |
 | **macOS** | aarch64 (Apple Silicon) | Dynamic | M1/M2/M3 Macs |
 
@@ -121,24 +122,31 @@ If you prefer not to use the installer script, you can install manually:
 
 **Linux (x86_64):**
 ```bash
-PLATFORM="x86_64-linux-musl"
+TARGET="x86_64-unknown-linux-musl"
+```
+
+**Linux (ARM64):**
+```bash
+TARGET="aarch64-unknown-linux-musl"
 ```
 
 **macOS (Intel):**
 ```bash
-PLATFORM="x86_64-macos"
+TARGET="x86_64-apple-darwin"
 ```
 
 **macOS (Apple Silicon):**
 ```bash
-PLATFORM="aarch64-macos"
+TARGET="aarch64-apple-darwin"
 ```
 
 #### Step 2: Set Version
 
 ```bash
-VERSION="0.2.0"  # or check latest at https://github.com/codekiln/langstar/releases
+VERSION="X.Y.Z"  # see https://github.com/codekiln/langstar/releases
 ```
+
+Every release up to v2.2.0, the newest one today, has archives named `langstar-<version>-<platform>.tar.gz`. For those releases, set `TARGET` to `x86_64-linux-musl`, `aarch64-linux-musl`, `x86_64-macos` or `aarch64-macos`, replace `langstar-${TARGET}.tar.gz` in Step 3 with `langstar-${VERSION}-${TARGET}.tar.gz`, and skip the final `cd`, because those archives hold `langstar` at the top level. `scripts/install.sh` picks the right name for you.
 
 #### Step 3: Download and Extract
 
@@ -148,16 +156,17 @@ TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
 
 # Download archive
-curl -LO "https://github.com/codekiln/langstar/releases/download/v${VERSION}/langstar-${VERSION}-${PLATFORM}.tar.gz"
+curl -LO "https://github.com/codekiln/langstar/releases/download/v${VERSION}/langstar-${TARGET}.tar.gz"
 
 # Download checksum
-curl -LO "https://github.com/codekiln/langstar/releases/download/v${VERSION}/langstar-${VERSION}-${PLATFORM}.tar.gz.sha256"
+curl -LO "https://github.com/codekiln/langstar/releases/download/v${VERSION}/langstar-${TARGET}.tar.gz.sha256"
 
 # Verify checksum
-shasum -a 256 -c "langstar-${VERSION}-${PLATFORM}.tar.gz.sha256"
+shasum -a 256 -c "langstar-${TARGET}.tar.gz.sha256"
 
 # Extract
-tar -xzf "langstar-${VERSION}-${PLATFORM}.tar.gz"
+tar -xzf "langstar-${TARGET}.tar.gz"
+cd "langstar-${TARGET}"
 ```
 
 #### Step 4: Install

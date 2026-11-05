@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Tag the version from a merged release pull request with release-plz"
+set -euo pipefail
+
+# GIT_TOKEN is the release GitHub App's token in CI. The tag it pushes starts release.yml.
+release-plz release --config release-plz.toml --output json

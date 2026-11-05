@@ -151,7 +151,7 @@ async fn test_deployment_workflow() {
     println!("✅ Deployment workflow test completed successfully!");
 }
 
-/// Full lifecycle integration test for pre-release validation
+/// Full lifecycle integration test, which `.github/workflows/deployment-lifecycle-test.yml` runs
 ///
 /// This test performs a **complete create/delete cycle** with a uniquely-named deployment.
 /// Uses `TestDeploymentConfig::for_release_tests()` which creates a `release-integration-test-<12 hex characters>`

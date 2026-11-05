@@ -5,8 +5,6 @@
 #
 # Installs development tools and dependencies:
 # - mise: version manager (installs Rust, Python, etc.)
-# - cargo-release: Rust release workflow tool
-# - git-cliff: Changelog generator
 # - gh-sub-issue: GitHub CLI extension for issue hierarchy
 # ---------------------------------------------------------------------
 
@@ -75,9 +73,9 @@ echo "[post-create] Installing lefthook git hooks and generating agent config...
 "$(mise which lefthook)" install
 mise run agents:generate
 
-# Step 4: Install cargo tools
+# Step 4: Check that mise installed cargo
 # After mise install, cargo should be available via ~/.cargo/env
-echo "[post-create] Installing cargo tools (cargo-release)..."
+echo "[post-create] Checking that cargo is on PATH..."
 
 # Check if cargo env exists and source it
 if [[ -f ~/.cargo/env ]]; then
@@ -98,11 +96,9 @@ fi
 echo "[post-create] cargo found at: $(command -v cargo)"
 echo "[post-create] cargo version: $(cargo --version)"
 
-# Install cargo tools
-# git-cliff and cargo-nextest come from mise.toml, pinned. Installing them
-# again here would build unpinned copies that shells without mise activation
+# release-plz, cargo-dist and cargo-nextest come from mise.toml, pinned. Installing
+# them again here would build unpinned copies that shells without mise activation
 # could pick up instead.
-cargo install cargo-release --locked
 
 # Step 6: gh CLI extensions
 # NOTE: gh CLI extensions requiring authentication are installed in setup-github-auth.sh

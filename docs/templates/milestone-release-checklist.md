@@ -34,11 +34,7 @@ CI automatically runs: `cargo fmt`, `cargo check`, `cargo clippy`, `cargo test`,
 
 ## Release (Automated)
 
-Version bumping and tagging is handled by the `prepare-release` workflow. Manual bumps only in exceptional cases (see `docs/dev/README.md`).
-
-```bash
-gh release create v{X.Y.Z} --generate-notes
-```
+Merge the open `🔖 release: prepare vX.Y.Z` pull request. The tag and the GitHub release follow; see `docs/dev/releases.md`.
 
 ## Milestone Cleanup (Automated)
 

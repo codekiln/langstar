@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [3.0.0] - 2026-11-03
 
 ### ⚠ BREAKING CHANGES
@@ -9996,7 +9998,7 @@ Related #285
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-## [Unreleased]
+## [Earlier unreleased changes]
 
 ### 📚 Documentation
 
@@ -11455,7 +11457,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 Co-authored-by: Claude <noreply@anthropic.com>
 
-## [Unreleased]
+## [Earlier unreleased changes]
 
 ### ✨ Features
 
@@ -11642,7 +11644,7 @@ All notable changes to Langstar will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Earlier unreleased changes]
 
 ## [0.2.0]
 

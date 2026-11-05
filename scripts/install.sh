@@ -167,6 +167,18 @@ detect_platform() {
     echo "$platform"
 }
 
+# Map a platform from detect_platform to the Rust target triple in the names of
+# the cargo-dist release archives (releases after v3.0.0).
+target_triple() {
+    case "$1" in
+        x86_64-linux-musl) echo "x86_64-unknown-linux-musl" ;;
+        aarch64-linux-musl) echo "aarch64-unknown-linux-musl" ;;
+        x86_64-macos) echo "x86_64-apple-darwin" ;;
+        aarch64-macos) echo "aarch64-apple-darwin" ;;
+        *) die "No release target for platform: $1" ;;
+    esac
+}
+
 # Check if required tools are available
 check_dependencies() {
     local missing_deps=()
@@ -406,11 +418,13 @@ main() {
         fi
     fi
 
-    # Construct download URLs
-    local archive_name="langstar-${version}-${platform}.tar.gz"
+    # Archives for releases after v3.0.0 are named langstar-<target triple>.tar.gz;
+    # archives for earlier releases, langstar-<version>-<platform>.tar.gz.
+    local triple
+    triple=$(target_triple "$platform")
     local base_url="https://github.com/$REPO/releases/download/v${version}"
-    local archive_url="$base_url/$archive_name"
-    local checksum_url="$archive_url.sha256"
+    local archive_name="langstar-${triple}.tar.gz"
+    local legacy_archive_name="langstar-${version}-${platform}.tar.gz"
 
     # Create temporary directory
     local temp_dir
@@ -420,9 +434,14 @@ main() {
     info "Downloading $archive_name..."
 
     # Download archive
-    if ! download_file "$archive_url" "$temp_dir/$archive_name"; then
-        die "Failed to download $archive_url"
+    if ! download_file "$base_url/$archive_name" "$temp_dir/$archive_name" 2>/dev/null; then
+        info "Downloading $legacy_archive_name..."
+        archive_name="$legacy_archive_name"
+        if ! download_file "$base_url/$archive_name" "$temp_dir/$archive_name"; then
+            die "Failed to download langstar $version for $platform from $base_url"
+        fi
     fi
+    local checksum_url="$base_url/$archive_name.sha256"
 
     # Download checksum
     if ! download_file "$checksum_url" "$temp_dir/$archive_name.sha256"; then
@@ -442,6 +461,8 @@ main() {
     local binary_path
     if [ -f "$temp_dir/$BINARY_NAME" ]; then
         binary_path="$temp_dir/$BINARY_NAME"
+    elif [ -f "$temp_dir/langstar-${triple}/$BINARY_NAME" ]; then
+        binary_path="$temp_dir/langstar-${triple}/$BINARY_NAME"
     elif [ -f "$temp_dir/langstar-${version}-${platform}/$BINARY_NAME" ]; then
         binary_path="$temp_dir/langstar-${version}-${platform}/$BINARY_NAME"
     else

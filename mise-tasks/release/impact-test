@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+#MISE description="Check the version bump and changelog release-plz.toml gives each kind of commit"
+set -euo pipefail
+
+root=$(git rev-parse --show-toplevel)
+fixture="$root/tests/fixtures/release-impact"
+tmp_root=$(mktemp -d)
+trap 'rm -rf "$tmp_root"' EXIT
+case_index=0
+
+# run_case <current> <title> <expected version> [changed file] [commit body]
+run_case() {
+  local current=$1
+  local title=$2
+  local expected=$3
+  local changed_file=${4:-cli/src/main.rs}
+  local body=${5:-}
+  local case_dir="$tmp_root/case-$case_index"
+  case_index=$((case_index + 1))
+
+  cp -R "$fixture" "$case_dir"
+  sed -i.bak "s/^version = \"0.0.0\"/version = \"$current\"/" "$case_dir/Cargo.toml"
+  rm "$case_dir/Cargo.toml.bak"
+
+  (
+    cd "$case_dir"
+    git init -q
+    git config user.name "Release Impact Test"
+    git config user.email "release-impact@example.invalid"
+    git remote add origin https://github.com/codekiln/langstar
+    cargo generate-lockfile --offline --quiet
+    git add .
+    git commit -qm "initial fixture"
+    git tag "v$current"
+
+    sed -i.bak 's/MARKER: u8 = 0/MARKER: u8 = 1/' "$changed_file"
+    rm "$changed_file.bak"
+    git add "$changed_file"
+    if [[ -n "$body" ]]; then
+      git commit -qm "$title" -m "$body"
+    else
+      git commit -qm "$title"
+    fi
+
+    release-plz update --config "$root/release-plz.toml" --repo-url https://github.com/codekiln/langstar >/dev/null 2>&1
+  )
+
+  local actual
+  actual=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$case_dir/Cargo.toml" | head -n 1)
+  if [[ "$actual" != "$expected" ]]; then
+    printf 'expected %s -> %s for "%s", got %s\n' "$current" "$expected" "$title" "$actual" >&2
+    return 1
+  fi
+  cargo metadata --locked --offline --format-version 1 --manifest-path "$case_dir/Cargo.toml" >/dev/null
+  last_changelog="$case_dir/CHANGELOG.md"
+}
+
+expect_changelog_line() {
+  if ! grep -qxF -- "$1" "$last_changelog"; then
+    printf 'CHANGELOG.md has no line "%s":\n' "$1" >&2
+    cat "$last_changelog" >&2
+    return 1
+  fi
+}
+
+run_case 3.0.0 "✨ feat(cli): add capability (#1)" 3.1.0
+expect_changelog_line "- *(cli)* add capability ([#1](https://github.com/codekiln/langstar/pull/1))"
+run_case 3.0.0 "🩹 fix: correct behavior (#2)" 3.0.1
+expect_changelog_line "- correct behavior ([#2](https://github.com/codekiln/langstar/pull/2))"
+run_case 3.0.0 "🐛 fix(sdk): correct behavior (#3)" 3.0.1 sdk/src/lib.rs
+expect_changelog_line "- *(sdk)* correct behavior ([#3](https://github.com/codekiln/langstar/pull/3))"
+run_case 3.0.0 "✨ feat(runs)!: replace behavior (#4)" 4.0.0
+run_case 3.0.0 "♻️ refactor!: replace behavior (#5)" 4.0.0
+run_case 3.0.0 "📚 docs: clarify usage (#6)" 3.0.0
+run_case 3.0.0 "🔧 build: change the build (#7)" 3.0.0
+run_case 3.0.0 "✨ feat(sdk): add SDK capability (#8)" 3.1.0 sdk/src/lib.rs
+# release-plz reads only the title to pick the bump, and writes only the title to the changelog.
+run_case 3.0.0 "🐛 fix: correct behavior (#9)" 3.0.1 cli/src/main.rs "A long explanation.
+
+BREAKING CHANGE: a footer"
+expect_changelog_line "- correct behavior ([#9](https://github.com/codekiln/langstar/pull/9))"
+if grep -q "long explanation\|footer" "$last_changelog"; then
+  printf 'CHANGELOG.md includes a commit body:\n' >&2
+  cat "$last_changelog" >&2
+  exit 1
+fi
+
+printf 'release impact tests passed\n'

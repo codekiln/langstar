@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   # Determines whether to run CI based on changed files and branch name
-  # Always runs CI for release branches (created by prepare-release workflow)
+  # Always runs CI for release pull requests (release-plz opens them from release-plz-* branches)
   # Skips CI for docs-only changes on regular PRs
   # See issue #640: https://github.com/codekiln/langstar/issues/640
   changes:
@@ -47,10 +47,9 @@ jobs:
       - name: Check if release branch or code changed
         id: filter
         run: |
-          # Always run CI for release preparation branches (created by prepare-release workflow)
-          # Branch pattern: release/v{version} (e.g., release/v1.2.3)
-          # See: .github/workflows/prepare-release.yml:241
-          if [[ "${{ github.head_ref }}" == release/* ]] || [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
+          # Always run CI for release pull requests. release-plz opens them from
+          # branches named release-plz-<timestamp>; see release-plz.toml.
+          if [[ "${{ github.head_ref }}" == release-plz-* ]]; then
             echo "Release branch detected - running CI regardless of changed files"
             echo "should_run=true" >> $GITHUB_OUTPUT
             exit 0
@@ -482,6 +481,28 @@ jobs:
             echo "✓ Devcontainer features are up to date with published version"
           fi
 
+  # Checks release-plz.toml and dist-workspace.toml (docs/dev/releases.md).
+  release-config:
+    name: Release Config
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # https://mise.jdx.dev/continuous-integration.html#github-actions
+      - name: Setup mise
+        uses: jdx/mise-action@v5
+        with:
+          version: 2026.10.2
+          install_args: release-plz cargo-dist
+
+      - name: Check the release-plz and cargo-dist configuration
+        run: mise run release:check
+
   # ⚠️ CRITICAL: DO NOT REMOVE THIS JOB
   # This job aggregates all CI results into a single "All Jobs" check.
   # Branch protection requires this check - removing it will block ALL merges to main.
@@ -503,6 +524,7 @@ jobs:
       - clippy
       - audit
       - build
+      - release-config
     steps:
       - name: Check all job results
         run: |
