@@ -12,7 +12,7 @@ To also check that the deployment serves the file's graph and that the workspace
 langstar assistant compare support-bot.json --deployment my-agent-prod
 ```
 
-Compare reads the ID of the assistant to compare from the destination record, `support-bot.destinations.json` beside the export file, which [`langstar assistant import`](assistant-import.md) wrote when it created the assistant on that deployment. When you imported with `--record`, pass the same path:
+When [`langstar assistant import`](assistant-import.md) creates the assistant, it writes the new assistant's ID to a destination record, `support-bot.destinations.json`, beside the export file. Compare reads the ID from that record. When you imported with `--record`, pass the same path:
 
 ```bash
 langstar assistant compare support-bot.json --deployment my-agent-prod --record records/prod.json

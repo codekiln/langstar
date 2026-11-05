@@ -258,7 +258,7 @@ langstar assistant import support-bot.json --deployment my-agent-prod
 # Compare the copy with the file
 langstar assistant compare support-bot.json --deployment my-agent-prod
 
-# Also check that the deployment serves its graph and the workspace holds its prompts
+# Also check that the deployment serves the file's graph and the workspace holds the file's prompts
 langstar assistant verify support-bot.json --deployment my-agent-prod
 
 # JSON output

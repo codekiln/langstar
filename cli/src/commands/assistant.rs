@@ -2537,7 +2537,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn compare_reads_the_assistant_that_assistant_id_names_over_the_record() {
+    async fn compare_uses_assistant_id_in_place_of_the_record_entry() {
         let directory = tempfile::tempdir().unwrap();
         let file = write_export(directory.path(), file_assistant(), json!({}));
         let record = record_path_for(&file);
@@ -2854,7 +2854,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn verify_requests_the_commit_each_prompt_name_reads_as() {
+    async fn verify_requests_a_commit_path_for_each_form_of_prompt_name() {
         for (name, path) in [
             ("support-system", "/api/v1/commits/-/support-system/latest"),
             (
