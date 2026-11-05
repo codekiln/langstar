@@ -493,4 +493,4 @@ gh release create v0.4.1 --generate-notes
 - **GitHub Workflow Documentation** - `@docs/dev/github-workflow.md`
 - **gh-sub-issue skill** - `.claude/skills/gh-sub-issue/SKILL.md`
 - **Milestone Management** - `@docs/dev/github-projects.md`
-- **Release Workflow** - `.github/workflows/auto-tag-release.yml`
+- **Release Workflow** - `docs/dev/releases.md`
