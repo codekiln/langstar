@@ -15,11 +15,13 @@ langstar assistant verify support-bot.json --deployment my-agent-prod --record r
 langstar assistant verify support-bot.json --deployment my-agent-prod --assistant-id <assistant-id>
 ```
 
-Verify looks for the prompts in the workspace you set with `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file, as import does. When you imported the prompts into another workspace, name it:
+Verify looks for the prompts in the workspace you set with `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file, as import does. Langstar also looks for the deployment in that workspace, so the deployment and the prompts have to be in the same one. When your API key reaches several workspaces, name the one that holds both:
 
 ```bash
 langstar assistant verify support-bot.json --deployment my-agent-prod --workspace-id <workspace-id>
 ```
+
+When you set no workspace and your API key reaches several, verify looks for the prompts in the workspace that holds the deployment.
 
 To see every flag:
 
