@@ -159,6 +159,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -175,6 +176,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
@@ -230,6 +232,28 @@ jobs:
           version: 2026.10.2
           install: false
 
+      - name: Check that the destination workspace ID is set and differs from the source
+        # When a developer adds the prompt import tests in task 7.1 of
+        # openspec/changes/export-import-prompts-and-assistants/tasks.md,
+        # those tests will import into this second workspace. If this secret is empty or
+        # holds the source workspace's ID, those tests would import back into
+        # the workspace they exported from, find the prompt already there, and
+        # pass even when import is broken. This step stops the job before the
+        # tests run.
+        run: |
+          if [ -z "$LANGSMITH_DESTINATION_WORKSPACE_ID" ]; then
+            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID is empty. Set it to the ID of the workspace the prompt import tests import into; docs/dev/environment-variables.md describes it under LANGSMITH_DESTINATION_WORKSPACE_ID."
+            exit 1
+          fi
+          if [ "$LANGSMITH_DESTINATION_WORKSPACE_ID" = "$LANGSMITH_WORKSPACE_ID" ]; then
+            echo "::error::secrets.LANGSMITH_DESTINATION_WORKSPACE_ID holds the same ID as secrets.LANGSMITH_WORKSPACE_ID. Set it to the second test workspace, which the prompt import tests import into; docs/dev/environment-variables.md describes it under LANGSMITH_DESTINATION_WORKSPACE_ID."
+            exit 1
+          fi
+          echo "✓ Destination workspace ID set, and it differs from the source workspace ID"
+        env:
+          LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
+
       - name: Run integration tests
         # Runs ALL CLI integration tests in the langstar package
         # Tests marked with #[cfg_attr(not(feature = "integration-tests"), ignore)] will run
@@ -241,6 +265,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -257,6 +282,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
@@ -322,6 +348,7 @@ jobs:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
 
       - name: List test artifacts
         if: always()
@@ -338,6 +365,7 @@ jobs:
         env:
           LANGSMITH_ORGANIZATION_ID: ${{ secrets.LANGSMITH_ORGANIZATION_ID }}
           LANGSMITH_WORKSPACE_ID: ${{ secrets.LANGSMITH_WORKSPACE_ID }}
+          LANGSMITH_DESTINATION_WORKSPACE_ID: ${{ secrets.LANGSMITH_DESTINATION_WORKSPACE_ID }}
           # The task needs no tool from mise.toml, so mise skips installing them.
           MISE_TASK_RUN_AUTO_INSTALL: "false"
 
