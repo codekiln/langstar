@@ -1982,12 +1982,14 @@ mod export_tests {
     #[test]
     fn test_export_takes_a_dashed_handle_without_a_double_dash() {
         use clap::Parser;
+        /// The `prompt` subcommand of langstar's command line, parsed the way
+        /// `Cli` in `cli/src/main.rs` parses it.
         #[derive(Parser)]
-        struct Wrapper {
+        struct PromptCli {
             #[command(subcommand)]
             command: PromptCommands,
         }
-        let parsed = Wrapper::try_parse_from([
+        let parsed = PromptCli::try_parse_from([
             "prompt",
             "export",
             "-/my-prompt",
