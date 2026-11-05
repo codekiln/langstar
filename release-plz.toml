@@ -13,7 +13,7 @@ pr_branch_prefix = "release-plz-"
 pr_name = "🔖 release: prepare v{{ version }}"
 pr_labels = ["release"]
 # Commit titles look like "✨ feat(scope): ...", so the type follows an emoji.
-# A "!" before the colon marks a breaking change. Footers never change the bump.
+# A "!" before the colon marks a breaking change. release-plz ignores footers.
 custom_major_increment_regex = '^\S+ \w+(?:\([^)]*\))?!:'
 custom_minor_increment_regex = '^\S+ feat(?:\([^)]*\))?!?:'
 release_commits = '^\S+ (?:feat|fix|perf)(?:\([^)]*\))?!?:|^\S+ \w+(?:\([^)]*\))?!:'
@@ -40,7 +40,7 @@ commit_parsers = [
 name = "langstar"
 version_group = "langstar"
 changelog_path = "./CHANGELOG.md"
-# CHANGELOG.md also lists the SDK commits, since the CLI ships them.
+# CHANGELOG.md also lists the SDK commits, since the CLI binary includes the SDK.
 changelog_include = ["langstar-sdk"]
 
 [[package]]

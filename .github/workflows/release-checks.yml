@@ -1,7 +1,7 @@
 name: Release checks
 
-# release.yml, which dist generates, calls this workflow in its plan job, so a
-# release builds only when the release configuration checks pass.
+# release.yml, which cargo-dist generates, calls this workflow, and its build jobs
+# start only after these release configuration checks pass.
 on:
   workflow_call:
 

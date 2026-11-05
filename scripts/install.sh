@@ -167,8 +167,8 @@ detect_platform() {
     echo "$platform"
 }
 
-# Map a platform from detect_platform to the Rust target triple that names the
-# release archives from cargo-dist (releases after v3.0.0).
+# Map a platform from detect_platform to the Rust target triple in the names of
+# the cargo-dist release archives (releases after v3.0.0).
 target_triple() {
     case "$1" in
         x86_64-linux-musl) echo "x86_64-unknown-linux-musl" ;;
@@ -418,8 +418,8 @@ main() {
         fi
     fi
 
-    # Releases after v3.0.0 name archives langstar-<target triple>.tar.gz;
-    # earlier ones used langstar-<version>-<platform>.tar.gz.
+    # Archives for releases after v3.0.0 are named langstar-<target triple>.tar.gz;
+    # archives for earlier releases, langstar-<version>-<platform>.tar.gz.
     local triple
     triple=$(target_triple "$platform")
     local base_url="https://github.com/$REPO/releases/download/v${version}"

@@ -1,6 +1,6 @@
 name: Deployment lifecycle test
 
-# Creates a new LangSmith deployment, exercises it and deletes it. Run it by hand
+# Creates a new LangSmith deployment, patches it and deletes it. Run it by hand
 # with `gh workflow run deployment-lifecycle-test.yml`.
 on:
   workflow_dispatch:

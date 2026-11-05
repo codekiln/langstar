@@ -13,13 +13,13 @@ description: Answer questions about cutting a langstar release, and show what th
 gh pr list --label release --state open
 ```
 
-The pull request is titled `🔖 release: prepare vX.Y.Z`. Its `CHANGELOG.md` section lists what the release contains. If there is none, no commit since the last tag needs a release.
+The pull request is titled `🔖 release: prepare vX.Y.Z`. Its `CHANGELOG.md` section lists what the release contains. When none is open, either every commit since the last tag has a type that makes no release, such as `docs` or `build`, or `prepare-release.yml` did not run; see "Find out why a release did not appear" below.
 
-## Releasing
+## Ask the maintainer to merge the release pull request
 
-Releasing means merging that pull request, which only the maintainer does. Ask before merging it, tagging, or starting a release workflow.
+Merging the release pull request releases langstar, and only the maintainer merges it. Ask before merging it, tagging, or starting a release workflow.
 
-## Previewing locally
+## Preview the next release locally
 
 ```bash
 mise run release:check
@@ -29,7 +29,7 @@ git diff Cargo.toml CHANGELOG.md
 
 `release-plz update` writes the next version and changelog section to the working tree. Discard them with `git checkout Cargo.toml Cargo.lock CHANGELOG.md` when done.
 
-## When a release did not appear
+## Find out why a release did not appear
 
 - No release pull request after a merge: open the latest `Prepare release` run with `gh run list -w prepare-release.yml`. A skipped job means the `RELEASE_ENABLED` variable is missing. A failure at "Create the release App token" means a release App secret is missing.
 - A tag with no GitHub release: open the `Release` run for that tag with `gh run list -w release.yml`.

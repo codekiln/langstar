@@ -2,8 +2,8 @@ name: Prepare release
 
 # On every push to main, release-plz tags the version if a release pull request
 # just merged, then opens or updates the next release pull request.
-# The release GitHub App's token does both, so the pull request gets CI and the
-# tag starts release.yml. docs/dev/releases.md explains the setup.
+# release-plz does both with the release GitHub App's token, so GitHub runs CI on
+# the pull request and starts release.yml for the tag. docs/dev/releases.md explains the setup.
 on:
   push:
     branches:
