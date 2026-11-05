@@ -48,7 +48,8 @@ Each archive has a `.sha256` file next to it. `scripts/install.sh` downloads the
    - `RELEASE_APP_ID`: the App ID from the App's settings page
    - `RELEASE_APP_PRIVATE_KEY`: the whole `.pem` private key
 4. Delete the downloaded `.pem` file.
-5. Add the [Actions repository variable](https://github.com/codekiln/langstar/settings/variables/actions) `RELEASE_ENABLED` with the value `true`. Until it exists, `prepare-release.yml` skips its job. Then start the first run with `gh workflow run prepare-release.yml`, so the release pull request opens without waiting for the next merge.
+5. Add the [Actions repository variable](https://github.com/codekiln/langstar/settings/variables/actions) `RELEASE_ENABLED` with the value `true`. Until it exists, `prepare-release.yml` skips its job.
+6. Check the App and its secrets with `gh workflow run prepare-release.yml`. The run should create the App token and finish without opening a pull request, because main has no `feat`, `fix`, `perf` or `!` commit that changes `cli/` or `sdk/` since v3.0.0. release-plz opens the first release pull request after someone merges one.
 
 ## Checks and maintenance
 
@@ -68,7 +69,7 @@ mise run dist:generate
 
 ## Deployment lifecycle test
 
-`test_deployment_workflow_full_lifecycle` creates a LangSmith deployment, patches it, waits for the new revision to deploy, and deletes the deployment. It runs only when someone starts it:
+`test_deployment_workflow_full_lifecycle` creates a LangSmith deployment, patches it, waits for the new revision to deploy, and deletes the deployment. `release.yml` ran it before each release until LangSmith refused the deployment with 403 on 2026-11-04. Until [#853 the deployment lifecycle test gets 403 when it creates a deployment](https://github.com/codekiln/langstar/issues/853) is fixed, the test runs only when someone starts it:
 
 ```sh
 gh workflow run deployment-lifecycle-test.yml
