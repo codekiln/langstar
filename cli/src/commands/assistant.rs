@@ -217,7 +217,7 @@ pub enum AssistantCommands {
     },
 
     /// Compare an assistant with its export file, and check that the
-    /// deployment serves its graph and the workspace holds its prompts
+    /// deployment serves the file's graph and the workspace holds the file's prompts
     ///
     /// Does what compare does, and also checks that the deployment serves the
     /// file's graph and that the workspace holds each prompt under
