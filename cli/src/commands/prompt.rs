@@ -1444,7 +1444,7 @@ mod export_tests {
     use serde_json::Value;
     use std::path::Path;
 
-    /// The workspace the served repo says it is in.
+    /// The workspace ID the mockito server returns as the repo's `tenant_id`.
     const TENANT_ID: &str = "00000000-0000-4000-8000-000000000001";
     /// The hash of the commit the server serves.
     const COMMIT_HASH: &str = "0a1b2c3d4e5f";

@@ -74,7 +74,7 @@ Keep credentials in the workspace's secrets (see [workspace-secrets.md](./worksp
 
 Export stops before it reads anything while `LANGSTAR_DEBUG_HTTP` is set, because langstar then writes each response it reads, with any credential in it, to a debug file and to stderr. Unset `LANGSTAR_DEBUG_HTTP` and run the export again. [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847) tracks the change that would let export run with it set.
 
-### A flagged string that holds no secret
+### Pass `--not-a-secret` for a harmless flagged string
 
 Some flagged strings are harmless, such as a message template that shows an example `Authorization: Bearer` header. Read the string at the path export printed, and when it is harmless, name that path with `--not-a-secret`:
 
@@ -83,8 +83,8 @@ langstar prompt export my-prompt --output my-prompt.json \
   --not-a-secret /commit/manifest/kwargs/first/kwargs/messages/0/kwargs/prompt/kwargs/template
 ```
 
-Export then writes the string and prints a warning to stderr that names the path. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
+Export then writes the string and prints a warning to stderr that names the path. Give `--not-a-secret` once for each path. When export flags a string at any other path, it still stops. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
 
 ### What the credential check misses
 
-The check reads key names and value shapes. A credential under an ordinary key name with an ordinary-looking value, such as a random string under a key called `x`, passes the check and reaches the file. Read every export file before you commit it.
+The credential check looks only at key names and at the patterns listed above, so it lets through a credential under an ordinary key name, such as a random string under a key called `x`, and export writes it to the file. Read every export file before you commit it.
