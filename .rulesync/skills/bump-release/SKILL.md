@@ -1,6 +1,6 @@
 ---
 name: bump-release
-description: Answer questions about cutting a langstar release, and show what the next release will contain. langstar releases through the release pull request that release-plz keeps open; merging it tags the version and publishes the GitHub release. Use when someone asks to cut, bump, preview or publish a release, or asks why a release did not appear.
+description: Answer questions about cutting a langstar release, and show what the next release will contain. release-plz keeps a release pull request open. When the maintainer merges it, release-plz pushes the version tag and `release.yml` publishes the GitHub release. Use when someone asks to cut, bump, preview or publish a release, or asks why a release did not appear.
 ---
 
 # Release langstar
