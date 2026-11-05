@@ -13,7 +13,7 @@ description: Answer questions about cutting a langstar release, and show what th
 gh pr list --label release --state open
 ```
 
-The pull request is titled `🔖 release: prepare vX.Y.Z`. Its `CHANGELOG.md` section lists what the release contains. When none is open, either every commit since the last tag has a type that makes no release, such as `docs` or `build`, or `prepare-release.yml` did not run; see "Find out why a release did not appear" below.
+The pull request is titled `🔖 release: prepare vX.Y.Z`, and its `CHANGELOG.md` section lists what the release contains. release-plz opens it after someone merges a `feat`, `fix`, `perf` or `!` commit that changes files in `cli/` or `sdk/`. When none is open, either main has no such commit since the last tag, or `prepare-release.yml` did not run; see "Find out why a release did not appear" below.
 
 ## Ask the maintainer to merge the release pull request
 
