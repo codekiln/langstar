@@ -1041,8 +1041,7 @@ async fn run_export(
     Ok(())
 }
 
-/// The variable that turns on the SDK's debug output. `refuse_debug_dump`
-/// says why export refuses to run while it is set.
+/// The environment variable that turns on the SDK's debug output.
 const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
 
 /// Refuse to export while `LANGSTAR_DEBUG_HTTP` is set.
@@ -1057,9 +1056,9 @@ const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
 fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
     if debug_http_set {
         return Err(crate::error::CliError::Other(anyhow::anyhow!(
-            "prompt export does not run while {DEBUG_HTTP_VARIABLE} is set, because that \
-             writes each response, with any credential in it, to a debug file and to \
-             stderr. Unset {DEBUG_HTTP_VARIABLE} and run the export again."
+            "prompt export stops while {DEBUG_HTTP_VARIABLE} is set, because langstar \
+             then writes each response it reads, with any credential in it, to a debug \
+             file and to stderr. Unset {DEBUG_HTTP_VARIABLE} and run the export again."
         )));
     }
     Ok(())
@@ -1210,13 +1209,15 @@ fn check_export_for_credentials(
         .filter(|pointer| !flagged.iter().any(|item| &item.path == *pointer))
         .collect();
     if !unflagged.is_empty() {
-        let mut message =
-            String::from("--not-a-secret names a path where the check flags no string:\n");
+        let mut message = String::from(
+            "--not-a-secret names a path that holds no string the credential check flags:\n",
+        );
         for pointer in unflagged {
             message.push_str(&format!("  {}\n", pointer));
         }
         message.push_str(
-            "Remove each one, or name the path the refusal printed. No file was written.",
+            "Remove --not-a-secret for each of these paths, or give it a path that export \
+             printed when it refused to write the file. No file was written.",
         );
         return Err(crate::error::CliError::Other(anyhow::anyhow!(message)));
     }
