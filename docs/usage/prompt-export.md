@@ -83,7 +83,7 @@ langstar prompt export my-prompt --output my-prompt.json \
   --not-a-secret /commit/manifest/kwargs/first/kwargs/messages/0/kwargs/prompt/kwargs/template
 ```
 
-Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
+Export then writes the string and prints a warning to stderr that names the path. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
 
 ### What the credential check misses
 

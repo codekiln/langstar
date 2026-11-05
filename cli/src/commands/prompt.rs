@@ -1041,18 +1041,19 @@ async fn run_export(
     Ok(())
 }
 
-/// The variable that, until issue #847 is fixed, makes the SDK write every
-/// response body it reads to a debug file and print parts of it to stderr.
+/// The variable that turns on the SDK's debug output. `refuse_debug_dump`
+/// says why export refuses to run while it is set.
 const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
 
 /// Refuse to export while `LANGSTAR_DEBUG_HTTP` is set.
 ///
-/// Until issue #847 is fixed, the SDK writes LangSmith's whole response for
-/// the commit to a debug file while that variable is set, and prints the start
-/// of it to stderr. The SDK does this before export runs the credential check.
-/// A literal API key in the prompt would then already be on disk and in the
-/// terminal when export refuses to write the file. Once #847 is fixed, this
-/// check can go.
+/// Until
+/// [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847)
+/// is fixed, the SDK writes LangSmith's whole response for the commit to a
+/// debug file while that variable is set, and prints the start of it to
+/// stderr. The SDK does this before export runs the credential check, so a
+/// literal API key in the prompt is already on disk and in the terminal when
+/// export refuses to write the file. Delete this check when #847 is fixed.
 fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
     if debug_http_set {
         return Err(crate::error::CliError::Other(anyhow::anyhow!(
