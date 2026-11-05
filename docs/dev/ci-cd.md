@@ -2,7 +2,7 @@
 
 ## Overview
 
-CI validates every pull request, and a version tag starts the release build.
+CI checks every pull request. When release-plz pushes a version tag, GitHub starts `release.yml`, which builds the binaries and publishes the release.
 
 ## Pipeline Architecture
 
