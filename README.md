@@ -265,7 +265,7 @@ langstar assistant verify support-bot.json --deployment my-agent-prod
 langstar assistant list --format json
 ```
 
-Export refuses to write a file that holds a credential. [Assistant Export](./docs/usage/assistant-export.md) shows what the file holds and how to use `--prompt-ref` and `--not-a-secret`. [Assistant Import](./docs/usage/assistant-import.md) shows what import checks before it creates the assistant, and how to copy every assistant from one deployment to another. [Assistant Compare](./docs/usage/assistant-compare.md) shows how to list the fields where a copy on a deployment differs from its export file, and [Assistant Verify](./docs/usage/assistant-verify.md) shows how to check that a copy can run on its deployment.
+Export refuses to write a file that holds a credential. [Assistant Export](./docs/usage/assistant-export.md) shows what the file holds and how to use `--prompt-ref` and `--not-a-secret`. [Assistant Import](./docs/usage/assistant-import.md) shows what import checks before it creates the assistant, and how to copy every assistant from one deployment to another. [Assistant Compare](./docs/usage/assistant-compare.md) shows how to list the fields where a copy on a deployment differs from its export file, and [Assistant Verify](./docs/usage/assistant-verify.md) shows how to check a copy against its export file and check that its deployment serves the graph and its workspace holds the prompts.
 
 #### Command Migration (v0.5.0+)
 

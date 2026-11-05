@@ -1,6 +1,6 @@
 # Assistant Verify
 
-`langstar assistant verify` checks that an assistant can run on a deployment. It compares the assistant with the file as [`langstar assistant compare`](assistant-compare.md) does, and also checks that the deployment serves the file's graph and that the workspace holds each prompt the file lists under `requires.prompts`. These are the checks that [`langstar assistant import`](assistant-import.md) runs before it creates anything. Verify changes nothing on the deployment and writes no file.
+`langstar assistant verify` checks a copy of an assistant on a deployment against its export file. It lists each field that differs, as [`langstar assistant compare`](assistant-compare.md) does. It also checks that the deployment serves the file's graph and that the workspace holds each prompt the file lists under `requires.prompts`, which are the checks [`langstar assistant import`](assistant-import.md) runs before it creates anything. Verify changes nothing on the deployment and writes no file.
 
 ## Verify an assistant
 
@@ -15,7 +15,7 @@ langstar assistant verify support-bot.json --deployment my-agent-prod --record r
 langstar assistant verify support-bot.json --deployment my-agent-prod --assistant-id <assistant-id>
 ```
 
-Verify looks for the prompts in the workspace you set with `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file, as import does. Langstar also looks for the deployment in that workspace, so the deployment and the prompts have to be in the same one. When your API key reaches several workspaces, name the one that holds both:
+Verify looks for the deployment and the prompts in one workspace, so both have to be in it. Langstar takes that workspace from `--workspace-id`, `LANGSMITH_WORKSPACE_ID` or the config file, as it does for import. When your API key reaches several workspaces, name the one that holds both:
 
 ```bash
 langstar assistant verify support-bot.json --deployment my-agent-prod --workspace-id <workspace-id>

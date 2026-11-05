@@ -2,7 +2,7 @@
 
 `langstar assistant compare` compares an assistant on a deployment with the file that [`langstar assistant export`](assistant-export.md) wrote. It lists each field that differs, so you can see whether someone changed a copy on the deployment, or changed the file in Git, since the last import. It changes nothing on the deployment and writes no file.
 
-When `LANGSTAR_DEBUG_HTTP` is set, langstar writes every server response to a debug file, and the assistant that compare and verify read from the deployment may hold a credential. Both commands refuse to run while that variable is set, so run `unset LANGSTAR_DEBUG_HTTP` first.
+Compare and verify refuse to run while `LANGSTAR_DEBUG_HTTP` is set, so run `unset LANGSTAR_DEBUG_HTTP` first. With that variable set, langstar writes every server response to a debug file, and the assistant these commands read from the deployment may hold a credential.
 
 To also check that the deployment serves the file's graph and that the workspace holds the prompts the assistant names, use [`langstar assistant verify`](assistant-verify.md).
 
@@ -24,7 +24,7 @@ To compare the file with another assistant, such as the one you exported it from
 langstar assistant compare support-bot.json --deployment my-agent --assistant-id <assistant-id>
 ```
 
-When the record has no entry for the deployment and you pass no `--assistant-id`, compare names the deployment, suggests `--assistant-id` and exits with status 1. When the record marks the deployment's entry `pending`, an earlier import stopped before it created the assistant. Compare says so and exits with status 1. Import the file again to finish creating it, or pass `--assistant-id`.
+Without `--assistant-id`, compare needs a created assistant in the record, and exits with status 1 when it finds none. When the record has no entry for the deployment, compare names the deployment and suggests `--assistant-id`. A `pending` entry means an earlier import stopped before it created the assistant. Compare says so, and you can import the file again to finish creating the assistant, or pass `--assistant-id`.
 
 To see every flag:
 
@@ -38,7 +38,7 @@ Compare reads the assistant from the deployment and compares it with the file's 
 
 The Agent Server keeps an assistant's settings in both `config.configurable` and `context`, and export writes both. When you remove one of them from the file, compare checks the field the file still holds against the same settings on the deployment, and leaves the other field out of the comparison.
 
-Before it reads the deployment, compare checks that each setting `requires.prompts` lists by its path still holds the prompt name recorded beside that path. When someone edited the configuration in Git and left `requires.prompts` as it was, compare prints the path, the prompt name `requires.prompts` records and the one the setting now holds, and exits with status 1.
+Before it reads the deployment, compare checks the file against itself. For each prompt, `requires.prompts` holds a JSON Pointer path into the file's `assistant` object and the prompt name export found at that path. When someone edits the prompt name in the configuration and leaves `requires.prompts` as it was, compare prints the path, the name `requires.prompts` holds and the name the configuration now holds, and exits with status 1.
 
 ## The report
 

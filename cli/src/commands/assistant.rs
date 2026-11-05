@@ -2519,7 +2519,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn compare_reads_the_assistant_id_from_the_record_that_record_names() {
+    async fn compare_reads_the_assistant_id_from_the_path_the_record_flag_names() {
         let directory = tempfile::tempdir().unwrap();
         let file = write_export(directory.path(), file_assistant(), json!({}));
         std::fs::create_dir(directory.path().join("records")).unwrap();
@@ -2751,7 +2751,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn verify_reports_a_graph_a_422_names_as_missing() {
+    async fn verify_reports_a_missing_graph_when_the_graph_lookup_answers_422() {
         let directory = tempfile::tempdir().unwrap();
         let mut assistant = file_assistant();
         assistant["graph_id"] = json!("other");

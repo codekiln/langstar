@@ -437,10 +437,11 @@ fn test_verify_reports_a_prompt_tag_the_workspace_lacks() {
 /// the destination workspace and the model provider key to `fnox.toml`, the CI
 /// workflow and `docs/dev/environment-variables.md`", in
 /// `openspec/changes/export-import-prompts-and-assistants/tasks.md`. The pull
-/// request for task 2.1 removes the `#[ignore]`. Langstar also looks for the
-/// deployment in the workspace `--workspace-id` names, so this test passes only
-/// once langstar finds the test deployment outside that workspace, or once the
-/// destination workspace holds the deployment it reads.
+/// request for task 2.1 removes the `#[ignore]`. The test still fails after
+/// that: langstar looks for the deployment in the workspace `--workspace-id`
+/// names, and the test deployment sits in the test workspace. The test passes
+/// once langstar can find a deployment outside that workspace, or once the
+/// destination workspace has a deployment of its own.
 #[test]
 #[serial]
 #[ignore = "needs task 2.1"]

@@ -155,6 +155,6 @@ The copies have new assistant IDs. Code that refers to an assistant by ID has to
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. When the copy differs from the file, the record keeps the ID of the assistant that import created, so the next import compares that assistant instead of creating another.
 
-## Planned: import's --update
+## Planned: import's --update, --assistant-id and --dry-run flags
 
 The langstar developers will add import's `--update`, `--assistant-id` and `--dry-run` flags under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807). Until `--update` exists, import only compares an assistant it finds through the record; to change a copy, edit it with `langstar assistant update`.
