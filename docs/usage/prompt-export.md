@@ -24,7 +24,7 @@ Export writes the same file for `my-prompt` and `-/my-prompt`, since both name a
 
 Progress messages and warnings go to stderr, so a file written through `>` holds only the export.
 
-## What the file holds
+## What the export file holds
 
 ```json
 {
@@ -85,6 +85,6 @@ langstar prompt export my-prompt --output my-prompt.json \
 
 Export then writes the string and prints a warning naming the path to stderr. Give `--not-a-secret` once for each path. A flagged string at any other path still stops the export. Export also stops when a path you named holds a string the check lets through, and it prints that path. `--not-a-secret` lets through whatever flagged string sits at the path, including one someone changed after you read it, so read the string again whenever the prompt changes.
 
-### What the check misses
+### What the credential check misses
 
 The check reads key names and value shapes. A credential under an ordinary key name with an ordinary-looking value, such as a random string under a key called `x`, passes the check and reaches the file. Read every export file before you commit it.

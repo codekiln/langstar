@@ -1041,16 +1041,18 @@ async fn run_export(
     Ok(())
 }
 
-/// The variable that makes the SDK write every response body it reads to a
-/// debug file and print parts of it to stderr.
+/// The variable that, until issue #847 is fixed, makes the SDK write every
+/// response body it reads to a debug file and print parts of it to stderr.
 const DEBUG_HTTP_VARIABLE: &str = "LANGSTAR_DEBUG_HTTP";
 
 /// Refuse to export while `LANGSTAR_DEBUG_HTTP` is set.
 ///
-/// With it set, the SDK writes LangSmith's whole response for the commit to a
-/// file and prints the start of it to stderr before export runs the credential
-/// check, so a literal API key in the prompt would reach the disk and the
-/// terminal even though export then refuses to write the file.
+/// Until issue #847 is fixed, the SDK writes LangSmith's whole response for
+/// the commit to a debug file while that variable is set, and prints the start
+/// of it to stderr. The SDK does this before export runs the credential check.
+/// A literal API key in the prompt would then already be on disk and in the
+/// terminal when export refuses to write the file. Once #847 is fixed, this
+/// check can go.
 fn refuse_debug_dump(debug_http_set: bool) -> Result<()> {
     if debug_http_set {
         return Err(crate::error::CliError::Other(anyhow::anyhow!(
@@ -1444,9 +1446,10 @@ mod export_tests {
     const TENANT_ID: &str = "00000000-0000-4000-8000-000000000001";
     /// The hash of the commit the server serves.
     const COMMIT_HASH: &str = "0a1b2c3d4e5f";
-    /// A provider token under a neutral key. The test builds it at run time so
-    /// a secret scanner, such as GitHub's push protection, does not flag this
-    /// file.
+    /// A token that starts with OpenAI's `sk-` prefix. The test puts it under
+    /// `model_kwargs.extra`, a key name the credential check lets through, so
+    /// only the provider-prefix rule can flag it. The test assembles the token
+    /// when it runs, so GitHub's push protection finds no token in this file.
     fn provider_token() -> String {
         format!("sk-{}", "0123456789abcdefghij".repeat(2))
     }
@@ -1750,7 +1753,7 @@ mod export_tests {
     }
 
     #[tokio::test]
-    async fn test_export_refuses_a_provider_token_under_a_neutral_key() {
+    async fn test_export_refuses_a_provider_token_under_an_ordinary_key() {
         let token = provider_token();
         let manifest = sequence(
             chat_prompt("Hi"),
