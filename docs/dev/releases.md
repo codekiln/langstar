@@ -57,7 +57,7 @@ Each archive has a `.sha256` file next to it. `scripts/install.sh` downloads the
 mise run release:check
 ```
 
-`release:check` runs two tasks. `release:impact-test` commits each kind of title to a temporary copy of `tests/fixtures/release-impact` and checks the version and changelog line that the pinned release-plz writes. `dist:check` checks that `release.yml` matches `dist-workspace.toml` and lists the release archives.
+`release:check` runs `release:impact-test` and `dist:check`. `release:impact-test` commits each kind of title to a temporary copy of `tests/fixtures/release-impact` and checks the version and changelog line that the pinned release-plz writes. `dist:check` checks that `release.yml` matches `dist-workspace.toml` and lists the release archives.
 
 CI's `Release Config` job runs `mise run release:check` on every pull request, and `All Jobs` waits for it.
 

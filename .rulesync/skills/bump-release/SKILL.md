@@ -31,5 +31,5 @@ git diff Cargo.toml CHANGELOG.md
 
 ## Find out why a release did not appear
 
-- No release pull request after a merge: open the latest `Prepare release` run with `gh run list -w prepare-release.yml`. A skipped job means the `RELEASE_ENABLED` variable is missing. A failure at "Create the release App token" means a release App secret is missing.
+- No release pull request after a merge: open the latest `Prepare release` run with `gh run list -w prepare-release.yml`. A skipped job means the `RELEASE_ENABLED` variable is missing. A failure at "Create the release App token" means the workflow could not get a token from the App. Check that the `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY` secrets exist and come from the same App, and that the App is installed on `codekiln/langstar`.
 - A tag with no GitHub release: open the `Release` run for that tag with `gh run list -w release.yml`.

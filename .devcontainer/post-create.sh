@@ -73,9 +73,9 @@ echo "[post-create] Installing lefthook git hooks and generating agent config...
 "$(mise which lefthook)" install
 mise run agents:generate
 
-# Step 4: Install cargo tools
+# Step 4: Check that mise installed cargo
 # After mise install, cargo should be available via ~/.cargo/env
-echo "[post-create] Installing cargo tools (cargo-release)..."
+echo "[post-create] Checking that cargo is on PATH..."
 
 # Check if cargo env exists and source it
 if [[ -f ~/.cargo/env ]]; then

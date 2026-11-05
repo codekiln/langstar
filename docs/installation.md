@@ -146,7 +146,7 @@ TARGET="aarch64-apple-darwin"
 VERSION="X.Y.Z"  # see https://github.com/codekiln/langstar/releases
 ```
 
-Archives for releases up to v3.0.0 are named `langstar-<version>-<platform>.tar.gz`, with platforms such as `x86_64-linux-musl` and `aarch64-macos`. `scripts/install.sh` downloads either name.
+Every release up to v2.2.0, the newest one today, has archives named `langstar-<version>-<platform>.tar.gz`. For those releases, set `TARGET` to `x86_64-linux-musl`, `aarch64-linux-musl`, `x86_64-macos` or `aarch64-macos`, and replace `langstar-${TARGET}` in Step 3 with `langstar-${VERSION}-${TARGET}`. `scripts/install.sh` picks the right name for you.
 
 #### Step 3: Download and Extract
 
