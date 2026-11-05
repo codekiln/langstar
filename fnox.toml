@@ -17,5 +17,5 @@
 LANGSMITH_API_KEY = { provider = "langsmith", value = "langstar-cli-testing-workspace/api-key", if_missing = "error" }
 LANGSMITH_ORGANIZATION_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-org-id", if_missing = "error" }
 LANGSMITH_WORKSPACE_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-workspace-id", if_missing = "error" }
-# The workspace the prompt import tests will import into, once task 7.1 in openspec/changes/export-import-prompts-and-assistants/tasks.md adds them. They will export from LANGSMITH_WORKSPACE_ID.
+# The workspace the prompt import tests will import into, once a developer adds them in task 7.1 of openspec/changes/export-import-prompts-and-assistants/tasks.md. They will export from LANGSMITH_WORKSPACE_ID.
 LANGSMITH_DESTINATION_WORKSPACE_ID = { provider = "langsmith", value = "langstar-cli-testing-workspace/langsmith-destination-workspace-id", if_missing = "error" }
