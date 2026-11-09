@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="Run the pre-commit chain: fmt, check, clippy, tests, then fmt --check (stops at the first failure)"
+#MISE description="Run the pre-commit chain: fmt, check, clippy, tests, bump-release script tests, then fmt --check (stops at the first failure)"
 set -euo pipefail
 
 # Sequential on purpose: `depends` runs sibling tasks in parallel, which would
@@ -11,4 +11,5 @@ mise run rust:fmt
 mise run rust:check
 mise run rust:clippy
 mise run rust:test
+mise run skills:test-bump-release
 cargo fmt --check
