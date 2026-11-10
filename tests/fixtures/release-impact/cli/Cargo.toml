@@ -1,0 +1,8 @@
+[package]
+name = "langstar"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+langstar-sdk = { path = "../sdk" }

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#MISE description="Open or update the release pull request with release-plz"
+set -euo pipefail
+
+# GIT_TOKEN is the release GitHub App's token in CI.
+release-plz release-pr --config release-plz.toml --output json

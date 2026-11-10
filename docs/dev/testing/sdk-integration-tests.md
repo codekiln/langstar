@@ -197,7 +197,7 @@ export REPOSITORY_NAME="langstar"                      # Default: "langstar"
 cargo test --test integration_deployment_workflow test_deployment_workflow -- --ignored --nocapture
 ```
 
-**Full lifecycle deployment workflow (pre-release validation, 20-30 minutes):**
+**Full lifecycle deployment workflow (20-30 minutes; `gh workflow run deployment-lifecycle-test.yml` runs it in GitHub Actions):**
 ```bash
 cargo test --test integration_deployment_workflow test_deployment_workflow_full_lifecycle -- --ignored --nocapture
 ```
