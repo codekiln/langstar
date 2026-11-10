@@ -38,7 +38,7 @@ For each deployment you import the file onto, the record holds the ID of the ass
 }
 ```
 
-When you import the same file onto the same deployment again, import finds that assistant through the record, compares it with the file and creates nothing. It reports the action `unchanged` and exits with status 0 when they match and 3 when they differ. So running import a second time is how you check a copy until `langstar assistant compare` exists. Keep the record in Git beside the export file. Without it, a second import creates a second assistant.
+When you import the same file onto the same deployment again, import finds that assistant through the record, compares it with the file and creates nothing. It reports the action `unchanged` and exits with status 0 when they match and 3 when they differ. [`langstar assistant compare`](assistant-compare.md) and [`langstar assistant verify`](assistant-verify.md) read the same record to find the copy. Keep the record in Git beside the export file. Without it, a second import creates a second assistant.
 
 Import writes the ID to the record as `pending` before it sends the create, and marks it `created` once the create succeeds. If langstar stops in between, the next import sends the same create with the same ID, and the deployment answers with the assistant the first import made instead of creating another.
 
@@ -123,12 +123,12 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 
    Each import prints the new assistant's ID. An import that exits with 3 printed what is missing or what differs. Fix that and run the loop again. On the next run, import reads each record and compares the assistant it created earlier with the file instead of creating it again.
 
-5. Check the copies. Import each file again; each one should report the action `unchanged` and no difference:
+5. Check the copies with [`langstar assistant verify`](assistant-verify.md). Each one should report the status `passed`:
 
    ```bash
    while read -r id; do
-     langstar -f json assistant import "assistants/$id.json" --deployment <new-deployment> < /dev/null \
-       | jq -r --arg id "$id" '"\($id) \(.action) \(.status)"'
+     langstar -f json assistant verify "assistants/$id.json" --deployment <new-deployment> < /dev/null \
+       | jq -r --arg id "$id" '"\($id) \(.status)"'
    done < assistant-ids.txt
    ```
 
@@ -149,6 +149,6 @@ The copies have new assistant IDs. Code that refers to an assistant by ID has to
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. When the copy differs from the file, the record keeps the ID of the assistant that import created, so the next import compares that assistant instead of creating another.
 
-## Planned: compare, verify and import's --update
+## Planned: import's --update, --assistant-id and --dry-run flags
 
-The langstar developers will add `langstar assistant compare`, `langstar assistant verify`, and import's `--update`, `--assistant-id` and `--dry-run` flags under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807). Until `--update` exists, import only compares an assistant it finds through the record; to change a copy, edit it with `langstar assistant update`.
+The langstar developers will add import's `--update`, `--assistant-id` and `--dry-run` flags under [#807 Export, import, compare, and verify prompts and assistants across LangSmith environments](https://github.com/codekiln/langstar/issues/807). Until `--update` exists, import only compares an assistant it finds through the record; to change a copy, edit it with `langstar assistant update`.

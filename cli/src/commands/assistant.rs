@@ -191,6 +191,59 @@ pub enum AssistantCommands {
         record: Option<PathBuf>,
     },
 
+    /// Compare an assistant on a deployment with its export file
+    ///
+    /// Compares the file with the assistant that import recorded for the
+    /// deployment in <file stem>.destinations.json, or with the one
+    /// --assistant-id names, and lists each field that differs by its JSON
+    /// Pointer path with both values. Exits with 0 when they match, 3 when they
+    /// differ, and 1 on any other error.
+    Compare {
+        /// Deployment name or ID that holds the assistant (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
+        /// The file 'langstar assistant export' wrote
+        file: PathBuf,
+
+        /// Compare the file with this assistant instead of the one the record names
+        #[arg(long, value_name = "ID")]
+        assistant_id: Option<String>,
+
+        /// Read the record of created assistant IDs here, instead of
+        /// <file stem>.destinations.json beside the export file
+        #[arg(long, value_name = "PATH")]
+        record: Option<PathBuf>,
+    },
+
+    /// Compare an assistant with its export file, and check that the
+    /// deployment serves the file's graph and the workspace holds the file's prompts
+    ///
+    /// Does what compare does, and also checks that the deployment serves the
+    /// file's graph and that the workspace holding the deployment has each
+    /// prompt under requires.prompts. To find that workspace, langstar searches
+    /// every workspace the API key reaches, unless you name one with
+    /// --workspace-id, LANGSMITH_WORKSPACE_ID or the config file. Exits with 0
+    /// when the assistant matches and every check passes, 3 when a check fails
+    /// or the assistant differs, and 1 on any other error.
+    Verify {
+        /// Deployment name or ID that holds the assistant (from 'langstar graph list')
+        #[arg(long, required = true)]
+        deployment: String,
+
+        /// The file 'langstar assistant export' wrote
+        file: PathBuf,
+
+        /// Compare the file with this assistant instead of the one the record names
+        #[arg(long, value_name = "ID")]
+        assistant_id: Option<String>,
+
+        /// Read the record of created assistant IDs here, instead of
+        /// <file stem>.destinations.json beside the export file
+        #[arg(long, value_name = "PATH")]
+        record: Option<PathBuf>,
+    },
+
     /// Delete an assistant
     Delete {
         /// Deployment name or ID (from 'langstar graph list')
@@ -289,6 +342,8 @@ impl AssistantCommands {
             AssistantCommands::Update { deployment, .. } => deployment,
             AssistantCommands::Export { deployment, .. } => deployment,
             AssistantCommands::Import { deployment, .. } => deployment,
+            AssistantCommands::Compare { deployment, .. } => deployment,
+            AssistantCommands::Verify { deployment, .. } => deployment,
             AssistantCommands::Delete { deployment, .. } => deployment,
         };
 
@@ -564,11 +619,33 @@ impl AssistantCommands {
                     &mut std::io::stderr(),
                 )
                 .await?;
-                report.print(format)?;
-                match report.exit_code() {
-                    EXIT_MATCH => Ok(()),
-                    code => Err(CliError::Exit(code)),
-                }
+                print_report_and_exit(&report, format)
+            }
+
+            AssistantCommands::Compare {
+                deployment: _,
+                file,
+                assistant_id,
+                record,
+            }
+            | AssistantCommands::Verify {
+                deployment: _,
+                file,
+                assistant_id,
+                record,
+            } => {
+                let record = record.clone().unwrap_or_else(|| record_path_for(file));
+                let target = AssistantToCompare {
+                    deployment_name,
+                    deployment_id: &deployment.id,
+                    assistant_id: assistant_id.as_deref(),
+                    record: &record,
+                };
+                let verify = matches!(self, AssistantCommands::Verify { .. });
+                let report =
+                    compare_assistant(&client, file, &target, verify, &mut std::io::stderr())
+                        .await?;
+                print_report_and_exit(&report, format)
             }
 
             AssistantCommands::Delete {
@@ -833,7 +910,13 @@ async fn import_assistant(
             "{} records assistant '{assistant_id}' on this deployment. Comparing it with the file...",
             record_path.display()
         )?;
-        let differences = read_back(client, &file_assistant, assistant_id, record_path).await?;
+        let differences = read_back(
+            client,
+            &file_assistant,
+            assistant_id,
+            IdFrom::Record(record_path),
+        )
+        .await?;
         return Ok(ResultReport::of(differences)
             .with_action(Action::Unchanged, Some(assistant_id.clone())));
     }
@@ -893,10 +976,25 @@ async fn import_assistant(
         record_path.display()
     )?;
 
-    let differences = read_back(client, &file_assistant, &assistant_id, record_path).await?;
+    let differences = read_back(
+        client,
+        &file_assistant,
+        &assistant_id,
+        IdFrom::Record(record_path),
+    )
+    .await?;
     Ok(ResultReport::of(differences)
         .with_checks(checks)
         .with_action(Action::Create, Some(assistant_id)))
+}
+
+/// Where a command found the ID of the assistant it reads, which the error
+/// names when the deployment has no assistant with that ID.
+enum IdFrom<'a> {
+    /// The destination record at this path.
+    Record(&'a Path),
+    /// The `--assistant-id` flag.
+    Flag,
 }
 
 /// Read the assistant with `assistant_id` from the deployment and compare it
@@ -905,17 +1003,23 @@ async fn read_back(
     client: &LangchainClient,
     file_assistant: &Value,
     assistant_id: &str,
-    record_path: &Path,
+    id_from: IdFrom<'_>,
 ) -> Result<Vec<Difference>> {
     let assistant = match client.assistants().get(assistant_id).await {
         Ok(assistant) => assistant,
         Err(LangstarError::ApiError { status: 404, .. }) => {
-            return Err(refusal(format!(
-                "{} records assistant '{assistant_id}' on this deployment, and the deployment \
-                 has no assistant with that ID. Remove the deployment's entry from the record \
-                 to create the assistant again.",
-                record_path.display()
-            )));
+            return Err(refusal(match id_from {
+                IdFrom::Record(record_path) => format!(
+                    "{} records assistant '{assistant_id}' on this deployment, and the \
+                     deployment has no assistant with that ID. Remove the deployment's entry \
+                     from the record to create the assistant again.",
+                    record_path.display()
+                ),
+                IdFrom::Flag => format!(
+                    "The deployment has no assistant with the ID '{assistant_id}' that you \
+                     passed with --assistant-id."
+                ),
+            }));
         }
         Err(error) => return Err(redacted(error)),
     };
@@ -924,6 +1028,100 @@ async fn read_back(
         &json!({ "assistant": file_assistant }),
         &json!({ "assistant": destination }),
     ))
+}
+
+/// Print the report and exit with the status it gives.
+fn print_report_and_exit(report: &ResultReport, format: OutputFormat) -> Result<()> {
+    report.print(format)?;
+    match report.exit_code() {
+        EXIT_MATCH => Ok(()),
+        code => Err(CliError::Exit(code)),
+    }
+}
+
+/// The assistant that `assistant compare` and `assistant verify` read.
+struct AssistantToCompare<'a> {
+    /// The deployment name or ID the user gave, which an error names.
+    deployment_name: &'a str,
+    /// The deployment's ID, which keys its entry in the destination record.
+    deployment_id: &'a str,
+    /// The `--assistant-id` flag, which takes the place of the record's entry.
+    assistant_id: Option<&'a str>,
+    /// The destination record to read the assistant ID from.
+    record: &'a Path,
+}
+
+/// Compare the file's assistant with the one `target` names on the deployment
+/// the client points at. With `verify`, also run the graph check and the prompt
+/// check that import runs before it writes.
+///
+/// When reading the file, checking its prompt pointers, finding the assistant
+/// ID or reading the assistant fails, this function returns the error, and
+/// `main` exits with status 1.
+/// A difference or a failed check goes in the report, and the command exits
+/// with status 3 after printing it. Neither command writes anything.
+async fn compare_assistant(
+    client: &LangchainClient,
+    file: &Path,
+    target: &AssistantToCompare<'_>,
+    verify: bool,
+    stderr: &mut dyn Write,
+) -> Result<ResultReport> {
+    let export = read_assistant_export(file)?;
+    let file_assistant = serde_json::to_value(&export.assistant)?;
+    check_prompt_pointers(&file_assistant, &export.requires.prompts)?;
+
+    let (assistant_id, id_from) = match target.assistant_id {
+        Some(assistant_id) => (assistant_id.to_string(), IdFrom::Flag),
+        None => (
+            recorded_assistant_id(target)?,
+            IdFrom::Record(target.record),
+        ),
+    };
+
+    let checks = if verify {
+        destination_checks(client, &export).await?
+    } else {
+        Vec::new()
+    };
+
+    writeln!(
+        stderr,
+        "Comparing assistant '{assistant_id}' with {}...",
+        file.display()
+    )?;
+    let differences = read_back(client, &file_assistant, &assistant_id, id_from).await?;
+    Ok(ResultReport::of(differences).with_checks(checks))
+}
+
+/// The assistant ID that the destination record holds for the target's
+/// deployment, which import marked created.
+fn recorded_assistant_id(target: &AssistantToCompare<'_>) -> Result<String> {
+    let record: AssistantDestinations = read_record(target.record)?;
+    match record.destinations.get(target.deployment_id) {
+        Some(AssistantDestination {
+            assistant_id,
+            state: DestinationState::Created,
+        }) => Ok(assistant_id.clone()),
+        Some(AssistantDestination {
+            assistant_id,
+            state: DestinationState::Pending,
+        }) => Err(refusal(format!(
+            "{} holds assistant '{assistant_id}' for deployment '{}' as pending: an import \
+             stopped before it finished creating the assistant. Import the file again to \
+             finish it, or name the assistant to compare with --assistant-id <id>.",
+            target.record.display(),
+            target.deployment_name
+        ))),
+        None => Err(refusal(format!(
+            "{} has no assistant for deployment '{}' ({}). Import the file onto that \
+             deployment first, pass --record with the record that import wrote, or name the \
+             assistant to compare with --assistant-id <id>.",
+            target.record.display(),
+            target.deployment_name,
+            target.deployment_id
+        ))),
+    }
 }
 
 /// Check that each pointer under `requires.prompts` still holds, in the file's
@@ -998,8 +1196,8 @@ fn settings_to_send(assistant: &AssistantBody) -> Result<(Option<Value>, Option<
 }
 
 /// Check that the deployment serves the file's graph and that the workspace
-/// holds each prompt under `requires.prompts`. `assistant verify` will reuse
-/// these checks.
+/// holds each prompt under `requires.prompts`. Import runs these checks before
+/// it writes, and `assistant verify` runs them alongside its comparison.
 async fn destination_checks(
     client: &LangchainClient,
     export: &AssistantExport,
@@ -2195,5 +2393,480 @@ mod tests {
             .to_string();
 
         assert!(error.contains(gone), "{error}");
+    }
+
+    // Tasks 9.1, "Add langstar assistant compare", and 9.2, "Add langstar
+    // assistant verify", of the export-import-prompts-and-assistants change
+
+    const RECORDED_ID: &str = "7a6b5c4d-3e2f-4a1b-9c8d-7e6f5a4b3c2d";
+
+    fn target<'a>(record: &'a Path, assistant_id: Option<&'a str>) -> AssistantToCompare<'a> {
+        AssistantToCompare {
+            deployment_name: "my-agent-prod",
+            deployment_id: DESTINATION_ID,
+            assistant_id,
+            record,
+        }
+    }
+
+    async fn compare(
+        client: &LangchainClient,
+        file: &Path,
+        target: &AssistantToCompare<'_>,
+        verify: bool,
+    ) -> Result<ResultReport> {
+        compare_assistant(client, file, target, verify, &mut Vec::new()).await
+    }
+
+    /// Write a record at `path` that marks `assistant_id` created on the
+    /// destination deployment.
+    fn write_created(path: &Path, assistant_id: &str) {
+        let mut destinations = AssistantDestinations::default();
+        destinations.destinations.insert(
+            DESTINATION_ID.to_string(),
+            AssistantDestination {
+                assistant_id: assistant_id.to_string(),
+                state: DestinationState::Created,
+            },
+        );
+        write_record(path, &destinations).unwrap();
+    }
+
+    /// A server that answers a read of `RECORDED_ID` alone with `assistant`.
+    async fn serve_recorded(
+        assistant: &Value,
+    ) -> (mockito::ServerGuard, mockito::Mock, LangchainClient) {
+        let mut server = mockito::Server::new_async().await;
+        let read = server
+            .mock("GET", format!("/assistants/{RECORDED_ID}").as_str())
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(assistant.to_string())
+            .expect(1)
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+        (server, read, client)
+    }
+
+    #[tokio::test]
+    async fn compare_reads_the_assistant_id_from_the_record_beside_the_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let record = record_path_for(&file);
+        write_created(&record, RECORDED_ID);
+        let mut changed = served_assistant();
+        changed["metadata"]["team"] = json!("billing");
+        let (_server, read, client) = serve_recorded(&changed).await;
+
+        let report = compare(&client, &file, &target(&record, None), false)
+            .await
+            .unwrap();
+
+        read.assert_async().await;
+        assert_eq!(report.exit_code(), 3, "{}", report.to_text());
+        assert_eq!(report.differences.len(), 1, "{}", report.to_text());
+        assert_eq!(report.differences[0].path, "/assistant/metadata/team");
+        assert_eq!(report.differences[0].file, Some(json!("support")));
+        assert_eq!(report.differences[0].destination, Some(json!("billing")));
+        assert!(report.checks.is_empty());
+        assert_eq!(report.action, None);
+    }
+
+    #[tokio::test]
+    async fn compare_reads_the_assistant_id_from_the_path_the_record_flag_names() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        std::fs::create_dir(directory.path().join("records")).unwrap();
+        let record = directory.path().join("records").join("prod.json");
+        write_created(&record, RECORDED_ID);
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        let report = compare(&client, &file, &target(&record, None), false)
+            .await
+            .unwrap();
+
+        read.assert_async().await;
+        assert_eq!(report.exit_code(), EXIT_MATCH, "{}", report.to_text());
+        assert!(!record_path_for(&file).exists(), "compare writes no record");
+    }
+
+    #[tokio::test]
+    async fn compare_uses_assistant_id_in_place_of_the_record_entry() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let record = record_path_for(&file);
+        write_created(&record, "1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e");
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        let report = compare(&client, &file, &target(&record, Some(RECORDED_ID)), false)
+            .await
+            .unwrap();
+
+        read.assert_async().await;
+        assert_eq!(report.exit_code(), EXIT_MATCH, "{}", report.to_text());
+    }
+
+    #[tokio::test]
+    async fn compare_without_a_record_entry_names_the_deployment_and_assistant_id() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let record = record_path_for(&file);
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        let error = compare(&client, &file, &target(&record, None), false)
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("my-agent-prod"), "{error}");
+        assert!(error.contains("--assistant-id"), "{error}");
+        assert!(!record.exists(), "compare writes no record");
+        read.expect(0).assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn compare_of_a_pending_record_entry_says_to_import_again() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let record = record_path_for(&file);
+        let mut destinations = AssistantDestinations::default();
+        destinations.destinations.insert(
+            DESTINATION_ID.to_string(),
+            AssistantDestination {
+                assistant_id: RECORDED_ID.to_string(),
+                state: DestinationState::Pending,
+            },
+        );
+        write_record(&record, &destinations).unwrap();
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        let error = compare(&client, &file, &target(&record, None), false)
+            .await
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("pending"), "{error}");
+        assert!(error.contains(RECORDED_ID), "{error}");
+        assert!(error.contains("--assistant-id"), "{error}");
+        read.expect(0).assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn compare_names_an_assistant_id_the_deployment_lacks() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let gone = "9e8d7c6b-5a4f-4e3d-8c2b-1a0f9e8d7c6b";
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("GET", format!("/assistants/{gone}").as_str())
+            .with_status(404)
+            .with_body(json!({"detail": "Assistant not found"}).to_string())
+            .create_async()
+            .await;
+        let client = LangchainClient::with_base_urls(
+            AuthConfig::new(Some("test_key".to_string()), None, None),
+            server.url(),
+            server.url(),
+            server.url(),
+        )
+        .unwrap();
+
+        let error = compare(
+            &client,
+            &file,
+            &target(&record_path_for(&file), Some(gone)),
+            false,
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert!(error.contains(gone), "{error}");
+        assert!(error.contains("--assistant-id"), "{error}");
+    }
+
+    #[tokio::test]
+    async fn compare_refuses_a_prompt_reference_that_names_another_prompt() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut assistant = file_assistant();
+        set(
+            &mut assistant,
+            SYSTEM_PROMPT,
+            json!("support-system:staging"),
+        );
+        set(
+            &mut assistant,
+            "/context/system_prompt",
+            json!("support-system:staging"),
+        );
+        let file = write_export(
+            directory.path(),
+            assistant,
+            json!({ SYSTEM_PROMPT: "support-system:prod" }),
+        );
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        for verify in [false, true] {
+            let error = compare(
+                &client,
+                &file,
+                &target(&record_path_for(&file), Some(RECORDED_ID)),
+                verify,
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+
+            assert!(error.contains(SYSTEM_PROMPT), "{error}");
+            assert!(error.contains("support-system:prod"), "{error}");
+            assert!(error.contains("support-system:staging"), "{error}");
+        }
+        read.expect(0).assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn compare_redacts_an_api_key_at_a_prompt_reference() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut assistant = file_assistant();
+        let token = format!("sk-{}", "a1B2c3D4e5".repeat(4));
+        set(&mut assistant, SYSTEM_PROMPT, json!(token));
+        set(&mut assistant, "/context/system_prompt", json!(token));
+        let file = write_export(
+            directory.path(),
+            assistant,
+            json!({ SYSTEM_PROMPT: "support-system:prod" }),
+        );
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        let error = compare(
+            &client,
+            &file,
+            &target(&record_path_for(&file), Some(RECORDED_ID)),
+            false,
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+
+        assert!(error.contains(SYSTEM_PROMPT), "{error}");
+        assert!(error.contains("support-system:prod"), "{error}");
+        assert!(error.contains("<redacted>"), "{error}");
+        assert!(!leaks(&error, &token), "{error}");
+        read.expect(0).assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn compare_refuses_a_prompt_export() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join("my-prompt.json");
+        std::fs::write(
+            &file,
+            json!({"kind": "prompt", "format_version": 1}).to_string(),
+        )
+        .unwrap();
+        let (_server, read, client) = serve_recorded(&served_assistant()).await;
+
+        for verify in [false, true] {
+            let error = compare(
+                &client,
+                &file,
+                &target(&record_path_for(&file), Some(RECORDED_ID)),
+                verify,
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+            assert!(error.contains("kind is prompt"), "{error}");
+        }
+        read.expect(0).assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn verify_passes_the_graph_check_and_compares() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(directory.path(), file_assistant(), json!({}));
+        let destination = destination(&served_assistant(), 0).await;
+
+        let report = compare(
+            &destination.client,
+            &file,
+            &target(&record_path_for(&file), Some(RECORDED_ID)),
+            true,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(report.exit_code(), EXIT_MATCH, "{}", report.to_text());
+        assert_eq!(report.checks.len(), 1);
+        assert_eq!(report.checks[0].name, "graph");
+        assert_eq!(report.checks[0].outcome, Outcome::Passed);
+        assert_eq!(report.action, None);
+        destination.create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn verify_reports_a_missing_graph_when_the_graph_lookup_answers_422() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut assistant = file_assistant();
+        assistant["graph_id"] = json!("other");
+        let file = write_export(directory.path(), assistant, json!({}));
+        let mut destination = destination(&served_assistant(), 0).await;
+        destination
+            .server
+            .mock("POST", "/assistants/search")
+            .match_body(mockito::Matcher::PartialJson(json!({"graph_id": "other"})))
+            .with_status(422)
+            .with_body(
+                json!({"detail": "body.graph_id: value is not one of 'test_graph'"}).to_string(),
+            )
+            .create_async()
+            .await;
+
+        let report = compare(
+            &destination.client,
+            &file,
+            &target(&record_path_for(&file), Some(RECORDED_ID)),
+            true,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(report.exit_code(), 3, "{}", report.to_text());
+        assert_eq!(report.checks[0].name, "graph");
+        assert_eq!(report.checks[0].outcome, Outcome::Failed);
+        assert!(
+            report.checks[0].detail.contains("'other'"),
+            "{:?}",
+            report.checks
+        );
+        destination.create.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn verify_exits_with_an_error_on_a_422_naming_another_field() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut assistant = file_assistant();
+        assistant["graph_id"] = json!("broken");
+        let file = write_export(directory.path(), assistant, json!({}));
+        let mut destination = destination(&served_assistant(), 0).await;
+        destination
+            .server
+            .mock("POST", "/assistants/search")
+            .match_body(mockito::Matcher::PartialJson(json!({"graph_id": "broken"})))
+            .with_status(422)
+            .with_body(json!({"detail": "body.limit: must be positive"}).to_string())
+            .create_async()
+            .await;
+
+        let result = compare(
+            &destination.client,
+            &file,
+            &target(&record_path_for(&file), Some(RECORDED_ID)),
+            true,
+        )
+        .await;
+
+        assert!(result.is_err(), "{result:?}");
+    }
+
+    #[tokio::test]
+    async fn verify_reports_a_prompt_tag_the_workspace_lacks() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = write_export(
+            directory.path(),
+            file_assistant(),
+            json!({ SYSTEM_PROMPT: "support-system:prod" }),
+        );
+        let mut destination = destination(&served_assistant(), 0).await;
+        destination
+            .server
+            .mock(
+                "GET",
+                mockito::Matcher::Regex(
+                    r"^/api/v1/commits/-/support-system/prod(\?.*)?$".to_string(),
+                ),
+            )
+            .with_status(404)
+            .with_body(json!({"detail": "Commit not found"}).to_string())
+            .create_async()
+            .await;
+
+        let report = compare(
+            &destination.client,
+            &file,
+            &target(&record_path_for(&file), Some(RECORDED_ID)),
+            true,
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(report.exit_code(), 3, "{}", report.to_text());
+        assert_eq!(report.checks[1].name, "prompt");
+        assert_eq!(report.checks[1].outcome, Outcome::Failed);
+        assert!(report.checks[1].detail.contains("support-system:prod"));
+        assert!(report.differences.is_empty(), "{}", report.to_text());
+    }
+
+    #[tokio::test]
+    async fn verify_requests_a_commit_path_for_each_form_of_prompt_name() {
+        for (name, path) in [
+            ("support-system", "/api/v1/commits/-/support-system/latest"),
+            (
+                "my-org/support-system:prod",
+                "/api/v1/commits/my-org/support-system/prod",
+            ),
+            (
+                "-/support-system:prod",
+                "/api/v1/commits/-/support-system/prod",
+            ),
+        ] {
+            let directory = tempfile::tempdir().unwrap();
+            let mut assistant = file_assistant();
+            set(&mut assistant, SYSTEM_PROMPT, json!(name));
+            set(&mut assistant, "/context/system_prompt", json!(name));
+            let file = write_export(
+                directory.path(),
+                assistant.clone(),
+                json!({ SYSTEM_PROMPT: name }),
+            );
+            let mut served = served_assistant();
+            served["config"] = assistant["config"].clone();
+            served["context"] = assistant["context"].clone();
+            let mut destination = destination(&served, 0).await;
+            let commit = destination
+                .server
+                .mock("GET", mockito::Matcher::Regex(format!(r"^{path}(\?.*)?$")))
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(json!({"commit_hash": "abc123", "manifest": {}}).to_string())
+                .expect(1)
+                .create_async()
+                .await;
+
+            let report = compare(
+                &destination.client,
+                &file,
+                &target(&record_path_for(&file), Some(RECORDED_ID)),
+                true,
+            )
+            .await
+            .unwrap();
+
+            commit.assert_async().await;
+            assert_eq!(
+                report.exit_code(),
+                EXIT_MATCH,
+                "{name}: {}",
+                report.to_text()
+            );
+            assert_eq!(report.checks[1].outcome, Outcome::Passed, "{name}");
+        }
     }
 }

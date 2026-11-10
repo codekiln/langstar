@@ -134,12 +134,12 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
 
 ## 9. assistant compare and verify
 
-- [ ] 9.1 Add `langstar assistant compare` with `--assistant-id`, `--record`, the lookup of the recorded assistant in the destination record from 4.1, and the check from 10.1 that each pointer under `requires.prompts` still resolves in the file's `assistant` object to the prompt name recorded with it. Verify with these tests:
+- [x] 9.1 Add `langstar assistant compare` with `--assistant-id`, `--record`, the lookup of the recorded assistant in the destination record from 4.1, and the check from 10.1 that each pointer under `requires.prompts` still resolves in the file's `assistant` object to the prompt name recorded with it. Verify with these tests:
   - An integration test that exports an assistant, changes its metadata through the SDK, runs compare with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
   - Unit tests that compare reads the assistant ID from a destination record written by the 4.1 types, once at the default path and once at a path passed with `--record`.
   - An integration test that `assistant compare` with no destination record entry and no `--assistant-id` exits with status 1 and names the deployment.
   - A unit test that a file whose configuration names another prompt at a pointer under `requires.prompts` exits with status 1 and names the pointer and both values. Another unit test puts `sk-` followed by a 40-character token at that pointer and asserts that the error prints `<redacted>` in place of the string.
-- [ ] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--record`, `--workspace-id` for the workspace that holds the prompts, and the graph check and prompt check from 10.1; the prompt check reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. 10.1 has the unit tests of the 422 answer and of the request each prompt name makes. Verify with these tests:
+- [x] 9.2 Add `langstar assistant verify` with `--assistant-id`, `--record`, `--workspace-id` for the workspace that holds the prompts, and the graph check and prompt check from 10.1; the prompt check reads `GET /api/v1/commits/{owner}/{repo}/{tag}`. 10.1 has the unit tests of the 422 answer and of the request each prompt name makes. Verify with these tests:
   - An integration test that runs verify with `--assistant-id` against an exported assistant and exits with status 0.
   - An integration test that exports an assistant, changes its metadata through the SDK, runs verify with `--assistant-id` set to that assistant, and asserts the reported path and exit status 3.
   - An integration test of a file whose graph ID the deployment lacks, which reports the graph ID and exits with status 3.
@@ -148,7 +148,7 @@ Each integration test in this group carries `#[cfg_attr(not(feature = "integrati
   - A unit test that a prompt reference with no owner and no tag, such as `support-system`, makes the prompt check request `GET /api/v1/commits/-/support-system/latest`, one that `my-org/support-system:prod` requests `GET /api/v1/commits/my-org/support-system/prod`, and one that `-/support-system:prod` requests `GET /api/v1/commits/-/support-system/prod`.
   - An integration test that runs verify with `--workspace-id` set to the destination workspace, for an assistant whose referenced prompt tag exists only in that workspace, and asserts that verify exits with status 0 and that `checks` reports the prompt as found. This test carries `#[ignore = "needs task 2.1"]`, because until then the destination workspace is the test workspace.
   - A CLI test that `langstar -f json assistant verify` prints one JSON object with `status`, `differences` and `checks` to stdout.
-- [ ] 9.3 Document assistant compare and verify; verify that each documented command runs as written
+- [x] 9.3 Document assistant compare and verify; verify that each documented command runs as written
 
 ## 10. assistant import
 
