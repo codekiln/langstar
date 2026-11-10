@@ -76,13 +76,7 @@ Each difference names its `path` and the `file` and `destination` values. Import
 
 Follow these steps to copy the assistants you created on an old deployment onto a new deployment in the same workspace, and then to check the copies. They use `jq`. Replace `<old-deployment>` and `<new-deployment>` with each deployment's name or ID from `langstar deployment list`. When your API key reaches several workspaces, add `--workspace-id <workspace-id>` to each command.
 
-1. Unset `LANGSTAR_DEBUG_HTTP`. It makes langstar write each response, credentials included, to a debug file, so export and import refuse to run while it is set:
-
-   ```bash
-   unset LANGSTAR_DEBUG_HTTP
-   ```
-
-2. List the assistants on the old deployment, leaving out the default assistant the Agent Server makes for each graph:
+1. List the assistants on the old deployment, leaving out the default assistant the Agent Server makes for each graph:
 
    ```bash
    langstar -f json assistant list --deployment <old-deployment> --limit 100 \
@@ -93,7 +87,7 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 
    `jq` writes one line per assistant: `default` for an assistant the Agent Server made for a graph, `custom` for any other, then the assistant's ID. It drops everything else, so the only assistant settings that reach the disk are the ones `langstar assistant export` has checked for credentials. `wc -l` counts every assistant on the page, default assistants included. When it prints 100, list the next page with `--offset 100`, add its IDs to `assistant-ids.txt` the same way, and go on until a page holds fewer than 100.
 
-3. Find the assistants the new deployment already holds. Import creates a new assistant without looking for one with the same graph ID and name, so copying an assistant the new deployment already has leaves two, and code that looks an assistant up by graph ID and name finds both. The `pairs` function prints the graph ID and name of each assistant on a deployment, and `comm -12` keeps the lines both deployments print:
+2. Find the assistants the new deployment already holds. Import creates a new assistant without looking for one with the same graph ID and name, so copying an assistant the new deployment already has leaves two, and code that looks an assistant up by graph ID and name finds both. The `pairs` function prints the graph ID and name of each assistant on a deployment, and `comm -12` keeps the lines both deployments print:
 
    ```bash
    pairs() {
@@ -107,7 +101,7 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 
    When it prints a pair, the new deployment already holds that assistant. Take its ID out of `assistant-ids.txt`, or delete that assistant with `langstar assistant delete` before you import.
 
-4. Export each assistant to a file:
+3. Export each assistant to a file:
 
    ```bash
    mkdir -p assistants
@@ -118,7 +112,7 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 
    Read each file before you commit it. When export refuses an assistant because it holds a credential, move the credential into the deployment's environment variables or the workspace's secrets, as [Assistant Export](assistant-export.md) says.
 
-5. Import each file onto the new deployment:
+4. Import each file onto the new deployment:
 
    ```bash
    while read -r id; do
@@ -129,7 +123,7 @@ Follow these steps to copy the assistants you created on an old deployment onto 
 
    Each import prints the new assistant's ID. An import that exits with 3 printed what is missing or what differs. Fix that and run the loop again. On the next run, import reads each record and compares the assistant it created earlier with the file instead of creating it again.
 
-6. Check the copies. Import each file again; each one should report the action `unchanged` and no difference:
+5. Check the copies. Import each file again; each one should report the action `unchanged` and no difference:
 
    ```bash
    while read -r id; do
@@ -144,14 +138,14 @@ Follow these steps to copy the assistants you created on an old deployment onto 
    pairs <new-deployment> | uniq -d
    ```
 
-7. Commit `assistants/`, with each export file and its `.destinations.json` record. The records hold the new assistant IDs, so the next import of a changed file finds the copy instead of making another.
+6. Commit `assistants/`, with each export file and its `.destinations.json` record. The records hold the new assistant IDs, so the next import of a changed file finds the copy instead of making another.
 
 The copies have new assistant IDs. Code that refers to an assistant by ID has to use the new ID from the record; code that finds it by graph ID and name keeps working.
 
 ## Exit statuses
 
 - 0: the assistant on the deployment matches the file, and every check passed.
-- 1: the file is not an assistant export, its `requires.prompts` no longer matches its assistant, its two settings fields differ, the record names an assistant the deployment no longer has, or `LANGSTAR_DEBUG_HTTP` is set; import created nothing in these cases. Another error, such as a network failure, also exits with 1; when it comes after the create, the record holds the new ID and the next import finds that assistant.
+- 1: the file is not an assistant export, its `requires.prompts` no longer matches its assistant, its two settings fields differ, or the record names an assistant the deployment no longer has; import created nothing in these cases. Another error, such as a network failure, also exits with 1; when it comes after the create, the record holds the new ID and the next import finds that assistant.
 - 2: a mistyped flag or a missing required one.
 - 3: a check failed and import created nothing, or the assistant on the deployment differs from the file. When the copy differs from the file, the record keeps the ID of the assistant that import created, so the next import compares that assistant instead of creating another.
 
