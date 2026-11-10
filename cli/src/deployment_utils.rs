@@ -8,6 +8,9 @@ use langstar_sdk::{AuthConfig, Deployment, LangchainClient, LangstarError, Works
 /// A deployment found on the Control Plane API
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResolvedDeployment {
+    /// The deployment's ID on the Control Plane, which an assistant export records
+    /// as `source.deployment_id`
+    pub id: String,
     /// The deployment's Agent Server URL (`source_config.custom_url`)
     pub url: String,
     /// The workspace that holds the deployment, found by searching each workspace the
@@ -105,7 +108,11 @@ async fn resolve_deployment_with(
             deployment.name
         ))
     })?;
-    Ok(ResolvedDeployment { url, workspace_id })
+    Ok(ResolvedDeployment {
+        id: deployment.id,
+        url,
+        workspace_id,
+    })
 }
 
 /// List every deployment in the client's workspace and return the one with this name or ID
@@ -263,6 +270,7 @@ mod tests {
         assert_eq!(
             resolved,
             ResolvedDeployment {
+                id: "my-deployment-id".to_string(),
                 url: "https://my-deployment.example".to_string(),
                 workspace_id: Some("ws-b".to_string()),
             }
