@@ -44,6 +44,14 @@ mise install   # installs every tool pinned in mise.toml
 op signin      # or turn on the 1Password desktop app integration
 ```
 
+When you run Cargo through mise, [Mr Boxington](https://github.com/jdx/mr-boxington) (`mbx`) caches what Cargo compiles, so a new worktree's first build restores most crates that another worktree already compiled. Cargo goes through mise when you run a `mise run` task, `mise exec -- cargo ...`, or `cargo` in a shell with mise activated. mise runs Cargo through mbx only from mise 2026.9.2 on, the first mise release whose `rust` entry accepts the `mr_boxington` option that `mise.toml` sets ([jdx/mise#12908 feat(core): add rust mr_boxington tool option and use flag](https://github.com/jdx/mise/pull/12908)). `mise --version` prints the version you have. `mbx stats` shows what the cache has saved. mbx keeps each worktree's `target/` in its cache directory and leaves a `target` symlink behind, so paths like `target/debug/langstar` still work.
+
+To see which Cargo a shell runs, run `command -v cargo`. In a terminal it prints mise's `command-wrappers/bin/cargo`, which goes through mbx. A Claude Code session started before Mr Boxington was set up can print `~/.cargo/bin/cargo` instead. In that session, plain `cargo` and `mise run` tasks skip mbx, while `mise exec -- cargo ...` and `~/.local/share/mise/command-wrappers/bin/cargo ...` still use it. A new terminal or Claude Code session puts the wrapper first again.
+
+On a Linux filesystem that cannot clone files, such as ext4, Cargo run without mbx can fail with `output file ... is not writeable`, because mbx restores outputs as read-only hard links. Run `mbx clean` to discard the managed target directory, or delete the file the error names. macOS's APFS clones files, so this does not happen on a Mac.
+
+rust-analyzer runs its own `cargo check` in the background, and that check skips mbx until `mbx setup` points it at mbx. Run `mbx setup` once per machine; it sets `check.overrideCommand` in rust-analyzer's user configuration file. When it asks `Where should plain cargo commands use mbx?`, choose **Create the shim without activating it**, and skip any `PATH` change it prints. Do not pass `--yes`, `--global` or `--local`: each one adds a second Cargo wrapper in mise that takes precedence over the `mr_boxington` option in `mise.toml`. To check the result, run `env -u MISE_SHELL mbx setup --status` ([mr-boxington/docs/setup.md, rust-analyzer](https://github.com/jdx/mr-boxington/blob/v1.29.0/docs/setup.md#rust-analyzer)).
+
 ### Step 2: One-Time Machine Setup
 
 Create your personal age key and the machine-wide `sync-age` provider, as shown in [One-time machine setup](./environment-variables.md#one-time-machine-setup). Skip this step if you already set up fnox for another project on this computer.
