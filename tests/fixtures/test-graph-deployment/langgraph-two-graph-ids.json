@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "./test_agent"
+  ],
+  "graphs": {
+    "test_graph": "./test_agent/agent.py:graph",
+    "test_graph_alt": "./test_agent/agent.py:graph"
+  },
+  "env": ".env"
+}
