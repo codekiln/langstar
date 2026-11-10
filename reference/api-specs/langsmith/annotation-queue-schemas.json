@@ -1,4 +1,70 @@
 {
+  "AddRunToQueueByKeyRequest": {
+    "properties": {
+      "run_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Run Id"
+      },
+      "session_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Session Id"
+      },
+      "start_time": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Start Time"
+      },
+      "source_proposed_example_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Proposed Example Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "run_id",
+      "session_id",
+      "start_time"
+    ],
+    "title": "AddRunToQueueByKeyRequest",
+    "description": "Add run to AQ by SmithDB key. is_root derived server-side (LSAQ-141)."
+  },
+  "AddRunToQueueRequest": {
+    "properties": {
+      "run_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Run Id"
+      },
+      "source_proposed_example_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Proposed Example Id"
+      }
+    },
+    "type": "object",
+    "required": [
+      "run_id"
+    ],
+    "title": "AddRunToQueueRequest",
+    "description": "Add a single run to AQ (CH path) with an optional back-pointer to the\nissues-agent proposal that seeded this add. Use when bulk-adding runs\nthat come from different proposals — each row carries its own\nsource_proposed_example_id. For unrelated bulk adds, prefer plain\nList[UUID] on the same endpoint."
+  },
   "AnnotationQueueBulkDeleteRunsRequest": {
     "properties": {
       "delete_all": {
@@ -99,6 +165,11 @@
         "title": "Reservation Minutes",
         "default": 1
       },
+      "reviewer_access_mode": {
+        "type": "string",
+        "title": "Reviewer Access Mode",
+        "default": "any"
+      },
       "name": {
         "type": "string",
         "title": "Name"
@@ -163,6 +234,7 @@
       "metadata": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -223,6 +295,62 @@
           }
         ],
         "title": "Score Descriptions"
+      },
+      "is_required": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Is Required"
+      },
+      "is_assertion": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Is Assertion"
+      },
+      "regex_validator": {
+        "anyOf": [
+          {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/Missing"
+              }
+            ],
+            "maxLength": 500
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Regex Validator",
+        "default": {
+          "__missing__": "__missing__"
+        }
+      },
+      "feedback_config_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Feedback Config Id"
       }
     },
     "type": "object",
@@ -230,6 +358,85 @@
       "feedback_key"
     ],
     "title": "AnnotationQueueRubricItemSchema"
+  },
+  "AnnotationQueueRunAddSchema": {
+    "properties": {
+      "run_id": {
+        "type": "string",
+        "format": "uuid",
+        "title": "Run Id",
+        "deprecated": true
+      },
+      "start_time": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Start Time",
+        "deprecated": true
+      },
+      "session_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Session Id",
+        "deprecated": true
+      },
+      "trace_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Trace Id",
+        "deprecated": true
+      },
+      "parent_run_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Parent Run Id",
+        "deprecated": true
+      },
+      "trace_tier": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TraceTier"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "deprecated": true
+      }
+    },
+    "type": "object",
+    "required": [
+      "run_id"
+    ],
+    "title": "AnnotationQueueRunAddSchema",
+    "description": "Deprecated: use plain UUID list or AddRunToQueueByKeyRequest instead."
   },
   "AnnotationQueueRunSchema": {
     "properties": {
@@ -259,6 +466,18 @@
         "type": "string",
         "format": "date-time",
         "title": "Added At"
+      },
+      "source_proposed_example_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Proposed Example Id"
       },
       "id": {
         "type": "string",
@@ -363,6 +582,11 @@
         "title": "Reservation Minutes",
         "default": 1
       },
+      "reviewer_access_mode": {
+        "type": "string",
+        "title": "Reviewer Access Mode",
+        "default": "any"
+      },
       "name": {
         "type": "string",
         "title": "Name"
@@ -424,6 +648,7 @@
       "metadata": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -431,6 +656,14 @@
           }
         ],
         "title": "Metadata"
+      },
+      "assigned_reviewers": {
+        "items": {
+          "$ref": "#/components/schemas/AssignedReviewerSchema"
+        },
+        "type": "array",
+        "title": "Assigned Reviewers",
+        "default": []
       }
     },
     "type": "object",
@@ -502,6 +735,11 @@
         "title": "Reservation Minutes",
         "default": 1
       },
+      "reviewer_access_mode": {
+        "type": "string",
+        "title": "Reviewer Access Mode",
+        "default": "any"
+      },
       "name": {
         "type": "string",
         "title": "Name"
@@ -563,6 +801,7 @@
       "metadata": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -570,6 +809,14 @@
           }
         ],
         "title": "Metadata"
+      },
+      "assigned_reviewers": {
+        "items": {
+          "$ref": "#/components/schemas/AssignedReviewerSchema"
+        },
+        "type": "array",
+        "title": "Assigned Reviewers",
+        "default": []
       },
       "rubric_items": {
         "anyOf": [
@@ -666,6 +913,11 @@
         "title": "Reservation Minutes",
         "default": 1
       },
+      "reviewer_access_mode": {
+        "type": "string",
+        "title": "Reviewer Access Mode",
+        "default": "any"
+      },
       "name": {
         "type": "string",
         "title": "Name"
@@ -727,6 +979,7 @@
       "metadata": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -734,6 +987,14 @@
           }
         ],
         "title": "Metadata"
+      },
+      "assigned_reviewers": {
+        "items": {
+          "$ref": "#/components/schemas/AssignedReviewerSchema"
+        },
+        "type": "array",
+        "title": "Assigned Reviewers",
+        "default": []
       },
       "total_runs": {
         "type": "integer",
@@ -807,6 +1068,9 @@
             "type": "integer"
           },
           {
+            "$ref": "#/components/schemas/Missing"
+          },
+          {
             "type": "null"
           }
         ],
@@ -857,6 +1121,7 @@
       "metadata": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -870,623 +1135,26 @@
         "default": {
           "__missing__": "__missing__"
         }
+      },
+      "reviewer_access_mode": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "any",
+              "assigned"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Reviewer Access Mode"
       }
     },
     "type": "object",
     "title": "AnnotationQueueUpdateSchema",
     "description": "AnnotationQueue update schema."
-  },
-  "ComparativeAnnotationQueueBulkDeleteEntriesRequest": {
-    "properties": {
-      "delete_all": {
-        "type": "boolean",
-        "title": "Delete All",
-        "default": false
-      },
-      "example_ids": {
-        "anyOf": [
-          {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Example Ids"
-      },
-      "exclude_example_ids": {
-        "anyOf": [
-          {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Exclude Example Ids"
-      },
-      "comparative_experiment_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Comparative Experiment Id"
-      }
-    },
-    "type": "object",
-    "required": [
-      "comparative_experiment_id"
-    ],
-    "title": "ComparativeAnnotationQueueBulkDeleteEntriesRequest",
-    "description": "Request to bulk delete runs from comparative annotation queue."
-  },
-  "ComparativeAnnotationQueueCreateRequest": {
-    "properties": {
-      "description": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Description"
-      },
-      "created_at": {
-        "type": "string",
-        "format": "date-time",
-        "title": "Created At"
-      },
-      "updated_at": {
-        "type": "string",
-        "format": "date-time",
-        "title": "Updated At"
-      },
-      "num_reviewers_per_item": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Num Reviewers Per Item",
-        "default": 1
-      },
-      "enable_reservations": {
-        "anyOf": [
-          {
-            "type": "boolean"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Enable Reservations",
-        "default": true
-      },
-      "reservation_minutes": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Reservation Minutes",
-        "default": 1
-      },
-      "name": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Name"
-      },
-      "rubric_items": {
-        "anyOf": [
-          {
-            "items": {
-              "$ref": "#/components/schemas/AnnotationQueueRubricItemSchema"
-            },
-            "type": "array"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Rubric Items"
-      },
-      "rubric_instructions": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Rubric Instructions"
-      },
-      "experiment_ids": {
-        "anyOf": [
-          {
-            "prefixItems": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "string",
-                "format": "uuid"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Experiment Ids"
-      },
-      "pairwise_experiment_ids": {
-        "anyOf": [
-          {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "maxItems": 1
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Pairwise Experiment Ids"
-      },
-      "metadata": {
-        "anyOf": [
-          {
-            "type": "object"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Metadata"
-      }
-    },
-    "type": "object",
-    "title": "ComparativeAnnotationQueueCreateRequest",
-    "description": "Create comparative annotation queue request."
-  },
-  "ComparativeAnnotationQueueEntry": {
-    "properties": {
-      "queue_entry_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Queue Entry Id"
-      },
-      "example_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Example Id"
-      },
-      "comparative_experiment_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Comparative Experiment Id"
-      },
-      "last_reviewed_time": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Last Reviewed Time"
-      },
-      "added_at": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Added At"
-      },
-      "effective_added_at": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Effective Added At"
-      },
-      "runs": {
-        "items": {
-          "$ref": "#/components/schemas/RunSchemaComparisonView"
-        },
-        "type": "array",
-        "title": "Runs"
-      }
-    },
-    "type": "object",
-    "required": [
-      "queue_entry_id",
-      "example_id",
-      "comparative_experiment_id",
-      "runs"
-    ],
-    "title": "ComparativeAnnotationQueueEntry",
-    "description": "One comparison task in a pairwise annotation queue."
-  },
-  "ComparativeAnnotationQueuePopulateBody": {
-    "properties": {
-      "experiment_ids": {
-        "anyOf": [
-          {
-            "prefixItems": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "string",
-                "format": "uuid"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Experiment Ids"
-      },
-      "pairwise_experiment_ids": {
-        "anyOf": [
-          {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "maxItems": 10
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Pairwise Experiment Ids"
-      }
-    },
-    "type": "object",
-    "title": "ComparativeAnnotationQueuePopulateBody"
-  },
-  "ComparativeAnnotationQueuePopulateRequest": {
-    "properties": {
-      "queue_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Queue Id"
-      },
-      "experiment_ids": {
-        "anyOf": [
-          {
-            "prefixItems": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "string",
-                "format": "uuid"
-              }
-            ],
-            "type": "array",
-            "maxItems": 2,
-            "minItems": 2
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Experiment Ids"
-      },
-      "pairwise_experiment_ids": {
-        "anyOf": [
-          {
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "type": "array",
-            "maxItems": 1
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Pairwise Experiment Ids"
-      }
-    },
-    "type": "object",
-    "required": [
-      "queue_id"
-    ],
-    "title": "ComparativeAnnotationQueuePopulateRequest"
-  },
-  "ComparativeAnnotationQueueSchema": {
-    "properties": {
-      "description": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Description"
-      },
-      "created_at": {
-        "type": "string",
-        "format": "date-time",
-        "title": "Created At"
-      },
-      "updated_at": {
-        "type": "string",
-        "format": "date-time",
-        "title": "Updated At"
-      },
-      "num_reviewers_per_item": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Num Reviewers Per Item",
-        "default": 1
-      },
-      "enable_reservations": {
-        "anyOf": [
-          {
-            "type": "boolean"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Enable Reservations",
-        "default": true
-      },
-      "reservation_minutes": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Reservation Minutes",
-        "default": 1
-      },
-      "name": {
-        "type": "string",
-        "title": "Name"
-      },
-      "id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Id"
-      },
-      "tenant_id": {
-        "type": "string",
-        "format": "uuid",
-        "title": "Tenant Id"
-      },
-      "source_rule_id": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "uuid"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Source Rule Id"
-      },
-      "run_rule_id": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "uuid"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Run Rule Id"
-      },
-      "default_dataset": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "uuid"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Default Dataset"
-      },
-      "queue_type": {
-        "type": "string",
-        "enum": [
-          "single",
-          "pairwise"
-        ],
-        "title": "Queue Type"
-      },
-      "metadata": {
-        "anyOf": [
-          {
-            "type": "object"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Metadata"
-      }
-    },
-    "type": "object",
-    "required": [
-      "name",
-      "id",
-      "tenant_id",
-      "queue_type"
-    ],
-    "title": "ComparativeAnnotationQueueSchema",
-    "description": "Comparative annotation queue schema."
-  },
-  "ComparativeAnnotationQueueUpdateSchema": {
-    "properties": {
-      "name": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Name"
-      },
-      "description": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Description"
-      },
-      "num_reviewers_per_item": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Num Reviewers Per Item"
-      },
-      "enable_reservations": {
-        "anyOf": [
-          {
-            "type": "boolean"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Enable Reservations"
-      },
-      "reservation_minutes": {
-        "anyOf": [
-          {
-            "type": "integer"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Reservation Minutes"
-      },
-      "rubric_items": {
-        "anyOf": [
-          {
-            "items": {
-              "$ref": "#/components/schemas/AnnotationQueueRubricItemSchema"
-            },
-            "type": "array"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Rubric Items"
-      },
-      "rubric_instructions": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Rubric Instructions"
-      },
-      "metadata": {
-        "anyOf": [
-          {
-            "type": "object"
-          },
-          {
-            "$ref": "#/components/schemas/Missing"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Metadata",
-        "default": {
-          "__missing__": "__missing__"
-        }
-      }
-    },
-    "type": "object",
-    "title": "ComparativeAnnotationQueueUpdateSchema",
-    "description": "Update schema for comparative annotation queue."
   },
   "ExportAnnotationQueueRunsRequest": {
     "properties": {
@@ -1513,6 +1181,11 @@
           }
         ],
         "title": "End Time"
+      },
+      "include_annotator_detail": {
+        "type": "boolean",
+        "title": "Include Annotator Detail",
+        "default": false
       }
     },
     "type": "object",
@@ -1549,36 +1222,6 @@
     "title": "IdentityAnnotationQueueRunStatusCreateSchema",
     "description": "Identity annotation queue run status create schema."
   },
-  "IdentityComparativeAnnotationQueueEntryStatusCreateSchema": {
-    "properties": {
-      "status": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Status"
-      },
-      "override_added_at": {
-        "anyOf": [
-          {
-            "type": "string",
-            "format": "date-time"
-          },
-          {
-            "type": "null"
-          }
-        ],
-        "title": "Override Added At"
-      }
-    },
-    "type": "object",
-    "title": "IdentityComparativeAnnotationQueueEntryStatusCreateSchema",
-    "description": "Identity comparative annotation queue run status create schema."
-  },
   "PopulateAnnotationQueueSchema": {
     "properties": {
       "queue_id": {
@@ -1593,6 +1236,11 @@
         },
         "type": "array",
         "title": "Session Ids"
+      },
+      "extend_trace_retention": {
+        "type": "boolean",
+        "title": "Extend Trace Retention",
+        "default": false
       }
     },
     "type": "object",
@@ -1601,6 +1249,54 @@
       "session_ids"
     ],
     "title": "PopulateAnnotationQueueSchema"
+  },
+  "QueueInfoResponse": {
+    "properties": {
+      "queued": {
+        "type": "integer",
+        "title": "Queued"
+      },
+      "active": {
+        "type": "integer",
+        "title": "Active"
+      },
+      "scheduled": {
+        "type": "integer",
+        "title": "Scheduled"
+      }
+    },
+    "type": "object",
+    "required": [
+      "queued",
+      "active",
+      "scheduled"
+    ],
+    "title": "QueueInfoResponse",
+    "description": "Short summary of queue counts."
+  },
+  "ResolvedAnnotationQueueRunSchema": {
+    "properties": {
+      "section": {
+        "type": "string",
+        "enum": [
+          "needs_my_review",
+          "needs_others_review",
+          "completed"
+        ],
+        "title": "Section"
+      },
+      "position": {
+        "type": "integer",
+        "title": "Position"
+      }
+    },
+    "type": "object",
+    "required": [
+      "section",
+      "position"
+    ],
+    "title": "ResolvedAnnotationQueueRunSchema",
+    "description": "Resolved annotation queue run position for deep linking."
   },
   "RunSchemaWithAnnotationQueueInfo": {
     "properties": {
@@ -1611,6 +1307,7 @@
       "inputs": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1653,6 +1350,7 @@
       "extra": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1674,13 +1372,14 @@
       },
       "execution_order": {
         "type": "integer",
-        "minimum": 1,
+        "minimum": 1.0,
         "title": "Execution Order",
         "default": 1
       },
       "serialized": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1692,6 +1391,7 @@
       "outputs": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1751,6 +1451,7 @@
         "anyOf": [
           {
             "items": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "array"
@@ -1778,6 +1479,7 @@
       "inputs_s3_urls": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1789,6 +1491,7 @@
       "outputs_s3_urls": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1800,6 +1503,7 @@
       "s3_urls": {
         "anyOf": [
           {
+            "additionalProperties": true,
             "type": "object"
           },
           {
@@ -1899,6 +1603,7 @@
         "anyOf": [
           {
             "additionalProperties": {
+              "additionalProperties": true,
               "type": "object"
             },
             "type": "object"
@@ -1967,7 +1672,8 @@
       "total_cost": {
         "anyOf": [
           {
-            "type": "string"
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
           },
           {
             "type": "null"
@@ -1978,7 +1684,8 @@
       "prompt_cost": {
         "anyOf": [
           {
-            "type": "string"
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
           },
           {
             "type": "null"
@@ -1989,7 +1696,8 @@
       "completion_cost": {
         "anyOf": [
           {
-            "type": "string"
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
           },
           {
             "type": "null"
@@ -2001,7 +1709,8 @@
         "anyOf": [
           {
             "additionalProperties": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
             },
             "type": "object"
           },
@@ -2015,7 +1724,8 @@
         "anyOf": [
           {
             "additionalProperties": {
-              "type": "string"
+              "type": "string",
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
             },
             "type": "object"
           },
@@ -2048,6 +1758,21 @@
           }
         ],
         "title": "First Token Time"
+      },
+      "messages": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Messages"
       },
       "session_id": {
         "type": "string",
@@ -2194,6 +1919,36 @@
           }
         ],
         "title": "Effective Added At"
+      },
+      "reserved_by": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Reserved By",
+        "default": []
+      },
+      "completed_by": {
+        "items": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": "array",
+        "title": "Completed By",
+        "default": []
+      },
+      "source_proposed_example_id": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "uuid"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Source Proposed Example Id"
       }
     },
     "type": "object",
@@ -2210,5 +1965,293 @@
     ],
     "title": "RunSchemaWithAnnotationQueueInfo",
     "description": "Run schema with annotation queue info."
+  },
+  "annotationqueues.AddAnnotationQueueItemsRequest": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "maxItems": 100,
+        "items": {
+          "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemInput"
+        }
+      }
+    }
+  },
+  "annotationqueues.AddAnnotationQueueItemsResponse": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItem"
+        }
+      }
+    }
+  },
+  "annotationqueues.AddReviewerRequest": {
+    "type": "object",
+    "required": [
+      "identity_id"
+    ],
+    "properties": {
+      "identity_id": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.AddReviewerResponse": {
+    "type": "object",
+    "properties": {
+      "identity_id": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueItem": {
+    "type": "object",
+    "properties": {
+      "added_at": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "item_type": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemType"
+      },
+      "last_reviewed_time": {
+        "description": "LastReviewedTime is always present on the wire (null until reviewed).",
+        "type": "string"
+      },
+      "project_id": {
+        "type": "string"
+      },
+      "queue_id": {
+        "type": "string"
+      },
+      "run_id": {
+        "type": "string"
+      },
+      "source_proposed_example_id": {
+        "type": "string"
+      },
+      "start_time": {
+        "type": "string"
+      },
+      "thread_id": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueItemCountResponse": {
+    "type": "object",
+    "properties": {
+      "count": {
+        "type": "integer"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueItemInput": {
+    "type": "object",
+    "properties": {
+      "item_type": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemType"
+      },
+      "project_id": {
+        "type": "string"
+      },
+      "run_id": {
+        "description": "RUN fields",
+        "type": "string"
+      },
+      "session_id": {
+        "description": "SessionID is an alias for project_id.",
+        "type": "string"
+      },
+      "source_proposed_example_id": {
+        "description": "SourceProposedExampleID links the queue item to the suggested example\nit was created from, when applicable.",
+        "type": "string"
+      },
+      "start_time": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "thread_id": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueItemListStatus": {
+    "type": "string",
+    "enum": [
+      "needs_my_review",
+      "needs_others_review",
+      "archived"
+    ],
+    "x-enum-varnames": [
+      "AnnotationQueueItemStatusNeedsMyReview",
+      "AnnotationQueueItemStatusNeedsOthersReview",
+      "AnnotationQueueItemStatusArchived"
+    ]
+  },
+  "annotationqueues.AnnotationQueueItemPlacementResponse": {
+    "type": "object",
+    "properties": {
+      "cursor": {
+        "type": "string"
+      },
+      "item_type": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemType"
+      },
+      "position": {
+        "type": "integer"
+      },
+      "section": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemListStatus"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueItemType": {
+    "type": "string",
+    "enum": [
+      "RUN",
+      "THREAD"
+    ],
+    "x-enum-varnames": [
+      "AnnotationQueueItemTypeRun",
+      "AnnotationQueueItemTypeThread"
+    ]
+  },
+  "annotationqueues.AnnotationQueueListItem": {
+    "type": "object",
+    "properties": {
+      "added_at": {
+        "type": "string"
+      },
+      "completed_by": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "effective_added_at": {
+        "type": "string"
+      },
+      "id": {
+        "type": "string"
+      },
+      "item_type": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueItemType"
+      },
+      "last_reviewed_time": {
+        "description": "LastReviewedTime is always present on the wire (null until reviewed).",
+        "type": "string"
+      },
+      "project_id": {
+        "type": "string"
+      },
+      "queue_id": {
+        "type": "string"
+      },
+      "reserved_by": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "run_id": {
+        "type": "string"
+      },
+      "source_proposed_example_id": {
+        "type": "string"
+      },
+      "start_time": {
+        "type": "string"
+      },
+      "thread_id": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.AnnotationQueueReviewStatus": {
+    "type": "string",
+    "enum": [
+      "viewed",
+      "completed"
+    ],
+    "x-enum-varnames": [
+      "AnnotationQueueReviewStatusViewed",
+      "AnnotationQueueReviewStatusCompleted"
+    ]
+  },
+  "annotationqueues.CreateAnnotationQueueItemStatusRequest": {
+    "type": "object",
+    "properties": {
+      "override_added_at": {
+        "type": "string"
+      },
+      "status": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueReviewStatus"
+      }
+    }
+  },
+  "annotationqueues.CreateAnnotationQueueItemStatusResponse": {
+    "type": "object",
+    "properties": {
+      "is_archived": {
+        "type": "boolean"
+      },
+      "override_added_at": {
+        "type": "string"
+      },
+      "queue_item_id": {
+        "type": "string"
+      },
+      "status": {
+        "$ref": "#/components/schemas/annotationqueues.AnnotationQueueReviewStatus"
+      }
+    }
+  },
+  "annotationqueues.DeleteAnnotationQueueItemsRequest": {
+    "type": "object",
+    "properties": {
+      "item_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "annotationqueues.ListAnnotationQueueItemsResponse": {
+    "type": "object",
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/annotationqueues.AnnotationQueueListItem"
+        }
+      },
+      "next_cursor": {
+        "type": "string"
+      },
+      "previous_cursor": {
+        "type": "string"
+      }
+    }
+  },
+  "annotationqueues.PatchAnnotationQueueItemRequest": {
+    "type": "object",
+    "properties": {
+      "added_at": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "last_reviewed_time": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
   }
 }
