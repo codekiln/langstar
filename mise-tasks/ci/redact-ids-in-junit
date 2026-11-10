@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-#MISE description="Redact the organization and workspace IDs from JUnit files, and fail if either was there"
+#MISE description="Redact the organization and workspace IDs from JUnit files, and fail if any was there"
 #USAGE arg "<junit_file>" var=#true help="JUnit XML file to redact in place"
-# Replace the values of LANGSMITH_ORGANIZATION_ID and LANGSMITH_WORKSPACE_ID
-# in JUnit files with [redacted VAR], and fail when either value was there.
+# Replace the values of LANGSMITH_ORGANIZATION_ID, LANGSMITH_WORKSPACE_ID and
+# LANGSMITH_DESTINATION_WORKSPACE_ID in JUnit files with [redacted VAR], and
+# fail when any of the values was there.
 #
 # CI uploads JUnit files as artifacts, and anyone signed in to GitHub can
 # download them from this public repository. GitHub masks secrets in job logs
@@ -30,7 +31,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 leaks=0
-for var in LANGSMITH_ORGANIZATION_ID LANGSMITH_WORKSPACE_ID; do
+for var in LANGSMITH_ORGANIZATION_ID LANGSMITH_WORKSPACE_ID LANGSMITH_DESTINATION_WORKSPACE_ID; do
   value="${!var:-}"
   if [ -z "$value" ]; then
     echo "$var is empty, so no file can contain it; skipping"
