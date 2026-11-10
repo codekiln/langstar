@@ -96,12 +96,8 @@ Export writes that string and prints a warning naming the path to stderr. A flag
 
 A credential under an ordinary key name with an ordinary-looking value, such as a random string under a key called `x`, passes the check and reaches the file. Read an export file before you commit it.
 
-## Unset LANGSTAR_DEBUG_HTTP before you export
-
-`LANGSTAR_DEBUG_HTTP` makes langstar write each response the server sends, credentials included, to a debug file and to stderr. Export refuses to run while it is set, before it sends any request. [#847 Keep credentials out of the LANGSTAR_DEBUG_HTTP output](https://github.com/codekiln/langstar/issues/847) tracks the change that would let export run with it set.
-
 ## Exit statuses
 
 - 0: export wrote the file.
-- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` pointer named no string, a `--not-a-secret` pointer named a path where the check flagged nothing, the deployment has no assistant with that ID, the assistant is a graph's default assistant, `LANGSTAR_DEBUG_HTTP` is set, or another error stopped it.
+- 1: export wrote nothing, because the assistant holds a credential, a `--prompt-ref` pointer named no string, a `--not-a-secret` pointer named a path where the check flagged nothing, the deployment has no assistant with that ID, the assistant is a graph's default assistant, or another error stopped it.
 - 2: a mistyped flag or a missing required one.

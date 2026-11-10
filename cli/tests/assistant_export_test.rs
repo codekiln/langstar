@@ -132,39 +132,6 @@ fn read_json(path: &std::path::Path) -> Value {
         .expect("the file should hold JSON")
 }
 
-/// With `LANGSTAR_DEBUG_HTTP` set, the SDK writes each response body to a
-/// debug file and prints the start of it to stderr. Export refuses before it
-/// sends any request, so neither holds the assistant. This test sends no
-/// request, so it runs without credentials.
-#[test]
-fn test_export_refuses_while_http_debugging_is_on() {
-    let directory = TempDir::new().unwrap();
-    let debug_file = directory.path().join("debug.json");
-    let file = directory.path().join("support-bot.json");
-    let output = langstar_cmd()
-        .env("LANGSTAR_DEBUG_HTTP", "1")
-        .env("LANGSTAR_DEBUG_FILE", &debug_file)
-        .env("LANGSMITH_API_KEY", "placeholder-key")
-        .args([
-            "assistant",
-            "export",
-            "3f1c2b8e-0d4a-4c6e-9b7a-2e5f8d9c1a00",
-            "--deployment",
-            "my-agent",
-            "--output",
-            file.to_str().unwrap(),
-        ])
-        .output()
-        .expect("Failed to run langstar");
-
-    assert_eq!(output.status.code(), Some(1));
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("LANGSTAR_DEBUG_HTTP"), "{stderr}");
-    assert!(output.stdout.is_empty());
-    assert!(!debug_file.exists(), "no request reached the debug file");
-    assert!(!file.exists(), "export should write no file");
-}
-
 /// Task 8.1, "Add langstar assistant export": export writes every field of an assistant with configuration,
 /// context and metadata.
 #[test]
